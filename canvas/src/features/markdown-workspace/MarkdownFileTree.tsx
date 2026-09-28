@@ -1,9 +1,10 @@
 import React from 'react'
-import { ChevronDown, ChevronRight, FileCode2, FileImage, FileJson2, FileText, Hash, Link as LinkIcon, ShieldCheck } from 'lucide-react'
+import { Link as LinkIcon, ShieldCheck } from 'lucide-react'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
 import { WORKSPACE_ROOT_PATH } from '@/features/workspace-fs/path'
 import { sortWorkspaceEntriesForExplorer } from '@/features/workspace-fs/workspaceFs'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { DirectoryTreeBranch, DirectoryTreeRow, DirectoryTreeDisclosure, DirectoryTreeFileButton, DirectoryTreeChildren } from '@/lib/ui/DirectoryTreeControls'
 import { normalizeImportUrlInput } from '@/lib/url'
 import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
@@ -15,7 +16,6 @@ import { excludeLegacyWorkspaceSourceEntries } from '@/features/workspace-fs/wor
 import { isAgenticGraphWorkspaceSeedsRootPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import {
   UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME,
-  UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME,
   UI_RESPONSIVE_DATA_VIEW_NARROW_MENU_PANEL_CLASSNAME,
   UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_LIST_CLASSNAME,
   UI_RESPONSIVE_MENU_ROW_CLASSNAME,
@@ -24,15 +24,6 @@ import {
 type Node = {
   entry: WorkspaceEntry
   children: Node[]
-}
-
-const fileGlyph = (name: string) => {
-  const extension = name.split('.').pop()?.toLowerCase()
-  if (extension === 'json' || extension === 'jsonld') return { Icon: FileJson2, color: 'text-amber-700 dark:text-amber-300' }
-  if (extension && ['js', 'jsx', 'ts', 'tsx', 'py', 'html', 'xml', 'sh'].includes(extension)) return { Icon: FileCode2, color: 'text-cyan-700 dark:text-cyan-300' }
-  if (extension && ['css', 'scss', 'sass'].includes(extension)) return { Icon: Hash, color: 'text-purple-700 dark:text-purple-300' }
-  if (extension && ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'avif'].includes(extension)) return { Icon: FileImage, color: 'text-rose-700 dark:text-rose-300' }
-  return { Icon: FileText, color: extension === 'md' || extension === 'mdx' ? 'text-blue-700 dark:text-blue-300' : '' }
 }
 
 const buildTree = (entries: WorkspaceEntry[]): Node => {
@@ -204,16 +195,13 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
       )
     }
 
-    const indent = depth * 20
     const isFolder = entry.kind === 'folder'
     const isExpanded = expandedPaths.has(entry.path)
     const isActive = activePath === entry.path
-    const { Icon: FileIcon, color: iconColor } = fileGlyph(entry.name)
     const source = sourcesByPath ? sourcesByPath[entry.path] : null
     const sourceUrl = source?.kind === 'url' ? normalizeImportUrlInput(source.url) : ''
     const isWorkspaceSeedsAuthorityRoot = isAgenticGraphWorkspaceSeedsRootPath(entry.path)
     const selectEntry = () => isFolder ? onSelectFolder(entry.path) : onSelectFile(entry.path)
-    const iconActionClass = `${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} p-0 shrink-0 inline-flex items-center justify-center rounded ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing}`
     const openContextMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
       event.preventDefault()
       event.stopPropagation()
@@ -226,26 +214,11 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     }
 
     return (
-      <li key={entry.path} className="group/source-branch list-none">
-        <section className="group flex items-center" style={{ paddingLeft: indent }}
-          aria-label={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}>
-          {isFolder ? (
-            <button type="button" aria-label={`${isExpanded ? 'Collapse' : 'Expand'} folder ${entry.name}`}
-              aria-expanded={isExpanded} title={`${isExpanded ? 'Collapse' : 'Expand'} ${entry.path}`}
-              className={`ml-1 ${iconActionClass}`}
-              onClick={() => toggleExpanded(entry.path)}>
-              {isExpanded
-                ? <ChevronDown role="img" aria-label="Collapse folder" className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />
-                : <ChevronRight role="img" aria-label="Expand folder" className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />}
-            </button>
-          ) : null}
-          {!isFolder && <button type="button" aria-label={`Select file ${entry.name}`}
-            aria-pressed={isActive} title={entry.path}
-            className={`ml-1 ${iconActionClass}`}
-            onClick={selectEntry} onContextMenu={openContextMenu}>
-            <FileIcon role="img" aria-label={`Select file ${entry.name}`}
-              className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} ${iconColor}`} />
-          </button>}
+      <DirectoryTreeBranch key={entry.path}>
+        <DirectoryTreeRow depth={depth} label={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}>
+          {isFolder
+            ? <DirectoryTreeDisclosure name={entry.name} path={entry.path} expanded={isExpanded} onToggle={() => toggleExpanded(entry.path)} />
+            : <DirectoryTreeFileButton name={entry.name} path={entry.path} selected={isActive} onSelect={selectEntry} onContextMenu={openContextMenu} />}
           <MarkdownFileTreeRowButton
             ariaLabel={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}
             title={entry.path}
@@ -273,21 +246,13 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
               {renderFileRight({ entry, isActive })}
             </span>
           ) : null}
-        </section>
+        </DirectoryTreeRow>
         {isFolder && isExpanded && node.children.length > 0 ? (
-          <section className="relative" aria-label={`Contents of folder ${entry.name}`}>
-            <button type="button" aria-label={`Select folder ${entry.name} from hierarchy guide`} title={`Select ${entry.path}`}
-              className={`absolute inset-y-0 w-3 p-0 rounded opacity-0 group-hover/source-branch:opacity-60 group-focus-within/source-branch:opacity-60 hover:!opacity-100 focus-visible:!opacity-100 ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.focus.primaryRing}`}
-              style={{ left: `calc(${indent}px + 0.25rem + var(--kg-data-view-icon-action-sm-size, 1.75rem) / 2 - 0.375rem)` }}
-              onClick={selectEntry}>
-              <svg role="img" aria-label={`Hierarchy guide for ${entry.name}`} className="block h-full w-full" viewBox="0 0 12 100" preserveAspectRatio="none">
-                <line x1="6" y1="0" x2="6" y2="100" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-              </svg>
-            </button>
+          <DirectoryTreeChildren name={entry.name} path={entry.path} depth={depth} onSelect={selectEntry}>
             <ul className="list-none m-0 p-0">{node.children.map(child => renderNode(child, depth + 1))}</ul>
-          </section>
+          </DirectoryTreeChildren>
         ) : null}
-      </li>
+      </DirectoryTreeBranch>
     )
   }
 

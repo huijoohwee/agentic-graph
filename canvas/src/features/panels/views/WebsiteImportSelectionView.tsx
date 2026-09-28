@@ -1,5 +1,6 @@
 import React from 'react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { DirectoryTreeBranch, DirectoryTreeRow, DirectoryTreeDisclosure, DirectoryTreeFileButton, DirectoryTreeChildren } from '@/lib/ui/DirectoryTreeControls'
 import { cn } from '@/lib/utils'
 import { buildWebsiteSelectionTree, websiteFolderUrls, type WebsiteSelectionFolder } from '@/lib/websites/websiteImportSelection'
 
@@ -14,25 +15,46 @@ function SelectionCheckbox(props: { label: string; urls: string[]; selected: Set
   return <input ref={ref} type="checkbox" aria-label={props.label} checked={props.urls.length > 0 && count === props.urls.length} onChange={event => props.toggle(props.urls, event.target.checked)} />
 }
 
-function PageTree(props: { folder: WebsiteSelectionFolder; selected: Set<string>; toggle: (urls: string[], checked: boolean) => void; discover: (url: string) => void; busy: boolean; visited: Set<string> }) {
-  return <ul className="m-0 list-none pl-4">
-    {props.folder.folders.map(folder => <li key={folder.path} className="py-1">
-      <details open>
-        <summary className="cursor-pointer py-1">
-          <SelectionCheckbox label={`Select folder ${folder.path}`} urls={websiteFolderUrls(folder)} selected={props.selected} toggle={props.toggle} />
-          <span className="ml-2">{folder.name}/</span>
-        </summary>
-        <PageTree {...props} folder={folder} />
-      </details>
-    </li>)}
-    {props.folder.pages.map(page => <li key={page.url} className="flex min-w-0 items-start gap-2 py-2">
-      <SelectionCheckbox label={`Select page ${page.url}`} urls={[page.url]} selected={props.selected} toggle={props.toggle} />
-      <span className="min-w-0 flex-1 break-words text-sm" title={page.url}>
-        {page.title || `${new URL(page.url).pathname.split('/').filter(Boolean).pop() || '/'}${new URL(page.url).search}`}
-        {page.title ? <span className={cn('block text-xs', UI_THEME_TOKENS.text.secondary)}>{page.path}{new URL(page.url).search}</span> : null}
-      </span>
-      <button type="button" className={cn(actionClass, 'shrink-0 px-2 py-1 text-xs')} disabled={props.busy || props.visited.has(page.url)} aria-label={`Find pages linked from ${page.url}`} onClick={() => props.discover(page.url)}>{props.visited.has(page.url) ? 'Listed' : 'Find links'}</button>
-    </li>)}
+type PageTreeProps = { folder: WebsiteSelectionFolder; depth: number; selected: Set<string>; toggle: (urls: string[], checked: boolean) => void; discover: (url: string) => void; busy: boolean; visited: Set<string> }
+
+function PageFolder(props: PageTreeProps) {
+  const [expanded, setExpanded] = React.useState(true)
+  const { folder, depth, selected, toggle } = props
+  const urls = websiteFolderUrls(folder)
+  const selectFolder = () => toggle(urls, !urls.every(url => selected.has(url)))
+  return <DirectoryTreeBranch>
+    <DirectoryTreeRow depth={depth} label={`Folder ${folder.path}`}>
+      <DirectoryTreeDisclosure name={folder.path} path={folder.path} expanded={expanded} onToggle={() => setExpanded(value => !value)} />
+      <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 py-2 text-sm">
+        <SelectionCheckbox label={`Select folder ${folder.path}`} urls={urls} selected={selected} toggle={toggle} />
+        <span className="truncate" title={folder.path}>{folder.name}/</span>
+      </label>
+    </DirectoryTreeRow>
+    {expanded && <DirectoryTreeChildren name={folder.path} path={folder.path} depth={depth} onSelect={selectFolder}>
+      <PageTree {...props} depth={depth + 1} />
+    </DirectoryTreeChildren>}
+  </DirectoryTreeBranch>
+}
+
+function PageTree(props: PageTreeProps) {
+  return <ul className="m-0 list-none p-0">
+    {props.folder.folders.map(folder => <PageFolder key={folder.path} {...props} folder={folder} />)}
+    {props.folder.pages.map(page => {
+      const url = new URL(page.url), name = url.pathname.split('/').filter(Boolean).pop() || '/'
+      return <DirectoryTreeBranch key={page.url}>
+        <DirectoryTreeRow depth={props.depth} label={`Page ${page.url}`}>
+          <DirectoryTreeFileButton name={name} path={page.url} label={`Select page icon ${page.url}`} selected={props.selected.has(page.url)} onSelect={() => props.toggle([page.url], !props.selected.has(page.url))} />
+          <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 py-2 text-sm">
+            <SelectionCheckbox label={`Select page ${page.url}`} urls={[page.url]} selected={props.selected} toggle={props.toggle} />
+            <span className="min-w-0 flex-1 break-words" title={page.url}>
+              {page.title || `${name}${url.search}`}
+              {page.title ? <span className={cn('block text-xs', UI_THEME_TOKENS.text.secondary)}>{page.path}{url.search}</span> : null}
+            </span>
+          </label>
+          <button type="button" className={cn(actionClass, 'ml-2 shrink-0 px-2 py-1 text-xs')} disabled={props.busy || props.visited.has(page.url)} aria-label={`Find pages linked from ${page.url}`} onClick={() => props.discover(page.url)}>{props.visited.has(page.url) ? 'Listed' : 'Find links'}</button>
+        </DirectoryTreeRow>
+      </DirectoryTreeBranch>
+    })}
   </ul>
 }
 
@@ -63,7 +85,7 @@ function WebsiteSelectionContents({ session }: { session: NonNullable<ReturnType
       {error ? <section role="alert" className="text-sm"><p>{error}</p><button type="button" className={actionClass} onClick={() => void discover(url)}>Retry discovery</button></section> : null}
       {limited || pages.length >= 500 ? <p className="text-sm">Showing up to 500 discovered pages. This is a bounded list, not a complete site inventory.</p> : <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>Lists links from visited pages. Use Find links to discover more before importing.</p>}
       <section aria-label="Website page tree" className="min-h-20 flex-1 overflow-auto overscroll-contain">
-        <PageTree folder={tree} selected={selected} toggle={toggle} discover={url => void discover(url)} busy={busy} visited={visited} />
+        <PageTree folder={tree} depth={0} selected={selected} toggle={toggle} discover={url => void discover(url)} busy={busy} visited={visited} />
       </section>
       <footer className="flex justify-end gap-2 border-t pt-3">
         <button type="button" className={actionClass} onClick={() => finishWebsiteImportSelection(null)}>Cancel</button>

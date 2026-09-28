@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.19"
+version: "0.2.20"
 date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.18"
-prd_revision: "0.2.19"
-tad_revision: "0.2.19"
-adr_revision: "0.2.19"
-mvp_revision: "0.2.19"
-gtm_revision: "0.2.19"
+previous_document_version: "0.2.19"
+prd_revision: "0.2.20"
+tad_revision: "0.2.20"
+adr_revision: "0.2.20"
+mvp_revision: "0.2.20"
+gtm_revision: "0.2.20"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -47,6 +47,16 @@ gtm_revision: "0.2.19"
 Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action discovers a selectable folder/page tree before starting a server-owned headless import of the chosen pages, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
 
 The external crawler project is a capability reference only. The implementation uses the repository's existing Playwright dependency and native Node.js modules. It does not copy or depend on the reference project.
+
+## 2026-09-28 shared Import URL tree controls
+
+**PRD.** Import URL reuses Source Files directory rows, file-only icons, square disclosure buttons and hover/focus hierarchy guides. Folder checkboxes and names select all visible descendants; page icons and labels toggle page selection. Disclosure only changes expansion. Import still requires the explicit Import selected action.
+
+**TAD / ADR.** Move the existing file glyph mapping, row indentation, disclosure button and hierarchy guide into one shared `DirectoryTreeControls` module consumed by both trees. Native buttons, checkboxes, labels, lists, sections and named SVG images provide separate semantic targets. The picker owns multi-selection and local expansion; Source Files keeps its existing single-selection owner. Folder icons remain omitted per the user's preference. No site-specific branches, new dependency, persistence schema or network endpoint.
+
+**MVP / verification.** Three picker regressions cover exact selected imports, partial folder selection, icon/guide selection, collapse/reopen retention, session retention and abort-on-cancel. Five Source Files regressions and TypeScript checking pass. Live discovery of the requested library URL lists four pages with the shared 28×28 disclosure/file controls, zero folder icons and zero hidden SVG images. Keyboard activation of the search page icon selects exactly one page; collapsing and reopening retains it, and focus reveals the hierarchy guide at 60% opacity. The required committed-candidate affected gate is recorded separately; this is local evidence only.
+
+**GTM / bounds / rollback.** Reduce repeated learning between source browsing and choosing import pages. One shared module replaces duplicate markup; five changed files and under 40 KB of changes within the 20-minute implementation/verification budget, followed by required release validation. Existing picker loading remains lazy and source-tree glyph code is moved rather than duplicated. No paid resources or Production claim. Revert the successor commit to restore the previous picker; imported files and saved documents are untouched.
 
 ## 2026-09-28 square Source Files selection controls
 
