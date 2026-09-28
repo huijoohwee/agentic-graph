@@ -70,6 +70,18 @@ The external crawler project is a capability reference only. The implementation 
 
 **GTM.** Measure browser responsiveness and time to first visible file during a timed 100-page pilot before claiming this recovery for users. No buyer or revenue evidence is recorded.
 
+## 2026-09-28 bounded import writes and conversion ownership
+
+**PRD.** Completed crawl pages must become usable progressively without repeated whole-workspace reconciliation or large HTML conversion on the browser UI thread. When server Markdown is unavailable, the file must clearly report that condition and retain the existing captured-HTML viewer reference.
+
+**TAD.** Text upserts now reuse the shared filesystem initialization owner. One crawl writer shares a single folder inventory and serializes folder creation across page workers. Its Explorer refresh guard begins before the import folder is created. Completed Markdown still writes through the shared workspace filesystem and publishes metadata immediately; one final refresh reconciles the tree.
+
+**ADR.** The server owns crawl HTML-to-Markdown conversion. Remove the client raw-HTML conversion fallback, which can parse a multi-megabyte capture and copy its full snapshot into a workspace document. Keep the server artifact and existing HTML viewer reference; emit an explicit Markdown-unavailable notice when conversion did not produce text. Browser enhancement remains disabled for the Launch headless action. Reuse the shared initialization and folder owners instead of introducing an import-specific filesystem.
+
+**MVP check.** A 100-page regression reproduced 103 seed reconciliations before the fix and one afterward, with one folder inventory and progressive visibility preserved. The saved 100-node crawl replay included a 12,017,857-byte HTML-only capture: removing the duplicate conversion reduced the local replay from 15.2 seconds to 1.3 seconds and maximum observed event-loop delay from 9,160 ms to 78 ms. It retained all 99 successful page files and both terminal documents. These local measurements are bounded evidence, not a browser crash-recovery claim. Focused tests also cover missing Markdown without raw-HTML fetch, concurrent folder ancestors, failed initialization retry, explicit seed refresh, and the first file's refresh guard. The crashed in-app tab remains inaccessible to automation under the browser URL policy; live review is pending.
+
+**GTM.** The immediate outcome is shorter time to a usable imported page and a responsive Source Files tree. Validate the exact reported browser flow before closing the crash report; no buyer or revenue result is claimed.
+
 ## User outcomes
 
 | Surface | Outcome |
