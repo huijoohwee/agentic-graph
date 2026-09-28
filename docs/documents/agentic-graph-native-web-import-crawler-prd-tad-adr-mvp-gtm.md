@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.13"
+version: "0.2.14"
 date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.12"
-prd_revision: "0.2.13"
-tad_revision: "0.2.13"
-adr_revision: "0.2.13"
-mvp_revision: "0.2.13"
-gtm_revision: "0.2.13"
+previous_document_version: "0.2.13"
+prd_revision: "0.2.14"
+tad_revision: "0.2.14"
+adr_revision: "0.2.14"
+mvp_revision: "0.2.14"
+gtm_revision: "0.2.14"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -47,6 +47,22 @@ gtm_revision: "0.2.13"
 Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action starts a server-owned headless crawl, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
 
 The external crawler project is a capability reference only. The implementation uses the repository's existing Playwright dependency and native Node.js modules. It does not copy or depend on the reference project.
+
+## 2026-09-28 library renderer stability and workspace persistence
+
+**PRD.** Crawl pages default to 2D D3 when opened, including older saved imports without renderer metadata. Explicit authored renderer choices remain valid. Large imported documents must permit Canvas View Mode switching and full Markdown scrolling. Autosave must persist every edit, including equal-length changes in the middle of a document; Storage Sync must honor its on/off setting through the existing storage owner.
+
+**TAD / ADR.** The actual saved query-variant `library.md` restored Storyboard with 436 cards. Profiling identified repeated Cartesian collision-candidate allocation and a full edge measurement notification per projected card. Replace the shared collision solver with a sweep over horizontal boundaries and merged vertical blocker intervals, retaining exact nearest-position tie order, pinned cards and media clearance. Commit geometry once after all changed card positions are written; unchanged projection emits no notification. The common frontmatter resolver supplies missing D3 fields for crawl metadata, preserving explicit presets. These changes use no hostname or filename branches and do not rewrite imported artifacts. Autosave now hashes the entire draft instead of only its length and two end samples, fixing skipped middle edits in the existing scheduler.
+
+**Import completion.** The predecessor Integration Gate exposed a race: status reported done while the persisted manifest still had no completed nodes. The existing server owner now publishes terminal status after the final manifest flush. Progress stays live; consumers can read the terminal manifest immediately after completion. The existing local article integration check covers this ordering.
+
+**Storage Sync.** The shared Explorer polling effect retains a scheduled retry while inline editing or a preceding effect’s read temporarily blocks reconciliation. One effect owns at most one timer; turning sync off cancels future polling, and turning it back on during an existing read resumes after that read settles. A mounted-hook regression fails before this fix and passes afterward.
+
+**MVP evidence.** The corrected actual-session replay reproduced the Canvas-menu hang and renderer crash before repair. The earlier isolated replay used a different library node and selected D3, so it did not exercise this Storyboard workload. After repair, the user's existing in-app session opened the query-variant library in D3, switched to Storyboard and back, reopened Canvas View Mode, and scrolled the Markdown preview through its midpoint, end and top without a crash. The full 232,051-character rendered preview remained present. Browser evidence: `/tmp/library-stability-inapp.png`. This establishes that reported sequence on the existing session; it is not an unrestricted performance guarantee.
+
+**Verification.** Six new regressions pass: exact comparison against exhaustive collision placement on randomized small layouts, 1,000-card non-overlap with pinned retention, one geometry commit per projection, crawl defaults with explicit choice preservation, equal-length middle-edit Autosave scheduling/cancellation, and Storage Sync resume across editing/toggles. Thirty-nine existing renderer, Autosave, settings, storage, Explorer suspension/inventory and conversion checks pass. TypeScript and 118 collaboration checks pass. The dense collision test has a three-second ceiling and completed locally in about half a second. An isolated Chromium session verifies same-size middle edits, persisted reload, Autosave Off withholding writes and On committing the pending draft. Storage Sync Off stops local source polling; On ingests an external source update. The fixture uses the normal local-source ownership index and intercepts host writes, preserving user files. Evidence: `/tmp/workspace-persistence-proof.json` and `/tmp/workspace-persistence-proof.png`. This proves local storage behavior; authenticated cross-device synchronization was not exercised.
+
+**GTM / bounds / recovery.** The immediate outcome is reliable crawl-to-reading and edit retention. No buyer, revenue or Production outcome is claimed. The slice changes six production modules and three regression modules, reuses the current preview, and targets a source/test diff below 32 KB with new modules below 600 lines. The inherited oversized website server receives a minimal completion-order repair and shrinks by one line; splitting its unrelated routes is deferred. The investigation extended beyond its initial 20-minute target to reproduce the actual restored renderer and verify both persistence controls; a further 15-minute slice covers polling recovery and its regression. Source rollback is a protected revert; saved imports remain intact. Exact protected integration and any subsequent Production authorization require their own receipts.
 
 ## 2026-09-28 shared webpage resource lifecycle
 

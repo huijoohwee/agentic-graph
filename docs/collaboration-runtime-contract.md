@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 69
+contract_version: 70
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -65,6 +65,20 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  storyboard_collision_scaling:
+    roots: ["canvas/src/components/StoryboardWidgetCanvas/storyboardFixedCardCollisionLayout2d.ts", "canvas/src/components/StoryboardWidgetCanvas/useStoryboardCardOverlayProjection2d.ts", "canvas/src/features/parsers/canvasFrontmatterPreset.ts", "canvas/src/__tests__/storyboardCollisionScaling.test.ts"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/storyboardCollisionScaling.test.ts"]
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "storyboardWidget.widget.collision", "storyboardWidget.widget.collectiveCameraMotion.freezesBalancedWorldLayout", "ui.storyboard.fixedCardOverlay"]
+  workspace_storage_sync_polling:
+    roots: ["canvas/src/lib/markdown-workspace-runtime/useMarkdownWorkspaceExplorerState.tsx", "canvas/src/__tests__/workspaceStorageSyncPolling.test.tsx"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/workspaceStorageSyncPolling.test.tsx"]
+  workspace_autosave_scheduling:
+    roots: ["canvas/src/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.stateSync.ts", "canvas/src/__tests__/workspaceAutosaveScheduling.test.ts"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/workspaceAutosaveScheduling.test.ts"]
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "markdownWorkspace.autosave", "markdown.workspace.sourceRevision.autosave", "settings.documentStorage"]
   webpage_request_resources:
     roots: ["canvas/src/lib/websites/webpageTextRequestCache.ts", "canvas/src/lib/websites/webpageIframeSrcdoc.ts", "canvas/src/features/markdown-workspace/main/useWebpageIframeSrcdoc.ts", "canvas/src/lib/websites/server/nativeWebsiteCrawler.ts", "canvas/src/__tests__/webpageArtifactResources.test.ts"]
     commands:
