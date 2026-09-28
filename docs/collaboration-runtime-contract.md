@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 65
+contract_version: 66
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -73,6 +73,10 @@ ci_scopes:
     roots: ["canvas/src/lib/websites/websiteCrawlCanvasMarkdown.ts", "canvas/src/__tests__/nativeWebsiteCrawler.test.ts"]
     commands:
       - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "websiteImport.native.canvasDownloads", "websiteImport.launch"]
+  webpage_content:
+    roots: ["canvas/src/lib/websites/server/websiteImportServer.ts", "canvas/src/lib/websites/webpageHtmlToMarkdownArtifact.ts", "canvas/src/lib/websites/webpageHtmlSnapshotMarkdown.ts", "canvas/src/lib/markdown/htmlToMarkdownUnified.ts", "canvas/src/lib/markdown/htmlContentRoot.ts", "canvas/src/__tests__/webpageHtmlToMarkdownArtifact.test.ts"]
+    commands:
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "webpage.htmlToArtifact", "html.unifiedToMarkdown", "markdown.sourceFaithful"]
   webpage_toolbar:
     roots: ["canvas/src/features/markdown-workspace/MarkdownWorkspaceToolbar.tsx", "canvas/src/lib/markdown-workspace-runtime/useMarkdownWorkspaceDerivedViews.tsx", "canvas/src/__tests__/markdownWorkspaceTheme.test.ts", "canvas/src/__tests__/markdownWorkspaceToolbarWebpageViewControls.test.tsx"]
     commands:
