@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.17"
+version: "0.2.18"
 date: "2026-09-28"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.16"
-prd_revision: "0.2.17"
-tad_revision: "0.2.17"
-adr_revision: "0.2.17"
-mvp_revision: "0.2.17"
-gtm_revision: "0.2.17"
+previous_document_version: "0.2.17"
+prd_revision: "0.2.18"
+tad_revision: "0.2.18"
+adr_revision: "0.2.18"
+mvp_revision: "0.2.18"
+gtm_revision: "0.2.18"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -47,6 +47,16 @@ gtm_revision: "0.2.17"
 Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action discovers a selectable folder/page tree before starting a server-owned headless import of the chosen pages, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
 
 The external crawler project is a capability reference only. The implementation uses the repository's existing Playwright dependency and native Node.js modules. It does not copy or depend on the reference project.
+
+## 2026-09-28 Source Files selection and affordances
+
+**PRD.** Source Files shows one current selection across session observations and authored files. Folder icons and names select workspace folders; separate named disclosure buttons expand or collapse children without changing selection. Imported source URLs occupy the trailing action area immediately before cloud status in ordinary file rows.
+
+**TAD / ADR.** The mission projection consumes the existing Explorer active path; it no longer creates a highlighted fallback while inactive. Selecting a workspace folder leaves mission inspection through the existing source-selection owner. Reuse MarkdownFileTree, its shared row shell, theme/focus tokens, and URL normalization. Native buttons and anchors own actions; named SVG images expose icon hit targets. No hidden icon decorations, generic div wrappers, nested buttons, site-specific branches, new dependencies or background services are introduced in the changed tree.
+
+**MVP / verification.** Five focused component cases pass: independent folder selection/disclosure, source inventory filtering, active-file reveal without focus theft, and mission/authored selection plus trailing source/cloud actions, safe URL schemes, read-only menus and cloud indicator activation. TypeScript checking passes. Live local verification at 1037×952 exercised folder icon selection, keyboard disclosure, mission JSON → workspace folder → website.sitemap.md. The final Source Files selection contains only website.sitemap.md; its URL link ends at x=303 and the cloud button begins at x=303, with zero hidden SVG icons in either source tree. Repository affected checks must bind the committed candidate separately.
+
+**GTM / scope / rollback.** This is a usability correction for existing source browsing; no demand or Production claim. Scope: five source files, two existing test files and this plan, below 60 KB of changes, no paid resource. The local implementation/verification sprint is bounded to 25 minutes, followed by required validation/provider handoff. Revert these source changes to restore prior controls; imported content and stored documents are unchanged.
 
 ## 2026-09-28 Import URL Main Panel tab
 

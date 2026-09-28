@@ -20,6 +20,7 @@ import {
 } from './SourceFileCloudSyncIndicator'
 import { SourceFilesOwnershipSummary } from './SourceFilesOwnershipSummary'
 import { AgentMissionSourceFile } from '@/features/agent-ready/agentMissionSourceFiles'
+import { selectAgentRunSource } from '@/features/agent-ready/agentRunInspectionStore'
 import { DASHBOARD_TEMPLATE_PATH, DASHBOARD_TEMPLATE_ROOT, readDashboardTemplate } from '@/components/DashboardCanvas/dashboardTemplateSource'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
@@ -153,7 +154,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
     <>
       <SourceFilesOwnershipSummary onOpenTemplate={() => void openTemplate()} templateBusy={templateBusy} />
       {templateError && <p role="status" className={`px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>{templateError}</p>}
-      <AgentMissionSourceFile search={props.search} />
+      <AgentMissionSourceFile search={props.search} activePath={activePath} />
       {loading ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.text.secondary}`}>Loading…</p>
         : loadError ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>Failed: {loadError}</p>
         : <MarkdownFileTree
@@ -162,7 +163,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
         toggleExpanded={toggleExpanded}
         activePath={activePath}
         onSelectFile={onSelectFile}
-        onSelectFolder={onSelectFolder}
+        onSelectFolder={path => { selectAgentRunSource(null); onSelectFolder(path) }}
         sourcesByPath={sourcesByPath}
         onCreateNewFile={onCreateNewFile}
         onRevealInFinder={onRevealInFinder}

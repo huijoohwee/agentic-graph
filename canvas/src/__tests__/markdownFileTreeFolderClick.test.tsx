@@ -1,3 +1,4 @@
+import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { MarkdownFileTree } from '@/features/markdown-workspace/MarkdownFileTree'
@@ -26,36 +27,32 @@ export async function testMarkdownFileTreeFolderClickDoesNotClearSelection() {
       { path: '/folder/file.md', parentPath: '/folder', kind: 'file', name: 'file.md', text: '# ok', updatedAtMs: 1 },
     ]
 
+    const selectedFolders: WorkspacePath[] = []
+    function Harness() {
+      const [selected, select] = React.useState('/folder/file.md')
+      const [expanded, expand] = React.useState(new Set<string>())
+      return <MarkdownFileTree entries={entries} expandedPaths={expanded}
+        toggleExpanded={path => {
+          expandedCalls.push(path)
+          expand(previous => { const next = new Set(previous); if (next.has(path)) next.delete(path); else next.add(path); return next })
+        }} activePath={selected} onSelectFile={path => { selectFileCalls.push(path); select(path) }}
+        onSelectFolder={path => { selectedFolders.push(path); select(path) }} />
+    }
     root = createRoot(container as unknown as HTMLElement)
-    root.render(
-      <MarkdownFileTree
-        entries={entries}
-        expandedPaths={new Set()}
-        toggleExpanded={path => expandedCalls.push(path)}
-        activePath={'/folder/file.md'}
-        onSelectFile={path => selectFileCalls.push(path)}
-        sourcesByPath={null}
-      />,
-    )
-    await tick()
-
-    let folderButton: HTMLButtonElement | null = null
-    for (let i = 0; i < 50; i += 1) {
-      folderButton = container.querySelector('section[aria-label="Folder folder"] button') as HTMLButtonElement | null
-      if (folderButton) break
-      await tick()
-    }
-    if (!folderButton) throw new Error('folder button not found')
-
-    folderButton.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))
-    await tick()
-
-    if (expandedCalls.length !== 1 || expandedCalls[0] !== '/folder') {
-      throw new Error(`expected toggleExpanded to be called once with /folder, got ${JSON.stringify(expandedCalls)}`)
-    }
-    if (selectFileCalls.length !== 0) {
-      throw new Error(`expected onSelectFile not to be called, got ${JSON.stringify(selectFileCalls)}`)
-    }
+    await act(async () => { root!.render(<Harness />) })
+    const folder = container.querySelector('button[aria-label="Folder folder"]')!
+    const icon = folder.querySelector('svg[role="img"]')!
+    if (!icon || icon.hasAttribute('aria-hidden')) throw Error('Folder icon must be a named, visible selection target')
+    await act(async () => { icon.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })) })
+    if (selectedFolders.join() !== '/folder' || folder.getAttribute('aria-current') !== 'page') throw Error('Folder icon must select its folder')
+    if (expandedCalls.length) throw Error('Folder selection must not also toggle expansion')
+    const disclosure = container.querySelector('button[aria-label="Expand folder folder"]') as HTMLButtonElement
+    await act(async () => { disclosure.click() })
+    if (expandedCalls.join() !== '/folder' || disclosure.getAttribute('aria-expanded') !== 'true') throw Error('Disclosure must expand children')
+    if (!container.querySelector('button[aria-label="File file.md"]')) throw Error('Expanded folder must reveal its file')
+    if (folder.getAttribute('aria-current') !== 'page' || selectedFolders.length !== 1) throw Error('Disclosure must preserve selection')
+    if (selectFileCalls.length) throw Error('Folder controls must not open a file')
+    if (container.querySelector('div, [aria-hidden="true"], button button')) throw Error('Tree affordances must use semantic, visible controls without nested buttons')
   } finally {
     try {
       root?.unmount()
