@@ -6,6 +6,8 @@ import type { WebsiteImportManifestV1 } from '@/lib/websites/server/websiteImpor
 import { bulkSetWorkspaceEntrySources } from '@/features/workspace-fs/sourceIndex'
 import type { WorkspaceImportWebsiteOpts, WorkspaceWebsiteImportProgress, WorkspaceWebsiteImportSummary } from '@/features/markdown-explorer/workspaceActionBridge'
 import { createWebsiteImportWorkspaceWriter } from './websiteImportNodeWriter'
+import { ancestorPathsForWorkspacePath } from '@/features/workspace-fs/path'
+import { MARKDOWN_EXPLORER_OPEN_SOURCE_FILES_EVENT } from '@/features/markdown/ui/useMarkdownExplorerSectionCollapseState'
 export { importWebsiteViaWorkspaceRuntime, useWorkspaceWebsiteImportAction } from './websiteImportRuntimeFacade'
 
 type WebsiteImportSettings = {
@@ -213,12 +215,14 @@ export async function runWorkspaceWebsiteImport(args: {
   status: WebsiteImportRuntimeStatus
   getFs: () => Promise<WorkspaceFs>
   refresh?: () => Promise<{ entries: import('@/features/workspace-fs/types').WorkspaceEntry[]; sourcesByPath: import('@/features/workspace-fs/sourceIndex').WorkspaceSourceIndex }>
+  setExpandedPaths?: React.Dispatch<React.SetStateAction<Set<string>>>
   focusAfterImport?: (createdPath: WorkspacePath, opts?: { sourceUrl?: string | null; applyToGraph?: boolean; jobId?: number }) => Promise<void>
 }): Promise<{ createdPaths: WorkspacePath[]; host: string; websiteImportManifest: WebsiteImportManifestV1; websiteImportSummary: WorkspaceWebsiteImportSummary }> {
   const settings = resolveWebsiteImportSettings(args.opts)
   let fs: WorkspaceFs | null = null
   let writer: Awaited<ReturnType<typeof createWebsiteImportWorkspaceWriter>> | null = null
   let refreshChain = Promise.resolve()
+  let openedSourceFiles = false
   const getWriter = async (importId: string) => {
     if (writer) return writer
     fs = await args.getFs()
@@ -234,8 +238,20 @@ export async function runWorkspaceWebsiteImport(args: {
       onFileCreated: async source => {
         if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
         bulkSetWorkspaceEntrySources([source])
+        args.setExpandedPaths?.(previous => {
+          const ancestors = ancestorPathsForWorkspacePath(source.path)
+          if (ancestors.every(path => previous.has(path))) return previous
+          const next = new Set(previous)
+          for (const ancestor of ancestors) next.add(ancestor)
+          return next
+        })
+        const shouldOpenSourceFiles = !openedSourceFiles
+        openedSourceFiles = true
         refreshChain = refreshChain.then(async () => { await args.refresh?.() })
         await refreshChain
+        if (shouldOpenSourceFiles && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent(MARKDOWN_EXPLORER_OPEN_SOURCE_FILES_EVENT, { detail: { path: source.path } }))
+        }
       },
     })
     return writer

@@ -29,6 +29,7 @@ function buildWorkspaceWebsiteImportCtx(args: UseWorkspaceFileActionsArgs): Work
   return {
     getFs: args.getFs,
     refresh: args.refresh,
+    setExpandedPaths: args.setExpandedPaths,
   }
 }
 
