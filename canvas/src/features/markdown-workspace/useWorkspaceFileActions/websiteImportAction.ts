@@ -222,6 +222,11 @@ export async function runWorkspaceWebsiteImport(args: {
   focusAfterImport?: (createdPath: WorkspacePath, opts?: { sourceUrl?: string | null; applyToGraph?: boolean; jobId?: number }) => Promise<void>
 }): Promise<{ createdPaths: WorkspacePath[]; host: string; websiteImportManifest: WebsiteImportManifestV1; websiteImportSummary: WorkspaceWebsiteImportSummary }> {
   const settings = resolveWebsiteImportSettings(args.opts)
+  if (settings.applyToCanvas) {
+    const { applyCanvasFrontmatterPreset } = await import('@/features/parsers/canvasFrontmatterPreset')
+    if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
+    applyCanvasFrontmatterPreset({ preset: { canvasRenderMode: '2d', canvas2dRenderer: 'd3' } })
+  }
   let fs: WorkspaceFs | null = null
   let writer: Awaited<ReturnType<typeof createWebsiteImportWorkspaceWriter>> | null = null
   let openedSourceFiles = false
@@ -230,7 +235,6 @@ export async function runWorkspaceWebsiteImport(args: {
   const getWriter = async (importId: string) => {
     if (writer) return writer
     fs = await args.getFs()
-    await fs.ensureSeed()
     writer = await createWebsiteImportWorkspaceWriter({
       fs,
       url: args.url,
@@ -239,12 +243,11 @@ export async function runWorkspaceWebsiteImport(args: {
       importJobRef: args.importJobRef,
       jobId: args.jobId,
       status: args.status,
+      onRootPath: root => {
+        if (args.setEntries) finishExplorerUpdates = beginWebsiteImportExplorerUpdates(root)
+      },
       onFileCreated: async source => {
         if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
-        if (args.setEntries && !finishExplorerUpdates) {
-          const importRoot = ancestorPathsForWorkspacePath(source.path)[2]
-          if (importRoot) finishExplorerUpdates = beginWebsiteImportExplorerUpdates(importRoot)
-        }
         bulkSetWorkspaceEntrySources([source])
         args.setEntries?.(previous => addCompletedWebsiteFileToExplorer(previous, source.path))
         args.setExpandedPaths?.(previous => {
@@ -308,6 +311,6 @@ export async function runWorkspaceWebsiteImport(args: {
     return { createdPaths: created.createdPaths, host, websiteImportManifest: manifest, websiteImportSummary: buildWebsiteImportManifestSummary(manifest) }
   } finally {
     finishExplorerUpdates?.()
-    if (!reconciliationAttempted && writer && isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) await args.refresh?.()
+    if (!reconciliationAttempted && (writer || finishExplorerUpdates) && isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) await args.refresh?.()
   }
 }
