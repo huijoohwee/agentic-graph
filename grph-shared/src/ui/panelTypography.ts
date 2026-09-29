@@ -1,3 +1,4 @@
+import { normalizeUiTextClasses } from './typography.js'
 import { UI_THEME_TOKENS } from './themeTokens.js'
 
 export type PanelTypography = {
@@ -21,7 +22,7 @@ export const PANEL_KEY_VALUE_INPUT_CLASS_BY_TEXT_SIZE = {
 export const PANEL_TYPOGRAPHY_DEFAULTS = {
   fontClass: 'font-sans',
   textSizeClass: 'text-sm',
-  microLabelTextSizeClass: 'text-[9px]',
+  microLabelTextSizeClass: 'text-xs',
   monospaceTextClass: 'font-mono text-xs',
   keyValueInputClass: PANEL_KEY_VALUE_INPUT_CLASS_BY_TEXT_SIZE.textSm,
 } as const
@@ -51,28 +52,28 @@ export function coercePanelTypography(input: Partial<PanelTypography> | null | u
     typeof input?.fontClass === 'string' && input.fontClass.trim() ? input.fontClass.trim() : PANEL_TYPOGRAPHY_DEFAULTS.fontClass
   const textSizeClass =
     typeof input?.textSizeClass === 'string' && input.textSizeClass.trim()
-      ? input.textSizeClass.trim()
+      ? normalizeUiTextClasses(input.textSizeClass.trim())
       : PANEL_TYPOGRAPHY_DEFAULTS.textSizeClass
   const microLabelTextSizeClass =
     typeof input?.microLabelTextSizeClass === 'string' && input.microLabelTextSizeClass.trim()
-      ? input.microLabelTextSizeClass.trim()
+      ? normalizeUiTextClasses(input.microLabelTextSizeClass.trim())
       : PANEL_TYPOGRAPHY_DEFAULTS.microLabelTextSizeClass
   const monospaceTextClass =
     typeof input?.monospaceTextClass === 'string' && input.monospaceTextClass.trim()
-      ? input.monospaceTextClass.trim()
+      ? normalizeUiTextClasses(input.monospaceTextClass.trim())
       : PANEL_TYPOGRAPHY_DEFAULTS.monospaceTextClass
   const keyValueInputClass =
     typeof input?.keyValueInputClass === 'string' && input.keyValueInputClass.trim()
-      ? input.keyValueInputClass.trim()
+      ? normalizeUiTextClasses(input.keyValueInputClass.trim())
       : PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass
   const keyLabelClass = typeof input?.keyLabelClass === 'string' && input.keyLabelClass.trim()
-    ? input.keyLabelClass.trim()
+    ? normalizeUiTextClasses(input.keyLabelClass.trim())
     : `${fontClass} ${textSizeClass}`
   const panelTextClass = typeof input?.panelTextClass === 'string' && input.panelTextClass.trim()
-    ? input.panelTextClass.trim()
+    ? normalizeUiTextClasses(input.panelTextClass.trim())
     : `${fontClass} ${textSizeClass}`
   const microLabelClass = typeof input?.microLabelClass === 'string' && input.microLabelClass.trim()
-    ? input.microLabelClass.trim()
+    ? normalizeUiTextClasses(input.microLabelClass.trim())
     : `${fontClass} ${microLabelTextSizeClass}`
   return {
     fontClass,

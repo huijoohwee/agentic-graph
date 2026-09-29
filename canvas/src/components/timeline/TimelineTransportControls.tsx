@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import { Pause, Play, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -208,6 +209,7 @@ export function TimelineTransportControls(props: TimelineTransportControlsProps)
     onTogglePlayback,
     onValueChange,
   } = props
+  const { panelTextClass } = usePanelTypography()
   const progressPercent = React.useMemo(() => {
     const span = Math.max(0, max - min)
     if (span <= 0) return 0
@@ -221,7 +223,7 @@ export function TimelineTransportControls(props: TimelineTransportControlsProps)
   }, [playbackRate, playbackRates])
   return (
     <section
-      className={cn('timeline-transport-shell', shellClassName)}
+      className={cn('timeline-transport-shell', shellClassName, panelTextClass)}
       data-kg-timeline-transport="shared"
       style={{ '--kg-timeline-progress': `${progressPercent}%` } as React.CSSProperties}
     >

@@ -190,11 +190,11 @@ export function XrSceneMediaSurface({
         <directionalLight position={[-7, 5, -6]} intensity={tropicalKit ? 0.72 : 0.55} />
         <XrSceneMediaContent projection={projection} />
       </Canvas>
-      <span className="pointer-events-none absolute bottom-2 left-2 max-w-[calc(100%-5rem)] truncate rounded-full border border-sky-300/70 bg-slate-950/75 px-2 py-0.5 text-[10px] font-medium tracking-wide text-sky-100">
+      <span className="pointer-events-none absolute bottom-2 left-2 max-w-[calc(100%-5rem)] truncate rounded-full border border-sky-300/70 bg-slate-950/75 px-2 py-0.5 text-xs font-medium tracking-normal text-sky-100">
         {projection.label}
       </span>
       <span
-        className="pointer-events-none absolute bottom-2 right-2 rounded-full border border-sky-300/70 bg-slate-950/75 px-2 py-0.5 text-[10px] font-medium tracking-wide text-sky-100"
+        className="pointer-events-none absolute bottom-2 right-2 rounded-full border border-sky-300/70 bg-slate-950/75 px-2 py-0.5 text-xs font-medium tracking-normal text-sky-100"
         data-kg-rich-media-xr-native-badge="1"
       >
         Native Three.js · XR

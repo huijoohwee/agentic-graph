@@ -1,3 +1,4 @@
+import { UI_FONT_MONO, UI_FONT_SANS } from 'grph-shared/ui/typography'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { resolvePreferredRichMediaPanelNodeId } from '@/lib/render/richMediaSsot'
 import {
@@ -151,7 +152,7 @@ export function buildGrabMapsPoiRichMediaSrcDoc(detail: GrabMapsPoiRichMediaDeta
       `<line x1="${width / 2}" y1="${pad}" x2="${width / 2}" y2="${height - pad}" stroke="#cbd5e1" stroke-dasharray="4 4"/>`,
       `<circle cx="${markerX.toFixed(2)}" cy="${markerY.toFixed(2)}" r="5.5" fill="#ef4444" stroke="#ffffff" stroke-width="2"/>`,
       `<circle cx="${markerX.toFixed(2)}" cy="${markerY.toFixed(2)}" r="14" fill="none" stroke="#ef4444" stroke-opacity="0.35" stroke-width="2"/>`,
-      `<text x="${pad + 6}" y="${height - 16}" fill="#334155" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace">${escapeHtml(latText)} / ${escapeHtml(lngText)}</text>`,
+      `<text x="${pad + 6}" y="${height - 16}" fill="#334155" font-size="11" font-family="${UI_FONT_MONO}">${escapeHtml(latText)} / ${escapeHtml(lngText)}</text>`,
       '</svg>',
       `<figcaption>${escapeHtml(markerLabel)}</figcaption>`,
       '</figure>',
@@ -162,7 +163,7 @@ export function buildGrabMapsPoiRichMediaSrcDoc(detail: GrabMapsPoiRichMediaDeta
     '<html><head><meta charset="utf-8" />',
     '<meta name="viewport" content="width=device-width,initial-scale=1" />',
     '<style>',
-    'html,body{margin:0;padding:0;background:#f8fafc;color:#0f172a;font:14px/1.45 ui-sans-serif,system-ui,sans-serif;}',
+    `html,body{margin:0;padding:0;background:#f8fafc;color:#0f172a;font:14px/1.45 ${UI_FONT_SANS};}`,
     'main{min-height:100vh;box-sizing:border-box;padding:18px;display:flex;align-items:flex-start;justify-content:center;}',
     'article{width:100%;max-width:520px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 8px 28px rgba(15,23,42,.08);padding:16px 18px;}',
     'h1{margin:0;font-size:20px;line-height:1.25;}',
@@ -175,9 +176,9 @@ export function buildGrabMapsPoiRichMediaSrcDoc(detail: GrabMapsPoiRichMediaDeta
     '.actions a:hover{background:#f1f5f9;}',
     '.mini-map{margin:16px 0 0;display:grid;gap:8px;}',
     '.mini-map svg{width:100%;height:auto;display:block;border-radius:12px;box-shadow:inset 0 0 0 1px #cbd5e1;}',
-    '.mini-map figcaption{font-size:12px;color:#475569;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;}',
-    'pre{margin:16px 0 0;padding:10px 12px;background:#0f172a;color:#e2e8f0;border-radius:10px;overflow:auto;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;}',
-    'strong{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#64748b;}',
+    `.mini-map figcaption{font-size:12px;color:#475569;font-family:${UI_FONT_MONO};}`,
+    `pre{margin:16px 0 0;padding:10px 12px;background:#0f172a;color:#e2e8f0;border-radius:10px;overflow:auto;font:12px/1.45 ${UI_FONT_MONO};}`,
+    'strong{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#64748b;}',
     'span{font-size:14px;color:#0f172a;word-break:break-word;}',
     '</style></head><body>',
     `<main><article><h1>${label}</h1><p>GrabMaps POI selection rendered on the Rich Media Panel surface.</p>`,

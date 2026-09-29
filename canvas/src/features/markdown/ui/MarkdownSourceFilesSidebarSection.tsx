@@ -98,7 +98,7 @@ export function MarkdownSourceFilesSidebarSection(props: {
           UI_THEME_TOKENS.panel.divider,
           UI_THEME_TOKENS.text.tertiary,
           uiPanelTextFontClass,
-          'text-[10px] flex items-center justify-between gap-2',
+          'text-xs flex items-center justify-between gap-2',
         ].join(' ')}
         aria-label="Source files status"
       >

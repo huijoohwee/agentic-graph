@@ -41,11 +41,11 @@ export function LiveCanvasHeroPromptPresetPicker(props: {
   const selectedDescription = presets.find(preset => preset.id === activePresetId)?.description
   return (
     <fieldset data-kg-live-canvas-hero-prompt-presets="true">
-      <legend className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--kg-text-secondary)]">
+      <legend className="text-xs font-semibold uppercase tracking-normal text-[var(--kg-text-secondary)]">
         Catalog
       </legend>
-      {loading ? <p className="mt-1 text-[10px] text-[var(--kg-text-secondary)]">Loading prompt presets…</p> : null}
-      {statusMessage ? <p className="mt-1 text-[10px] text-red-500" role="alert">{statusMessage}</p> : null}
+      {loading ? <p className="mt-1 text-xs text-[var(--kg-text-secondary)]">Loading prompt presets…</p> : null}
+      {statusMessage ? <p className="mt-1 text-xs text-red-500" role="alert">{statusMessage}</p> : null}
       {catalogError && !loading && <button type="button" onClick={retry}
         className="mt-2 rounded border px-3 py-2 text-xs">Retry catalog</button>}
       {!loading && !catalogError ? (

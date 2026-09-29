@@ -51,7 +51,7 @@ export default function LearningAssetsPanel({ view: panelView }: { view: 'assets
       </div>{!filtered.length && <p role="status">No lesson assets match this search.</p>}
     </>}
     <section className="space-y-2 rounded-lg border p-3" aria-label="Selected lesson asset">
-      <div className="flex items-center justify-between gap-2"><strong>{selected.name}</strong><span className="rounded border px-2 py-1 text-[10px] uppercase">{selected.kind}</span></div>
+      <div className="flex items-center justify-between gap-2"><strong>{selected.name}</strong><span className="rounded border px-2 py-1 text-xs uppercase">{selected.kind}</span></div>
       <p className="text-xs opacity-75">{selected.detail}</p>
       <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
         <dt>X / Z</dt><dd className="text-right font-mono">{selected.position[0].toFixed(2)} / {selected.position[2].toFixed(2)} m</dd>

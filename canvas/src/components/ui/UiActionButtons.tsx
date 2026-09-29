@@ -42,7 +42,7 @@ export function UiActionButtons({
             key={actionId}
             type="button"
             className={cn(
-              'rounded border px-2 py-1 text-[11px] leading-4 transition-colors disabled:cursor-wait disabled:opacity-60',
+              'rounded border px-2 py-1 text-xs leading-4 transition-colors disabled:cursor-wait disabled:opacity-60',
               UI_THEME_TOKENS.panel.border,
               getToneClasses(action.tone),
             )}

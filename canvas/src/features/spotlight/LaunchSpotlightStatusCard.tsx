@@ -111,7 +111,7 @@ export function LaunchSpotlightStatusCard({
   )
   const uiIconBadgeChipClass = useGraphStore(s => s.uiIconBadgeChipClass)
   const uiIconBadgeChipTextSizeClass = useGraphStore(
-    s => s.uiIconBadgeChipTextSizeClass || s.uiPanelMicroLabelTextSizeClass || 'text-[9px]',
+    s => s.uiIconBadgeChipTextSizeClass || s.uiPanelMicroLabelTextSizeClass || 'text-xs',
   )
 
   const selectionCount =
@@ -366,7 +366,7 @@ export function LaunchSpotlightStatusCard({
           <>
             <section className="flex items-start justify-between mb-2">
               <section className="flex flex-col gap-0.5">
-                <span className={`${uiPanelKeyValueTextSizeClass} font-medium uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`}>Status Panel</span>
+                <span className={`${uiPanelKeyValueTextSizeClass} font-medium uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`}>Status Panel</span>
                 <section className={`text-sm font-semibold ${UI_THEME_TOKENS.text.primary}`}>Status</section>
               </section>
               <button
@@ -399,7 +399,7 @@ export function LaunchSpotlightStatusCard({
               </section>
               <section className={`text-xs ${UI_THEME_TOKENS.text.primary} space-y-2`}>
                 <section>
-                  <section className={`${uiPanelKeyValueTextSizeClass} font-medium uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary} mb-0.5`}>
+                  <section className={`${uiPanelKeyValueTextSizeClass} font-medium uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary} mb-0.5`}>
                     Graph state
                   </section>
                   <section>
@@ -438,7 +438,7 @@ export function LaunchSpotlightStatusCard({
                   ) : null}
 
                   <section className="mt-2" aria-label="Viewport status">
-                    <h3 className={`${uiPanelKeyValueTextSizeClass} font-medium uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary} mb-0.5`}>
+                    <h3 className={`${uiPanelKeyValueTextSizeClass} font-medium uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary} mb-0.5`}>
                       Viewport
                     </h3>
                     <dl className={LAUNCH_SPOTLIGHT_VIEWPORT_STATUS_GRID_CLASS_NAME}>
@@ -456,7 +456,7 @@ export function LaunchSpotlightStatusCard({
                   </section>
                 </section>
                 <section>
-                  <section className={`${uiPanelKeyValueTextSizeClass} font-medium uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary} mb-0.5`}>
+                  <section className={`${uiPanelKeyValueTextSizeClass} font-medium uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary} mb-0.5`}>
                     Validation
                   </section>
                   <section className="flex items-center gap-1 mb-1">

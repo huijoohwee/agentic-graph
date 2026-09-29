@@ -151,11 +151,11 @@ export function StoryboardReferenceStrip(props: {
       <section className="mb-2 flex items-center justify-between gap-2">
         <section className="flex items-center gap-2">
           <ImageIcon className={['h-3.5 w-3.5 shrink-0', UI_THEME_TOKENS.text.tertiary].join(' ')} aria-hidden="true" />
-          <span className={['text-[10px] font-semibold uppercase tracking-[0.08em]', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+          <span className={['text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary].join(' ')}>
             Reference Pack
           </span>
         </section>
-        <span className={['inline-flex h-5 min-w-5 items-center justify-center rounded px-1.5 text-[10px]', UI_THEME_TOKENS.badge.chip, UI_THEME_TOKENS.text.secondary].join(' ')}>
+        <span className={['inline-flex h-5 min-w-5 items-center justify-center rounded px-1.5 text-xs', UI_THEME_TOKENS.badge.chip, UI_THEME_TOKENS.text.secondary].join(' ')}>
           {props.references.length}
         </span>
       </section>
@@ -200,7 +200,7 @@ export function StoryboardReferenceStrip(props: {
               href={reference.url}
               target="_blank"
               rel="noreferrer"
-              className={[UI_RESPONSIVE_STORYBOARD_REFERENCE_LINK_CLASSNAME, 'rounded-lg border px-2 text-center text-[11px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.secondary].join(' ')}
+              className={[UI_RESPONSIVE_STORYBOARD_REFERENCE_LINK_CLASSNAME, 'rounded-lg border px-2 text-center text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.secondary].join(' ')}
               title={reference.url}
               draggable={false}
               onDragStart={event => {
@@ -356,7 +356,7 @@ function StoryboardMediaSelectionSlotView(props: {
     <figure
       className="m-0 flex min-h-0 flex-col gap-1.5"
     >
-      <figcaption className={['truncate text-[11px]', UI_THEME_TOKENS.text.secondary].join(' ')}>
+      <figcaption className={['truncate text-xs', UI_THEME_TOKENS.text.secondary].join(' ')}>
         {slot.label}
       </figcaption>
       {media ? (

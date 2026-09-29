@@ -151,7 +151,7 @@ export default function SchemaSummary({
 
   const sections: Array<JSX.Element> = []
   if (resolvedShowTitle) {
-    sections.push(<section key="title" className={`font-semibold uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`}>SCHEMA SUMMARY</section>)
+    sections.push(<section key="title" className={`font-semibold uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`}>SCHEMA SUMMARY</section>)
   }
   if (resolvedShowSchemaSummary) {
     sections.push(

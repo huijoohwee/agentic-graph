@@ -53,6 +53,7 @@ export type WebsiteImportRuntime = {
 }
 
 export type WebsiteImportManifestV1 = {
+  selectedUrls?: string[]
   version: 1
   importId: string
   rootUrl: string
@@ -67,6 +68,8 @@ export type WebsiteImportManifestV1 = {
 }
 
 export type WebsiteImportOptions = {
+  /** Exact page selection. When present, link following is disabled. */
+  selectedUrls?: string[]
   discoverSitemap?: boolean
   sitemapUrl?: string
   maxPages?: number
