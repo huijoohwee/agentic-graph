@@ -1,7 +1,8 @@
+import { stripOversizedHydrationAttributes } from '../markdown/htmlToMarkdownHast'
 import { renderHtmlSnapshotMarkdown } from './webpageHtmlSnapshotMarkdown'
 import { renderAsciiFrame } from './webpageMarkdownArtifactAscii'
 import { normalizeInline, stripTrailingPunctuation } from './webpageMarkdownArtifactAsciiPrivate'
-import { convertHtmlToMarkdownUnified } from '../markdown/htmlToMarkdownUnified'
+import { assertHtmlInputBudget, convertHtmlToMarkdownUnified } from '../markdown/htmlToMarkdownUnified'
 import { postprocessWebpageMarkdownSsot } from '../markdown/webpageMarkdownPostprocess'
 import { serializeMarkdownPipeTable } from '@/features/markdown/ui/markdownDataViewSerialize'
 import {
@@ -185,6 +186,9 @@ export async function convertWebpageHtmlToMarkdownArtifactAsync(args: {
   onProgress?: (step: string) => void
 }): Promise<string> {
   const raw = String(args.html || '')
+  assertHtmlInputBudget(raw, 32_000_000)
+  const renderableHtml = stripOversizedHydrationAttributes(raw)
+  assertHtmlInputBudget(renderableHtml, 10_000_000)
   if (raw.length > 120_000) await yieldToMain()
   args.onProgress?.('Converting HTML')
   if (raw.length > 120_000) await yieldToMain()
@@ -205,7 +209,7 @@ export async function convertWebpageHtmlToMarkdownArtifactAsync(args: {
   let fullText = ''
   try {
     const unified = await convertHtmlToMarkdownUnified({
-      html: raw,
+      html: renderableHtml,
       fallbackMarkdown,
       baseUrl: args.url,
       maxInputChars: 10_000_000,
