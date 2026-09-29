@@ -254,6 +254,9 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     ? 0
     : learningScene || immersiveMediaStageActive || hasXrEmptyWorld || hasGraph ? 1 : 0
   const rendererLifecycleKey = resolveThreeRendererLifecycleKey(mode) + `-${rendererBackend.key}`
+  const [resolution, setResolution] = useState<{ key: string; dpr: number } | null>(null)
+  const canvasDpr = resolution?.key === rendererLifecycleKey ? resolution.dpr : [1, 2] as [number, number]
+  const setCanvasDpr = useCallback((dpr: number) => setResolution({ key: rendererLifecycleKey, dpr }), [rendererLifecycleKey])
   const rendererMounted = shouldMountThreeRenderer({
     mode,
     hasRenderableScene,
@@ -455,7 +458,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
         camera={{ position: [0, 0, 220], fov: 50 }}
         shadows
         gl={rendererBackend.gl}
-        dpr={[1, 2]}
+        dpr={canvasDpr}
         style={geospatialComposite ? { pointerEvents: 'none' } : undefined}
         onCreated={state => configureThreeGraphRenderer(state, {
           mode, glCanvasRef, threeGlRef, threeCameraRef, threeSceneRef, applySemanticCanvasOwner,
@@ -554,7 +557,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
               }
             }}
           /> : null}
-          <OverlayFrameSync enabled={active && mode !== 'xr'} scheduleRef={scheduleRef} />
+          <OverlayFrameSync enabled={active && mode !== 'xr'} scheduleRef={scheduleRef} onResolutionChange={setCanvasDpr} />
         </React.Suspense>
       </Canvas>
       </XrSubjectHoverProvider>

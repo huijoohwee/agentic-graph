@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.15.0"
+version: "1.16.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -572,27 +572,27 @@ use a bounded adaptive grid with internal scrolling. Authored wrappers use named
 sections, headers, navigation and figures; confirmed image regions are native
 select buttons. Existing data, playback and camera permission owners remain.
 
-MVP/evidence: cap 15 files / 75 KB (13 files / 68 KB measured), no new dependencies. Check duplicate frames, desktop/touch sizing, constrained clips,
-selection hit testing, TypeScript and the focused presentation contracts. Broader
-release evidence is recorded separately; focused checks do not establish parity.
-GTM: consistent free/offline learning and inspection controls. Rollback: revert
-this successor patch; no persisted-format migration.
+MVP/evidence: cap 15 files / 75 KB (13 files / 68 KB measured), no new dependencies. Check duplicate frames, desktop/touch sizing, clips, selection, TypeScript and presentation contracts; broader release evidence is separate.
+GTM: consistent free/offline learning and inspection controls. Rollback: revert; no persisted-format migration.
 
 ## Canvas setting descriptions (2026-09-29)
 
-PRD: Display Controls and Document Modes identify each setting visibly; On/Off
-and shape/layout values remain secondary. TAD/ADR: the shared Canvas View row
-renderer distinguishes named settings from categorical choices, preserving native
-buttons, selectable outputs, invocation metadata, height and ellipsis owners.
-MVP: 10-minute implementation cap, 6 files / 20 KB; browser and existing menu checks
-verify labels and state separately. GTM: clearer free/offline controls. Rollback:
-revert this successor; no data or dependency change.
+PRD/TAD/ADR: Display Controls and Document Modes identify each setting visibly;
+On/Off and categorical values remain secondary. Shared Canvas View rows preserve
+native buttons, outputs, invocation metadata, height and ellipsis owners.
+MVP: cap 10 minutes, 6 files / 20 KB; browser/menu checks verify names and state.
+GTM: clearer free/offline controls. Rollback: revert; no data or dependency change.
 
 ## XR hover fidelity (2026-09-29)
 
-PRD/TAD/ADR: XR subjects reuse the interactive graph hover box for crisp HTML
-names/details; remove overlapping name sprites. Pointer exit bridges to the box,
-removal/document changes clear stale content, and tapping preserves selection.
-The timeline owns its top edge; remove the transform inspector's adjacent stroke.
-MVP/GTM: free/offline, cap 8 files / 30 KB / 20 minutes; verify hover, selection,
-borders and existing contracts. Rollback: revert this successor; no data migration.
+PRD/TAD/ADR: XR subjects reuse the interactive HTML hover box, replacing name sprites.
+Pointer exit bridges to the box; removal/document changes clear it; tapping selects.
+Timeline owns its top edge; remove the inspector's adjacent stroke.
+MVP/GTM: free/offline; cap 8 files / 30 KB / 20 minutes; verify hover, selection and
+borders. Rollback: revert this successor; no data migration.
+
+## XR playback visibility (2026-09-29)
+
+PRD/TAD/ADR: Keep the authored scene visible through continuous playback. Canvas owns adaptive DPR through its declared prop; the frame budget reports changes to it. Remove frame-local DPR writes that race Canvas reconfiguration and repeatedly clear the drawing buffer. Reset resolution on renderer lifecycle changes; existing camera, asset, hover and source owners remain.
+
+MVP/evidence: cap 8 files / 30 KB; diagnosis extended beyond the initial 20 minutes. Reproduced transparent output with valid camera poses and draw calls; verified playback beyond the 13-second failure at DPR 0.5. Lifecycle/budget checks: 10/10. Release checks recorded separately. GTM: stable free/offline playback with bounded pixel work. Rollback: revert; no dependency, data migration or new module.

@@ -41,13 +41,14 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { createThreeFrameResolutionBudget } from './threeRendererLifecycle'
 import { isVideoSequenceRecorderLeased } from '@/components/timeline/videoSequenceRecorderLifecycle'
 
-export function OverlayFrameSync({ enabled, scheduleRef }: { enabled: boolean; scheduleRef: React.MutableRefObject<(() => void) | null> }) {
+export function OverlayFrameSync({ enabled, scheduleRef, onResolutionChange }: { enabled: boolean; scheduleRef: React.MutableRefObject<(() => void) | null>; onResolutionChange: (ratio: number) => void }) {
   const resolutionBudget = React.useMemo(createThreeFrameResolutionBudget, [])
   useFrame((state, delta) => {
     const ratio = resolutionBudget.sample(delta, state.viewport.dpr, state.viewport.initialDpr,
       state.gl.xr.enabled && !state.gl.xr.isPresenting && state.frameloop === 'always' && !isVideoSequenceRecorderLeased()
       && (typeof document === 'undefined' || document.visibilityState === 'visible'))
-    if (ratio !== null) state.setDpr(ratio)
+    // Canvas must own the admitted DPR; frame-local setDpr races its prop on each render.
+    if (ratio !== null) onResolutionChange(ratio)
     if (!enabled) return
     try {
       scheduleRef.current?.()
