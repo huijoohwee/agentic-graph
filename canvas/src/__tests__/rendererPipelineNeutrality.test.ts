@@ -527,11 +527,11 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   if (!canvasViewMenuText.includes('getCanvas2dRendererMenuDescription(id)') || !canvasViewMenuText.includes('getCanvas2dRendererMenuBadges(id)')) {
     throw new Error('expected Canvas view menu renderer options to derive UX metadata from the shared renderer spec')
   }
-  if (!rendererSelectText.includes('option.description') || !rendererSelectText.includes('option.badges')) {
-    throw new Error('expected Canvas2dRendererSelect to render shared renderer UX metadata without local option aliases')
+  if (!rendererSelectText.includes('getOptionTooltip={buildCanvasViewOptionHelp}')) {
+    throw new Error('expected Canvas2dRendererSelect to delegate renderer UX metadata to shared hover/focus help')
   }
-  if (!rendererSelectText.includes('kg-toolbar-dropdown-option-copy') || !responsiveToolbarCssText.includes('--kg-toolbar-dropdown-width')) {
-    throw new Error('expected rich renderer menu metadata to use shared toolbar sizing and copy wrapping primitives')
+  if (rendererSelectText.includes('kg-toolbar-dropdown-option-copy') || !responsiveToolbarCssText.includes('--kg-toolbar-dropdown-width')) {
+    throw new Error('expected renderer rows to use shared toolbar sizing without legacy wrapping metadata')
   }
   if (!animaticTimelineModelText.includes('buildScopedGraphSemanticKey') || !animaticTimelineModelText.includes("'animatic-timeline-model'")) {
     throw new Error('expected Animatic timeline model caching to reuse the shared graph semantic-key helper')

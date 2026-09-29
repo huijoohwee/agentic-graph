@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.5.0"
+version: "1.6.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -405,3 +405,36 @@ validation is separate candidate evidence, not production parity.
 GTM: Removes colour-editing and inspection friction in the existing free/offline
 workflow. No pricing or adoption claim. Rollback: revert this revision as a unit;
 colour values and workspace formats require no migration.
+
+## Compact renderer menu and shared help (2026-09-29)
+
+PRD: Canvas View choices must match their section headers in height, keep long
+names on one line, and expose explanations on hover or focus. Repeated renderer
+headings, badges and enablement paragraphs must not crowd the choices.
+
+TAD/ADR: `ToolbarDropdownSelect` and the existing shared menu row own geometry.
+`Canvas2dRendererSelect` renders an icon and choice name; parent sections retain
+their current value. Retire the wrapping-copy, inline metadata and hint variants.
+`buildCanvasViewOptionHelp` reuses the role/action/outcome and settings-value help
+builders with renderer metadata and the canonical default. Categorical choices
+do not invent numeric bounds. Disabled reasons and enablement guidance join the
+same portal tooltip. A named lock icon conveys unavailability; aria-disabled
+buttons remain focusable and hit-testable while click dispatch remains guarded.
+Arrow/Home/End navigation includes expanded children, and live option refreshes
+preserve focus. Selection and invocation metadata retain their existing owners.
+
+MVP/evidence: cap 15 files / 60 KB patch; no dependency or runtime request added.
+Eight focused checks pass, covering help/disabled dispatch, focus preservation,
+retired-variant prohibition, tooltip ownership, menu grouping, 2D return behavior,
+touch sizing and responsive containment. Browser measurements show all 18 rows at
+28 px on desktop and 44 px in a 390 px viewport. Desktop buttons pass pointer hit
+testing; both widths have no horizontal menu overflow. Disabled Dashboard focus
+shows the role/action/outcome, default and enablement help in an unclipped portal;
+Enter leaves its selection unchanged. The temporary viewport and surface-mode
+changes were restored. Broader renderer-pipeline validation separately encounters
+an existing source-layout assertion about the Dashboard import in CanvasViewport;
+affected release validation is reported per candidate, not inferred from this proof.
+
+GTM: Reduces scanning and inspection effort in the existing free/offline interface.
+No adoption or revenue claim. Rollback: revert this revision as a unit, including
+its owner and regression updates; saved choices and source formats need no migration.

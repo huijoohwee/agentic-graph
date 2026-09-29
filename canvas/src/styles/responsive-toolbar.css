@@ -1973,21 +1973,8 @@
     max-inline-size: calc(100vw - var(--kg-safe-left) - var(--kg-safe-right) - var(--kg-toolbar-dropdown-inline-clearance, 1rem));
   }
 
-  .kg-toolbar-dropdown-option-meta {
-    max-width: min(var(--kg-toolbar-dropdown-option-meta-max-width, 45%), 100%);
-    max-inline-size: min(var(--kg-toolbar-dropdown-option-meta-max-width, 45%), 100%);
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .kg-toolbar-dropdown-option-hint {
-    padding-inline: var(--kg-toolbar-dropdown-option-hint-padding-inline, 0.5rem);
-    padding-block: var(--kg-toolbar-dropdown-option-hint-padding-block, 0.125rem);
-    font-size: var(--kg-toolbar-dropdown-option-hint-font-size, var(--kg-text-xs));
-    opacity: var(--kg-toolbar-dropdown-option-hint-opacity, 0.75);
-  }
+  .kg-toolbar-dropdown-menu .kg-menu-row { height: var(--kg-control-height, 28px); }
+  .kg-toolbar-dropdown-option-value { min-width: 0; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   .kg-click-expand-menu-children {
     width: 100%;
@@ -2179,7 +2166,6 @@
     max-width: 100%;
   }
 
-  .kg-menu-row > .kg-toolbar-dropdown-option-copy { overflow: visible; text-overflow: clip; white-space: normal; }
 
   .kg-touch-menu-row {
     min-height: var(--kg-control-height, 28px);

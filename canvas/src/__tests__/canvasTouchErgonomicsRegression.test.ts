@@ -518,8 +518,6 @@ export function testToolbarTouchErgonomicsStaySourceDriven() {
     !responsiveElementClassesText.includes('UI_RESPONSIVE_COMPACT_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME') ||
     !responsiveElementClassesText.includes('UI_RESPONSIVE_SLIM_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME') ||
     !responsiveElementClassesText.includes('UI_RESPONSIVE_TINY_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME') ||
-    !responsiveElementClassesText.includes('UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_META_CLASSNAME') ||
-    !responsiveElementClassesText.includes('UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_HINT_CLASSNAME') ||
     !responsiveElementClassesText.includes('UI_RESPONSIVE_MARKDOWN_GEO_PANEL_EMPTY_CLASSNAME') ||
     !responsiveElementClassesText.includes('UI_RESPONSIVE_MARKDOWN_GEO_PANEL_FRAME_CLASSNAME') ||
     !responsiveElementClassesText.includes('UI_RESPONSIVE_MARKDOWN_GEO_PANEL_PRESENTATION_FRAME_CLASSNAME') ||
@@ -826,10 +824,6 @@ export function testToolbarTouchErgonomicsStaySourceDriven() {
     !responsiveToolbarCssText.includes('.kg-toolbar-dropdown-menu--compact') ||
     !responsiveToolbarCssText.includes('.kg-toolbar-dropdown-menu--slim') ||
     !responsiveToolbarCssText.includes('.kg-toolbar-dropdown-menu--tiny') ||
-    !responsiveToolbarCssText.includes('.kg-toolbar-dropdown-option-meta') ||
-    !responsiveToolbarCssText.includes('--kg-toolbar-dropdown-option-meta-max-width') ||
-    !responsiveToolbarCssText.includes('.kg-toolbar-dropdown-option-hint') ||
-    !responsiveToolbarCssText.includes('--kg-toolbar-dropdown-option-hint-padding-inline') ||
     !responsiveToolbarCssText.includes('.kg-menu-option-row') ||
     !responsiveToolbarCssText.includes('--kg-menu-option-row-padding-inline') ||
     !responsiveToolbarCssText.includes('.kg-launch-menu-root') ||
@@ -1139,8 +1133,6 @@ export function testToolbarTouchErgonomicsStaySourceDriven() {
     !searchPanelText.includes('UI_RESPONSIVE_WIDE_TOOLBAR_DROPDOWN_PANEL_CLASSNAME') ||
     !searchPanelText.includes('UI_RESPONSIVE_TOOLBAR_FIELD_CLASSNAME') ||
     !toolbarDropdownSelectText.includes('dropdownMenuOptionClassName') || !readUtf8(path.resolve(root, 'src/lib/ui/dropdownMenu.tsx')).includes('UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME') ||
-    !toolbarDropdownSelectText.includes('UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_META_CLASSNAME') ||
-    !toolbarDropdownSelectText.includes('UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_HINT_CLASSNAME') ||
     !editorWorkspaceSelectText.includes('UI_RESPONSIVE_MENU_OPTION_ROW_CLASSNAME') ||
     !launchDropdownText.includes('kg-launch-menu-root') ||
     !launchDropdownText.includes('UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME') ||
