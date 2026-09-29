@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import React from 'react'
 import type { WebpageLayoutSnapshot } from '@/lib/websites/webpageLayoutExport'
 import { pickWebpageSnapshotRects } from 'grph-shared/rich-media/webpageSnapshot'
@@ -111,7 +112,7 @@ export function SharedWebpageSnapshotSurface(props: SharedWebpageSnapshotSurface
                     y={r.rect.y + 18}
                     fontSize={14}
                     fill="rgba(0,0,0,0.55)"
-                    fontFamily="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial"
+                    fontFamily={UI_FONT_SANS}
                   >
                     {truncateText(r.text, estimateMaxChars(r.rect.w - 16, 14))}
                   </text>
@@ -124,12 +125,12 @@ export function SharedWebpageSnapshotSurface(props: SharedWebpageSnapshotSurface
         )}
         <section aria-hidden={true} className={UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME}>
           <section className={overlayBadgeClassName}>
-            <section className={`text-[11px] font-semibold ${UI_THEME_TOKENS.text.primary} truncate`}>{props.titleLabel}</section>
-            <section className={`text-[10px] ${UI_THEME_TOKENS.text.tertiary} truncate`}>{props.hostLabel}</section>
+            <section className={`text-xs font-semibold ${UI_THEME_TOKENS.text.primary} truncate`}>{props.titleLabel}</section>
+            <section className={`text-xs ${UI_THEME_TOKENS.text.tertiary} truncate`}>{props.hostLabel}</section>
           </section>
           {props.blocked ? (
             <section className={`absolute right-2 top-2 ${overlayBadgeClassName}`}>
-              <section className={`text-[10px] font-semibold ${UI_THEME_TOKENS.text.secondary}`}>Blocked</section>
+              <section className={`text-xs font-semibold ${UI_THEME_TOKENS.text.secondary}`}>Blocked</section>
             </section>
           ) : null}
         </section>

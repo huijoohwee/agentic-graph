@@ -11,8 +11,8 @@ import {
 } from '@/features/graph-data-table/ui/GraphDataTableToolbarStyles'
 import { reorderList } from '@/lib/reorder'
 
-const previewGalleryMoveButtonClassName = `text-[11px] ${UI_THEME_TOKENS.text.tertiary} ${UI_THEME_TOKENS.button.hoverBg} rounded px-1`
-const previewGalleryActiveBadgeClassName = `px-1 py-0.5 rounded ${UI_INTENT_TOKENS.primary.bg} text-[9px] font-medium ${UI_INTENT_TOKENS.primary.text} uppercase tracking-wide`
+const previewGalleryMoveButtonClassName = `text-xs ${UI_THEME_TOKENS.text.tertiary} ${UI_THEME_TOKENS.button.hoverBg} rounded px-1`
+const previewGalleryActiveBadgeClassName = `px-1 py-0.5 rounded ${UI_INTENT_TOKENS.primary.bg} text-xs font-medium ${UI_INTENT_TOKENS.primary.text} uppercase tracking-normal`
 export const PREVIEW_GALLERY_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2'
 export type PreviewGalleryItem = {
   id: string
@@ -156,7 +156,7 @@ export default function PreviewGallery({
     >
       <header className="mb-2">
         <h3 className={`text-xs font-medium ${UI_THEME_TOKENS.text.primary}`}>Slides</h3>
-        <p className={`mt-0.5 text-[11px] ${UI_THEME_TOKENS.text.tertiary}`}>
+        <p className={`mt-0.5 text-xs ${UI_THEME_TOKENS.text.tertiary}`}>
           Drag or use arrows to reorder
         </p>
       </header>
@@ -494,7 +494,7 @@ export default function PreviewGallery({
                 <header className="flex items-center justify-between gap-2">
                   <section className="min-w-0">
                     <section className={`text-xs ${UI_THEME_TOKENS.text.primary} truncate`}>{it.label}</section>
-                    <section className={`text-[11px] ${UI_THEME_TOKENS.text.tertiary}`}>#{idx + 1}</section>
+                    <section className={`text-xs ${UI_THEME_TOKENS.text.tertiary}`}>#{idx + 1}</section>
                   </section>
                   <section className="flex flex-col items-end gap-1">
                     <section className="flex items-center gap-1">
@@ -531,7 +531,7 @@ export default function PreviewGallery({
                         </button>
                       ) : null}
                     </section>
-                    {isDragging ? <section className={`text-[11px] ${UI_THEME_TOKENS.text.tertiary}`}>Moving</section> : null}
+                    {isDragging ? <section className={`text-xs ${UI_THEME_TOKENS.text.tertiary}`}>Moving</section> : null}
                   </section>
                 </header>
               </section>
@@ -596,14 +596,14 @@ export default function PreviewGallery({
           <section className="px-3 py-1.5 flex flex-col">
             <section
               ref={dragImagePrimaryLabelRef}
-              className={`text-[12px] font-semibold ${UI_THEME_TOKENS.text.primary} leading-tight`}
+              className={`text-xs font-semibold ${UI_THEME_TOKENS.text.primary} leading-tight`}
             >
               #1
             </section>
             <section className="flex items-center gap-1">
               <section
                 ref={dragImageSecondaryLabelRef}
-                className={`text-[11px] ${UI_THEME_TOKENS.text.secondary} leading-tight truncate`}
+                className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-tight truncate`}
               >
                 Slide title
               </section>

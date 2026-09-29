@@ -1,4 +1,6 @@
-import { lazy, Suspense, Fragment, useEffect, useMemo, useRef, useState, type ElementType } from 'react'
+import { CanvasEditableKeyTypeValueRow } from '@/features/panels/ui/CanvasEditableKeyTypeValueRow'
+import { MainPanelTypeIcon, resolveMainPanelKtvTypeIconKey } from '@/features/panels/ui/mainPanelHelpIconLibrary'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ElementType } from 'react'
 import type { GraphRecordColumnDoc } from '@/lib/graph-record-db'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { SELECTION_INSPECTOR_EMPTY_TEXT } from '@/lib/config'
@@ -28,7 +30,6 @@ import { readMarkdownSigilDisplayText } from '@/lib/markdown/markdownSigil'
 import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
 import { UI_RESPONSIVE_GRAPH_DATA_TABLE_CODE_EDITOR_CLASSNAME, UI_RESPONSIVE_VIEWPORT_SCROLL_PANEL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import {
-  GRAPH_RECORD_INSPECTOR_DETAIL_GRID_CLASS_NAME,
   GRAPH_RECORD_INSPECTOR_ROOT_CLASS_NAME,
 } from '@/features/graph-inspector/ui/graphInspectorResponsiveMetrics'
 
@@ -499,15 +500,16 @@ export function GraphRecordInspector({
                 </section>
               </section>
             ) : null}
-          <dl className={GRAPH_RECORD_INSPECTOR_DETAIL_GRID_CLASS_NAME}>
+          <section aria-label="Record properties">
             {ordered.map(col => {
               const value = (row.data || {})[col.columnId]
               const raw = value == null ? '' : String(value)
               const disabled = col.columnId === 'id'
               return (
-                <Fragment key={col.pk}>
-                  <dt className={cn(textSizeClass, UI_THEME_TOKENS.text.tertiary, 'truncate')}>{col.name}</dt>
-                  <dd>
+                <CanvasEditableKeyTypeValueRow key={col.pk}
+                  keyNode={col.name}
+                  typeNode={<MainPanelTypeIcon iconKey={resolveMainPanelKtvTypeIconKey(col.kind)} className="h-4 w-4" />}
+                  valueNode={
                     <PlainTextInputEditor
                       className={cn(
                         'w-full',
@@ -517,15 +519,16 @@ export function GraphRecordInspector({
                         UI_THEME_TOKENS.input.bg,
                         UI_THEME_TOKENS.input.text,
                       )}
+                      aria-label={col.name}
                       value={raw}
                       disabled={disabled}
                       onChange={next => onChangeCell(col.columnId, next)}
                     />
-                  </dd>
-                </Fragment>
+                  }
+                />
               )
             })}
-          </dl>
+          </section>
           </>
         )}
       </FieldsTag>

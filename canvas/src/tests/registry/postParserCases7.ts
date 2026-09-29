@@ -4,6 +4,8 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["ui.invocation.hoverSourceParity", "@/__tests__/invocationHoverSourceParity.test.tsx", "testInvocationHoverSourceParity"],
   ["ui.card.viewer.mediaSerializationParity", "@/__tests__/cardInlineTextEditorMediaInsertParity.test.tsx", "testCardViewerMediaSerializationParity"],
   ["ui.card.viewer.mediaInsertParity", "@/__tests__/cardInlineTextEditorMediaInsertParity.test.tsx", "testCardViewerMediaInsertParity"],
+  ["ui.toolbar.compactMenu.helpAndDisabledActions", "@/__tests__/compactToolbarMenu.test.tsx", "testCompactToolbarMenuHelpAndDisabledActions"],
+  ["ui.toolbar.compactMenu.forbidInlineHelp", "@/__tests__/compactToolbarMenu.test.tsx", "testCompactToolbarMenuForbidsInlineHelp"],
   ["ui.tooltip.nativeDelegation", "@/__tests__/nativeTitleTooltip.test.tsx", "testNativeTitleTooltipDelegation"],
   ["ui.tooltip.explicitOwner", "@/__tests__/nativeTitleTooltip.test.tsx", "testNativeTitleTooltipExplicitOwner"],
   ["ui.tooltip.singleSharedOwner", "@/__tests__/nativeTitleTooltip.test.tsx", "testSharedTooltipIsTheOnlyTooltipOwner"],

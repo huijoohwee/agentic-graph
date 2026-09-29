@@ -63,8 +63,8 @@ export default function LayoutAndRoutingSection({
               return (
                 <PanelSelect
                   value={mode}
-                  onChange={e => {
-                    const nextMode = e.target.value === 'straight' ? 'straight' : 'quadratic'
+                  onValueChange={selectedValueInput => {
+                    const nextMode = selectedValueInput === 'straight' ? 'straight' : 'quadratic'
                     const cur = schema.edgeRouting || {}
                     setSchema({
                       ...schema,

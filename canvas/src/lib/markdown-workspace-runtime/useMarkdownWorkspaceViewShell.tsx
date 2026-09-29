@@ -9,7 +9,7 @@ import {
   scheduleMarkdownWorkspaceInlineEditStateSync,
 } from './markdownWorkspaceRuntime.stateSync'
 import type { FolderModeContract } from './markdownWorkspaceRuntime.shared'
-import { applyMarkdownWorkspaceSuccessStatus } from './markdownWorkspaceStatusTransitions'
+import { applyMarkdownWorkspaceSuccessStatus, applyMarkdownWorkspaceErrorStatus } from './markdownWorkspaceStatusTransitions'
 import { buildWorkspaceEntriesIndex, hasWorkspaceFileEntry } from './workspaceEntriesIndex'
 import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
 
@@ -29,6 +29,7 @@ export function useMarkdownWorkspaceViewShell(args: {
   pickFolderContractTargetPath: (folderPath: WorkspacePath, preferredMode: FolderModeContract) => WorkspacePath | null
   revealLineInEditor: (line: number) => void
   setStatusWithAutoClear: (label: string, ttlMs?: number) => void
+  setStatusError: (label: string) => void
   streamingWorkspacePath?: WorkspacePath | null
 }) {
   const {
@@ -47,6 +48,7 @@ export function useMarkdownWorkspaceViewShell(args: {
     pickFolderContractTargetPath,
     revealLineInEditor,
     setStatusWithAutoClear,
+    setStatusError,
     streamingWorkspacePath,
   } = args
 
@@ -117,7 +119,7 @@ export function useMarkdownWorkspaceViewShell(args: {
         if (summary) {
           return (
             <span
-              className="inline-flex items-center rounded border border-amber-300/70 bg-amber-500/10 px-1.5 py-0.5 text-[10px] leading-none text-amber-700"
+              className="inline-flex items-center rounded border border-amber-300/70 bg-amber-500/10 px-1.5 py-0.5 text-xs leading-none text-amber-700"
               aria-label={`Frontmatter warning in ${renderArgs.entry.name}`}
               title={summary}
             >
@@ -165,44 +167,23 @@ export function useMarkdownWorkspaceViewShell(args: {
     ],
   )
 
+  const revealPendingRef = React.useRef(false)
   const revealInFinder = React.useCallback(
-    (path: WorkspacePath) => {
-      const normalized = normalizeWorkspacePath(path)
-      const source = sourcesByPath[normalized]
-      if (source && source.kind === 'url' && String(source.url || '').trim()) {
-        try {
-          window.open(String(source.url || '').trim(), '_blank', 'noopener,noreferrer')
-          applyShellStatus('Opened source URL', UI_TOAST_TTL_MS.statusAutoClose)
-          return
-        } catch {
-          void 0
-        }
-      }
-      const localName = source && source.kind === 'local' ? String(source.originalName || '').trim() : ''
-      const localLooksAbsolute = !!localName && (localName.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(localName))
-      if (localLooksAbsolute) {
-        try {
-          window.open(`file://${localName.replace(/\\/g, '/')}`, '_blank', 'noopener,noreferrer')
-          applyShellStatus('Opened local file URL', UI_TOAST_TTL_MS.statusAutoCloseMedium)
-          return
-        } catch {
-          void 0
-        }
-      }
-      if (source && source.kind === 'local') {
-        try {
-          void navigator.clipboard?.writeText(normalized.replace(/^\/+/, '') || normalized)
-          applyShellStatus('Copied workspace-relative path', UI_TOAST_TTL_MS.statusAutoCloseSlow)
-        } catch {
-          void 0
-        }
-      }
-      setSelectionSource('editor')
-      setSelectionPathSafe(normalized)
-      setActivePathSafe(normalized)
-      applyShellStatus('Revealed in Source Files explorer', UI_TOAST_TTL_MS.statusAutoCloseSlow)
+    async (path: WorkspacePath) => {
+      if (revealPendingRef.current) return
+      revealPendingRef.current = true
+      try {
+        const normalized = normalizeWorkspacePath(path)
+        const entry = entriesIndex.byPath.get(normalized)
+        const { revealWorkspaceFileInManager } = await import('@/features/workspace-fs/workspaceRevealInFileManager')
+        const message = await revealWorkspaceFileInManager({ path: normalized,
+          text: entry?.kind === 'file' ? entry.text : undefined, source: sourcesByPath[normalized] })
+        applyShellStatus(message, UI_TOAST_TTL_MS.statusAutoCloseMedium)
+      } catch (error) {
+        applyMarkdownWorkspaceErrorStatus({ setStatusError, prefix: 'Reveal failed', error })
+      } finally { revealPendingRef.current = false }
     },
-    [applyShellStatus, setActivePathSafe, setSelectionPathSafe, setSelectionSource, sourcesByPath],
+    [applyShellStatus, entriesIndex, setStatusError, sourcesByPath],
   )
 
   const openBacklink = React.useCallback(

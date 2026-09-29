@@ -1,3 +1,4 @@
+import { readMenuOptions, selectMenuValue } from './helpers/semanticMenu'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -46,22 +47,20 @@ export async function testCitySimPoiControlsExposeCanonicalIdentityAndNormalizeI
     await mountReactRoot(root, <Harness />)
     const poiSelect = container.querySelector(
       '[data-kg-city-sim-poi-id="1"]',
-    ) as HTMLSelectElement | null
+    ) as HTMLButtonElement | null
     assert.ok(poiSelect)
-    assert.equal(poiSelect.options.length, 4)
+    assert.equal(readMenuOptions(poiSelect).length, 4)
     assert.equal(container.textContent?.includes('POI zoning target'), true)
 
     await act(async () => {
       Simulate.keyDown(poiSelect)
-      poiSelect.value = 'singapore-flyer'
-      Simulate.change(poiSelect)
+      selectMenuValue(poiSelect, 'singapore-flyer')
     })
     assert.deepEqual(selections.at(-1), ['singapore-flyer', 'keyboard'])
 
     await act(async () => {
       Simulate.touchStart(poiSelect)
-      poiSelect.value = 'gardens-by-the-bay'
-      Simulate.change(poiSelect)
+      selectMenuValue(poiSelect, 'gardens-by-the-bay')
     })
     assert.deepEqual(selections.at(-1), ['gardens-by-the-bay', 'touch'])
   } finally {

@@ -187,7 +187,7 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
     >
       <WorkspaceHeaderRow className="kg-markdown-workspace-panel-toolbar-row kg-markdown-workspace-explorer-toolbar-row gap-2 px-2 !py-0" ariaLabel="Explorer header">
         <section className="min-w-0 max-w-full flex-1 flex items-center gap-2 overflow-hidden" aria-label="Explorer title">
-          <h2 className={`${panelTypography.microLabelClass} font-semibold tracking-wide uppercase ${UI_THEME_TOKENS.text.secondary} ${UI_TEXT_TRUNCATE}`}>Explorer</h2>
+          <h2 className={`${panelTypography.microLabelClass} font-semibold tracking-normal uppercase ${UI_THEME_TOKENS.text.secondary} ${UI_TEXT_TRUNCATE}`}>Explorer</h2>
         </section>
         <MarkdownWorkspaceExplorerHeaderActions
           panelTextClass={panelTypography.panelTextClass}

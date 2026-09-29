@@ -185,7 +185,7 @@ export function GraphDataTableFastGridHeader(props: {
                     toggleTargets="chevron"
                     rightContent={
                       sortMeta ? (
-                        <span className={`${UI_THEME_TOKENS.text.tertiary} text-[10px] font-semibold`}>
+                        <span className={`${UI_THEME_TOKENS.text.tertiary} text-xs font-semibold`}>
                           {sortMeta.dir === 'desc' ? `↓${sortMeta.index}` : `↑${sortMeta.index}`}
                         </span>
                       ) : null

@@ -93,18 +93,18 @@ export function RendererDocumentMetadataSummary({
 
   return (
     <section className="mt-2">
-      <section className={`mb-1 text-[11px] font-medium ${UI_THEME_TOKENS.text.secondary}`}>
+      <section className={`mb-1 text-xs font-medium ${UI_THEME_TOKENS.text.secondary}`}>
         Document metadata {formatCount(entries.length)}
       </section>
       <section className="flex flex-col gap-1" data-kg-renderer-document-metadata-list="1">
         {entries.map(entry => (
           <section
             key={entry.id}
-            className={`rounded border px-2 py-1 text-[11px] ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.headerBg}`}
+            className={`rounded border px-2 py-1 text-xs ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.headerBg}`}
             data-kg-renderer-document-metadata-item="1"
           >
             <section className="flex items-center gap-2">
-              <span className={`shrink-0 rounded-sm border px-1 py-0.5 uppercase tracking-wide ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.text.tertiary}`}>
+              <span className={`shrink-0 rounded-sm border px-1 py-0.5 uppercase tracking-normal ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.text.tertiary}`}>
                 {formatMetadataTypeLabel(entry.type)}
               </span>
               <span
@@ -270,15 +270,15 @@ export function RendererGraphTopologySummary({ graph }: { graph?: GraphData } = 
           </section>
         ) : null}
       </section>
-      <section className={`mt-2 text-[11px] ${UI_THEME_TOKENS.text.tertiary}`}>
+      <section className={`mt-2 text-xs ${UI_THEME_TOKENS.text.tertiary}`}>
         Types: {compactCounts(summary.topNodeTypes)}
       </section>
-      <section className={`mt-1 text-[11px] ${UI_THEME_TOKENS.text.tertiary}`}>
+      <section className={`mt-1 text-xs ${UI_THEME_TOKENS.text.tertiary}`}>
         Labels: {compactCounts(summary.topEdgeLabels)}
       </section>
       {rendererHighlights.length > 0 ? (
         <section className="mt-2">
-          <section className={`mb-1 text-[11px] font-medium ${UI_THEME_TOKENS.text.secondary}`}>
+          <section className={`mb-1 text-xs font-medium ${UI_THEME_TOKENS.text.secondary}`}>
             Highlights{rendererHighlightCount > rendererHighlights.length ? ` ${formatCount(rendererHighlightCount)}` : ''}
           </section>
           <section className="flex flex-wrap gap-1">
@@ -294,7 +294,7 @@ export function RendererGraphTopologySummary({ graph }: { graph?: GraphData } = 
               return (
                 <span
                   key={token.id}
-                  className={`${getSemanticHighlightSurfaceClassName(SEMANTIC_HIGHLIGHT_SURFACES.renderer)} max-w-full truncate rounded-sm border px-1.5 py-0.5 text-[11px] leading-4 ${fallbackClass}`}
+                  className={`${getSemanticHighlightSurfaceClassName(SEMANTIC_HIGHLIGHT_SURFACES.renderer)} max-w-full truncate rounded-sm border px-1.5 py-0.5 text-xs leading-4 ${fallbackClass}`}
                   style={style}
                   title={`${token.source}: ${token.label}`}
                   data-kg-renderer-highlight-chip="1"

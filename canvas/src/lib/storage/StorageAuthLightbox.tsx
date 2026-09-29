@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { Github, Globe, X } from 'lucide-react'
@@ -118,7 +119,7 @@ function StorageAuthLightbox({ loginUrl, onClose, readSession }: { loginUrl: str
         </button>
         <header className="mb-7 pr-7">
           <p className="mb-4 flex items-center gap-2 text-sm font-semibold"><AgenticGraphIcon className="h-6 w-6" />airvio</p>
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+          <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
           <p className={'mt-2 text-sm leading-relaxed ' + theme.text.secondary}>
             {authenticated ? 'Choose where to sync your files. Your local copies stay available.'
               : signup ? 'Create a private workspace with your existing provider account.'
@@ -134,10 +135,10 @@ function StorageAuthLightbox({ loginUrl, onClose, readSession }: { loginUrl: str
           <section className="space-y-4">
             {session.workspaces?.length ? <>
               <section className="space-y-2 text-sm"><label className="block" htmlFor={workspaceFieldId}>Cloud workspace</label>
-                <select id={workspaceFieldId} className={'min-h-12 w-full rounded-lg border px-3 ' + theme.panel.bg + ' ' + theme.panel.border + ' ' + theme.focus.primaryRing}
-                  value={workspaceId} onChange={event => setWorkspaceId(event.currentTarget.value)}>
+                <PanelSelect id={workspaceFieldId} className={'min-h-12 w-full rounded-lg border px-3 ' + theme.panel.bg + ' ' + theme.panel.border + ' ' + theme.focus.primaryRing}
+                  value={workspaceId} onValueChange={selectedValueInput => setWorkspaceId(selectedValueInput)}>
                   {session.workspaces.map(workspace => <option key={workspace.id} value={workspace.id}>{workspace.title || workspace.id}</option>)}
-                </select>
+                </PanelSelect>
               </section>
               <button type="button" className={actionClass + ' ' + theme.button.primarySolid} onClick={continueToWorkspace}>Continue to workspace</button>
             </> : <p role="status" className="text-sm">This account has no workspace available for sync. Ask the workspace owner for access.</p>}

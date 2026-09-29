@@ -1,3 +1,5 @@
+import { normalizeSingleLineControlClassName } from 'grph-shared/ui/themeTokens'
+import { normalizeUiTextClasses } from 'grph-shared/ui/typography'
 
 import type { StoreApi } from 'zustand'
 import type { GraphState } from '@/hooks/store/types'
@@ -97,7 +99,7 @@ export const createUiCoreActions = (set: SetGraph)=> ({
       set({
         uiPanelKeyValueTextSizeClass: lsSetJson(
           LS_KEYS.panelKeyValueTextSizeClass,
-          String(className || '').trim() || 'text-sm',
+          normalizeUiTextClasses(String(className || '').trim()) || 'text-sm',
         ),
       }),
 
@@ -113,8 +115,8 @@ export const createUiCoreActions = (set: SetGraph)=> ({
       set({
         uiPanelKeyValueInputClass: lsSetJson(
           LS_KEYS.panelKeyValueInputClass,
-          String(className || '').trim() ||
-            PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass,
+          normalizeSingleLineControlClassName(normalizeUiTextClasses(String(className || '').trim()) ||
+            PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass),
         ),
       }),
 
@@ -138,14 +140,14 @@ export const createUiCoreActions = (set: SetGraph)=> ({
       set({
         uiPanelMonospaceTextClass: lsSetJson(
           LS_KEYS.panelMonospaceTextClass,
-          String(className || '').trim() || 'font-mono text-xs',
+          normalizeUiTextClasses(String(className || '').trim()) || 'font-mono text-xs',
         ),
       }),
     setUiPanelMicroLabelTextSizeClass: (className: string) =>
       set({
         uiPanelMicroLabelTextSizeClass: lsSetJson(
           LS_KEYS.panelMicroLabelTextSizeClass,
-          String(className || '').trim(),
+          normalizeUiTextClasses(String(className || '').trim()),
         ),
       }),
 
@@ -233,21 +235,21 @@ export const createUiCoreActions = (set: SetGraph)=> ({
       set({
         uiIconBadgeChipTextSizeClass: lsSetJson(
           LS_KEYS.iconBadgeChipTextSizeClass,
-          String(className || '').trim() || 'text-[9px]',
+          normalizeUiTextClasses(String(className || '').trim()) || 'text-xs',
         ),
       }),
     setUiIconPillLegendTextSizeClass: (className: string) =>
       set({
         uiIconPillLegendTextSizeClass: lsSetJson(
           LS_KEYS.iconPillLegendTextSizeClass,
-          String(className || '').trim() || 'text-xs',
+          normalizeUiTextClasses(String(className || '').trim()) || 'text-xs',
         ),
       }),
     setUiIconPillBadgeTextSizeClass: (className: string) =>
       set({
         uiIconPillBadgeTextSizeClass: lsSetJson(
           LS_KEYS.iconPillBadgeTextSizeClass,
-          String(className || '').trim() || 'text-[9px]',
+          normalizeUiTextClasses(String(className || '').trim()) || 'text-xs',
         ),
       }),
     setUiIconAnimationEnabled: (v: boolean) =>

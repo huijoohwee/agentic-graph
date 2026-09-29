@@ -1,7 +1,7 @@
 import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/workspaceUi'
 import type { MarkdownWorkspaceLoadedSnapshot, MarkdownWorkspaceExplorerPresentationArgs } from './markdownWorkspaceRuntime.types'
 import React from 'react'
-import { startPointerDrag } from 'grph-shared/dom/pointerDrag'
+import { bindMarkdownExplorerResize } from '@/features/markdown-workspace/bindMarkdownExplorerResize'
 import { LS_KEYS } from '@/lib/config'
 import { lsSetBool, lsSetInt } from '@/lib/persistence'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
@@ -61,7 +61,6 @@ import {
   resolveWorkspaceFolderContractTargetPath,
 } from './workspaceFolderContractTarget'
 import { readWorkspaceExplorerReadOnlySnapshot } from './workspaceExplorerReadOnlySnapshot'
-
 type ExplorerRefreshOptions = { silent?: boolean; reconcileSeed?: boolean }
 
 const hasNonWorkspaceSourceFile = (sourceFiles: ReturnType<typeof useGraphStore.getState>['sourceFiles']): boolean => {
@@ -115,7 +114,6 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     setWorkspaceSeedSyncPollMs(readWorkspaceSeedSyncPollMsSetting())
     setWorkspaceSeedSyncIdleMaxMs(readWorkspaceSeedSyncIdleMaxMsSetting())
   }, [workspaceSyncSettingsRev])
-
   const getFs = React.useCallback(async () => {
     const existing = workspaceFsRef.current
     if (existing) return existing
@@ -123,10 +121,8 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     workspaceFsRef.current = fs
     return fs
   }, [])
-
   const runtimeRef = React.useRef(args)
   runtimeRef.current = args
-
   const scheduleApplyComposedFromSourceFiles = React.useCallback(async () => {
     try {
       const mod = (await import('@/features/source-files/applyComposedGraphFromSourceFiles')) as typeof import('@/features/source-files/applyComposedGraphFromSourceFiles')
@@ -341,15 +337,19 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
       })
       idleStreak = next.nextIdleStreak
       if (stopped) return
+      if (timer != null) window.clearTimeout(timer)
       timer = window.setTimeout(() => {
         timer = null
         void ensureSeedTick()
       }, next.nextDelayMs)
     }
     const ensureSeedTick = async () => {
-      if (stopped || seedSyncInFlightRef.current) return
+      if (stopped) return
       const runtime = runtimeRef.current
-      if (runtime.viewerInlineEditActiveRef.current) return
+      if (seedSyncInFlightRef.current || runtime.viewerInlineEditActiveRef.current) {
+        scheduleNextSeedSync(false, ensureSeedTick)
+        return
+      }
       const finishSeedSyncTask = beginWorkspaceSeedSyncTask()
       if (!finishSeedSyncTask) {
         scheduleNextSeedSync(false, ensureSeedTick)
@@ -423,7 +423,6 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
       document.removeEventListener('visibilitychange', onWake)
     }
   }, [args.active, getFs, refresh, workspaceAutoRefreshEnabled, workspaceSeedSyncEnabled, workspaceSeedSyncPollMs, workspaceSeedSyncIdleMaxMs])
-
   const persistWorkspacePrefsPendingRef = React.useRef<{
     sidebarWidthPx: number
     explorerOpen: boolean
@@ -516,27 +515,11 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
   React.useEffect(() => {
     const el = resizeHandleEl
     if (!el) return
-    const onDown = (ev: PointerEvent) => {
-      if (ev.button !== undefined && ev.button !== 0) return
-      const startX = ev.clientX
-      const startWidth = sidebarWidthPxRef.current
-      let pending = startWidth
-      startPointerDrag({
-        ev,
-        cursor: 'col-resize',
-        shouldStart: down => (down.button === undefined || down.button === 0),
-        onMove: mv => {
-          const dx = mv.clientX - startX
-          const next = Math.max(SIDEBAR_MIN_PX, Math.min(SIDEBAR_MAX_PX, Math.round(startWidth + dx)))
-          pending = next
-          setSidebarWidthPx(next)
-        },
-        onEnd: () => setSidebarWidthPx(pending),
-        onCancel: () => setSidebarWidthPx(pending),
-      })
-    }
-    el.addEventListener('pointerdown', onDown)
-    return () => el.removeEventListener('pointerdown', onDown)
+    return bindMarkdownExplorerResize({
+      el, minWidth: SIDEBAR_MIN_PX, maxWidth: SIDEBAR_MAX_PX,
+      readWidth: () => sidebarWidthPxRef.current,
+      setWidth: next => { sidebarWidthPxRef.current = next; setSidebarWidthPx(next) },
+    })
   }, [resizeHandleEl, setSidebarWidthPx])
 
   const sourceFilesExplorerEntries = React.useMemo(() => {

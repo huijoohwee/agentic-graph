@@ -36,7 +36,7 @@ function CloudflareMediaAssetServiceType({
   return (
     <span className="inline-flex min-w-0 max-w-full items-center justify-start gap-1 overflow-hidden sm:justify-end" title={service.owner}>
       <Icon className={cn('h-3.5 w-3.5 shrink-0', UI_THEME_TOKENS.text.secondary)} strokeWidth={1.7} aria-hidden />
-      <span className={cn('min-w-0 truncate text-[11px]', UI_THEME_TOKENS.text.tertiary)}>{service.owner}</span>
+      <span className={cn('min-w-0 truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{service.owner}</span>
     </span>
   )
 }
@@ -62,17 +62,17 @@ function CloudflareMediaAssetServiceRow({
         keyNode={(
           <span className="flex min-w-0 flex-col leading-4">
             <span className={cn('truncate font-semibold', UI_THEME_TOKENS.text.primary)}>{service.label}</span>
-            <span className={cn('truncate font-mono text-[11px] font-normal', UI_THEME_TOKENS.text.tertiary)}>{service.bindingName}</span>
+            <span className={cn('truncate font-mono text-xs font-normal', UI_THEME_TOKENS.text.tertiary)}>{service.bindingName}</span>
           </span>
         )}
         typeNode={<CloudflareMediaAssetServiceType service={service} />}
         valueNode={(
           <span className="flex min-w-0 flex-col leading-4">
-            <span className={cn('truncate font-mono text-[11px]', UI_THEME_TOKENS.text.secondary)} title={service.contract}>
+            <span className={cn('truncate font-mono text-xs', UI_THEME_TOKENS.text.secondary)} title={service.contract}>
               {service.contract}
             </span>
             <a
-              className={cn('truncate text-[11px] underline-offset-2 hover:underline', UI_THEME_TOKENS.text.tertiary)}
+              className={cn('truncate text-xs underline-offset-2 hover:underline', UI_THEME_TOKENS.text.tertiary)}
               href={service.docsUrl}
               target="_blank"
               rel="noreferrer"

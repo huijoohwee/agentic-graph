@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import * as React from 'react'
 import { BLOCK_DEFINITIONS, type BlockInsertPosition } from '@/features/block-editor/blockLibrary'
 import { readBlockSession, subscribeBlockSession } from '@/features/block-editor/blockSession'
@@ -32,7 +33,7 @@ export function FloatingPanelBlockLibraryView() {
   }
   return <section className={floatingPanelCatalogSurfaceClassName()} aria-label="Block library">
     <FloatingPanelCatalogHeader title="Block library" subtitle="Local program definitions" actionsLabel="Block library actions"
-      actions={<button type="button" className={`rounded border px-1 text-[10px] ${UI_THEME_TOKENS.panel.border}`}
+      actions={<button type="button" className={`rounded border px-1 text-xs ${UI_THEME_TOKENS.panel.border}`}
         onClick={() => setExpanded(previous => previous.size === CATEGORIES.length ? new Set() : new Set(CATEGORIES))}>
         {expanded.size === CATEGORIES.length ? 'Collapse all' : 'Expand all'}</button>}
       searchControl={<FloatingPanelCatalogSearchControl id="block-library-search" buttonLabel="Search Block library"
@@ -61,10 +62,10 @@ export function FloatingPanelBlockLibraryView() {
                 <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white" style={{ background: tone }}>{category[0]}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-xs font-semibold leading-4">{item.title}</span>
-                  <span className="mt-0.5 block text-[11px] leading-4 opacity-75">{item.description}</span>
+                  <span className="mt-0.5 block text-xs leading-4 opacity-75">{item.description}</span>
                 </span>
               </span>
-              <span aria-hidden="true" className="kg-block-preview mt-2 font-mono text-[11px] leading-4" data-shape={blockDefinitionShape(item.id)}
+              <span aria-hidden="true" className="kg-block-preview mt-2 font-mono text-xs leading-4" data-shape={blockDefinitionShape(item.id)}
                 style={{ '--block-tone': tone } as React.CSSProperties}>
                 {item.snippet.split('\n').map((line, index) => <span key={index} className="block truncate">{line || ' '}</span>)}
               </span>
@@ -77,12 +78,12 @@ export function FloatingPanelBlockLibraryView() {
     </section>
     <section className={`shrink-0 space-y-1 border-t px-2 py-2 text-xs ${UI_THEME_TOKENS.panel.border}`} aria-label="Block insertion">
       <p className="truncate" title={session?.documentId || ''}>{session ? `File: ${session.documentId.split('/').pop()} · Target: ${target?.title || 'none'}` : 'Open Block in Editor Workspace to select a target.'}</p>
-      {selected ? <><p className="font-semibold">{selected.title} · {selected.category}</p><pre className="max-h-24 overflow-auto rounded border p-1.5 text-[11px]">{selected.snippet}</pre></> : <p>Select a block to preview it.</p>}
+      {selected ? <><p className="font-semibold">{selected.title} · {selected.category}</p><pre className="max-h-24 overflow-auto rounded border p-1.5 text-xs">{selected.snippet}</pre></> : <p>Select a block to preview it.</p>}
       <div className="flex items-center gap-1">
         <label htmlFor="block-insert-position">Place</label>
-        <select id="block-insert-position" value={position} onChange={event => setPosition(event.target.value as BlockInsertPosition)} className={`min-w-0 flex-1 rounded border bg-transparent px-1 py-1 ${UI_THEME_TOKENS.panel.border}`}>
+        <PanelSelect id="block-insert-position" value={position} onValueChange={selectedValueInput => setPosition(selectedValueInput as BlockInsertPosition)} className={`min-w-0 flex-1 rounded border bg-transparent px-1 py-1 ${UI_THEME_TOKENS.panel.border}`}>
           <option value="inside">Inside</option><option value="before">Before</option><option value="after">After</option>
-        </select>
+        </PanelSelect>
         <button type="button" disabled={!selected || !canInsert} onClick={insert} className="rounded border px-2 py-1 font-semibold disabled:opacity-50">Insert</button>
       </div>
       {feedback ? <p role="status" className="break-words">{feedback}</p> : null}

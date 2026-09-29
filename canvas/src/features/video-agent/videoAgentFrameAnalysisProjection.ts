@@ -1,3 +1,4 @@
+import { UI_FONT_MONO } from 'grph-shared/ui/typography'
 import { buildRemoteVideoFrameRequestUrl } from 'grph-shared/rich-media/providers'
 
 type VideoAgentFrameAnalysisBox = {
@@ -139,7 +140,7 @@ const buildFrameAnalysisMarkup = (
     '.thumbnail>[data-kg-video-agent-frame-analysis] mark{position:absolute;border:2px solid #fbbf24;border-radius:6px;background:rgba(251,191,36,.1);box-shadow:0 0 0 1px rgba(15,23,42,.7);transition:left 80ms linear,top 80ms linear,width 80ms linear,height 80ms linear}',
     '.thumbnail>[data-kg-video-agent-frame-analysis] mark[data-kg-video-agent-component-mark="1"]{border-color:#38bdf8;background:rgba(56,189,248,.08)}',
     '.thumbnail>[data-kg-video-agent-frame-analysis] mark[data-kg-video-agent-component-mark="1"] span{background:#38bdf8}',
-    '.thumbnail>[data-kg-video-agent-frame-analysis] mark span{position:absolute;left:0;top:0;max-width:100%;border-radius:0 0 4px 0;background:#fbbf24;color:#1f2937;padding:2px 5px;font:10px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    `.thumbnail>[data-kg-video-agent-frame-analysis] mark span{position:absolute;left:0;top:0;max-width:100%;border-radius:0 0 4px 0;background:#fbbf24;color:#1f2937;padding:2px 5px;font:12px ${UI_FONT_MONO};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}`,
     '.thumbnail>[data-kg-video-agent-frame-analysis] [hidden]{display:none!important}',
     '.thumbnail>[data-kg-video-agent-frame-analysis]~.thumbnail-source,.thumbnail>[data-kg-video-agent-frame-analysis]~.frame-boxes{display:none!important}',
     '.thumbnail[data-kg-video-agent-projected="1"]::before,.thumbnail[data-kg-video-agent-projected="1"]::after{display:none!important}',

@@ -128,7 +128,7 @@ export function GeoPanelSection(props: GeoPanelSectionProps): React.ReactElement
 }
 
 export const buildGeoPanelButtonClassName = (selected = false, disabled = false): string => [
-  'inline-flex min-h-[var(--kg-control-height,28px)] min-w-0 items-center justify-center rounded border px-2 py-0.5 text-xs transition-colors',
+  `${UI_THEME_TOKENS.control.singleLine} inline-block rounded border text-xs transition-colors`,
   selected
     ? `${UI_THEME_TOKENS.button.activeBorder} ${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
     : `${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.primary} ${UI_THEME_TOKENS.button.hoverBg}`,

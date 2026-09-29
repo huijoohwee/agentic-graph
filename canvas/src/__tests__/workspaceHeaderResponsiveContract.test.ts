@@ -6,6 +6,7 @@ const readUtf8 = (relativePath: string): string => fs.readFileSync(path.resolve(
 export function testWorkspaceHeaderRowsUseSharedResponsiveOwner() {
   const classText = readUtf8('src/lib/ui/responsiveElementClasses.ts')
   const cssText = readUtf8('src/styles/responsive-toolbar.css')
+  const borderCssText = readUtf8('src/styles/shared-borders.css')
   const workspaceHeaderText = readUtf8('src/components/ui/WorkspaceHeader.tsx')
   const markdownExplorerText = readUtf8('src/features/markdown-workspace/MarkdownWorkspaceExplorer.tsx')
   const markdownExplorerSectionText = readUtf8('src/features/markdown-workspace/MarkdownExplorerSection.tsx')
@@ -40,7 +41,7 @@ export function testWorkspaceHeaderRowsUseSharedResponsiveOwner() {
     !cssText.includes('--kg-markdown-workspace-toolbar-dock-offset') ||
     !cssText.includes('--kg-markdown-workspace-toolbar-bottom-offset') ||
     !cssText.includes('bottom: calc(var(--kg-safe-bottom) + var(--kg-markdown-workspace-toolbar-bottom-offset))') ||
-    !cssText.includes('border-bottom: 1px solid var(--kg-border)') ||
+    !cssText.includes('border-bottom: var(--kg-workspace-divider)') ||
     !cssText.includes('--kg-markdown-workspace-toolbar-editor-clearance') ||
     !cssText.includes('margin-block-end: var(--kg-markdown-workspace-toolbar-editor-clearance) !important') ||
     !cssText.includes('scroll-padding-block-end: var(--kg-markdown-workspace-toolbar-editor-clearance)') ||
@@ -49,15 +50,14 @@ export function testWorkspaceHeaderRowsUseSharedResponsiveOwner() {
     throw new Error('expected Markdown workspace toolbar row to keep one scroll owner, share the workspace panel footer boundary, and reserve editor clearance in the shared responsive owner')
   }
   if (
-    !cssText.includes('.kg-markdown-workspace-explorer-resize') ||
-    !cssText.includes('box-shadow: inset 1px 0 0 var(--kg-divider)') ||
-    !cssText.includes('inline-size: 100% !important') ||
-    !cssText.includes('block-size: 1px !important') ||
-    !cssText.includes('cursor: row-resize !important') ||
-    !cssText.includes('background-image: none !important') ||
-    !cssText.includes('box-shadow: none;')
+    !borderCssText.includes('.kg-markdown-workspace-explorer-resize') ||
+    cssText.includes('box-shadow: inset 1px 0 0 var(--kg-divider)') ||
+    !borderCssText.includes('inline-size: 100% !important') ||
+    !borderCssText.includes('block-size: var(--kg-resize-separator-thickness) !important') ||
+    !borderCssText.includes('cursor: row-resize;') ||
+    !borderCssText.includes('background-image: linear-gradient(var(--kg-workspace-divider-color), var(--kg-workspace-divider-color))')
   ) {
-    throw new Error('expected Markdown workspace Explorer divider to stay visible on desktop and reset to a horizontal separator on stacked mobile')
+    throw new Error('expected Explorer to share the thin neutral line while keeping a usable mobile resize target')
   }
   if (
     !classText.includes('UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_SECTION_CLASSNAME') ||

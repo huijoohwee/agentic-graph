@@ -54,6 +54,7 @@ export async function testMarkdownWorkspaceViewShellFileSelectionClearsCanvasSel
         pickFolderContractTargetPath: path => path === '/repo' ? '/repo/repo.sitemap.md' : null,
         revealLineInEditor: () => {},
         setStatusWithAutoClear: () => {},
+      setStatusError: () => {},
       })
 
       selectFolder = viewShell.onSelectFolder
@@ -160,6 +161,7 @@ export async function testMarkdownWorkspaceViewShellKeepsYoutubeFormatOutOfSourc
         pickFolderContractTargetPath: () => null,
         revealLineInEditor: () => {},
         setStatusWithAutoClear: () => {},
+      setStatusError: () => {},
       })
 
       return <section>{viewShell.renderSourceFileRight({ entry, isActive: true })}</section>
@@ -231,6 +233,7 @@ export async function testMarkdownWorkspaceViewShellShowsFrontmatterWarningBadge
         pickFolderContractTargetPath: () => null,
         revealLineInEditor: () => {},
         setStatusWithAutoClear: () => {},
+      setStatusError: () => {},
       })
 
       return <section>{viewShell.renderSourceFileRight({ entry, isActive: false })}</section>
@@ -298,6 +301,7 @@ export async function testMarkdownWorkspaceViewShellSuppressesYamlBadgeForLiveSt
         pickFolderContractTargetPath: () => null,
         revealLineInEditor: () => {},
         setStatusWithAutoClear: () => {},
+      setStatusError: () => {},
         streamingWorkspacePath: entry.path,
       })
 

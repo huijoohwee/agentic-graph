@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import React from 'react'
 import { PHOTO_DISTANCE, photoDimensions } from './immersivePhotoProjection'
 import { useFrame, useThree } from '@react-three/fiber'
@@ -62,10 +63,10 @@ function createProceduralPanorama(snapshot: ImmersiveMediaSnapshot): CanvasTextu
     context.stroke()
   }
   context.fillStyle = 'rgba(255,255,255,0.9)'
-  context.font = '600 34px system-ui, sans-serif'
+  context.font = `600 36px ${UI_FONT_SANS}`
   context.fillText(snapshot.title, 48, 72)
   context.fillStyle = 'rgba(207,250,254,0.74)'
-  context.font = '20px system-ui, sans-serif'
+  context.font = `20px ${UI_FONT_SANS}`
   context.fillText('Local procedural panorama · zero network', 48, 108)
   const texture = new CanvasTexture(canvas)
   texture.colorSpace = SRGBColorSpace
@@ -163,10 +164,10 @@ function createMarkerTexture(marker: ImmersiveMediaMarker): CanvasTexture | null
     context.lineWidth = 6
     context.strokeRect(7, 7, canvas.width - 14, canvas.height - 14)
     context.fillStyle = marker.color
-    context.font = '700 22px system-ui, sans-serif'
+    context.font = `700 24px ${UI_FONT_SANS}`
     context.fillText(['video', 'youtube'].includes(marker.kind) ? '▶' : marker.kind === 'element' ? '◆' : '●', 18, 48)
     context.fillStyle = '#f8fafc'
-    context.font = '600 17px system-ui, sans-serif'
+    context.font = `600 18px ${UI_FONT_SANS}`
     context.fillText(marker.label.slice(0, 18), 18, 88)
   }
   const texture = new CanvasTexture(canvas)

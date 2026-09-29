@@ -5,12 +5,12 @@ const readUtf8 = (relativePath: string): string => fs.readFileSync(path.resolve(
 
 export function testGraphFieldsFieldGridsUseSharedResponsiveOwner() {
   const ownerText = readUtf8('src/features/panels/views/graph-fields/graphFieldResponsiveClasses.ts')
-  const fieldGridLiteral = 'grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2'
-  const compactGridLiteral = 'grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2'
-  const denseGridLiteral = 'grid min-w-0 grid-cols-1 gap-1 sm:grid-cols-2'
-  const tripleGridLiteral = 'grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3'
-  const denseTripleGridLiteral = 'grid min-w-0 grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3'
-  const mainSplitGridLiteral = 'grid min-h-0 min-w-0 grid-cols-1 gap-2 lg:grid-cols-3'
+  const fieldGridLiteral = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3'
+  const compactGridLiteral = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-2'
+  const denseGridLiteral = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-1'
+  const tripleGridLiteral = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2'
+  const denseTripleGridLiteral = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-1'
+  const mainSplitGridLiteral = 'kg-graph-fields-split grid h-full min-h-0 min-w-0 gap-2'
   const spaciousConsumers = [
     'FieldSchemaSection.tsx',
     'FieldSettingsPanel.tsx',

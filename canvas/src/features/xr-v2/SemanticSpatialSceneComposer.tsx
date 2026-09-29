@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import type { SpaceDocument, SpaceObservation } from './semanticSpaceRuntime'
 import { SEMANTIC_TWIN_TEMPLATES, type TwinTemplate } from './semanticTwinRuntime'
@@ -44,12 +45,12 @@ export default function SemanticSpatialSceneComposer({ space, observation, disab
       Use buildings for box and contour regions</button>
     <div className="grid max-h-64 gap-2 overflow-y-auto">{models.map((model, index) => <label className="grid min-w-0 gap-1" key={model.entityId}>
       {index + 1}. {space.entities.find(entity => entity.id === model.entityId)?.label || model.template}
-      <select aria-label={`Solid shape ${index + 1}`} className="min-h-11 w-full min-w-0 rounded border bg-transparent px-2"
+      <PanelSelect aria-label={`Solid shape ${index + 1}`} className="min-h-11 w-full min-w-0 rounded border bg-transparent px-2"
         disabled={disabled || busy} value={choices[model.entityId] || model.template}
-        onChange={event => { const value = event.currentTarget.value as TwinTemplate; setChoices(current => ({ ...current, [model.entityId]: value })) }}>
+        onValueChange={selectedValueInput => { const value = selectedValueInput as TwinTemplate; setChoices(current => ({ ...current, [model.entityId]: value })) }}>
         {SEMANTIC_TWIN_TEMPLATES.filter(shape => shape !== 'relief' && (shape !== 'contour' || model.silhouette)).map(shape =>
           <option value={shape} key={shape}>{semanticTwinTemplateLabel(shape)}</option>)}
-      </select>
+      </PanelSelect>
     </label>)}</div>
     <button type="button" className={button} disabled={disabled || busy || !models.length} onClick={() => void apply()}>Build solid scene</button>
     {status && <output role="status">{status}</output>}

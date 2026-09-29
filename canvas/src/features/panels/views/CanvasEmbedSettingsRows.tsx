@@ -1,4 +1,5 @@
 import React from 'react'
+import { PanelCode } from '@/features/panels/ui/PanelText'
 import { CanvasEmbedImportPanel } from '@/features/canvas/CanvasEmbedImportPanel'
 import { selectCanvasEmbedImport } from '@/features/canvas/canvasEmbedImportContract'
 import { resolveCanonicalStartupCanvasEmbedRuntimeUrl } from '@/features/canvas/canvasEmbedPresets'
@@ -34,7 +35,7 @@ export function CanvasEmbedSettingsRows() {
       <KeyTypeValueStaticRow
         {...staticRowProps}
         keyNode={<span className="font-semibold">Canvas Embed</span>}
-        typeNode={<code>iframe + postMessage</code>}
+        typeNode={<PanelCode>iframe + postMessage</PanelCode>}
         valueNode={(
           <section className="flex min-w-0 max-w-full flex-wrap items-center gap-1">
             <button
