@@ -2,6 +2,7 @@
 @import './styles/tailwind-theme.css';
 @import 'katex/dist/katex.min.css';
 @import './styles/kgTokens.generated.css';
+@import './styles/application-typography.css';
 @import './styles/responsive-toolbar.css';
 @import './styles/responsive-canvas-toolbar.css';
 @import './styles/markdown-presentation-responsive.css';
@@ -16,20 +17,7 @@
 @import './styles/page-responsive.css';
 @import './styles/markdown-media-responsive.css'; @import './styles/markdown-data-view-table.css';
 @import './styles/aie-book-demo-responsive.css';
-@layer base {
-  body { font-size: var(--kg-text-sm); }
-  h3, h4 { font-size: var(--kg-text-base); line-height: var(--kg-text-base-line); }
-}
-
 :root {
-  font-family: var(--kg-font-sans);
-  line-height: 1.5;
-  font-weight: 400;
-  letter-spacing: normal;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   --gap: 0.5rem;
   --padding: 0.5rem;
   --toolbar-gap: 0.5rem;
@@ -64,8 +52,6 @@
   --kg-code-bg: #f8fafc;
   --kg-code-border: #e2e8f0;
   --kg-code-text: #0f172a;
-  --kg-inline-code-font-size: inherit;
-  --kg-inline-code-line-height: inherit;
   --kg-control-height: 28px;
   --kg-workspace-header-pad-y: 0.5rem;
   --kg-workspace-header-pad-x: 0.75rem;
@@ -173,8 +159,6 @@
   --kg-code-bg: rgba(2, 6, 23, 0.6);
   --kg-code-border: #1e293b;
   --kg-code-text: #e2e8f0;
-  --kg-inline-code-font-size: inherit;
-  --kg-inline-code-line-height: inherit;
   --kg-canvas-node-stroke: #0b1220;
   --kg-canvas-edge-stroke: #4b5563;
   --kg-canvas-accent: #60a5fa;
@@ -397,11 +381,6 @@ html, body, #root {
 }
 
 @layer base {
-  .lucide {
-    flex-shrink: 0;
-    vertical-align: -0.125em;
-  }
-
   .maplibregl-map {
     position: relative;
     width: 100%;

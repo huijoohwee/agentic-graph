@@ -12,7 +12,6 @@ import { useShallow } from 'zustand/react/shallow'
 import { applyExternalMonacoValue } from './monacoExternalValueApply'
 import { resolveMonacoRuntimeMode } from './monacoRuntimeMode'
 import { setNativeMonacoTheme } from './theme'
-
 const FLASH_STYLE_ID = 'monaco-flash-style'
 const FLASH_CSS = `
 @keyframes monaco-flash-fade {

@@ -187,13 +187,12 @@ export const defaultFlowTheme = (): FlowNativeTheme => ({
 })
 
 export const readFlowFontFamilyFromCss = (): string => {
-  const fallback = UI_FONT_SANS
-  if (typeof document === 'undefined') return fallback
+  if (typeof document === 'undefined') return UI_FONT_SANS
   try {
     const raw = String(getComputedStyle(document.documentElement).fontFamily || '').trim()
-    return raw || fallback
+    return raw || UI_FONT_SANS
   } catch {
-    return fallback
+    return UI_FONT_SANS
   }
 }
 

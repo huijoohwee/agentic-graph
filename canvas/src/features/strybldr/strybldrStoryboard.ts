@@ -979,9 +979,7 @@ const resolveStrybldrElementLane = (args: {
 const isExplainerVideoXrMode = (doc: StrybldrStoryboardDocument): boolean => cleanText(doc.explainerVideo?.mode).toLowerCase() === 'xr'
 
 const buildExplainerPanelSrcDoc = (title: string, text: string): string => {
-  const safeTitle = htmlAttr(title || 'Explainer')
-  const safeText = htmlAttr(text || '')
-  return `<article style="font:14px/1.5 ${UI_FONT_SANS};padding:20px;color:#17202a"><h1 style="font-size:20px;margin:0 0 12px">${safeTitle}</h1><pre style="white-space:pre-wrap;margin:0">${safeText}</pre></article>`
+  return `<article style="font:14px/1.5 ${UI_FONT_SANS};padding:20px;color:#17202a"><h1 style="font-size:20px;margin:0 0 12px">${htmlAttr(title || 'Explainer')}</h1><pre style="white-space:pre-wrap;margin:0">${htmlAttr(text || '')}</pre></article>`
 }
 
 type StrytreeNodeRuntime = {

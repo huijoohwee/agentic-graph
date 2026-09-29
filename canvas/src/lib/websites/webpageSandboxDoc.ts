@@ -343,7 +343,6 @@ export const buildCodeViewerSrcdoc = (args: { baseHref: string; title: string; m
   const label = args.mode === 'json' ? 'JSON' : 'Text'
   const rawText = String(args.text || '')
   const clippedText = rawText.length > 450_000 ? `${rawText.slice(0, 450_000)}\n\n…(clipped ${rawText.length - 450_000} chars)…` : rawText
-  const body = escapeHtml(clippedText)
   const csp = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
   const html = [
     '<!doctype html>',
@@ -364,7 +363,7 @@ export const buildCodeViewerSrcdoc = (args: { baseHref: string; title: string; m
     '</head>',
     '<body>',
     `<header><strong>${label}</strong><span style="opacity:.7">sandboxed</span></header>`,
-    `<main><pre>${body}</pre></main>`,
+    `<main><pre>${escapeHtml(clippedText)}</pre></main>`,
     '</body>',
     '</html>',
   ].join('\n')

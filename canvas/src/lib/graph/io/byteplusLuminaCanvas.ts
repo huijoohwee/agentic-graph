@@ -230,7 +230,6 @@ const escapeSvgText = (value: string): string => (
 
 const buildLuminaSourceImageDataUrl = (args: { path: string; title: string; kind: string }): string => {
   const title = normalizeText(args.title) || formatSourceFieldLabel(args.kind) || 'Lumina media'
-  const sourcePath = normalizeText(args.path)
   const svg = [
     '<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img">',
     '<rect width="960" height="540" fill="#f8fafc"/>',
@@ -238,7 +237,7 @@ const buildLuminaSourceImageDataUrl = (args: { path: string; title: string; kind
     '<circle cx="126" cy="126" r="34" fill="#e0f2fe" stroke="#38bdf8" stroke-width="2"/>',
     '<path d="M111 134l23-28 34 45H94l17-17z" fill="#0284c7"/>',
     `<text x="190" y="125" font-family="${UI_FONT_SANS}" font-size="34" font-weight="700" fill="#0f172a">${escapeSvgText(title)}</text>`,
-    `<text x="190" y="172" font-family="${UI_FONT_SANS}" font-size="22" fill="#475569">${escapeSvgText(sourcePath)}</text>`,
+    `<text x="190" y="172" font-family="${UI_FONT_SANS}" font-size="22" fill="#475569">${escapeSvgText(normalizeText(args.path))}</text>`,
     `<text x="190" y="224" font-family="${UI_FONT_SANS}" font-size="18" fill="#64748b">Lumina source media reference</text>`,
     '</svg>',
   ].join('')

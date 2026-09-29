@@ -188,8 +188,11 @@ when switching MainPanel, FloatingPanel, BottomPanel, Explorer or editor surface
 
 TAD/ADR: `grph-shared/src/ui/typography.ts` owns the text scale and reexports font
 stacks from `fontStacks.mjs`, a build-independent ESM owner shared with headless tools.
-The existing token generator emits CSS variables; Tailwind theme utilities, base
-styles, panel preferences, canvas measurement and exported viewers consume them.
+The existing token generator emits CSS variables; Tailwind theme utilities,
+`application-typography.css`, panel preferences, canvas measurement and exported
+viewers consume them. Base typography and glyph alignment leave the global
+stylesheet; touched pre-existing oversized modules retain or reduce their line
+counts. The source hygiene gate runs before publication.
 Markdown heading pixel measurements derive from the same utility scale. Persisted
 8–12 px arbitrary micro classes migrate idempotently to `text-xs`. Explicit other
 user typography preferences remain supported. No new dependency, network font,
