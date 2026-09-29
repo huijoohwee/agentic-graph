@@ -593,6 +593,6 @@ html, body, #root {
 
   /* Keep Monaco gutter/line-number column visually separated from text area. */
   .kg-monaco-editor-host .monaco-editor .margin {
-    border-right: var(--kg-surface-border) !important;
+    border-right: var(--kg-workspace-divider) !important;
   }
 }

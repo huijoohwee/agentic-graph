@@ -547,7 +547,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
           <VerticalResizeSeparatorHr
             ref={setResizeHandleEl}
             ariaLabel="Resize explorer"
-            visualStyle="centerGrip"
+            visualStyle="line"
             className="kg-markdown-workspace-explorer-resize"
           />
         </>

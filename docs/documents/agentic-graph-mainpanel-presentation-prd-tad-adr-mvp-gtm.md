@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.7.0"
+version: "1.8.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -471,3 +471,21 @@ Release validation is separate evidence and does not establish production parity
 GTM: Reduces visual inconsistency and resize friction in the existing free/offline
 editor. No pricing or adoption claim. Rollback: revert this revision as one unit;
 no storage or document migration is required.
+
+## Visible workspace dividers (2026-09-29)
+
+PRD: Explorer and editor boundaries must remain perceptible across the full pane,
+including the Source Files header and Monaco line-number gutter. Resize targets
+remain semantic and keyboard usable.
+
+TAD/ADR: Shared border CSS derives one stronger workspace divider from the active
+theme's secondary text and panel surface, retaining the 1 px reference width.
+Explorer separators draw a full-length line within their 8 px hit area. The
+Source Files header, workspace toolbar and Monaco gutter consume the same divider;
+surface control outlines keep their existing neutral token.
+
+MVP/evidence: cap 10 files / 20 KB patch; no dependencies, services or stored-data
+changes. Browser measurements confirm full-length separator geometry and 1 px
+header and gutter borders. Focused contracts, type checking and the affected gate
+are reported in the candidate handoff. GTM: clearer pane boundaries in the local,
+offline editor. Rollback: revert this revision; no migration is required.

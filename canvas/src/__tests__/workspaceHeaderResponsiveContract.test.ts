@@ -41,7 +41,7 @@ export function testWorkspaceHeaderRowsUseSharedResponsiveOwner() {
     !cssText.includes('--kg-markdown-workspace-toolbar-dock-offset') ||
     !cssText.includes('--kg-markdown-workspace-toolbar-bottom-offset') ||
     !cssText.includes('bottom: calc(var(--kg-safe-bottom) + var(--kg-markdown-workspace-toolbar-bottom-offset))') ||
-    !cssText.includes('border-bottom: var(--kg-surface-border)') ||
+    !cssText.includes('border-bottom: var(--kg-workspace-divider)') ||
     !cssText.includes('--kg-markdown-workspace-toolbar-editor-clearance') ||
     !cssText.includes('margin-block-end: var(--kg-markdown-workspace-toolbar-editor-clearance) !important') ||
     !cssText.includes('scroll-padding-block-end: var(--kg-markdown-workspace-toolbar-editor-clearance)') ||
@@ -55,7 +55,7 @@ export function testWorkspaceHeaderRowsUseSharedResponsiveOwner() {
     !borderCssText.includes('inline-size: 100% !important') ||
     !borderCssText.includes('block-size: var(--kg-resize-separator-thickness) !important') ||
     !borderCssText.includes('cursor: row-resize;') ||
-    !borderCssText.includes('background-image: linear-gradient(var(--kg-border), var(--kg-border))')
+    !borderCssText.includes('background-image: linear-gradient(var(--kg-workspace-divider-color), var(--kg-workspace-divider-color))')
   ) {
     throw new Error('expected Explorer to share the thin neutral line while keeping a usable mobile resize target')
   }

@@ -142,7 +142,7 @@
     width: 100%;
     inline-size: 100%;
     box-sizing: border-box;
-    border-bottom: var(--kg-surface-border);
+    border-bottom: var(--kg-workspace-divider);
     background: var(--kg-panel-bg);
   }
 

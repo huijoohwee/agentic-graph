@@ -231,7 +231,7 @@ export function MarkdownPanelLayout(props: MarkdownPanelLayoutProps) {
           ariaLabel="Resize explorer"
           tabIndex={0}
           ref={setResizeHandleEl}
-          visualStyle="centerGrip"
+          visualStyle="line"
           className="relative z-20 flex-shrink-0 self-stretch pointer-events-auto"
         />
       ) : null}
@@ -241,7 +241,7 @@ export function MarkdownPanelLayout(props: MarkdownPanelLayoutProps) {
           ariaLabel="Resize explorer"
           tabIndex={0}
           ref={setResizeHandleEl}
-          visualStyle="centerGrip"
+          visualStyle="line"
           className="relative z-20 flex-shrink-0 self-stretch pointer-events-auto"
         />
       ) : null}
