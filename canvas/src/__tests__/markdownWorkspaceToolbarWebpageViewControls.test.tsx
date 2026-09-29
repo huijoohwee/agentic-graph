@@ -440,7 +440,7 @@ export async function testMarkdownWorkspaceToolbarWebpageViewControlsConsolidate
       await tick()
       await tick()
     })
-    const viewSelect = dom.window.document.querySelector('select[aria-label="Webpage view mode"]')
+    const viewSelect = dom.window.document.querySelector('button[data-kg-select][aria-label="Webpage view mode"]')
     if (viewSelect) throw new Error('expected Webpage view dropdown to be removed')
 
     const htmlInput = checkboxFor(dom.window.document, 'HTML')

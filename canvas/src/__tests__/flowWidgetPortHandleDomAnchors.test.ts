@@ -1,3 +1,5 @@
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { selectMenuValue } from './helpers/semanticMenu'
 import { JSDOM } from 'jsdom'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -64,11 +66,11 @@ const installDomGlobals = (dom: JSDOM): (() => void) => {
   }
 }
 
-type EditableControlElement = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLElement
+type EditableControlElement = HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement | HTMLElement
 type EditableControlWindow = Window & {
   HTMLInputElement: typeof HTMLInputElement
   HTMLTextAreaElement: typeof HTMLTextAreaElement
-  HTMLSelectElement: typeof HTMLSelectElement
+  HTMLButtonElement: typeof HTMLButtonElement
 }
 
 const asEditableControlWindow = (win: Window): EditableControlWindow => win as unknown as EditableControlWindow
@@ -76,18 +78,18 @@ const asEditableControlWindow = (win: Window): EditableControlWindow => win as u
 const isEditableTextControl = (
   control: Element,
   win: Window,
-): control is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement => {
+): control is HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement => {
   const typedWin = asEditableControlWindow(win)
   return (
     control instanceof typedWin.HTMLInputElement
     || control instanceof typedWin.HTMLTextAreaElement
-    || control instanceof typedWin.HTMLSelectElement
+    || control instanceof typedWin.HTMLButtonElement
   )
 }
 
 const openInlineValueControl = async (
   control: EditableControlElement,
-): Promise<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement> => {
+): Promise<HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement> => {
   const win = control.ownerDocument.defaultView
   if (!win) throw new Error('expected DOM control owner window')
   if (isEditableTextControl(control, win)) return control
@@ -110,11 +112,10 @@ const changeControlValue = async (control: EditableControlElement, value: string
   if (!win) throw new Error('expected DOM control owner window')
   const typedWin = asEditableControlWindow(win)
   const editable = await openInlineValueControl(control)
+  if (editable.matches('button[data-kg-select]')) { await act(async () => selectMenuValue(editable as HTMLButtonElement, value)); return }
   const proto = editable instanceof typedWin.HTMLTextAreaElement
     ? typedWin.HTMLTextAreaElement.prototype
-    : editable instanceof typedWin.HTMLSelectElement
-      ? typedWin.HTMLSelectElement.prototype
-      : typedWin.HTMLInputElement.prototype
+    : typedWin.HTMLInputElement.prototype
   const valueSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set
   if (!valueSetter) throw new Error('expected DOM control value setter')
   await act(async () => {
@@ -122,9 +123,9 @@ const changeControlValue = async (control: EditableControlElement, value: string
     Simulate.change(editable)
     await new Promise(resolve => setTimeout(resolve, 0))
   })
-  if (editable instanceof typedWin.HTMLSelectElement) return
+  if (editable instanceof typedWin.HTMLButtonElement) return
   const changedEditable = editable.id ? editable.ownerDocument.getElementById(editable.id) : editable
-  if (!changedEditable || !isEditableTextControl(changedEditable, win) || changedEditable instanceof typedWin.HTMLSelectElement) {
+  if (!changedEditable || !isEditableTextControl(changedEditable, win) || changedEditable instanceof typedWin.HTMLButtonElement) {
     throw new Error(`expected shared inline Value control ${editable.id || ''} to stay editable after change`)
   }
   await act(async () => {
@@ -275,11 +276,7 @@ export const testTextWidgetCellsStayLocallyEditable = async () => {
 }
 
 export const testWidgetRegistrySelectFieldsStayEditable = async () => {
-  const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'http://localhost' })
-
-  const g = globalThis as unknown as { window?: unknown; document?: unknown }
-  g.window = dom.window
-  g.document = dom.window.document
+  const { dom, restore } = initJsdomHarness()
 
   const host = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(host)
@@ -319,11 +316,11 @@ export const testWidgetRegistrySelectFieldsStayEditable = async () => {
 
   await new Promise<void>(resolve => setTimeout(resolve, 20))
 
-  const selects = Array.from(host.querySelectorAll('select'))
+  const selects = Array.from(host.querySelectorAll('button[data-kg-select]'))
   if (selects.length < 2) {
     throw new Error(`expected registry select fields to render shared dropdown editors, got ${selects.length} selects`)
   }
-  const aspectSelect = host.querySelector<HTMLSelectElement>('#aspect_ratio')
+  const aspectSelect = host.querySelector<HTMLButtonElement>('#aspect_ratio')
   if (!aspectSelect) throw new Error('expected aspect ratio select to render')
   await changeControlValue(aspectSelect, 'portrait')
 
@@ -333,7 +330,7 @@ export const testWidgetRegistrySelectFieldsStayEditable = async () => {
     throw new Error(`expected shared select editor to patch aspect_ratio, got ${JSON.stringify(patched)}`)
   }
 
-  root.unmount()
+  root.unmount(); restore()
 }
 
 export const testOpenAiTextWidgetCellsStayLocallyEditable = async () => {
@@ -406,11 +403,7 @@ export const testOpenAiTextWidgetCellsStayLocallyEditable = async () => {
 }
 
 export const testSeedreamImageWidgetKvRowsStayEditable = async () => {
-  const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'http://localhost' })
-
-  const g = globalThis as unknown as { window?: unknown; document?: unknown }
-  g.window = dom.window
-  g.document = dom.window.document
+  const { dom, restore } = initJsdomHarness()
 
   const host = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(host)
@@ -452,7 +445,7 @@ export const testSeedreamImageWidgetKvRowsStayEditable = async () => {
 
   await new Promise<void>(resolve => setTimeout(resolve, 20))
 
-  const sizeSelect = host.querySelector<HTMLSelectElement>('#size')
+  const sizeSelect = host.querySelector<HTMLButtonElement>('#size')
   const refInput = host.querySelector<HTMLElement>('#reference_image')
   if (!sizeSelect || !refInput) throw new Error('expected Seedream image widget fields to render')
   await changeControlValue(sizeSelect, '4K')
@@ -467,15 +460,11 @@ export const testSeedreamImageWidgetKvRowsStayEditable = async () => {
     throw new Error('expected Seedream image widget text field edits to patch widget properties')
   }
 
-  root.unmount()
+  root.unmount(); restore()
 }
 
 export const testBytePlusVideoWidgetKvRowsStayEditable = async () => {
-  const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url: 'http://localhost' })
-
-  const g = globalThis as unknown as { window?: unknown; document?: unknown }
-  g.window = dom.window
-  g.document = dom.window.document
+  const { dom, restore } = initJsdomHarness()
 
   const host = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(host)
@@ -517,7 +506,7 @@ export const testBytePlusVideoWidgetKvRowsStayEditable = async () => {
 
   await new Promise<void>(resolve => setTimeout(resolve, 20))
 
-  const durationSelect = host.querySelector<HTMLSelectElement>('#duration')
+  const durationSelect = host.querySelector<HTMLButtonElement>('#duration')
   const promptInput = host.querySelector<HTMLElement>('#prompt')
   if (!durationSelect || !promptInput) throw new Error('expected BytePlus video widget fields to render')
   await changeControlValue(durationSelect, '6')
@@ -532,7 +521,7 @@ export const testBytePlusVideoWidgetKvRowsStayEditable = async () => {
     throw new Error('expected BytePlus video widget text field edits to patch widget properties')
   }
 
-  root.unmount()
+  root.unmount(); restore()
 }
 
 export const testTextWidgetRegistryFieldRowsKeepPlaceholderPortHandles = async () => {

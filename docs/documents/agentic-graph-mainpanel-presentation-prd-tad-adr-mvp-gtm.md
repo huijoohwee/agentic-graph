@@ -353,6 +353,10 @@ three options passes `elementFromPoint` hit testing; keyboard movement and Escap
 restore focus. At a 390 px viewport the menu is 220 px wide within x=29..249, all
 options have 44 px touch rows, and pointer selection closes the menu. Broader native
 validation and provider status remain separately reported exact-candidate evidence.
+Existing component and browser checks now open the visible menu and click its real
+option buttons through shared test helpers. This preserves model, workspace, widget,
+XR, and form behavior checks without native-select compatibility shims. Review cap:
+150 files / 400 KB patch; existing files above 600 lines do not grow.
 
 GTM: Removes an inspection and automation obstacle from the existing free, offline
 interface. No new package, service, model call or measured commercial claim.

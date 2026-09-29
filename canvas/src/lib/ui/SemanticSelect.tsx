@@ -134,7 +134,7 @@ export const SemanticSelect = React.forwardRef<HTMLButtonElement, SemanticSelect
           {option.group && option.group !== options[index - 1]?.group ? <li role="separator" className="px-2 pt-2 text-xs font-semibold" aria-label={option.group}>{option.group}</li> : null}
           <li role="none" className="list-none min-w-0">
             <button type="button" role="menuitemradio" aria-checked={option.value === selectedValue}
-              aria-label={option.label} disabled={option.disabled} tabIndex={-1}
+              aria-label={option.label} value={option.value} disabled={option.disabled} tabIndex={-1}
               ref={element => { itemRefs.current[index] = element }}
               className={dropdownMenuOptionClassName(option.value === selectedValue)}
               onClick={() => {

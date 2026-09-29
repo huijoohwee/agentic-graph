@@ -330,10 +330,10 @@ async function verifyCatalogRecovery(catalog: Exclude<Awaited<ReturnType<typeof 
     await mountReactRoot(root, React.createElement(LiveCanvasHeroPromptPresetPicker,
       { activePresetId: catalog.presets[0]!.id, runtime, onSelect: value => selected.push(value) }),
       { window: dom.window as unknown as Window, frames: 3 })
-    if (!container.querySelector('[role="alert"]') || container.querySelector('select')) throw Error('A missing catalog must remain unavailable')
+    if (!container.querySelector('[role="alert"]') || container.querySelector('button[data-kg-select]')) throw Error('A missing catalog must remain unavailable')
     const retry = [...container.querySelectorAll('button')].find(button => button.textContent === 'Retry catalog')!
     await act(async () => { retry.click(); await waitForFrames(dom.window as unknown as Window, 3) })
-    if (calls !== 2 || !container.querySelector('select') || container.querySelector('[role="alert"]') || selected.length)
+    if (calls !== 2 || !container.querySelector('button[data-kg-select]') || container.querySelector('[role="alert"]') || selected.length)
       throw Error('Explicit retry must recover the catalog without selecting or executing a preset')
   } finally { await unmountReactRoot(root, { window: dom.window as unknown as Window }); restore() }
 }

@@ -1,3 +1,4 @@
+import { selectMenuValue } from './helpers/semanticMenu'
 import assert from 'node:assert/strict'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -60,12 +61,11 @@ export async function testMainPanelSharedPresentationKeepsAccessibleControlsAndH
     await act(async () => root.render(<CollapsibleSection title="Workspace" defaultCollapsed={false}>
       <WorkspaceTableModeControl />
     </CollapsibleSection>))
-    const select = host.querySelector<HTMLSelectElement>('select[aria-label="Select panel position"]')!
+    const select = host.querySelector<HTMLButtonElement>('button[data-kg-select][aria-label="Select panel position"]')!
     assert(select.className.includes('font-serif') && select.className.includes('text-[15px]'), 'workspace controls use configured panel typography')
     const nextPlacement = previousPlacement === 'top' ? 'bottom' : 'top'
     await act(async () => {
-      select.value = nextPlacement
-      select.dispatchEvent(new window.Event('change', { bubbles: true }))
+      selectMenuValue(select, nextPlacement)
     })
     assert.equal(workspaceTablePreferencesStore.getSnapshot().workspaceCellSelectPanelPlacement, nextPlacement, 'shared layout keeps the canonical preference handler')
     const header = host.querySelector<HTMLElement>('section[role="button"]')!

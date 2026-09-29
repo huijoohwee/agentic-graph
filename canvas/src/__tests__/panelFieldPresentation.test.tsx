@@ -65,7 +65,7 @@ export async function testPanelFieldsShareOnePresentationAndKeepInteractions() {
       assert.equal(row.children.length, 3, 'every field preserves key/type/value columns')
       assert(!row.classList.contains('grid-cols-2') && !row.classList.contains('gap-8') && !row.classList.contains('py-9'))
     }
-    for (const control of host.querySelectorAll('label input:not([type=range]), select')) {
+    for (const control of host.querySelectorAll('label input:not([type=range]), button[data-kg-select]')) {
       assert(control.classList.contains('text-[15px]') && control.classList.contains('font-serif'))
       assert(!control.classList.contains('text-[10px]') && !control.classList.contains('font-mono'))
     }

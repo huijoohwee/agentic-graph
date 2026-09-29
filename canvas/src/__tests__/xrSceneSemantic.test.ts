@@ -1,3 +1,4 @@
+import { selectMenuValue } from './helpers/semanticMenu'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import React, { act } from 'react'
@@ -124,9 +125,8 @@ export async function testXrStudioInspectorProjectsSceneAndExercises(): Promise<
     assert.equal(studio.querySelectorAll('[data-kg-xr-studio-exercise][data-state="blocked"]').length, 3,
       'physics-only ownership changes refresh the visible exercise result')
     await act(async () => {
-      const selector = studio.querySelector<HTMLSelectElement>('[aria-label="Find scene objects"]')!
-      selector.value = 'furniture'
-      selector.dispatchEvent(new env.dom.window.Event('change', { bubbles: true }))
+      const selector = studio.querySelector<HTMLButtonElement>('[aria-label="Find scene objects"]')!
+      selectMenuValue(selector, 'furniture')
     })
     assert.match(studio.querySelector('[data-kg-xr-studio-results]')?.textContent || '', /1 result · Table/)
   } finally {
