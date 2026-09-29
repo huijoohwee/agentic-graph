@@ -1,0 +1,15 @@
+.kg-color-picker-trigger { cursor: pointer; padding: 2px; }
+.kg-color-picker-trigger:disabled { cursor: not-allowed; opacity: .5; }
+.kg-color-palette { display: grid; gap: 8px; box-sizing: border-box; width: min(288px, calc(100vw - 16px)); max-height: calc(100dvh - 16px); overflow: auto; padding: 12px; color: var(--kg-text-primary); }
+.kg-color-spectrum { position: relative; display: block; width: 100%; height: 128px; min-height: 128px; padding: 0; border: 1px solid var(--kg-border); border-radius: 4px; touch-action: none; background-image: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent); }
+.kg-color-spectrum svg { display: block; width: 100%; height: 100%; }
+.kg-color-channel { display: grid; grid-template-columns: 3rem minmax(0, 1fr); align-items: center; gap: 8px; }
+.kg-color-hue { min-width: 0; width: 100%; min-height: var(--kg-control-height, 28px); accent-color: var(--kg-accent); }
+.kg-color-swatches { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.kg-color-swatches li { min-width: 0; }
+.kg-color-swatch { display: block; width: 100%; height: var(--kg-control-height, 28px); border: 1px solid var(--kg-border); border-radius: 4px; }
+.kg-color-swatch[aria-pressed="true"] { outline: 2px solid var(--kg-accent); outline-offset: 2px; }
+.kg-color-swatch svg { display: block; width: 100%; height: 100%; }
+.kg-color-rgb { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; border: 0; padding: 0; margin: 0; }
+.kg-color-rgb label { display: grid; gap: 4px; min-width: 0; }
+@media (pointer: coarse), (max-width: 640px) { .kg-color-swatch, .kg-color-palette input, .kg-color-palette header button { min-height: var(--kg-touch-target, 44px); } }

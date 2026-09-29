@@ -1,0 +1,21 @@
+@layer base {
+  body { font-size: var(--kg-text-sm); }
+  h3, h4 { font-size: var(--kg-text-base); line-height: var(--kg-text-base-line); }
+  .lucide {
+    flex-shrink: 0;
+    vertical-align: -0.125em;
+  }
+}
+
+:root {
+  font-family: var(--kg-font-sans);
+  line-height: 1.5;
+  font-weight: 400;
+  letter-spacing: normal;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --kg-inline-code-font-size: inherit;
+  --kg-inline-code-line-height: inherit;
+}

@@ -136,7 +136,7 @@ export function DocumentVersionGitGraphPanel({
   if (!selectedVersions.length || !selectedSummary) {
     return (
       <section
-        className={`rounded border px-3 py-2 text-xs ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.text.tertiary} ${className}`.trim()}
+        className={`min-w-0 rounded px-3 py-2 text-xs ${UI_THEME_TOKENS.border.outline} ${UI_THEME_TOKENS.text.tertiary} ${className}`.trim()}
         data-kg-document-version-gitgraph-panel="1"
         data-kg-document-version-gitgraph-empty="1"
       >
@@ -147,16 +147,16 @@ export function DocumentVersionGitGraphPanel({
 
   return (
     <section
-      className={`flex min-h-0 flex-col overflow-hidden rounded border ${UI_THEME_TOKENS.panel.border} ${className}`.trim()}
+      className={`flex h-full max-h-full min-h-0 min-w-0 flex-col overflow-hidden rounded ${UI_THEME_TOKENS.border.outline} ${className}`.trim()}
       data-kg-document-version-gitgraph-panel="1"
       data-kg-document-version-gitgraph-path={selectedPath}
       data-kg-document-version-gitgraph-selected-version={selectedVersion?.id || ''}
     >
-      <header className={`flex min-w-0 flex-wrap items-center gap-2 border-b px-3 py-1.5 text-xs ${UI_THEME_TOKENS.panel.divider}`}>
+      <header className={`flex shrink-0 min-w-0 items-center gap-2 border-b px-3 text-xs ${UI_THEME_TOKENS.control.height} ${UI_THEME_TOKENS.panel.divider}`}>
         <span className={`font-medium ${UI_THEME_TOKENS.text.primary}`}>Version Graph</span>
-        <span className={`min-w-0 truncate ${UI_THEME_TOKENS.text.secondary}`} title={selectedPath}>{selectedPath}</span>
+        <span className={`min-w-0 flex-1 truncate ${UI_THEME_TOKENS.text.secondary}`} title={selectedPath}>{selectedPath}</span>
         <span className={UI_THEME_TOKENS.text.tertiary}>{`v${selectedSummary.count}`}</span>
-        <span className={UI_THEME_TOKENS.text.tertiary}>{formatTimestamp(selectedSummary.latest.timestamp)}</span>
+        <time className={`min-w-0 truncate ${UI_THEME_TOKENS.text.tertiary}`} title={formatTimestamp(selectedSummary.latest.timestamp)}>{formatTimestamp(selectedSummary.latest.timestamp)}</time>
       </header>
       <section
         className={compact ? UI_RESPONSIVE_COMPACT_DOCUMENT_VERSION_GITGRAPH_VIEWPORT_CLASSNAME : UI_RESPONSIVE_DOCUMENT_VERSION_GITGRAPH_VIEWPORT_CLASSNAME}
@@ -171,6 +171,7 @@ export function DocumentVersionGitGraphPanel({
         >
           <InteractiveMermaidDiagram
             code={gitGraphCode}
+            ariaLabel="Document version graph"
             rootThemeMode={themeMode}
             svgSurfaceKey="document-version-graph"
             selectedLabels={selectedDiagramLabels}
@@ -184,23 +185,23 @@ export function DocumentVersionGitGraphPanel({
       </section>
       {selectedReview && selectedVersion ? (
         <section
-          className={`min-h-0 overflow-auto border-t ${UI_THEME_TOKENS.panel.divider}`}
+          className={`min-h-0 min-w-0 flex-1 overflow-auto border-t ${UI_THEME_TOKENS.panel.divider}`}
           data-kg-document-version-gitgraph-selected-review="1"
           data-kg-document-version-gitgraph-selected-review-version={selectedVersion.id}
         >
-          <header className={`sticky top-0 z-10 flex min-w-0 flex-wrap items-center gap-2 px-3 py-1.5 text-xs ${UI_THEME_TOKENS.panel.bg}`}>
+          <header className={`sticky top-0 z-10 flex min-w-0 items-center gap-2 px-3 text-xs ${UI_THEME_TOKENS.control.height} ${UI_THEME_TOKENS.panel.bg}`}>
             <span className={`font-medium ${UI_THEME_TOKENS.text.primary}`}>
               {selectedRow ? `v${selectedRow.versionNumber}` : 'Selected'}
             </span>
             <span className={selectedReview.diff.changed ? 'text-emerald-700 dark:text-emerald-300' : UI_THEME_TOKENS.text.tertiary}>
               {selectedReview.summary}
             </span>
-            <span className={`min-w-0 truncate ${UI_THEME_TOKENS.text.secondary}`} title={selectedVersion.label}>
+            <span className={`min-w-0 flex-1 truncate ${UI_THEME_TOKENS.text.secondary}`} title={selectedVersion.label}>
               {selectedVersion.label}
             </span>
-            <span className={UI_THEME_TOKENS.text.tertiary}>{formatTimestamp(selectedVersion.timestamp)}</span>
+            <time className={`min-w-0 truncate ${UI_THEME_TOKENS.text.tertiary}`} title={formatTimestamp(selectedVersion.timestamp)}>{formatTimestamp(selectedVersion.timestamp)}</time>
           </header>
-          <pre className={`whitespace-pre-wrap break-words px-3 pb-2 font-mono text-[11px] leading-4 ${UI_THEME_TOKENS.text.primary}`}>
+          <pre className={`whitespace-pre-wrap break-words [overflow-wrap:anywhere] px-3 pb-2 font-mono text-xs leading-4 ${UI_THEME_TOKENS.text.primary}`}>
             {selectedPatchText}
           </pre>
         </section>

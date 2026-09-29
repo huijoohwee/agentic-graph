@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 62
+contract_version: 72
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -14,6 +14,17 @@ ci_command_timeout_overrides:
     timeout_ms: 900000
   - command: ["npm", "run", "travel-commerce:test"]
     timeout_ms: 900000
+  # Isolate measured expensive commands; retain their existing five-minute limits.
+  - command: ["npm", "run", "spatial-workspace:full-app"]
+    timeout_ms: 300000
+  - command: ["node", "canvas/scripts/run_block_editor_browser_smoke.mjs", "--build"]
+    timeout_ms: 300000
+  - command: ["node", "canvas/scripts/run_python_learning_browser_smoke.mjs"]
+    timeout_ms: 300000
+  - command: ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--build"]
+    timeout_ms: 300000
+  - command: ["npm", "run", "runtime:test:core"]
+    timeout_ms: 300000
 invocation:
   actions: ["/change", "/fix", "/refactor", "/verify", "/release"]
   required_pr_keys: ["action", "scope", "actor", "base_sha"]
@@ -65,6 +76,57 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  website_import_selection:
+    roots: ["canvas/src/lib/websites/websiteImportSelection.ts", "canvas/src/lib/websites/server/websiteImportDiscovery.ts", "canvas/src/lib/websites/server/websiteImportJob.ts", "canvas/src/lib/websites/server/websiteImportServerHelpers.ts", "canvas/src/lib/websites/server/websiteImportTypes.ts", "canvas/src/features/panels/views/WebsiteImportSelectionView.tsx", "canvas/src/features/panels/websiteImportSelectionSession.ts", "canvas/src/features/panels/mainPanelTabs.ts", "canvas/src/features/panels/ui/mainPanelHelpIconLibrary.tsx", "canvas/src/components/toolbar/useCanvasToolbarContext.ts", "canvas/src/lib/toolbar/LaunchDropdownImportUrlItem.tsx", "canvas/src/features/markdown-explorer/workspaceActionBridge.ts", "canvas/src/__tests__/websiteImportSelection.test.ts", "canvas/src/__tests__/websiteImportSelectionPanel.test.tsx"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/websiteImportSelection.test.ts", "canvas/src/__tests__/websiteImportSelectionPanel.test.tsx"]
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "websiteImport.launch", "webpage.htmlToArtifact", "html.unifiedToMarkdown"]
+  workspace_local_reveal_and_refresh:
+    roots: ["canvas/viteWorkspaceReveal.ts", "canvas/viteWorkspaceArtifactBridge.ts", "canvas/src/features/workspace-fs/workspaceRevealInFileManager.ts", "canvas/src/lib/markdown-workspace-runtime/useMarkdownWorkspaceViewShell.tsx", "canvas/src/lib/markdown-workspace-runtime/MarkdownWorkspaceRuntime.impl.tsx", "canvas/src/features/markdown-workspace/workspaceImport/refreshWebsiteImportMarkdown.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/mutationActions.ts", "canvas/src/__tests__/workspaceRevealInFileManager.test.ts", "canvas/src/__tests__/workspaceRevealMenu.test.tsx", "canvas/src/__tests__/websiteImportContentRefresh.test.ts", "canvas/src/__tests__/markdownWorkspaceViewShellSelectionSource.test.tsx"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/workspaceRevealInFileManager.test.ts", "canvas/src/__tests__/workspaceRevealMenu.test.tsx", "canvas/src/__tests__/websiteImportContentRefresh.test.ts"]
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "workspace.selection.fileExplorer", "markdown.workspace.viewShell.noFileRowFormatControls", "webpage.htmlToArtifact", "html.unifiedToMarkdown"]
+  storyboard_collision_scaling:
+    roots: ["canvas/src/components/StoryboardWidgetCanvas/storyboardFixedCardCollisionLayout2d.ts", "canvas/src/components/StoryboardWidgetCanvas/useStoryboardCardOverlayProjection2d.ts", "canvas/src/features/parsers/canvasFrontmatterPreset.ts", "canvas/src/__tests__/storyboardCollisionScaling.test.ts"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/storyboardCollisionScaling.test.ts"]
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "storyboardWidget.widget.collision", "storyboardWidget.widget.collectiveCameraMotion.freezesBalancedWorldLayout", "ui.storyboard.fixedCardOverlay"]
+  workspace_storage_sync_polling:
+    roots: ["canvas/src/lib/markdown-workspace-runtime/useMarkdownWorkspaceExplorerState.tsx", "canvas/src/__tests__/workspaceStorageSyncPolling.test.tsx"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/workspaceStorageSyncPolling.test.tsx"]
+  workspace_autosave_scheduling:
+    roots: ["canvas/src/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.stateSync.ts", "canvas/src/__tests__/workspaceAutosaveScheduling.test.ts"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/workspaceAutosaveScheduling.test.ts"]
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "markdownWorkspace.autosave", "markdown.workspace.sourceRevision.autosave", "settings.documentStorage"]
+  webpage_request_resources:
+    roots: ["canvas/src/lib/websites/webpageTextRequestCache.ts", "canvas/src/lib/websites/webpageIframeSrcdoc.ts", "canvas/src/features/markdown-workspace/main/useWebpageIframeSrcdoc.ts", "canvas/src/lib/websites/server/nativeWebsiteCrawler.ts", "canvas/src/__tests__/webpageArtifactResources.test.ts"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/webpageArtifactResources.test.ts", "canvas/src/__tests__/webpageArtifactCancellation.test.ts"]
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "webpage.iframeSrcdoc.shrinksLargeHtml"]
+  markdown_scroll_resources:
+    roots: ["canvas/src/lib/markdown-core/ui/markdownPreviewViewerMode.ts", "canvas/src/features/parsers/markdownLargeDocumentGraph.ts", "canvas/src/features/parsers/default.ts", "canvas/src/__tests__/markdownScrollResourceBudget.test.ts"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/markdownScrollResourceBudget.test.ts"]
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "markdown.preview.largeImport.scrollStability", "markdown.largeDense.summaryGraphBeforeFullParse", "markdown.frontmatterFlowGraph.flowDiagrams.largeMarkdownParserPath"]
+  website_import_progress:
+    roots: ["canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportNodeWriter.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportExplorerProgress.ts", "canvas/src/features/workspace-fs/websiteImportRefreshGuard.ts", "canvas/src/features/workspace-fs/upsertWorkspaceTextDocument.ts", "canvas/src/features/workspace-fs/ensureFolderTreeIfMissing.ts", "canvas/src/features/workspace-fs/workspaceFsInitialization.ts", "canvas/src/__tests__/websiteImportProgress.test.ts", "canvas/src/__tests__/workspaceFsMutationInitialization.test.ts", "canvas/src/lib/websites/websitePathUtils.ts", "canvas/src/features/source-files/SourceFilesPersistenceBootstrap.tsx", "canvas/src/lib/markdown-workspace-runtime/useMarkdownWorkspaceOpenSourceFilesEvent.ts", "canvas/src/__tests__/websiteImportExplorerLifecycle.test.tsx", "canvas/src/__tests__/sourceFilesIngestStaleGuard.test.ts", "canvas/src/lib/websites/webpageIframeSrcdoc.ts", "canvas/src/__tests__/webpageArtifactCancellation.test.ts"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/websiteImportProgress.test.ts", "canvas/src/__tests__/workspaceFsMutationInitialization.test.ts", "canvas/src/__tests__/websiteImportExplorerLifecycle.test.tsx", "canvas/src/__tests__/webpageArtifactCancellation.test.ts"]
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "sourceFiles.bootstrap.resyncsOnlyOnActivePathChanges", "sourceFiles.bootstrap.resyncsOnWorkspaceFsSeedChanges", "workspace.refresh.manualActions.suppressFollowUpFsEvent"]
+  website_import_canvas:
+    roots: ["canvas/src/lib/websites/websiteCrawlCanvasMarkdown.ts", "canvas/src/__tests__/nativeWebsiteCrawler.test.ts"]
+    commands:
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "websiteImport.native.canvasDownloads", "websiteImport.launch"]
+  webpage_content:
+    roots: ["canvas/src/lib/websites/server/websiteImportServer.ts", "canvas/src/lib/websites/webpageHtmlToMarkdownArtifact.ts", "canvas/src/lib/websites/webpageHtmlSnapshotMarkdown.ts", "canvas/src/lib/markdown/htmlToMarkdownUnified.ts", "canvas/src/lib/markdown/htmlContentRoot.ts", "canvas/src/__tests__/webpageHtmlToMarkdownArtifact.test.ts"]
+    commands:
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "webpage.htmlToArtifact", "html.unifiedToMarkdown", "markdown.sourceFaithful"]
+  webpage_toolbar:
+    roots: ["canvas/src/features/markdown-workspace/MarkdownWorkspaceToolbar.tsx", "canvas/src/lib/markdown-workspace-runtime/useMarkdownWorkspaceDerivedViews.tsx", "canvas/src/__tests__/markdownWorkspaceTheme.test.ts", "canvas/src/__tests__/markdownWorkspaceToolbarWebpageViewControls.test.tsx"]
+    commands:
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "markdown.workspace.toolbar.autoRoutesImageMode", "ui.markdown.workspace.toolbar.webpageViewControls", "markdown.workspace.toolbar.viewerAndHtmlRenderTogetherAfterSelection"]
   spatial_workspace:
     roots: ["canvas/src/features/three/spatialWorkspace", "canvas/src/features/three/SpatialWorkspaceReview.tsx", "canvas/src/features/three/XrSubjectTransformEditor.tsx", "canvas/src/features/workspace-table/workspaceSceneMetadataAuthoring.ts", "canvas/src/hooks/store/graph-data-slice/graphDataFrontmatterFlowSync.ts", "canvas/src/hooks/store/graph-data-slice/graphDataNodeActions.ts", "canvas/src/features/agent-ready/xrSceneWebMcpTools.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/__tests__/spatialWorkspace", "canvas/scripts/run_spatial_workspace_browser_smoke.mjs", "canvas/scripts/run_spatial_workspace_full_app_smoke.mjs", "canvas/src/features/strybldr/strybldrTimelineBottomPanelLayout.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/core.ts"]
     commands:

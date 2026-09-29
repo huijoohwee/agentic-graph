@@ -4,6 +4,7 @@ import { WORKSPACE_IMPORT_IMAGE_URL_TEST, WORKSPACE_IMPORT_URL_TEST } from '@/li
 import { SOURCE_FILES_COPY } from '@/lib/config-copy/importExportCopy'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
+  UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME,
   UI_RESPONSIVE_IMPORT_URL_CONFIRM_ACTION_CLASSNAME,
   UI_RESPONSIVE_IMPORT_URL_FIELD_CLASSNAME,
   UI_RESPONSIVE_IMPORT_URL_PRESET_ACTION_CLASSNAME,
@@ -16,6 +17,7 @@ export function ImportUrlPrompt(props: {
   onConfirm: (url: string) => void
   onCancel?: () => void
   confirmLabel?: string
+  confirmIcon?: React.ReactNode
   autoFocus?: boolean
   disabled?: boolean
   rightAddon?: React.ReactNode
@@ -42,6 +44,30 @@ export function ImportUrlPrompt(props: {
   }, [autoFocus])
 
   const normalizedDraft = String(urlDraft || '')
+  const confirmButton = (
+    <button
+      type="button"
+      className={cn(
+        UI_RESPONSIVE_IMPORT_URL_CONFIRM_ACTION_CLASSNAME,
+        props.confirmIcon && UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME,
+        'rounded border text-xs',
+        UI_THEME_TOKENS.input.border,
+        UI_THEME_TOKENS.button.text,
+        UI_THEME_TOKENS.button.hoverBg,
+      )}
+      aria-label={confirmLabel}
+      title={confirmLabel}
+      style={props.confirmIcon ? { inlineSize: 'var(--kg-import-url-addon-action-size, var(--kg-control-height, 28px))' } : undefined}
+      onClick={() => {
+        const next = String(normalizedDraft || '').trim()
+        if (!next) return
+        onConfirm(next)
+      }}
+      disabled={disabled || !String(normalizedDraft || '').trim()}
+    >
+      {props.confirmIcon || confirmLabel}
+    </button>
+  )
 
   return (
     <section className="kg-import-url-prompt min-w-0" aria-label="URL import controls">
@@ -107,28 +133,16 @@ export function ImportUrlPrompt(props: {
             onConfirm(next)
           }}
         />
-        <button
-          type="button"
-          className={cn(
-            UI_RESPONSIVE_IMPORT_URL_CONFIRM_ACTION_CLASSNAME,
-            'rounded border text-xs',
-            UI_THEME_TOKENS.input.border,
-            UI_THEME_TOKENS.button.text,
-            UI_THEME_TOKENS.button.hoverBg,
-          )}
-          onClick={() => {
-            const next = String(normalizedDraft || '').trim()
-            if (!next) return
-            onConfirm(next)
-          }}
-          disabled={disabled || !String(normalizedDraft || '').trim()}
-        >
-          {confirmLabel}
-        </button>
+        {props.confirmIcon ? null : confirmButton}
       </section>
-      {props.rightAddon ? (
+      {props.confirmIcon || props.rightAddon ? (
         <section className="kg-import-url-addon mt-1 flex min-w-0 items-stretch gap-1">
-          {props.rightAddon}
+          {props.confirmIcon ? (
+            <section className="flex min-w-0 flex-1 flex-wrap items-stretch gap-1" aria-label="URL import actions">
+              {confirmButton}
+              {props.rightAddon}
+            </section>
+          ) : props.rightAddon}
         </section>
       ) : null}
     </section>

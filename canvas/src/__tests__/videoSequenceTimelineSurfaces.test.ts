@@ -184,7 +184,7 @@ export function testVideoSequenceClipVerticalDragReordersDisplayLane() {
 }
 export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
   const controlsText = readSource('components', 'timeline', 'TimelineTransportControls.tsx')
-  const controlsCssText = readSource('components', 'timeline', 'TimelineTransportControls.css')
+  const controlsCssText = ['TimelineTransportControls.css', 'TimelineTransportPlayer.css', 'TimelineTransportControlsMermaidGantt.css'].map(file => readSource('components', 'timeline', file)).join('\n')
   const clipEditText = readSource('components', 'timeline', 'videoSequenceClipEdit.ts')
   const mediaCanvasText = readSource('components', 'MediaCanvas.tsx')
   const previewMediaCanvasBindingText = readSource('components', 'timeline', 'useTimelinePreviewMediaCanvasBinding.ts')

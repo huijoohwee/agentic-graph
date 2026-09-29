@@ -1,6 +1,7 @@
 import { XrAuthoredSubjectGeometry } from './XrAuthoredSubjectGeometry'
 import { resolveXrSubjectConstructionBounds } from './xrSubjectAuthoring'
 import { XrSelectionBounds } from './XrSelectionBounds'
+import { useXrSubjectHover } from './XrSubjectHover'
 import { xrMotionReferenceWorldPosition } from './xrMotionReferenceCoordinates'
 import { XrStoryCharacter, XrSailboatGeometry, XrStoryEffect } from './XrProceduralStoryGeometry'
 import type { XrStoryPresentation } from './xrStoryPresentation'
@@ -341,34 +342,6 @@ export function XrSceneLibraryAssetGeometry({
   return <XrProceduralHouseGeometry color={effectiveColor} label={asset.id.startsWith('prop-house-') ? asset.id : asset.id === 'prop-soup-pot' ? 'Soup Pot' : label} size={size} />
 }
 
-function SubjectLabel({
-  heightMeters,
-  label,
-  selected,
-}: {
-  heightMeters: number
-  label: string
-  selected: boolean
-}) {
-  const labelTexture = React.useMemo(() => getVoxelLabelTexture({
-    text: label,
-    fontSizePx: 18,
-    textColor: selected ? '#0f172a' : '#f8fafc',
-    bgColor: selected ? XR_MOTION_REFERENCE_SELECTION_COLOR : '#0f172a',
-    bgOpacity: selected ? 1 : 0.88,
-  }), [label, selected])
-  const aspect = labelTexture.widthPx / Math.max(1, labelTexture.heightPx)
-  return (
-    <sprite
-      position={[0, 0, heightMeters + 0.45]}
-      scale={[Math.min(3.2, Math.max(1.2, aspect * 0.5)), 0.5, 1]}
-      renderOrder={selected ? THREE_RENDER_ORDER.overlays : undefined}
-    >
-      <spriteMaterial map={labelTexture.texture} transparent depthTest={!selected} depthWrite={false} sizeAttenuation />
-    </sprite>
-  )
-}
-
 export function XrSceneLibrarySubject({
   animationPose,
   presentation,
@@ -390,6 +363,9 @@ export function XrSceneLibrarySubject({
   showIdentificationBounds?: boolean
   onSelect?: () => void
 }) {
+  const hover = useXrSubjectHover()
+  React.useEffect(() => () => hover?.remove(subject.id), [hover, subject.id])
+  React.useEffect(() => { if (presentation?.visible === false) hover?.remove(subject.id) }, [hover, subject.id, presentation?.visible])
   if (presentation?.visible === false) return null
   const asset = resolveXrSceneLibraryAsset(subject.assetId)
   const identificationBounds = resolveXrSceneSubjectIdentificationBounds(subject, showIdentificationBounds && !selected)
@@ -412,8 +388,12 @@ export function XrSceneLibrarySubject({
         kgXrSharedAssetSelected: selected,
         kgXrTimelineHighlight: selected ? 'shared-asset' : '',
       }}
+      onPointerOver={hover ? event => { event.stopPropagation(); hover.show(subject, event) } : undefined}
+      onPointerMove={hover ? event => { event.stopPropagation(); hover.show(subject, event) } : undefined}
+      onPointerOut={hover ? () => hover.leave(subject.id) : undefined}
       onClick={onSelect ? event => {
         event.stopPropagation()
+        hover?.show(subject, event)
         onSelect()
       } : undefined}
     >
@@ -445,7 +425,6 @@ export function XrSceneLibrarySubject({
               />
             </mesh>
           ) : null}
-          <SubjectLabel label={subject.label} heightMeters={subject.construction ? resolveXrSubjectConstructionBounds(subject.construction).max[1] : asset.dimensionsMeters[1]} selected={false} />
         </group>
       </group>
     </group>

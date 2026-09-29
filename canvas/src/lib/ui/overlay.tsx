@@ -152,6 +152,11 @@ export function AnchorOverlay({
     }
   }, [autoFocus, open])
 
+  const attachContainer = React.useCallback((element: HTMLElement | null) => {
+    containerRef.current = element
+    if (element) refreshOverlayPositionAfterMount(updatePosition)
+  }, [updatePosition])
+
   const style = useMemo<React.CSSProperties>(
     () => ({
       position: 'fixed',
@@ -169,11 +174,7 @@ export function AnchorOverlay({
   return createPortal(
     <section style={buildNonBlockingPortalLayerStyle(Z_INDEX_ANCHOR_OVERLAY)}>
       <section
-        ref={el => {
-          containerRef.current = el
-          if (!el) return
-          refreshOverlayPositionAfterMount(updatePosition)
-        }}
+        ref={attachContainer}
         style={withInteractivePortalContentStyle(style)}
         className={['kg-anchor-overlay', className].filter(Boolean).join(' ')}
         data-kg-anchor-overlay="true"

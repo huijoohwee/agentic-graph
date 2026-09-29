@@ -1,3 +1,4 @@
+import { selectMenuOption } from './lib/select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -67,13 +68,12 @@ try {
   // Exercise the actual Source Files owner before the separate offline lesson proof.
   await page.setViewportSize({ width: 1280, height: 900 })
   await dismissVisibleFloatingPanel(page)
-  const folder = page.getByRole('button', { name: 'Folder python-lessons', exact: true })
-  const docsFolder = page.getByRole('button', { name: 'Folder docs', exact: true })
-  await docsFolder.waitFor()
-  if (await docsFolder.locator('svg.lucide-chevron-right').count()) await docsFolder.click()
-  await folder.waitFor({ timeout: 30000 })
-  const firstFile = page.getByRole('button', { name: `File ${lessonFiles[0].name}`, exact: true })
-  if (!await firstFile.isVisible()) await folder.click()
+  for (const name of ['docs', 'python-lessons']) {
+    await page.getByRole('button', { name: `Folder ${name}`, exact: true }).waitFor()
+    const disclosure = page.getByRole('button', { name: `Expand folder ${name}`, exact: true })
+    if (await disclosure.isVisible()) await disclosure.click()
+  }
+  await page.getByRole('button', { name: `File ${lessonFiles[0].name}`, exact: true }).waitFor()
   const nativePane = page.getByRole('region', { name: 'Python learning workspace', exact: true })
   for (const file of lessonFiles) {
     const row = page.getByRole('button', { name: `File ${file.name}`, exact: true })
@@ -81,7 +81,7 @@ try {
     assert.equal(await row.getAttribute('title'), file.path)
     console.log('Opening native lesson:', file.path)
     await row.click(); await nativePane.waitFor()
-    await page.waitForFunction(id => document.querySelector('select[aria-label="Python lesson"]')?.value === id, file.id)
+    await page.waitForFunction(id => document.querySelector('button[data-kg-select="true"][aria-label="Python lesson"]')?.value === id, file.id)
     assert.equal(await nativePane.getAttribute('data-learning-state'), 'idle', 'opening a source file never runs it')
     await page.getByRole('button', { name: `Local saved copy: ${file.name}. Sign in to sync this file.`, exact: true }).waitFor()
   }
@@ -116,7 +116,7 @@ try {
   await awaitNativeStoredSource()
   await page.waitForFunction(text => document.querySelector('textarea[aria-label="Python source text"]')?.value === text, editedSource, { timeout: 30000 })
   assert.equal(await nativeEditor.inputValue(), editedSource, 'native lesson save survives reload without replacing learner code')
-  assert.equal(await nativePane.getByLabel('Python lesson', { exact: true }).inputValue(), editedFile.id, 'markerless source keeps its file lesson')
+  assert.equal(await nativePane.getByLabel('Python lesson', { exact: true }).getAttribute('value'), editedFile.id, 'markerless source keeps its file lesson')
   await page.screenshot({ path: join(output, 'native-lesson-files.png'), fullPage: true })
   await page.setViewportSize({ width: 375, height: 812 })
   await page.locator('input[type="file"][accept*=".py"]').setInputFiles({ name: 'learning.py', mimeType: 'text/plain', buffer: Buffer.from(lessons[0].solution) })
@@ -193,7 +193,7 @@ try {
   assert.equal(await editor.inputValue(), lessons[0].solution)
   const outcomes = []
   for (const lesson of lessons) {
-    await pane.getByLabel('Python lesson', { exact: true }).selectOption(lesson.id)
+    await selectMenuOption(pane.getByLabel('Python lesson', { exact: true }), lesson.id)
     await pane.getByRole('button', { name: 'Code', exact: true }).click()
     if (await editor.inputValue() !== lesson.solution) {
       const saved = page.getByText('Saved', { exact: true })
@@ -286,7 +286,7 @@ try {
   assert.equal((await inspect()).binding.expectedRunId, beforeCanvasSwitch.binding.expectedRunId, 'view switching must preserve the run')
   assert.equal(await editor.inputValue(), lessons.at(-1).solution, 'view switching must preserve source')
   assert.equal(await editor.evaluate(element => element.selectionStart), 7, 'view switching must preserve the editor cursor')
-  assert.equal(await pane.getByLabel('Python lesson', { exact: true }).inputValue(), lessons.at(-1).id)
+  assert.equal(await pane.getByLabel('Python lesson', { exact: true }).getAttribute('value'), lessons.at(-1).id)
   await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await page.locator('.python-learning-result').evaluate(element => { element.scrollTop = 0 })
   await page.screenshot({ path: join(output, 'offline-mobile.png'), fullPage: true })
@@ -316,7 +316,7 @@ try {
   if (await richEditor.isVisible()) await richEditor.click()
   await pane.locator('.monaco-editor .view-lines').waitFor({ timeout: 30000 })
   assert.ok(await pane.locator('.monaco-editor .view-lines').evaluate(element => new Set([...element.querySelectorAll('span')].map(span => span.className).filter(name => /^mtk/.test(name))).size > 1), 'offline Python highlighting must load')
-  await pane.getByLabel('Python lesson', { exact: true }).selectOption(lessons[0].id)
+  await selectMenuOption(pane.getByLabel('Python lesson', { exact: true }), lessons[0].id)
   const editRichSource = async source => {
     await pane.locator('.monaco-editor .view-line').first().click()
     await page.keyboard.press('ControlOrMeta+A')

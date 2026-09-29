@@ -90,7 +90,7 @@ export function XrTimelineSceneStageControls({
         style={{ minHeight: 44 }}
         aria-label="XR scene stage"
         value={stageId}
-        onChange={event => applyStage(event.target.value)}
+        onValueChange={selectedValueInput => applyStage(selectedValueInput)}
         data-kg-xr-motion-stage-select="scene-clip"
         data-kg-xr-motion-stage-select-lane="scene"
       >

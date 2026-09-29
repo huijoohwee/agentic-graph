@@ -1,3 +1,4 @@
+import { selectMenuOption } from './lib/select-menu-option.mjs'
 import { readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
@@ -153,7 +154,9 @@ const exerciseStorytreeWorkflow = async page => {
   await page.getByRole('button', { name: 'Strybldr unlock storytree branch' }).click({ timeout: 15000 })
   await page.getByRole('button', { name: 'Strybldr storytree filter All' }).click({ timeout: 15000 })
   await page.getByRole('button', { name: 'Strybldr draft storytree continuation' }).click({ timeout: 15000 })
-  await page.locator('select[aria-label="Strybldr storytree branch"] option', { hasText: 'Draft continuation' }).first().waitFor({ state: 'attached', timeout: 15000 })
+  await page.getByRole('button', { name: 'Strybldr storytree branch', exact: true }).click()
+  await page.getByRole('menuitemradio', { name: /Draft continuation/ }).first().waitFor({ timeout: 15000 })
+  await page.keyboard.press('Escape')
 }
 
 const seedBytePlusProviderSettings = url => {
@@ -250,7 +253,7 @@ try {
     await page.getByRole('button', { name: 'Launch' }).click()
     await page.getByRole('button', { name: /^Import URL$/ }).click()
     await page.locator('.kg-import-url-input').fill(importUrl)
-    await page.locator('select[aria-label="Import URL renderer"]').selectOption('strybldr:document')
+    await selectMenuOption(page.locator('button[data-kg-select="true"][aria-label="Import URL renderer"]'), 'strybldr:document')
     await page.locator('.kg-import-url-confirm').click()
   }
   try {

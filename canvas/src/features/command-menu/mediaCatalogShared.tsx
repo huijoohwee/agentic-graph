@@ -194,7 +194,7 @@ export function MediaThumbnailCaption(props: {
   if (!label) return null
   return (
     <span
-      className="pointer-events-none absolute bottom-1 left-1 z-20 max-w-[calc(100%-0.5rem)] truncate rounded bg-slate-950/75 px-1.5 py-0.5 text-[9px] font-semibold leading-3 text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+      className="pointer-events-none absolute bottom-1 left-1 z-20 max-w-[calc(100%-0.5rem)] truncate rounded bg-slate-950/75 px-1.5 py-0.5 text-xs font-semibold leading-3 text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
       data-kg-command-menu-media-thumbnail-caption="1"
     >
       {label}

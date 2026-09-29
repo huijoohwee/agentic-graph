@@ -457,12 +457,15 @@ try {
   const secondListState = await secondCrossPanel.evaluate(panel => Object.freeze({
     phase: panel.getAttribute('data-kg-xr-v2-cross-device-phase'),
     message: panel.querySelector('[role="status"]')?.textContent?.trim() || null,
-    manifestCount: panel.querySelectorAll('select[aria-label="Shared XR asset manifest"] option').length,
+
   }))
   assert.equal(secondListState.phase, 'ready', `shared catalog did not reach ready: ${JSON.stringify({
     secondListState, events: storageFixture.events,
   })}`)
-  assert.ok(secondListState.manifestCount > 0, `shared catalog returned no manifest: ${JSON.stringify({
+  await secondCrossPanel.getByRole('button', { name: 'Shared XR asset manifest', exact: true }).click()
+  const manifestCount = await secondPage.getByRole('menu', { name: 'Shared XR asset manifest', exact: true }).getByRole('menuitemradio').count()
+  await secondPage.keyboard.press('Escape')
+  assert.ok(manifestCount > 0, `shared catalog returned no manifest: ${JSON.stringify({
     secondListState, events: storageFixture.events,
   })}`)
   assert.equal(await secondRead.isDisabled(), false, 'verified shared manifest must enable explicit reopen')

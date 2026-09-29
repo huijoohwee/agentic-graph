@@ -1,3 +1,6 @@
+import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
+import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { publishCameraFramingRuntime } from '@/features/strybldr/cameraFramingRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -15,8 +18,10 @@ import { emptySemanticTwin, positionTwinBeside, SEMANTIC_TWIN_PREVIEW_EVENT, SEM
 const actionId = () => `action:${crypto.randomUUID()}`
 const entityId = () => `entity:${crypto.randomUUID()}`
 const observationId = () => `observation:${crypto.randomUUID()}`
-const buttonClass = 'App-toolbar__btn min-h-11 min-w-11 text-sm'
-const fieldClass = 'min-h-11 w-full rounded border border-current/30 bg-transparent px-3 text-sm'
+const buttonClass = `${UI_THEME_TOKENS.control.singleLine} ${UI_THEME_TOKENS.border.outline} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing} rounded text-sm disabled:opacity-40`
+const fieldClass = 'min-w-0 max-w-full'
+const sectionClass = `grid min-w-0 gap-2 rounded p-2 ${UI_THEME_TOKENS.border.outline}`
+const formClass = 'min-w-0 [&_label]:min-w-0 [&_label]:leading-[var(--kg-control-height)]'
 const clamp = (value: number) => Math.min(1, Math.max(0, value))
 const sourceStatus = (space: SpaceDocument) => {
   const status = readSemanticSpaceSourceMirrorStatus()
@@ -224,7 +229,7 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
     && item.evidenceSha256 === twinBinding?.evidenceSha256) || []
   const results = document ? querySpaceEntities(document, query) : []
   const imageEntities = document?.entities.filter(item => item.observationId === observation?.id) || []
-  const pointer = (event: React.PointerEvent<HTMLDivElement>) => {
+  const pointer = (event: React.PointerEvent<HTMLElement>) => {
     const bounds = event.currentTarget.getBoundingClientRect()
     return { x: clamp((event.clientX - bounds.left) / bounds.width),
       y: clamp((event.clientY - bounds.top) / bounds.height) }
@@ -325,8 +330,8 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
   }
 
   const selectedEvidence = document?.observations.find(item => item.id === selected?.observationId)
-  const objectEditor = document && (selected && <div className="grid gap-2"><span>Selected ID: <code>{selected.id}</code></span>
-        <div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} onClick={() => { setEditing(!editing); setLabel(selected.label); setCategory(selected.category) }}>Correct label</button>
+  const objectEditor = document && (selected && <section className="grid min-w-0 gap-2" aria-label="Selected object controls"><span className="min-w-0 truncate" title={selected.id}>Selected ID: <code>{selected.id}</code></span>
+        <section className="flex min-w-0 flex-wrap gap-2"><button type="button" className={buttonClass} onClick={() => { setEditing(!editing); setLabel(selected.label); setCategory(selected.category) }}>Correct label</button>
           <button type="button" className={buttonClass} onClick={() => void addSelectedToCanvas()}>Open 3D layout</button>
           {(['photo', 'models'] as const).map(view => <button key={view} type="button" className={buttonClass} onClick={() => {
             void openSemanticObjects(document, selected.observationId, undefined, { presentation: 'photo', context: view === 'photo' })
@@ -334,9 +339,9 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
           }}>{view === 'photo' ? 'Match photo composition' : 'Show meshes without photo'}</button>)}
           <button type="button" className={buttonClass} onClick={() => {
             void overlaySemanticObservation(document, selected.observationId).then(setStatus, error => setStatus(String(error.message)))
-          }}>Overlay objects on image</button></div>
-        {editing && <div className="grid gap-2"><input className={fieldClass} aria-label="Corrected label" value={label} onChange={event => setLabel(event.target.value)} />
-          <input className={fieldClass} aria-label="Corrected category" value={category} onChange={event => setCategory(event.target.value)} />
+          }}>Overlay objects on image</button></section>
+        {editing && <section className="grid min-w-0 gap-2"><PanelTextInput className={fieldClass} aria-label="Corrected label" value={label} onChange={event => setLabel(event.target.value)} />
+          <PanelTextInput className={fieldClass} aria-label="Corrected category" value={category} onChange={event => setCategory(event.target.value)} />
           <button type="button" className={buttonClass} disabled={busy || !label.trim() || !category.trim()} onClick={() => {
             void mutate({ operation: 'correct', requestId: actionId(), expectedRevision: document.revision,
               entityId: selected.id, label, category }, 'Entity correction saved.').then(ok => {
@@ -347,8 +352,8 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
                   { label, properties: { ...node.properties, category } })
                 setEditing(false)
               })
-          }}>Save correction</button></div>}
-        {selectedEvidence && <details><summary className="min-h-11 cursor-pointer py-2">Compare source detail</summary>
+          }}>Save correction</button></section>}
+        {selectedEvidence && <details><summary className={`${UI_THEME_TOKENS.control.singleLine} cursor-pointer content-center`}>Compare source detail</summary>
           <svg role="img" aria-label="Original object crop" className="h-32 max-w-full" viewBox={`${selected.region.x * selectedEvidence.width} ${selected.region.y * selectedEvidence.height} ${selected.region.width * selectedEvidence.width} ${selected.region.height * selectedEvidence.height}`}>
             <image href={selectedEvidence.imageDataUrl} width={selectedEvidence.width} height={selectedEvidence.height} />
           </svg>
@@ -357,67 +362,67 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
           <button type="button" className={buttonClass} onClick={() => publishCameraFramingRuntime({ anchorId: 'canvas-camera', source: 'panel',
             settings: { angle: 'front', level: 'eye-level', shot: 'medium', orbitX: 0, orbitY: 0 } })}>Face photo textures</button>
         </details>}
-        <fieldset className="grid gap-2 rounded border p-2"><legend className="px-1 font-medium">Editable 3D approximation</legend>
-          <label>Supported shape<select className={fieldClass} value={twinTemplate}
-            onChange={event => setTwinTemplate(event.currentTarget.value as TwinTemplate)}>
+        <fieldset className={sectionClass}><legend className="px-1 font-medium">Editable 3D approximation</legend>
+          <label>Supported shape<PanelSelect className={fieldClass} value={twinTemplate}
+            onValueChange={selectedValueInput => setTwinTemplate(selectedValueInput as TwinTemplate)}>
             {SEMANTIC_TWIN_TEMPLATES.filter(item => !['contour', 'relief'].includes(item) || twinBinding?.template === item).map(item => <option key={item} value={item}>{item}</option>)}
-          </select></label>
-          <div className="grid grid-cols-3 gap-2">{(['Width', 'Height', 'Depth'] as const).map((name, axis) => <label key={name}>{name}
-            <input className={fieldClass} type="number" min="0.1" max="5" step="0.1" value={twinSize[axis]}
+          </PanelSelect></label>
+          <section className="grid min-w-0 grid-cols-3 gap-2">{(['Width', 'Height', 'Depth'] as const).map((name, axis) => <label key={name}>{name}
+            <PanelTextInput className={fieldClass} type="number" min="0.1" max="5" step="0.1" value={twinSize[axis]}
               onChange={event => { const value = Number(event.currentTarget.value)
-                setTwinSize(current => current.map((item, index) => index === axis ? value : item) as [number, number, number]) }} /></label>)}</div>
+                setTwinSize(current => current.map((item, index) => index === axis ? value : item) as [number, number, number]) }} /></label>)}</section>
           {['box', 'building'].includes(twinTemplate) && <button type="button" className={buttonClass} disabled={busy} onClick={() => {
             setTwinSize(current => [current[0], current[1], current[0]])
             setStatus('Square footprint prepared. Apply geometry to save this authored depth.')
           }}>Match depth to width</button>}
-          <div className="grid grid-cols-2 gap-2">{(['X position', 'Elevation', 'Depth position'] as const).map((name, index) => {
+          <section className="grid min-w-0 grid-cols-2 gap-2">{(['X position', 'Elevation', 'Depth position'] as const).map((name, index) => {
             const axis = index
-            return <label key={name}>{name}<input className={fieldClass} type="number" min={axis === 1 ? "0" : "-10"} max="10" step="0.1"
+            return <label key={name}>{name}<PanelTextInput className={fieldClass} type="number" min={axis === 1 ? "0" : "-10"} max="10" step="0.1"
               value={twinPosition[axis]} onChange={event => { const value = Number(event.currentTarget.value)
                 setTwinPosition(current => current.map((item, currentAxis) => currentAxis === axis ? value : item) as [number, number, number]) }} /></label>
-          })}</div>
+          })}</section>
           <p className="m-0 text-xs">Shape, hidden surfaces and image-derived placement are editable assumptions.
             {document.twin?.room.unit === 'authored-metres' ? ' Room dimensions are user-authored metres.' : ' Units are arbitrary.'}</p>
-          <div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} disabled={busy || draftEntityId !== selected.id} onClick={applyTwin}>
+          <section className="flex min-w-0 flex-wrap gap-2"><button type="button" className={buttonClass} disabled={busy || draftEntityId !== selected.id} onClick={applyTwin}>
             {twinBinding ? 'Apply geometry and placement' : 'Build and add to canvas'}</button>
             {twinBinding && <><button type="button" className={buttonClass} disabled={busy} onClick={() => previewTwin('drop')}>Drop preview</button>
               <button type="button" className={buttonClass} onClick={() => previewTwin('reset')}>Reset preview</button>
               <button type="button" className={buttonClass} disabled={busy} onClick={() => void exportSelectedModel()}>Export model GLB</button></>}
-          </div>
-          {twinBinding && neighbors.length > 0 && <details><summary className="min-h-11 cursor-pointer py-2">Join neighboring blocks</summary>
-            <div className="grid gap-2"><label>Neighbor object<select className={fieldClass} value={joinNeighborId} disabled={busy}
-              onChange={event => setJoinNeighborId(event.currentTarget.value)}>
+          </section>
+          {twinBinding && neighbors.length > 0 && <details><summary className={`${UI_THEME_TOKENS.control.singleLine} cursor-pointer content-center`}>Join neighboring blocks</summary>
+            <section className="grid min-w-0 gap-2"><label>Neighbor object<PanelSelect className={fieldClass} value={joinNeighborId} disabled={busy}
+              onValueChange={selectedValueInput => setJoinNeighborId(selectedValueInput)}>
               <option value="">Choose a neighbor</option>
               {neighbors.map(item => <option key={item.entityId} value={item.entityId}>
                 {document.entities.find(entity => entity.id === item.entityId)?.label || item.entityId}
-              </option>)}</select></label>
-              <div className="grid grid-cols-2 gap-2"><label>Join side<select className={fieldClass} value={joinSide} disabled={busy}
-                onChange={event => setJoinSide(event.currentTarget.value as TwinJoinSide)}>
+              </option>)}</PanelSelect></label>
+              <section className="grid min-w-0 grid-cols-2 gap-2"><label>Join side<PanelSelect className={fieldClass} value={joinSide} disabled={busy}
+                onValueChange={selectedValueInput => setJoinSide(selectedValueInput as TwinJoinSide)}>
                 {(['left', 'right', 'front', 'back'] as const).map(side => <option key={side} value={side}>{side}</option>)}
-              </select></label>
-              <label>Gap<input className={fieldClass} type="number" min="0" max="2" step="0.01" value={joinGap} disabled={busy}
-                onChange={event => setJoinGap(Number(event.currentTarget.value))} /></label></div>
+              </PanelSelect></label>
+              <label>Gap<PanelTextInput className={fieldClass} type="number" min="0" max="2" step="0.01" value={joinGap} disabled={busy}
+                onChange={event => setJoinGap(Number(event.currentTarget.value))} /></label></section>
               <span className="text-xs">Zero gap joins bounds. Left/right joins align front faces; each object keeps its own shape and selection.</span>
               <button type="button" className={buttonClass} disabled={busy || draftEntityId !== selected.id
                 || twinTemplate !== twinBinding.template || !neighbors.some(item => item.entityId === joinNeighborId)}
                 onClick={joinNeighbor}>Join beside object</button>
-            </div></details>}
+            </section></details>}
           {twinBinding?.recipe.controls.filter(control => control.type === 'color').slice(0, 1).map(control =>
-            <label key={control.id}>Model colour<input className={fieldClass} type="color"
-              value={String(twinBinding.recipe.values[control.id])} disabled={busy} onChange={event => {
+            <label key={control.id}>Model colour<PanelColorPicker className={fieldClass}
+              value={String(twinBinding.recipe.values[control.id])} disabled={busy} onValueChange={nextColor => {
                 void mutate({ operation: 'control-twin', requestId: actionId(), expectedRevision: document.revision,
-                  entityId: selected.id, controlId: control.id, value: event.currentTarget.value }, 'Model colour saved.')
+                  entityId: selected.id, controlId: control.id, value: nextColor }, 'Model colour saved.')
               }} /></label>)}
-        </fieldset></div>)
+        </fieldset></section>)
   if (inspectorOnly && inspectorSpaceId && document?.id !== inspectorSpaceId) return <p>Choose an object in the current space.</p>
-  if (inspectorOnly) return <section className="grid gap-2 p-2" aria-label="Selected 3D object inspector">
+  if (inspectorOnly) return <section className={`grid gap-2 p-2 ${formClass}`} aria-label="Selected 3D object inspector">
     <strong>{selected?.label || 'Choose an object'} · Object transform</strong>
     {objectEditor}<output role="status">{status}</output>
   </section>
-  return <section className="grid gap-3 rounded border p-3 text-sm" aria-label="Semantic space" data-kg-semantic-space="1">
+  return <section className={`grid max-w-full gap-3 overflow-hidden rounded p-3 text-sm ${formClass} ${UI_THEME_TOKENS.border.outline}`} aria-label="Semantic space" data-kg-semantic-space="1">
     <header><h5 className="m-0 text-base font-semibold">Semantic space</h5>
       <p className="m-0">Capture or choose a still, confirm regions, and query the same saved entities. Scale is unknown.</p></header>
-    <div className="flex flex-wrap gap-2">
+    <section className="flex min-w-0 flex-wrap gap-2">
       <button type="button" className={buttonClass} disabled={busy || cameraActive} onClick={() => void startCamera()}>Open camera</button>
       <button type="button" className={buttonClass} disabled={!cameraActive || busy} onClick={() => {
         const video = videoRef.current; if (video) void persistImage(video, video.videoWidth, video.videoHeight)
@@ -427,42 +432,46 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
       <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={event => {
         void chooseImage(event.target.files?.[0]); event.currentTarget.value = ''
       }} />
-    </div>
-    <div className="flex flex-wrap gap-2"><input className={`${fieldClass} min-w-0 flex-1`} type="url"
+    </section>
+    <section className="flex min-w-0 flex-wrap gap-2"><PanelTextInput className={`${fieldClass} min-w-0 flex-1`} type="url"
       value={imageUrl} placeholder="HTTPS image URL" aria-label="Image URL"
       onChange={event => setImageUrl(event.currentTarget.value)} />
       <button type="button" className={buttonClass} disabled={busy || urlBusy || !imageUrl.trim()}
-        onClick={() => void importImageUrl()}>Import URL</button></div>
+        onClick={() => void importImageUrl()}>Import URL</button></section>
     <video ref={videoRef} className={cameraActive ? 'w-full rounded bg-black' : 'hidden'} muted playsInline aria-label="Space camera preview" />
     {observation && <>
-      <label>Observation <select className={fieldClass} value={observationIndex} onChange={event => {
-        setObservationIndex(Number(event.target.value)); setRegion(null)
-      }}>{document!.observations.map((item, index) => <option key={item.id} value={index}>{index + 1} · {new Date(item.capturedAtMs).toLocaleString()}</option>)}</select></label>
-      <div className="relative touch-none" onPointerDown={event => { dragStart.current = pointer(event); event.currentTarget.setPointerCapture(event.pointerId) }}
+      <label>Observation <PanelSelect className={fieldClass} value={observationIndex} onValueChange={selectedValueInput => {
+        setObservationIndex(Number(selectedValueInput)); setRegion(null)
+      }}>{document!.observations.map((item, index) => <option key={item.id} value={index}>{index + 1} · {new Date(item.capturedAtMs).toLocaleString()}</option>)}</PanelSelect></label>
+      <figure className="relative m-0 min-w-0 touch-none" onPointerDown={event => { dragStart.current = pointer(event); event.currentTarget.setPointerCapture(event.pointerId) }}
         onPointerUp={event => { const start = dragStart.current; dragStart.current = null; if (!start) return
           const end = pointer(event); const next = { x: Math.min(start.x, end.x), y: Math.min(start.y, end.y),
             width: Math.abs(end.x - start.x), height: Math.abs(end.y - start.y) }
           if (next.width >= 0.02 && next.height >= 0.02) setRegion(next)
         }} aria-label="Drag a region on the observation image">
         <img src={observation.imageDataUrl} alt="Captured physical space" className="block w-full rounded" />
-        {imageEntities.map(item => <div key={item.id} className={`pointer-events-none absolute border-2 ${selected?.id === item.id ? 'border-amber-400' : 'border-cyan-400'}`}
+        {imageEntities.map(item => <button key={item.id} type="button" aria-label={`Select region ${item.label}`}
+          title={item.label} aria-pressed={selected?.id === item.id}
+          onPointerDown={event => event.stopPropagation()} onPointerUp={event => event.stopPropagation()}
+          onClick={() => { void selectSemanticObject(document!.id, item.id).catch(error => setStatus(String(error.message))) }}
+          className={`absolute bg-transparent ${UI_THEME_TOKENS.border.width} ${selected?.id === item.id ? 'border-amber-400' : 'border-cyan-400'}`}
           style={{ left: `${item.region.x * 100}%`, top: `${item.region.y * 100}%`, width: `${item.region.width * 100}%`, height: `${item.region.height * 100}%` }} />)}
-        {region && <div className="pointer-events-none absolute border-2 border-emerald-400" style={{ left: `${region.x * 100}%`,
+        {region && <output aria-label="Unconfirmed observation region" className={`absolute border-emerald-400 ${UI_THEME_TOKENS.border.width}`} style={{ left: `${region.x * 100}%`,
           top: `${region.y * 100}%`, width: `${region.width * 100}%`, height: `${region.height * 100}%` }} />}
-      </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <label>Label <input className={fieldClass} value={label} maxLength={80} onChange={event => setLabel(event.target.value)} /></label>
-        <label>Category <input className={fieldClass} value={category} maxLength={80} onChange={event => setCategory(event.target.value)} /></label>
-      </div>
-      <div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} onClick={() => setRegion({ x: 0, y: 0, width: 1, height: 1 })}>Use full image</button>
-        <button type="button" className={buttonClass} disabled={busy || !region || !label.trim() || (document?.entities.length || 0) >= MAX_SPACE_ENTITIES} onClick={confirm}>Confirm region</button></div>
+      </figure>
+      <section className="grid min-w-0 gap-2 sm:grid-cols-2" aria-label="Observation region details">
+        <label>Label <PanelTextInput className={fieldClass} value={label} maxLength={80} onChange={event => setLabel(event.target.value)} /></label>
+        <label>Category <PanelTextInput className={fieldClass} value={category} maxLength={80} onChange={event => setCategory(event.target.value)} /></label>
+      </section>
+      <section className="flex min-w-0 flex-wrap gap-2"><button type="button" className={buttonClass} onClick={() => setRegion({ x: 0, y: 0, width: 1, height: 1 })}>Use full image</button>
+        <button type="button" className={buttonClass} disabled={busy || !region || !label.trim() || (document?.entities.length || 0) >= MAX_SPACE_ENTITIES} onClick={confirm}>Confirm region</button></section>
     </>}
     {document && <>
-      <fieldset className="grid gap-2 rounded border p-2"><legend className="px-1 font-medium">Approximate room floor</legend>
-        <div className="grid grid-cols-2 gap-2">{(['Width', 'Depth'] as const).map((name, axis) => <label key={name}>{name}
-          <input className={fieldClass} type="number" min="2" max="20" step="0.1" value={roomSize[axis]}
+      <fieldset className={sectionClass}><legend className="px-1 font-medium">Approximate room floor</legend>
+        <section className="grid min-w-0 grid-cols-2 gap-2">{(['Width', 'Depth'] as const).map((name, axis) => <label key={name}>{name}
+          <PanelTextInput className={fieldClass} type="number" min="2" max="20" step="0.1" value={roomSize[axis]}
             onChange={event => { const value = Number(event.currentTarget.value)
-              setRoomSize(current => current.map((item, index) => index === axis ? value : item) as [number, number]) }} /></label>)}</div>
+              setRoomSize(current => current.map((item, index) => index === axis ? value : item) as [number, number]) }} /></label>)}</section>
         <label className="flex items-center gap-2"><input type="checkbox" checked={authoredMetres}
           onChange={event => setAuthoredMetres(event.currentTarget.checked)} />I entered these dimensions in metres</label>
         <button type="button" className={buttonClass} disabled={busy} onClick={() => {
@@ -471,8 +480,8 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
           'Room floor dimensions saved. Image-only geometry remains approximate.')
         }}>Save floor</button>
       </fieldset>
-      <label>Find entity <input className={fieldClass} value={query} onChange={event => setQuery(event.target.value)} placeholder="Label or category" /></label>
-      <div className="grid max-h-48 gap-1 overflow-auto" aria-label="Matching confirmed entities">
+      <label>Find entity <PanelTextInput className={fieldClass} value={query} onChange={event => setQuery(event.target.value)} placeholder="Label or category" /></label>
+      <section className="grid min-w-0 max-h-48 gap-1 overflow-auto" aria-label="Matching confirmed entities">
         {results.map(item => <button type="button" key={item.id} className={`${buttonClass} text-left ${selected?.id === item.id ? 'ring-2 ring-cyan-400' : ''}`}
           onClick={() => { setObservationIndex(document.observations.findIndex(view => view.id === item.observationId));
             const linked = linkedCanvasNode(document, item.id)
@@ -480,18 +489,18 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
             void selectSemanticObject(document.id, item.id).catch(error => setStatus(String(error.message))) }}>
           {item.category} · {item.label}</button>)}
         {results.length === 0 && <span>No matching confirmed entities.</span>}
-      </div>
+      </section>
       {selected && <button type="button" className={buttonClass} onClick={() => {
         void inspectSemanticObject(document).catch(error => setStatus(String(error.message)))
       }}>Edit selected object in Timeline</button>}
       <span>Revision {document.revision} · {document.observations.length} observations · {document.entities.length} entities</span>
     </>}
-    <div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} disabled={!document || busy} onClick={() => void exportPackage()}>Export space</button>
+    <section className="flex min-w-0 flex-wrap gap-2"><button type="button" className={buttonClass} disabled={!document || busy} onClick={() => void exportPackage()}>Export space</button>
         <button type="button" className={buttonClass} disabled={busy} onClick={() => packageRef.current?.click()}>Import space</button>
         <input ref={packageRef} type="file" accept="application/json,.json" className="sr-only" onChange={event => {
           void importPackage(event.target.files?.[0]); event.currentTarget.value = ''
-        }} /></div>
+        }} /></section>
     <LearningOfflineControls purpose="studio" />
-    <p className="m-0" role="status" aria-live="polite">{status}</p>
+    <p className="m-0 [overflow-wrap:anywhere]" role="status" aria-live="polite">{status}</p>
   </section>
 }

@@ -1,3 +1,4 @@
+import type { PanelSelectProps } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { Check, ChevronRight } from 'lucide-react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -101,9 +102,9 @@ export const WorkspaceDataViewSearchInput = React.forwardRef<HTMLInputElement, W
   },
 )
 
-type WorkspaceDataViewFieldSelectProps = React.SelectHTMLAttributes<HTMLSelectElement>
+type WorkspaceDataViewFieldSelectProps = PanelSelectProps
 
-export const WorkspaceDataViewFieldSelect = React.forwardRef<HTMLSelectElement, WorkspaceDataViewFieldSelectProps>(
+export const WorkspaceDataViewFieldSelect = React.forwardRef<HTMLButtonElement, WorkspaceDataViewFieldSelectProps>(
   function WorkspaceDataViewFieldSelect({ className, ...props }, ref) {
     return (
       <PanelSelect

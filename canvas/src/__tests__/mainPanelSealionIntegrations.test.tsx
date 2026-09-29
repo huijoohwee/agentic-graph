@@ -1,3 +1,4 @@
+import { readMenuOptions } from './helpers/semanticMenu'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import IntegrationsHubView from '@/features/panels/views/IntegrationsHubView'
@@ -9,15 +10,15 @@ import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { installDeterministicRaf, mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
 
-const getSelectOptionValues = (select: HTMLSelectElement): string[] =>
-  Array.from(select.options).map(option => option.value).filter(Boolean)
+const getSelectOptionValues = (select: HTMLButtonElement): string[] =>
+  Array.from(readMenuOptions(select)).map(option => option.value).filter(Boolean)
 
-const findModelSelectsWithOption = (container: Element, optionValue: string): HTMLSelectElement[] =>
-  (Array.from(container.querySelectorAll('select')) as HTMLSelectElement[])
+const findModelSelectsWithOption = (container: Element, optionValue: string): HTMLButtonElement[] =>
+  (Array.from(container.querySelectorAll('button[data-kg-select]')) as HTMLButtonElement[])
     .filter(select => getSelectOptionValues(select).includes(optionValue))
 
 const hasSelectOption = (container: Element, optionValue: string): boolean =>
-  (Array.from(container.querySelectorAll('select')) as HTMLSelectElement[])
+  (Array.from(container.querySelectorAll('button[data-kg-select]')) as HTMLButtonElement[])
     .some(select => getSelectOptionValues(select).includes(optionValue))
 
 const findKtvRow = (container: Element, key: string): HTMLElement | undefined =>

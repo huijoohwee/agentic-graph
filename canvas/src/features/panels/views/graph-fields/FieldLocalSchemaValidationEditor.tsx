@@ -238,8 +238,8 @@ export default function FieldLocalSchemaValidationEditor({
               <GraphFieldsFieldSelect
                 id={getValidationControlId('type', p)}
                 value={localValidationTypesMap[p] ?? 'string'}
-                onChange={e => {
-                  const v = e.target.value as PropertySpec['type']
+                onValueChange={selectedValueInput => {
+                  const v = selectedValueInput as PropertySpec['type']
                   setLocalValidationTypesMap({
                     ...localValidationTypesMap,
                     [p]: v,
@@ -261,9 +261,7 @@ export default function FieldLocalSchemaValidationEditor({
           <section className="mt-1 flex flex-wrap items-center gap-1">
             <GraphFieldsFieldSelect
               value={localValidationBulkType}
-              onChange={e =>
-                setLocalValidationBulkType(e.target.value as PropertySpec['type'])
-              }
+              onValueChange={selectedValueInput => setLocalValidationBulkType(selectedValueInput as PropertySpec['type'])}
               className={validationSelectClassName}
               textSizeClassName="text-xs"
             >

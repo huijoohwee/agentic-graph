@@ -41,7 +41,7 @@ export function ToolbarSettingsArea({
           />
           {RICH_MEDIA_DISPLAY_COPY.toggleTitle}
         </label>
-        <span className={`text-[10px] ${UI_THEME_TOKENS.text.tertiary}`}>
+        <span className={`text-xs ${UI_THEME_TOKENS.text.tertiary}`}>
           {RICH_MEDIA_DISPLAY_COPY.tooltip}
         </span>
         <button

@@ -64,7 +64,7 @@ export function CanvasViewportMarkdownMetricsDevOverlay(props: { layout: 'full' 
                   <section className="font-mono text-[color:var(--kg-text-secondary)]">
                     {new Date(s.ts).toLocaleTimeString()} {s.event}
                   </section>
-                  <pre className="mt-1 whitespace-pre-wrap break-words text-[10px] text-[color:var(--kg-text-tertiary)]">{JSON.stringify(s.payload, null, 2)}</pre>
+                  <pre className="mt-1 whitespace-pre-wrap break-words text-xs text-[color:var(--kg-text-tertiary)]">{JSON.stringify(s.payload, null, 2)}</pre>
                 </li>
               ))}
             </ul>
