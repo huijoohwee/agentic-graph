@@ -49,7 +49,7 @@ function DirectionChip({ direction }: { direction: StoryboardWidgetPortRow['dire
   return (
     <span
       className={cn(
-        'inline-flex min-w-0 max-w-full items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-semibold leading-4',
+        'inline-flex min-w-0 max-w-full items-center gap-1 rounded border px-1.5 py-0.5 text-xs font-semibold leading-4',
         STORYBOARD_WIDGET_ROW_DIRECTION_CLASS[direction],
       )}
     >
@@ -94,19 +94,19 @@ function StoryboardWidgetPortRowView({
         keyNode={(
           <span className="flex min-w-0 flex-col leading-4">
             <span className="truncate font-semibold">{row.nodeLabel}</span>
-            <span className={cn('truncate text-[11px] font-normal', UI_THEME_TOKENS.text.tertiary)}>{row.nodeType}</span>
+            <span className={cn('truncate text-xs font-normal', UI_THEME_TOKENS.text.tertiary)}>{row.nodeType}</span>
           </span>
         )}
         typeNode={(
           <span className="flex min-w-0 max-w-full items-center justify-start gap-1 overflow-hidden sm:justify-end">
             <DirectionChip direction={row.direction} />
-            <span className={cn('min-w-0 truncate text-[11px]', UI_THEME_TOKENS.text.secondary)}>{row.socketType}</span>
+            <span className={cn('min-w-0 truncate text-xs', UI_THEME_TOKENS.text.secondary)}>{row.socketType}</span>
           </span>
         )}
         valueNode={(
           <span className="flex min-w-0 max-w-full items-center gap-1 overflow-hidden">
-            <span className="min-w-0 truncate font-mono text-[11px]">{row.portKey}</span>
-            <span className={cn('shrink-0 rounded border px-1 py-0.5 text-[11px] leading-4', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.tertiary)}>
+            <span className="min-w-0 truncate font-mono text-xs">{row.portKey}</span>
+            <span className={cn('shrink-0 rounded border px-1 py-0.5 text-xs leading-4', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.tertiary)}>
               {row.connectedEdgeCount}
             </span>
           </span>
@@ -153,13 +153,13 @@ function StoryboardWidgetPortDetailRows({ row }: { row: StoryboardWidgetPortRow 
           {...compactStaticRowProps}
           keyNode="Node ID"
           typeNode="id"
-          valueNode={<span className="min-w-0 truncate font-mono text-[11px]">{row.nodeId}</span>}
+          valueNode={<span className="min-w-0 truncate font-mono text-xs">{row.nodeId}</span>}
         />
         <KeyTypeValueStaticRow
           {...compactStaticRowProps}
           keyNode="Port"
           typeNode={<DirectionChip direction={row.direction} />}
-          valueNode={<span className="min-w-0 truncate font-mono text-[11px]">{row.portKey}</span>}
+          valueNode={<span className="min-w-0 truncate font-mono text-xs">{row.portKey}</span>}
         />
         <KeyTypeValueStaticRow
           {...compactStaticRowProps}
@@ -172,7 +172,7 @@ function StoryboardWidgetPortDetailRows({ row }: { row: StoryboardWidgetPortRow 
           align="start"
           keyNode="Edges"
           typeNode={`${row.connectedEdgeCount}`}
-          valueNode={<span className="min-w-0 truncate font-mono text-[11px]" title={connectedText}>{connectedText}</span>}
+          valueNode={<span className="min-w-0 truncate font-mono text-xs" title={connectedText}>{connectedText}</span>}
         />
       </KeyTypeValueSectionStack>
     </section>
@@ -271,7 +271,7 @@ export function StoryboardWidgetFloatingPanelView() {
       <header className="flex items-center justify-between gap-2 px-1">
         <section className="min-w-0">
           <section className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>Storyboard Widget</section>
-          <section className={cn('truncate text-[11px]', UI_THEME_TOKENS.text.secondary)} data-kg-storyboard-widget-port-summary="1">
+          <section className={cn('truncate text-xs', UI_THEME_TOKENS.text.secondary)} data-kg-storyboard-widget-port-summary="1">
             {summary.inputCount} inputs, {summary.outputCount} outputs, {summary.connectedCount} connected
           </section>
         </section>
@@ -321,7 +321,7 @@ export function StoryboardWidgetFloatingPanelView() {
           <header className="flex items-center justify-between gap-2 px-1 pb-1">
             <section className={cn('min-w-0 truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>Details</section>
             {selectedRow ? (
-              <section className={cn('min-w-0 truncate text-[11px]', UI_THEME_TOKENS.text.secondary)}>
+              <section className={cn('min-w-0 truncate text-xs', UI_THEME_TOKENS.text.secondary)}>
                 {selectedRow.connectedEdgeCount} edges
               </section>
             ) : null}

@@ -246,7 +246,7 @@ export const testResponsiveWorkspaceAndTableSurfacesStayBounded = () => {
   const graphTableInspector = readUtf8(graphTableInspectorPath)
   if (
     !graphTableInspector.includes('GRAPH_RECORD_INSPECTOR_ROOT_CLASS_NAME') ||
-    !graphTableInspector.includes('GRAPH_RECORD_INSPECTOR_DETAIL_GRID_CLASS_NAME') || graphTableInspector.includes('grid-cols-[minmax(0,120px)_minmax(0,1fr)]') ||
+    !graphTableInspector.includes('<CanvasEditableKeyTypeValueRow') || graphTableInspector.includes('grid-cols-[minmax(0,120px)_minmax(0,1fr)]') ||
     !graphTableInspector.includes('UI_RESPONSIVE_GRAPH_DATA_TABLE_CODE_EDITOR_CLASSNAME') ||
     graphTableInspector.includes('h-[220px]') ||
     !responsiveCss.includes('.kg-graph-data-table-code-editor')
@@ -1203,19 +1203,19 @@ export const testKeyValueRowsKeepMobileGridConsistency = () => {
     throw new Error('Expected the upstream shared KTV row runtime to preserve grid columns on narrow widths instead of introducing ad hoc breakpoint overrides')
   }
   if (
-    !sharedKtvRow.includes('KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME')
+    !sharedKtvRow.includes('KTV_FIELD_GRID_CLASS_NAME')
     || !sharedKtvRows.includes('grid-cols-[minmax(0,0.95fr)_minmax(2.75rem,0.42fr)_minmax(0,1.2fr)]')
     || !sharedKtvRows.includes('sm:grid-cols-[minmax(0,1fr)_minmax(3rem,4.75rem)_minmax(0,1.45fr)]')
   ) {
     throw new Error('Expected the upstream shared KTV row runtime to keep the shared default Key/Type/Value grid with a wider bounded Value column')
   }
   if (
-    !sharedKtvRow.includes('KTV_KEY_VALUE_GRID_CLASS_NAME')
-    || !sharedKtvRows.includes('grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]')
+    sharedKtvRow.includes('KTV_KEY_VALUE_GRID_CLASS_NAME')
+    || sharedKtvRows.includes('grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]')
   ) {
-    throw new Error('Expected the upstream shared KTV row runtime to keep the shared simple Key/Value mobile two-column grid')
+    throw new Error('Expected the upstream shared KTV row runtime to retire the separate two-column grid')
   }
-  if (!sharedKtvRow.includes('flex min-w-0 items-center justify-center')) {
+  if (!sharedKtvRow.includes("layout === 'keyIconSliderInput' ? null : typeNode")) {
     throw new Error('Expected the upstream shared KTV row runtime to preserve icon spacer cells in the mobile grid instead of hiding them')
   }
   if (!sharedKtvRow.includes('justify-start sm:justify-end')) {

@@ -117,7 +117,7 @@ export default function Tooltip({ id, anchorElement, content, className, childre
     }, 30)
   }, [])
 
-  React.useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!open) return
     updatePosition()
     let frame: number | null = null

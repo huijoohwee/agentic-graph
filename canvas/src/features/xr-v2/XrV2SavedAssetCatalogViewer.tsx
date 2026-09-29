@@ -256,14 +256,14 @@ export function XrV2SavedAssetCatalogViewer({
       data-kg-xr-v2-saved-asset-catalog-status={status}
     >
       <header className="flex items-center justify-between gap-2">
-        <strong className="flex items-center gap-1 text-[9px]"><Save className="h-3 w-3" aria-hidden="true" /> Saved spatial assets</strong>
-        <span className={cn('text-[8px]', UI_THEME_TOKENS.text.tertiary)}><RefreshCw className="mr-1 inline h-3 w-3" aria-hidden="true" />{assets.length} local</span>
+        <strong className="flex items-center gap-1 text-xs"><Save className="h-3 w-3" aria-hidden="true" /> Saved spatial assets</strong>
+        <span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}><RefreshCw className="mr-1 inline h-3 w-3" aria-hidden="true" />{assets.length} local</span>
       </header>
       {assets.length ? (
         <ul className="m-0 grid list-none gap-1 p-0" aria-label="Persisted XR spatial asset catalog">
           {assets.map(asset => (
             <li key={asset.asset_id} className={cn('flex items-center justify-between gap-2 rounded border p-1', UI_THEME_TOKENS.panel.border)} data-kg-xr-v2-saved-asset={asset.asset_id}>
-              <span className="min-w-0 text-[8px]"><b className="block truncate">{asset.asset_id}</b>{asset.metadata.xr_capability_tier} · {asset.metadata.synthesis_mode}</span>
+              <span className="min-w-0 text-xs"><b className="block truncate">{asset.asset_id}</b>{asset.metadata.xr_capability_tier} · {asset.metadata.synthesis_mode}</span>
               <button type="button" className="App-toolbar__btn" disabled={status === 'opening'} onClick={() => void openAsset(asset.asset_id)} data-kg-xr-v2-saved-asset-open="1">
                 <FolderOpen className="h-3 w-3" aria-hidden="true" /> Open
               </button>
@@ -271,7 +271,7 @@ export function XrV2SavedAssetCatalogViewer({
           ))}
         </ul>
       ) : status === 'ready' ? (
-        <p className={cn('m-0 text-[8px]', UI_THEME_TOKENS.text.tertiary)}>No persisted captures yet.</p>
+        <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>No persisted captures yet.</p>
       ) : null}
       {opened ? (
         <section className="grid gap-1" aria-label="Saved XR spatial asset viewer" data-kg-xr-v2-saved-asset-viewer={opened.lease.presentationTier} data-kg-xr-v2-saved-asset-observed={observed ? 'true' : 'false'}>
@@ -317,12 +317,12 @@ export function XrV2SavedAssetCatalogViewer({
               data-kg-xr-v2-saved-temporal-fallback="raw-video"
             />
           ) : (
-            <p className="m-0 text-[8px]">This persisted capability tier has no local saved-viewer adapter.</p>
+            <p className="m-0 text-xs">This persisted capability tier has no local saved-viewer adapter.</p>
           )}
-          <code className={cn('break-all text-[8px]', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-v2-saved-asset-metadata="1">
+          <code className={cn('break-all text-xs', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-v2-saved-asset-metadata="1">
             {JSON.stringify(opened.resource.asset.metadata)}
           </code>
-          <p className={cn('m-0 break-all text-[8px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('m-0 break-all text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Raw {opened.resource.rawClip.size} bytes · frames {opened.resource.frameBundle?.frames.length ?? 0}<br />
             {opened.resource.asset.raw_clip_ref}<br />{opened.resource.asset.metadata.depth_metadata_ref}
           </p>
@@ -333,7 +333,7 @@ export function XrV2SavedAssetCatalogViewer({
         localStore={storeRef.current}
         onImported={reopenImportedAsset}
       />
-      {error ? <p className="m-0 text-[8px] text-red-700 dark:text-red-300" role="alert">{error}</p> : null}
+      {error ? <p className="m-0 text-xs text-red-700 dark:text-red-300" role="alert">{error}</p> : null}
     </section>
   )
 }

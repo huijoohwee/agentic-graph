@@ -41,10 +41,10 @@
   gap: 0;
   padding-bottom: 0;
   color: var(--kg-text-tertiary, rgb(107 114 128 / 1));
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-  font-size: 8px;
+  font-family: var(--kg-font-mono);
+  font-size: var(--kg-text-xs);
   font-variant-numeric: tabular-nums;
-  line-height: 14px;
+  line-height: var(--kg-text-xs-line);
 }
 
 .timeline-transport-ruler--video-sequence .timeline-transport-ruler-tick-line {

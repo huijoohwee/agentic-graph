@@ -23,7 +23,7 @@ export function ResponsiveInlineIconBadge({
   return (
     <span
       className={getChipClass('default', {
-        textSizeClass: 'text-[10px]',
+        textSizeClass: 'text-xs',
         textColorClass: UI_THEME_TOKENS.text.secondary,
         extraClassName: cn(
           UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME,

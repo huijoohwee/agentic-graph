@@ -101,26 +101,26 @@ export function FlightSimTrainingSurfaceProjection({
     >
       <header className="flex items-start justify-between gap-2">
         <section className="min-w-0">
-          <h3 className="flex items-center gap-1 text-[11px] font-semibold">
+          <h3 className="flex items-center gap-1 text-xs font-semibold">
             <Plane className="h-3.5 w-3.5" aria-hidden="true" />
             Flight Training · {training.missionTitle}
           </h3>
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
             {SURFACE_ROLE[surface]}
           </p>
         </section>
-        <output className="shrink-0 text-right text-[10px] font-semibold">
+        <output className="shrink-0 text-right text-xs font-semibold">
           {training.score}/100 · {training.grade}
         </output>
       </header>
 
-      <p className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+      <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
         {training.coachingCue}
       </p>
 
       {surface === 'motion-control' ? (
         <p
-          className={cn('text-[9px]', UI_THEME_TOKENS.text.secondary)}
+          className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}
           data-kg-flight-training-motion-controls="connected-handoff"
         >
           Start Motion Control, then return to Flight Sim: lean forward/back for pitch,
@@ -129,7 +129,7 @@ export function FlightSimTrainingSurfaceProjection({
         </p>
       ) : null}
 
-      <section className="grid grid-cols-3 gap-1 text-[9px]" aria-label="Flight training outcomes">
+      <section className="grid grid-cols-3 gap-1 text-xs" aria-label="Flight training outcomes">
         <span><b>Route</b><br />{training.routeProgress}%</span>
         <span><b>Stable</b><br />{training.stabilityPercent}%</span>
         <span><b>Energy</b><br />{training.energyPercent}%</span>
@@ -137,7 +137,7 @@ export function FlightSimTrainingSurfaceProjection({
 
       <output
         className={cn(
-          'rounded border px-2 py-1 text-[9px] font-semibold',
+          'rounded border px-2 py-1 text-xs font-semibold',
           training.envelope.severity === 'warning'
             ? 'border-rose-400/40 text-rose-300'
             : training.envelope.severity === 'caution'
@@ -150,10 +150,10 @@ export function FlightSimTrainingSurfaceProjection({
         {' · '}control {Math.round(training.envelope.controlAuthority * 100)}%
       </output>
 
-      <label className="grid gap-1 text-[9px]">
+      <label className="grid gap-1 text-xs">
         <span>Training mission</span>
         <select
-          className="min-w-0 rounded border bg-transparent px-1 py-1 text-[10px]"
+          className="min-w-0 rounded border bg-transparent px-1 py-1 text-xs"
           value={training.missionId}
           disabled={selectionLocked}
           onChange={event => selectFlightSimTrainingMission(
@@ -167,10 +167,10 @@ export function FlightSimTrainingSurfaceProjection({
         </select>
       </label>
 
-      <label className="grid gap-1 text-[9px]">
+      <label className="grid gap-1 text-xs">
         <span>Practice failure</span>
         <select
-          className="min-w-0 rounded border bg-transparent px-1 py-1 text-[10px]"
+          className="min-w-0 rounded border bg-transparent px-1 py-1 text-xs"
           value={training.failureId}
           disabled={selectionLocked}
           onChange={event => selectFlightSimTrainingFailure(
@@ -184,7 +184,7 @@ export function FlightSimTrainingSurfaceProjection({
         </select>
       </label>
 
-      <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+      <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
         {training.terrain} · {training.night ? 'night lighting' : 'day lighting'} ·
         {' '}{training.airspeedReliable ? 'airspeed reliable' : 'airspeed unreliable'}
       </p>
@@ -222,7 +222,7 @@ export function FlightSimTrainingSurfaceProjection({
         </button>
       </div>
 
-      <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+      <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
         Systems: {training.systemsChecklist.join(' · ')}
       </p>
     </section>

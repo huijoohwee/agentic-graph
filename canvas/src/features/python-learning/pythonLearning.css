@@ -1,4 +1,4 @@
-.python-learning { container:python-learning / inline-size; display:flex; flex-direction:column; min-width:0; min-height:0; flex:1; color:var(--kg-text-primary,inherit); font-size:13px; }
+.python-learning { container:python-learning / inline-size; display:flex; flex-direction:column; min-width:0; min-height:0; flex:1; color:var(--kg-text-primary,inherit); font-size: var(--kg-text-sm); }
 .python-learning-controls { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:8px; border-bottom:1px solid var(--kg-border,#667); }
 .python-learning button,.python-learning select { min-height:36px; padding:4px 9px; border:1px solid var(--kg-border,#667); border-radius:5px; background:var(--kg-panel-bg,transparent); color:inherit; }
 .python-learning button:disabled { opacity:.45; cursor:not-allowed; }

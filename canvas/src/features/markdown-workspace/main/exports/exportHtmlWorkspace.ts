@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import { downloadBlob, saveBlobWithPicker } from '@/lib/graph/save'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { UiToastInput } from '@/hooks/store/types'
@@ -57,7 +58,7 @@ export function buildWorkspaceHtmlExportDocument(args: BuildWorkspaceHtmlExportD
     '  <style>',
     '    :root{color-scheme:light dark;--kg-bg:#f7f8fa;--kg-panel:#ffffff;--kg-border:#d7dde5;--kg-text:#172033;--kg-muted:#5d687a;--kg-accent:#2563eb}',
     '    *{box-sizing:border-box}',
-    '    body{margin:0;background:var(--kg-bg);color:var(--kg-text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}',
+    `    body{margin:0;background:var(--kg-bg);color:var(--kg-text);font-family:${UI_FONT_SANS}}`,
     '    header{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--kg-border);background:var(--kg-panel)}',
     '    h1{margin:0;font-size:16px;line-height:1.25;font-weight:650}',
     '    .kg-meta{margin:4px 0 0;color:var(--kg-muted);font-size:12px;line-height:1.4}',

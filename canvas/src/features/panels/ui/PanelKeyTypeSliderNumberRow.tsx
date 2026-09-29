@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useId } from 'react'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
 import Tooltip from '@/features/panels/ui/Tooltip'
 import { PanelRangeInput, PanelTextInput } from '@/lib/ui/panelFormControls'
@@ -47,11 +47,13 @@ export function PanelKeyTypeSliderNumberRow({
   fallbackValue = value,
   displayValue,
 }: PanelKeyTypeSliderNumberRowProps) {
+  const labelId = useId()
   const staticRowProps = useCanvasKeyTypeValueStaticRowProps(density)
   const resolvedDisplayValue = displayValue ?? value
 
   const sliderNode = (
     <PanelRangeInput
+      aria-labelledby={labelId}
       min={min}
       max={max}
       step={step}
@@ -63,6 +65,7 @@ export function PanelKeyTypeSliderNumberRow({
 
   const valueNode = (
     <PanelTextInput
+      aria-labelledby={labelId}
       type="number"
       min={min}
       max={max}
@@ -91,7 +94,7 @@ export function PanelKeyTypeSliderNumberRow({
     <KeyTypeValueStaticRow
       layout="keyIconSliderInput"
       {...staticRowProps}
-      keyNode={keyNode}
+      keyNode={<span id={labelId}>{keyNode}</span>}
       typeNode={maybeWrapWithTooltip(sliderNode)}
       valueNode={maybeWrapWithTooltip(valueNode)}
     />

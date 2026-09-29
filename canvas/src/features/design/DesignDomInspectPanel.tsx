@@ -149,7 +149,7 @@ export default function DesignDomInspectPanel({ active }: { active: boolean }) {
       <section className={cn('px-3 py-2 border-b flex items-center gap-2', UI_THEME_TOKENS.panel.border)} aria-label="Inspect header">
         <FileCode className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
         <span className={cn('min-w-0 truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>Inspect</span>
-        <span className={cn('ml-auto text-[10px] font-mono', UI_THEME_TOKENS.text.tertiary)}>
+        <span className={cn('ml-auto text-xs font-mono', UI_THEME_TOKENS.text.tertiary)}>
           {hasLayout ? coerceString(selectedNodeId) || '—' : '—'}
         </span>
       </section>

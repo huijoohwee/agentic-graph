@@ -67,7 +67,7 @@ export function WorkspaceDataViewSettingsFilterSection(props: {
                   <section key={r.id} className={[UI_RESPONSIVE_ELEMENT_ROW_CLASSNAME, 'gap-2 px-2 py-1 rounded', UI_THEME_TOKENS.button.hoverBg].join(' ')}>
                     <section className="min-w-0 flex-1">
                       <section className={['text-xs font-medium', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.primary].join(' ')}>{colName}</section>
-                      <section className={['text-[11px]', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>
+                      <section className={['text-xs', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>
                         {opLabel} {value ? `“${value}”` : '“”'}
                       </section>
                     </section>

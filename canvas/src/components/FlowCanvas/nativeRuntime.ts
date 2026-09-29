@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import * as d3 from 'd3'
 import type { FlowHandleId, FlowNodeHandles } from '@/components/FlowCanvas/handles'
 import { parseFlowHandleKey } from '@/components/FlowCanvas/handles'
@@ -186,7 +187,7 @@ export const defaultFlowTheme = (): FlowNativeTheme => ({
 })
 
 export const readFlowFontFamilyFromCss = (): string => {
-  const fallback = '-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif'
+  const fallback = UI_FONT_SANS
   if (typeof document === 'undefined') return fallback
   try {
     const raw = String(getComputedStyle(document.documentElement).fontFamily || '').trim()

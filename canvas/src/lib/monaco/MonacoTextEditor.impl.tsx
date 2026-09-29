@@ -1,3 +1,4 @@
+import { UI_FONT_MONO } from 'grph-shared/ui/typography'
 import { loadMonacoLanguageContribution } from './monacoLanguageContributions'
 export { loadMonacoLanguageContribution } from './monacoLanguageContributions'
 import React from 'react'
@@ -244,7 +245,7 @@ export const buildMonacoEditorOptions = (
   scrollBeyondLastLine: settings.monacoScrollBeyondLastLineEnabled,
   wordWrap: settings.monacoWordWrapEnabled || args.wordWrap ? 'on' : 'off',
   fontLigatures: false,
-  fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+  fontFamily: UI_FONT_MONO,
   fontSize: 12,
   lineHeight: 18,
   automaticLayout: true,
@@ -1331,7 +1332,7 @@ export function MonacoTextEditor(props: MonacoTextEditorProps) {
           className="border-b border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-3 py-3"
           data-kg-monaco-touch-intent="true"
         >
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--kg-text-secondary)]">
+          <p className="text-xs font-semibold uppercase tracking-normal text-[var(--kg-text-secondary)]">
             {MONACO_TOUCH_INTENT_COPY.eyebrow}
           </p>
           <h2 className="mt-1 text-sm font-semibold text-[var(--kg-text-primary)]">
