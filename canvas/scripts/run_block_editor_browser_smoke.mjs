@@ -34,7 +34,7 @@ try {
   page = await context.newPage()
   page.on('pageerror', error => errors.push(error.message))
   await page.goto(origin + (dev ? '/' : '/agentic-graph/') + '?openEditorWorkspace=1', { waitUntil: 'domcontentloaded', timeout: 60000 })
-  await page.getByRole('navigation', { name: 'Source files', exact: true }).waitFor({ timeout: 60000 })
+  await page.getByRole('region', { name: 'Source Files content', exact: true }).waitFor({ timeout: 60000 })
   const source = 'score = 2\nprint(score)\n'
   await page.locator('input[type="file"][accept*=".py"]').setInputFiles({ name: 'block-check.py', mimeType: 'text/plain', buffer: Buffer.from(source) })
   const python = page.getByRole('region', { name: 'Python learning workspace', exact: true })

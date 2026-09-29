@@ -20,7 +20,8 @@ export function isWebsiteImportExplorerUpdate(path: string | null | undefined): 
   if (!path) return false
   const normalized = normalizeWorkspacePath(path)
   for (const root of activeRoots.keys()) {
-    if (normalized === root || normalized.startsWith(`${root}/`)) return true
+    // Parent-folder creation is part of the same progressive import.
+    if (normalized === root || normalized.startsWith(`${root}/`) || root.startsWith(`${normalized}/`)) return true
   }
   return false
 }

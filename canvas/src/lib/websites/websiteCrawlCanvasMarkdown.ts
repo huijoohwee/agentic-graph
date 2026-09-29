@@ -65,7 +65,7 @@ export function buildWebsiteCrawlCanvasMarkdown(args: {
   const pageByUrl = new Map(pages.map(page => [page.url, page]))
   const lines = [
     '---',
-    'kgCanvas2dRenderer: "flowchart"',
+    'kgCanvas2dRenderer: "d3"',
     'kgCanvasRenderMode: "2d"',
     `kgWebsiteImportId: ${yamlString(args.importId)}`,
     `kgWebsiteRootUrl: ${yamlString(args.rootUrl)}`,

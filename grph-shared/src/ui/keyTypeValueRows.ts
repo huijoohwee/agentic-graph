@@ -14,6 +14,9 @@ export const KTV_DEFAULT_HEADER_LABELS: KtvHeaderLabels = {
 }
 
 export const KTV_SECTION_STACK_CLASS_NAME = 'space-y-0 py-0'
+// Header and row density own vertical rhythm; do not stack additional section gaps.
+export const KTV_SECTION_SPACING_CLASS_NAME = 'mt-0 pt-0'
+export const KTV_SECTION_CONTENT_CLASS_NAME = 'block mt-0'
 export const KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME = PANEL_TYPOGRAPHY_DEFAULTS.textSizeClass
 export const KTV_HEADER_LABEL_TEXT_SIZE_CLASS_NAME = 'text-xs'
 export const KTV_STATUS_TEXT_SIZE_CLASS_NAME = 'text-xs'
