@@ -1,16 +1,16 @@
 ---
 title: "Spatial workspace acceptance and pilot"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.6.0"
-date: "2026-09-26"
+version: "0.6.1"
+date: "2026-09-29"
 lang: "en-US"
 owner: "Graph product maintainer"
 continuity_id: "SPATIAL-WORKSPACE-PILOT-001"
-prd_revision: "0.6.0"
-tad_revision: "0.6.0"
-adr_revision: "0.6.0"
-mvp_revision: "0.6.0"
-gtm_revision: "0.6.0"
+prd_revision: "0.6.1"
+tad_revision: "0.6.1"
+adr_revision: "0.6.1"
+mvp_revision: "0.6.1"
+gtm_revision: "0.6.1"
 frontmatter_contract: "required"
 lifecycle_status: "active"
 local_rung: "undocumented"
@@ -24,7 +24,7 @@ guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.
 ---
 # Spatial workspace acceptance and pilot — reference implementation
 
-All five roles join `SPATIAL-WORKSPACE-PILOT-001@0.6.0`. This bounded follow-up validates
+All five roles join `SPATIAL-WORKSPACE-PILOT-001@0.6.1`. This bounded follow-up validates
 SW5/SW6 in the spatial workspace specification and prepares three human walkthroughs.
 The named participants below are recommended profiles, not recruited people. No outreach
 or completed human walkthrough is recorded. Consent is stored separately in the private session record; it does not establish completion, target-profile eligibility or first-time discovery. Automated results never count as interviews or consent.
@@ -190,6 +190,24 @@ Run `npm run spatial-workspace:test`, `npm run spatial-workspace:browser` and
 source and writes revision-bound `acceptance.json` plus desktop/mobile review screenshots.
 Observed technical timings: 1024 px: 18.38 s to first value, 4.69 s installation, 2.74 s offline reload; 390 px: 4.61 s to first value, 3.83 s installation, 1.69 s offline reload. Artifact: `/tmp/spatial-full-app-offline/acceptance.json`. Mobile text review retains the existing separate 3D opt-in. The browser uses native UI and actual IndexedDB. The existing storage service fixture prevents
 host/external writes; no fixture component or injected graph-store state establishes first value.
+
+### Selection-independent review repair — 2026-09-29
+
+PRD: retain P1's five actions at 390 px with 3D unloaded. Protected run
+`36565123764` passed desktop acceptance but lost the mobile review form after
+selection cleared. TAD/ADR: Timeline mounts its existing `XrSubjectTransformEditor`,
+whose no-selection branch already owns `SpatialWorkspaceReview`; Media retains its
+selection-only inspector. Readiness, source fencing, approval and persistence stay
+with the existing owners. No duplicate form or renderer opt-in is added.
+
+MVP repair cap: 20 active minutes, three files, 20 KiB; no new modules or dependencies.
+The inherited durability assertion now verifies initialization and awaited use of
+`runSourcePersistence`, preserving the native import owner's current source binding.
+Run the existing spatial suite and unchanged desktop/mobile full-app acceptance,
+plus the focused durable-artifact and native-crawler contracts. Candidate results
+are pending; earlier M1–M3 receipts remain bound to their historical revisions.
+GTM and production claims remain unchanged: no new participant, buyer or deployment
+evidence. Rollback is a scoped source revert through protected integration.
 
 ### Three walkthroughs — reference implementation
 

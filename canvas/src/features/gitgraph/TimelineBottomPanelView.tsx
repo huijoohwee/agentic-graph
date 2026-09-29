@@ -37,6 +37,7 @@ export function TimelineBottomPanelView({ compact = false }: { compact?: boolean
   if (learningDocument?.lessonId === 'drone') return <React.Suspense fallback={<p>Opening warehouse timeline…</p>}><WarehouseTimelinePanel compact={compact} /></React.Suspense>
   if (semanticSelection) return <XrObjectInspector />
   if (xrTimelineContext && !stageAuthority) return <p role="status" className="p-3 text-xs">No authored XR timeline in this document. Add an object from Media or open an XR scene.</p>
-  if (xrTimelineContext) return <><XrObjectInspector /><XrCameraMotionSection /></>
+  // Scene review also works before mobile 3D opt-in or object selection.
+  if (xrTimelineContext) return <><XrSubjectTransformEditor /><XrCameraMotionSection /></>
   return <MediaTimelineBottomPanelView compact={compact} />
 }

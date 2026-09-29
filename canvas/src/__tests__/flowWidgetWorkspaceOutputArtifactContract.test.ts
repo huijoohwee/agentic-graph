@@ -84,7 +84,8 @@ export function testGeneratedArtifactsAndCanvasDocumentsUseDurablePersistenceCon
     throw new Error('expected shared Canvas document writes to serialize by workspace path and preserve generation order')
   }
   if (!workflowRunTypesText.includes('options?: StoryboardCardMediaGraphPersistenceOptions')
-    || !workflowRunText.includes('await args.persistDraftGraphData(durableGraph, runOptions?.sourcePersistence)')) {
+    || !workflowRunText.includes('let runSourcePersistence = runOptions?.sourcePersistence')
+    || !workflowRunText.includes('await args.persistDraftGraphData(durableGraph, runSourcePersistence)')) {
     throw new Error('expected every workflow generator to await the required shared graph-document persistence contract')
   }
   if (!canvasRuntimeText.includes('useStoryboardCardMediaGraphCommit({')
