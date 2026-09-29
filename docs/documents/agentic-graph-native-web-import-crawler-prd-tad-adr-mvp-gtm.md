@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.24"
+version: "0.2.25"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,27 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.23"
-prd_revision: "0.2.24"
-tad_revision: "0.2.24"
-adr_revision: "0.2.24"
-mvp_revision: "0.2.24"
-gtm_revision: "0.2.24"
+previous_document_version: "0.2.24"
+prd_revision: "0.2.25"
+tad_revision: "0.2.25"
+adr_revision: "0.2.25"
+mvp_revision: "0.2.25"
+gtm_revision: "0.2.25"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 live UI verification
+
+**PRD / scope.** Verify the implemented website import through the actual browser UI, saved document and reload. Bind source behavior to `768003ca22e0562dd69e355cd6df6faec5a0cc5a`, and documentation continuity to this plan at 0.2.25, successor `website-markdown-ui-e2e`. Use the operator-supplied target only as an external runtime input. Initial sprint: 20 active minutes; refreshed by 10 minutes to resolve covered controls and complete reload readback. Cap: one documentation file, less than 8 KB new text, no new module, dependency or paid resource.
+
+**TAD / ADR.** Run the candidate's native dev command on a separate loopback origin with a task-owned external artifact store. Use visible controls for Launch, URL entry, page selection and import; browser-local runtime identity proves the source revision. Preserve browser-policy failures as failures. Do not substitute the earlier headless conversion receipt for UI completion. Existing helper modules and published source remain unchanged.
+
+**MVP / observed results.** The predecessor's protected Integration Gate passed. The actual desktop UI completed Launch → Import URL → Crawl website headlessly → page selection → import. Discovery returned three pages; one selected page completed in 20,354 ms without manifest errors. Artifacts contain 16,903,437 raw HTML bytes, 151,985 Markdown bytes and 24 downloaded images totaling 652,985 bytes. Source Files displayed the page, sitemap and Canvas document. Opening the page visibly rendered its title and content; two DOM readbacks timed out while the large page loaded. Reload recovered responsiveness and retained the selected local Markdown file, source content and title in the table of contents. The browser console reported no warnings/errors after reload. Evidence belongs to the task's external `website-markdown-ui-e2e.json` and before/after screenshots; source receipt remains the exact candidate above.
+
+**Partial-pass boundaries.** The ordinary Import URL path did not complete in the in-app browser: hidden document requests were rejected with `ERR_BLOCKED_BY_CLIENT`, reason `inspector`. Browser automation required the screenshot coordinate offset; pinned panels covered controls until closed. Source inspection also identified an existing five-million-character slice in `workspaceImport/urlContent.ts` before ordinary conversion, requiring a separate implementation follow-up. This verification update changes no runtime behavior. One-page local import and persistence pass; ordinary import, full-site discovery completeness, responsive mobile behavior, offline use and production delivery remain unverified.
+
+**GTM / rollback.** This increment adds verification evidence only and makes no revenue or deployment claim. Retain the test-owned store and screenshots outside source. Stop the task-owned preview to release runtime resources; preserve the published candidate and stored user imports. Rollback of this documentation update is a source revert; production activation requires separate authority and receipts.
 
 ## 2026-09-30 reference implementation: website Markdown safety
 
