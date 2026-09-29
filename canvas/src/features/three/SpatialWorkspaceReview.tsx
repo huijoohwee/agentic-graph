@@ -29,6 +29,7 @@ export function SpatialWorkspaceReview() {
   const [inspection, setInspection] = React.useState<{ context: typeof inspectionContext; snapshot: Awaited<ReturnType<typeof inspectSpatialWorkspace>> } | null>(null)
   const snapshot = inspection?.snapshot ?? null
   const inspectionCurrent = inspection?.context === inspectionContext
+  const inspectionReady = inspectionCurrent && snapshot?.ok === true
   React.useEffect(() => {
     let active = true
     void inspectSpatialWorkspace().then(next => { if (active) setInspection({ context: inspectionContext, snapshot: next }) })
@@ -59,7 +60,7 @@ export function SpatialWorkspaceReview() {
     <p>Preview position or scale edits, then apply the exact change. Bounds are approximate; physical correspondence is unknown.</p>
     {snapshot && !snapshot.ok && <><p role="status">{snapshot.message}</p><button type="button" className="min-h-11 rounded border px-3" onClick={() => setRefresh(value => value + 1)}>Refresh inspection</button></>}
     {snapshot?.ok && 'provenance' in snapshot && <p>Authored positions · metres. Simulated bounds · approximate. {snapshot.provenance.observation ? `Imported observation · ${snapshot.provenance.observation.availability} · ${snapshot.provenance.observation.units} · physical scale unknown.` : 'No observation linked.'}</p>}
-    {!proposal && <fieldset disabled={working || review.preparing || !inspectionCurrent || !snapshot?.ok} className="grid min-w-0 gap-2">
+    {!proposal && <fieldset disabled={working || review.preparing || !inspectionReady} className="grid min-w-0 gap-2">
       <label className="grid gap-1">Object<PanelSelect aria-label="Review object" value={subject?.id || ''} onValueChange={selectedValueInput => setSelected(selectedValueInput)} className="min-h-11 rounded border bg-transparent p-1">
         {subjects.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
       </PanelSelect></label>
@@ -88,10 +89,10 @@ export function SpatialWorkspaceReview() {
       <p>Simulated approximate overlaps: {proposal.preview.before.overlaps.length} → {proposal.preview.after.overlaps.length}. Objects outside stage bounds: {proposal.preview.after.outsideStage.length}.</p>
       {proposal.preview.after.overlaps.length > 0 && <details><summary>Overlap findings</summary><ul>{proposal.preview.after.overlaps.map(pair => <li key={pair}>{pair}</li>)}</ul></details>}
       <p className="break-all opacity-70">Review {proposal.digest.slice(0, 12)} · source {proposal.sourceToken.slice(0, 12)}</p>
-      <button type="button" disabled={working} className="min-h-11 rounded border px-3" onClick={() => void run(() => applySpatialWorkspace(proposal))}>Apply reviewed change</button>
+      <button type="button" disabled={working || !inspectionReady} className="min-h-11 rounded border px-3" onClick={() => void run(() => applySpatialWorkspace(proposal))}>Apply reviewed change</button>
     </>}
     {(proposal || review.preparing) && <button type="button" disabled={working} className="min-h-11 rounded border px-3" onClick={() => { cancelSpatialWorkspace(); setResult({ ok: true, message: 'Proposal cancelled; no scene change was made.' }) }}>Cancel proposal</button>}
-    {latest && !proposal && <button type="button" disabled={working} className="min-h-11 rounded border px-3" onClick={() => void run(() => undoSpatialWorkspace(latest.id))}>Undo last reviewed change</button>}
+    {latest && !proposal && <button type="button" disabled={working || !inspectionReady} className="min-h-11 rounded border px-3" onClick={() => void run(() => undoSpatialWorkspace(latest.id))}>Undo last reviewed change</button>}
     <LearningOfflineControls purpose="studio" />
     {result && <p role="status">{result.message}</p>}
     {result?.receipt && <p className="break-all">Receipt {result.receipt.id}</p>}
