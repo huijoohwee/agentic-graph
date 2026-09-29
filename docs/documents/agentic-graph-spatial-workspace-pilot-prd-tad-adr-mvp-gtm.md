@@ -200,12 +200,19 @@ whose no-selection branch already owns `SpatialWorkspaceReview`; Media retains i
 selection-only inspector. Readiness, source fencing, approval and persistence stay
 with the existing owners. No duplicate form or renderer opt-in is added.
 
-MVP repair cap: 20 active minutes, three files, 20 KiB; no new modules or dependencies.
+MVP repair cap: 20 active minutes, four files, 20 KiB; no new modules or dependencies.
 The inherited durability assertion now verifies initialization and awaited use of
 `runSourcePersistence`, preserving the native import owner's current source binding.
 Run the existing spatial suite and unchanged desktop/mobile full-app acceptance,
-plus the focused durable-artifact and native-crawler contracts. Candidate results
-are pending; earlier M1–M3 receipts remain bound to their historical revisions.
+plus the focused durable-artifact and native-crawler contracts. The latter now checks
+the shared cached folder helper and extracted job owner's incremental manifest write.
+At `912fe6d94b50f5c902cd62bf2786f0cacd729910`, all 26 spatial tests and the durability
+assertion passed. Unchanged full-app acceptance passed at 1024/390 px in 9.25/11.58 s
+to first value, five actions each; mobile 3D stayed unloaded. Offline apply/cancel/undo,
+922-file installation, cold reload, absent WebMCP, zero overflow and zero page errors
+passed. Receipt: `/tmp/spatial-full-app-912fe6d94b50/acceptance.json`. The subsequent
+test-only assertion alignment passes all 12 focused native-crawler/durability checks.
+Protected CI and integration remain pending. Earlier M1–M3 receipts retain their historical revisions.
 GTM and production claims remain unchanged: no new participant, buyer or deployment
 evidence. Rollback is a scoped source revert through protected integration.
 

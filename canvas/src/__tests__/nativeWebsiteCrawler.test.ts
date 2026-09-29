@@ -328,7 +328,8 @@ export const testNativeCrawlerWidgetRunReusesImportUrlBridgeAndPublishesRichMedi
   if (!websiteImportActionSource.includes('startedAtMs > 30 * 60_000')) {
     throw new Error('expected production-size native crawls to remain attached beyond the old ten-minute timeout')
   }
-  if (!websiteImportNodeWriterSource.includes('ensureWorkspaceFolderTreeIfMissing({ folderPath: normalized, fs })')) {
+  if (!websiteImportNodeWriterSource.includes('const ensureFolder = await createWorkspaceFolderTreeEnsurer(fs)')
+    || !websiteImportNodeWriterSource.includes('ensureFolder(normalized)')) {
     throw new Error('expected repeat crawl materialization to reuse canonical persisted workspace folders')
   }
   if (websiteImportNodeWriterSource.includes('await fs.createFolder({ parentPath: parent, name })')) {
@@ -365,7 +366,9 @@ export const testNativeCrawlerWidgetRunReusesImportUrlBridgeAndPublishesRichMedi
   if (!websiteImportServerSource.includes("existingManifest.status === 'done' || existingRunIsFresh")) {
     throw new Error('expected repeated UTC-token runs to attach to the existing crawl instead of overwriting it')
   }
-  if (!websiteImportServerSource.includes('nodes: [...nodes], errors: [...errors]')) {
+  const websiteImportJobSource = fs.readFileSync(path.resolve(process.cwd(), 'src/lib/websites/server/websiteImportJob.ts'), 'utf8')
+  if (!websiteImportServerSource.includes('void runWebsiteImportJob({')
+    || !websiteImportJobSource.includes('await updateManifest({ progress: nextProgress, nodes: [...nodes], errors: [...errors] })')) {
     throw new Error('expected crawl manifests to retain incremental nodes for interrupted-run recovery')
   }
 }
