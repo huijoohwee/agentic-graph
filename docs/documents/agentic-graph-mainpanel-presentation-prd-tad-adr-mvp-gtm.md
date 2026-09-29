@@ -501,8 +501,7 @@ and toolbar separators center the line in 8 px hit areas. Collapsed explorer
 sections omit duplicate borders. Toolbar groups use named `hr` elements;
 native buttons and resize controls retain interaction.
 
-MVP/evidence: cap 12 files / 22 KB; no dependency or data change. Focused tests,
+MVP/evidence: cap 11 files / 20 KB; no dependency or data change. Focused tests,
 types, browser styles and affected gate are in the handoff. The storage-auth
-smoke reads the semantic select button value. Spatial review readiness uses the
-same 60 s bound as adjacent browser readiness checks. GTM: clearer borders
+smoke reads the semantic select button value and passes. GTM: clearer borders
 in the free offline app. Rollback: revert this revision; no migration.
