@@ -94,8 +94,8 @@ const buildStructuredMermaidFallbackSvg = (
       const x = 34 + (index % 3) * 268
       const y = 84 + Math.floor(index / 3) * 86
       svg += `<rect x="${x}" y="${y}" width="228" height="58" rx="7" fill="${color}" fill-opacity=".13" stroke="${color}" stroke-width="1.5"/>`
-      svg += `<text x="${x + 12}" y="${y + 22}" font-size="11" font-weight="700" fill="${color}">${escapeSvgText(row.kind.toUpperCase())}</text>`
-      svg += `<text x="${x + 12}" y="${y + 43}" font-size="13" fill="currentColor">${label}</text>`
+      svg += `<text x="${x + 12}" y="${y + 22}" font-size="12" font-weight="700" fill="${color}">${escapeSvgText(row.kind.toUpperCase())}</text>`
+      svg += `<text x="${x + 12}" y="${y + 43}" font-size="14" fill="currentColor">${label}</text>`
       if (index > 0 && index % 3 !== 0) {
         const prevX = 34 + ((index - 1) % 3) * 268 + 228
         const prevY = 84 + Math.floor((index - 1) / 3) * 86 + 29
@@ -132,11 +132,12 @@ function StructuredMermaidFallbackPreview({
   return (
     <section
       className={cn(
-        'relative min-h-0 overflow-auto rounded-md border',
+        'relative min-h-0 min-w-0 overflow-auto rounded-md border',
         compact ? 'max-h-36' : 'min-h-36 flex-1',
         UI_THEME_TOKENS.panel.border,
         UI_THEME_TOKENS.panel.bg,
       )}
+      aria-label={`${kind} diagram`}
       data-kg-mermaid-diagram-render="1"
       data-kg-mermaid-diagram-renderer="structured-fallback"
       data-kg-mermaid-diagram-kind={kind}
@@ -200,11 +201,12 @@ export function MermaidDiagramRenderPreview({
   return (
     <section
       className={cn(
-        'relative min-h-0 overflow-auto rounded-md border',
+        'relative min-h-0 min-w-0 overflow-auto rounded-md border',
         compact ? 'max-h-36' : 'min-h-36 flex-1',
         UI_THEME_TOKENS.panel.border,
         UI_THEME_TOKENS.panel.bg,
       )}
+      aria-label={`${kind} diagram`}
       data-kg-mermaid-diagram-render="1"
       data-kg-mermaid-diagram-kind={kind}
       data-kg-mermaid-diagram-selected-row={selectedRowKey || undefined}
@@ -212,6 +214,7 @@ export function MermaidDiagramRenderPreview({
     >
       <InteractiveMermaidDiagram
         code={code}
+        ariaLabel={`${kind} diagram`}
         rootThemeMode={rootThemeMode}
         svgSurfaceKey={`mermaid:${kind}`}
         selectedLabels={selectedLabels}
@@ -313,18 +316,18 @@ export function MermaidDiagramPanelView({
 
   return (
     <section
-      className={cn('flex h-full min-h-0 flex-col gap-2', compact && 'gap-1')}
+      className={cn('flex h-full min-h-0 min-w-0 flex-col gap-2', compact && 'gap-1')}
       aria-label={panelAriaLabel}
       data-kg-mermaid-diagram-panel="1"
       data-kg-mermaid-diagram-kind={kind}
       data-kg-mermaid-diagram-surface={surface}
       data-kg-mermaid-diagram-render-mode={renderMode}
     >
-      <header className="flex min-w-0 items-center justify-between gap-2 px-1">
+      <header className={`flex min-w-0 items-center justify-between gap-2 px-1 ${UI_THEME_TOKENS.control.height}`}>
         <section className="min-w-0">
           <section className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>{title}</section>
           {showRowList ? (
-            <section className={cn('truncate text-[11px]', UI_THEME_TOKENS.text.secondary)}>
+            <section className={cn('truncate text-xs', UI_THEME_TOKENS.text.secondary)}>
               {rowEntries.length === model.rows.length
                 ? `${model.rows.length} parsed rows`
                 : `${rowEntries.length} / ${model.rows.length} parsed rows`}
@@ -398,9 +401,9 @@ export function MermaidDiagramPanelView({
                       }}
                     >
                       {treeNode.leadingControl}
-                      <span className="w-16 shrink-0 text-[10px] uppercase tracking-normal text-[var(--kg-text-tertiary)]">{row.kind}</span>
-                      <span className="min-w-0 flex-1 truncate font-mono text-[11px]">{row.label}</span>
-                      <span className="shrink-0 text-[10px] text-[var(--kg-text-tertiary)]">L{row.lineNumber}</span>
+                      <span className="w-16 shrink-0 text-xs uppercase tracking-normal text-[var(--kg-text-tertiary)]">{row.kind}</span>
+                      <span className="min-w-0 flex-1 truncate font-mono text-xs">{row.label}</span>
+                      <span className="shrink-0 text-xs text-[var(--kg-text-tertiary)]">L{row.lineNumber}</span>
                     </article>
                   </li>
                 )
@@ -429,9 +432,9 @@ export function MermaidDiagramPanelView({
                 data-kg-mermaid-diagram-command-selected={selected ? '1' : undefined}
                 onClick={() => setSelectedRowKey(key)}
               >
-                <span className="w-16 shrink-0 text-[10px] uppercase tracking-normal text-[var(--kg-text-tertiary)]">{row.kind}</span>
-                <span className="min-w-0 flex-1 truncate font-mono text-[11px]">{row.label}</span>
-                <span className="shrink-0 text-[10px] text-[var(--kg-text-tertiary)]">L{row.lineNumber}</span>
+                <span className="w-16 shrink-0 text-xs uppercase tracking-normal text-[var(--kg-text-tertiary)]">{row.kind}</span>
+                <span className="min-w-0 flex-1 truncate font-mono text-xs">{row.label}</span>
+                <span className="shrink-0 text-xs text-[var(--kg-text-tertiary)]">L{row.lineNumber}</span>
               </button>
             )
           })}

@@ -84,25 +84,25 @@ export default function EdgesStatsSection({
           </section>
           <section className={[uiPanelKeyValueTextSizeClass, uiPanelTextFontClass, 'mt-2', GRAPH_STATS_METRIC_GRID_CLASS_NAME, UI_THEME_TOKENS.text.primary].join(' ')}>
             <section className="flex flex-col">
-              <span className={['uppercase tracking-wide', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+              <span className={['uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary].join(' ')}>
                 {similarityMetricLabel} weight
               </span>
               <span className="font-semibold">{formatNumber(getEdgeWeightForStats(selectedEdge))}</span>
             </section>
             <section className="flex flex-col">
-              <span className={['uppercase tracking-wide', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+              <span className={['uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary].join(' ')}>
                 Co-occurrence
               </span>
               <span className="font-semibold">{String(getEdgeCooccurrenceForStats(selectedEdge))}</span>
             </section>
             <section className="flex flex-col">
-              <span className={['uppercase tracking-wide', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+              <span className={['uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary].join(' ')}>
                 Source
               </span>
               <span className={uiPanelMonospaceTextClass}>{String(selectedEdge.source ?? '')}</span>
             </section>
             <section className="flex flex-col">
-              <span className={['uppercase tracking-wide', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+              <span className={['uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary].join(' ')}>
                 Target
               </span>
               <span className={uiPanelMonospaceTextClass}>{String(selectedEdge.target ?? '')}</span>

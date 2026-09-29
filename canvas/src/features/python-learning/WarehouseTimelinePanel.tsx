@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react'
+import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { GanttTimelineTransportPanel } from '@/features/gitgraph/GanttTimelineTransportPanel'
 import type { GanttTimelineTransportCommandAdapter } from '@/features/gitgraph/ganttTimelineTransportCommandAdapter'
 import { TimelineTransportTimeAxisClip } from '@/components/timeline/TimelineTransportControls'
@@ -18,6 +19,7 @@ const names: Record<string, string> = {
   'charging-truck': 'Mobile charging truck', drone001: 'Drone 001', drone002: 'Drone 002',
   door: 'Dock door', lid: 'Drone lid', camera: 'Camera frames', wifi: 'Wi-Fi delivery', yolo: 'Simulated detections',
 }
+const actionClass = `${UI_THEME_TOKENS.control.singleLine} ${UI_THEME_TOKENS.border.outline} rounded text-xs`
 const colors = ['#477fa1', '#008e8a', '#9a62b1', '#b07835', '#596baf', '#34765f']
 
 export function WarehouseTimelinePanel({ compact = true }: { compact?: boolean }) {
@@ -49,38 +51,38 @@ export function WarehouseTimelinePanel({ compact = true }: { compact?: boolean }
     useGraphStore.getState().setTimelineTransportState({ documentKey, position: Math.max(0, Math.min(duration, time)) / 60, playing: false })
   }
   if (!available) return <p role="status" className="p-3 text-xs">Open the drone Python lesson to inspect this warehouse scenario.</p>
-  if (!active) return <section className="space-y-2 p-3 text-xs" aria-label="Warehouse inspection timeline">
+  if (!active) return <section className="min-h-0 min-w-0 max-h-full space-y-2 overflow-auto p-3 text-xs" aria-label="Warehouse inspection timeline">
     <strong className="block text-sm">Warehouse inspection</strong>
     <p>Replay the truck, two drones and dock cycle with the shared Timeline. Camera frames, Wi-Fi delivery and detections are simulated locally.</p>
-    <button type="button" className="min-h-11 rounded border px-3" disabled={!canEnable} onClick={enable}>Open warehouse inspection</button>
+    <button type="button" className={actionClass} disabled={!canEnable} onClick={enable}>Open warehouse inspection</button>
     {!canEnable && <p role="status">Pause or stop Python before opening the inspection preview.</p>}
   </section>
-  return <section className="min-w-0 space-y-2" aria-label="Warehouse inspection timeline" data-warehouse-inspection="active" data-warehouse-frame={sample.frameIndex}>
-    <div className="flex flex-wrap items-center justify-between gap-2 px-2 text-xs">
-      <div><strong>Warehouse inspection</strong><p>{sample.phase} · rack checks {sample.coverage.rackVisited}/{sample.coverage.rackTotal} · aisle checks {sample.coverage.aisleVisited}/{sample.coverage.aisleTotal}</p></div>
-      <button type="button" className="min-h-11 rounded border px-3" onClick={disable}>Return to Python flight</button>
-    </div>
-    <div className="grid min-w-0 items-start gap-2 md:grid-cols-[minmax(0,3fr)_minmax(240px,2fr)]">
-    <div className="min-w-0 overflow-x-auto">
+  return <section className="flex h-full min-h-0 min-w-0 flex-col gap-2 overflow-hidden" aria-label="Warehouse inspection timeline" data-warehouse-inspection="active" data-warehouse-frame={sample.frameIndex}>
+    <header className="flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 px-2 text-xs">
+      <section className="min-w-0 flex-1" aria-label="Warehouse inspection progress"><strong>Warehouse inspection</strong><p className="truncate" title={`${sample.phase} · rack checks ${sample.coverage.rackVisited}/${sample.coverage.rackTotal} · aisle checks ${sample.coverage.aisleVisited}/${sample.coverage.aisleTotal}`}>{sample.phase} · rack checks {sample.coverage.rackVisited}/{sample.coverage.rackTotal} · aisle checks {sample.coverage.aisleVisited}/{sample.coverage.aisleTotal}</p></section>
+      <button type="button" className={actionClass} onClick={disable}>Return to Python flight</button>
+    </header>
+    <section aria-label="Warehouse timeline and camera" className="grid min-h-0 min-w-0 flex-1 grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] items-start gap-2 overflow-auto">
+    <section aria-label="Warehouse inspection tracks" className="min-w-0 overflow-hidden">
     <GanttTimelineTransportPanel code={code} compact={compact} clockActive editable={false}
       commandAdapter={readOnlyScenario} mode="media" publishPlaybackRequest={false}
       runtimeDocumentKey={documentKey} runtimeDurationSeconds={duration} runtimeFrameRate={WAREHOUSE_INSPECTION_FPS}
       timelineInsertedLanes={laneGroups.map(([id, cues], index) => ({
         id: `warehouse:${id}`, insertAfterLaneId: 'scene', label: names[id] ?? id,
         content: <TimelineTransportTimeAxisClip laneStyle="video" aria-label={`${names[id] ?? id} inspection cues`}>
-          <div className="relative h-12 w-full">
+          <section aria-label={`${names[id] ?? id} cues`} className={`relative w-full ${UI_THEME_TOKENS.control.height}`}>
             {cues.map(cue => <button key={cue.id} type="button" title={`${cue.label} · ${cue.startSeconds.toFixed(1)}–${cue.endSeconds.toFixed(1)} s`}
               aria-label={`Seek ${cue.label}`} onClick={() => seek(cue.startSeconds)}
-              className="absolute top-0 h-11 overflow-hidden rounded border px-1 text-left text-[10px] text-white"
+              className={`absolute top-0 rounded text-left text-xs text-white ${UI_THEME_TOKENS.control.singleLine} ${UI_THEME_TOKENS.border.outline}`}
               style={{ left: `${cue.startSeconds / scaleSeconds * 100}%`, width: `${Math.max(0.15, (cue.endSeconds - cue.startSeconds) / scaleSeconds * 100)}%`, background: colors[index % colors.length] }}>
               {cue.label}
             </button>)}
-            <span className="pointer-events-none absolute inset-y-0 w-px bg-sky-500" style={{ left: `${seconds / scaleSeconds * 100}%` }} />
-          </div>
+            <hr role="separator" aria-orientation="vertical" aria-label="Warehouse playhead" className="absolute inset-y-0 m-0 h-full w-px border-0 bg-sky-500" style={{ left: `${seconds / scaleSeconds * 100}%` }} />
+          </section>
         </TimelineTransportTimeAxisClip>,
       }))} />
-    </div>
+    </section>
     <WarehouseInspectionFeed seconds={seconds} sample={sample} />
-    </div>
+    </section>
   </section>
 }

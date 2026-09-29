@@ -1,4 +1,7 @@
+import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import React from 'react'
+import { SurfaceSeparator } from '@/components/ui/SurfaceSeparator'
+import { dropdownMenuOptionClassName } from '@/lib/ui/dropdownMenu'
 import { ArrowLeft, ArrowRight, EyeOff, Filter, Trash2, Copy, ArrowUp, ArrowDown, ChevronDown, Columns2 } from 'lucide-react'
 
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -12,7 +15,6 @@ import {
   UI_RESPONSIVE_COLUMN_HEADER_MENU_PANEL_CLASSNAME,
   UI_RESPONSIVE_COLUMN_HEADER_TYPE_VALUE_CLASSNAME,
   UI_RESPONSIVE_MENU_ICON_ACTION_CLASSNAME,
-  UI_RESPONSIVE_MENU_ROW_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 
 export type ColumnHeaderMenuFilterOp = string
@@ -58,7 +60,7 @@ export type ColumnHeaderMenuProps = {
 
 const itemBtn = (disabled?: boolean): string => {
   return [
-    `${UI_RESPONSIVE_MENU_ROW_CLASSNAME} gap-2 px-2 py-2 rounded text-xs`,
+    `${dropdownMenuOptionClassName(false)} gap-2 text-xs`,
     disabled ? UI_THEME_TOKENS.text.tertiary : UI_THEME_TOKENS.button.hoverBg,
   ].join(' ')
 }
@@ -102,10 +104,10 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
               setIsTypeOpen(prev => !prev)
             }}
           >
-            <Columns2 className={icon14} aria-hidden="true" />
+            <Columns2 className={icon14} role="img" aria-label="Column type" />
             <span className={['min-w-0 flex-1 text-left', UI_TEXT_TRUNCATE].join(' ')}>{props.typeSummaryLabel}</span>
             <span className={[UI_RESPONSIVE_COLUMN_HEADER_TYPE_VALUE_CLASSNAME, UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>{props.typeValueLabel}</span>
-            <ChevronDown className={[icon14, 'transition-transform', isTypeOpen ? 'rotate-180' : ''].join(' ')} aria-hidden="true" />
+            <ChevronDown className={[icon14, 'transition-transform', isTypeOpen ? 'rotate-180' : ''].join(' ')} role="img" aria-label="Expand choices" />
           </summary>
           <section id={typeMenuId} className="kg-column-header-children kg-click-expand-menu-children mt-1">
             {props.renderTypeMenu({ closeMenu: props.closeMenu })}
@@ -114,7 +116,7 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
       </li>
 
       <li className="list-none">
-        <hr className={['my-1', UI_THEME_TOKENS.panel.border].join(' ')} />
+        <SurfaceSeparator label="Column visibility separator" />
       </li>
 
       <li className="list-none">
@@ -127,13 +129,13 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
             props.closeMenu()
           }}
         >
-          <EyeOff className={icon14} aria-hidden="true" />
+          <EyeOff className={icon14} role="img" aria-label="Hide" />
           <span className={['min-w-0 flex-1 text-left', UI_TEXT_TRUNCATE].join(' ')}>Hide In View</span>
         </button>
       </li>
 
       <li className="list-none">
-        <hr className={['my-1', UI_THEME_TOKENS.panel.border].join(' ')} />
+        <SurfaceSeparator label="Column filter and sort separator" />
       </li>
 
       {props.filter ? (
@@ -145,9 +147,9 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
             menuClassName="absolute left-0 mt-1"
             summary={
               <>
-                <Filter className={icon14} aria-hidden="true" />
+                <Filter className={icon14} role="img" aria-label="Filter" />
                 <span className={['min-w-0 flex-1 text-left', UI_TEXT_TRUNCATE].join(' ')}>Filter</span>
-                <ArrowRight className={icon14} aria-hidden="true" />
+                <ArrowRight className={icon14} role="img" aria-label="Next" />
               </>
             }
             menu={({ close }) => (
@@ -164,18 +166,18 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
                     aria-label="Back"
                     onClick={() => close()}
                   >
-                    <ArrowLeft className={icon14} aria-hidden="true" />
+                    <ArrowLeft className={icon14} role="img" aria-label="Previous" />
                   </button>
                   <section className={['min-w-0 font-medium text-sm', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.primary].join(' ')}>Filter</section>
                 </header>
 
                 <fieldset className="border-0 p-0 m-0 space-y-2">
                   <label className="flex min-w-0 items-center gap-2">
-                    <span className={[UI_RESPONSIVE_COLUMN_HEADER_FILTER_LABEL_CLASSNAME, 'text-xs', UI_THEME_TOKENS.text.secondary].join(' ')}>Op</span>
-                    <select
+                    <span className={[UI_RESPONSIVE_COLUMN_HEADER_FILTER_LABEL_CLASSNAME, UI_THEME_TOKENS.control.height, 'inline-flex items-center text-xs', UI_THEME_TOKENS.text.secondary].join(' ')}>Op</span>
+                    <PanelSelect
                       className={[UI_RESPONSIVE_COLUMN_HEADER_FILTER_FIELD_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.bg].join(' ')}
                       value={filterOp}
-                      onChange={e => setFilterOp(e.target.value)}
+                      onValueChange={selectedValueInput => setFilterOp(selectedValueInput)}
                       disabled={props.filter?.isDisabled}
                     >
                       {props.filter.ops.map(o => (
@@ -183,11 +185,11 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
                           {o.label}
                         </option>
                       ))}
-                    </select>
+                    </PanelSelect>
                   </label>
                   <label className="flex min-w-0 items-center gap-2">
-                    <span className={[UI_RESPONSIVE_COLUMN_HEADER_FILTER_LABEL_CLASSNAME, 'text-xs', UI_THEME_TOKENS.text.secondary].join(' ')}>Value</span>
-                    <input
+                    <span className={[UI_RESPONSIVE_COLUMN_HEADER_FILTER_LABEL_CLASSNAME, UI_THEME_TOKENS.control.height, 'inline-flex items-center text-xs', UI_THEME_TOKENS.text.secondary].join(' ')}>Value</span>
+                    <PanelTextInput
                       className={[UI_RESPONSIVE_COLUMN_HEADER_FILTER_FIELD_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.bg].join(' ')}
                       value={filterValue}
                       onChange={e => setFilterValue(e.target.value)}
@@ -198,14 +200,14 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
                   <section className="flex items-center justify-end gap-2 pt-1">
                     <button
                       type="button"
-                      className={[UI_RESPONSIVE_COLUMN_HEADER_FILTER_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.button.hoverBg].join(' ')}
+                      className={[UI_RESPONSIVE_COLUMN_HEADER_FILTER_ACTION_CLASSNAME, UI_THEME_TOKENS.control.singleLine, 'rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.button.hoverBg].join(' ')}
                       onClick={() => close()}
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
-                      className={[UI_RESPONSIVE_COLUMN_HEADER_FILTER_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.button.hoverBg].join(' ')}
+                      className={[UI_RESPONSIVE_COLUMN_HEADER_FILTER_ACTION_CLASSNAME, UI_THEME_TOKENS.control.singleLine, 'rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.button.hoverBg].join(' ')}
                       disabled={props.filter?.isDisabled}
                       onClick={() => {
                         if (props.filter?.isDisabled) return
@@ -224,7 +226,7 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
       ) : (
         <li className="list-none">
           <button type="button" className={itemBtn(true)} disabled>
-            <Filter className={icon14} aria-hidden="true" />
+            <Filter className={icon14} role="img" aria-label="Filter" />
             <span className={['min-w-0 flex-1 text-left', UI_TEXT_TRUNCATE].join(' ')}>Filter</span>
           </button>
         </li>
@@ -240,7 +242,7 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
             props.closeMenu()
           }}
         >
-          <ArrowUp className={icon14} aria-hidden="true" />
+          <ArrowUp className={icon14} role="img" aria-label="Ascending" />
           <span className={['min-w-0 flex-1 text-left', UI_TEXT_TRUNCATE].join(' ')}>Sort Ascending</span>
         </button>
       </li>
@@ -254,13 +256,13 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
             props.closeMenu()
           }}
         >
-          <ArrowDown className={icon14} aria-hidden="true" />
+          <ArrowDown className={icon14} role="img" aria-label="Descending" />
           <span className={['min-w-0 flex-1 text-left', UI_TEXT_TRUNCATE].join(' ')}>Sort Descending</span>
         </button>
       </li>
 
       <li className="list-none">
-        <hr className={['my-1', UI_THEME_TOKENS.panel.border].join(' ')} />
+        <SurfaceSeparator label="Column insertion and position separator" />
       </li>
 
       <li className="list-none">
@@ -273,7 +275,7 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
             props.closeMenu()
           }}
         >
-          <ArrowLeft className={icon14} aria-hidden="true" />
+          <ArrowLeft className={icon14} role="img" aria-label="Previous" />
           <span className={['min-w-0 flex-1 text-left', UI_TEXT_TRUNCATE].join(' ')}>Insert Left Column</span>
         </button>
       </li>
@@ -287,7 +289,7 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
             props.closeMenu()
           }}
         >
-          <ArrowRight className={icon14} aria-hidden="true" />
+          <ArrowRight className={icon14} role="img" aria-label="Next" />
           <span className={['min-w-0 flex-1 text-left', UI_TEXT_TRUNCATE].join(' ')}>Insert Right Column</span>
         </button>
       </li>
@@ -301,7 +303,7 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
             props.closeMenu()
           }}
         >
-          <ArrowLeft className={icon14} aria-hidden="true" />
+          <ArrowLeft className={icon14} role="img" aria-label="Previous" />
           <span className={['min-w-0 flex-1 text-left', UI_TEXT_TRUNCATE].join(' ')}>Move Left</span>
         </button>
       </li>
@@ -315,13 +317,13 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
             props.closeMenu()
           }}
         >
-          <ArrowRight className={icon14} aria-hidden="true" />
+          <ArrowRight className={icon14} role="img" aria-label="Next" />
           <span className={['min-w-0 flex-1 text-left', UI_TEXT_TRUNCATE].join(' ')}>Move Right</span>
         </button>
       </li>
 
       <li className="list-none">
-        <hr className={['my-1', UI_THEME_TOKENS.panel.border].join(' ')} />
+        <SurfaceSeparator label="Column duplication and deletion separator" />
       </li>
 
       <li className="list-none">
@@ -334,7 +336,7 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
             props.closeMenu()
           }}
         >
-          <Copy className={icon14} aria-hidden="true" />
+          <Copy className={icon14} role="img" aria-label="Duplicate" />
           <span className={['min-w-0 flex-1 text-left', UI_TEXT_TRUNCATE].join(' ')}>Duplicate</span>
         </button>
       </li>
@@ -348,7 +350,7 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
             props.closeMenu()
           }}
         >
-          <Trash2 className={icon14} aria-hidden="true" />
+          <Trash2 className={icon14} role="img" aria-label="Delete" />
           <span className={['min-w-0 flex-1 text-left', UI_TEXT_TRUNCATE].join(' ')}>Delete</span>
         </button>
       </li>

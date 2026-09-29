@@ -4,8 +4,26 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: var(--kg-font-sans);
+  --font-mono: var(--kg-font-mono);
+  --text-xs: var(--kg-text-xs);
+  --text-xs--line-height: var(--kg-text-xs-line);
+  --text-sm: var(--kg-text-sm);
+  --text-sm--line-height: var(--kg-text-sm-line);
+  --text-base: var(--kg-text-base);
+  --text-base--line-height: var(--kg-text-base-line);
+  --text-lg: var(--kg-text-lg);
+  --text-lg--line-height: var(--kg-text-lg-line);
+  --text-xl: var(--kg-text-xl);
+  --text-xl--line-height: var(--kg-text-xl-line);
+  --text-2xl: var(--kg-text-2xl);
+  --text-2xl--line-height: var(--kg-text-2xl-line);
+  --text-3xl: var(--kg-text-3xl);
+  --text-3xl--line-height: var(--kg-text-3xl-line);
+  --text-4xl: var(--kg-text-4xl);
+  --text-4xl--line-height: var(--kg-text-4xl-line);
+  --text-5xl: var(--kg-text-5xl);
+  --text-5xl--line-height: var(--kg-text-5xl-line);
   --color-kg-app: var(--kg-app-bg);
   --color-kg-surface: var(--kg-surface-bg);
   --color-kg-panel: var(--kg-panel-bg);

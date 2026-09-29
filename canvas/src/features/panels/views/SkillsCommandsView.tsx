@@ -225,7 +225,7 @@ export default function SkillsCommandsView({
       aria-label="Skills & Commands"
     >
       <p
-        className={cn('mb-1 text-[10px]', catalogVerified ? UI_THEME_TOKENS.text.tertiary : UI_THEME_TOKENS.text.secondary)}
+        className={cn('mb-1 text-xs', catalogVerified ? UI_THEME_TOKENS.text.tertiary : UI_THEME_TOKENS.text.secondary)}
         role={catalogVerified || grammarCatalog.hydration.status === 'loading' || grammarCatalog.hydration.status === 'idle' ? 'status' : 'alert'}
         data-kg-floating-panel-skills-commands-catalog-proof={catalogVerified ? 'verified' : grammarCatalog.hydration.status}
       >
@@ -245,8 +245,8 @@ export default function SkillsCommandsView({
               <CollapsibleSection
                 title={(
                   <span className="flex min-w-0 items-center justify-between gap-2" aria-label={`Skills & Commands ${grammarGroupBy} group`}>
-                    <span className={cn('m-0 truncate text-[10px] font-semibold uppercase tracking-wide', UI_THEME_TOKENS.text.tertiary)}>{group.label}</span>
-                    <span className={cn('shrink-0 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{group.entries.length}</span>
+                    <span className={cn('m-0 truncate text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary)}>{group.label}</span>
+                    <span className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{group.entries.length}</span>
                   </span>
                 )}
                 collapsed={groupCollapsed}

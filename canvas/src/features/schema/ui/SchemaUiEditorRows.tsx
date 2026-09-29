@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import type { GraphSchema } from '@/lib/graph/schema'
 import { MarkdownStructuredTextEditor } from '@/features/markdown/ui/MarkdownStructuredTextEditor'
 import { Eraser } from 'lucide-react'
@@ -9,7 +10,7 @@ import { PanelLabeledRangeField } from '@/features/panels/ui/PanelLabeledRangeFi
 import {
   UI_RESPONSIVE_PANEL_INLINE_FIELD_CLASSNAME,
   UI_RESPONSIVE_SCHEMA_PROPERTY_NAME_CLASSNAME,
-  UI_RESPONSIVE_SCHEMA_RULES_TEXT_EDITOR_CLASSNAME,
+  UI_RESPONSIVE_SCHEMA_RULES_TEXT_EDITOR_CLASSNAME, UI_RESPONSIVE_SCHEMA_EDITOR_SERIALIZATION_EDITOR_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 import { uiToolbarButtonMutedClassName } from '@/features/toolbar/ui/toolbarStyles'
 
@@ -17,11 +18,11 @@ const schemaInputClassName = `${UI_RESPONSIVE_PANEL_INLINE_FIELD_CLASSNAME} roun
 const schemaActionButtonClassName = `App-toolbar__btn text-xs border ${UI_THEME_TOKENS.input.border} ${uiToolbarButtonMutedClassName}`
 const schemaLabelClassName = `text-xs ${UI_THEME_TOKENS.text.secondary} mb-1`
 const schemaValueTextClassName = `text-xs ${UI_THEME_TOKENS.text.primary}`
-export const SCHEMA_UI_EDITOR_COLUMN_CLASS_NAME = 'flex min-h-0 flex-col'
-export const SCHEMA_UI_STRUCTURED_TEXT_EDITOR_CLASS_NAME = 'w-full flex-1 min-h-0'
-export const SCHEMA_UI_REQUIRED_FIELDS_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3'
-export const SCHEMA_UI_PROPERTY_TYPE_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-1 sm:grid-cols-2'
-export const SCHEMA_UI_LAYOUT_CONTROL_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4'
+export const SCHEMA_UI_EDITOR_COLUMN_CLASS_NAME = 'flex min-h-0 min-w-0 flex-col'
+export const SCHEMA_UI_STRUCTURED_TEXT_EDITOR_CLASS_NAME = `${UI_RESPONSIVE_SCHEMA_EDITOR_SERIALIZATION_EDITOR_CLASSNAME} w-full shrink-0`
+export const SCHEMA_UI_REQUIRED_FIELDS_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-1'
+export const SCHEMA_UI_PROPERTY_TYPE_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-1'
+export const SCHEMA_UI_LAYOUT_CONTROL_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-2'
 
 function SchemaSubstepHeader({ title, label }: { title: string; label?: string }) {
   const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || 'text-sm')
@@ -31,7 +32,7 @@ function SchemaSubstepHeader({ title, label }: { title: string; label?: string }
       <span className={`${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} font-semibold ${UI_THEME_TOKENS.text.primary}`}>
         {title}
       </span>
-      {label && (
+      {label && label !== title && (
         <span className={`${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.primary}`}>
           {label}
         </span>
@@ -67,14 +68,14 @@ export function SchemaUiHeaderRow({
   return (
     <>
       <section className="Stack Stack_horizontal items-center gap-1 mb-1">
-        <select
+        <PanelSelect
           value={selectedKey}
-          onChange={e => setSelectedKey(e.target.value)}
+          onValueChange={selectedValueInput => setSelectedKey(selectedValueInput)}
           className={`${schemaInputClassName} ${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass}`}
         >
           {availableKeys.length === 0 && <option value="">(none)</option>}
           {availableKeys.map(k => <option key={k} value={k}>{k}</option>)}
-        </select>
+        </PanelSelect>
         <input
           value={newKey}
           onChange={e => setNewKey(e.target.value)}
@@ -259,10 +260,10 @@ export function SchemaUiValidationRulesRow({
             {propertyNames.map(p => (
               <section key={p} className="flex items-center gap-1">
                 <span className={`${schemaValueTextClassName} ${UI_RESPONSIVE_SCHEMA_PROPERTY_NAME_CLASSNAME}`}>{p}</span>
-                <select
+                <PanelSelect
                   value={typesMap[p] ?? 'string'}
-                  onChange={e => {
-                    const v = e.target.value as 'string' | 'number' | 'boolean' | 'array' | 'object'
+                  onValueChange={selectedValueInput => {
+                    const v = selectedValueInput as 'string' | 'number' | 'boolean' | 'array' | 'object'
                     setTypesMap({ ...typesMap, [p]: v })
                   }}
                   className={`${UI_RESPONSIVE_PANEL_INLINE_FIELD_CLASSNAME} text-xs rounded border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.text} ${UI_THEME_TOKENS.focus.primaryBorderRing} flex-1`}
@@ -272,7 +273,7 @@ export function SchemaUiValidationRulesRow({
                   <option value="boolean">boolean</option>
                   <option value="array">array</option>
                   <option value="object">object</option>
-                </select>
+                </PanelSelect>
               </section>
             ))}
           </section>
@@ -303,9 +304,9 @@ export function SchemaUiValidationRulesRow({
             <Eraser className="w-3.5 h-3.5" />
             {UI_COPY.validationClearRequiredButtonLabel}
           </button>
-          <select
+          <PanelSelect
             value={bulkType}
-            onChange={e => setBulkType(e.target.value as typeof bulkType)}
+            onValueChange={selectedValueInput => setBulkType(selectedValueInput as typeof bulkType)}
             className={`${schemaInputClassName} text-xs`}
           >
             <option value="string">string</option>
@@ -313,7 +314,7 @@ export function SchemaUiValidationRulesRow({
             <option value="boolean">boolean</option>
             <option value="array">array</option>
             <option value="object">object</option>
-          </select>
+          </PanelSelect>
           <button
             type="button"
             className={schemaActionButtonClassName}

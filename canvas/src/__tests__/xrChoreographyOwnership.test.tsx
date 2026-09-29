@@ -1,3 +1,4 @@
+import { selectMenuValue } from './helpers/semanticMenu'
 import assert from 'node:assert/strict'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -42,10 +43,9 @@ export async function testXrChoreographyOwnership() {
     controlXrSharedAssetControls({ operation: 'select-target', targetId: 'pig' })
     await mountReactRoot(root, <Panels />)
     const change = async (label: string, value: string) => act(async () => {
-      const element = container.querySelector<HTMLSelectElement>(`[aria-label="${label}"]`)!
+      const element = container.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)!
       assert.ok(element, label)
-      element.value = value
-      element.dispatchEvent(new env.dom.window.Event('change', { bubbles: true }))
+      selectMenuValue(element, value)
     })
     const second = readXrMotionReferenceRuntime().plan.cast[0]!.marks[1]!
     await change('Cast choreography mark', second.id)

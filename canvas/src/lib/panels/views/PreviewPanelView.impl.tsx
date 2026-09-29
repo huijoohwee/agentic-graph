@@ -1,4 +1,6 @@
 import React from 'react'
+import { usePanelTypography } from '@/lib/ui/panelTypography'
+import { MainPanelIconButton } from '@/features/panels/ui/MainPanelIconButton'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import MainPanelBody from '@/features/panels/ui/MainPanelBody'
 import { splitMermaidIntoDiagrams } from 'grph-shared/markdown/mermaidBlocks'
@@ -16,8 +18,8 @@ import {
   useCommandMenuRichMediaInventory,
 } from '@/lib/command-menu/commandMenuRichMediaInventory'
 
-const previewEmptyStateClassName = `w-full h-full flex items-center justify-center text-xs ${UI_THEME_TOKENS.text.tertiary}`
-const previewActionButtonClassName = `text-xs px-3 py-2 rounded border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.text.primary} ${UI_THEME_TOKENS.button.hoverBg}`
+const previewEmptyStateClassName = `w-full h-full flex items-center justify-center ${UI_THEME_TOKENS.text.tertiary}`
+const previewActionButtonClassName = `px-2 py-1 rounded border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.text.primary} ${UI_THEME_TOKENS.button.hoverBg}`
 const previewPanelHeaderClassName = `shrink-0 border-b ${UI_THEME_TOKENS.panel.divider} bg-[color:var(--kg-panel-bg)]/60`
 export const PREVIEW_PANEL_MEDIA_FRAME_CLASS_NAME = `kg-preview-panel-media-frame rounded border ${UI_THEME_TOKENS.panel.border}`
 const PREVIEW_PANEL_EMBED_FRAME_CLASS_NAME = `${PREVIEW_PANEL_MEDIA_FRAME_CLASS_NAME} bg-black/5`
@@ -33,9 +35,7 @@ export default function PreviewPanelView() {
   const activeMediaKey = useGraphStore(s => s.markdownPreviewActiveMediaKey || null)
   const setActiveMediaKey = useGraphStore(s => s.setMarkdownPreviewActiveMediaKey)
   const updateNode = useGraphStore(s => s.updateNode)
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const typography = usePanelTypography()
   const frontmatterModeEnabled = useGraphStore(s => s.frontmatterModeEnabled || false)
   const rootThemeMode = useRootThemeMode()
   const {
@@ -152,14 +152,9 @@ export default function PreviewPanelView() {
             ) : (
               <section className="w-full h-full flex items-center justify-center">
                 <section className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className={previewActionButtonClassName}
-                    onClick={() => setLoadedEmbedKey(activeMedia.key)}
-                  >
-                    {UI_COPY.markdownMediaLoadEmbedLabel}
-                  </button>
-                  <a className="text-xs underline" href={richMediaOpenUrl} target="_blank" rel="noreferrer">
+                  <MainPanelIconButton iconKey="action.run" label={UI_COPY.markdownMediaLoadEmbedLabel}
+                    className={previewActionButtonClassName} onClick={() => setLoadedEmbedKey(activeMedia.key)} />
+                  <a className="underline" href={richMediaOpenUrl} target="_blank" rel="noreferrer">
                     {UI_COPY.markdownMediaOpenInNewTabLabel}
                   </a>
                 </section>
@@ -177,17 +172,17 @@ export default function PreviewPanelView() {
     <MainPanelBody header={<header />} scrollable={false}>
       <section ref={setOverlayPortalRef} className="h-full min-h-0 flex flex-col overflow-hidden relative">
         {!hasMarkdown && mediaItems.length === 0 ? (
-          <section className={['px-2 py-2 text-sm', UI_THEME_TOKENS.text.secondary, uiPanelTextFontClass].join(' ')}>
+          <section className={['px-2 py-2', UI_THEME_TOKENS.text.secondary, typography.panelTextClass].join(' ')}>
             No markdown loaded.
           </section>
         ) : (
           <section className="flex-1 min-h-0 overflow-hidden flex flex-col">
             <header className={previewPanelHeaderClassName}>
-              <section className="px-3 py-2 flex items-center justify-between">
-                <section className={['text-xs font-medium', UI_THEME_TOKENS.text.primary, uiPanelTextFontClass].join(' ')}>
+              <section className="px-2 py-1 flex items-center justify-between">
+                <section className={['font-medium', UI_THEME_TOKENS.text.primary, typography.panelTextClass].join(' ')}>
                   Preview: selected Mermaid diagram or rich media
                 </section>
-                <section className={`text-[11px] ${UI_THEME_TOKENS.text.tertiary}`}>
+                <section className={`${typography.microLabelClass} ${UI_THEME_TOKENS.text.tertiary}`}>
                   Open Command Menu for @ media
                 </section>
               </section>

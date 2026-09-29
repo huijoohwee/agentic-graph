@@ -24,7 +24,7 @@ export function KanbanCardDropPreview(props: { position: KanbanDropPosition; lab
   if (props.position === 'left' || props.position === 'right') return <section aria-hidden="true"
     className={`pointer-events-none absolute inset-y-0 z-10 w-1 ${props.position === 'left' ? 'left-0' : 'right-0'}`}
     style={{ backgroundColor: UI_COLOR_PRIMARY_BLUE_INDICATOR }}>
-    <span className={`absolute top-2 whitespace-nowrap rounded border bg-[var(--kg-panel-bg)] p-1 text-[10px] ${props.position === 'left' ? 'left-1' : 'right-1'}`}>
+    <span className={`absolute top-2 whitespace-nowrap rounded border bg-[var(--kg-panel-bg)] p-1 text-xs ${props.position === 'left' ? 'left-1' : 'right-1'}`}>
       {props.label || `Insert ${props.position}`}
     </span>
   </section>
@@ -39,7 +39,7 @@ export function KanbanCardDropPreview(props: { position: KanbanDropPosition; lab
       <KanbanDropIndicator className="flex-1 rounded-full" />
       <span
         className={[
-          'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium shadow-sm',
+          'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium shadow-sm',
           UI_THEME_TOKENS.panel.border,
           UI_THEME_TOKENS.panel.bg,
           UI_THEME_TOKENS.text.secondary,
@@ -65,7 +65,7 @@ export function KanbanLaneDropPreview(props: { label: string; compact?: boolean 
       style={{ borderColor: UI_COLOR_PRIMARY_BLUE_INDICATOR }}
       aria-hidden="true"
     >
-      <section className="flex items-center justify-center gap-2 text-[11px] font-medium">
+      <section className="flex items-center justify-center gap-2 text-xs font-medium">
         <CornerDownRight className="h-3.5 w-3.5" aria-hidden="true" />
         <span>{props.label}</span>
       </section>

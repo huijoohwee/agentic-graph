@@ -41,9 +41,9 @@ export function GanttTimelineTransportShell(args: GanttTimelineTransportShellPro
       playing={args.shellModel.playing}
       shellClassName={args.shellModel.shellClassName}
       rootProps={args.shellModel.rootProps}
-      headerAside={args.transportControls ? <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
+      headerAside={args.transportControls ? <section aria-label="Timeline transport actions" className="flex min-w-0 flex-wrap items-center gap-1">
         {args.transportControls}<GanttTimelineTransportHeaderTools model={args.chromeModel.headerTools} />
-      </div> : <GanttTimelineTransportHeaderTools model={args.chromeModel.headerTools} />}
+      </section> : <GanttTimelineTransportHeaderTools model={args.chromeModel.headerTools} />}
       mediaPlayer={args.mediaPlayerModel.active ? <GanttTimelineTransportMediaPlayer model={args.mediaPlayerModel} /> : null}
       ruler={<GanttTimelineTransportRuler model={args.rulerModel.ruler} renderClipOverlay={args.renderClipOverlay} timeAxisControls={args.timeAxisControls} timeRulerOverlay={args.timeRulerOverlay} timelineInsertedLanes={args.timelineInsertedLanes} />}
       rulerClassName={args.rulerModel.chrome.rulerClassName}

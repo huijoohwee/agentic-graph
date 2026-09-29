@@ -170,7 +170,7 @@ export default function DesignLayersPanel({ active }: { active: boolean }) {
       <section className={cn(UI_RESPONSIVE_DESIGN_PANEL_HEADER_ROW_CLASSNAME, UI_THEME_TOKENS.panel.border)} aria-label="Design Layers header">
         <Layers className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
         <span className={cn('min-w-0 truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>{UI_LABELS.layerMode}</span>
-        <span className={cn('text-[10px] font-mono', UI_THEME_TOKENS.text.tertiary)}>
+        <span className={cn('text-xs font-mono', UI_THEME_TOKENS.text.tertiary)}>
           {visibleCount}/{nodes.length}
         </span>
         <button
@@ -230,7 +230,7 @@ export default function DesignLayersPanel({ active }: { active: boolean }) {
 
       <section aria-label="Layers list">
         {filtered.length === 0 ? (
-          <span className={cn(UI_RESPONSIVE_DESIGN_PANEL_EMPTY_ROW_CLASSNAME, 'text-[10px]', UI_THEME_TOKENS.text.tertiary)}>No layers match.</span>
+          <span className={cn(UI_RESPONSIVE_DESIGN_PANEL_EMPTY_ROW_CLASSNAME, 'text-xs', UI_THEME_TOKENS.text.tertiary)}>No layers match.</span>
         ) : (
           <ul className="m-0 p-0 list-none" aria-label="Layers">
             {filtered.map(n => {
@@ -270,7 +270,7 @@ export default function DesignLayersPanel({ active }: { active: boolean }) {
                       <span className={cn('block min-w-0 truncate text-xs font-semibold', hidden ? 'opacity-50' : '')}>
                         {renderMarkdownSigilInlineText(n.label)}
                       </span>
-                      <span className={cn('block min-w-0 truncate text-[10px] font-mono', UI_THEME_TOKENS.text.tertiary, hidden ? 'opacity-50' : '')}>
+                      <span className={cn('block min-w-0 truncate text-xs font-mono', UI_THEME_TOKENS.text.tertiary, hidden ? 'opacity-50' : '')}>
                         {n.type ? `${n.type} · ${n.id}` : n.id}
                       </span>
                     </button>

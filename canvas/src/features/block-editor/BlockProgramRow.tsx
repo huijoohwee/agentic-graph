@@ -48,13 +48,13 @@ export function BlockProgramRow(props: Props) {
           className="flex h-6 w-5 shrink-0 items-center justify-center rounded border text-sm hover:bg-black/5 dark:hover:bg-white/10">
           {expanded ? '−' : '+'}
         </button>}
-        <span className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+        <span className="rounded px-1.5 py-0.5 text-xs font-bold uppercase tracking-normal text-white"
           style={{ background: tone }}>{blockKindBadge(row.kind)}</span>
         <span className="min-w-0 flex-1 break-words text-sm font-semibold leading-5" title={row.title}>{row.title}</span>
-        {row.line > 0 && !compact && <span className="shrink-0 text-[10px] opacity-70">L{row.line}</span>}
-        {!expanded && !!children.length && <span className="text-[10px] opacity-70">Collapsed</span>}
+        {row.line > 0 && !compact && <span className="shrink-0 text-xs opacity-70">L{row.line}</span>}
+        {!expanded && !!children.length && <span className="text-xs opacity-70">Collapsed</span>}
       </div>
-      {!compact && <div className="kg-block-card-meta px-2.5 pb-1 text-[10px] opacity-80">{category} · {role}</div>}
+      {!compact && <div className="kg-block-card-meta px-2.5 pb-1 text-xs opacity-80">{category} · {role}</div>}
       {row.kind !== 'module' && renderGroups()}
     </div>
     {row.kind === 'module' && renderGroups()}

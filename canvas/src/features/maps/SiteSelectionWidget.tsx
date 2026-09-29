@@ -109,7 +109,7 @@ export default function SiteSelectionWidget() {
               className={`grid grid-cols-2 gap-2 mb-2 pb-2 ${i !== candidates.length - 1 ? 'border-b border-white/10' : ''}`}
             >
               <legend className="sr-only">{`Candidate ${c.label || i + 1}`}</legend>
-              <PanelField label="Label" layout="compact" labelClassName="text-[10px] opacity-70">
+              <PanelField label="Label" layout="compact" labelClassName="text-xs opacity-70">
                 <PanelTextInput
                   variant="transparent"
                   type="text"
@@ -118,7 +118,7 @@ export default function SiteSelectionWidget() {
                   className="px-1 text-xs"
                 />
               </PanelField>
-              <PanelField label="Base Rent ($/mo)" layout="compact" labelClassName="text-[10px] opacity-70">
+              <PanelField label="Base Rent ($/mo)" layout="compact" labelClassName="text-xs opacity-70">
                 <PanelTextInput
                   variant="transparent"
                   type="number"
@@ -127,7 +127,7 @@ export default function SiteSelectionWidget() {
                   className="px-1 text-xs"
                 />
               </PanelField>
-              <PanelField label="Daily Customers" layout="compact" labelClassName="text-[10px] opacity-70">
+              <PanelField label="Daily Customers" layout="compact" labelClassName="text-xs opacity-70">
                 <PanelTextInput
                   variant="transparent"
                   type="number"
@@ -136,7 +136,7 @@ export default function SiteSelectionWidget() {
                   className="px-1 text-xs"
                 />
               </PanelField>
-              <PanelField label="Avg Spend ($)" layout="compact" labelClassName="text-[10px] opacity-70">
+              <PanelField label="Avg Spend ($)" layout="compact" labelClassName="text-xs opacity-70">
                 <PanelTextInput
                   variant="transparent"
                   type="number"
@@ -145,7 +145,7 @@ export default function SiteSelectionWidget() {
                   className="px-1 text-xs"
                 />
               </PanelField>
-              <PanelField label="Initial Invest ($)" layout="compact" labelClassName="text-[10px] opacity-70">
+              <PanelField label="Initial Invest ($)" layout="compact" labelClassName="text-xs opacity-70">
                 <PanelTextInput
                   variant="transparent"
                   type="number"
@@ -154,7 +154,7 @@ export default function SiteSelectionWidget() {
                   className="px-1 text-xs"
                 />
               </PanelField>
-              <PanelField label="Lease (Months)" layout="compact" labelClassName="text-[10px] opacity-70">
+              <PanelField label="Lease (Months)" layout="compact" labelClassName="text-xs opacity-70">
                 <PanelTextInput
                   variant="transparent"
                   type="number"
@@ -174,7 +174,7 @@ export default function SiteSelectionWidget() {
         <section className={`p-2 rounded border ${UI_THEME_TOKENS.panel.border} bg-white/5`}>
           <h3 className="font-semibold mb-2">2. Space-Photo Analysis</h3>
           <input type="file" accept="image/*" className="w-full text-xs" />
-          <p className="text-[10px] opacity-70 mt-1">Upload blueprint or shopfront for visual extraction</p>
+          <p className="text-xs opacity-70 mt-1">Upload blueprint or shopfront for visual extraction</p>
         </section>
 
         {/* Address Verification & Nearby Places */}
@@ -197,7 +197,7 @@ export default function SiteSelectionWidget() {
             <PanelSelect
               variant="transparent"
               value={scenario}
-              onChange={e => setScenario(e.target.value)}
+              onValueChange={selectedValueInput => setScenario(selectedValueInput)}
               className="flex-1 min-w-0 px-1 text-xs"
             >
               <option value="baseline">Baseline</option>

@@ -20,7 +20,7 @@ export function DesignWireframeSettings() {
   return (
     <CollapsibleSection title="Design wireframe" defaultCollapsed={false} stickyHeader={false} headerClassName={`px-2 ${uiPanelTextFontClass}`}>
       <section className={uiToolbarSettingsPanelBodyClassName}>
-        <section className={`text-[10px] ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
+        <section className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
           Controls for webpage source-url wireframes (layout fidelity, grouping cues, label readability).
         </section>
         <ToggleRow label="Show edges" value={settings.showEdges} onChange={v => setSettings({ showEdges: v })} />

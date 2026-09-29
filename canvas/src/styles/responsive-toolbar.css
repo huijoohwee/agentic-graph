@@ -1,4 +1,4 @@
-:root { --kg-overlay-max-height: calc(100dvh - var(--kg-safe-top) - var(--kg-safe-bottom) - 1rem); }
+:root { --kg-control-height: 28px; --kg-overlay-max-height: calc(100dvh - var(--kg-safe-top) - var(--kg-safe-bottom) - 1rem); }
 
   .kg-collapsible-toolbar-overflow {
     max-width: calc(100vw - var(--kg-safe-left) - var(--kg-safe-right) - 1rem);
@@ -142,12 +142,8 @@
     width: 100%;
     inline-size: 100%;
     box-sizing: border-box;
-    border-bottom: 1px solid var(--kg-border);
+    border-bottom: var(--kg-surface-border);
     background: var(--kg-panel-bg);
-  }
-
-  .kg-markdown-workspace-explorer-resize {
-    box-shadow: inset 1px 0 0 var(--kg-divider);
   }
 
   .kg-markdown-workspace-explorer-content {
@@ -303,7 +299,7 @@
     min-width: 0;
     max-width: 100%;
     padding-block-start: var(--kg-toolbar-settings-panel-subsection-padding-block-start, 0.5rem);
-    border-block-start: 1px solid var(--kg-border);
+    border-block-start: var(--kg-surface-border);
   }
 
   .kg-toolbar-settings-panel-subsection > :not([hidden]) ~ :not([hidden]) {
@@ -345,12 +341,12 @@
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    width: var(--kg-responsive-color-swatch-width, 2rem);
-    inline-size: var(--kg-responsive-color-swatch-width, 2rem);
-    min-width: var(--kg-responsive-color-swatch-width, 2rem);
-    min-inline-size: var(--kg-responsive-color-swatch-width, 2rem);
-    height: var(--kg-responsive-color-swatch-height, 1.5rem);
-    block-size: var(--kg-responsive-color-swatch-height, 1.5rem);
+    width: var(--kg-responsive-color-swatch-width, var(--kg-control-height, 28px));
+    inline-size: var(--kg-responsive-color-swatch-width, var(--kg-control-height, 28px));
+    min-width: var(--kg-responsive-color-swatch-width, var(--kg-control-height, 28px));
+    min-inline-size: var(--kg-responsive-color-swatch-width, var(--kg-control-height, 28px));
+    height: var(--kg-responsive-color-swatch-height, var(--kg-control-height, 28px));
+    block-size: var(--kg-responsive-color-swatch-height, var(--kg-control-height, 28px));
     padding: 0;
     box-sizing: border-box;
   }
@@ -1309,12 +1305,8 @@
   }
 
   .kg-responsive-control-touch-target {
-    min-height: var(--kg-responsive-control-touch-target-min-height, var(--kg-touch-target, 44px));
-    min-block-size: var(--kg-responsive-control-touch-target-min-height, var(--kg-touch-target, 44px));
-  }
-
-  .kg-responsive-control-touch-target--compact {
-    --kg-responsive-control-touch-target-min-height: 2.25rem;
+    min-height: var(--kg-control-height);
+    min-block-size: var(--kg-control-height);
   }
 
   .kg-responsive-control-input,
@@ -1369,7 +1361,7 @@
     text-align: end;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: var(--kg-responsive-control-hint-font-size, 10px);
+    font-size: var(--kg-responsive-control-hint-font-size, var(--kg-text-xs));
   }
 
   .kg-responsive-text-action-button {
@@ -1973,21 +1965,8 @@
     max-inline-size: calc(100vw - var(--kg-safe-left) - var(--kg-safe-right) - var(--kg-toolbar-dropdown-inline-clearance, 1rem));
   }
 
-  .kg-toolbar-dropdown-option-meta {
-    max-width: min(var(--kg-toolbar-dropdown-option-meta-max-width, 45%), 100%);
-    max-inline-size: min(var(--kg-toolbar-dropdown-option-meta-max-width, 45%), 100%);
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .kg-toolbar-dropdown-option-hint {
-    padding-inline: var(--kg-toolbar-dropdown-option-hint-padding-inline, 0.5rem);
-    padding-block: var(--kg-toolbar-dropdown-option-hint-padding-block, 0.125rem);
-    font-size: var(--kg-toolbar-dropdown-option-hint-font-size, 10px);
-    opacity: var(--kg-toolbar-dropdown-option-hint-opacity, 0.75);
-  }
+  .kg-menu-row { height: var(--kg-control-height, 28px); min-height: var(--kg-control-height, 28px); padding-block: 0; }
+  .kg-toolbar-dropdown-option-value { min-width: 0; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   .kg-click-expand-menu-children {
     width: 100%;
@@ -1995,7 +1974,7 @@
     max-width: 100%;
     margin-inline: 0;
     padding: 0 0 0 0.5rem;
-    border-left: 1px solid var(--kg-border);
+    border-left: var(--kg-surface-border);
     box-sizing: border-box;
   }
 
@@ -2020,8 +1999,8 @@
     flex: 1 1 0;
     min-width: 0;
     max-width: 100%;
-    height: var(--kg-column-header-filter-field-height, 1.75rem);
-    block-size: var(--kg-column-header-filter-field-height, 1.75rem);
+    height: var(--kg-control-height, 28px);
+    block-size: var(--kg-control-height, 28px);
     padding-inline: var(--kg-column-header-filter-field-padding-inline, 0.5rem);
   }
 
@@ -2031,8 +2010,8 @@
     justify-content: center;
     min-width: 0;
     max-width: 100%;
-    height: var(--kg-column-header-filter-action-height, 1.75rem);
-    block-size: var(--kg-column-header-filter-action-height, 1.75rem);
+    height: var(--kg-control-height, 28px);
+    block-size: var(--kg-control-height, 28px);
     padding-inline: var(--kg-column-header-filter-action-padding-inline, 0.5rem);
   }
 
@@ -2070,7 +2049,7 @@
     border-radius: var(--kg-menu-option-row-radius, 0.25rem);
     padding-inline: var(--kg-menu-option-row-padding-inline, 0.5rem);
     padding-block: var(--kg-menu-option-row-padding-block, 0.25rem);
-    font-size: var(--kg-menu-option-row-font-size, 0.875rem);
+    font-size: var(--kg-menu-option-row-font-size, var(--kg-text-sm));
     line-height: var(--kg-menu-option-row-line-height, 1.25rem);
   }
 
@@ -2179,7 +2158,6 @@
     max-width: 100%;
   }
 
-  .kg-menu-row > .kg-toolbar-dropdown-option-copy { overflow: visible; text-overflow: clip; white-space: normal; }
 
   .kg-touch-menu-row {
     min-height: var(--kg-control-height, 28px);
@@ -2396,7 +2374,7 @@
   }
 
   @media (pointer: coarse), (max-width: 768px) {
-    :root { --kg-mobile-bottom-dock-clearance: calc(var(--kg-control-height, 28px) + 2.75rem); --kg-overlay-max-height: calc(100dvh - var(--kg-safe-top) - var(--kg-safe-bottom) - var(--kg-mobile-bottom-dock-clearance)); }
+    :root { --kg-control-height: var(--kg-touch-target, 44px); --kg-mobile-bottom-dock-clearance: calc(var(--kg-control-height, 28px) + 2.75rem); --kg-overlay-max-height: calc(100dvh - var(--kg-safe-top) - var(--kg-safe-bottom) - var(--kg-mobile-bottom-dock-clearance)); }
 
     .kg-canvas-diagnostic-panel {
       inset-block-end: calc(var(--kg-safe-bottom) + var(--kg-mobile-bottom-dock-clearance) + 0.5rem);
@@ -2525,7 +2503,7 @@
       width: 100%;
       inline-size: 100%;
       box-sizing: border-box;
-      border-top: 1px solid var(--kg-border);
+      border-top: var(--kg-surface-border);
     }
 
     .kg-markdown-workspace-main {
@@ -2558,9 +2536,9 @@
     }
 
     .kg-markdown-workspace-pane-divider {
-      width: auto;
-      height: 1px;
-      min-height: 1px;
+      width: 100%;
+      height: var(--kg-resize-separator-thickness);
+      min-height: var(--kg-resize-separator-thickness);
       align-self: stretch;
     }
 
@@ -2575,24 +2553,10 @@
       width: 100% !important;
       min-width: 0;
       max-width: 100%;
-      height: min(40dvh, 16rem);
+      height: var(--kg-explorer-resize-height, min(40dvh, 16rem));
       max-height: 45%;
       border-right-width: 0;
       border-bottom-width: 1px;
-    }
-
-    .kg-markdown-workspace-explorer-resize {
-      display: block;
-      width: 100% !important;
-      inline-size: 100% !important;
-      min-height: 1px;
-      height: 1px !important;
-      block-size: 1px !important;
-      flex: 0 0 1px;
-      cursor: row-resize !important;
-      background-color: var(--kg-border) !important;
-      background-image: none !important;
-      box-shadow: none;
     }
 
     .MainPanelContainer {
@@ -2663,7 +2627,7 @@
     }
 
     .kg-touch-menu-row {
-      min-height: var(--kg-touch-target, 44px);
+      min-height: var(--kg-control-height, 28px);
     }
 
     .App-toolbar--touch-row-scroll {
@@ -2765,7 +2729,7 @@
     .kg-graph-record-inspector {
       width: 100% !important;
       max-height: 45dvh;
-      border-top: 1px solid var(--kg-border);
+      border-top: var(--kg-surface-border);
     }
 
     .HeaderBar,

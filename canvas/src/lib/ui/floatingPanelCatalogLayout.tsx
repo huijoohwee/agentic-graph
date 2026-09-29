@@ -8,8 +8,8 @@ type DataAttributes = Record<`data-${string}`, string | undefined>
 export const FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT = 'compact-list'
 export const FLOATING_PANEL_CATALOG_COMPACT_ICON_FRAME_CLASSNAME = 'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border'
 export const FLOATING_PANEL_CATALOG_COMPACT_ROW_TITLE_CLASSNAME = 'm-0 truncate text-xs font-semibold'
-export const FLOATING_PANEL_CATALOG_COMPACT_ROW_META_CLASSNAME = 'm-0 mt-0.5 truncate text-[11px]'
-export const FLOATING_PANEL_CATALOG_COMPACT_ROW_TOKEN_CLASSNAME = 'shrink-0 truncate font-mono text-[10px]'
+export const FLOATING_PANEL_CATALOG_COMPACT_ROW_META_CLASSNAME = 'm-0 mt-0.5 truncate text-xs'
+export const FLOATING_PANEL_CATALOG_COMPACT_ROW_TOKEN_CLASSNAME = 'shrink-0 truncate font-mono text-xs'
 export const FLOATING_PANEL_CATALOG_THREE_ROW_LAYOUT = 'media-3-rows'
 export const FLOATING_PANEL_CATALOG_THREE_ROW_GRID_CLASSNAME = 'grid-cols-[6.875rem_minmax(0,1fr)]'
 export const FLOATING_PANEL_CATALOG_THREE_ROW_THUMBNAIL_FRAME_CLASSNAME = 'group relative inline-flex h-[4.625rem] w-[6.475rem] shrink-0 overflow-visible rounded border p-[2px] shadow-sm'
@@ -173,7 +173,7 @@ export function FloatingPanelCatalogHeader({
     >
       <section className="min-w-0 flex-1">
         <h2 className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>{title}</h2>
-        <p className={cn('truncate text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{subtitle}</p>
+        <p className={cn('truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{subtitle}</p>
       </section>
       <section className="flex min-w-0 shrink-0 items-center justify-end gap-1" aria-label={actionsLabel}>
         {actions}

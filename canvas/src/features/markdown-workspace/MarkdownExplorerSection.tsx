@@ -20,10 +20,11 @@ export function MarkdownExplorerSection(props: {
   sectionRef?: React.Ref<HTMLElement>
   sectionStyle?: React.CSSProperties
   scrollMode?: MarkdownExplorerSectionScrollMode
+  resizeAfter?: boolean
   right?: React.ReactNode
   children: React.ReactNode
 }) {
-  const { title, collapsed, setCollapsed, sectionRef, sectionStyle, scrollMode = 'auto', right, children } = props
+  const { title, collapsed, setCollapsed, sectionRef, sectionStyle, scrollMode = 'auto', resizeAfter = false, right, children } = props
   const panelTypography = usePanelTypography()
   const sectionScrollClassName = collapsed
     ? ''
@@ -46,15 +47,15 @@ export function MarkdownExplorerSection(props: {
   return (
     <section
       ref={sectionRef}
-      className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_SECTION_CLASSNAME} ${sectionScrollClassName} border-b ${UI_THEME_TOKENS.panel.border}`}
+      className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_SECTION_CLASSNAME} ${sectionScrollClassName} ${collapsed || resizeAfter ? '' : `border-b last:border-b-0 ${UI_THEME_TOKENS.panel.border}`}`}
       style={sectionStyle}
       aria-label={title}
     >
       <header
         className={[
-          'sticky top-0 z-20 w-full flex items-center justify-between px-2 py-1',
+          'kg-workspace-section-header sticky top-0 z-20 w-full flex items-center justify-between px-2 py-1',
           panelTypography.microLabelClass,
-          'tracking-wide font-semibold uppercase',
+          'tracking-normal font-semibold uppercase',
           UI_THEME_TOKENS.panel.bg,
           'backdrop-blur',
           UI_THEME_TOKENS.button.text,

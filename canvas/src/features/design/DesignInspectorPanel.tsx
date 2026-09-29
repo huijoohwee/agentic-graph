@@ -226,17 +226,17 @@ export default function DesignInspectorPanel({ active }: { active: boolean }) {
     <section className="space-y-2 px-3 py-2" aria-label="Design style inspector">
       <header className="flex items-center justify-between gap-2">
         <section className={`text-xs font-semibold ${UI_THEME_TOKENS.text.primary}`}>Style</section>
-        <section className={`font-mono text-[10px] ${UI_THEME_TOKENS.text.tertiary}`}>
+        <section className={`font-mono text-xs ${UI_THEME_TOKENS.text.tertiary}`}>
           {selectedIds.length} selected
         </section>
       </header>
       <section className={`rounded border p-2 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}`} aria-label="Position">
-        <header className={`mb-2 text-[10px] font-semibold ${UI_THEME_TOKENS.text.tertiary}`}>Position</header>
+        <header className={`mb-2 text-xs font-semibold ${UI_THEME_TOKENS.text.tertiary}`}>Position</header>
         <NumberFieldRow label="X" value={xText} placeholder={uniform.x == null ? mixed : undefined} onChange={setXText} onSubmit={apply} />
         <NumberFieldRow label="Y" value={yText} placeholder={uniform.y == null ? mixed : undefined} onChange={setYText} onSubmit={apply} />
       </section>
       <section className={`rounded border p-2 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}`} aria-label="Size">
-        <header className={`mb-2 text-[10px] font-semibold ${UI_THEME_TOKENS.text.tertiary}`}>Size</header>
+        <header className={`mb-2 text-xs font-semibold ${UI_THEME_TOKENS.text.tertiary}`}>Size</header>
         <NumberFieldRow label="W" value={wText} placeholder={uniform.w == null ? mixed : undefined} onChange={setWText} onSubmit={apply} />
         <NumberFieldRow label="H" value={hText} placeholder={uniform.h == null ? mixed : undefined} onChange={setHText} onSubmit={apply} />
       </section>

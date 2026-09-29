@@ -16,7 +16,7 @@ function readRuleBlock(source: string, selector: string): string {
 }
 
 export function testVideoSequenceTimelineRulerUsesSingleScrollOwner() {
-  const controlsCssText = readSource('components', 'timeline', 'TimelineTransportControls.css')
+  const controlsCssText = ['TimelineTransportControls.css', 'TimelineTransportPlayer.css', 'TimelineTransportControlsMermaidGantt.css'].map(file => readSource('components', 'timeline', file)).join('\n')
   const mermaidCssText = readSource('components', 'timeline', 'TimelineTransportControlsMermaidGantt.css')
   const rulerText = readSource('components', 'timeline', 'VideoSequenceTimelineRuler.tsx')
   const scrollRule = readRuleBlock(controlsCssText, '.timeline-video-sequence-ruler-scroll')

@@ -262,7 +262,7 @@ export function TraversalPresetSection({
   )
   const presetButtonClassName = `App-toolbar__btn text-xs px-2 py-1 border ${UI_THEME_TOKENS.input.border} ${uiToolbarButtonNeutralClassName}`
   const panelClassName = `mt-2 border ${UI_THEME_TOKENS.panel.border} rounded px-2 py-1 ${UI_THEME_TOKENS.panel.bg}`
-  const sectionHeadingClassName = `${uiPanelKeyValueTextSizeClass} font-semibold uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary} mb-1`
+  const sectionHeadingClassName = `${uiPanelKeyValueTextSizeClass} font-semibold uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary} mb-1`
   const keyLabelClassName = `${UI_THEME_TOKENS.text.secondary} break-words`
 
   return (

@@ -33,7 +33,7 @@ export function FlightSimNavigationInset({
   if (!result.projection) {
     return (
       <section
-        className={cn('rounded border p-2 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg, className)}
+        className={cn('rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg, className)}
         data-kg-flight-sim-navigation="unavailable"
         role="status"
       >
@@ -54,7 +54,7 @@ export function FlightSimNavigationInset({
       data-kg-flight-sim-objective-bearing={projection.objective?.bearingDegrees.toFixed(3)}
       data-kg-flight-sim-objective-heading-error={projection.objective?.headingErrorDegrees.toFixed(3)}
     >
-      <header className="flex items-center justify-between gap-2 text-[10px] font-semibold">
+      <header className="flex items-center justify-between gap-2 text-xs font-semibold">
         <span>LOCAL ROUTE · N↑</span>
         <span>
           {projection.objective
@@ -63,7 +63,7 @@ export function FlightSimNavigationInset({
         </span>
       </header>
       <p
-        className="text-[9px] font-semibold text-amber-200"
+        className="text-xs font-semibold text-amber-200"
         data-kg-flight-sim-course-director="inset"
       >
         {courseDirector}

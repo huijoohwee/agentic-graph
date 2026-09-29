@@ -46,7 +46,7 @@ export function WorkspaceDataViewSettingsSortSection(props: {
             <PanelSelect
               className={[UI_FOCUS_RING, MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME, 'w-full text-left'].join(' ')}
               value={current?.columnId || ''}
-              onChange={e => setSort({ columnId: e.target.value })}
+              onValueChange={selectedValueInput => setSort({ columnId: selectedValueInput })}
             >
               {props.columns.map(c => (
                 <option key={c.id} value={c.id}>
@@ -59,7 +59,7 @@ export function WorkspaceDataViewSettingsSortSection(props: {
             <PanelSelect
               className={[UI_FOCUS_RING, MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME].join(' ')}
               value={current?.direction || 'asc'}
-              onChange={e => setSort({ direction: e.target.value === 'desc' ? 'desc' : 'asc' })}
+              onValueChange={selectedValueInput => setSort({ direction: selectedValueInput === 'desc' ? 'desc' : 'asc' })}
             >
               <option value="asc">ASC</option>
               <option value="desc">DESC</option>
