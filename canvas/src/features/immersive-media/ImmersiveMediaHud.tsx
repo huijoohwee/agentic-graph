@@ -44,7 +44,7 @@ export function ImmersiveMediaHud({
         >
           <figcaption>
             <b className="block text-xs">{snapshot.overlay.title}</b>
-            <span className="block text-[10px]">{snapshot.overlay.description}</span>
+            <span className="block text-xs">{snapshot.overlay.description}</span>
           </figcaption>
         </figure>
       ) : null}
@@ -85,7 +85,7 @@ export function ImmersiveMediaHud({
           data-kg-immersive-media-tooltip={tooltipMarker.id}
         >
           <b className="block text-xs">{tooltipMarker.label}</b>
-          <span className={cn('block text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+          <span className={cn('block text-xs', UI_THEME_TOKENS.text.secondary)}>
             {tooltipMarker.tooltip}
           </span>
         </aside>

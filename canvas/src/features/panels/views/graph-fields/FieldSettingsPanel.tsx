@@ -29,7 +29,7 @@ import {
 import { computeFilteredLists } from '@/features/schema-editor/utils'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
-import { KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME } from 'grph-shared/ui/keyTypeValueRows'
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import FieldSchemaSection from '@/features/panels/views/graph-fields/FieldSchemaSection'
 import FieldStylesSection from '@/features/panels/views/graph-fields/FieldStylesSection'
 import FieldLayoutSection from '@/features/panels/views/graph-fields/FieldLayoutSection'
@@ -98,18 +98,15 @@ export default function FieldSettingsPanel({
     () => inferFieldTypeFromGraphData(graphData, selectedField),
     [graphData, selectedField],
   )
-  const uiPanelKeyValueTextSizeClass = useGraphStore(
-    s => s.uiPanelKeyValueTextSizeClass || KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME,
-  )
-  const uiPanelTextFontClass = useGraphStore(
-    s => s.uiPanelTextFontClass || 'font-sans',
-  )
+  const panelTypography = usePanelTypography()
+  const { textSizeClass: uiPanelKeyValueTextSizeClass, fontClass: uiPanelTextFontClass,
+    monospaceTextClass: uiPanelMonospaceTextClass } = panelTypography
   const uiPanelRowDensityCompactClass = useGraphStore(
     s => s.uiPanelRowDensityCompactClass || 'py-0.5',
   )
   const secondaryActionButtonClassName = `App-toolbar__btn ${uiPanelKeyValueTextSizeClass} border ${UI_THEME_TOKENS.input.border} ${uiToolbarButtonNeutralClassName}`
   const fieldLabelClassName = `${uiPanelKeyValueTextSizeClass} ${UI_THEME_TOKENS.text.primary}`
-  const fieldHintClassName = `${uiPanelKeyValueTextSizeClass} ${UI_THEME_TOKENS.text.tertiary}`
+  const fieldHintClassName = `${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.tertiary}`
   const compactCheckboxClassName = UI_RESPONSIVE_COMPACT_SELECTION_CONTROL_CLASSNAME
   const comfortableInputClassName = `${UI_RESPONSIVE_GRAPH_FIELDS_COMFORTABLE_FIELD_INPUT_CLASSNAME} w-full`
   const comfortableSelectClassName = [
@@ -117,9 +114,6 @@ export default function FieldSettingsPanel({
     UI_RESPONSIVE_GRAPH_FIELDS_COMFORTABLE_FIELD_INPUT_CLASSNAME,
     'w-full text-left',
   ].join(' ')
-  const uiPanelMonospaceTextClass = useGraphStore(
-    s => s.uiPanelMonospaceTextClass || 'font-mono text-xs',
-  )
   const schema = useGraphStore(s => s.schema)
   const setSchema = useGraphStore(s => s.setSchema)
 

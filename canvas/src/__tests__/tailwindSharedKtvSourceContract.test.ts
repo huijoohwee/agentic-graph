@@ -26,16 +26,16 @@ export const testTailwindScansSharedKtvClassOwners = () => {
   if (
     !sharedKtvRows.includes('KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME')
     || !sharedKtvRows.includes('grid-cols-[minmax(0,0.95fr)_minmax(2.75rem,0.42fr)_minmax(0,1.2fr)]')
-    || !sharedKtvRows.includes('KTV_KEY_VALUE_GRID_CLASS_NAME')
+    || sharedKtvRows.includes('KTV_KEY_VALUE_GRID_CLASS_NAME')
   ) {
     throw new Error(
       'Expected the scanned shared package to remain the source owner for KTV grid-column utilities',
     )
   }
   if (
-    !sharedKtvRow.includes('gridClassName: KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME')
-    || !sharedKtvRow.includes('gridClassName: KTV_KEY_VALUE_GRID_CLASS_NAME')
-    || !sharedKtvLayout.includes('${KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME}')
+    !sharedKtvRow.includes('KTV_FIELD_GRID_CLASS_NAME')
+    || sharedKtvRow.includes('KTV_KEY_VALUE_GRID_CLASS_NAME')
+    || !sharedKtvLayout.includes('${KTV_FIELD_GRID_CLASS_NAME}')
   ) {
     throw new Error(
       'Expected shared MainPanel and FloatingPanel KTV React owners to consume the scanned grid-column utilities',

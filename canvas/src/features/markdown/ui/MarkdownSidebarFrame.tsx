@@ -33,7 +33,7 @@ export function MarkdownSidebarFrame(props: MarkdownSidebarFrameProps) {
           <h2
             className={
               titleClassName ||
-              `font-sans text-[10px] font-semibold uppercase tracking-wide truncate ${UI_THEME_TOKENS.text.tertiary}`
+              `font-sans text-xs font-semibold uppercase tracking-normal truncate ${UI_THEME_TOKENS.text.tertiary}`
             }
           >
             {title}

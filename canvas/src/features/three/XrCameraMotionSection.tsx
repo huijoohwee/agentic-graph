@@ -776,21 +776,21 @@ export function XrCameraMotionSection() {
           ]}
           timeAxisControls={(
             <section className="flex min-w-0 flex-wrap items-center gap-2" aria-label="XR timeline scale controls" data-kg-timeline-axis-controls-layout="duration-fps">
-              <label className="flex min-w-0 items-center gap-1 text-[9px]" data-kg-xr-timeline-seconds-control="time-axis">
+              <label className="flex min-w-0 items-center gap-1 text-xs" data-kg-xr-timeline-seconds-control="time-axis">
                 <span className={UI_THEME_TOKENS.text.tertiary}>Seconds</span>
                 <PanelTextInput
                   aria-label="XR timeline seconds"
-                  className="h-5 w-12 px-1 py-0 text-[10px]"
+                  className="h-5 w-12 px-1 py-0 text-xs"
                   type="number" min={1} max={30} step={0.5}
                   value={runtime.plan.durationSeconds}
                   onChange={event => setXrMotionReferenceDuration(Number(event.target.value))}
                 />
               </label>
-              <label className="flex min-w-0 items-center gap-1 text-[9px]" data-kg-xr-timeline-fps-control="time-axis">
+              <label className="flex min-w-0 items-center gap-1 text-xs" data-kg-xr-timeline-fps-control="time-axis">
                 <span className={UI_THEME_TOKENS.text.tertiary}>FPS</span>
                 <PanelTextInput
                   aria-label="XR timeline FPS"
-                  className="h-5 w-12 px-1 py-0 text-[10px]"
+                  className="h-5 w-12 px-1 py-0 text-xs"
                   type="number" min={6} max={30} step={1}
                   value={runtime.plan.fps}
                   onChange={event => setXrMotionReferenceFps(Number(event.target.value))}

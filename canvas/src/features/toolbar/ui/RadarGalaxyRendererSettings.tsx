@@ -93,7 +93,7 @@ export function RadarGalaxyRendererSettings() {
   return (
     <CollapsibleSection title="Radar Galaxy" defaultCollapsed={false} stickyHeader={false} headerClassName={`px-2 ${uiPanelTextFontClass}`}>
       <section className={uiToolbarSettingsPanelBodyClassName}>
-        <section className={`text-[10px] ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
+        <section className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
           Controls hub-spoke force distances, curved flow arrows, and repulsion for JSON-imported radar maps.
         </section>
         <ResponsiveControlRow label="Orbit animate" valueClassName={UI_RESPONSIVE_CONTROL_TOGGLE_GROUP_END_CLASSNAME}>

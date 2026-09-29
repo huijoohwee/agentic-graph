@@ -143,7 +143,7 @@ const STORYBOARD_RENDERED_EDGE_LABELS = new Set(['parent_node_id', 'rootBranch',
 const EMPTY_STORYBOARD_WIDGET_REGISTRY: WidgetRegistryEntry[] = []
 const STORYBOARD_BRANCH_ACTION_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-4'
 const STORYBOARD_GROUP_MEMBERSHIP_PROPERTY_KEYS = ['luminaGroupId', 'groupId', 'parentGroupId', 'clusterId', 'sectionId'] as const
-const STORYBOARD_SCORECARD_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-1.5 text-[11px] sm:grid-cols-2'
+const STORYBOARD_SCORECARD_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-1.5 text-xs sm:grid-cols-2'
 const STORYBOARD_CANONICAL_TEXT_FIELDS = { summary: { propertyKeys: STORYBOARD_SUMMARY_PROPERTY_KEYS, canonicalKey: 'summary' }, output: { propertyKeys: STORYBOARD_OUTPUT_PROPERTY_KEYS, canonicalKey: 'output' }, action: { propertyKeys: STORYBOARD_ACTION_PROPERTY_KEYS, canonicalKey: 'action' }, dialogue: { propertyKeys: STORYBOARD_DIALOGUE_PROPERTY_KEYS, canonicalKey: 'dialogue' } } as const
 const STORYBOARD_NEW_CARD_NODE_TYPE = 'Storyboard'
 const STORYBOARD_NEW_CARD_LABEL = 'New storyboard card'
@@ -389,7 +389,7 @@ function StorytreeEdgeConnector(props: {
     >
       <section className="pointer-events-none absolute bottom-0 top-0 w-px bg-black/15" style={{ left: `${indentPx + 8}px` }} aria-hidden="true" />
       <section className="pointer-events-none absolute h-px w-7 bg-black/15" style={{ left: `${indentPx + 8}px`, top: '50%' }} aria-hidden="true" />
-      <span className="ml-8 inline-flex max-w-full items-center gap-1 rounded-full border border-black/10 bg-black/[0.025] px-2 py-1 text-[10px] text-black/55">
+      <span className="ml-8 inline-flex max-w-full items-center gap-1 rounded-full border border-black/10 bg-black/[0.025] px-2 py-1 text-xs text-black/55">
         <span className="h-1.5 w-1.5 rounded-full bg-black/35" aria-hidden="true" />
         <span className="truncate">{sourceTitle}</span>
         <span aria-hidden="true">to</span>
@@ -464,7 +464,7 @@ function StoryboardDetailRow(props: {
     <section className="flex items-start gap-2 rounded-lg border border-black/5 bg-black/[0.025] px-2.5 py-2">
       <span className={['mt-0.5 shrink-0', UI_THEME_TOKENS.text.tertiary].join(' ')}>{props.icon}</span>
       <section className="min-w-0 flex-1">
-        <p className={['m-0 text-[10px] font-semibold uppercase tracking-[0.08em]', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+        <p className={['m-0 text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary].join(' ')}>
           {props.label}
         </p>
         <CardInlineTextEditor
@@ -1825,7 +1825,7 @@ export default function StoryboardCanvas({
           <section className="flex items-center gap-2">
             <PanelsTopLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
             <h2 className={['m-0 text-sm font-semibold', UI_THEME_TOKENS.text.primary].join(' ')}>Storyboard</h2>
-            <span className={['inline-flex h-5 min-w-5 items-center justify-center rounded px-1.5 text-[10px]', UI_THEME_TOKENS.badge.chip, UI_THEME_TOKENS.text.secondary].join(' ')}>
+            <span className={['inline-flex h-5 min-w-5 items-center justify-center rounded px-1.5 text-xs', UI_THEME_TOKENS.badge.chip, UI_THEME_TOKENS.text.secondary].join(' ')}>
               {board.totalCards}
             </span>
           </section>
@@ -1834,19 +1834,19 @@ export default function StoryboardCanvas({
           </p>
         </section>
         <section className="flex flex-wrap items-center gap-2">
-          <span className={['inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px]', UI_THEME_TOKENS.badge.chip, UI_THEME_TOKENS.text.secondary].join(' ')}>
+          <span className={['inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs', UI_THEME_TOKENS.badge.chip, UI_THEME_TOKENS.text.secondary].join(' ')}>
             <Hash className="h-3 w-3" aria-hidden="true" />
             {laneCount} lanes
           </span>
-          <span className={['inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px]', UI_THEME_TOKENS.badge.chip, UI_THEME_TOKENS.text.secondary].join(' ')}>
+          <span className={['inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs', UI_THEME_TOKENS.badge.chip, UI_THEME_TOKENS.text.secondary].join(' ')}>
             <ImageIcon className="h-3 w-3" aria-hidden="true" />
             {mediaCount} media
           </span>
-          <span className={['inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px]', UI_THEME_TOKENS.badge.chip, UI_THEME_TOKENS.text.secondary].join(' ')}>
+          <span className={['inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs', UI_THEME_TOKENS.badge.chip, UI_THEME_TOKENS.text.secondary].join(' ')}>
             <Link2 className="h-3 w-3" aria-hidden="true" />
             {referenceCount} links
           </span>
-          <span className={['hidden text-[10px] sm:inline font-mono', UI_THEME_TOKENS.text.tertiary].join(' ')} title={board.semanticKey}>
+          <span className={['hidden text-xs sm:inline font-mono', UI_THEME_TOKENS.text.tertiary].join(' ')} title={board.semanticKey}>
             {board.semanticKey ? board.semanticKey.slice(0, 10) : 'empty'}
           </span>
         </section>
@@ -1961,7 +1961,7 @@ export default function StoryboardCanvas({
                     <h3 className={['m-0 text-sm font-medium truncate', UI_THEME_TOKENS.text.primary].join(' ')} title={readMarkdownSigilDisplayText(lane.label)}>
                       {renderMarkdownSigilInlineText(lane.label)}
                     </h3>
-                    <p className={['m-0 mt-1 text-[11px]', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+                    <p className={['m-0 mt-1 text-xs', UI_THEME_TOKENS.text.tertiary].join(' ')}>
                       {lane.cards.length} storyboard cards
                     </p>
                   </section>
@@ -1980,7 +1980,7 @@ export default function StoryboardCanvas({
                         />
                       </li>
                     </menu>
-                    <span className={['inline-flex h-6 min-w-6 items-center justify-center rounded-lg px-1.5 text-[10px]', UI_THEME_TOKENS.badge.chip, UI_THEME_TOKENS.text.secondary].join(' ')}>
+                    <span className={['inline-flex h-6 min-w-6 items-center justify-center rounded-lg px-1.5 text-xs', UI_THEME_TOKENS.badge.chip, UI_THEME_TOKENS.text.secondary].join(' ')}>
                       {lane.cards.length}
                     </span>
                   </section>
@@ -1993,7 +1993,7 @@ export default function StoryboardCanvas({
                         type="button"
                         className={[
                           UI_RESPONSIVE_STORYBOARD_FILTER_ACTION_CLASSNAME,
-                          'inline-flex shrink-0 items-center gap-1 rounded border text-[11px]',
+                          'inline-flex shrink-0 items-center gap-1 rounded border text-xs',
                           filter.id === storytreeFilter ? 'border-black/30 bg-black/10 text-black' : [UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.button.hoverBg, UI_THEME_TOKENS.text.secondary].join(' '),
                         ].join(' ')}
                         aria-pressed={filter.id === storytreeFilter}
@@ -2291,7 +2291,7 @@ export default function StoryboardCanvas({
                               <section className="flex items-start justify-between gap-3">
                                 <section className="min-w-0 flex-1">
                                   <section className="mb-2 flex items-center gap-2">
-                                    <span className={`${UI_RESPONSIVE_STORYBOARD_INDEX_BADGE_CLASSNAME} inline-flex items-center justify-center rounded-md border border-black/10 bg-black/[0.03] px-2 py-1 text-[10px] font-semibold text-black/70`}>
+                                    <span className={`${UI_RESPONSIVE_STORYBOARD_INDEX_BADGE_CLASSNAME} inline-flex items-center justify-center rounded-md border border-black/10 bg-black/[0.03] px-2 py-1 text-xs font-semibold text-black/70`}>
                                       {displayIndex}
                                     </span>
                                     <CardInlineTextEditor
@@ -2309,7 +2309,7 @@ export default function StoryboardCanvas({
                                         resolveDataViewChipClass(card.typeLabel),
                                       ].join(' ')}
                                       editorClassName={[
-                                        'min-w-[6rem] rounded border px-2 py-0.5 text-[10px] font-medium',
+                                        'min-w-[6rem] rounded border px-2 py-0.5 text-xs font-medium',
                                         UI_THEME_TOKENS.input.bg,
                                         UI_THEME_TOKENS.input.border,
                                         UI_THEME_TOKENS.input.text,
@@ -2330,7 +2330,7 @@ export default function StoryboardCanvas({
                                         resolveDataViewChipClass(card.lane),
                                       ].join(' ')}
                                       editorClassName={[
-                                        'min-w-[4.5rem] rounded border px-2 py-0.5 text-[10px] font-medium',
+                                        'min-w-[4.5rem] rounded border px-2 py-0.5 text-xs font-medium',
                                         UI_THEME_TOKENS.input.bg,
                                         UI_THEME_TOKENS.input.border,
                                         UI_THEME_TOKENS.input.text,
@@ -2350,7 +2350,7 @@ export default function StoryboardCanvas({
                                     editorClassName={`${UI_RESPONSIVE_CARD_TITLE_EDITOR_CLASSNAME} text-sm font-semibold leading-5`}
                                   />
                                   {card.slugline ? (
-                                    <p className={['m-0 mt-1 text-[11px] uppercase tracking-[0.08em]', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+                                    <p className={['m-0 mt-1 text-xs uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary].join(' ')}>
                                       {renderMarkdownSigilInlineText(card.slugline)}
                                     </p>
                                   ) : null}
@@ -2410,7 +2410,7 @@ export default function StoryboardCanvas({
                                 onClick={event => event.stopPropagation()}
                                 onPointerDown={event => event.stopPropagation()}
                               >
-                                <p className={['m-0 text-[10px] font-semibold uppercase tracking-[0.08em]', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+                                <p className={['m-0 text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary].join(' ')}>
                                   {UI_COPY.chatModelSelectLabel}
                                 </p>
                                 {storyboardCardModelSelect ? (
@@ -2425,7 +2425,7 @@ export default function StoryboardCanvas({
                                 ) : (
                                   <output
                                     className={[
-                                      'block rounded border px-2 py-1 text-[11px]',
+                                      'block rounded border px-2 py-1 text-xs',
                                       UI_THEME_TOKENS.input.border,
                                       UI_THEME_TOKENS.input.bg,
                                       UI_THEME_TOKENS.text.primary,
@@ -2439,7 +2439,7 @@ export default function StoryboardCanvas({
 
                               {summaryEntry || canEditCanonicalText ? (
                                 <section>
-                                  <p className={['m-0 text-[10px] font-semibold uppercase tracking-[0.08em]', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+                                  <p className={['m-0 text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary].join(' ')}>
                                     {summaryEntry?.label || 'Summary'}
                                   </p>
                                   <CardInlineTextEditor
@@ -2482,7 +2482,7 @@ export default function StoryboardCanvas({
                                   <section className={STORYBOARD_BRANCH_ACTION_GRID_CLASS_NAME}>
                                     <button
                                       type="button"
-                                      className={[UI_RESPONSIVE_PANEL_TEXT_ACTION_BUTTON_CLASSNAME, 'inline-flex items-center justify-center gap-1 rounded border text-[11px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.button.hoverBg, UI_THEME_TOKENS.text.secondary].join(' ')}
+                                      className={[UI_RESPONSIVE_PANEL_TEXT_ACTION_BUTTON_CLASSNAME, 'inline-flex items-center justify-center gap-1 rounded border text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.button.hoverBg, UI_THEME_TOKENS.text.secondary].join(' ')}
                                       aria-label={`${likedByCurrentUser ? 'Unlike' : 'Like'} storytree branch ${displayTitle}`}
                                       onClick={event => {
                                         event.stopPropagation()
@@ -2494,7 +2494,7 @@ export default function StoryboardCanvas({
                                     </button>
                                     <button
                                       type="button"
-                                      className={[UI_RESPONSIVE_PANEL_TEXT_ACTION_BUTTON_CLASSNAME, 'inline-flex items-center justify-center gap-1 rounded border text-[11px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.button.hoverBg, UI_THEME_TOKENS.text.secondary].join(' ')}
+                                      className={[UI_RESPONSIVE_PANEL_TEXT_ACTION_BUTTON_CLASSNAME, 'inline-flex items-center justify-center gap-1 rounded border text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.button.hoverBg, UI_THEME_TOKENS.text.secondary].join(' ')}
                                       aria-label={`Compare storytree candidates from ${displayTitle}`}
                                       disabled={storytreeStatus === 'dropped'}
                                       onClick={event => {
@@ -2507,7 +2507,7 @@ export default function StoryboardCanvas({
                                     </button>
                                     <button
                                       type="button"
-                                      className={[UI_RESPONSIVE_PANEL_TEXT_ACTION_BUTTON_CLASSNAME, 'inline-flex items-center justify-center gap-1 rounded border text-[11px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.button.hoverBg, UI_THEME_TOKENS.text.secondary].join(' ')}
+                                      className={[UI_RESPONSIVE_PANEL_TEXT_ACTION_BUTTON_CLASSNAME, 'inline-flex items-center justify-center gap-1 rounded border text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.button.hoverBg, UI_THEME_TOKENS.text.secondary].join(' ')}
                                       aria-label={`Unlock storytree branch ${displayTitle}`}
                                       disabled={!unlockRequired || !canUnlock}
                                       onClick={event => {
@@ -2520,7 +2520,7 @@ export default function StoryboardCanvas({
                                     </button>
                                     <button
                                       type="button"
-                                      className={[UI_RESPONSIVE_PANEL_TEXT_ACTION_BUTTON_CLASSNAME, 'inline-flex items-center justify-center gap-1 rounded border text-[11px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.button.hoverBg, UI_THEME_TOKENS.text.secondary].join(' ')}
+                                      className={[UI_RESPONSIVE_PANEL_TEXT_ACTION_BUTTON_CLASSNAME, 'inline-flex items-center justify-center gap-1 rounded border text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.button.hoverBg, UI_THEME_TOKENS.text.secondary].join(' ')}
                                       aria-label={`Draft storytree continuation from ${displayTitle}`}
                                       disabled={storytreeStatus === 'dropped'}
                                       onClick={event => {
@@ -2560,7 +2560,7 @@ export default function StoryboardCanvas({
                                     type="button"
                                     className={[
                                       UI_RESPONSIVE_PANEL_TEXT_ACTION_BUTTON_CLASSNAME,
-                                      'mt-2 inline-flex w-full items-center justify-center gap-1 rounded border text-[11px]',
+                                      'mt-2 inline-flex w-full items-center justify-center gap-1 rounded border text-xs',
                                       candidatePublishEligible ? 'border-emerald-900/20 bg-emerald-700/10 text-emerald-950 hover:bg-emerald-700/15' : [UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.tertiary].join(' '),
                                     ].join(' ')}
                                     aria-label={`Publish ForkCompare candidate ${displayTitle}`}
@@ -2581,7 +2581,7 @@ export default function StoryboardCanvas({
                                   <section className="flex items-center justify-between gap-2">
                                     <section className="flex items-center gap-2">
                                       <Sparkles className={['h-3.5 w-3.5 shrink-0', UI_THEME_TOKENS.text.tertiary].join(' ')} aria-hidden="true" />
-                                      <span className={['text-[10px] font-semibold uppercase tracking-[0.08em]', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+                                      <span className={['text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary].join(' ')}>
                                         {sourcePromptLabel || 'Visual Brief'}
                                       </span>
                                     </section>
@@ -2666,7 +2666,7 @@ export default function StoryboardCanvas({
                               ) : null}
 
                               {card.meta.length > 0 ? (
-                                <section className={['flex flex-wrap gap-1 text-[11px]', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+                                <section className={['flex flex-wrap gap-1 text-xs', UI_THEME_TOKENS.text.tertiary].join(' ')}>
                                   {card.meta.map(item => (
                                     <span key={`${card.id}:meta:${item}`} className={['rounded px-2 py-1', UI_THEME_TOKENS.badge.chip].join(' ')}>
                                       {item}

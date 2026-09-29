@@ -30,14 +30,14 @@ type Props = Readonly<{
 
 export function XrChoreographyMarkControls({ target, warning, compact = false, showPosition = !compact, onChange }: Props) {
   const easing = target.kind === 'cast' ? target.mark.transition : target.mark.easing
-  const selectClass = compact ? 'h-5 w-[76px] px-1 py-0 text-[9px]' : 'h-7 min-w-0 text-[10px]'
+  const selectClass = compact ? 'h-5 w-[76px] px-1 py-0 text-xs' : 'h-7 min-w-0 text-xs'
   return (
     <section
       className={cn('flex min-w-0 items-center gap-1', compact ? '' : 'flex-wrap')}
       aria-label={`${target.kind === 'cast' ? 'Cast' : 'Camera'} mark choreography`}
       data-kg-xr-choreography-mark-controls={target.kind}
     >
-      <label className="grid min-w-0 gap-0.5 text-[9px]">
+      <label className="grid min-w-0 gap-0.5 text-xs">
         {!compact ? <span className={UI_THEME_TOKENS.text.tertiary}>Easing</span> : null}
         <PanelSelect
           className={selectClass}
@@ -55,7 +55,7 @@ export function XrChoreographyMarkControls({ target, warning, compact = false, s
         </PanelSelect>
       </label>
       {target.kind === 'cast' ? (
-        <label className="grid min-w-0 gap-0.5 text-[9px]">
+        <label className="grid min-w-0 gap-0.5 text-xs">
           {!compact ? <span className={UI_THEME_TOKENS.text.tertiary}>Gait</span> : null}
           <PanelSelect
             className={selectClass}
@@ -70,12 +70,12 @@ export function XrChoreographyMarkControls({ target, warning, compact = false, s
       ) : null}
       {showPosition && target.kind === 'cast' ? compact ? (
         <section className="flex min-w-0 items-center gap-1" aria-label="Cast mark position in meters" data-kg-xr-mark-position={target.mark.id} data-kg-xr-mark-position-layout="compact-timeline">
-          <span className={cn('whitespace-nowrap text-[8px]', UI_THEME_TOKENS.text.tertiary)}>XYZ m</span>
+          <span className={cn('whitespace-nowrap text-xs', UI_THEME_TOKENS.text.tertiary)}>XYZ m</span>
           {(['X', 'Y', 'Z'] as const).map((axis, index) => (
-            <label key={axis} className="flex min-w-0 items-center gap-0.5 text-[8px]">
+            <label key={axis} className="flex min-w-0 items-center gap-0.5 text-xs">
               <span className={UI_THEME_TOKENS.text.tertiary}>{axis}</span>
               <PanelTextInput
-                className="h-5 w-11 min-w-0 px-1 py-0 text-[9px]"
+                className="h-5 w-11 min-w-0 px-1 py-0 text-xs"
                 type="number"
                 min={axis === 'Y' ? 0 : -XR_MOTION_REFERENCE_MAX_COORDINATE_METERS}
                 max={XR_MOTION_REFERENCE_MAX_COORDINATE_METERS}
@@ -96,12 +96,12 @@ export function XrChoreographyMarkControls({ target, warning, compact = false, s
         </section>
       ) : (
         <fieldset className="grid min-w-[180px] flex-1 grid-cols-3 gap-1 border-0 p-0" data-kg-xr-mark-position={target.mark.id}>
-          <legend className={cn('col-span-3 text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Mark position · meters</legend>
+          <legend className={cn('col-span-3 text-xs', UI_THEME_TOKENS.text.tertiary)}>Mark position · meters</legend>
           {(['X', 'Y', 'Z'] as const).map((axis, index) => (
-            <label key={axis} className="grid min-w-0 gap-0.5 text-[9px]">
+            <label key={axis} className="grid min-w-0 gap-0.5 text-xs">
               <span className={UI_THEME_TOKENS.text.tertiary}>{axis}</span>
               <PanelTextInput
-                className="h-7 min-w-0 px-1 text-[10px]"
+                className="h-7 min-w-0 px-1 text-xs"
                 type="number"
                 min={axis === 'Y' ? 0 : -XR_MOTION_REFERENCE_MAX_COORDINATE_METERS}
                 max={XR_MOTION_REFERENCE_MAX_COORDINATE_METERS}
@@ -122,7 +122,7 @@ export function XrChoreographyMarkControls({ target, warning, compact = false, s
         </fieldset>
       ) : null}
       {warning ? (
-        <output className="flex min-w-0 items-center gap-1 text-[9px] text-amber-700 dark:text-amber-300" title={warning.message} data-kg-xr-speed-warning={warning.code}>
+        <output className="flex min-w-0 items-center gap-1 text-xs text-amber-700 dark:text-amber-300" title={warning.message} data-kg-xr-speed-warning={warning.code}>
           <TriangleAlert className="size-3 shrink-0" aria-hidden />
           {!compact ? <span className="truncate">{warning.message}</span> : null}
         </output>

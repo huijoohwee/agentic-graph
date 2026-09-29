@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import React from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { PerspectiveCamera } from 'three'
@@ -66,7 +67,7 @@ export default function LearningCanvasEmbed() {
       <LearningSceneGeometry lesson={learningLesson('drone')} scene={learningCanvasScene(pose)} />
       <CameraControls />
     </Canvas>
-    {shared ? <div style={{ position: 'absolute', bottom: 12, left: 12, right: 12, background: '#101b2e', color: 'white', padding: 12, borderRadius: 8, fontFamily: 'system-ui' }}>
+    {shared ? <div style={{ position: 'absolute', bottom: 12, left: 12, right: 12, background: '#101b2e', color: 'white', padding: 12, borderRadius: 8, fontFamily: UI_FONT_SANS }}>
       <p role="status">{error || (samples ? `Flight replay · ${pose[0]} / ${samples.length - 1} ticks · altitude ${pose[4].toFixed(2)} m` : 'Loading Canvas snapshot…')}</p>
       <button disabled={!samples || !!error} onClick={() => { if (samples && pose[0] === samples.length - 1) setPose(samples[0]); setPlaying(value => !value) }}
         style={{ minHeight: 44, marginRight: 8 }}>{playing ? 'Pause replay' : 'Replay flight'}</button>

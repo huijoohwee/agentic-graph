@@ -3,7 +3,6 @@
 Editable MainPanel Help Icon Library Values used by KTV rows.
 
 Keep `Key` aligned to the Help icon text key in source. Keep `Type` aligned to the shared MainPanel Help Icon Library semantic icon key. Update `Value` and optional semicolon-separated `Details` here when Help icon row text should change.
-
 | Key | Type | Value | Details |
 | --- | --- | --- | --- |
 | iconLegend.header | mainPanel.help | Shared icon legend | Shows the semantic icon library used by MainPanel tabs, FloatingPanel views, Workflow Manager graph fields, and shared KTV rows. |
@@ -103,3 +102,18 @@ Keep `Key` aligned to the Help icon text key in source. Keep `Type` aligned to t
 | field.type.url | field.type.url | URI string | Link or URL string pointing to external resources or documents. |
 | field.type.currency | field.type.currency | Monetary numeric | Numeric values representing currency amounts such as prices or balances. |
 | field.type.json | field.type.json | Structured JSON payload | Structured JSON objects used for nested metadata or model outputs. |
+| action.run | action.run | Run | Shared MainPanel action; hover or focus the named button before activation. |
+| action.connect | action.connect | Connect | Shared MainPanel action; hover or focus the named button before activation. |
+| action.disconnect | action.disconnect | Disconnect | Shared MainPanel action; hover or focus the named button before activation. |
+| action.save | action.save | Save snapshot | Shared MainPanel action; hover or focus the named button before activation. |
+| action.restore | action.restore | Restore | Restore a selected history snapshot. |
+| action.export | action.export | Export | Shared MainPanel action; hover or focus the named button before activation. |
+| action.import | action.import | Import selected | Shared MainPanel action; hover or focus the named button before activation. |
+| action.cancel | action.cancel | Cancel | Shared MainPanel action; hover or focus the named button before activation. |
+| action.discover | action.discover | Find links | Shared MainPanel action; hover or focus the named button before activation. |
+| action.review | action.review | Stage review | Shared MainPanel action; hover or focus the named button before activation. |
+| status.ready | status.ready | Ready | Shared MainPanel action; hover or focus the named button before activation. |
+| status.error | status.error | Error | Shared MainPanel action; hover or focus the named button before activation. |
+| mainPanel.websiteImport | mainPanel.websiteImport | Import URL | Discover pages and select files or folders before importing. |
+| floatingPanel.blockLibrary | floatingPanel.blockLibrary | Block library | Shared semantic icon; hover or focus the named control for its action. |
+| floatingPanel.console | floatingPanel.console | Console | Shared semantic icon; hover or focus the named control for its action. |

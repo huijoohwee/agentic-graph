@@ -266,7 +266,7 @@ export default function FieldLocalSchemaRowsEditor({
                       const next = localSchemaRows.filter(r => r.id !== row.id)
                       setLocalSchemaRows(next)
                     }}
-                    className={`${actionButtonClassName} text-[11px]`}
+                    className={`${actionButtonClassName} text-xs`}
                   >
                     {UI_LABELS.delete}
                   </button>
@@ -296,7 +296,7 @@ export default function FieldLocalSchemaRowsEditor({
                       {hasDefaultSuggestion ? (
                         <button
                           type="button"
-                          className={`${actionButtonClassName} text-[11px]`}
+                          className={`${actionButtonClassName} text-xs`}
                           onClick={() => applySuggestedSpec('default')}
                         >
                           Use default
@@ -306,7 +306,7 @@ export default function FieldLocalSchemaRowsEditor({
                         <button
                           key={v}
                           type="button"
-                          className={`${actionButtonClassName} text-[11px]`}
+                          className={`${actionButtonClassName} text-xs`}
                           onClick={() => applySuggestedSpec('enum', String(v))}
                         >
                           {v}
@@ -315,7 +315,7 @@ export default function FieldLocalSchemaRowsEditor({
                       {hasSampleSuggestion ? (
                         <button
                           type="button"
-                          className={`${actionButtonClassName} text-[11px]`}
+                          className={`${actionButtonClassName} text-xs`}
                           onClick={() => applySuggestedSpec('sample')}
                         >
                           Use sample

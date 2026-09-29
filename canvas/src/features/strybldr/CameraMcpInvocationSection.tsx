@@ -93,8 +93,8 @@ function CameraCatalogCard({
           </h4>
         </header>
         <section className="grid min-w-0 gap-0.5" data-kg-floating-panel-card-row="meta">
-          <p className={cn('m-0 line-clamp-2 text-[11px]', UI_THEME_TOKENS.text.secondary)} title={description}>{description}</p>
-          <p className={cn('m-0 truncate text-[10px] uppercase tracking-wide', UI_THEME_TOKENS.text.tertiary)} title={metadata}>{metadata}</p>
+          <p className={cn('m-0 line-clamp-2 text-xs', UI_THEME_TOKENS.text.secondary)} title={description}>{description}</p>
+          <p className={cn('m-0 truncate text-xs uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary)} title={metadata}>{metadata}</p>
         </section>
         <footer className="flex min-w-0 items-center gap-1 overflow-hidden" data-kg-floating-panel-card-row="description">{footer}</footer>
       </section>
@@ -111,7 +111,7 @@ function CameraInvocationTokenCard({ entry }: { entry: AgenticOsDictionaryInvoca
       title={entry.token}
       description={entry.summary || entry.label || 'Canonical Camera invocation token.'}
       metadata={`${kind} · ${entry.label || 'Camera'}`}
-      footer={<code className={cn('block min-w-0 truncate text-[9px]', UI_THEME_TOKENS.text.tertiary)} title={source}>{source}</code>}
+      footer={<code className={cn('block min-w-0 truncate text-xs', UI_THEME_TOKENS.text.tertiary)} title={source}>{source}</code>}
       dataAttributes={{
         'data-kg-camera-invocation-token': entry.token,
         'data-kg-camera-invocation-kind': kind,
@@ -151,7 +151,7 @@ export function CameraMcpInvocationSection() {
           title="Inspect Local Camera"
           description="Read shared framing, XR motion, panel, and BottomPanel Timeline state without mutation."
           metadata="WebMCP · read-only"
-          footer={<code className="block min-w-0 truncate text-[9px]" title={camera.webMcpTools.inspect}>{camera.webMcpTools.inspect}</code>}
+          footer={<code className="block min-w-0 truncate text-xs" title={camera.webMcpTools.inspect}>{camera.webMcpTools.inspect}</code>}
           dataAttributes={{ 'data-kg-camera-webmcp-tool': camera.webMcpTools.inspect }}
         />
         <CameraCatalogCard
@@ -159,7 +159,7 @@ export function CameraMcpInvocationSection() {
           title="Control Local Camera"
           description="Frame, apply subject-bound moves, play, pause, and scrub through structured input or canonical invocation tokens."
           metadata="WebMCP · local mutation"
-          footer={<code className="block min-w-0 truncate text-[9px]" title={camera.webMcpTools.control}>{camera.webMcpTools.control}</code>}
+          footer={<code className="block min-w-0 truncate text-xs" title={camera.webMcpTools.control}>{camera.webMcpTools.control}</code>}
           dataAttributes={{ 'data-kg-camera-webmcp-tool': camera.webMcpTools.control }}
         />
       </section>
@@ -168,7 +168,7 @@ export function CameraMcpInvocationSection() {
         {cameraEntries.map(entry => <CameraInvocationTokenCard key={entry.token} entry={entry} />)}
         {!sourceMetadataReady ? (
           <p
-            className={cn('m-0 rounded border px-2 py-1 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.tertiary)}
+            className={cn('m-0 rounded border px-2 py-1 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.tertiary)}
             data-kg-camera-metadata-not-fresh="1"
           >
             {metadataLoading

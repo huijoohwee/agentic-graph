@@ -1,3 +1,4 @@
+import { UI_FONT_MONO } from 'grph-shared/ui/typography'
 import { buildWebpageAssetPathProxyUrl, shouldUseWebpageAssetPathProxyUrl } from '../url'
 import { pickFirstSrcsetUrl } from 'grph-shared/markdown/mediaHtml'
 
@@ -342,7 +343,6 @@ export const buildCodeViewerSrcdoc = (args: { baseHref: string; title: string; m
   const label = args.mode === 'json' ? 'JSON' : 'Text'
   const rawText = String(args.text || '')
   const clippedText = rawText.length > 450_000 ? `${rawText.slice(0, 450_000)}\n\n…(clipped ${rawText.length - 450_000} chars)…` : rawText
-  const body = escapeHtml(clippedText)
   const csp = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
   const html = [
     '<!doctype html>',
@@ -355,7 +355,7 @@ export const buildCodeViewerSrcdoc = (args: { baseHref: string; title: string; m
     `<title>${title}</title>`,
     '<style>',
     '  :root{color-scheme: dark light;}',
-    '  body{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;}',
+    `  body{margin:0;font-family:${UI_FONT_MONO};}`,
     '  header{position:sticky;top:0;z-index:1;background:rgba(0,0,0,0.72);backdrop-filter:blur(8px);color:#fff;padding:8px 12px;font-size:12px;display:flex;gap:8px;align-items:center;}',
     '  main{padding:12px;}',
     '  pre{margin:0;white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.45;}',
@@ -363,7 +363,7 @@ export const buildCodeViewerSrcdoc = (args: { baseHref: string; title: string; m
     '</head>',
     '<body>',
     `<header><strong>${label}</strong><span style="opacity:.7">sandboxed</span></header>`,
-    `<main><pre>${body}</pre></main>`,
+    `<main><pre>${escapeHtml(clippedText)}</pre></main>`,
     '</body>',
     '</html>',
   ].join('\n')

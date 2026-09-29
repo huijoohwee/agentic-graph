@@ -143,7 +143,7 @@ function AdvisorProposal({
   return (
     <article
       className={cn(
-        'grid gap-1 rounded border p-2 text-[10px]',
+        'grid gap-1 rounded border p-2 text-xs',
         UI_THEME_TOKENS.panel.border,
         UI_THEME_TOKENS.panel.bg,
       )}
@@ -317,7 +317,7 @@ export function CitySimFloatingPanelView() {
       <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
         <section
           className={cn(
-            'grid grid-cols-3 gap-2 rounded border p-2 text-[10px]',
+            'grid grid-cols-3 gap-2 rounded border p-2 text-xs',
             UI_THEME_TOKENS.panel.border,
             UI_THEME_TOKENS.panel.bg,
           )}
@@ -339,11 +339,11 @@ export function CitySimFloatingPanelView() {
           )}
           aria-label="City simulation runtime status"
         >
-          <p className="flex items-center gap-1 text-[11px] font-semibold">
+          <p className="flex items-center gap-1 text-xs font-semibold">
             <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
             Browser-local · explicit persistence · no deployment
           </p>
-          <p className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
             {snapshot.message}
           </p>
           <span
@@ -357,7 +357,7 @@ export function CitySimFloatingPanelView() {
           </span>
           <p
             className={cn(
-              'text-[9px]',
+              'text-xs',
               defaultPathIsZeroCost
                 ? UI_THEME_TOKENS.status.success
                 : UI_THEME_TOKENS.status.warning,
@@ -369,13 +369,13 @@ export function CitySimFloatingPanelView() {
               : `${snapshot.modelCallCount} model calls · $${snapshot.estimatedCostUsd.toFixed(4)} estimated cost`}
           </p>
           {snapshot.costLog ? (
-            <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+            <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
               Last cost log · {snapshot.costLog.model} · {snapshot.costLog.prompt_tokens} prompt · {snapshot.costLog.completion_tokens} completion
             </p>
           ) : null}
           {runtimeError ? (
             <p
-              className={cn('break-words text-[10px]', UI_THEME_TOKENS.status.error)}
+              className={cn('break-words text-xs', UI_THEME_TOKENS.status.error)}
               role="alert"
               data-kg-city-sim-error="1"
             >
@@ -393,7 +393,7 @@ export function CitySimFloatingPanelView() {
           )}
           aria-label="Selected regional POI"
         >
-          <header className="flex items-center justify-between gap-2 text-[11px]">
+          <header className="flex items-center justify-between gap-2 text-xs">
             <b className="flex items-center gap-1">
               <MapPinned className="h-3.5 w-3.5" aria-hidden="true" />
               Selected POI
@@ -401,19 +401,19 @@ export function CitySimFloatingPanelView() {
             <span>{selectedParcel?.id ?? 'None'}</span>
           </header>
           {selectedParcel ? (
-            <p className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+            <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
               {ZONE_LABELS[selectedParcel.zone]} · land value {formatTreasuryCents(selectedParcel.landValueCents)}
               {' · '}population {formatMetric(selectedParcel.population)}
               {' · '}pollution {formatMetric(selectedParcel.pollution)}
             </p>
           ) : (
-            <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
+            <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
               Select a regional POI before assigning a zone.
             </p>
           )}
           {snapshot.lastInput ? (
             <p
-              className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}
+              className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}
               data-kg-city-sim-last-input="1"
             >
               {describeCityInputSnapshot(snapshot.lastInput)}
@@ -447,11 +447,11 @@ export function CitySimFloatingPanelView() {
           aria-label="City zoning advisor"
         >
           <header className="flex items-center justify-between gap-2">
-            <h3 className="flex items-center gap-1 text-[11px] font-semibold">
+            <h3 className="flex items-center gap-1 text-xs font-semibold">
               <Lightbulb className="h-3.5 w-3.5" aria-hidden="true" />
               Zoning advisor
             </h3>
-            <span className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+            <span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
               2 rounds maximum
             </span>
           </header>
@@ -487,7 +487,7 @@ export function CitySimFloatingPanelView() {
               ))}
             </section>
           ) : (
-            <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
+            <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
               No proposal is pending. Advice uses the deterministic local heuristic.
             </p>
           )}
@@ -541,7 +541,7 @@ export function CitySimFloatingPanelView() {
               <Save className="h-3.5 w-3.5" aria-hidden="true" /> Save locally
             </button>
           </div>
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
             WorkspaceFs status · {snapshot.saveStatus}. Open reads the one local document;
             Save is explicit, and simulation ticks never auto-save.
           </p>
@@ -549,7 +549,7 @@ export function CitySimFloatingPanelView() {
 
         <section
           className={cn(
-            'grid grid-cols-2 gap-2 rounded border p-2 text-[10px]',
+            'grid grid-cols-2 gap-2 rounded border p-2 text-xs',
             UI_THEME_TOKENS.panel.border,
             UI_THEME_TOKENS.panel.bg,
           )}

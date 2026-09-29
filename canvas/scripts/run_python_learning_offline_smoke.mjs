@@ -67,13 +67,12 @@ try {
   // Exercise the actual Source Files owner before the separate offline lesson proof.
   await page.setViewportSize({ width: 1280, height: 900 })
   await dismissVisibleFloatingPanel(page)
-  const folder = page.getByRole('button', { name: 'Folder python-lessons', exact: true })
-  const docsFolder = page.getByRole('button', { name: 'Folder docs', exact: true })
-  await docsFolder.waitFor()
-  if (await docsFolder.locator('svg.lucide-chevron-right').count()) await docsFolder.click()
-  await folder.waitFor({ timeout: 30000 })
-  const firstFile = page.getByRole('button', { name: `File ${lessonFiles[0].name}`, exact: true })
-  if (!await firstFile.isVisible()) await folder.click()
+  for (const name of ['docs', 'python-lessons']) {
+    await page.getByRole('button', { name: `Folder ${name}`, exact: true }).waitFor()
+    const disclosure = page.getByRole('button', { name: `Expand folder ${name}`, exact: true })
+    if (await disclosure.isVisible()) await disclosure.click()
+  }
+  await page.getByRole('button', { name: `File ${lessonFiles[0].name}`, exact: true }).waitFor()
   const nativePane = page.getByRole('region', { name: 'Python learning workspace', exact: true })
   for (const file of lessonFiles) {
     const row = page.getByRole('button', { name: `File ${file.name}`, exact: true })

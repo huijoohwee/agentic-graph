@@ -167,17 +167,17 @@ export function XrShootCameraSection() {
         <section className="flex min-w-0 items-center gap-2">
           <Clapperboard className="size-4 shrink-0" strokeWidth={1.8} aria-hidden />
           <section>
-            <h3 className="text-xs font-black tracking-[0.16em]">SHOOT</h3>
-            <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Scene/object links, cast marks, rig, camera track.</p>
+            <h3 className="text-xs font-black tracking-normal">SHOOT</h3>
+            <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Scene/object links, cast marks, rig, camera track.</p>
           </section>
         </section>
-        <output className={cn('text-right text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
+        <output className={cn('text-right text-xs', UI_THEME_TOKENS.text.tertiary)}>
           {runtime.playheadSeconds.toFixed(2)}s<br />{runtime.plan.camera.length} camera marks
         </output>
       </header>
       <XrRehearsalStatus />
 
-      <label className="grid gap-1 text-[10px]">
+      <label className="grid gap-1 text-xs">
         <span className={UI_THEME_TOKENS.text.tertiary}>Camera source</span>
         <PanelSelect
           aria-label="XR camera source"
@@ -194,7 +194,7 @@ export function XrShootCameraSection() {
         </span>
       </label>
 
-      <label className="grid gap-1 text-[10px]">
+      <label className="grid gap-1 text-xs">
         <span className={UI_THEME_TOKENS.text.tertiary}>Shot target</span>
         <PanelSelect
           aria-label="SHOOT scene or 3D object target"
@@ -230,17 +230,17 @@ export function XrShootCameraSection() {
         data-kg-xr-shoot-cast-mark="1"
       >
         <MapPin className="size-3.5" aria-hidden />
-        <kbd className="rounded border px-1 text-[9px]">M</kbd>
+        <kbd className="rounded border px-1 text-xs">M</kbd>
         {runtime.castMarkArmed ? 'Click the XR floor' : 'Place cast marks'}
       </button>
-      <p className={cn('m-0 text-[10px]', runtime.castMarkArmed ? 'text-emerald-600 dark:text-emerald-300' : UI_THEME_TOKENS.text.tertiary)} aria-live="polite">
+      <p className={cn('m-0 text-xs', runtime.castMarkArmed ? 'text-emerald-600 dark:text-emerald-300' : UI_THEME_TOKENS.text.tertiary)} aria-live="polite">
         {selectedTrack
           ? `${selectedTrack.label} · ${selectedTrack.marks.length} numbered mark${selectedTrack.marks.length === 1 ? '' : 's'}${runtime.castMarkArmed ? ' · placement armed; Esc cancels' : ''}`
           : `${selectedShotTarget?.label || 'Scene'} · camera target only; select a mobile 3D Object to place cast marks.`}
       </p>
 
       <section className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2">
-        <label className="grid gap-1 text-[10px]">
+        <label className="grid gap-1 text-xs">
           <span className={UI_THEME_TOKENS.text.tertiary}>Rig</span>
           <PanelSelect
             aria-label="SHOOT camera rig"
@@ -251,7 +251,7 @@ export function XrShootCameraSection() {
             {XR_MOTION_REFERENCE_CAMERA_RIGS.map(rig => <option key={rig} value={rig}>{RIG_LABELS[rig]}</option>)}
           </PanelSelect>
         </label>
-        <section className="grid gap-1 text-[10px]" aria-label="SHOOT camera optics projection" data-kg-camera-optics-projection="xr-shoot">
+        <section className="grid gap-1 text-xs" aria-label="SHOOT camera optics projection" data-kg-camera-optics-projection="xr-shoot">
           <span className={UI_THEME_TOKENS.text.tertiary}>Optics · edit in Camera</span>
           <output className={cn('min-w-0 rounded border px-2 py-1.5 font-semibold', UI_THEME_TOKENS.panel.border)}>
             {formatCameraOptics(framing.settings)}

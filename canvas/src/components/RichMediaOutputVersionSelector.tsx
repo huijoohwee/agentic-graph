@@ -17,8 +17,8 @@ export function RichMediaOutputVersionSelector(props: {
   return (
     <label
       className={inHeader || inToolbar
-        ? 'flex min-w-0 shrink-0 items-center gap-1 text-[10px]'
-        : 'flex shrink-0 items-center justify-end gap-2 border-b px-2 py-1 text-[11px]'}
+        ? 'flex min-w-0 shrink-0 items-center gap-1 text-xs'
+        : 'flex shrink-0 items-center justify-end gap-2 border-b px-2 py-1 text-xs'}
       data-kg-rich-media-output-version-control="1"
       data-kg-rich-media-output-version-placement={placement}
       style={{
@@ -35,8 +35,8 @@ export function RichMediaOutputVersionSelector(props: {
         title="Select generated output version"
         value={selectedOutputVersionId}
         className={inHeader || inToolbar
-          ? 'max-w-24 rounded border bg-transparent px-1 py-0 text-[10px] leading-4'
-          : 'max-w-40 rounded border bg-transparent px-1 py-0.5 text-[11px]'}
+          ? 'max-w-24 rounded border bg-transparent px-1 py-0 text-xs leading-4'
+          : 'max-w-40 rounded border bg-transparent px-1 py-0.5 text-xs'}
         style={{ borderColor: 'var(--kg-border)', color: 'var(--kg-foreground)' }}
         onChange={event => onPanelChange?.({
           activeTab: 'text',

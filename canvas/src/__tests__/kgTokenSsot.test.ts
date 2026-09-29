@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
+import { buildUiTypographyCss } from 'grph-shared/ui/typography'
 
 import { AG_TOKEN_DEFS, extractKgCssVarsFromCssText } from '@/lib/ui/tokens-ssot'
 
@@ -84,6 +85,7 @@ export async function testKgTokenExportsAreDeterministicAndBounded() {
     light: '#ffffff', dark: '#000000', black: '#0a0a0a' }))
   assert.ok(new TextEncoder().encode(JSON.stringify(buildKgTokenBundle(boundary))).length <= 65536)
   const generated = [
+    buildUiTypographyCss(),
     buildKgTokensCssText('light', { selector: ':root' }),
     buildKgTokensCssText('dark', { selector: ":root[data-theme='dark']" }),
     buildKgTokensCssText('black', { selector: ":root[data-theme='dark'][data-dark-variant='black']" }),
