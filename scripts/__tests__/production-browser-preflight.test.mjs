@@ -10,6 +10,7 @@ import YAML from 'yaml'
 import { historyArtifactName, assertPriorBrowserRun } from '../production-browser-history.mjs'
 import { browserArtifactDigest, inspectBrowserInput, verifyStaticAssetRevalidation } from '../production-browser-preflight.mjs'
 import { productionMirrorArtifactEntries } from '../production-mirror-artifact-entries.mjs'
+import './production-prompt-catalog.test.mjs'
 
 test('browser history refuses failed, interrupted, active, self, and unprotected attempts', () => {
   const run = { id: 41, head_sha: 'a'.repeat(40), path: '.github/workflows/release.yml', event: 'workflow_dispatch',
