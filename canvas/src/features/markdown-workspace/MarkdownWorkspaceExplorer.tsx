@@ -207,6 +207,7 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
           }}
           sectionStyle={resolveSectionStyle('sourceFiles', sourceFilesCollapsed)}
           scrollMode="primary"
+          resizeAfter={!sourceFilesCollapsed && !tocCollapsed}
           right={<span className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.secondary}`}>{sourceFileCount + (matchesAgentMissionSource(search) ? 1 + Number(!!missionInspection) : 0)}</span>}
         >
           <MarkdownWorkspaceSourceFilesList
@@ -249,6 +250,7 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
           }}
           sectionStyle={resolveSectionStyle('toc', tocCollapsed)}
           scrollMode={tocItems.length > 0 || sectionHeightsPx ? 'secondary' : 'auto'}
+          resizeAfter={!tocCollapsed && !backlinksCollapsed}
         >
           <MarkdownWorkspaceTocList
             items={tocItems}

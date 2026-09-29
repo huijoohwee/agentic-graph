@@ -522,7 +522,7 @@ export default function SettingsView({
             </section>
           )}
           {mode === 'all' && (
-            <WorkspaceTableModeControl className={`border-b ${UI_THEME_TOKENS.panel.border}`} />
+            <WorkspaceTableModeControl />
           )}
           <SettingsSections
             applyUiPanelDensityPreset={applyUiPanelDensityPreset}

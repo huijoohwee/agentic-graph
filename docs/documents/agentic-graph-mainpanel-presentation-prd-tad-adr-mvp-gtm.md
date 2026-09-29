@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.9.0"
+version: "1.10.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -495,7 +495,7 @@ offline editor. Rollback: revert this revision; no migration is required.
 PRD: Explorer, toolbar, Main Panel and Settings use one visible 1 px border.
 Resize and menu controls remain selectable.
 
-TAD/ADR: The shared border token owns color (`#9ca3af` light; dark values
+TAD/ADR: The shared border token owns color (`#e5e7eb` light; dark values
 unchanged). The 1 px utility feeds headers, toolbar, gutter and panels. Explorer
 and toolbar separators center the line in 8 px hit areas. Collapsed explorer
 sections omit duplicate borders. Toolbar groups use named `hr` elements;
@@ -505,3 +505,20 @@ MVP/evidence: cap 11 files / 20 KB; no dependency or data change. Focused tests,
 types, browser styles and affected gate are in the handoff. The storage-auth
 smoke reads the semantic select button value and passes. GTM: clearer borders
 in the free offline app. Rollback: revert this revision; no migration.
+
+## Single boundary ownership (2026-09-29)
+
+PRD: Match the light 1 px reference and remove adjacent lines that make canvas,
+explorer and Settings boundaries look thicker. Keep semantic controls selectable.
+
+TAD/ADR: The canvas resize HR owns the full-height boundary; its adjacent pane
+has no right border. Explorer sections defer their bottom border to a following
+resize HR, and the last expanded section defers to the panel frame. Settings
+section top borders own the boundary below workspace controls. Main, Floating
+and Bottom panel chrome consumes the same neutral border token; no local color
+or opacity override is introduced. Resize hit areas remain 8 px and keyboard usable.
+
+MVP/evidence: cap 10 files / 20 KB; no new dependency, service or storage change.
+Focused contracts, type checking, browser geometry and affected checks are recorded
+in the handoff. GTM: consistent boundaries in the existing free/offline editor.
+Rollback: revert this follow-up as one unit; no data migration is required.
