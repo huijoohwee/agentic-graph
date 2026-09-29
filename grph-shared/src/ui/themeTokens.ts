@@ -168,3 +168,16 @@ export const UI_THEME_TOKENS = {
     text: 'text-[color:var(--kg-code-text)]',
   },
 } as const
+
+/** Keep decoration; fixed geometry belongs to the shared single-line control. */
+export function singleLineControlDecorationClassName(className = ''): string {
+  return className.split(/\s+/).filter(token => {
+    const utility = token.replace(/^(?:(?:[\w-]+|\[[^\]]+\]):)+/, '').replace(/^!/, '')
+    return token && !/^(?:(?:min-|max-)?(?:h|size)-|(?:min|max)-w-|p[xytrblse]?-|leading-|whitespace-|overflow(?:-[xy])?-|text-(?:ellipsis|clip)$|box-)/.test(utility)
+  }).join(' ')
+}
+
+/** Normalize saved/caller classes so old sizes cannot override the shared owner. */
+export function normalizeSingleLineControlClassName(className = ''): string {
+  return [...new Set(`${singleLineControlDecorationClassName(className)} ${UI_THEME_TOKENS.control.singleLine}`.trim().split(/\s+/))].join(' ')
+}

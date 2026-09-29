@@ -1,3 +1,4 @@
+import { normalizeSingleLineControlClassName } from './theme-tokens'
 import { normalizeUiTextClasses } from 'grph-shared/ui/typography'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { cn } from '@/lib/utils'
@@ -15,7 +16,7 @@ export function usePanelTypography(): PanelTypography {
         normalizeUiTextClasses(state.uiPanelMicroLabelTextSizeClass || state.uiIconBadgeChipTextSizeClass || PANEL_TYPOGRAPHY_DEFAULTS.microLabelTextSizeClass)
       const monospaceTextClass = normalizeUiTextClasses(state.uiPanelMonospaceTextClass || PANEL_TYPOGRAPHY_DEFAULTS.monospaceTextClass)
       const keyValueInputClass =
-        normalizeUiTextClasses(state.uiPanelKeyValueInputClass || PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass)
+        normalizeSingleLineControlClassName(normalizeUiTextClasses(state.uiPanelKeyValueInputClass || PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass))
       return {
         fontClass,
         textSizeClass,

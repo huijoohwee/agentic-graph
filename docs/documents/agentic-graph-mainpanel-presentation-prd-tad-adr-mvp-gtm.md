@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.3.1"
+version: "1.3.2"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -294,3 +294,28 @@ The native affected receipt binds broader validation to the committed candidate.
 GTM/rollback: This improves the existing free local interface without adding a
 package or network request. Revert the revision as a unit to restore the previous
 control geometry; workspace data and preferences need no migration.
+
+
+## Shared form height follow-up (2026-09-29)
+
+PRD: Match the reference 28 px height for dashboard source selection, source path
+fields, Save, Open actions, and settings text/number/drop-down controls. Inline
+labels align with the same height; long values remain bounded with ellipsis.
+
+TAD/ADR: `UI_THEME_TOKENS.control.singleLine` remains the geometry owner.
+`normalizeSingleLineControlClassName` rejects conflicting height, padding,
+line-height, box-sizing, overflow and wrapping utilities, including responsive
+variants. Panel primitives and settings rendering use it. Persisted panel input
+preferences migrate on read and write. Row density remains independent of control
+height. Multiline settings editors reuse decoration without fixed height or nowrap.
+Dashboard Open actions reuse `MainPanelIconButton` and Help's `action.open` icon;
+accessible labels, disabled behavior and existing file handlers remain intact.
+
+MVP/GTM: Local/offline presentation change, no service, dependency or pricing
+change. Budget: 13 modules, under 50 KB patch. Focused typography migration tests
+cover canonical sizing, idempotence, both density options, multiline preservation
+and source-owner guards. Live desktop measurements: all eight dashboard controls
+and Integrations' context dropdown are 28 px; JSON editor remains 130 px/pre-wrap.
+At 390 px, Integrations content/scroll widths are 356/356 px; dashboard form widths
+are 348/348 px. Native affected validation is recorded with release proof.
+Rollback: revert this follow-up; no content or storage-format migration is needed.

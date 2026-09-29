@@ -7,6 +7,8 @@ import { JSDOM } from 'jsdom'
 import { exportGraphAsCenteredSvgMarkup } from '@/lib/graph/graphCenteredSvg'
 import { defaultSchema } from '@/lib/graph/schema'
 import { UI_FONT_SANS, UI_FONT_MONO, UI_TEXT_SCALE, buildUiTypographyCss, normalizeUiTextClasses } from 'grph-shared/ui/typography'
+import { UI_THEME_TOKENS, normalizeSingleLineControlClassName, singleLineControlDecorationClassName } from 'grph-shared/ui/themeTokens'
+import { readDataViewSingleLineControlClassName } from '@/lib/ui/dataViewDensity'
 import { coercePanelTypography } from 'grph-shared/ui/panelTypography'
 import { tailwindTextSizeClassToPx } from 'grph-shared/ui/tailwindTextSize'
 import { getMarkdownHeadingFontSizePx, getMarkdownHeadingTextSizeClass } from '@/features/markdown/ui/markdownTypography'
@@ -52,6 +54,26 @@ export function testApplicationTypographyMigratesLegacyPreferences() {
   }
   assert.equal(normalizeUiTextClasses('font-serif text-[15px]'), 'font-serif text-[15px]')
   assert.equal(coercePanelTypography(null).microLabelTextSizeClass, 'text-xs')
+  const legacy = 'w-full h-6 md:h-9 !min-h-10 max-h-12 py-1 p-2 leading-10 whitespace-normal overflow-visible rounded border text-right'
+  const normalized = normalizeSingleLineControlClassName(legacy)
+  assert.equal(normalized, `w-full rounded border text-right ${UI_THEME_TOKENS.control.singleLine}`)
+  assert.equal(normalizeSingleLineControlClassName(normalized), normalized, 'Saved migrations must be idempotent')
+  assert.equal(coercePanelTypography({ keyValueInputClass: legacy }).keyValueInputClass, normalized)
+  assert.equal(readDataViewSingleLineControlClassName('compact'), readDataViewSingleLineControlClassName('comfortable'),
+    'Row density must never change single-line control height')
+  const multiline = singleLineControlDecorationClassName(normalized)
+  assert.ok(!multiline.includes('h-[') && !multiline.includes('nowrap') && !multiline.includes('overflow-hidden'),
+    'Multiline fields must retain intrinsic height and wrapping')
+  for (const file of ['src/lib/ui/panelFormControls.tsx', 'src/features/settings/ui.tsx',
+    'src/hooks/store/uiSliceInitialState.ts', 'src/hooks/store/uiSliceCoreActions.ts']) {
+    const source = fs.readFileSync(file, 'utf8')
+    assert.ok(source.includes('normalizeSingleLineControlClassName'), `${file} must reject legacy/caller height variants`)
+  }
+  const dashboard = fs.readFileSync('src/features/agent-ready/AgentMissionDashboardExport.tsx', 'utf8')
+  assert.ok(dashboard.includes('UI_THEME_TOKENS.control.singleLine'))
+  assert.ok(dashboard.includes('iconKey="action.open"') && !dashboard.includes('>Open</button>'))
+  assert.ok(!/className="[^"\n]*\b(?:h-[0-9]|p-2)[^"\n]*"/.test(dashboard), 'Dashboard controls must use shared sizing')
+
 }
 
 export function testApplicationTypographyExportsValidSvgFonts() {

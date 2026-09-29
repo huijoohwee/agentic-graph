@@ -1330,8 +1330,8 @@ export const testSettingsRowsUseEllipsisForLongMobileText = () => {
   if (!settingsUi.includes('overflow-hidden text-ellipsis whitespace-nowrap')) {
     throw new Error('Expected read-only settings values to ellipsize on mobile')
   }
-  if (!settingsUi.includes('w-full min-w-0 max-w-full h-6')) {
-    throw new Error('Expected settings inputs and selects to keep responsive width constraints')
+  if (!settingsUi.includes('normalizeSingleLineControlClassName') || settingsUi.includes('w-full min-w-0 max-w-full h-6')) {
+    throw new Error('Expected settings inputs and selects to reuse shared height and responsive width constraints')
   }
 }
 

@@ -1,3 +1,4 @@
+import { normalizeSingleLineControlClassName } from 'grph-shared/ui/themeTokens'
 import { normalizeUiTextClasses } from 'grph-shared/ui/typography'
 
 import type { StoreApi } from 'zustand'
@@ -378,7 +379,7 @@ export const createUiInitialState = (
       PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass,
       value =>
         typeof value === 'string'
-          ? normalizeUiTextClasses(value)
+          ? normalizeSingleLineControlClassName(normalizeUiTextClasses(value))
           : PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass,
     ),
 

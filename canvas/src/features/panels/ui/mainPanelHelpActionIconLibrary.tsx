@@ -1,7 +1,8 @@
-import { Check, CircleCheck, CircleX, Download, FileDown, Link, LogIn, Play, RotateCcw, Save, Unplug, X } from 'lucide-react'
+import { Check, CircleCheck, CircleX, Download, FileDown, FileInput, Link, LogIn, Play, RotateCcw, Save, Unplug, X } from 'lucide-react'
 
 // Actions are registered in the Help icon library, alongside type and tab icons.
 export const MAIN_PANEL_ACTION_ICON_META_BY_KEY = {
+  'action.open': { category: 'Action', label: 'Open source file', Icon: FileInput },
   'action.run': { category: 'Action', label: 'Run', Icon: Play },
   'action.connect': { category: 'Action', label: 'Connect', Icon: LogIn },
   'action.disconnect': { category: 'Action', label: 'Disconnect', Icon: Unplug },

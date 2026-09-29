@@ -3,7 +3,7 @@ import { usePanelTypography } from './panelTypography'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
 import { KeyTypeValueStaticRow } from 'grph-shared/react/keyTypeValueRow'
 import { KTV_FIELD_GRID_CLASS_NAME, KTV_ROW_LABEL_CELL_CLASS_NAME, KTV_ROW_VALUE_CELL_CLASS_NAME, panelFieldDecorationClassName } from 'grph-shared/ui/keyTypeValueRows'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { UI_THEME_TOKENS, normalizeSingleLineControlClassName } from '@/lib/ui/theme-tokens'
 import {
   readDataViewControlPaddingClassName,
   readDataViewMultiLineControlClassName,
@@ -136,8 +136,7 @@ export const PanelTextInput = React.forwardRef<HTMLInputElement, PanelTextInputP
       ref={ref}
       className={cn(
         variant === 'transparent' ? PANEL_FORM_SINGLE_LINE_TRANSPARENT_CONTROL_CLASSNAME : PANEL_FORM_SINGLE_LINE_FILLED_CONTROL_CLASSNAME,
-        readDataViewSingleLineControlClassName(density || densityContext?.rowHeightPreset || 'compact'),
-        className,
+        normalizeSingleLineControlClassName(`${readDataViewSingleLineControlClassName(density || densityContext?.rowHeightPreset || 'compact')} ${className || ''}`),
         panelTextClass,
       )}
     />
@@ -185,8 +184,7 @@ export const PanelSelect = React.forwardRef<HTMLSelectElement, PanelSelectProps>
       ref={ref}
       className={cn(
         variant === 'transparent' ? PANEL_FORM_SINGLE_LINE_TRANSPARENT_CONTROL_CLASSNAME : PANEL_FORM_SINGLE_LINE_FILLED_CONTROL_CLASSNAME,
-        readDataViewSingleLineControlClassName(density || densityContext?.rowHeightPreset || 'compact'),
-        className,
+        normalizeSingleLineControlClassName(`${readDataViewSingleLineControlClassName(density || densityContext?.rowHeightPreset || 'compact')} ${className || ''}`),
         panelTextClass,
       )}
     />

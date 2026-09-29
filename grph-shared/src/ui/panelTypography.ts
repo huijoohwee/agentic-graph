@@ -1,5 +1,5 @@
 import { normalizeUiTextClasses } from './typography.js'
-import { UI_THEME_TOKENS } from './themeTokens.js'
+import { UI_THEME_TOKENS, normalizeSingleLineControlClassName } from './themeTokens.js'
 
 export type PanelTypography = {
   fontClass: string
@@ -15,8 +15,8 @@ export type PanelTypography = {
 export type PanelTypographyDensityPreset = 'comfortable' | 'compact'
 
 export const PANEL_KEY_VALUE_INPUT_CLASS_BY_TEXT_SIZE = {
-  textSm: `w-full h-6 px-2 text-sm border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.text} rounded text-right ${UI_THEME_TOKENS.focus.primaryBorderRing}`,
-  textXs: `w-full h-6 px-2 text-xs border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.text} rounded text-right ${UI_THEME_TOKENS.focus.primaryBorderRing}`,
+  textSm: `w-full ${UI_THEME_TOKENS.control.singleLine} text-sm border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.text} rounded text-right ${UI_THEME_TOKENS.focus.primaryBorderRing}`,
+  textXs: `w-full ${UI_THEME_TOKENS.control.singleLine} text-xs border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.text} rounded text-right ${UI_THEME_TOKENS.focus.primaryBorderRing}`,
 } as const
 
 export const PANEL_TYPOGRAPHY_DEFAULTS = {
@@ -64,7 +64,7 @@ export function coercePanelTypography(input: Partial<PanelTypography> | null | u
       : PANEL_TYPOGRAPHY_DEFAULTS.monospaceTextClass
   const keyValueInputClass =
     typeof input?.keyValueInputClass === 'string' && input.keyValueInputClass.trim()
-      ? normalizeUiTextClasses(input.keyValueInputClass.trim())
+      ? normalizeSingleLineControlClassName(normalizeUiTextClasses(input.keyValueInputClass.trim()))
       : PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass
   const keyLabelClass = typeof input?.keyLabelClass === 'string' && input.keyLabelClass.trim()
     ? normalizeUiTextClasses(input.keyLabelClass.trim())

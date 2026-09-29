@@ -1,3 +1,4 @@
+import { normalizeSingleLineControlClassName } from 'grph-shared/ui/themeTokens'
 import { normalizeUiTextClasses } from 'grph-shared/ui/typography'
 
 import type { StoreApi } from 'zustand'
@@ -114,8 +115,8 @@ export const createUiCoreActions = (set: SetGraph)=> ({
       set({
         uiPanelKeyValueInputClass: lsSetJson(
           LS_KEYS.panelKeyValueInputClass,
-          normalizeUiTextClasses(String(className || '').trim()) ||
-            PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass,
+          normalizeSingleLineControlClassName(normalizeUiTextClasses(String(className || '').trim()) ||
+            PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass),
         ),
       }),
 
