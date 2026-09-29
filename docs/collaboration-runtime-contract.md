@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 71
+contract_version: 72
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -14,6 +14,17 @@ ci_command_timeout_overrides:
     timeout_ms: 900000
   - command: ["npm", "run", "travel-commerce:test"]
     timeout_ms: 900000
+  # Isolate measured expensive commands; retain their existing five-minute limits.
+  - command: ["npm", "run", "spatial-workspace:full-app"]
+    timeout_ms: 300000
+  - command: ["node", "canvas/scripts/run_block_editor_browser_smoke.mjs", "--build"]
+    timeout_ms: 300000
+  - command: ["node", "canvas/scripts/run_python_learning_browser_smoke.mjs"]
+    timeout_ms: 300000
+  - command: ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--build"]
+    timeout_ms: 300000
+  - command: ["npm", "run", "runtime:test:core"]
+    timeout_ms: 300000
 invocation:
   actions: ["/change", "/fix", "/refactor", "/verify", "/release"]
   required_pr_keys: ["action", "scope", "actor", "base_sha"]

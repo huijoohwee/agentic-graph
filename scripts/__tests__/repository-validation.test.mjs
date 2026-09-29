@@ -124,7 +124,7 @@ test('native partition drift fails before any affected check can be omitted', as
     assert.throws(() => validateExecutionPartitions(groups, { ...policy, checks }), /exactly once/)
   }
   const extra = structuredClone(contract)
-  extra.ci_command_timeout_overrides.push({ command: ['npm', 'run', 'runtime:test:core'], timeout_ms: 600000 })
+  extra.ci_command_timeout_overrides.push({ command: ['npm', 'run', 'spatial-workspace:browser'], timeout_ms: 600000 })
   validateContract(extra)
   assert.throws(() => validateExecutionPartitions(partitionAffectedCommands([], extra), policy), /exactly once/)
   const foreign = structuredClone(policy)
@@ -189,4 +189,21 @@ test('selected CI control checks run first without adding or repeating catalog c
     commands.map(JSON.stringify).sort())
   const product = commands.filter(command => !controlKeys.has(JSON.stringify(command)))
   assert.deepEqual(partitionAffectedCommands(product, contract), partitionAffectedCommands(product, ordinary))
+})
+
+test('measured slow checks are isolated without raising their command timeout', async () => {
+  const contract = await readContract()
+  const policy = JSON.parse(readFileSync(new URL('../../.agentic-os-validation.json', import.meta.url)))
+  const isolated = contract.ci_command_timeout_overrides.filter(row => row.timeout_ms === contract.ci_command_timeout_ms)
+  assert.equal(isolated.length, 5)
+  const ordinary = { ...contract, ci_command_timeout_overrides: [] }
+  const commands = isolated.map(row => row.command)
+  const groups = partitionAffectedCommands(commands, contract)
+  validateExecutionPartitions(groups, policy)
+  for (const { command } of isolated) {
+    assert.equal(resolveCiCommandTimeoutMs(command, contract), resolveCiCommandTimeoutMs(command, ordinary))
+    const key = JSON.stringify(command)
+    assert(!groups.standard.some(row => JSON.stringify(row) === key))
+    assert.equal(Object.values(groups).flat().filter(row => JSON.stringify(row) === key).length, 1)
+  }
 })
