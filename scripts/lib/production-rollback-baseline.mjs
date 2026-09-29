@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { verifyRemovedTerminalPersistence } from './production-terminal-persistence.mjs'
 import { normalizeCloudflarePagesDeploymentId } from '../verify-production-release-transports.mjs'
 import {
   canonicalJson, digest, normalizeRollbackRecapture,
@@ -21,7 +22,7 @@ const substantive = round => {
 
 // This is a newly observed rollback target, never a reconstruction of lost
 // authorization, reconciliation, or production-complete lifecycle receipts.
-export function createObservedRollbackBaseline({ first, second, run, artifacts, repositoryId, assembledAt }) {
+export function createObservedRollbackBaseline({ first, second, run, artifacts, repositoryId, assembledAt, terminalPersistence }) {
   assert.equal(run.repository?.id, repositoryId, 'release repository identity differs')
   assert.ok(Number.isSafeInteger(repositoryId) && repositoryId > 0, 'repository ID is required')
   assert.equal(run.path, '.github/workflows/release.yml', 'run is not the protected release workflow')
@@ -34,9 +35,14 @@ export function createObservedRollbackBaseline({ first, second, run, artifacts, 
   assert.equal(artifacts.total_count, artifacts.artifacts?.length, 'artifact inventory is truncated')
   const terminal = artifacts.artifacts.filter(item =>
     item.name === `production-lifecycle-complete-${run.head_sha}-${run.id}`)
-  assert.equal(terminal.length, 1, 'exact terminal artifact metadata is required')
-  assert.equal(terminal[0].expired, true, 'use the existing terminal artifact while available')
-  assert.ok(Number.isSafeInteger(terminal[0].id) && terminal[0].id > 0, 'terminal artifact ID is required')
+  let persistence
+  if (terminal.length === 0 && terminalPersistence) {
+    persistence = verifyRemovedTerminalPersistence({ ...terminalPersistence, run, artifacts })
+  } else {
+    assert.equal(terminal.length, 1, 'exact terminal artifact metadata is required')
+    assert.equal(terminal[0].expired, true, 'use the existing terminal artifact while available')
+    assert.ok(Number.isSafeInteger(terminal[0].id) && terminal[0].id > 0, 'terminal artifact ID is required')
+  }
   assert.equal(canonicalJson(substantive(first)), canonicalJson(substantive(second)), 'provider state changed between observations')
 
   const chronology = []
@@ -93,17 +99,17 @@ export function createObservedRollbackBaseline({ first, second, run, artifacts, 
     capturedAt: assembledAt,
   })
   const provenance = {
-    schema: 'agentic-graph-observed-rollback-baseline/v1',
+    schema: persistence ? 'agentic-graph-observed-rollback-baseline/v2' : 'agentic-graph-observed-rollback-baseline/v1',
     status: 'rollback-baseline-observed',
-    reason: 'terminal-artifact-expired',
+    reason: persistence ? 'terminal-artifact-removed' : 'terminal-artifact-expired',
     historicalLifecycleReconstructed: false,
     productionAuthorized: false,
     releaseRunId: run.id,
     releaseAttempt: run.run_attempt,
-    expiredTerminalArtifactId: terminal[0].id,
+    ...(persistence ? { terminalPersistence: persistence } : { expiredTerminalArtifactId: terminal[0].id }),
     repositoryId,
     capturedAt: assembledAt,
-    observationDigest: digest({ first, second, run, artifacts, repositoryId }),
+    observationDigest: digest({ first, second, run, artifacts, repositoryId, ...(persistence ? { terminalPersistence } : {}) }),
     rollbackRecaptureDigest: digest(recapture),
   }
   return { recapture, provenance }

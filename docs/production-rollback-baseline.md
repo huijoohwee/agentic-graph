@@ -44,3 +44,40 @@ Fetch the mirror's origin first. Obtain the PR facts through authenticated `gh p
 The native proof admits at most 64 regular-file changes under repository `docs/*.md` and `scripts/*.mjs`, or the root package manifests, validation configuration, and runtime-readiness workflow. Published and retired artifact paths remain excluded. Every other tracked entry, including other applications and unknown paths, must retain its exact mode, object type, and blob identity. Inventory is bounded to 50,000 entries and 16 MiB; evidence includes both tree IDs and an unchanged-tree digest. This mode cannot combine with the historical GameXR exception.
 
 The previous rollback identity must still originate from the terminal publication receipt. Pages and D1 must match that carrier across both fresh rounds; prior recapture and merge chronology remain enforced. This proves a maintenance-only mirror transition, not a new deployment or production approval. The command emits the generated proof in its JSON result; retain that result and the PR observation with release evidence. Focused validation: `node --test scripts/__tests__/production-mirror-maintenance-proof.test.mjs`.
+
+## Removed artifact metadata: exact protected execution evidence
+
+GitHub may delete the terminal artifact metadata as well as its bytes. When the
+authenticated run inventory is completely empty, the same capture command can
+use the exact successful deployment job from that run and attempt. It requires
+the historical release workflow to be byte-identical to the clean integrated
+controller, its protected production environment, and ordered successful
+publication, terminal seal/validation, rollback capture/validation and pinned
+artifact upload steps. The upload must fail on missing files. Truncated,
+ambiguous, skipped, failed, changed-source or changed-attempt evidence is rejected.
+Both artifact and execution inventories are reobserved after the live rounds.
+
+The output uses `agentic-graph-observed-rollback-baseline/v2`, records the retained
+job ID and workflow digest, and labels the artifact `removed`. It invents no
+artifact ID, historical receipt or past authorization. Retain
+`terminal-persistence-inputs.json` with all capture files. Fresh ordered Pages,
+authoritative D1 and exact mirror observations, source stability, source review,
+protected release verification and exact human production authorization still
+apply. A nonempty inventory uses the original expired-artifact path.
+
+### Implementation join: PRD / TAD / ADR / MVP / GTM
+
+- PRD: unblock an observed rollback baseline after GitHub's one-day retention
+  removes both terminal files and metadata, without claiming historical completion.
+- TAD: extend the existing capture owner with an I/O-free exact execution verifier;
+  preserve two provider rounds and bind retained raw records into provenance.
+- ADR: require successful protected execution plus unchanged reviewed workflow
+  bytes as evidence of terminal persistence; do not infer it from a run badge alone.
+- MVP: focused tests reject drift, truncation, wrong run/attempt/source, failed or
+  skipped terminal steps, optional uploads and missing validation. Existing
+  expired-artifact and live-state rejection tests remain unchanged.
+- GTM: no new service, dependency, paid resource or product-readiness claim. This
+  is release recovery plumbing; production delivery remains a separate receipt.
+
+Repair budget: six owner files including CI selection, 20 KiB authored delta, no added dependencies.
+Review this authority-controlling source separately before production capture.

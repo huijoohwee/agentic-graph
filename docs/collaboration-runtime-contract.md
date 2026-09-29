@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 72
+contract_version: 73
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -190,6 +190,11 @@ ci_scopes:
     roots: ["scripts/verify-production-service-worker-upgrade.mjs", "scripts/production-service-worker-profile.mjs", "scripts/production-pages-routing.mjs", "scripts/__tests__/production-service-worker-profile.test.mjs", "scripts/__tests__/production-scope-redirects.test.mjs"]
     commands:
       - ["node", "--test", "scripts/__tests__/production-service-worker-profile.test.mjs", "scripts/__tests__/production-scope-redirects.test.mjs"]
+  production_rollback_baseline:
+    roots: ["scripts/production-rollback-baseline.mjs", "scripts/lib/production-rollback-baseline.mjs", "scripts/lib/production-terminal-persistence.mjs", "scripts/__tests__/production-rollback-baseline.test.mjs", "scripts/__tests__/production-terminal-persistence.test.mjs"]
+    commands:
+      - ["npm", "run", "smoke:prepare"]
+      - ["node", "--test", "scripts/__tests__/production-rollback-baseline.test.mjs", "scripts/__tests__/production-terminal-persistence.test.mjs"]
   production_terminal_authorization:
     roots: ["scripts/production-terminal-authorization.mjs", "scripts/production-canonical-release-state.mjs", "scripts/__tests__/production-terminal-authorization.test.mjs"]
     commands:
