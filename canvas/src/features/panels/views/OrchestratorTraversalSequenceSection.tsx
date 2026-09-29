@@ -13,7 +13,7 @@ import {
 import IconButton from '@/components/IconButton'
 import Tooltip from '@/features/panels/ui/Tooltip'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { getIconSizeClass } from '@/lib/ui'
+import { getIconSizeClass } from '@/lib/ui/icons'
 import {
   TRAVERSAL_SEQUENCE_TOOLTIP,
   TRAVERSAL_SEQUENCE_MODE_LABEL_GRAPH_RAG,

@@ -1,3 +1,5 @@
+import { hashStringToHex } from '@/lib/hash/stringHash'
+
 export const safeWebsitePathSegment = (raw: string): string => {
   const s = String(raw || '').trim()
   if (!s) return 'item'
@@ -35,5 +37,10 @@ export const resolveWebsiteImportNodeRelativeDocumentPath = (args: {
   const leaf = parts[parts.length - 1] || 'index'
   const folderParts = parts.slice(0, Math.max(0, parts.length - 1))
   const nameBase = leaf.replace(/\.md$/i, '') || 'index'
-  return [...folderParts, `${nameBase}.md`].join('/')
+  // A pathname can represent many separately captured pages. Keep its query identity
+  // in both workspace writes and the shared crawl-table links.
+  let query = ''
+  try { query = new URL(args.nodeUrl).search } catch { /* Local imports have no URL query. */ }
+  const suffix = query ? `--${hashStringToHex(query)}` : ''
+  return [...folderParts, `${nameBase}${suffix}.md`].join('/')
 }

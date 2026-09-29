@@ -5,7 +5,7 @@ import Tooltip from '@/features/panels/ui/Tooltip'
 import { RENDER_PANEL_SECTION_COPY } from '@/features/panels/config'
 import { AgenticRagIgnoreFiltersSummaryView } from '@/features/panels/views/AgenticRagContextSection'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { getPillClass } from '@/lib/ui'
+import { getPillClass } from '@/lib/ui/icons'
 import {
   AGENTIC_RAG_CONTEXT_LABEL,
   AGENTIC_RAG_DATASET_CONTEXT_VOCAB_LABEL,

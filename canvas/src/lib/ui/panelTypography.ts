@@ -20,7 +20,7 @@ export function usePanelTypography(): PanelTypography {
         textSizeClass,
         microLabelTextSizeClass,
         monospaceTextClass,
-        keyValueInputClass,
+        keyValueInputClass: cn(keyValueInputClass, fontClass, textSizeClass),
         keyLabelClass: cn(fontClass, textSizeClass),
         panelTextClass: cn(fontClass, textSizeClass),
         microLabelClass: cn(fontClass, microLabelTextSizeClass),

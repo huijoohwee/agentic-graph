@@ -10,7 +10,7 @@ import { ORCHESTRATOR_AGENTIC_COPY } from '@/features/panels/config'
 import { type AgenticPathInfo } from '@/features/panels/views/AgenticRagNodeInspectorSectionModel'
 import { SimpleKeyValueRow } from 'grph-shared/react/keyTypeValueRow'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { getChipClass } from '@/lib/ui'
+import { getChipClass } from '@/lib/ui/icons'
 import {
   AGENTIC_RAG_SCHEMA_LABEL,
   AGENTIC_RAG_CONTEXT_LABEL,

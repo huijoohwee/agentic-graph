@@ -34,6 +34,7 @@ const CommerceHubViewLazy = React.lazy(() => import('./views/CommerceHubView'))
 const ResearchCompilerViewLazy = React.lazy(() => import('./views/ResearchCompilerView'))
 const CollaborationViewLazy = React.lazy(() => import('./views/CollaborationView'))
 const StoryboardWidgetManagerViewLazy = React.lazy(() => import('@/features/panels/views/StoryboardWidgetManagerView'))
+const WebsiteImportSelectionViewLazy = React.lazy(() => import('./views/WebsiteImportSelectionView'))
 const PreviewPanelViewLazy = React.lazy(() => import('@/lib/panels/views/PreviewPanelView.impl'))
 const SettingsViewLazy = React.lazy(() => import('@/features/panels/views/SettingsView'))
 const HistoryViewLazy = React.lazy(() => import('@/features/panels/views/HistoryView'))
@@ -363,7 +364,7 @@ export default function MainPanel({
         </footer>
       )}
     >
-      <section className="h-full min-h-0 px-2 py-2 sm:px-3 overflow-hidden" aria-label="Main panel content">
+      <section className={`h-full min-h-0 px-2 py-2 sm:px-3 overflow-hidden ${panelTypography.panelTextClass}`} aria-label="Main panel content">
         <section className="h-full min-h-0" role="tabpanel" id="main-panel-help-panel" aria-labelledby="main-panel-help-tab" hidden={tab !== 'help'}>
           {tab === 'help' && (
             <React.Suspense fallback={null}>
@@ -437,6 +438,9 @@ export default function MainPanel({
               />
             </React.Suspense>
           )}
+        </section>
+        <section className="h-full min-h-0" role="tabpanel" id="main-panel-websiteImport-panel" aria-labelledby="main-panel-websiteImport-tab" hidden={tab !== 'websiteImport'}>
+          {tab === 'websiteImport' && <React.Suspense fallback={null}><WebsiteImportSelectionViewLazy /></React.Suspense>}
         </section>
         <section className="h-full min-h-0" role="tabpanel" id="main-panel-dashboard-panel" aria-labelledby="main-panel-dashboard-tab" hidden={tab !== 'dashboard'}>
           {tab === 'dashboard' && (
