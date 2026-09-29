@@ -2,7 +2,6 @@ import React from 'react'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { MainPanelIconButton } from '@/features/panels/ui/MainPanelIconButton'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import MainPanelBody from '@/features/panels/ui/MainPanelBody'
 import { splitMermaidIntoDiagrams } from 'grph-shared/markdown/mermaidBlocks'
 import {
   type MermaidInitConfig,
@@ -169,7 +168,7 @@ export default function PreviewPanelView() {
   }
 
   return (
-    <MainPanelBody header={<header />} scrollable={false}>
+    <section className="h-full min-h-0 min-w-0" aria-label="Selected media preview">
       <section ref={setOverlayPortalRef} className="h-full min-h-0 flex flex-col overflow-hidden relative">
         {!hasMarkdown && mediaItems.length === 0 ? (
           <section className={['px-2 py-2', UI_THEME_TOKENS.text.secondary, typography.panelTextClass].join(' ')}>
@@ -180,10 +179,10 @@ export default function PreviewPanelView() {
             <header className={previewPanelHeaderClassName}>
               <section className="px-2 py-1 flex items-center justify-between">
                 <section className={['font-medium', UI_THEME_TOKENS.text.primary, typography.panelTextClass].join(' ')}>
-                  Preview: selected Mermaid diagram or rich media
+                  Selected media
                 </section>
                 <section className={`${typography.microLabelClass} ${UI_THEME_TOKENS.text.tertiary}`}>
-                  Open Command Menu for @ media
+                  Select from Media below
                 </section>
               </section>
             </header>
@@ -216,6 +215,6 @@ export default function PreviewPanelView() {
           </section>
         )}
       </section>
-    </MainPanelBody>
+    </section>
   )
 }

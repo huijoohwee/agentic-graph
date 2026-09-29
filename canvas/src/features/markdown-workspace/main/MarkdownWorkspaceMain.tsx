@@ -1,3 +1,4 @@
+import { useDocumentInsightsSource } from '../documentInsightsRuntime'
 import React from 'react'
 import { useWorkspaceDocumentState } from './useWorkspaceDocumentState'
 import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/workspaceUi'
@@ -8,7 +9,7 @@ import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
 import type { MarkdownGeoDatasetIntegration } from '@/features/markdown/ui/MarkdownRendererTypes'
 import { extractYamlFrontmatterBlock, type WebpageFrontmatterMeta, type WebpageViewMode, type WebsiteImportFrontmatterMeta } from '@/lib/markdown/frontmatter'
 import { parseGlbAssetDocument } from '@/lib/assets/glbAssetDocument'
-import { summarizeCategorizedSignalsFromMarkdown } from '@/lib/websites/signalTokens'
+import { indexDocumentSignals } from '@/lib/websites/signalTokens'
 import { buildWebpageLayoutWireframeAsciiFromMarkdown } from '@/lib/websites/webpageLayoutWireframe'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { MonacoTextEditorHandle } from '@/features/monaco/MonacoTextEditor'
@@ -302,16 +303,12 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
   }, [viewerText, webpageMeta?.url])
 
   const debouncedSignalText = useDebouncedValue(activeText, 450, webpageMeta?.url)
-  const webpageSignalSummary = React.useMemo(() => {
-    if (!webpageMeta?.url) return null
-    const signals = summarizeCategorizedSignalsFromMarkdown(debouncedSignalText, { maxLines: 8000, maxPerKind: 24 })
-    return {
-      nav: signals.nav.length,
-      cta: signals.cta.length,
-      price: signals.price.length,
-      time: signals.time.length,
-    }
-  }, [debouncedSignalText, webpageMeta?.url])
+  const documentSignals = React.useMemo(() => indexDocumentSignals(debouncedSignalText), [debouncedSignalText])
+  useDocumentInsightsSource({ key: activeDocumentKey, text: activeText, signals: activeText === debouncedSignalText ? documentSignals : null, revealLine: revealLineInEditor })
+  const webpageSignalSummary = React.useMemo(() => webpageMeta?.url ? {
+    nav: documentSignals.nav.length, cta: documentSignals.cta.length,
+    price: documentSignals.price.length, time: documentSignals.time.length,
+  } : null, [documentSignals, webpageMeta?.url])
 
   const handleMarkdownViewerRootRef = React.useCallback((el: HTMLElement | null) => {
     viewerRef.current = el

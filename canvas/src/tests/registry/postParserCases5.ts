@@ -1,6 +1,10 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_5: TestCaseTuple[] = [
+  ["documentInsights.SourceLocations","@/__tests__/documentInsights.test","testDocumentInsightsSourceLocations"],
+  ["documentInsights.Bounds","@/__tests__/documentInsights.test","testDocumentInsightsBounds"],
+  ["documentInsights.RejectStaleSource","@/__tests__/documentInsights.test","testDocumentInsightsRejectStaleSource"],
+  ["documentInsights.FloatingRoute","@/__tests__/documentInsights.test","testDocumentInsightsFloatingRoute"],
   ["agentReady.markdownDiscovery.canonicalRoutes","@/__tests__/agentMarkdownDiscovery.test","testAgentMarkdownDiscoveryUsesCanonicalMachineRoutes"],
   ["agentReady.markdownDiscovery.nonEmptyDocuments","@/__tests__/agentMarkdownDiscovery.test","testAgentMarkdownDiscoveryExcludesEmptyPlaceholders"],
   ["agentReady.markdownDiscovery.editorWorkspaceManifest","@/__tests__/agentMarkdownDiscovery.test","testAgentMarkdownDiscoveryBuildsEditorWorkspaceManifest"],

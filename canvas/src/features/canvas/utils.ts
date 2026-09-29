@@ -29,6 +29,7 @@ export type FloatingPanelOpenEventDetail = {
      | 'camera'
      | 'chat'
     | 'media'
+    | 'preview'
     | 'animation'
     | 'motionControl'
     | 'gameMode'
