@@ -522,9 +522,7 @@ export default function SettingsView({
             </section>
           )}
           {mode === 'all' && (
-            <section className="p-2 border-b border-white/10">
-              <WorkspaceTableModeControl />
-            </section>
+            <WorkspaceTableModeControl className={`border-b ${UI_THEME_TOKENS.panel.border}`} />
           )}
           <SettingsSections
             applyUiPanelDensityPreset={applyUiPanelDensityPreset}
@@ -548,7 +546,7 @@ export default function SettingsView({
               title="Resets and data"
               collapsed={false}
               onToggle={() => void 0}
-              className={`mt-2 pt-2 border-t ${UI_COLOR_DANGER_RED_BORDER}`}
+              className={UI_COLOR_DANGER_RED_BORDER}
             >
               <section className={`space-y-1 text-xs ${UI_THEME_TOKENS.text.primary}`}>
                 <section>

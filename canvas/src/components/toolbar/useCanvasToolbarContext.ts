@@ -8,6 +8,7 @@ import {
   type MainPanelTabKey,
   type WorkflowManagerTabKey,
 } from '@/features/toolbar/hooks/useMainPanelDrag'
+import { isMainPanelTabKey } from '@/features/panels/mainPanelTabs'
 import { MAIN_PANEL_OPEN_EVENT, MAIN_PANEL_OPEN_READY_EVENT } from '@/features/panels/utils/useMainPanelRect'
 import { useLaunchSpotlight } from '@/features/panels/hooks/useLaunchSpotlight'
 import { LS_KEYS, UI_COPY } from '@/lib/config'
@@ -229,20 +230,7 @@ export function useCanvasToolbarContext({ onZoomSelection }: CanvasToolbarCallba
         e.detail && typeof e.detail.workflowManagerEntryLabel === 'string'
           ? e.detail.workflowManagerEntryLabel.trim()
           : ''
-      const tab: MainPanelTabKey =
-        detailTab === 'collaboration'
-        || detailTab === 'integrations'
-        || detailTab === 'mcp'
-        || detailTab === 'maps'
-        || detailTab === 'commerce'
-        || detailTab === 'workflowManager'
-        || detailTab === 'help'
-        || detailTab === 'dashboard'
-        || detailTab === 'preview'
-        || detailTab === 'settings'
-        || detailTab === 'history'
-          ? detailTab
-          : 'help'
+      const tab: MainPanelTabKey = typeof detailTab === 'string' && isMainPanelTabKey(detailTab) ? detailTab : 'help'
       const options: MainPanelOpenOptions = {
         ...(detailSearchQuery ? { searchQuery: detailSearchQuery } : {}),
         ...(detailAnchorId ? { anchorId: detailAnchorId } : {}),
@@ -254,6 +242,7 @@ export function useCanvasToolbarContext({ onZoomSelection }: CanvasToolbarCallba
           : {}),
       }
       openMainPanel(tab, options)
+      if (tab === 'websiteImport') setMainPanelCollapsed(false)
     }
     ;(window as MainPanelOpenReadyWindow).__AG_MAIN_PANEL_OPEN_READY__ = true
     window.addEventListener(MAIN_PANEL_OPEN_EVENT, handler as EventListener)
@@ -263,7 +252,7 @@ export function useCanvasToolbarContext({ onZoomSelection }: CanvasToolbarCallba
       ;(window as MainPanelOpenReadyWindow).__AG_MAIN_PANEL_OPEN_READY__ = false
       window.removeEventListener(MAIN_PANEL_OPEN_EVENT, handler as EventListener)
     }
-  }, [openMainPanel])
+  }, [openMainPanel, setMainPanelCollapsed])
 
   React.useEffect(() => {
     return onGeospatialModeChanged(detail => {

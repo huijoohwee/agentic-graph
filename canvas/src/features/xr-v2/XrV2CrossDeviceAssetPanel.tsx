@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { CloudDownload, CloudUpload, RefreshCw } from 'lucide-react'
 
@@ -166,8 +167,8 @@ export function XrV2CrossDeviceAssetPanel({
       data-kg-xr-v2-cross-device-blocker={blocker.code}
     >
       <header>
-        <strong className="text-[9px]">Existing Asset Contract Writer · explicit preview</strong>
-        <p className={cn('m-0 text-[8px]', UI_THEME_TOKENS.text.tertiary)}>
+        <strong className="text-xs">Existing Asset Contract Writer · explicit preview</strong>
+        <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>
           Local-first capture remains authoritative. Publish, refresh, and reopen are separate user actions.
         </p>
       </header>
@@ -183,12 +184,12 @@ export function XrV2CrossDeviceAssetPanel({
         </button>
       </div>
       {manifests.length ? (
-        <select className="min-w-0 rounded border bg-transparent p-1 text-[8px]" value={selectedAssetId} onChange={event => setSelectedAssetId(event.target.value)} aria-label="Shared XR asset manifest">
+        <PanelSelect className="min-w-0 rounded border bg-transparent p-1 text-xs" value={selectedAssetId} onValueChange={selectedValueInput => setSelectedAssetId(selectedValueInput)} aria-label="Shared XR asset manifest">
           {manifests.map(manifest => <option key={manifest.asset.asset_id} value={manifest.asset.asset_id}>{manifest.asset.asset_id}</option>)}
-        </select>
+        </PanelSelect>
       ) : null}
-      <p className={cn('m-0 text-[8px]', phase === 'error' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.tertiary)} role="status">{message}</p>
-      <p className="m-0 rounded bg-amber-100 px-2 py-1 text-[8px] text-amber-900 dark:bg-amber-950/60 dark:text-amber-100">
+      <p className={cn('m-0 text-xs', phase === 'error' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.tertiary)} role="status">{message}</p>
+      <p className="m-0 rounded bg-amber-100 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950/60 dark:text-amber-100">
         External promotion blocker: {blocker.message}
       </p>
     </section>

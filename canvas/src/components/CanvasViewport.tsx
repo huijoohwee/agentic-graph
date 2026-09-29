@@ -481,7 +481,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
             data-kg-canvas-heavy-runtime-intent={heavyRuntimeIntentSurface}
           >
             <section className="w-full max-w-sm rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-5 py-5 text-left shadow-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--kg-text-secondary)]">
+              <p className="text-xs font-semibold uppercase tracking-normal text-[var(--kg-text-secondary)]">
                 {CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].eyebrow}
               </p>
               <h2 className="mt-2 text-base font-semibold text-[var(--kg-text-primary)]">

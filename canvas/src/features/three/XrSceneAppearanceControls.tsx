@@ -15,8 +15,8 @@ export function XrSceneAppearanceControls({ compact = false, disabled = false }:
   const commit = (patch: Partial<XrSceneAppearance>) => {
     if (!configureXrSceneAppearance(patch)) useGraphStore.getState().pushUiToast({ id: 'xr:appearance:error', kind: 'error', message: 'Appearance could not be saved to the active scene document.' })
   }
-  const presets = <PanelSelect aria-label="Scene appearance" value={xrSceneAppearancePresetId(appearance)} disabled={disabled} className={compact ? 'w-24 min-w-0 text-[10px]' : 'min-h-11 w-full'} onChange={event => {
-    const preset = XR_SCENE_APPEARANCE_PRESETS.find(item => item.id === event.target.value)
+  const presets = <PanelSelect aria-label="Scene appearance" value={xrSceneAppearancePresetId(appearance)} disabled={disabled} className={compact ? 'w-24 min-w-0 text-xs' : 'min-h-11 w-full'} onValueChange={selectedValueInput => {
+    const preset = XR_SCENE_APPEARANCE_PRESETS.find(item => item.id === selectedValueInput)
     if (preset) commit(preset)
   }}>
     <option value="custom" disabled>Custom look</option>
@@ -35,9 +35,9 @@ export function XrSceneAppearanceControls({ compact = false, disabled = false }:
         if (Number.isFinite(value)) commit({ [key]: value })
         event.currentTarget.value = String(readXrMotionReferenceRuntime().plan.appearance[key])
       }} /></label>)}
-      <label className="grid gap-1 text-xs">Scenery detail<PanelSelect aria-label="Scenery detail" className="min-h-11" value={appearance.detail} onChange={event => commit({ detail: event.target.value as XrSceneAppearance['detail'] })}><option value="standard">Standard</option><option value="low">Low · fewer decorative meshes</option></PanelSelect></label>
+      <label className="grid gap-1 text-xs">Scenery detail<PanelSelect aria-label="Scenery detail" className="min-h-11" value={appearance.detail} onValueChange={selectedValueInput => commit({ detail: selectedValueInput as XrSceneAppearance['detail'] })}><option value="standard">Standard</option><option value="low">Low · fewer decorative meshes</option></PanelSelect></label>
       <label className="flex min-h-11 items-center gap-2 text-xs"><input type="checkbox" checked={appearance.shadows} onChange={event => commit({ shadows: event.target.checked })} />Cast shadows</label>
-      <p className="text-[11px] text-slate-500">Saved in this scene’s source document. Use Workspace sync in Settings to share it with your signed-in devices.</p>
+      <p className="text-xs text-slate-500">Saved in this scene’s source document. Use Workspace sync in Settings to share it with your signed-in devices.</p>
     </fieldset>
   </details>
 }

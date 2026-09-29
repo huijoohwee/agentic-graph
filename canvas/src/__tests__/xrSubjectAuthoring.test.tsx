@@ -1,3 +1,4 @@
+import { readMenuOptions, selectMenuValue } from './helpers/semanticMenu'
 import { Simulate } from 'react-dom/test-utils'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { withGlbExporterFileReader } from '@/tests/lib/glbExporterFileReaderHarness'
@@ -140,14 +141,14 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     const openParts = async () => {
       const details = [...container.querySelectorAll('details')].find(node => node.querySelector('summary')?.textContent === 'Parts & rig')!
       await act(async () => { details.open = true; Simulate.toggle(details) })
-      assert.ok(container.querySelector('select[aria-label="Part"]'), 'Part fields are lazily projected from the native document')
+      assert.ok(container.querySelector('button[data-kg-select][aria-label="Part"]'), 'Part fields are lazily projected from the native document')
     }
     const changeField = async (label: string, value: string) => {
-      const input = container.querySelector<HTMLInputElement | HTMLSelectElement>(`[aria-label="${label}"]`)!
-      await act(async () => { input.value = value; Simulate.change(input) })
+      const input = container.querySelector<HTMLInputElement | HTMLButtonElement>(`[aria-label="${label}"]`)!
+      await act(async () => { if (input.matches('button[data-kg-select]')) selectMenuValue(input as HTMLButtonElement, value); else { input.value = value; Simulate.change(input) } })
     }
     await openParts()
-    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Part"]')!.value, 'body')
+    assert.equal(container.querySelector<HTMLButtonElement>('[aria-label="Part"]')!.value, 'body')
     assert.equal(container.querySelector<HTMLInputElement>('[aria-label="Size (m) X"]')!.value, '1.1', 'Inspector shows the effective procedural value')
     await changeField('Size (m) X', '1.3')
     await changeField('Position (m) Y', '1.6')
@@ -170,11 +171,11 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     assert.equal(useGraphStore.getState().markdownDocumentText, partSavedSource, 'A parent cycle retains the exact last valid source')
     assert.equal(readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument, editedDocument)
     await act(async () => Simulate.click(button('Reset part draft')))
-    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Parent part"]')!.value, '')
+    assert.equal(container.querySelector<HTMLButtonElement>('[aria-label="Parent part"]')!.value, '')
 
-    const clipField = () => container.querySelector<HTMLSelectElement>('[aria-label="Authored clip"]')!
+    const clipField = () => container.querySelector<HTMLButtonElement>('[aria-label="Authored clip"]')!
     assert.equal(clipField().value, 'walk', 'Legacy construction selects its first clip')
-    assert.deepEqual([...clipField().options].map(option => option.value), ['', 'walk', 'salute'])
+    assert.deepEqual([...readMenuOptions(clipField())].map(option => option.value), ['', 'walk', 'salute'])
     await changeField('Authored clip', 'salute')
     await changeField('At clip end', 'hold')
     const pendingClipField = clipField()
@@ -190,7 +191,7 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     assert.equal(readXrMotionReferenceRuntime().selectedShotTargetId, 'shared-id')
     await act(async () => { hydrateCanonicalXrMotionReferenceRuntime(); selectXrMotionReferenceShotTarget('shared-id') })
     assert.equal(clipField().value, 'salute', 'Source rehydration restores clip selection')
-    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="At clip end"]')!.value, 'hold')
+    assert.equal(container.querySelector<HTMLButtonElement>('[aria-label="At clip end"]')!.value, 'hold')
     const beforeMissingClip = readXrMotionReferenceRuntime()
     assert.throws(() => setXrSubjectConstruction('shared-id', { ...reopenedClip, playback: { clipId: 'missing', loop: true } }), XrSubjectConstructionError)
     assert.equal(readXrMotionReferenceRuntime(), beforeMissingClip)
@@ -198,7 +199,7 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     await changeField('Authored clip', '')
     await act(async () => Simulate.click(button('Apply playback')))
     assert.deepEqual(readXrMotionReferenceRuntime().plan.subjects[0].construction!.playback, { clipId: null, loop: false })
-    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="At clip end"]')!.disabled, true)
+    assert.equal(container.querySelector<HTMLButtonElement>('[aria-label="At clip end"]')!.disabled, true)
     await changeField('Authored clip', 'walk')
     await changeField('At clip end', 'repeat')
     await act(async () => Simulate.click(button('Apply playback')))
@@ -216,15 +217,15 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     await changeField('Pivot (m) Y', '0.05')
     await save('Apply part')
     editedDocument = readXrMotionReferenceRuntime().plan.subjects[0].construction!.proceduralAssetDocument
-    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Part"]')!.value, 'head', 'Saving a non-first part preserves its selection')
+    assert.equal(container.querySelector<HTMLButtonElement>('[aria-label="Part"]')!.value, 'head', 'Saving a non-first part preserves its selection')
     assert.equal(JSON.parse(editedDocument).lastValid.parts.find((part: { id: string }) => part.id === 'head').pivot[1], 0.05)
     const partSelection = readXrMotionReferenceRuntime().selectedSubjectPart
     await act(async () => { root.render(<ConstructionHarness key="reopened-inspector" />) })
     await openParts()
-    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Part"]')!.value, 'head', 'A remounted inspector uses canonical part selection')
+    assert.equal(container.querySelector<HTMLButtonElement>('[aria-label="Part"]')!.value, 'head', 'A remounted inspector uses canonical part selection')
     await act(async () => { setXrMotionReferencePlayhead(1.25); hydrateCanonicalXrMotionReferenceRuntime() })
     assert.equal(readXrMotionReferenceRuntime().selectedSubjectPart, partSelection, 'Seek and same-document hydration preserve the canonical selection record')
-    assert.equal(container.querySelector<HTMLSelectElement>('[aria-label="Part"]')!.value, 'head')
+    assert.equal(container.querySelector<HTMLButtonElement>('[aria-label="Part"]')!.value, 'head')
 
     let finishFs: (() => void) | undefined
     resolveFs = () => new Promise(resolve => { finishFs = () => resolve(fs) })

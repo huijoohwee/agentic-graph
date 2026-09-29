@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { ArrowLeft, ArrowRight, EyeOff, Filter, Trash2, Copy, ArrowUp, ArrowDown, ChevronDown, Columns2 } from 'lucide-react'
 
@@ -172,10 +173,10 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
                 <fieldset className="border-0 p-0 m-0 space-y-2">
                   <label className="flex min-w-0 items-center gap-2">
                     <span className={[UI_RESPONSIVE_COLUMN_HEADER_FILTER_LABEL_CLASSNAME, 'text-xs', UI_THEME_TOKENS.text.secondary].join(' ')}>Op</span>
-                    <select
+                    <PanelSelect
                       className={[UI_RESPONSIVE_COLUMN_HEADER_FILTER_FIELD_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.bg].join(' ')}
                       value={filterOp}
-                      onChange={e => setFilterOp(e.target.value)}
+                      onValueChange={selectedValueInput => setFilterOp(selectedValueInput)}
                       disabled={props.filter?.isDisabled}
                     >
                       {props.filter.ops.map(o => (
@@ -183,7 +184,7 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
                           {o.label}
                         </option>
                       ))}
-                    </select>
+                    </PanelSelect>
                   </label>
                   <label className="flex min-w-0 items-center gap-2">
                     <span className={[UI_RESPONSIVE_COLUMN_HEADER_FILTER_LABEL_CLASSNAME, 'text-xs', UI_THEME_TOKENS.text.secondary].join(' ')}>Value</span>

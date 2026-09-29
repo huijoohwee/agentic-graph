@@ -299,8 +299,8 @@ export const MediaVideoSnapshot = React.memo(function MediaVideoSnapshot({
           )}
           <section aria-hidden={true} className={UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME}>
             <section className={snapshotOverlayBadgeClassName}>
-              <section className={`text-[11px] font-semibold ${UI_THEME_TOKENS.text.primary} truncate`}>{fallbackInfo.titleLabel}</section>
-              <section className={`text-[10px] ${UI_THEME_TOKENS.text.tertiary} truncate`}>{fallbackInfo.hostLabel}</section>
+              <section className={`text-xs font-semibold ${UI_THEME_TOKENS.text.primary} truncate`}>{fallbackInfo.titleLabel}</section>
+              <section className={`text-xs ${UI_THEME_TOKENS.text.tertiary} truncate`}>{fallbackInfo.hostLabel}</section>
             </section>
           </section>
         </section>
@@ -521,7 +521,7 @@ const MediaErrorPlaceholder = ({ alt }: { alt?: string }) => {
   const prefix = UI_COPY.markdownMediaErrorPrefix
   const label = alt ? `${prefix}: ${alt}` : prefix
   return (
-    <section className={`${CARD_MARKDOWN_PREVIEW_MEDIA_ERROR_FRAME_CLASS_NAME} rounded border border-dashed border-red-300 bg-red-50 text-[11px] text-red-700 px-3 text-center`}>
+    <section className={`${CARD_MARKDOWN_PREVIEW_MEDIA_ERROR_FRAME_CLASS_NAME} rounded border border-dashed border-red-300 bg-red-50 text-xs text-red-700 px-3 text-center`}>
       <span>{label}</span>
     </section>
   )

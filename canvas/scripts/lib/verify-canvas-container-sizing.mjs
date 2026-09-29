@@ -1,3 +1,4 @@
+import { selectMenuOption } from './select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { openEditorWorkspace } from './mission-card-face.mjs'
 
@@ -13,7 +14,7 @@ export async function verifyCanvasContainerSizing(page) {
     await page.getByRole('button', { name: 'Settings', exact: true }).click()
     const panel = page.getByRole('complementary', { name: 'Main panel', exact: true })
     await panel.getByRole('textbox', { name: 'Search settings…', exact: true }).fill('canvas.container.sizing')
-    await panel.getByRole('combobox', { name: '', exact: true }).selectOption(mode)
+    await selectMenuOption(panel.locator('button[data-kg-select]'), mode)
     await panel.getByRole('button', { name: 'Apply', exact: true }).click()
     await panel.getByRole('button', { name: 'Close', exact: true }).click()
     await openEditorWorkspace(page)

@@ -1,3 +1,4 @@
+import { selectMenuValue } from './helpers/semanticMenu'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import React, { act } from 'react'
@@ -28,8 +29,7 @@ test('Activity projects existing logs and Mission selection, then clears revoked
         operation: 'Inspect scene', status: 'completed', timing: { inclusiveMs: 7 } }] }, 'xr-observation')
     await act(async () => {
       openAgentRunInspection({ trace, scope: 'fixture', expiresAt: trace.expiresAt, spanId: null, search: '', view: 'tree' })
-      const select = container.querySelector('select')!; select.value = 'mission'
-      select.dispatchEvent(new dom.window.Event('change', { bubbles: true }))
+      const select = container.querySelector<HTMLButtonElement>('button[data-kg-select]')!; selectMenuValue(select, 'mission')
     })
     assert.match(container.textContent || '', /Inspect scene/)
     assert.match(container.textContent || '', /partial coverage/)

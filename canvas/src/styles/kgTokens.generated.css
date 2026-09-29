@@ -1,3 +1,27 @@
+/* Generated application typography: grph-shared/src/ui/typography.ts */
+:root {
+  --kg-font-sans: -apple-system, BlinkMacSystemFont, Segoe UI, Noto Sans, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+  --kg-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --kg-text-xs: 0.75rem;
+  --kg-text-xs-line: 1rem;
+  --kg-text-sm: 0.875rem;
+  --kg-text-sm-line: 1.25rem;
+  --kg-text-base: 1rem;
+  --kg-text-base-line: 1.5rem;
+  --kg-text-lg: 1.125rem;
+  --kg-text-lg-line: 1.75rem;
+  --kg-text-xl: 1.25rem;
+  --kg-text-xl-line: 1.75rem;
+  --kg-text-2xl: 1.5rem;
+  --kg-text-2xl-line: 2rem;
+  --kg-text-3xl: 1.875rem;
+  --kg-text-3xl-line: 2.25rem;
+  --kg-text-4xl: 2.25rem;
+  --kg-text-4xl-line: 2.5rem;
+  --kg-text-5xl: 3rem;
+  --kg-text-5xl-line: 3rem;
+}
+
 :root{
   --kg-app-bg: #f3f4f6;
   --kg-surface-bg: #ffffff;

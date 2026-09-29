@@ -1,6 +1,5 @@
-import {
-  AGENTIC_OS_AGENT_READY_PROMPT_NAMES,
-} from './agentic-graph-agent-ready-prompt-contract.mjs'
+import { UI_FONT_MONO, UI_FONT_SANS } from '../../../../grph-shared/src/ui/fontStacks.js'
+import { AGENTIC_OS_AGENT_READY_PROMPT_NAMES } from './agentic-graph-agent-ready-prompt-contract.mjs'
 import { AGENTIC_OS_SOURCE_FILE_RESOURCE_URI_TEMPLATE } from './agentic-graph-agent-ready-resource-contract.mjs'
 import { resolveAgenticOsControlPlaneMcpUrl } from './agenticOsControlPlane.mjs'
 import {
@@ -579,24 +578,24 @@ export const buildAgenticGraphMcpAppsHtml = (args = {}) => {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>agentic-graph Agent Ready</title>
   <style>
-    :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    :root { color-scheme: light dark; font-family: ${UI_FONT_SANS}; }
     * { box-sizing: border-box; }
     body { margin: 0; background: Canvas; color: CanvasText; }
     main { display: grid; gap: 12px; min-height: 100vh; padding: 16px; }
     header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-bottom: 1px solid color-mix(in srgb, CanvasText 18%, transparent); padding-bottom: 10px; }
     h1 { margin: 0; font-size: 16px; line-height: 1.25; letter-spacing: 0; }
-    p { margin: 4px 0 0; color: color-mix(in srgb, CanvasText 72%, transparent); font-size: 13px; line-height: 1.45; }
+    p { margin: 4px 0 0; color: color-mix(in srgb, CanvasText 72%, transparent); font-size: 14px; line-height: 1.45; }
     button, a { border: 1px solid color-mix(in srgb, CanvasText 24%, transparent); border-radius: 6px; background: color-mix(in srgb, Canvas 88%, CanvasText 12%); color: CanvasText; font: inherit; padding: 7px 10px; text-decoration: none; }
     button { cursor: pointer; }
     section { display: grid; gap: 8px; }
     dl { display: grid; grid-template-columns: minmax(110px, max-content) 1fr; gap: 6px 10px; margin: 0; font-size: 12px; }
     dt { color: color-mix(in srgb, CanvasText 62%, transparent); }
     dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
-    pre { margin: 0; max-height: 48vh; overflow: auto; border: 1px solid color-mix(in srgb, CanvasText 18%, transparent); border-radius: 6px; padding: 10px; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; background: color-mix(in srgb, Canvas 94%, CanvasText 6%); }
+    pre { margin: 0; max-height: 48vh; overflow: auto; border: 1px solid color-mix(in srgb, CanvasText 18%, transparent); border-radius: 6px; padding: 10px; font: 12px/1.45 ${UI_FONT_MONO}; white-space: pre-wrap; overflow-wrap: anywhere; background: color-mix(in srgb, Canvas 94%, CanvasText 6%); }
     .actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
     .status { font-size: 12px; color: color-mix(in srgb, CanvasText 66%, transparent); }
     .readiness { border: 1px solid color-mix(in srgb, CanvasText 18%, transparent); border-radius: 6px; padding: 10px; background: color-mix(in srgb, Canvas 96%, CanvasText 4%); font-size: 12px; }
-    .readiness strong { display: block; font-size: 13px; margin-bottom: 3px; }
+    .readiness strong { display: block; font-size: 14px; margin-bottom: 3px; }
     .readiness ol { display: grid; gap: 6px; margin: 8px 0 0; padding-left: 18px; }
     .readiness ul { display: grid; gap: 4px; margin: 8px 0 0; padding: 0; list-style: none; }
     .check { min-width: 0; overflow-wrap: anywhere; }

@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
@@ -91,9 +92,9 @@ export function ProceduralAssetControls(props: {
       const id = `${props.nodeId}-procedural-${control.id}`
       return <div key={control.id} className="flex min-w-0 flex-wrap items-center gap-2">
         <label className="min-w-24 text-xs" htmlFor={id}>{control.label}</label>
-        {control.type === 'enum' ? <select id={id} className={props.inputClassName} disabled={busy} value={String(values[control.id] ?? control.default)} onChange={e => setValues(v => ({ ...v, [control.id]: e.target.value }))}>
+        {control.type === 'enum' ? <PanelSelect id={id} className={props.inputClassName} disabled={busy} value={String(values[control.id] ?? control.default)} onValueChange={selectedValueInput => setValues(v => ({ ...v, [control.id]: selectedValueInput }))}>
           {control.options.map(option => <option key={option} value={option}>{option}</option>)}
-        </select> : <input id={id} className={props.inputClassName} disabled={busy}
+        </PanelSelect> : <input id={id} className={props.inputClassName} disabled={busy}
           type={control.type === 'boolean' ? 'checkbox' : control.type === 'color' ? 'color' : 'number'}
           min={control.type === 'number' ? control.min : undefined} max={control.type === 'number' ? control.max : undefined} step={control.type === 'number' ? control.step : undefined}
           checked={control.type === 'boolean' ? values[control.id] === true : undefined}

@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { readThreeRendererBackend, requestThreeRendererBackend, subscribeThreeRendererBackend } from './threeRendererBackend'
 
@@ -5,11 +6,11 @@ export function ThreeRendererControls() {
   const state = React.useSyncExternalStore(subscribeThreeRendererBackend, readThreeRendererBackend, readThreeRendererBackend)
   return <section className="grid min-w-0 gap-2 rounded border p-2" aria-label="3D renderer">
     <label>Rendering backend
-      <select className="mt-1 min-h-11 w-full rounded border bg-transparent px-2" aria-label="3D renderer"
-        value={state.requested} onChange={event => requestThreeRendererBackend(event.target.value)}>
+      <PanelSelect className="mt-1 min-h-11 w-full rounded border bg-transparent px-2" aria-label="3D renderer"
+        value={state.requested} onValueChange={selectedValueInput => requestThreeRendererBackend(selectedValueInput)}>
         <option value="webgl">WebGL · compatible default</option>
         <option value="webgpu">WebGPU · optional device rendering</option>
-      </select>
+      </PanelSelect>
     </label>
     <output role="status">{state.reason}</output>
     <p className="m-0">Both backends draw the same objects. Switching does not add objects or improve reconstruction.

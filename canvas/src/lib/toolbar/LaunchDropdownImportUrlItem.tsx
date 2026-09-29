@@ -276,16 +276,21 @@ export function LaunchDropdownImportUrlItem(props: {
     async (nextUrlRaw: string) => {
       const nextUrl = String(nextUrlRaw || '').trim()
       if (!nextUrl) return
-      try {
-        await targetSkillsCommandsCommand(NATIVE_CRAWLER_COMMAND)
-      } catch {
-        return
-      }
       onClose()
-      getMarkdownWorkspaceActionBridge().importWebsite?.(nextUrl, buildAutoWebsiteImportOptions())
+      try {
+        const { chooseWebsiteImportPages } = await import('@/features/panels/websiteImportSelectionSession')
+        const selectedUrls = await chooseWebsiteImportPages(nextUrl)
+        if (!selectedUrls?.length) return
+        await targetSkillsCommandsCommand(NATIVE_CRAWLER_COMMAND)
+        const importWebsite = getMarkdownWorkspaceActionBridge().importWebsite
+        if (!importWebsite) throw new Error('Website import is unavailable in this workspace')
+        await importWebsite(nextUrl, { ...buildAutoWebsiteImportOptions(), selectedUrls })
+      } catch (error) {
+        reportSkillsCommandsResolutionFailure(error)
+      }
       setUrlInputOpen(false)
     },
-    [onClose, targetSkillsCommandsCommand],
+    [onClose, targetSkillsCommandsCommand, reportSkillsCommandsResolutionFailure],
   )
 
   const runVideoDownload = React.useCallback(async () => {

@@ -259,14 +259,14 @@ export function Canvas2dRendererSelect({
             {option.description || option.badges?.length ? (
               <span className="mt-0.5 block min-w-0">
                 {option.description ? (
-                  <span className={`block text-[10px] leading-3 ${UI_THEME_TOKENS.text.tertiary}`}>
+                  <span className={`block text-xs leading-3 ${UI_THEME_TOKENS.text.tertiary}`}>
                     {option.description}
                   </span>
                 ) : null}
                 {option.badges?.length ? (
                   <span className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
                     {option.badges.slice(0, 2).map(badge => (
-                      <span key={badge} className={`shrink-0 rounded border px-1 py-0 text-[9px] leading-3 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.badge.chip}`}>
+                      <span key={badge} className={`shrink-0 rounded border px-1 py-0 text-xs leading-3 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.badge.chip}`}>
                         {badge}
                       </span>
                     ))}

@@ -1,4 +1,5 @@
 import React from 'react'
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import type { GraphSchema } from '@/lib/graph/schema'
 import type { GraphField, GraphFieldId, GraphFieldSettingsById, GraphFieldSettingsResolved, GraphFieldType } from '@/features/graph-fields/graphFields'
 import { GRAPH_FIELD_TYPES, parseGraphFieldId } from '@/features/graph-fields/graphFields'
@@ -90,6 +91,7 @@ export const GraphFieldsListRow = React.memo(function GraphFieldsListRow({
   setDraggingDataTableColumnKey,
   setDragOverDataTableColumnKey,
 }: GraphFieldsListRowProps) {
+  const panelTypography = usePanelTypography()
   const isPropertyColumn = isGraphDataTablePropertyColumnKey(columnKey)
   const isCustomField = settings?.isCustom === true
 
@@ -296,7 +298,7 @@ export const GraphFieldsListRow = React.memo(function GraphFieldsListRow({
                     />
                     <PanelSelect
                       value={settings.fieldType}
-                      onChange={e => updateGraphFieldSettings(field.id, { fieldType: e.target.value as GraphFieldType })}
+                      onValueChange={selectedValueInput => updateGraphFieldSettings(field.id, { fieldType: selectedValueInput as GraphFieldType })}
                       className={typeSelectClassName}
                       onClick={e => e.stopPropagation()}
                     >
@@ -309,10 +311,10 @@ export const GraphFieldsListRow = React.memo(function GraphFieldsListRow({
                   </section>
                 ) : (
                   <>
-                    <section className={`flex items-center gap-1 min-w-0 text-xs ${UI_THEME_TOKENS.text.primary} truncate`}>
+                    <section className={`flex items-center gap-1 min-w-0 ${panelTypography.panelTextClass} ${UI_THEME_TOKENS.text.primary} truncate`}>
                       <span className="truncate">{settings?.displayName || label}</span>
                     </section>
-                    <section className={`text-sm ${UI_THEME_TOKENS.text.tertiary} truncate`}>
+                    <section className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.tertiary} truncate`}>
                       {graphFieldId || columnKey}
                     </section>
                   </>

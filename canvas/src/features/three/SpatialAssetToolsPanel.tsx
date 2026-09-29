@@ -77,8 +77,8 @@ export function SpatialAssetToolsPanel() {
       />
 
       <section className={cn('rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="3D graphics stack" data-kg-media-3d-graphics-stack="1">
-        <h3 className="text-[11px] font-semibold uppercase">Graphics</h3>
-        <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 gap-y-1 text-[11px]">
+        <h3 className="text-xs font-semibold uppercase">Graphics</h3>
+        <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 gap-y-1 text-xs">
           {runtimeStack.map(item => (
             <React.Fragment key={item.id}>
               <dt className={UI_THEME_TOKENS.text.tertiary}>{item.label}</dt>
@@ -97,8 +97,8 @@ export function SpatialAssetToolsPanel() {
       >
         <header className="flex flex-wrap items-center justify-between gap-2">
           <section className="min-w-0">
-            <h3 className="text-[11px] font-semibold uppercase">Spatial Tools</h3>
-            <output className={cn('block truncate text-[11px]', UI_THEME_TOKENS.text.tertiary)} data-kg-media-3d-spatial-tool-label="1">
+            <h3 className="text-xs font-semibold uppercase">Spatial Tools</h3>
+            <output className={cn('block truncate text-xs', UI_THEME_TOKENS.text.tertiary)} data-kg-media-3d-spatial-tool-label="1">
               {readSpatialCaptureToolLabel(spatialTool)}
             </output>
           </section>
@@ -110,7 +110,7 @@ export function SpatialAssetToolsPanel() {
                 aria-label={`3D ${axis.toUpperCase()} axis`}
                 aria-pressed={spatialAxis === axis}
                 className={cn(
-                  'grid size-6 place-items-center rounded-full border text-[10px] font-semibold',
+                  'grid size-6 place-items-center rounded-full border text-xs font-semibold',
                   UI_THEME_TOKENS.panel.border,
                   spatialAxis === axis ? 'ring-2 ring-sky-300' : '',
                   axis === 'x' ? 'bg-rose-400/80 text-white' : axis === 'y' ? 'bg-emerald-400/80 text-slate-950' : 'bg-indigo-500/80 text-white',
@@ -135,8 +135,8 @@ export function SpatialAssetToolsPanel() {
                 {action}
               </button>
             ))}
-            <output className={cn('rounded border px-2 py-1 text-[11px]', UI_THEME_TOKENS.panel.border)} data-kg-media-3d-center-radius="1">1</output>
-            <output className={cn('text-[11px]', UI_THEME_TOKENS.text.tertiary)}>Radius</output>
+            <output className={cn('rounded border px-2 py-1 text-xs', UI_THEME_TOKENS.panel.border)} data-kg-media-3d-center-radius="1">1</output>
+            <output className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Radius</output>
           </fieldset>
         </header>
         <nav className="mt-2 flex max-w-full items-center gap-1 overflow-x-auto pb-1" aria-label="3D spatial capture primary modes" data-kg-media-3d-primary-modes="1" data-kg-media-3d-primary-mode-active={spatialPrimaryMode}>

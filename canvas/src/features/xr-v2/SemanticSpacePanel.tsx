@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { publishCameraFramingRuntime } from '@/features/strybldr/cameraFramingRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -358,10 +359,10 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
             settings: { angle: 'front', level: 'eye-level', shot: 'medium', orbitX: 0, orbitY: 0 } })}>Face photo textures</button>
         </details>}
         <fieldset className="grid gap-2 rounded border p-2"><legend className="px-1 font-medium">Editable 3D approximation</legend>
-          <label>Supported shape<select className={fieldClass} value={twinTemplate}
-            onChange={event => setTwinTemplate(event.currentTarget.value as TwinTemplate)}>
+          <label>Supported shape<PanelSelect className={fieldClass} value={twinTemplate}
+            onValueChange={selectedValueInput => setTwinTemplate(selectedValueInput as TwinTemplate)}>
             {SEMANTIC_TWIN_TEMPLATES.filter(item => !['contour', 'relief'].includes(item) || twinBinding?.template === item).map(item => <option key={item} value={item}>{item}</option>)}
-          </select></label>
+          </PanelSelect></label>
           <div className="grid grid-cols-3 gap-2">{(['Width', 'Height', 'Depth'] as const).map((name, axis) => <label key={name}>{name}
             <input className={fieldClass} type="number" min="0.1" max="5" step="0.1" value={twinSize[axis]}
               onChange={event => { const value = Number(event.currentTarget.value)
@@ -385,16 +386,16 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
               <button type="button" className={buttonClass} disabled={busy} onClick={() => void exportSelectedModel()}>Export model GLB</button></>}
           </div>
           {twinBinding && neighbors.length > 0 && <details><summary className="min-h-11 cursor-pointer py-2">Join neighboring blocks</summary>
-            <div className="grid gap-2"><label>Neighbor object<select className={fieldClass} value={joinNeighborId} disabled={busy}
-              onChange={event => setJoinNeighborId(event.currentTarget.value)}>
+            <div className="grid gap-2"><label>Neighbor object<PanelSelect className={fieldClass} value={joinNeighborId} disabled={busy}
+              onValueChange={selectedValueInput => setJoinNeighborId(selectedValueInput)}>
               <option value="">Choose a neighbor</option>
               {neighbors.map(item => <option key={item.entityId} value={item.entityId}>
                 {document.entities.find(entity => entity.id === item.entityId)?.label || item.entityId}
-              </option>)}</select></label>
-              <div className="grid grid-cols-2 gap-2"><label>Join side<select className={fieldClass} value={joinSide} disabled={busy}
-                onChange={event => setJoinSide(event.currentTarget.value as TwinJoinSide)}>
+              </option>)}</PanelSelect></label>
+              <div className="grid grid-cols-2 gap-2"><label>Join side<PanelSelect className={fieldClass} value={joinSide} disabled={busy}
+                onValueChange={selectedValueInput => setJoinSide(selectedValueInput as TwinJoinSide)}>
                 {(['left', 'right', 'front', 'back'] as const).map(side => <option key={side} value={side}>{side}</option>)}
-              </select></label>
+              </PanelSelect></label>
               <label>Gap<input className={fieldClass} type="number" min="0" max="2" step="0.01" value={joinGap} disabled={busy}
                 onChange={event => setJoinGap(Number(event.currentTarget.value))} /></label></div>
               <span className="text-xs">Zero gap joins bounds. Left/right joins align front faces; each object keeps its own shape and selection.</span>
@@ -435,9 +436,9 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
         onClick={() => void importImageUrl()}>Import URL</button></div>
     <video ref={videoRef} className={cameraActive ? 'w-full rounded bg-black' : 'hidden'} muted playsInline aria-label="Space camera preview" />
     {observation && <>
-      <label>Observation <select className={fieldClass} value={observationIndex} onChange={event => {
-        setObservationIndex(Number(event.target.value)); setRegion(null)
-      }}>{document!.observations.map((item, index) => <option key={item.id} value={index}>{index + 1} · {new Date(item.capturedAtMs).toLocaleString()}</option>)}</select></label>
+      <label>Observation <PanelSelect className={fieldClass} value={observationIndex} onValueChange={selectedValueInput => {
+        setObservationIndex(Number(selectedValueInput)); setRegion(null)
+      }}>{document!.observations.map((item, index) => <option key={item.id} value={index}>{index + 1} · {new Date(item.capturedAtMs).toLocaleString()}</option>)}</PanelSelect></label>
       <div className="relative touch-none" onPointerDown={event => { dragStart.current = pointer(event); event.currentTarget.setPointerCapture(event.pointerId) }}
         onPointerUp={event => { const start = dragStart.current; dragStart.current = null; if (!start) return
           const end = pointer(event); const next = { x: Math.min(start.x, end.x), y: Math.min(start.y, end.y),
