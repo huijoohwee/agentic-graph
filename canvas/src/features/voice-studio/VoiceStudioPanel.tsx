@@ -396,7 +396,7 @@ export function VoiceStudioPanel() {
             <h3 className="text-sm font-semibold">AI Voice Studio</h3>
             <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>Clean-room · provider-neutral · injected-adapter Dev; provider unconfigured</p>
           </div>
-          <span className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px]" data-kg-voice-consent-gate="1">
+          <span className="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs" data-kg-voice-consent-gate="1">
             <ShieldCheck className="size-3.5" aria-hidden />
             Consent gated
           </span>
@@ -501,14 +501,14 @@ export function VoiceStudioPanel() {
           <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>System-voice preview is available now. A consented profile is metadata-only until a live adapter returns a verified audio artifact.</p>
           <label className="grid gap-1 text-xs">Consented profile<select className={cn('rounded border px-2 py-1.5', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)} value={selectedProfileId} onChange={event => setSelectedProfileId(event.target.value)}><option value="">System voice only</option>{profiles.map(profile => <option key={profile.id} value={profile.id} disabled={!isVoiceProfileSelectable(profile)}>{profile.displayName} · {profile.profileRevision} · {isVoiceProfileSelectable(profile) ? profile.state : 'revoked/expired'}</option>)}</select></label>
           {selectedProfileId ? <button type="button" className={cn('rounded border px-3 py-2 text-xs', UI_THEME_TOKENS.panel.border)} onClick={revokeSelectedProfile}>Revoke selected profile manifest</button> : null}
-          <p className={cn('text-[11px]', UI_THEME_TOKENS.text.secondary)}>{selectableProfiles.length} active, unexpired local manifest{selectableProfiles.length === 1 ? '' : 's'}. Host receipt verification is still required for live output.</p>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>{selectableProfiles.length} active, unexpired local manifest{selectableProfiles.length === 1 ? '' : 's'}. Host receipt verification is still required for live output.</p>
           <label className="grid gap-1 text-xs">System preview voice<select className={cn('rounded border px-2 py-1.5', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)} value={voiceName} onChange={event => setVoiceName(event.target.value)}><option value="">Browser default</option>{voices.map(voice => <option key={`${voice.name}:${voice.lang}`} value={voice.name}>{voice.name} · {voice.lang}</option>)}</select></label>
           <label className="grid gap-1 text-xs">Text<textarea className={cn('min-h-32 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)} maxLength={VOICE_STUDIO_LOCAL_LIMITS.createTextCharacters} value={createText} onChange={event => setCreateText(event.target.value.slice(0, VOICE_STUDIO_LOCAL_LIMITS.createTextCharacters))} /></label>
           <div className="flex gap-2">
             <button type="button" disabled={speaking} className={cn('inline-flex items-center gap-1 rounded border px-3 py-2 text-xs', UI_THEME_TOKENS.panel.border)} onClick={previewSpeech}><Play className="size-4" aria-hidden />Preview</button>
             <button type="button" disabled={!speaking} className={cn('inline-flex items-center gap-1 rounded border px-3 py-2 text-xs', UI_THEME_TOKENS.panel.border)} onClick={stopSpeech} data-kg-voice-stop="speech"><CircleStop className="size-4" aria-hidden />Stop</button>
           </div>
-          <p className="inline-flex items-center gap-1 text-[11px]"><Volume2 className="size-3.5" aria-hidden />Synthetic-voice disclosure is always required.</p>
+          <p className="inline-flex items-center gap-1 text-xs"><Volume2 className="size-3.5" aria-hidden />Synthetic-voice disclosure is always required.</p>
         </section>
       ) : null}
 

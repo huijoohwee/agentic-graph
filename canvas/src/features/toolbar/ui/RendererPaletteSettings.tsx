@@ -44,7 +44,7 @@ export function RendererPaletteSettings() {
 
   return (
     <section className="grid grid-cols-1 gap-1">
-      <section className={`text-[10px] ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
+      <section className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
         <Tooltip
           content={RENDERER_PALETTE_LIFECYCLE_TOOLTIP}
           maxWidthPx={260}

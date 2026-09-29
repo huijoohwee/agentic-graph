@@ -64,11 +64,11 @@ export function XrV2SpatialCapturePanel({
     >
       <header className="flex flex-wrap items-start justify-between gap-2">
         <section>
-          <h5 className="m-0 text-[10px] font-semibold">Spatial capture · local depth + DIBR</h5>
-          <p className={cn('m-0 text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <h5 className="m-0 text-xs font-semibold">Spatial capture · local depth + DIBR</h5>
+          <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Uses the canonical camera after Start · depth/DIBR is separate · bounded to {XR_V2_SPATIAL_CAPTURE_MAX_DURATION_MS / 1_000}s
           </p>
-          <p className={cn('m-0 text-[8px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Raw fallback after {XR_V2_SPATIAL_CAPTURE_CONSECUTIVE_BREACHES} consecutive frames over {XR_V2_SPATIAL_CAPTURE_FRAME_BUDGET_MS}ms
           </p>
         </section>
@@ -102,26 +102,26 @@ export function XrV2SpatialCapturePanel({
         <canvas ref={rightRef} className="aspect-video w-full rounded bg-black object-contain" aria-label="Synthesized right-eye preview" />
       </div>
 
-      <div className={cn('grid grid-cols-3 gap-1 text-[9px]', UI_THEME_TOKENS.text.secondary)}>
+      <div className={cn('grid grid-cols-3 gap-1 text-xs', UI_THEME_TOKENS.text.secondary)}>
         <span><b>Raw</b><br />{capture.rawFrameCount}</span>
         <span><b>Depth</b><br />{capture.depthFrameCount}</span>
         <span><b>Stereo</b><br />{capture.synthesizedFrameCount}</span>
       </div>
-      <p className={cn('m-0 text-[9px]', capture.phase === 'error' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.tertiary)} role="status" aria-live="polite">
+      <p className={cn('m-0 text-xs', capture.phase === 'error' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.tertiary)} role="status" aria-live="polite">
         {capture.message}
       </p>
       {!capture.cameraSourceAvailable ? (
-        <p className="m-0 text-[9px] text-amber-700 dark:text-amber-300" data-kg-xr-v2-spatial-capture-camera-gate="start-camera-first">
+        <p className="m-0 text-xs text-amber-700 dark:text-amber-300" data-kg-xr-v2-spatial-capture-camera-gate="start-camera-first">
           Start the pose camera above first. XR capture never requests or stops the camera itself.
         </p>
       ) : null}
       {!actionsEnabled && disabledReason ? (
-        <p className="m-0 text-[9px] text-amber-700 dark:text-amber-300" data-kg-xr-v2-spatial-capture-gate={disabledReason}>
+        <p className="m-0 text-xs text-amber-700 dark:text-amber-300" data-kg-xr-v2-spatial-capture-gate={disabledReason}>
           {disabledReason}
         </p>
       ) : null}
       {capture.assetMetadata ? (
-        <code className={cn('break-all text-[8px]', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-v2-captured-asset-metadata="1">
+        <code className={cn('break-all text-xs', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-v2-captured-asset-metadata="1">
           {JSON.stringify(capture.assetMetadata)}
         </code>
       ) : null}

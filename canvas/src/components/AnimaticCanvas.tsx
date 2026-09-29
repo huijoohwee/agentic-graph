@@ -89,7 +89,7 @@ const DRAG_EDGE_SCROLL_STEP_PX = 28
 const DRAG_COMMIT_MIN_DELTA_PX = 4
 const BEAT_LANE_SUMMARY_LIMIT = 3
 const TIMELINE_COMPACT_HINT_CHIP_CLASS_NAME =
-  'rounded-full border border-cyan-500/30 bg-cyan-500/10 px-1 py-0 text-[8px] leading-3 text-cyan-100'
+  'rounded-full border border-cyan-500/30 bg-cyan-500/10 px-1 py-0 text-xs leading-3 text-cyan-100'
 
 const SELECTED_LANE_HINTS = [
   { label: 'Arrows', title: 'Arrow Up/Down focus lane' },
@@ -316,10 +316,10 @@ function getTimelineBeatQuickIconButtonClassName(enabled: boolean): string {
 function getTimelineCompactStatusChipClassName(
   tone: 'default' | 'muted' | 'amber' | 'cyan' = 'default',
 ): string {
-  if (tone === 'muted') return 'rounded-md border border-slate-800 bg-slate-950/80 px-2 py-1 text-[10px] text-slate-500'
-  if (tone === 'amber') return 'rounded-md border border-slate-800 bg-slate-950/80 px-2 py-1 text-[10px] text-amber-200'
-  if (tone === 'cyan') return 'rounded-md border border-slate-800 bg-slate-950/80 px-2 py-1 text-[10px] text-cyan-200'
-  return 'rounded-md border border-slate-800 bg-slate-950/80 px-2 py-1 text-[10px] text-slate-300'
+  if (tone === 'muted') return 'rounded-md border border-slate-800 bg-slate-950/80 px-2 py-1 text-xs text-slate-500'
+  if (tone === 'amber') return 'rounded-md border border-slate-800 bg-slate-950/80 px-2 py-1 text-xs text-amber-200'
+  if (tone === 'cyan') return 'rounded-md border border-slate-800 bg-slate-950/80 px-2 py-1 text-xs text-cyan-200'
+  return 'rounded-md border border-slate-800 bg-slate-950/80 px-2 py-1 text-xs text-slate-300'
 }
 
 export default function AnimaticCanvas({
@@ -1719,7 +1719,7 @@ export default function AnimaticCanvas({
             <section className="flex h-7 items-center overflow-hidden rounded-md border border-slate-800 bg-slate-950/80">
               <button
                 type="button"
-                className={`h-full px-2 text-[10px] font-medium transition ${
+                className={`h-full px-2 text-xs font-medium transition ${
                   snapEnabled ? 'bg-cyan-500/18 text-cyan-50' : 'text-slate-400 hover:bg-slate-900'
                 }`}
                 onClick={() => setSnapEnabled(current => !current)}
@@ -1730,7 +1730,7 @@ export default function AnimaticCanvas({
                 <button
                   key={step}
                   type="button"
-                  className={`h-full px-2 text-[10px] font-medium transition ${
+                  className={`h-full px-2 text-xs font-medium transition ${
                     snapStepMs === step ? 'bg-cyan-500/18 text-cyan-50' : 'text-slate-300 hover:bg-slate-900'
                   }`}
                   onClick={() => setSnapStepMs(step)}
@@ -1750,7 +1750,7 @@ export default function AnimaticCanvas({
                   <IconButton title={`Rename ${activeBeat.label} (L)`} showTooltip className={getTimelineIconButtonClassName(true)} onClick={() => handleStartBeatLabelEdit(activeBeat)}>
                     <Pencil className={toolbarIconClassName} />
                   </IconButton>
-                  <span className="max-w-32 truncate text-[10px] text-slate-400">{activeBeat.label}</span>
+                  <span className="max-w-32 truncate text-xs text-slate-400">{activeBeat.label}</span>
                 </section>
               ) : null}
               {activeBeat ? (
@@ -1780,7 +1780,7 @@ export default function AnimaticCanvas({
                         editing,
                       })
                     }}
-                    displayClassName="max-w-32 truncate text-[10px] leading-4 text-slate-400"
+                    displayClassName="max-w-32 truncate text-xs leading-4 text-slate-400"
                     editorClassName="min-h-16 w-52 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 outline-none"
                   />
                 </section>
@@ -1790,7 +1790,7 @@ export default function AnimaticCanvas({
                   <IconButton title={activeBeat.summary ? 'Edit beat summary (M)' : 'Add beat summary (M)'} showTooltip className={getTimelineIconButtonClassName(true)} onClick={() => handleStartBeatSummaryEdit(activeBeat)}>
                     <AlignLeft className={toolbarIconClassName} />
                   </IconButton>
-                  {activeBeat.summary ? <span className="max-w-36 truncate text-[10px] text-slate-400">{activeBeat.summary}</span> : null}
+                  {activeBeat.summary ? <span className="max-w-36 truncate text-xs text-slate-400">{activeBeat.summary}</span> : null}
                 </section>
               ) : null}
               {activeBeat ? (
@@ -1818,7 +1818,7 @@ export default function AnimaticCanvas({
                         editing,
                       })
                     }}
-                    displayClassName="max-w-32 truncate text-[10px] leading-4 text-slate-400"
+                    displayClassName="max-w-32 truncate text-xs leading-4 text-slate-400"
                     editorClassName="w-56 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 outline-none"
                   />
                 </section>
@@ -1854,13 +1854,13 @@ export default function AnimaticCanvas({
         <section className="timeline-bottom-panel-editor flex min-h-0 flex-1 overflow-hidden">
           <aside className="timeline-lane-sidebar w-44 shrink-0 border-r border-slate-800 bg-[#111827]">
             <section
-              className="timeline-lane-sidebar-scale flex items-center border-b border-slate-800 px-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500"
+              className="timeline-lane-sidebar-scale flex items-center border-b border-slate-800 px-4 text-xs font-semibold uppercase tracking-normal text-slate-500"
               style={{ height: SCALE_ROW_HEIGHT_PX }}
             >
               Scale
             </section>
             <section
-              className="timeline-lane-sidebar-beats flex items-center border-b border-slate-800 px-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400"
+              className="timeline-lane-sidebar-beats flex items-center border-b border-slate-800 px-4 text-xs font-semibold uppercase tracking-normal text-slate-400"
               style={{ height: BEAT_HEADER_HEIGHT_PX }}
             >
               Timeline
@@ -2239,7 +2239,7 @@ export default function AnimaticCanvas({
                         ) : (
                           <span />
                         )}
-                        <span className="relative z-10 text-[8px] uppercase leading-3 tracking-[0.14em] text-slate-500">{beat.beatRef}</span>
+                        <span className="relative z-10 text-xs uppercase leading-3 tracking-normal text-slate-500">{beat.beatRef}</span>
                         <CardInlineTextEditor
                           value={beat.label}
                           ariaLabel={`Beat label for ${beat.beatRef}`}
@@ -2260,30 +2260,30 @@ export default function AnimaticCanvas({
                               editing,
                             })
                           }}
-                          displayClassName="relative z-[25] text-[10px] font-semibold leading-3.5 text-slate-100"
-                          editorClassName="relative z-[25] rounded border border-slate-700 bg-slate-950/95 px-1 py-0.5 text-[10px] font-semibold leading-4 text-slate-50 outline-none"
+                          displayClassName="relative z-[25] text-xs font-semibold leading-3.5 text-slate-100"
+                          editorClassName="relative z-[25] rounded border border-slate-700 bg-slate-950/95 px-1 py-0.5 text-xs font-semibold leading-4 text-slate-50 outline-none"
                         />
                         <section
-                          className={`relative z-10 ${laneInlineScrollClassName} text-[9px] leading-3.5 text-slate-400`}
+                          className={`relative z-10 ${laneInlineScrollClassName} text-xs leading-3.5 text-slate-400`}
                         >
                           <span>
                             {timelineModel.usesAbsoluteTiming
                               ? `${formatAnimaticTimelineTimestamp(beat.startMs)} -> ${formatAnimaticTimelineTimestamp(beat.endMs)}`
                               : `${beat.items.length} item${beat.items.length === 1 ? '' : 's'}`}
                           </span>
-                          <span className="rounded-full border border-slate-700 bg-slate-900/70 px-1 py-0 text-[9px] leading-3 text-slate-300">
+                          <span className="rounded-full border border-slate-700 bg-slate-900/70 px-1 py-0 text-xs leading-3 text-slate-300">
                             {beat.items.length} item{beat.items.length === 1 ? '' : 's'}
                           </span>
                         </section>
                         {beatLaneSummary.length > 0 ? (
                           <section
-                            className={`relative z-10 ${laneInlineScrollClassName} text-[9px] leading-3.5`}
+                            className={`relative z-10 ${laneInlineScrollClassName} text-xs leading-3.5`}
                           >
                             {visibleBeatLaneSummary.map(({ laneId, count }) => (
                               <button
                                 type="button"
                                 key={`${beat.beatRef}:lane:${laneId}`}
-                                className={`truncate rounded-full border px-1 py-0 text-[9px] leading-3 transition hover:brightness-110 focus:outline-none focus:ring-1 focus:ring-cyan-300 ${LANE_ACCENT_CLASS[laneId]}`}
+                                className={`truncate rounded-full border px-1 py-0 text-xs leading-3 transition hover:brightness-110 focus:outline-none focus:ring-1 focus:ring-cyan-300 ${LANE_ACCENT_CLASS[laneId]}`}
                                 title={`${LANE_LABEL[laneId]}: ${count} item${count === 1 ? '' : 's'}`}
                                 onClick={() => handleFocusLaneFromBeatCard(laneId)}
                               >
@@ -2292,7 +2292,7 @@ export default function AnimaticCanvas({
                             ))}
                             {beatLaneSummary.length > BEAT_LANE_SUMMARY_LIMIT ? (
                               <span
-                                className="rounded-full border border-slate-700 bg-slate-900/80 px-1 py-0 text-[9px] leading-3 text-slate-300"
+                                className="rounded-full border border-slate-700 bg-slate-900/80 px-1 py-0 text-xs leading-3 text-slate-300"
                                 title={`${beatLaneSummary.length - BEAT_LANE_SUMMARY_LIMIT} more lane summaries`}
                               >
                                 +{beatLaneSummary.length - BEAT_LANE_SUMMARY_LIMIT}
@@ -2323,18 +2323,18 @@ export default function AnimaticCanvas({
                                 editing,
                               })
                             }}
-                            displayClassName="relative z-[25] truncate text-[9px] leading-3.5 text-slate-300"
-                            editorClassName="relative z-[25] min-h-16 rounded border border-slate-700 bg-slate-950/95 px-1.5 py-1 text-[10px] leading-4 text-slate-50 outline-none"
+                            displayClassName="relative z-[25] truncate text-xs leading-3.5 text-slate-300"
+                            editorClassName="relative z-[25] min-h-16 rounded border border-slate-700 bg-slate-950/95 px-1.5 py-1 text-xs leading-4 text-slate-50 outline-none"
                           />
                         ) : null}
                         {beat.tags.length > 0 ? (
                           <section
-                            className={`relative z-10 ${laneInlineScrollClassName} text-[9px] leading-3.5`}
+                            className={`relative z-10 ${laneInlineScrollClassName} text-xs leading-3.5`}
                           >
                             {beat.tags.slice(0, 3).map(tag => (
                               <span
                                 key={`${beat.beatRef}:${tag}`}
-                                className="truncate rounded-full border border-cyan-500/30 bg-cyan-500/10 px-1 py-0 text-[9px] leading-3 text-cyan-100"
+                                className="truncate rounded-full border border-cyan-500/30 bg-cyan-500/10 px-1 py-0 text-xs leading-3 text-cyan-100"
                                 title={tag}
                               >
                                 {tag}
@@ -2342,7 +2342,7 @@ export default function AnimaticCanvas({
                             ))}
                             {beat.tags.length > 3 ? (
                               <span
-                                className="rounded-full border border-slate-700 bg-slate-900/90 px-1 py-0 text-[9px] leading-3 text-slate-400"
+                                className="rounded-full border border-slate-700 bg-slate-900/90 px-1 py-0 text-xs leading-3 text-slate-400"
                                 title={beat.tags.slice(3).join(', ')}
                               >
                                 +{beat.tags.length - 3}
@@ -2352,7 +2352,7 @@ export default function AnimaticCanvas({
                         ) : null}
                         {isActiveBeat ? (
                           <section
-                            className={`relative z-10 ${laneInlineScrollClassName} text-[9px] text-cyan-100`}
+                            className={`relative z-10 ${laneInlineScrollClassName} text-xs text-cyan-100`}
                           >
                             {SELECTED_BEAT_HINTS.map(hint => (
                               <span key={hint.label} className={TIMELINE_COMPACT_HINT_CHIP_CLASS_NAME} title={hint.title}>
@@ -2403,14 +2403,14 @@ export default function AnimaticCanvas({
                     )
                     if (!lane.visibleItems) {
                       return (
-                        <section className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-2 text-[10px] text-slate-600">
+                        <section className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-2 text-xs text-slate-600">
                           {lane.soloFiltered ? 'Solo filtered' : lane.hidden ? 'Hidden lane' : lane.muted ? 'Muted lane' : `No ${lane.label.toLowerCase()} item`}
                         </section>
                       )
                     }
                     if (laneItemContexts.length === 0) {
                       return (
-                        <section className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-2 text-[10px] text-slate-600">
+                        <section className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-2 text-xs text-slate-600">
                           No {lane.label.toLowerCase()} item
                         </section>
                       )
@@ -2489,7 +2489,7 @@ export default function AnimaticCanvas({
                                 <section
                                   className={`${laneInlineScrollClassName} min-w-0 w-full justify-center px-2 ${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME}`}
                                 >
-                                  <span className={`${actionEffectClassName}-text min-w-0 truncate text-[9px] leading-3.5 font-normal`}>{item.title}</span>
+                                  <span className={`${actionEffectClassName}-text min-w-0 truncate text-xs leading-3.5 font-normal`}>{item.title}</span>
                                   {selectedItemNodeId === item.nodeId ? (
                                     <section className={`${laneInlineScrollClassName} shrink-0`}>
                                       {SELECTED_ITEM_HINTS.map(hint => (

@@ -88,7 +88,7 @@ export function MarkdownSourceFilesTreeRow(props: MarkdownSourceFilesTreeRowProp
           {icon}
           <span
             className={[
-              'min-w-0 flex-1 text-[12px] truncate transition-colors font-semibold',
+              'min-w-0 flex-1 text-xs truncate transition-colors font-semibold',
               UI_THEME_TOKENS.text.primary,
               uiPanelTextFontClass,
             ].join(' ')}
@@ -131,7 +131,7 @@ export function MarkdownSourceFilesTreeRow(props: MarkdownSourceFilesTreeRowProp
           </bdi>
           {versionCount > 0 ? (
             <span
-              className={`shrink-0 rounded border px-1 py-0 text-[10px] leading-4 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.text.tertiary}`}
+              className={`shrink-0 rounded border px-1 py-0 text-xs leading-4 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.text.tertiary}`}
               data-kg-source-file-version-count={versionCount}
               title={`${versionCount} document versions`}
             >

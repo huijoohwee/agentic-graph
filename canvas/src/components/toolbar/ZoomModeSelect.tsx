@@ -267,14 +267,14 @@ export function ZoomModeSelect({ iconSizeClass, iconStrokeWidth, onZoomSelection
       renderButtonContent={() => (
         <span className="inline-flex min-w-0 items-center gap-1">
           <Focus className={iconSizeClass} strokeWidth={iconStrokeWidth} />
-          <span className="max-w-[3.5rem] truncate text-[10px] leading-none">{currentZoomLabel}</span>
+          <span className="max-w-[3.5rem] truncate text-xs leading-none">{currentZoomLabel}</span>
         </span>
       )}
       renderOptionContent={option => (
         <>
           <option.Icon className={iconSizeClass} strokeWidth={iconStrokeWidth} />
           <span className="truncate">{option.title}</span>
-          {isOptionActive(option.id) ? <span className="ml-auto text-[10px] opacity-80">On</span> : null}
+          {isOptionActive(option.id) ? <span className="ml-auto text-xs opacity-80">On</span> : null}
         </>
       )}
       menuWidthClass={UI_RESPONSIVE_COMPACT_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME}

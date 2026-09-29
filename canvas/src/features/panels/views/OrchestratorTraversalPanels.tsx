@@ -97,7 +97,7 @@ function GraphRagPathTraverseHelperSection({
     <section className={helperPanelClassName}>
       <section
         className={[
-          `font-semibold uppercase tracking-wide ${helperTitleClassName} mb-1`,
+          `font-semibold uppercase tracking-normal ${helperTitleClassName} mb-1`,
           uiPanelKeyValueTextSizeClass,
           uiPanelTextFontClass,
         ].join(' ')}
@@ -254,7 +254,7 @@ function DuckDbQueryPresetsSection({
     <section className={helperPanelClassName}>
       <section
         className={[
-          `font-semibold uppercase tracking-wide ${helperTitleClassName} mb-1`,
+          `font-semibold uppercase tracking-normal ${helperTitleClassName} mb-1`,
           uiPanelKeyValueTextSizeClass,
           uiPanelTextFontClass,
         ].join(' ')}

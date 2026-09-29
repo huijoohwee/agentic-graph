@@ -203,7 +203,7 @@ function XrSubjectPartEditor({ document, generation, selectedPart, busy, onSelec
     <div className="grid grid-cols-3 gap-1">{(['X', 'Y', 'Z'] as const).map((axis, index) => {
       const control = field === 'size' ? recipe?.controls.find(item => item.partId === draft.id && item.target === ['width', 'height', 'depth'][index]) : undefined
       const value = draft[field][index] * (field === 'rotation' ? 180 / Math.PI : 1)
-      return <label key={axis} className="min-w-0 text-[10px]">{axis}<input type="number" aria-label={`${label} ${axis}`} className={inputClass}
+      return <label key={axis} className="min-w-0 text-xs">{axis}<input type="number" aria-label={`${label} ${axis}`} className={inputClass}
         min={control?.type === 'number' ? control.min : field === 'size' ? 0.01 : field === 'rotation' ? -180 : -100}
         max={control?.type === 'number' ? control.max : field === 'size' ? 20 : field === 'rotation' ? 180 : 100}
         step="any" value={Number.isFinite(value) ? value : ''} onChange={event => {

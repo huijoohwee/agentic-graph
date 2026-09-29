@@ -189,7 +189,7 @@ export function ImageToGlbSurface(props: {
         </Canvas>
       ) : null}
       {loadState === 'loading' ? (
-        <span className="absolute inset-x-0 bottom-2 text-center text-[11px] text-slate-500" role="status">
+        <span className="absolute inset-x-0 bottom-2 text-center text-xs text-slate-500" role="status">
           Loading procedural GLB…
         </span>
       ) : null}
@@ -200,7 +200,7 @@ export function ImageToGlbSurface(props: {
       ) : null}
       {loadState === 'ready' ? (
         <span
-          className="pointer-events-none absolute bottom-2 right-2 rounded-full border border-sky-300/70 bg-slate-950/75 px-2 py-0.5 text-[10px] font-medium tracking-wide text-sky-100"
+          className="pointer-events-none absolute bottom-2 right-2 rounded-full border border-sky-300/70 bg-slate-950/75 px-2 py-0.5 text-xs font-medium tracking-normal text-sky-100"
           data-kg-image-to-glb-native-badge="1"
         >
           Native Three.js · GLB

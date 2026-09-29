@@ -9,7 +9,7 @@ const AXES = [
 export function XrEmptyWorldHud() {
   return (
     <aside
-      className="pointer-events-none absolute inset-0 z-[1] text-[11px] text-slate-100"
+      className="pointer-events-none absolute inset-0 z-[1] text-xs text-slate-100"
       aria-label="XR empty world center and axes"
       data-kg-xr-empty-world-hud="1"
     >

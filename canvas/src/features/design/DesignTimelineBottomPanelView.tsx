@@ -48,8 +48,8 @@ export function DesignTimelineBottomPanelView({ compact = false }: { compact?: b
             ['duration', `${durationMs}ms`],
           ].map(([label, value]) => (
             <section key={String(label)} className={cn('rounded border px-2 py-1', UI_THEME_TOKENS.panel.border)}>
-              <dt className={cn('text-[10px] uppercase', UI_THEME_TOKENS.text.tertiary)}>{label}</dt>
-              <dd className={cn('m-0 font-mono text-[11px]', UI_THEME_TOKENS.text.primary)}>{value}</dd>
+              <dt className={cn('text-xs uppercase', UI_THEME_TOKENS.text.tertiary)}>{label}</dt>
+              <dd className={cn('m-0 font-mono text-xs', UI_THEME_TOKENS.text.primary)}>{value}</dd>
             </section>
           ))}
         </dl>
@@ -57,7 +57,7 @@ export function DesignTimelineBottomPanelView({ compact = false }: { compact?: b
       <section className="grid min-h-0 grid-cols-[7rem_minmax(0,1fr)] overflow-hidden rounded border" style={{ minHeight }} aria-label="Design video timeline lanes">
         <aside className={cn('grid border-r p-2', UI_THEME_TOKENS.panel.border)} aria-label="Design timeline lane labels">
           {artifact.manifest.timelineLanes.map(lane => (
-            <section key={lane.id} className={cn('flex min-w-0 items-center gap-1 text-[11px] font-semibold', UI_THEME_TOKENS.text.primary)}>
+            <section key={lane.id} className={cn('flex min-w-0 items-center gap-1 text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>
               <Rows3 className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden={true} />
               <span className="truncate">{lane.label}</span>
             </section>
@@ -68,7 +68,7 @@ export function DesignTimelineBottomPanelView({ compact = false }: { compact?: b
           {artifact.manifest.timelineTicks.map(tick => (
             <section
               key={`${tick.timeMs}:${tick.label}`}
-              className={cn('absolute inset-y-0 border-l text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.tertiary)}
+              className={cn('absolute inset-y-0 border-l text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.tertiary)}
               style={{ left: `clamp(0.75rem, ${tick.percent}%, calc(100% - 0.75rem))` }}
               aria-label={`Timeline tick ${tick.label}`}
             >
@@ -82,7 +82,7 @@ export function DesignTimelineBottomPanelView({ compact = false }: { compact?: b
               return (
                 <article
                   key={track.id}
-                  className="absolute top-12 flex min-w-0 items-center rounded border border-[var(--kg-accent)] bg-[var(--kg-accent-soft-bg)] px-2 py-1 text-[11px] text-[var(--kg-text-primary)] shadow-sm"
+                  className="absolute top-12 flex min-w-0 items-center rounded border border-[var(--kg-accent)] bg-[var(--kg-accent-soft-bg)] px-2 py-1 text-xs text-[var(--kg-text-primary)] shadow-sm"
                   style={{
                     left: `${leftPercent}%`,
                     width: `${Math.min(100 - leftPercent, widthPercent)}%`,

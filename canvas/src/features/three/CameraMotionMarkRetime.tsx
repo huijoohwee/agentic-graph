@@ -48,7 +48,7 @@ function TimeEditor({
 }) {
   return (
     <PanelTextInput
-      className={compact ? 'h-5 w-12 px-1 py-0 text-[9px]' : 'h-6 w-16 px-1 text-[10px]'}
+      className={compact ? 'h-5 w-12 px-1 py-0 text-xs' : 'h-6 w-16 px-1 text-xs'}
       aria-label={label}
       type="number"
       min={0}
@@ -400,33 +400,33 @@ export function CameraMotionMarkRetime({
       data-kg-xr-timeline-retime-layout={layout}
     >
       <header className="flex items-center justify-between gap-2 px-0.5">
-        <h4 className="text-[10px] font-semibold uppercase">Retime marks</h4>
-        <p className={cn('m-0 text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Seconds · actor + camera</p>
+        <h4 className="text-xs font-semibold uppercase">Retime marks</h4>
+        <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>Seconds · actor + camera</p>
       </header>
       <section className="flex min-w-0 flex-wrap gap-1" aria-label="Cast mark times">
         {selectedTrack?.marks.map((mark, index) => (
           <article key={mark.id} className={cn('flex items-center gap-1 rounded border px-1 py-0.5', UI_THEME_TOKENS.panel.border)} data-kg-xr-retime-cast-mark={index + 1}>
-            <span className="grid size-5 place-items-center rounded-full text-[9px] font-bold text-white" style={{ backgroundColor: selectedTrack.color }}>{index + 1}</span>
+            <span className="grid size-5 place-items-center rounded-full text-xs font-bold text-white" style={{ backgroundColor: selectedTrack.color }}>{index + 1}</span>
             <TimeEditor label={`${selectedTrack.label} mark ${index + 1} time`} value={mark.timeSeconds} max={runtime.plan.durationSeconds} onChange={value => retimeXrMotionReferenceCastMark(selectedTrack.actorId, mark.id, value)} />
             <button type="button" className="App-toolbar__btn p-1" disabled={selectedTrack.marks.length <= 1} aria-label={`Remove ${selectedTrack.label} mark ${index + 1}`} onClick={() => removeXrMotionReferenceCastMark(selectedTrack.actorId, mark.id)}>
               <Trash2 className="size-3" aria-hidden />
             </button>
           </article>
         ))}
-        {!selectedTrack ? <p className={cn('m-0 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>No cast track.</p> : null}
+        {!selectedTrack ? <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>No cast track.</p> : null}
       </section>
       <section className="flex min-w-0 flex-wrap gap-1" aria-label="Camera mark times">
         {runtime.plan.camera.map((mark, index) => (
           <article key={mark.id} className={cn('flex items-center gap-1 rounded border px-1 py-0.5', UI_THEME_TOKENS.panel.border)} data-kg-xr-retime-camera-mark={index + 1}>
-            <span className="text-[9px] font-bold">C{index + 1}</span>
+            <span className="text-xs font-bold">C{index + 1}</span>
             <TimeEditor label={`Camera mark ${index + 1} time`} value={mark.timeSeconds} max={runtime.plan.durationSeconds} onChange={value => retimeXrMotionReferenceCameraMark(mark.id, value)} />
-            <span className={cn('max-w-40 truncate text-[9px]', UI_THEME_TOKENS.text.tertiary)} title={`${resolveXrCameraMoveLabel(mark.moveId)} · ${mark.rig} · ${formatCameraOptics(mark.settings)}`} data-kg-camera-optics-projection="timeline-mark">{resolveXrCameraMoveLabel(mark.moveId)} · {mark.settings.focalLengthMm}mm · {mark.settings.focusDistanceMeters}m</span>
+            <span className={cn('max-w-40 truncate text-xs', UI_THEME_TOKENS.text.tertiary)} title={`${resolveXrCameraMoveLabel(mark.moveId)} · ${mark.rig} · ${formatCameraOptics(mark.settings)}`} data-kg-camera-optics-projection="timeline-mark">{resolveXrCameraMoveLabel(mark.moveId)} · {mark.settings.focalLengthMm}mm · {mark.settings.focusDistanceMeters}m</span>
             <button type="button" className="App-toolbar__btn p-1" aria-label={`Remove camera mark ${index + 1}`} onClick={() => removeXrMotionReferenceCameraMark(mark.id)}>
               <Trash2 className="size-3" aria-hidden />
             </button>
           </article>
         ))}
-        {runtime.plan.camera.length === 0 ? <p className={cn('m-0 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Drop camera marks from FloatingPanel → Camera → SHOOT.</p> : null}
+        {runtime.plan.camera.length === 0 ? <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>Drop camera marks from FloatingPanel → Camera → SHOOT.</p> : null}
       </section>
     </section>
   )

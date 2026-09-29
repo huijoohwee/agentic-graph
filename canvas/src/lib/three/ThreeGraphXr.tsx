@@ -406,7 +406,7 @@ export function CanvasXrEntryPanel({
         data-kg-canvas-xr-fallback="monocular-capture"
         className="absolute right-3 top-3 z-[90] pointer-events-auto rounded-md border border-[var(--kg-border)] bg-[var(--kg-surface)]/90 p-2 shadow-sm backdrop-blur"
       >
-        <p className="max-w-48 text-[11px] text-[var(--kg-text-secondary)]">
+        <p className="max-w-48 text-xs text-[var(--kg-text-secondary)]">
           Immersive XR is unavailable. Continue through the existing local camera and Motion Control owner.
         </p>
         <button

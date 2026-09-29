@@ -58,7 +58,7 @@ export function MarkdownDataViewAddColumnMenu(props: {
           <header className={['min-w-0 text-xs font-semibold px-1 py-1', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.primary].join(' ')}>New column</header>
         </li>
         <li className="list-none px-1 pb-2">
-          <label className={['block text-[10px] mb-1', UI_THEME_TOKENS.text.secondary].join(' ')} htmlFor={nameId}>
+          <label className={['block text-xs mb-1', UI_THEME_TOKENS.text.secondary].join(' ')} htmlFor={nameId}>
             Name
           </label>
           <input
@@ -70,7 +70,7 @@ export function MarkdownDataViewAddColumnMenu(props: {
           />
         </li>
         <li className="list-none px-1 pb-2">
-          <section className={['block text-[10px] mb-1', UI_THEME_TOKENS.text.secondary].join(' ')}>Type</section>
+          <section className={['block text-xs mb-1', UI_THEME_TOKENS.text.secondary].join(' ')}>Type</section>
           <details className="relative">
             <summary
               className={[
