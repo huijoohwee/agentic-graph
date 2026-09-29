@@ -312,10 +312,11 @@ Dashboard Open actions reuse `MainPanelIconButton` and Help's `action.open` icon
 accessible labels, disabled behavior and existing file handlers remain intact.
 
 MVP/GTM: Local/offline presentation change, no service, dependency or pricing
-change. Budget: 13 modules, under 50 KB patch. Focused typography migration tests
+change. Budget: 14 modules, under 50 KB patch (including one browser-test readiness fix). Focused typography migration tests
 cover canonical sizing, idempotence, both density options, multiline preservation
 and source-owner guards. Live desktop measurements: all eight dashboard controls
 and Integrations' context dropdown are 28 px; JSON editor remains 130 px/pre-wrap.
 At 390 px, Integrations content/scroll widths are 356/356 px; dashboard form widths
-are 348/348 px. Native affected validation is recorded with release proof.
+are 348/348 px. Native affected validation is recorded with release proof. Full-app boot readiness
+accepts multiple source roots; all subsequent named-control and storage assertions remain.
 Rollback: revert this follow-up; no content or storage-format migration is needed.
