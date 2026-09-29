@@ -424,16 +424,17 @@ Arrow/Home/End navigation includes expanded children, and live option refreshes
 preserve focus. Selection and invocation metadata retain their existing owners.
 
 MVP/evidence: cap 15 files / 60 KB patch; no dependency or runtime request added.
-Eight focused checks pass, covering help/disabled dispatch, focus preservation,
+Eleven focused checks pass, covering help/disabled dispatch, focus preservation,
 retired-variant prohibition, tooltip ownership, menu grouping, 2D return behavior,
 touch sizing and responsive containment. Browser measurements show all 18 rows at
 28 px on desktop and 44 px in a 390 px viewport. Desktop buttons pass pointer hit
 testing; both widths have no horizontal menu overflow. Disabled Dashboard focus
 shows the role/action/outcome, default and enablement help in an unclipped portal;
 Enter leaves its selection unchanged. The temporary viewport and surface-mode
-changes were restored. Broader renderer-pipeline validation separately encounters
-an existing source-layout assertion about the Dashboard import in CanvasViewport;
-affected release validation is reported per candidate, not inferred from this proof.
+changes were restored. Renderer source contracts follow the current Dashboard
+surface/chart modules. The XR persistence fixture edits the shared palette Hex
+field rather than dispatching a change event to the retired native colour input.
+Affected release validation is reported per candidate, not inferred from this proof.
 
 GTM: Reduces scanning and inspection effort in the existing free/offline interface.
 No adoption or revenue claim. Rollback: revert this revision as a unit, including

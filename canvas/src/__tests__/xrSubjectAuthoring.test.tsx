@@ -145,6 +145,15 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
     }
     const changeField = async (label: string, value: string) => {
       const input = container.querySelector<HTMLInputElement | HTMLButtonElement>(`[aria-label="${label}"]`)!
+      if (input.matches('button[data-kg-color-picker]')) {
+        await act(async () => Simulate.click(input))
+        await act(async () => { await import('@/lib/ui/ColorPalette'); await new Promise(resolve => setTimeout(resolve, 35)) })
+        const palette = document.querySelector<HTMLElement>('[role="dialog"][aria-label="Part color palette"]')!
+        assert.ok(palette, 'Colour editing opens the shared semantic palette')
+        await act(async () => Simulate.change(palette.querySelector('[aria-label="Hex colour"]')!, { target: { value } } as never))
+        await act(async () => Simulate.keyDown(palette, { key: 'Escape' }))
+        return
+      }
       await act(async () => { if (input.matches('button[data-kg-select]')) selectMenuValue(input as HTMLButtonElement, value); else { input.value = value; Simulate.change(input) } })
     }
     await openParts()
