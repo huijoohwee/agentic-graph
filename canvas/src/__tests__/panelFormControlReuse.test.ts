@@ -191,8 +191,8 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
     !sharedControlsText.includes('readPanelBooleanChoiceButtonClassName') ||
     !sharedControlsText.includes('React.createContext<PanelFormDensityContextValue | null>(null)') || !sharedControlsText.includes("densityContext?.rowHeightPreset || 'compact'") ||
     !sharedControlsText.includes('const fieldLineRows = nextFieldLineMode ? readDataViewMultiLineControlRows(nextFieldLineMode) : 0') || !sharedControlsText.includes('rows={fieldLineRows > 0 ? fieldLineRows : rows}') ||
-    !sharedControlsText.includes('w-full min-w-0 max-w-full resize-y rounded-md border') ||
-    !sharedControlsText.includes('w-full min-w-0 max-w-full resize-y rounded border bg-transparent') ||
+    !sharedControlsText.includes('w-full min-w-0 max-w-full resize-y rounded-md') || !sharedControlsText.includes('UI_THEME_TOKENS.border.outline') ||
+    !sharedControlsText.includes('w-full min-w-0 max-w-full resize-y rounded bg-transparent') ||
     sharedControlsText.includes('w-full resize rounded') ||
     !sharedControlsText.includes('UI_RESPONSIVE_SELECTION_CONTROL_CLASSNAME') ||
     !sharedControlsText.includes('type="range"')

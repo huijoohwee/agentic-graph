@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.10.0"
+version: "1.11.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -522,3 +522,23 @@ MVP/evidence: cap 10 files / 20 KB; no new dependency, service or storage change
 Focused contracts, type checking, browser geometry and affected checks are recorded
 in the handoff. GTM: consistent boundaries in the existing free/offline editor.
 Rollback: revert this follow-up as one unit; no data migration is required.
+
+
+## Menu and form reference alignment (2026-09-29)
+
+PRD: Dropdown separators, labels, text inputs and choices match the shared border
+and single-line height. Long values ellipsize without horizontal overflow. Menu
+and workspace separators stay semantic, named and visible to selection tooling.
+
+TAD/ADR: SurfaceSeparator renders one neutral 1 px line in an 8 px hit area,
+replacing raw and hidden HR variants in toolbar, column menus and editor panes.
+Column-menu rows reuse the shared menu owner; dashboard inputs use PanelTextInput.
+The responsive owner supplies one control height: 28 px desktop and 44 px on touch
+or narrow viewports. Local field/action height overrides and the dark-only Settings
+border are removed. Main, Floating and Bottom panels consume these same owners.
+
+MVP/evidence: cap 14 files / 40 KB; no dependency, service or stored-data changes.
+Check named separators, keyboard menus, computed borders/heights and ellipsis at
+desktop/mobile widths; record type, focused and affected checks in the handoff.
+GTM: more consistent controls in the existing free/offline app. Rollback: revert
+this successor; no migration is required.

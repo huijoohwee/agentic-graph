@@ -62,5 +62,12 @@ export function testCompactToolbarMenuForbidsInlineHelp() {
   assert.ok(!/kg-toolbar-dropdown-option-(hint|meta|copy)/.test(menu + renderer + css))
   assert.ok(!renderer.includes('option.badges') && !renderer.includes('option.description'))
   assert.ok(renderer.includes('getOptionTooltip={buildCanvasViewOptionHelp}'))
-  assert.ok(css.includes('.kg-toolbar-dropdown-menu .kg-menu-row { height: var(--kg-control-height, 28px); }'))
+  assert.ok(css.includes('.kg-menu-row { height: var(--kg-control-height, 28px); min-height: var(--kg-control-height, 28px); padding-block: 0; }'))
+  for (const file of ['components/toolbar/ToolbarDropdownSelect.tsx', 'components/toolbar/EditorWorkspaceSelect.tsx', 'components/ui/ColumnHeaderMenu.tsx']) {
+    assert.ok(read(file).includes('SurfaceSeparator'), `${file} must share the neutral separator`)
+    assert.doesNotMatch(read(file), /<hr\b|border-(?:black|white)\//)
+  }
+  assert.ok(read('lib/ui/dropdownMenu.tsx').includes('UI_THEME_TOKENS.control.singleLine'))
+  assert.doesNotMatch(read('features/markdown-workspace/main/layout/MarkdownWorkspaceLayout.tsx'), /aria-hidden/)
+  assert.doesNotMatch(css, /kg-column-header-filter-(?:field|action)-height/)
 }

@@ -1,4 +1,5 @@
 import React from 'react'
+import { SurfaceSeparator } from '@/components/ui/SurfaceSeparator'
 import { ChevronDown, LockKeyhole } from 'lucide-react'
 import IconButton from '@/components/IconButton'
 import { DropdownPanel } from '@/lib/ui/overlay'
@@ -199,8 +200,8 @@ export function ToolbarDropdownSelect<T extends ToolbarDropdownOptionBase>({
               return (
                 <React.Fragment key={option.id}>
                   {option.dividerBefore ? (
-                    <li className="list-none px-1 py-0.5">
-                      <hr />
+                    <li className="list-none px-1">
+                      <SurfaceSeparator label={`${option.title} section separator`} />
                     </li>
                   ) : null}
                   <li
