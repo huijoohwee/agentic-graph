@@ -3,7 +3,7 @@ title: "Production browser preflight"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 status: "active"
 continuity_id: "GRAPH-BROWSER-PREFLIGHT-001"
-revision: 4
+revision: 6
 owner: "agentic-graph"
 frontmatter_contract: "required"
 version: "0.1.1"
@@ -27,6 +27,27 @@ gtm_revision: "0.1.1"
 ---
 
 # Production browser preflight
+
+## Revision 6: Source Files disclosure proof
+
+Release36616395606 passed Home, catalog, Physics and persisted-source recovery, then timed out
+opening `docs`. The verifier still clicked folder selection and expected a sibling `ul`; the
+shared DirectoryTree controls now expose a separate Expand/Collapse button and a labeled contents
+section. The source inventory requirement remains exact and unchanged.
+
+PRD/MVP: prove the complete visible canonical seed inventory through the user-facing tree.
+TAD/ADR: the fidelity owner imports one directory inventory helper, clicks only a collapsed
+disclosure, waits for its expanded state and labeled contents, and reads direct visible file rows.
+Nested and hidden files cannot satisfy the inventory; duplicates remain in the comparison.
+GTM: this is release-verifier compatibility, with no new product feature, dependency or spend.
+
+The release preflight regression bundles the real DirectoryTree controls, reproduces the old
+sibling-list timeout, and verifies disclosure idempotence, unchanged selection, nested-row
+exclusion, hidden-row rejection and duplicate preservation. The same owner remains required in
+the isolated artifact and live production gates. Budget: four files, 12 KiB authored delta,
+20 active implementation/proof minutes; provider CI and human decisions are external dependencies.
+This revision completes only implementation and focused proof; protected source integration,
+canonical Dev certification, exact production authorization and live release receipts remain required.
 
 ## PRD: browser acceptance
 
@@ -98,6 +119,38 @@ exercises the candidate. Required protected Integration and XR checks still gove
 The recovery extension adds two on-demand release modules, no dependency package, no service, and
 no always-load prompt text. It retains the existing Agentic OS dependency revision. Recovery guards
 also run in the credentialless preparation job before production approval.
+
+## Implemented catalog verification repair — 2026-09-30
+
+PRD: release run 36601533634 rejected source `2699bbb06228caa504cd64c53adf6026bb338e9d`
+before authorization because the catalog verifier queried native `option` descendants of the shared
+semantic menu button. The UI had no page errors; the published catalog byte check passed. Acceptance
+still requires a complete canonical catalog and preserves the existing minimum inventory guard.
+
+TAD: `scripts/production-prompt-catalog.mjs` opens the actual `Prompt preset` menu, binds its ID to
+the trigger's `aria-controls`, and compares each visible enabled radio item's ID, label and checked
+state to the independently byte-verified pinned catalog. Escape closes the portal without selecting
+or invoking a preset. Both isolated and live fidelity checks call this same owner.
+
+ADR: replace the obsolete native-select assertion; retain source hash verification, catalog alerts,
+all scene/source/asset assertions, failed-attempt history and exact production authorization. No UI,
+provider configuration, runtime dependency or always-load module changes are introduced. The helper
+loads only for release validation. The original failed run and bounded diagnostics stay retained.
+
+MVP: the release's existing `production-browser-preflight.test.mjs` entry also executes a real-browser
+regression against the actual `SemanticSelect` component. It proves that the native-option count is
+zero while the full visible menu passes, then rejects missing, duplicate, mislabeled, disabled,
+hidden or incorrectly selected choices and source-authority alerts. A disposable catalog keeps this
+test independent of the later docs checkout; production expectations come from pinned source bytes.
+Source tests alone do not establish protected integration or deployed browser readiness.
+Local result: 56 tests passed across the preflight, Pages boundary and production release contract
+entries, including the shared-menu browser regression. Syntax and whitespace checks passed.
+
+GTM: restore the existing zero-spend Home entry and release path. This increment adds no new feature,
+paid service, demand claim or physical-device acceptance. Full delivery remains conditional on the
+successor's protected source proof, canonical runtime certification, isolated browser pass, exact
+human authorization and live production receipts. Repair budget: five files, 18 KiB authored delta,
+20 active implementation/proof minutes; CI and human decisions are external dependencies.
 
 ## Planning revision — reference implementation
 

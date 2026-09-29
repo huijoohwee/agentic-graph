@@ -11,6 +11,8 @@ import {
 import { LIVE_CANVAS_HERO_SOURCE_SESSION_KEY } from '../canvas/src/features/canvas/liveCanvasHeroSourceSelectionContract.mjs'
 import { validateProductionRuntimeReadiness } from './production-runtime-readiness.mjs'
 import { AGENTIC_OS_WORKSPACE_SEED_INVENTORY } from './workspace-seed-authority.mjs'
+import { verifyHomePromptCatalog } from './production-prompt-catalog.mjs'
+import { openWorkspaceFolder, readVisibleWorkspaceSeedInventory } from './production-workspace-inventory.mjs'
 
 const normalizeOrigin = value => {
   const url = new URL(String(value || 'https://airvio.co'))
@@ -188,26 +190,6 @@ const waitForHomeSourceAuthority = async page => {
   )
 }
 
-const readVisibleWorkspaceSeedInventory = async seedFolder => seedFolder.evaluate(section => {
-  const childList = section.nextElementSibling
-  if (!(childList instanceof HTMLUListElement)) return []
-  return Array.from(childList.querySelectorAll(':scope > li > section[aria-label^="File "]'))
-    .map(element => String(element.getAttribute('aria-label') || '').replace(/^File /, ''))
-    .filter(Boolean)
-    .sort()
-})
-
-const openWorkspaceFolder = async (parent, name) => {
-  const folderLabel = `Folder ${name}`
-  const folder = parent.locator(`section[aria-label="${folderLabel}"]`)
-  await folder.waitFor({ state: 'visible', timeout: 45_000 })
-  const childList = folder.locator('xpath=following-sibling::ul[1]')
-  // The tree can replace a folder during hydration. Query the child locator directly;
-  // locator.evaluate can wait on a detached row until its default timeout expires.
-  if (await childList.count() === 0) await folder.getByRole('button', { name: folderLabel, exact: true }).click({ force: true, noWaitAfter: true })
-  await childList.waitFor({ state: 'visible', timeout: 45_000 })
-  return folder
-}
 
 const waitForWorkspaceSeedInventory = async page => {
   const explorer = page.locator('aside[aria-label="Markdown Explorer"]')
@@ -371,22 +353,7 @@ try {
   await home.locator('h1').filter({ hasText: 'Map intent' }).waitFor({ state: 'visible', timeout: 30_000 })
   const heading = await home.locator('h1').innerText()
   for (const phrase of ['Map intent', 'Run agents', 'Get results']) assert.ok(heading.includes(phrase))
-  const promptPresetFieldset = home.locator('[data-kg-live-canvas-hero-prompt-presets="true"]')
-  const promptPresetSelect = promptPresetFieldset.locator('[data-kg-live-canvas-hero-prompt-preset-select="true"]')
-  await Promise.race([
-    promptPresetSelect.waitFor({ state: 'visible', timeout: 30_000 }),
-    promptPresetFieldset.locator('[role="alert"]').waitFor({ state: 'visible', timeout: 30_000 })
-      .then(async () => { throw new Error(`Home prompt catalog failed: ${await promptPresetFieldset.locator('[role="alert"]').innerText()}`) }),
-  ])
-  assert.equal(
-    await promptPresetFieldset.locator('[role="alert"]').count(),
-    0,
-    'Home prompt catalog must load without a source-authority alert',
-  )
-  assert.ok(
-    await promptPresetSelect.locator('option').count() >= 11,
-    'Home must load the complete canonical prompt preset catalog',
-  )
+  await verifyHomePromptCatalog(home, catalogSource)
   const heroFrameElement = home.locator('iframe').first()
   await heroFrameElement.waitFor({ state: 'attached', timeout: 30_000 })
   const heroFrameSrc = await heroFrameElement.getAttribute('src')
