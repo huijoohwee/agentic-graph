@@ -169,6 +169,9 @@ FloatingPanel Renderer uses the same responsive contract. At 390 × 844, both
 MainPanel and FloatingPanel rows measure 356 px client/scroll width without
 overflow. BottomPanel playback time, rate and rate value inherit 14 px text.
 The desktop viewport and Dashboard view were restored after verification.
+Headless inspector validation passes all 11 tests after four panel modules import
+icon helpers directly instead of loading the full UI/media export. Range fields
+also use the shared row primitive directly, without a rich Markdown dependency.
 
 GTM and rollback: Consistent controls reduce re-learning between panel surfaces.
 Keep the free/offline local workflow. Revert this successor commit to restore the

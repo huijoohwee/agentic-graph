@@ -1,6 +1,7 @@
 import React, { useId } from 'react'
 import { PanelRangeInput } from '@/lib/ui/panelFormControls'
-import { CanvasEditableKeyTypeValueRow } from './CanvasEditableKeyTypeValueRow'
+import { KeyTypeValueStaticRow } from 'grph-shared/react/keyTypeValueRow'
+import { useCanvasKeyTypeValueStaticRowProps } from './canvasKeyTypeValueRuntime'
 import { RightAlignedValueCell } from './canvasKeyTypeValueValueCell'
 import { MainPanelTypeIcon } from './mainPanelHelpIconLibrary'
 import { panelFieldDecorationClassName } from 'grph-shared/ui/keyTypeValueRows'
@@ -24,7 +25,8 @@ export function PanelLabeledRangeField({ label, valueLabel, min, max, step, valu
   className, labelClassName, valueClassName, rangeClassName, disabled,
 }: PanelLabeledRangeFieldProps) {
   const id = useId()
-  return <CanvasEditableKeyTypeValueRow className={className}
+  const row = useCanvasKeyTypeValueStaticRowProps()
+  return <KeyTypeValueStaticRow {...row} className={className}
     keyNode={<label htmlFor={id} className={panelFieldDecorationClassName(labelClassName)}>{label}</label>}
     typeNode={<MainPanelTypeIcon iconKey="setting.number" className="h-4 w-4" />}
     valueNode={<RightAlignedValueCell>
