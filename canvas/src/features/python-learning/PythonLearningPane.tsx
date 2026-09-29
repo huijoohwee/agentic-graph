@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { MarkdownEditorPane } from '../markdown-workspace/main/editor/MarkdownEditorPane'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
@@ -47,9 +48,9 @@ export default function PythonLearningPane(props: {
   return <section className="python-learning" aria-label="Python learning workspace" data-learning-state={snapshot.state}>
     <div className="python-learning-controls">
       <button onClick={() => useGraphStore.getState().setWorkspaceViewState({ mode: 'canvas' })}>View Canvas</button>
-      <label>Lesson <select aria-label="Python lesson" value={lessonId} onChange={event => { setLessonId(event.target.value); setNotice('Lesson changed. Source is preserved.'); }}>
+      <label>Lesson <PanelSelect aria-label="Python lesson" value={lessonId} onValueChange={selectedValueInput => { setLessonId(selectedValueInput); setNotice('Lesson changed. Source is preserved.'); }}>
         {LEARNING_LESSONS.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}
-      </select></label>
+      </PanelSelect></label>
       <button disabled={disabled || running} onClick={() => { props.onChange(lesson.starter); setNotice('Starter placed in this file. Run when ready.'); }}>Replace source with starter</button>
       {lesson.vehicle === 'drone' ? <button disabled={disabled || running} onClick={() => {
         props.onChange(lesson.solution); setNotice('Flight example loaded. Choose Run to watch takeoff, flight and landing.');

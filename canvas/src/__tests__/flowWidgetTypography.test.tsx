@@ -77,7 +77,7 @@ export async function testFlowWidgetTypographyInheritsPanelSettings() {
     const caption = form.querySelector('caption')
     if (!caption) throw new Error('expected widget to render a table caption')
     const captionClass = String(caption.getAttribute('class') || '')
-    if (!captionClass.includes('text-[10px]')) {
+    if (!captionClass.includes('text-xs')) {
       throw new Error(`expected caption to use micro label class, got ${JSON.stringify(captionClass)}`)
     }
 

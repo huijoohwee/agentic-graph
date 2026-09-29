@@ -39,7 +39,7 @@ const MOTION_TARGET_GRAMMAR_SIGILS = ['/', '#', '@'] as const
 function TargetInvocation({ invocation }: { invocation: string }) {
   return (
     <code
-      className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'min-w-0 overflow-hidden font-mono text-[9px]', UI_THEME_TOKENS.text.secondary)}
+      className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'min-w-0 overflow-hidden font-mono text-xs', UI_THEME_TOKENS.text.secondary)}
       data-kg-motion-control-target-invocation="shared-canonical"
     >
       {renderMarkdownSigilInlineText(invocation, {
@@ -111,10 +111,10 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
       <article className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-motion-control-target="xr-3d">
         <header className="flex items-center gap-2">
           <Box className="size-4" aria-hidden="true" />
-          <h3 className="text-[11px] font-semibold">3D for XR</h3>
+          <h3 className="text-xs font-semibold">3D for XR</h3>
           <button type="button" className="App-toolbar__btn ml-auto" onClick={() => onOpenTarget('xr-3d')} data-kg-motion-control-open-target="xr-3d">Open</button>
         </header>
-        <p className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+        <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
           {xr3d.sceneReady
             ? `${objectIdentification.counts.total} identified · ${objectIdentification.counts.physicsAttached} physics bodies · controller ${xr3d.controllerPhase} (${xr3d.controllerMode})`
             : 'Open or create a graph document to control the XR scene.'}
@@ -124,8 +124,8 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
             <PanelSelect
               value={selectedObject?.id || ''}
               disabled={!objectIdentification.records.length}
-              onChange={event => {
-                const targetId = event.currentTarget.value
+              onValueChange={selectedValueInput => {
+                const targetId = selectedValueInput
                 const result = controlXrSharedAssetControls({ operation: 'select-target', targetId })
                 if (!result.ok) selectBoundXrShotTarget(targetId)
               }}
@@ -140,7 +140,7 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
             </PanelSelect>
           </PanelField>
           {selectedObject ? (
-            <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)} data-kg-motion-control-selected-object={selectedObject.id}>
+            <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)} data-kg-motion-control-selected-object={selectedObject.id}>
               {selectedObject.category} · catalog size {selectedObject.catalogDimensionsMeters.join(' × ')} m · {selectedObject.physicsBodyAttached ? `${selectedObject.physicsBodyMode} body` : 'physics not attached'}
             </p>
           ) : null}
@@ -154,21 +154,21 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
             Fine-tune physics
           </button>
         </section>
-        <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Live pose feeds the selected XR humanoid and the native physics controller without writing camera frames or pose history.</p>
+        <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Live pose feeds the selected XR humanoid and the native physics controller without writing camera frames or pose history.</p>
         <TargetInvocation invocation={xr3d.invocation} />
-        <p className={cn('truncate text-[9px]', UI_THEME_TOKENS.text.tertiary)}>WebMCP · {xr3d.webMcpTool}</p>
+        <p className={cn('truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>WebMCP · {xr3d.webMcpTool}</p>
       </article>
 
       <article className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-motion-control-target="animation">
         <header className="flex items-center gap-2">
           <Clapperboard className="size-4" aria-hidden="true" />
-          <h3 className="text-[11px] font-semibold">Animation</h3>
+          <h3 className="text-xs font-semibold">Animation</h3>
           <button type="button" className="App-toolbar__btn ml-auto" onClick={() => onOpenTarget('animation')} data-kg-motion-control-open-target="animation">Open</button>
         </header>
-        <p className={cn('text-[10px]', animation.sceneReady && animationTarget.compatible ? UI_THEME_TOKENS.text.secondary : UI_THEME_TOKENS.status.warning)}>{animationStatus}</p>
-        <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Vehicles, props, and other compatible assets retain authored motion. Live pose overrides only a selected compatible humanoid; assigned presets and path marks resume after Stop.</p>
+        <p className={cn('text-xs', animation.sceneReady && animationTarget.compatible ? UI_THEME_TOKENS.text.secondary : UI_THEME_TOKENS.status.warning)}>{animationStatus}</p>
+        <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Vehicles, props, and other compatible assets retain authored motion. Live pose overrides only a selected compatible humanoid; assigned presets and path marks resume after Stop.</p>
         <TargetInvocation invocation={animation.invocation} />
-        <p className={cn('truncate text-[9px]', UI_THEME_TOKENS.text.tertiary)}>WebMCP · {animation.webMcpTool}</p>
+        <p className={cn('truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>WebMCP · {animation.webMcpTool}</p>
       </article>
 
       <XrSharedAssetControls surface="motion-control" />
@@ -176,17 +176,17 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
       <article className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-motion-control-target="game-mode">
         <header className="flex items-center gap-2">
           <Gamepad2 className="size-4" aria-hidden="true" />
-          <h3 className="text-[11px] font-semibold">Game Mode</h3>
+          <h3 className="text-xs font-semibold">Game Mode</h3>
           <button type="button" className="App-toolbar__btn ml-auto" onClick={() => onOpenTarget('game-mode')} data-kg-motion-control-open-target="game-mode">Open</button>
         </header>
-        <p className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+        <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
           {gameMode.active
             ? `${gameMode.phase} · ${gameMode.simulationStatus} · ${gameMode.enemiesAlive} NPC remaining · ${gameMode.surfaceMode}`
             : 'Open the deterministic ECS mission inside the shared XR Canvas.'}
         </p>
-        <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>The authored XR scene stays visible and paused under gameplay. The existing pose adapter arms movement, sprint, and rising-edge fire without adding another camera or inference pipeline.</p>
+        <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>The authored XR scene stays visible and paused under gameplay. The existing pose adapter arms movement, sprint, and rising-edge fire without adding another camera or inference pipeline.</p>
         <TargetInvocation invocation={gameMode.invocation} />
-        <p className={cn('truncate text-[9px]', UI_THEME_TOKENS.text.tertiary)}>WebMCP · {gameMode.webMcpTool}</p>
+        <p className={cn('truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>WebMCP · {gameMode.webMcpTool}</p>
       </article>
     </section>
   )

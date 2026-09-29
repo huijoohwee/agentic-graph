@@ -35,11 +35,8 @@ export function testMainPanelCommerceReplacesPaymentsTopLevelTab() {
   if (keys.includes('payments' as never)) {
     throw new Error(`expected Payments not to remain a top-level tab, got ${JSON.stringify(keys)}`)
   }
-  if (!commerceHubText.includes("COMMERCE_ROUTE_READINESS_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3'") || commerceHubText.includes('grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-3')) {
-    throw new Error('expected Commerce readiness cards to use a mobile-first responsive grid owner')
-  }
-  if (!commerceHubText.includes("COMMERCE_ROUTE_READINESS_ROW_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-1 sm:grid-cols-[minmax(5rem,0.35fr)_minmax(0,1fr)] sm:gap-2'") || commerceHubText.includes('className="grid min-w-0 grid-cols-[minmax(5rem,0.35fr)_minmax(0,1fr)] gap-2"')) {
-    throw new Error('expected Commerce readiness rows to use a mobile-first responsive row grid owner')
+  if (!commerceHubText.includes('<MainPanelField') || !commerceHubText.includes('<KeyTypeValueSectionStack>')) {
+    throw new Error('expected Commerce readiness to reuse the responsive MainPanel field and section owners')
   }
 }
 

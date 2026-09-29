@@ -167,7 +167,7 @@ export const MarkdownBlockContainerCommandMenu = (props: {
             : props.itemClassName
           return (
             <React.Fragment key={item.id}>
-              {showGroup ? <li className={`list-none px-2 pt-2 pb-1 text-[10px] uppercase ${UI_THEME_TOKENS.text.tertiary}`}>{item.group}</li> : null}
+              {showGroup ? <li className={`list-none px-2 pt-2 pb-1 text-xs uppercase ${UI_THEME_TOKENS.text.tertiary}`}>{item.group}</li> : null}
               <li className="list-none">
                 <button
                   id={`${props.ariaLabel}-${item.id}`}
@@ -199,7 +199,7 @@ export const MarkdownBlockContainerCommandMenu = (props: {
                   ) : null}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{item.label}</span>
-                    {item.description ? <span className={`block truncate text-[10px] ${UI_THEME_TOKENS.text.tertiary}`}>{item.description}</span> : null}
+                    {item.description ? <span className={`block truncate text-xs ${UI_THEME_TOKENS.text.tertiary}`}>{item.description}</span> : null}
                   </span>
                 </button>
               </li>

@@ -1,3 +1,4 @@
+import { selectMenuValue } from './helpers/semanticMenu'
 import assert from 'node:assert/strict'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { settleWorkspaceSourceTextWrites } from '@/hooks/store/graph-data-slice/workspaceSourceTextWriteQueue'
@@ -142,7 +143,7 @@ export async function testXrTimelineSceneCuesShareSelectionAndTransport() {
     try {
       await mountReactRoot(cameraRoot, <XrShootCameraSection />)
       await act(async () => { controlXrSharedAssetControls({ operation: 'select-target', targetId: 'npc-scout' }) })
-      const cameraTarget = cameraHost.querySelector<HTMLSelectElement>('[aria-label="SHOOT scene or 3D object target"]')!
+      const cameraTarget = cameraHost.querySelector<HTMLButtonElement>('[aria-label="SHOOT scene or 3D object target"]')!
       assert.equal(cameraTarget.value, '', 'Camera must not present the prior authored object as a selected NPC')
       assert.equal(cameraTarget.disabled, false)
       await mountReactRoot(cameraRoot, <XrAnimationFloatingPanelView />)
@@ -150,10 +151,9 @@ export async function testXrTimelineSceneCuesShareSelectionAndTransport() {
       const presetButtons = [...cameraHost.querySelectorAll<HTMLButtonElement>('[data-kg-animation-card-apply]')]
       assert.ok(presetButtons.length > 0 && presetButtons.every(button => button.disabled))
       await mountReactRoot(cameraRoot, <XrShootCameraSection />)
-      const restoredCameraTarget = cameraHost.querySelector<HTMLSelectElement>('[aria-label="SHOOT scene or 3D object target"]')!
+      const restoredCameraTarget = cameraHost.querySelector<HTMLButtonElement>('[aria-label="SHOOT scene or 3D object target"]')!
       await act(async () => {
-        restoredCameraTarget.value = 'actor'
-        restoredCameraTarget.dispatchEvent(new env.dom.window.Event('change', { bubbles: true }))
+        selectMenuValue(restoredCameraTarget, 'actor')
       })
       assert.equal(inspectXrSharedAssetControls().selectedKind, 'object')
       assert.equal(inspectXrSharedAssetControls().selectedTargetId, 'actor')

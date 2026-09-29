@@ -80,9 +80,7 @@ export function NewFieldForm({
             <section className="mt-1">
               <GraphFieldsComfortableFieldSelect
                 value={newFieldScope}
-                onChange={e =>
-                  setNewFieldScope(e.target.value === 'edge' ? 'edge' : 'node')
-                }
+                onValueChange={selectedValueInput => setNewFieldScope(selectedValueInput === 'edge' ? 'edge' : 'node')}
                 className={selectClassName}
                 textSizeClassName={uiPanelKeyValueTextSizeClass}
               >
@@ -96,7 +94,7 @@ export function NewFieldForm({
             <section className="mt-1">
               <GraphFieldsComfortableFieldSelect
                 value={newFieldType}
-                onChange={e => setNewFieldType(e.target.value as GraphFieldType)}
+                onValueChange={selectedValueInput => setNewFieldType(selectedValueInput as GraphFieldType)}
                 className={selectClassName}
                 textSizeClassName={uiPanelKeyValueTextSizeClass}
               >

@@ -1,3 +1,4 @@
+import { readMenuOptions, selectMenuValue } from './helpers/semanticMenu'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
@@ -89,7 +90,7 @@ const createMainPanelHost = () => {
 const findValueCellSelectForRowKey = (container: HTMLElement, rowKey: string) => {
   const valueRows = Array.from(container.querySelectorAll('dl')) as HTMLElement[]
   const row = valueRows.find(item => item.children[0]?.textContent?.trim() === rowKey)
-  return row?.querySelector<HTMLSelectElement>('select') || null
+  return row?.querySelector<HTMLButtonElement>('button[data-kg-select]') || null
 }
 
 const findValueCellInputForRowKey = (container: HTMLElement, rowKey: string) => {
@@ -111,7 +112,7 @@ export async function testMainPanelRequestedIntegrationsChatProviderValueCellDer
     if (!providerValueCell || !providerInput || providerInput.readOnly !== true || providerInput.value !== CHAT_PROVIDER_OPENAI) {
       throw new Error(`expected chatProvider Value cell to render derived read-only OpenAI text, got ${JSON.stringify(providerValueCell?.textContent || providerInput?.value || '')}`)
     }
-    if (providerValueCell.querySelector('select')) {
+    if (providerValueCell.querySelector('button[data-kg-select]')) {
       throw new Error('expected chatProvider Value cell to avoid a manual provider dropdown')
     }
     if (providerValueCell.querySelector('button')) {
@@ -122,11 +123,10 @@ export async function testMainPanelRequestedIntegrationsChatProviderValueCellDer
       throw new Error('expected chatModel Value cell to own provider selection through the model dropdown')
     }
 
-    const valueSetter = Object.getOwnPropertyDescriptor(host.dom.window.HTMLSelectElement.prototype, 'value')?.set
+    const valueSetter = selectMenuValue
     if (!valueSetter) throw new Error('expected DOM select value setter')
     await act(async () => {
-      valueSetter.call(modelSelect, CHAT_QWEN_MODEL_OPTIONS[0])
-      Simulate.change(modelSelect)
+      valueSetter(modelSelect, CHAT_QWEN_MODEL_OPTIONS[0])
       await waitForFrames()
     })
 
@@ -161,7 +161,7 @@ export async function testMainPanelRequestedIntegrationsChatModelValueCellUsesVi
       CHAT_QWEN_MODEL_OPTIONS[0],
       CHAT_GOOGLE_CLOUD_MODEL_OPTIONS[0],
     ].forEach(value => {
-      if (!Array.from(modelSelect.options).some(option => option.value === value)) {
+      if (!Array.from(readMenuOptions(modelSelect)).some(option => option.value === value)) {
         throw new Error(`expected chatModel dropdown to include shared model option ${JSON.stringify(value)}`)
       }
     })
@@ -213,7 +213,7 @@ export async function testMainPanelRequestedIntegrationsProviderModelRowsRejectK
       if (!modelSelect) {
         throw new Error(`expected ${testCase.rowKey} Value cell to render a configurable model dropdown`)
       }
-      if (!Array.from(modelSelect.options).some(option => option.value === testCase.expectedModel)) {
+      if (!Array.from(readMenuOptions(modelSelect)).some(option => option.value === testCase.expectedModel)) {
         throw new Error(`expected ${testCase.rowKey} model dropdown to include ${JSON.stringify(testCase.expectedModel)}`)
       }
       if (modelSelect.value !== testCase.expectedModel) {
@@ -234,17 +234,16 @@ export async function testMainPanelRequestedIntegrationsMappedDropdownKeepsUserS
   try {
     await renderRequestedIntegrationsSearch(host.root, 'qwenApi.endpoint_url')
 
-    const endpointSelect = Array.from(host.container.querySelectorAll('select') as NodeListOf<HTMLSelectElement>)
-      .find(select => Array.from(select.options).some(option => option.value === CHAT_QWEN_ENDPOINT_OPTIONS[1]))
+    const endpointSelect = Array.from(host.container.querySelectorAll('button[data-kg-select]') as NodeListOf<HTMLButtonElement>)
+      .find(select => Array.from(readMenuOptions(select)).some(option => option.value === CHAT_QWEN_ENDPOINT_OPTIONS[1]))
     if (!endpointSelect) {
       throw new Error('expected Qwen endpoint_url Value cell to render a configurable dropdown')
     }
     const nextEndpoint = CHAT_QWEN_ENDPOINT_OPTIONS[1]
-    const valueSetter = Object.getOwnPropertyDescriptor(host.dom.window.HTMLSelectElement.prototype, 'value')?.set
+    const valueSetter = selectMenuValue
     if (!valueSetter) throw new Error('expected DOM select value setter')
     await act(async () => {
-      valueSetter.call(endpointSelect, nextEndpoint)
-      Simulate.change(endpointSelect)
+      valueSetter(endpointSelect, nextEndpoint)
       await waitForFrames()
     })
 
@@ -257,8 +256,8 @@ export async function testMainPanelRequestedIntegrationsMappedDropdownKeepsUserS
       await waitForFrames()
     })
 
-    const rerenderedEndpointSelect = Array.from(host.container.querySelectorAll('select') as NodeListOf<HTMLSelectElement>)
-      .find(select => Array.from(select.options).some(option => option.value === CHAT_QWEN_ENDPOINT_OPTIONS[1]))
+    const rerenderedEndpointSelect = Array.from(host.container.querySelectorAll('button[data-kg-select]') as NodeListOf<HTMLButtonElement>)
+      .find(select => Array.from(readMenuOptions(select)).some(option => option.value === CHAT_QWEN_ENDPOINT_OPTIONS[1]))
     if (rerenderedEndpointSelect?.value !== nextEndpoint) {
       throw new Error(`expected mapped Qwen endpoint dropdown to keep edited value, got ${JSON.stringify(rerenderedEndpointSelect?.value)}`)
     }
@@ -278,11 +277,10 @@ export async function testMainPanelRequestedIntegrationsMappedChatModelKeepsUser
       throw new Error('expected Qwen model Value cell to render a configurable chatModel dropdown')
     }
     const nextModel = CHAT_QWEN_MODEL_OPTIONS[2]
-    const valueSetter = Object.getOwnPropertyDescriptor(host.dom.window.HTMLSelectElement.prototype, 'value')?.set
+    const valueSetter = selectMenuValue
     if (!valueSetter) throw new Error('expected DOM select value setter')
     await act(async () => {
-      valueSetter.call(modelSelect, nextModel)
-      Simulate.change(modelSelect)
+      valueSetter(modelSelect, nextModel)
       await waitForFrames()
     })
 
@@ -309,7 +307,7 @@ export async function testMainPanelChatSettingsCommitOneRouteUsedByFloatingPanel
   const floatingContainer = host.dom.window.document.createElement('section')
   host.dom.window.document.body.appendChild(floatingContainer)
   const floatingRoot = createRoot(floatingContainer as unknown as HTMLElement)
-  const modelValueSetter = Object.getOwnPropertyDescriptor(host.dom.window.HTMLSelectElement.prototype, 'value')?.set
+  const modelValueSetter = selectMenuValue
   const inputValueSetter = Object.getOwnPropertyDescriptor(host.dom.window.HTMLInputElement.prototype, 'value')?.set
 
   if (!modelValueSetter || !inputValueSetter) {
@@ -335,8 +333,7 @@ export async function testMainPanelChatSettingsCommitOneRouteUsedByFloatingPanel
     })
     try {
       await act(async () => {
-        modelValueSetter.call(modelSelect, nextModel)
-        Simulate.change(modelSelect)
+        modelValueSetter(modelSelect, nextModel)
         await waitForFrames(3)
       })
     } finally {
@@ -356,7 +353,7 @@ export async function testMainPanelChatSettingsCommitOneRouteUsedByFloatingPanel
       throw new Error(`expected MainPanel chatModel to select BytePlus ${JSON.stringify(nextModel)}, got ${JSON.stringify(chatState)}`)
     }
 
-    const floatingModelSelect = floatingContainer.querySelector<HTMLSelectElement>('[data-kg-chat-model-select="true"]')
+    const floatingModelSelect = floatingContainer.querySelector<HTMLButtonElement>('[data-kg-chat-model-select="true"]')
     if (floatingModelSelect?.value !== nextModel) {
       throw new Error(`expected FloatingPanel model to follow MainPanel settings, got ${JSON.stringify(floatingModelSelect?.value)}`)
     }
@@ -365,8 +362,7 @@ export async function testMainPanelChatSettingsCommitOneRouteUsedByFloatingPanel
     const authModeSelect = findValueCellSelectForRowKey(host.container, 'byteplus.auth_mode')
     if (!authModeSelect) throw new Error('expected BytePlus auth_mode Value cell')
     await act(async () => {
-      modelValueSetter.call(authModeSelect, 'byok')
-      Simulate.change(authModeSelect)
+      modelValueSetter(authModeSelect, 'byok')
       await waitForFrames(2)
     })
     if (useGraphStore.getState().chatAuthMode !== 'byok') {

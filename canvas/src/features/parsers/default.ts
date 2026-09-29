@@ -20,6 +20,7 @@ import { strybldrParsers } from '@/features/strybldr/parserSpecs'
 import { isStrybldrStoryboardMarkdown } from '@/features/strybldr/strybldrStoryboard'
 import {
   buildMarkdownLargeDocumentGraph,
+  exceedsMarkdownDocumentGraphBudget,
   readMarkdownLargeDocumentProfile,
   shouldUseSummaryGraphForMarkdown,
 } from './markdownLargeDocumentGraph'
@@ -280,6 +281,10 @@ const markdownSpec: ParserSpec = {
     const t1 = Date.now()
     const baseGraph = parseJsonLd(jsonld)
     const t2 = Date.now()
+    if (!panelFlow && !containsFrontmatterMermaid(raw) && exceedsMarkdownDocumentGraphBudget(baseGraph)) {
+      const summary = buildMarkdownLargeDocumentGraph({ name, rawText: raw, profile: { ...largeProfile, reason: 'structure' } })
+      return mergeMarkdownAgenticOsSemanticGraph({ name, text, graphData: summary.graphData, warnings: [...frontmatterWarnings, ...summary.warnings] })
+    }
     const baseMeta =
       baseGraph.metadata && typeof baseGraph.metadata === 'object' && !Array.isArray(baseGraph.metadata)
         ? baseGraph.metadata
@@ -334,6 +339,11 @@ const markdownSpec: ParserSpec = {
     const t1 = Date.now()
     const baseGraph = parseJsonLd(jsonld)
     const t2 = Date.now()
+
+    if (!panelFlow && !containsFrontmatterMermaid(raw) && exceedsMarkdownDocumentGraphBudget(baseGraph)) {
+      const summary = buildMarkdownLargeDocumentGraph({ name, rawText: raw, profile: { ...largeProfile, reason: 'structure' } })
+      return mergeMarkdownAgenticOsSemanticGraph({ name, text, graphData: summary.graphData, warnings: [...frontmatterWarnings, ...summary.warnings] })
+    }
 
     const baseMeta =
       baseGraph.metadata && typeof baseGraph.metadata === 'object' && !Array.isArray(baseGraph.metadata)

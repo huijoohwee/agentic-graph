@@ -1,3 +1,4 @@
+import { selectMenuOption } from './lib/select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
@@ -90,8 +91,8 @@ async function verify() {
       assert.ok(dimensions.scroll <= dimensions.client + 1, 'Design review must not overflow horizontally')
       const viewport = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, width: innerWidth }))
       assert.ok(viewport.scroll <= viewport.width + 1, 'Design review must not cause page-level horizontal overflow')
-      const format = review.getByRole('combobox', { name: 'Export format' })
-      await format.selectOption('context-json')
+      const format = review.getByRole('button', { name: 'Export format' })
+      await selectMenuOption(format, 'context-json')
       const button = review.getByRole('button', { name: 'Export locally' })
       const box = await button.boundingBox(); assert.ok(box && box.height >= 44 && box.width >= 44)
       await button.focus()
@@ -129,7 +130,7 @@ async function verify() {
     const source = review.getByRole('button', { name: 'Inspect finding source' }).first()
     await source.tap()
     assert.equal(await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().selectedNodeId), 'design-card')
-    await review.getByRole('combobox', { name: 'Export format' }).selectOption('tokens-css')
+    await selectMenuOption(review.getByRole('button', { name: 'Export format' }), 'tokens-css')
     const offlineDownload = page.waitForEvent('download')
     await review.getByRole('button', { name: 'Export locally' }).tap()
     const download = await offlineDownload, css = await readFile(await download.path(), 'utf8')

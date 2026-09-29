@@ -140,7 +140,7 @@ export function MediaInfoOverlay({
       <Info className="h-3 w-3" strokeWidth={1.7} aria-hidden />
       <span
         className={cn(
-          'pointer-events-none absolute bottom-full left-0 z-20 mb-1 hidden w-max max-w-[16rem] rounded border px-2 py-1 text-left text-[10px] leading-4 shadow-lg backdrop-blur-sm group-hover:block group-focus:block',
+          'pointer-events-none absolute bottom-full left-0 z-20 mb-1 hidden w-max max-w-[16rem] rounded border px-2 py-1 text-left text-xs leading-4 shadow-lg backdrop-blur-sm group-hover:block group-focus:block',
           UI_THEME_TOKENS.panel.border,
           'bg-[color:var(--kg-panel-bg)]/95',
           UI_THEME_TOKENS.text.secondary,
@@ -168,7 +168,7 @@ export function MediaPromptActionOverlay({
     <button
       type="button"
       className={cn(
-        'absolute left-1/2 top-1/2 z-20 inline-flex h-7 -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded border px-2 text-[11px] font-semibold shadow-sm backdrop-blur-sm',
+        'absolute left-1/2 top-1/2 z-20 inline-flex h-7 -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded border px-2 text-xs font-semibold shadow-sm backdrop-blur-sm',
         UI_THEME_TOKENS.panel.border,
         'bg-[color:var(--kg-panel-bg)]/90',
         UI_THEME_TOKENS.text.secondary,

@@ -2,12 +2,13 @@
 @import './styles/tailwind-theme.css';
 @import 'katex/dist/katex.min.css';
 @import './styles/kgTokens.generated.css';
+@import './styles/application-typography.css';
+@import './styles/semantic-colour-palette.css';
 @import './styles/responsive-toolbar.css';
 @import './styles/responsive-canvas-toolbar.css';
 @import './styles/markdown-presentation-responsive.css';
 @import './styles/markdown-gallery-responsive.css';
 @import './styles/markdown-codeblock-responsive.css';
-@import './styles/graph-inspector-responsive.css';
 @import './styles/toast-responsive.css';
 @import './styles/preview-panel-responsive.css';
 @import './styles/grabmaps-discovery-responsive.css';
@@ -18,13 +19,6 @@
 @import './styles/markdown-media-responsive.css'; @import './styles/markdown-data-view-table.css';
 @import './styles/aie-book-demo-responsive.css';
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  line-height: 1.5;
-  font-weight: 400;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   --gap: 0.5rem;
   --padding: 0.5rem;
   --toolbar-gap: 0.5rem;
@@ -59,8 +53,6 @@
   --kg-code-bg: #f8fafc;
   --kg-code-border: #e2e8f0;
   --kg-code-text: #0f172a;
-  --kg-inline-code-font-size: inherit;
-  --kg-inline-code-line-height: inherit;
   --kg-control-height: 28px;
   --kg-workspace-header-pad-y: 0.5rem;
   --kg-workspace-header-pad-x: 0.75rem;
@@ -168,8 +160,6 @@
   --kg-code-bg: rgba(2, 6, 23, 0.6);
   --kg-code-border: #1e293b;
   --kg-code-text: #e2e8f0;
-  --kg-inline-code-font-size: inherit;
-  --kg-inline-code-line-height: inherit;
   --kg-canvas-node-stroke: #0b1220;
   --kg-canvas-edge-stroke: #4b5563;
   --kg-canvas-accent: #60a5fa;
@@ -392,11 +382,6 @@ html, body, #root {
 }
 
 @layer base {
-  .lucide {
-    flex-shrink: 0;
-    vertical-align: -0.125em;
-  }
-
   .maplibregl-map {
     position: relative;
     width: 100%;
@@ -588,7 +573,7 @@ html, body, #root {
     align-items: center;
     justify-content: space-between;
     padding: 0.5rem 1rem;
-    font-size: 0.75rem;
+    font-size: var(--kg-text-xs);
     color: var(--kg-statusbar-text);
     background-color: var(--kg-statusbar-bg);
     border-top: 1px solid var(--island-border-color);
@@ -599,7 +584,7 @@ html, body, #root {
     border: 1px solid var(--island-border-color);
     border-radius: 0.5rem;
     box-shadow: 0 1px 2px rgba(0,0,0,0.08);
-    font-size: 0.875rem;
+    font-size: var(--kg-text-sm);
     z-index: 20;
   }
 

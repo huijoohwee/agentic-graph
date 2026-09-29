@@ -1,4 +1,5 @@
 import React from 'react'
+import { PanelCode } from '@/features/panels/ui/PanelText'
 import { refreshAgenticOsRemoteGrammarCatalog } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import {
   isAgenticGraphRuntimeIdentityFresh,
@@ -44,14 +45,14 @@ export function CrossDeviceIdentitySettingsRowsContent({
       setCopyStatus('Copy unavailable')
     }
   }, [serializedDiagnostic])
-  const revisionValue = (value: string) => <code className="min-w-0 break-all">{revisionText(value)}</code>
+  const revisionValue = (value: string) => <PanelCode className="min-w-0 break-all">{revisionText(value)}</PanelCode>
 
   return (
     <>
       <KeyTypeValueStaticRow
         {...staticRowProps}
         keyNode={<span className="font-semibold">Status</span>}
-        typeNode={<code>identity/v1</code>}
+        typeNode={<PanelCode>identity/v1</PanelCode>}
         valueNode={(
           <span
             className={fresh ? 'text-emerald-400' : 'text-amber-400'}
@@ -68,7 +69,7 @@ export function CrossDeviceIdentitySettingsRowsContent({
           </span>
         )}
       />
-      <KeyTypeValueStaticRow {...staticRowProps} keyNode="Device" typeNode="runtime" valueNode={<code>{identity.device}</code>} />
+      <KeyTypeValueStaticRow {...staticRowProps} keyNode="Device" typeNode="runtime" valueNode={<PanelCode>{identity.device}</PanelCode>} />
       <KeyTypeValueStaticRow {...staticRowProps} keyNode="Branch" typeNode="git" valueNode={revisionValue(identity.branch)} />
       <KeyTypeValueStaticRow {...staticRowProps} keyNode="agentic-graph SHA" typeNode="git SHA" valueNode={revisionValue(identity.agenticGraphRevision)} />
       <KeyTypeValueStaticRow {...staticRowProps} keyNode="Docs SHA" typeNode="git SHA" valueNode={revisionValue(identity.agenticCanvasOsRevision)} />
@@ -77,12 +78,12 @@ export function CrossDeviceIdentitySettingsRowsContent({
         {...staticRowProps}
         keyNode="Catalog digest"
         typeNode="SHA-256"
-        valueNode={<code className="min-w-0 break-all">{revisionText(identity.catalogDigest)}</code>}
+        valueNode={<PanelCode className="min-w-0 break-all">{revisionText(identity.catalogDigest)}</PanelCode>}
       />
       <KeyTypeValueStaticRow
         {...staticRowProps}
         keyNode={<span className="font-semibold">Agent proof</span>}
-        typeNode={<code>provider-proof/v1</code>}
+        typeNode={<PanelCode>provider-proof/v1</PanelCode>}
         valueNode={(
           <span
             className={agentProofVerified ? 'text-emerald-400' : 'text-amber-400'}
@@ -102,7 +103,7 @@ export function CrossDeviceIdentitySettingsRowsContent({
         typeNode="git SHA"
         valueNode={agentProof.sourceUrl ? (
           <a className="min-w-0 break-all underline" href={agentProof.sourceUrl} target="_blank" rel="noreferrer">
-            <code>{revisionText(agentProof.proofRevision)}</code>
+            <PanelCode>{revisionText(agentProof.proofRevision)}</PanelCode>
           </a>
         ) : revisionValue(agentProof.proofRevision)}
       />
@@ -111,9 +112,9 @@ export function CrossDeviceIdentitySettingsRowsContent({
         keyNode="Provider usage"
         typeNode={agentProof.model || 'provider'}
         valueNode={(
-          <code data-kg-agent-live-provider-proof-usage={`${agentProof.inputTokens}/${agentProof.outputTokens}/${agentProof.cachedInputTokens}`}>
+          <PanelCode data-kg-agent-live-provider-proof-usage={`${agentProof.inputTokens}/${agentProof.outputTokens}/${agentProof.cachedInputTokens}`}>
             {agentProof.inputTokens} in · {agentProof.outputTokens} out · {agentProof.cachedInputTokens} cached · USD {agentProof.estimatedCostUsd.toFixed(5)}
-          </code>
+          </PanelCode>
         )}
       />
       <KeyTypeValueStaticRow
@@ -129,7 +130,7 @@ export function CrossDeviceIdentitySettingsRowsContent({
       <KeyTypeValueStaticRow
         {...staticRowProps}
         keyNode={<span className="font-semibold">Progressive agents</span>}
-        typeNode={<code>readiness/v1</code>}
+        typeNode={<PanelCode>readiness/v1</PanelCode>}
         valueNode={(
           <span
             className={progressiveAgentsVerified ? 'text-emerald-400' : 'text-amber-400'}
@@ -148,9 +149,9 @@ export function CrossDeviceIdentitySettingsRowsContent({
         typeNode={progressiveAgents.contractSchema || 'contract'}
         valueNode={progressiveAgents.sourceUrl ? (
           <a className="min-w-0 break-all underline" href={progressiveAgents.sourceUrl} target="_blank" rel="noreferrer">
-            <code>{progressiveAgents.runtimeOwner || progressiveAgents.sourcePath}</code>
+            <PanelCode>{progressiveAgents.runtimeOwner || progressiveAgents.sourcePath}</PanelCode>
           </a>
-        ) : <code>{progressiveAgents.sourcePath}</code>}
+        ) : <PanelCode>{progressiveAgents.sourcePath}</PanelCode>}
       />
       <KeyTypeValueStaticRow
         {...staticRowProps}
@@ -171,15 +172,15 @@ export function CrossDeviceIdentitySettingsRowsContent({
         keyNode="Catalog"
         typeNode="/ · # · @"
         valueNode={(
-          <code data-kg-runtime-catalog-counts={`${identity.catalogCounts.slash}/${identity.catalogCounts.hash}/${identity.catalogCounts.at}`}>
+          <PanelCode data-kg-runtime-catalog-counts={`${identity.catalogCounts.slash}/${identity.catalogCounts.hash}/${identity.catalogCounts.at}`}>
             / {identity.catalogCounts.slash} · # {identity.catalogCounts.hash} · @ {identity.catalogCounts.at}
-          </code>
+          </PanelCode>
         )}
       />
       <KeyTypeValueStaticRow
         {...staticRowProps}
         keyNode={<span className="font-semibold">Peer gate</span>}
-        typeNode={<code>attestation/v1</code>}
+        typeNode={<PanelCode>attestation/v1</PanelCode>}
         valueNode={(
           <span
             className={gatePassed ? 'text-emerald-400' : 'text-amber-400'}
@@ -194,7 +195,7 @@ export function CrossDeviceIdentitySettingsRowsContent({
         {...staticRowProps}
         keyNode="Attestation"
         typeNode="authenticated room"
-        valueNode={<code>{gate.transportStatus}</code>}
+        valueNode={<PanelCode>{gate.transportStatus}</PanelCode>}
       />
       <KeyTypeValueStaticRow
         {...staticRowProps}
@@ -207,9 +208,9 @@ export function CrossDeviceIdentitySettingsRowsContent({
         keyNode="Proof"
         typeNode="SHA-256"
         valueNode={(
-          <code className="min-w-0 break-all" data-kg-runtime-identity-verification-digest={gate.verificationDigest || ''}>
+          <PanelCode className="min-w-0 break-all" data-kg-runtime-identity-verification-digest={gate.verificationDigest || ''}>
             {gate.verificationDigest || 'unavailable'}
-          </code>
+          </PanelCode>
         )}
       />
       <KeyTypeValueStaticRow

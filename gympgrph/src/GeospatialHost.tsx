@@ -182,10 +182,10 @@ function GeospatialPointLegend(props: {
   ]
   return (
     <aside
-      className={`absolute left-2 bottom-2 z-20 pointer-events-none rounded-md border px-2 py-1.5 text-[11px] shadow-sm ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.overlayBg} ${UI_THEME_TOKENS.text.secondary}`}
+      className={`absolute left-2 bottom-2 z-20 pointer-events-none rounded-md border px-2 py-1.5 text-xs shadow-sm ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.overlayBg} ${UI_THEME_TOKENS.text.secondary}`}
       aria-label="Geospatial point legend"
     >
-      <p className={`mb-1 text-[10px] font-medium uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`}>Legend</p>
+      <p className={`mb-1 text-xs font-medium uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`}>Legend</p>
       <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
         {items.map(item => (
           <li key={item.key} className="flex items-center gap-1.5">
@@ -1329,7 +1329,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
       />
       {debug ? (
         <aside
-          className={`absolute top-2 right-2 z-20 pointer-events-none rounded-md border px-2 py-1 text-[11px] ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.overlayBg} ${UI_THEME_TOKENS.text.secondary}`}
+          className={`absolute top-2 right-2 z-20 pointer-events-none rounded-md border px-2 py-1 text-xs ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.overlayBg} ${UI_THEME_TOKENS.text.secondary}`}
           aria-label="Geospatial debug status"
         >
           <p>map: {basemap.map ? 'yes' : 'no'}</p>

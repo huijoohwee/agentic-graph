@@ -1,3 +1,4 @@
+import { readMenuOptions, selectMenuValue } from './helpers/semanticMenu'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
@@ -135,11 +136,11 @@ export async function testSettingsApplyCommitsChatContextScopeIntoFloatingChatPi
     if (!contextRow) {
       throw new Error(`expected settings harness context row, got ${JSON.stringify(settingsContainer.textContent || '')}`)
     }
-    const contextSelect = contextRow.querySelector('select') as HTMLSelectElement | null
+    const contextSelect = contextRow.querySelector('button[data-kg-select]') as HTMLButtonElement | null
     if (!contextSelect) {
       throw new Error(`expected chatContextScope Value dropdown, got ${JSON.stringify(contextRow.textContent || '')}`)
     }
-    const optionLabels = Array.from(contextSelect.options).map(option => String(option.textContent || '').trim())
+    const optionLabels = Array.from(readMenuOptions(contextSelect)).map(option => String(option.textContent || '').trim())
     CHAT_CONTEXT_SCOPE_LABELS.forEach(label => {
       if (!optionLabels.includes(label)) {
         throw new Error(`expected chatContextScope dropdown to include ${JSON.stringify(label)}, got ${JSON.stringify(optionLabels)}`)
@@ -150,10 +151,9 @@ export async function testSettingsApplyCommitsChatContextScopeIntoFloatingChatPi
     }
 
     await act(async () => {
-      const valueSetter = Object.getOwnPropertyDescriptor(dom.window.HTMLSelectElement.prototype, 'value')?.set
+      const valueSetter = selectMenuValue
       if (!valueSetter) throw new Error('expected DOM select value setter')
-      valueSetter.call(contextSelect, 'workspace')
-      Simulate.change(contextSelect)
+      valueSetter(contextSelect, 'workspace')
       await waitForFrames(dom.window as unknown as Window, 3)
     })
 

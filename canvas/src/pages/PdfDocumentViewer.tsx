@@ -185,7 +185,7 @@ export default function PdfDocumentViewer() {
             <h1 className="text-sm font-semibold truncate" aria-label="Document title">
               {title}
             </h1>
-            <output className={`block text-[11px] ${UI_THEME_TOKENS.text.tertiary}`} aria-label="Viewer state summary">
+            <output className={`block text-xs ${UI_THEME_TOKENS.text.tertiary}`} aria-label="Viewer state summary">
               {layout} · {Math.round(zoom * 100)}%
             </output>
           </section>
@@ -216,11 +216,11 @@ export default function PdfDocumentViewer() {
         <aside className={`${PDF_DOCUMENT_VIEWER_TOC_CLASS_NAME} rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-3`} aria-label="TOC">
           <header className="flex items-center justify-between" aria-label="TOC Header">
             <h2 className="text-xs font-semibold">Outline</h2>
-            <span className={`text-[11px] ${UI_THEME_TOKENS.text.tertiary}`}>{toc.length}</span>
+            <span className={`text-xs ${UI_THEME_TOKENS.text.tertiary}`}>{toc.length}</span>
           </header>
           <nav className={`mt-2 ${UI_RESPONSIVE_VIEWPORT_SCROLL_PANEL_CLASSNAME}`} aria-label="TOC entries">
             {toc.length === 0 ? (
-              <p className={`text-[11px] ${UI_THEME_TOKENS.text.tertiary}`}>No headings.</p>
+              <p className={`text-xs ${UI_THEME_TOKENS.text.tertiary}`}>No headings.</p>
             ) : (
               <ul className="space-y-1" aria-label="TOC list">
                 {toc.map(n => (
@@ -275,7 +275,7 @@ export default function PdfDocumentViewer() {
                 value={zoom}
                 onChange={e => onSetZoom(Number(e.target.value))}
               />
-              <output className={`text-[11px] ${UI_THEME_TOKENS.text.tertiary}`} aria-label="Zoom label">
+              <output className={`text-xs ${UI_THEME_TOKENS.text.tertiary}`} aria-label="Zoom label">
                 {Math.round(zoom * 100)}%
               </output>
 
@@ -295,7 +295,7 @@ export default function PdfDocumentViewer() {
               </button>
             </form>
             {notice && (
-              <output className={`mt-2 block text-[11px] ${UI_THEME_TOKENS.text.tertiary}`} aria-label="Viewer notice">
+              <output className={`mt-2 block text-xs ${UI_THEME_TOKENS.text.tertiary}`} aria-label="Viewer notice">
                 {notice}
               </output>
             )}

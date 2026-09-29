@@ -88,7 +88,7 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   if (
     !panelKeyTypeColorTextValueRowText.includes("from '@/lib/ui/panelFormControls'") ||
     !panelKeyTypeColorTextValueRowText.includes('PanelTextInput') ||
-    !panelKeyTypeColorTextValueRowText.includes('type="color"')
+    !panelKeyTypeColorTextValueRowText.includes('PanelColorPicker')
   ) {
     throw new Error('expected PanelKeyTypeColorTextValueRow to centralize the specialized color-swatch-plus-text input row on top of the shared panel text input primitive')
   }
@@ -368,10 +368,10 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   if (
     !researchCompilerText.includes("from '@/lib/ui/panelFormControls'") ||
     !researchCompilerText.includes('PanelField') ||
-    !researchCompilerText.includes('PanelReadOnlyField') ||
+    !researchCompilerText.includes('observedFieldHelp') ||
     !researchCompilerText.includes('<PanelTextarea') ||
     !researchCompilerText.includes('<PanelTextInput') ||
-    !researchCompilerText.includes('<PanelReadOnlyField label="Run ID"') ||
+    !researchCompilerText.includes("observed('Run ID'") ||
     !researchCompilerText.includes('variant="transparent"') ||
     researchCompilerText.includes('min-h-24 resize-y rounded border') ||
     researchCompilerText.includes('w-28 rounded border') ||
@@ -770,8 +770,8 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   }
 
   if (
-    !panelLabeledRangeCardText.includes("from '@/lib/ui/panelFormControls'") ||
-    !panelLabeledRangeCardText.includes('PanelRangeInput') ||
+    !panelLabeledRangeCardText.includes("from './PanelLabeledRangeField'") ||
+    !panelLabeledRangeCardText.includes('PanelLabeledRangeField') ||
     panelLabeledRangeCardText.includes('type="range"')
   ) {
     throw new Error('expected PanelLabeledRangeCard to reuse the shared panel range primitive instead of a raw range input')
@@ -786,8 +786,8 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   }
 
   if (
-    !panelInlineLabeledRangeRowText.includes("from '@/lib/ui/panelFormControls'") ||
-    !panelInlineLabeledRangeRowText.includes('PanelRangeInput') ||
+    !panelInlineLabeledRangeRowText.includes("from './PanelLabeledRangeField'") ||
+    !panelInlineLabeledRangeRowText.includes('PanelLabeledRangeField') ||
     panelInlineLabeledRangeRowText.includes('type="range"')
   ) {
     throw new Error('expected PanelInlineLabeledRangeRow to reuse the shared panel range primitive instead of a raw range input')

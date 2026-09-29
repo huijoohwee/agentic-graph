@@ -282,8 +282,8 @@ export function MediaLightbox({
                           <PanelSelect
                             value={parameterValues[parameter.id] || parameter.options[0]?.value || ''}
                             disabled={promptBusy}
-                            onChange={event => {
-                              const nextValue = event.currentTarget.value
+                            onValueChange={selectedValueInput => {
+                              const nextValue = selectedValueInput
                               setParameterValues(current => ({
                                 ...current,
                                 [parameter.id]: nextValue,

@@ -86,7 +86,7 @@ type MarkdownPreviewPresentationProps = {
 }
 
 export function MarkdownPreviewPresentation(props: MarkdownPreviewPresentationProps) {
-  const uiPanelMicroLabelTextSizeClass = useGraphStore(s => s.uiPanelMicroLabelTextSizeClass || 'text-[10px]')
+  const uiPanelMicroLabelTextSizeClass = useGraphStore(s => s.uiPanelMicroLabelTextSizeClass || 'text-xs')
   const {
     rootRef,
     onClick,
