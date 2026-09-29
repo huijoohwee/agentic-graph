@@ -2,8 +2,8 @@
  * CSS, DOM controls, canvas labels and generated viewers share this owner.
  * Imported document styles and world-space text retain their source dimensions.
  */
-import { UI_FONT_SANS, UI_FONT_MONO } from './fontStacks.mjs'
-export { UI_FONT_SANS, UI_FONT_MONO } from './fontStacks.mjs'
+import { UI_FONT_SANS, UI_FONT_MONO } from './fontStacks.js'
+export { UI_FONT_SANS, UI_FONT_MONO } from './fontStacks.js'
 
 export const UI_TEXT_SCALE = {
   xs: { size: 12, line: 16 },

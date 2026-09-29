@@ -32,7 +32,7 @@ export function testApplicationTypographyLoadsBeforeBuild() {
   try {
     const shared = path.join(root, 'node_modules/grph-shared')
     fs.mkdirSync(path.join(shared, 'src/ui'), { recursive: true })
-    for (const file of ['package.json', 'src/ui/fontStacks.mjs']) {
+    for (const file of ['package.json', 'src/ui/fontStacks.js']) {
       fs.copyFileSync(path.resolve('../grph-shared', file), path.join(shared, file))
     }
     const output = execFileSync(process.execPath, ['--input-type=module', '-e',
@@ -72,13 +72,13 @@ export function testApplicationTypographyExportsValidSvgFonts() {
 const sources = (root: string): string[] => fs.readdirSync(root, { withFileTypes: true }).flatMap(entry => {
   if (['__tests__', 'tests', 'testing'].includes(entry.name)) return []
   const file = path.join(root, entry.name)
-  return entry.isDirectory() ? sources(file) : /\.(tsx?|mjs|css)$/.test(file) ? [file] : []
+  return entry.isDirectory() ? sources(file) : /\.(tsx?|m?js|css)$/.test(file) ? [file] : []
 })
 
 export function testApplicationTypographyForbidsLegacyVariants() {
   const violations: string[] = []
   for (const root of ['src', '../grph-shared/src', '../gympgrph/src']) for (const file of sources(path.resolve(root))) {
-    if (file.endsWith('/ui/typography.ts') || file.endsWith('/ui/fontStacks.mjs') || file.endsWith('/kgTokens.generated.css')) continue
+    if (file.endsWith('/ui/typography.ts') || file.endsWith('/ui/fontStacks.js') || file.endsWith('/kgTokens.generated.css')) continue
     const content = fs.readFileSync(file, 'utf8')
     if (/text-\[\d+(?:\.\d+)?(?:px|rem)\]/.test(content)) violations.push(`${file}: use the shared text scale`)
     if (/tracking-(?:wide|wider|widest|tight|tighter)\b|tracking-\[[^\]]+\]/.test(content)) violations.push(`${file}: use normal letter spacing`)

@@ -1,4 +1,4 @@
-import { UI_FONT_MONO, UI_FONT_SANS } from 'grph-shared/ui/fontStacks'
+import { UI_FONT_MONO, UI_FONT_SANS } from '../../../../grph-shared/src/ui/fontStacks.js'
 import { AGENTIC_OS_AGENT_READY_PROMPT_NAMES } from './agentic-graph-agent-ready-prompt-contract.mjs'
 import { AGENTIC_OS_SOURCE_FILE_RESOURCE_URI_TEMPLATE } from './agentic-graph-agent-ready-resource-contract.mjs'
 import { resolveAgenticOsControlPlaneMcpUrl } from './agenticOsControlPlane.mjs'

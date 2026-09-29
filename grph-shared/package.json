@@ -519,9 +519,9 @@
       "default": "./dist/spatial-review/index.js"
     },
     "./ui/fontStacks": {
-      "types": "./dist/ui/fontStacks.d.mts",
-      "import": "./src/ui/fontStacks.mjs",
-      "default": "./src/ui/fontStacks.mjs"
+      "types": "./dist/ui/fontStacks.d.ts",
+      "import": "./src/ui/fontStacks.js",
+      "default": "./src/ui/fontStacks.js"
     },
     "./ui/typography": {
       "types": "./dist/ui/typography.d.ts",

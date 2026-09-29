@@ -187,12 +187,14 @@ monospace. Operators must not encounter another tiny-label or font-stack variant
 when switching MainPanel, FloatingPanel, BottomPanel, Explorer or editor surfaces.
 
 TAD/ADR: `grph-shared/src/ui/typography.ts` owns the text scale and reexports font
-stacks from `fontStacks.mjs`, a build-independent ESM owner shared with headless tools.
+stacks from `fontStacks.js`, a build-independent ESM owner shared with headless tools.
 The existing token generator emits CSS variables; Tailwind theme utilities,
 `application-typography.css`, panel preferences, canvas measurement and exported
 viewers consume them. Base typography and glyph alignment leave the global
 stylesheet; touched pre-existing oversized modules retain or reduce their line
-counts. The source hygiene gate runs before publication.
+counts. The source hygiene gate runs before publication. Plain ESM `.js` matches the
+shared package build contract; headless imports use a relative source path so
+page-export dependency traversal retains the same font owner without a build.
 Markdown heading pixel measurements derive from the same utility scale. Persisted
 8–12 px arbitrary micro classes migrate idempotently to `text-xs`. Explicit other
 user typography preferences remain supported. No new dependency, network font,
@@ -200,7 +202,7 @@ runtime stylesheet overlay, site-specific rule or eager feature loading is added
 Imported document CSS and world-space/media geometry remain source data; application
 font defaults in those renderers still use the shared font owner.
 
-The source guard traverses Canvas, grph-shared and gympgrph production TS/TSX/MJS/CSS
+The source guard traverses Canvas, grph-shared and gympgrph production TS/TSX/JS/MJS/CSS
 and rejects arbitrary numeric text utilities, custom letter spacing, duplicated
 font stacks and CSS labels below the shared caption size. Generated typography is
 checked against its source. Tests also parse exported SVG and check DOM/canvas
