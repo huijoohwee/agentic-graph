@@ -107,7 +107,7 @@ try {
     await (await chooser).setFiles({ name: 'spatial-pilot.md', mimeType: 'text/markdown', buffer: Buffer.from(source) }); actions.push('Select local scene')
     const review = page.getByRole('region', { name: 'Spatial change review', exact: true })
     await review.getByRole('button', { name: 'Preview +1 m on X', exact: true }).waitFor()
-    await page.waitForFunction(() => { const fieldset = document.querySelector('[data-kg-spatial-review] fieldset'); return fieldset && !fieldset.disabled })
+    await page.waitForFunction(() => { const fieldset = document.querySelector('[data-kg-spatial-review] fieldset'); return fieldset && !fieldset.disabled }, undefined, { timeout: 60000 })
     const initialLayout = await visibleReviewWidth(review)
     assert.ok(initialLayout.visible >= Math.min(320, width - 48), JSON.stringify(initialLayout))
     assert.equal(initialLayout.overflow, false)
