@@ -5,6 +5,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
+import { verifyRemovedTerminalPersistence } from './lib/production-terminal-persistence.mjs'
 import { createObservedRollbackBaseline } from './lib/production-rollback-baseline.mjs'
 
 const repository = 'huijoohwee/agentic-graph'
@@ -53,6 +54,17 @@ export async function main(args = process.argv.slice(2)) {
   const artifacts = gh(`repos/${repository}/actions/runs/${values['run-id']}/artifacts?per_page=100`)
   await write(path.join(output, 'release-run.json'), releaseRun)
   await write(path.join(output, 'artifacts.json'), artifacts)
+  let terminalPersistence
+  if (artifacts.total_count === 0) {
+    const readWorkflow = revision => execFileSync('git', ['show', `${revision}:.github/workflows/release.yml`],
+      { cwd: root, encoding: 'utf8', timeout: 30_000, maxBuffer: 500_000 })
+    const workflow = readWorkflow(releaseRun.head_sha)
+    const trustedWorkflow = readWorkflow('HEAD')
+    const jobs = gh(`repos/${repository}/actions/runs/${releaseRun.id}/attempts/${releaseRun.run_attempt}/jobs?per_page=100`)
+    terminalPersistence = { workflow, trustedWorkflow, jobs }
+    verifyRemovedTerminalPersistence({ ...terminalPersistence, run: releaseRun, artifacts })
+    await write(path.join(output, 'terminal-persistence-inputs.json'), terminalPersistence)
+  }
   const first = await round(path.join(output, 'first'), mirrorRoot)
   const attribution = /^github-actions:([^:]+):(\d+):(\d+):pages$/.exec(first.deployment.deployment_trigger?.metadata?.commit_message || '')
   assert.ok(attribution && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(attribution[1]), 'invalid deployment run attribution')
@@ -63,12 +75,18 @@ export async function main(args = process.argv.slice(2)) {
   for (const key of ['id', 'head_sha', 'status', 'conclusion', 'run_attempt', 'updated_at']) {
     assert.equal(currentRun[key], releaseRun[key], `release ${key} changed during capture`)
   }
+  assert.deepEqual(gh(`repos/${repository}/actions/runs/${values['run-id']}/artifacts?per_page=100`), artifacts,
+    'artifact inventory changed during capture')
+  if (terminalPersistence) {
+    assert.deepEqual(gh(`repos/${repository}/actions/runs/${releaseRun.id}/attempts/${releaseRun.run_attempt}/jobs?per_page=100`),
+      terminalPersistence.jobs, 'terminal execution records changed during capture')
+  }
   assert.equal(git(root, 'rev-parse', 'HEAD'), sourceRevision, 'capture source changed')
   assert.equal(git(root, 'status', '--porcelain'), '', 'capture source became dirty')
   assert.equal(git(root, 'ls-remote', 'origin', 'refs/heads/main').split(/\s+/)[0], sourceRevision, 'protected main changed during capture')
   const { recapture, provenance } = createObservedRollbackBaseline({ first, second, run: releaseRun,
-    artifacts, repositoryId: repo.id, assembledAt: new Date().toISOString() })
-  await write(path.join(output, 'observations.json'), { first, second, run: releaseRun, artifacts, repositoryId: repo.id })
+    artifacts, terminalPersistence, repositoryId: repo.id, assembledAt: new Date().toISOString() })
+  await write(path.join(output, 'observations.json'), { first, second, run: releaseRun, artifacts, terminalPersistence, repositoryId: repo.id })
   await write(path.join(output, 'provenance.json'), { ...provenance, captureSource: { sourceRevision, sourceTree },
     attributedRepository: { requestedName: attribution[1], repositoryId: attributedRepo.id } })
   await write(path.join(output, 'rollback-recapture.json'), recapture)
