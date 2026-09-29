@@ -46,7 +46,7 @@ export function MarkdownExplorerSection(props: {
   return (
     <section
       ref={sectionRef}
-      className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_SECTION_CLASSNAME} ${sectionScrollClassName} border-b ${UI_THEME_TOKENS.panel.border}`}
+      className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_SECTION_CLASSNAME} ${sectionScrollClassName} ${collapsed ? '' : `border-b ${UI_THEME_TOKENS.panel.border}`}`}
       style={sectionStyle}
       aria-label={title}
     >

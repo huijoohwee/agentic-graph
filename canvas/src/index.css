@@ -29,9 +29,9 @@
   --kg-toolbar-compact-padding: var(--kg-toolbar-compact-pad-y) var(--kg-toolbar-compact-pad-x);
   --kg-toolbar-compact-surface-height: calc(var(--kg-control-height, 28px) + var(--kg-toolbar-compact-pad-y) + var(--kg-toolbar-compact-pad-y) + var(--kg-surface-border-width) + var(--kg-surface-border-width));
   --divider-height: 24px;
-  --divider-color: #d1d5db;
+  --divider-color: var(--kg-divider);
   --island-radius: 0.5rem;
-  --island-border-color: #e5e7eb;
+  --island-border-color: var(--kg-border);
   --island-shadow: 0 1px 2px rgba(0,0,0,0.04);
   --overlay-opacity: 0.95;
   --panel-opacity: 0.95;
@@ -45,8 +45,6 @@
   --kg-surface-bg: var(--island-bg);
   --kg-panel-bg: var(--panel-bg);
   --kg-panel-bg-hover: #f9fafb;
-  --kg-border: var(--island-border-color);
-  --kg-divider: var(--divider-color);
   --kg-text-primary: #111827;
   --kg-text-secondary: #4b5563;
   --kg-text-tertiary: #6b7280;
@@ -142,8 +140,6 @@
 }
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --divider-color: #4b5563;
-  --island-border-color: #4b5563;
   --island-shadow: 0 1px 2px rgba(0,0,0,0.5);
   --overlay-opacity: 0.95;
   --panel-opacity: 0.95;
@@ -179,7 +175,7 @@
   --kg-panel-action-bg: rgba(255,255,255,0.06);
   --kg-panel-action-bg-hover: var(--kg-canvas-accent, #60a5fa);
 }
-:root[data-theme='dark'][data-dark-variant='black'] { --divider-color: #404040; --island-border-color: #404040; --app-bg: #000000; --panel-bg: #0a0a0a; --island-bg: #111111; --panel-bg-rgb: 10, 10, 10; --island-bg-rgb: 17, 17, 17; }
+:root[data-theme='dark'][data-dark-variant='black'] { --app-bg: #000000; --panel-bg: #0a0a0a; --island-bg: #111111; --panel-bg-rgb: 10, 10, 10; --island-bg-rgb: 17, 17, 17; }
 @layer components {
   [data-kg-kanban-card="1"]:hover [data-kg-kanban-actions="1"],
   [data-kg-kanban-card="1"]:focus-within [data-kg-kanban-actions="1"] {
@@ -431,9 +427,11 @@ html, body, #root {
   }
 
   .App-toolbar__divider {
-    width: var(--kg-surface-border-width);
+    width: var(--kg-resize-separator-thickness);
+    min-width: var(--kg-resize-separator-thickness);
+    flex-shrink: 0;
     height: calc(var(--kg-control-height, 28px) - 12px);
-    background-color: var(--kg-border);
+    background: linear-gradient(var(--kg-border), var(--kg-border)) center / var(--kg-surface-border-width) 100% no-repeat;
     border: none;
     margin-left: var(--toolbar-gap);
     margin-right: var(--toolbar-gap);
@@ -593,6 +591,6 @@ html, body, #root {
 
   /* Keep Monaco gutter/line-number column visually separated from text area. */
   .kg-monaco-editor-host .monaco-editor .margin {
-    border-right: var(--kg-workspace-divider) !important;
+    border-right: var(--kg-surface-border) !important;
   }
 }

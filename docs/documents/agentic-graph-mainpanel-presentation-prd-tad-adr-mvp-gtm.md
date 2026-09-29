@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.8.0"
+version: "1.9.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -478,14 +478,35 @@ PRD: Explorer and editor boundaries must remain perceptible across the full pane
 including the Source Files header and Monaco line-number gutter. Resize targets
 remain semantic and keyboard usable.
 
-TAD/ADR: Shared border CSS derives one stronger workspace divider from the active
-theme's secondary text and panel surface, retaining the 1 px reference width.
+TAD/ADR: Shared border CSS uses a stronger neutral workspace divider with the
+1 px reference width.
 Explorer separators draw a full-length line within their 8 px hit area. The
 Source Files header, workspace toolbar and Monaco gutter consume the same divider;
-surface control outlines keep their existing neutral token.
+surface control outlines use the same neutral token.
 
 MVP/evidence: cap 10 files / 20 KB patch; no dependencies, services or stored-data
 changes. Browser measurements confirm full-length separator geometry and 1 px
 header and gutter borders. Focused contracts, type checking and the affected gate
 are reported in the candidate handoff. GTM: clearer pane boundaries in the local,
 offline editor. Rollback: revert this revision; no migration is required.
+
+## Reference border parity (2026-09-29)
+
+PRD: Explorer, Source Files, toolbar, Main Panel controls, and Settings section
+boundaries must show the same 1 px neutral line in light and dark themes. Resize
+handles and menu controls remain selectable and usable.
+
+TAD/ADR: The shared theme token is the neutral line color owner. Its light value
+is strengthened to `#9ca3af`; dark and black values keep their existing contrast.
+The 1 px surface border utility feeds explorer headers, workspace toolbar,
+Monaco gutter, and panel borders. Explorer's 8 px resize target and toolbar
+separators center the same line within a usable hit area. Collapsed explorer
+sections omit a duplicate outer border. Toolbar groups use named semantic `hr`
+separators in place of empty sections or hidden decoration. Native buttons,
+headers, and resize controls retain their accessible interaction owners.
+
+MVP/evidence: cap 10 files / 20 KB patch; no dependency, service, or data change.
+Focused border and responsive contracts, type checking, browser computed styles,
+and affected release gate are recorded in candidate handoff. GTM: clearer
+boundaries in the existing free, offline interface. Rollback: revert this
+revision as one unit; saved settings require no migration.
