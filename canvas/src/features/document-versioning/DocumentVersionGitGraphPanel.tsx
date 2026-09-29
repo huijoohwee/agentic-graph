@@ -171,6 +171,7 @@ export function DocumentVersionGitGraphPanel({
         >
           <InteractiveMermaidDiagram
             code={gitGraphCode}
+            ariaLabel="Document version graph"
             rootThemeMode={themeMode}
             svgSurfaceKey="document-version-graph"
             selectedLabels={selectedDiagramLabels}

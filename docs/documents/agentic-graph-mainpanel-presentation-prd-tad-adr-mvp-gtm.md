@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.12.0"
+version: "1.13.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -564,3 +564,27 @@ service or storage-schema change. Verify desktop/mobile borders, heights, bounds
 keyboard controls and pointer targets; report focused/type/affected checks in the
 candidate handoff. Reuse existing help and tooltip owners. GTM: consistent controls
 in the free/offline editor. Rollback: revert this successor as one unit; no migration.
+
+
+## Warehouse and semantic-space reference alignment (2026-09-29)
+
+PRD: Warehouse inspection, Python lesson controls and Semantic space follow the
+same neutral 1 px border and 28 px desktop / 44 px narrow-touch control reference.
+Clip names and constrained fields ellipsize; their accessible names retain the
+full content. GitGraph and Version Graph have one panel frame each.
+
+TAD/ADR: Panel wrappers own graph frames; InteractiveMermaidDiagram owns only
+rendering/selection and explicitly names its SVG. Remove Python's local 36/44 px
+pane overrides and warehouse/Semantic space 44 px button variants. Reuse shared
+control/border tokens and PanelTextInput/PanelSelect. Warehouse tracks and camera
+use a bounded adaptive grid with internal scrolling. Authored wrappers use named
+sections, headers, navigation and figures; confirmed image regions are native
+select buttons. Existing data, playback and camera permission owners remain.
+
+MVP/evidence: 25-minute implementation target; cap 15 files / 75 KB patch after the added
+Semantic space request (13 files / 68 KB measured), no new
+dependencies. Check duplicate frames, desktop/touch sizing, constrained clips,
+selection hit testing, TypeScript and the focused presentation contracts. Broader
+release evidence is recorded separately; focused checks do not establish parity.
+GTM: consistent free/offline learning and inspection controls. Rollback: revert
+this successor patch; no persisted-format migration.
