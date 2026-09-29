@@ -11,7 +11,7 @@ import {
 } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
-import { KTV_SECTION_TITLE_CLASS_NAME } from 'grph-shared/ui/keyTypeValueRows'
+import { KTV_SECTION_CONTENT_CLASS_NAME, KTV_SECTION_SPACING_CLASS_NAME, KTV_SECTION_TITLE_CLASS_NAME } from 'grph-shared/ui/keyTypeValueRows'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 
 interface CollapsibleSectionProps {
@@ -94,7 +94,8 @@ export default function CollapsibleSection({
   return (
     <section
       className={clsx(
-        flushTop ? 'mt-0 border-t-0 pt-0' : `mt-3 border-t ${UI_THEME_TOKENS.panel.border} pt-2`,
+        KTV_SECTION_SPACING_CLASS_NAME,
+        flushTop ? 'border-t-0' : `border-t ${UI_THEME_TOKENS.panel.border}`,
         className,
       )}
     >
@@ -130,7 +131,7 @@ export default function CollapsibleSection({
           </IconButton>
         </section>
       </section>
-      <section id={contentId} className={clsx(isCollapsed ? 'hidden' : 'block mt-2')}>
+      <section id={contentId} className={clsx(isCollapsed ? 'hidden' : KTV_SECTION_CONTENT_CLASS_NAME)}>
         {hasExpanded || !isCollapsed ? children : null}
       </section>
     </section>

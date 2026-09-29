@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.0.0"
+version: "1.1.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -76,9 +76,40 @@ within a 390 × 844 viewport with no horizontal panel overflow. Numeric help sho
 the configured bounds, including an explicit absent upper limit for Research tokens.
 Help lists every registered icon. Shared Tooltip positions before paint so its
 viewport clamp survives the open effect. The component test checks settled
-bounds; live browser measurement changed from −11 px to the 8 px viewport inset. Full canvas TypeScript checking reports 33 errors
-in unchanged storage/media/test and Python-learning files; this is not a full green
-typecheck claim.
+bounds; live browser measurement changed from −11 px to the 8 px viewport inset.
+The native affected gate passed with the app-pinned TypeScript 5.8.3 compiler. A
+separate invocation of the parent TypeScript 5.9.3 reported 33 errors in unchanged
+files; that alternate compiler run was not the native release gate.
+
+## Spacing and typography follow-up
+
+PRD: Remove excess whitespace between MainPanel sections and align workspace
+settings with the existing Collaboration rows, including editable control text.
+
+TAD/ADR: Shared KTV tokens own section spacing. Header and row density settings
+remain the sole vertical padding owners; section margins, top padding and content
+gaps no longer accumulate. Existing 36 px header targets remain available. Settings
+workspace controls reuse MainPanelField, panel typography, named central icons and
+source-owned preference handlers. The workspace-open action shares the selector
+row. Selects grow within the shared value cell so their left edges align even when
+an adjacent action is present. Numeric help reads conversion limits from its owner.
+Code identifiers retain semantic monospace rendering.
+
+MVP budget: at most 8 source modules / 30 KB changed; 20-minute implementation
+window plus required validation. Actual change: 5 source modules plus this document,
+no new packages or always-loaded feature entry points.
+
+Verification: three focused cases pass, including preference changes, configured
+font/size, keyboard collapse/expand and lazy-load ownership. Live Settings controls
+and labels use 14 px panel text with identical grid columns. Collaboration headers
+have zero extra section margin/padding/content gap while keeping their 36 px target.
+At 390 × 844, Settings and its six workspace rows have matching client/scroll widths
+(356 px) and stay within the viewport. Native affected validation binds the final
+commit separately; local UI proof is not deployment proof.
+
+GTM: Improve density and consistency within the existing product; no new tier,
+telemetry collection or measured usability claim. Rollback is the presentation
+commit revert; stored preferences require no migration.
 
 ## GTM
 
