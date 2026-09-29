@@ -56,11 +56,16 @@ publication, terminal seal/validation, rollback capture/validation and pinned
 artifact upload steps. The upload must fail on missing files. Truncated,
 ambiguous, skipped, failed, changed-source or changed-attempt evidence is rejected.
 Both artifact and execution inventories are reobserved after the live rounds.
+Their final payloads and observation time are retained in
+`terminal-persistence-reobservation.json`, included in `observations.json`, and
+bound by both the complete observation digest and a dedicated reobservation
+digest. Missing, changed or incorrectly timed final inventories fail capture.
 
 The output uses `agentic-graph-observed-rollback-baseline/v2`, records the retained
 job ID and workflow digest, and labels the artifact `removed`. It invents no
 artifact ID, historical receipt or past authorization. Retain
-`terminal-persistence-inputs.json` with all capture files. Fresh ordered Pages,
+`terminal-persistence-inputs.json` and `terminal-persistence-reobservation.json`
+with all capture files. Fresh ordered Pages,
 authoritative D1 and exact mirror observations, source stability, source review,
 protected release verification and exact human production authorization still
 apply. A nonempty inventory uses the original expired-artifact path.
@@ -74,7 +79,8 @@ apply. A nonempty inventory uses the original expired-artifact path.
 - ADR: require successful protected execution plus unchanged reviewed workflow
   bytes as evidence of terminal persistence; do not infer it from a run badge alone.
 - MVP: focused tests reject drift, truncation, wrong run/attempt/source, failed or
-  skipped terminal steps, optional uploads and missing validation. Existing
+  skipped terminal steps, optional uploads, missing validation and absent or
+  unbound final inventory observations. Existing
   expired-artifact and live-state rejection tests remain unchanged.
 - GTM: no new service, dependency, paid resource or product-readiness claim. This
   is release recovery plumbing; production delivery remains a separate receipt.

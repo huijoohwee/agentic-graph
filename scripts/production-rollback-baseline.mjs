@@ -75,18 +75,22 @@ export async function main(args = process.argv.slice(2)) {
   for (const key of ['id', 'head_sha', 'status', 'conclusion', 'run_attempt', 'updated_at']) {
     assert.equal(currentRun[key], releaseRun[key], `release ${key} changed during capture`)
   }
-  assert.deepEqual(gh(`repos/${repository}/actions/runs/${values['run-id']}/artifacts?per_page=100`), artifacts,
-    'artifact inventory changed during capture')
+  const finalArtifacts = gh(`repos/${repository}/actions/runs/${values['run-id']}/artifacts?per_page=100`)
+  assert.deepEqual(finalArtifacts, artifacts, 'artifact inventory changed during capture')
+  let terminalPersistenceReobservation
   if (terminalPersistence) {
-    assert.deepEqual(gh(`repos/${repository}/actions/runs/${releaseRun.id}/attempts/${releaseRun.run_attempt}/jobs?per_page=100`),
-      terminalPersistence.jobs, 'terminal execution records changed during capture')
+    const jobs = gh(`repos/${repository}/actions/runs/${releaseRun.id}/attempts/${releaseRun.run_attempt}/jobs?per_page=100`)
+    assert.deepEqual(jobs, terminalPersistence.jobs, 'terminal execution records changed during capture')
+    terminalPersistenceReobservation = { artifacts: finalArtifacts, jobs, capturedAt: new Date().toISOString() }
+    await write(path.join(output, 'terminal-persistence-reobservation.json'), terminalPersistenceReobservation)
   }
   assert.equal(git(root, 'rev-parse', 'HEAD'), sourceRevision, 'capture source changed')
   assert.equal(git(root, 'status', '--porcelain'), '', 'capture source became dirty')
   assert.equal(git(root, 'ls-remote', 'origin', 'refs/heads/main').split(/\s+/)[0], sourceRevision, 'protected main changed during capture')
   const { recapture, provenance } = createObservedRollbackBaseline({ first, second, run: releaseRun,
-    artifacts, terminalPersistence, repositoryId: repo.id, assembledAt: new Date().toISOString() })
-  await write(path.join(output, 'observations.json'), { first, second, run: releaseRun, artifacts, terminalPersistence, repositoryId: repo.id })
+    artifacts, terminalPersistence, terminalPersistenceReobservation, repositoryId: repo.id, assembledAt: new Date().toISOString() })
+  await write(path.join(output, 'observations.json'), { first, second, run: releaseRun, artifacts,
+    terminalPersistence, terminalPersistenceReobservation, repositoryId: repo.id })
   await write(path.join(output, 'provenance.json'), { ...provenance, captureSource: { sourceRevision, sourceTree },
     attributedRepository: { requestedName: attribution[1], repositoryId: attributedRepo.id } })
   await write(path.join(output, 'rollback-recapture.json'), recapture)

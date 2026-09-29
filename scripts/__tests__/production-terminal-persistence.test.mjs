@@ -99,7 +99,9 @@ const baseline = async () => {
         commit_message: 'github-actions:huijoohwee/agentic-graph:42:1:pages' } } },
   })
   return { run: value.run, artifacts: value.artifacts, repositoryId: 99, assembledAt: at(50),
-    first: round(30), second: round(40), terminalPersistence: value }
+    first: round(30), second: round(40), terminalPersistence: value,
+    terminalPersistenceReobservation: { artifacts: structuredClone(value.artifacts),
+      jobs: structuredClone(value.jobs), capturedAt: at(45) } }
 }
 
 test('baseline joins removed-artifact proof to fresh live identity without a historical artifact ID', async () => {
@@ -116,6 +118,29 @@ test('baseline joins removed-artifact proof to fresh live identity without a his
     v => { v.first.pages.identity.sourceRevision = 'e'.repeat(40) },
     v => { v.second.mirror.observedAt = at(31) },
     v => { v.terminalPersistence.jobs.jobs[0].steps[4].conclusion = 'skipped' },
+  ]) {
+    const invalid = structuredClone(value); mutate(invalid)
+    assert.throws(() => createObservedRollbackBaseline(invalid))
+  }
+})
+
+test('baseline requires and binds retained post-round inventories and their observation time', async () => {
+  const { createObservedRollbackBaseline } = await import('../lib/production-rollback-baseline.mjs')
+  const { digest } = await import('../lib/production-release-lifecycle-evidence.mjs')
+  const value = await baseline()
+  const { provenance } = createObservedRollbackBaseline(value)
+  assert.equal(provenance.terminalPersistenceReobservationDigest, digest(value.terminalPersistenceReobservation))
+  const { assembledAt: _, ...observations } = value
+  assert.equal(provenance.observationDigest, digest(observations))
+  const later = structuredClone(value)
+  later.terminalPersistenceReobservation.capturedAt = at(46)
+  assert.notEqual(createObservedRollbackBaseline(later).provenance.observationDigest, provenance.observationDigest)
+  for (const mutate of [
+    v => { delete v.terminalPersistenceReobservation },
+    v => { v.terminalPersistenceReobservation.artifacts.total_count = 1 },
+    v => { v.terminalPersistenceReobservation.jobs.jobs[0].id++ },
+    v => { v.terminalPersistenceReobservation.capturedAt = at(41) },
+    v => { v.terminalPersistenceReobservation.capturedAt = at(51) },
   ]) {
     const invalid = structuredClone(value); mutate(invalid)
     assert.throws(() => createObservedRollbackBaseline(invalid))
