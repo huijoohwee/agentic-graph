@@ -74,7 +74,7 @@
   left: 0;
   z-index: 1;
   height: var(--kg-video-sequence-lane-height, 61px);
-  border-bottom: 1px solid color-mix(in srgb, var(--kg-border, #cbd5e1) 58%, transparent);
+  border-bottom: var(--kg-surface-border);
   background: color-mix(in srgb, var(--kg-panel-bg, #fff) 97%, var(--kg-canvas-accent, #2563eb) 3%);
 }
 
@@ -214,10 +214,10 @@
   border-radius: 4px;
   background: rgb(236 254 255 / 0.96);
   color: rgb(14 116 144 / 1);
-  font-size: 8px;
+  font-size: var(--kg-text-xs);
   font-weight: 800;
-  letter-spacing: 0;
-  line-height: 12px;
+  letter-spacing: normal;
+  line-height: var(--kg-text-xs-line);
   padding-inline: 4px;
   pointer-events: none;
 }
@@ -233,9 +233,9 @@
   border-radius: 3px;
   background: rgb(15 23 42 / 0.22);
   color: rgb(255 255 255 / 0.86);
-  font-size: 7px;
+  font-size: var(--kg-text-xs);
   font-weight: 800;
-  line-height: 10px;
+  line-height: var(--kg-text-xs-line);
   padding-inline: 3px;
 }
 
@@ -322,10 +322,10 @@
   border-radius: 3px;
   background: rgb(2 6 23 / 0.72);
   color: rgb(248 250 252 / 0.92);
-  font-size: 7px;
+  font-size: var(--kg-text-xs);
   font-weight: 800;
-  letter-spacing: 0;
-  line-height: 10px;
+  letter-spacing: normal;
+  line-height: var(--kg-text-xs-line);
   opacity: 0;
   padding: 1px 3px;
   transform: translateY(3px);
@@ -372,10 +372,10 @@
   border-radius: 4px;
   background: rgb(2 6 23 / 0.78);
   color: rgb(248 250 252 / 0.96);
-  font-size: 9px;
+  font-size: var(--kg-text-xs);
   font-weight: 800;
-  letter-spacing: 0;
-  line-height: 12px;
+  letter-spacing: normal;
+  line-height: var(--kg-text-xs-line);
   padding: 2px 4px;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -209,7 +209,7 @@ const INLINE_SEMANTIC_BADGE_CLASS = [
   'border-slate-300/70 bg-slate-100/80 text-slate-700 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200',
 ].join(' ')
 const INLINE_SEMANTIC_LABEL_CLASS = [
-  'uppercase tracking-wide text-[10px] font-semibold',
+  'uppercase tracking-normal text-xs font-semibold',
   UI_THEME_TOKENS.text.secondary,
 ].join(' ')
 const INLINE_SEMANTIC_VALUE_CLASS = 'font-medium'

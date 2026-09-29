@@ -266,7 +266,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
     read: () => s().uiIconPillBadgeTextSizeClass,
     write: (v) => s().setUiIconPillBadgeTextSizeClass(String(v || '')),
     docKey: 'uiIconPillBadgeTextSizeClass',
-    default: () => 'text-[9px]',
+    default: () => 'text-xs',
   },
   {
     key: 'uiIconBadgeChipClass',
@@ -284,7 +284,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
     read: () => s().uiIconBadgeChipTextSizeClass,
     write: (v) => s().setUiIconBadgeChipTextSizeClass(String(v || '')),
     docKey: 'uiIconBadgeChipTextSizeClass',
-    default: () => 'text-[9px]',
+    default: () => 'text-xs',
   },
   {
     key: 'uiPanelMicroLabelTextSizeClass',

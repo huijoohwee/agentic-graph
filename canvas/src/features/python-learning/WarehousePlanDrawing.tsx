@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import React from 'react'
 import { WAREHOUSE_ZONES, WAREHOUSE_DOCKS, WAREHOUSE_CONTEXT_RACKS, warehouseAllocation } from './warehouseLayout'
 
@@ -8,7 +9,7 @@ export function WarehousePlanDrawing({ selectedId, onSelect, dimensions = true, 
   const select = (id: string, label: string) => onSelect ? { role: 'button', tabIndex: 0, 'aria-label': `Select ${label}`, 'aria-pressed': selectedId === id,
     onClick: () => onSelect(id), onKeyDown: (event: React.KeyboardEvent) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(id) } } } : {}
   const allocation = warehouseAllocation()
-  return <g fontFamily="system-ui, sans-serif">
+  return <g fontFamily={UI_FONT_SANS}>
     {context && <>
       <path d="M -54 -20 V 24 H 54 V -20" fill="none" stroke="#d9dfe1" strokeWidth="12" />
       <path d="M -54 -20 V 24 H 54 V -20" fill="none" stroke="#89969c" strokeWidth=".12" strokeDasharray="1 1" />

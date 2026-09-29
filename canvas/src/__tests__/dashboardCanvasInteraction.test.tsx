@@ -286,8 +286,9 @@ export async function testDashboardCanvasCardFlipConfiguration() {
     await act(async () => { Simulate.click(flipIcon); await waitFrame() })
     const form = frame.querySelector('form[aria-label="Widget configuration"]')!
     if (!form || !frame.querySelector('section.kg-dashboard-widget-face[data-kg-widget-face="back"]')) throw Error('Toolbar Flip must reveal the semantic configuration back')
-    const inputs = form.querySelectorAll('input')
-    const titleEditor = inputs[0], noteEditor = form.querySelector('textarea')!
+    if (frame.querySelector('nav[data-kg-bubble-toolbar]')) throw Error('Configuration controls must not be covered by the front selection toolbar')
+    const titleEditor = [...form.querySelectorAll('label')].find(label => label.firstChild?.textContent === 'Title')!.querySelector('input')!
+    const noteEditor = form.querySelector('textarea')!
     await act(async () => {
       setEditableValue(dom, titleEditor, 'Edited Node Type Trend'); Simulate.change(titleEditor)
       setEditableValue(dom, noteEditor, 'Edited dashboard narrative'); Simulate.change(noteEditor)

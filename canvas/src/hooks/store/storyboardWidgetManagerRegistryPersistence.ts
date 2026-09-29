@@ -372,14 +372,6 @@ export function normalizeWidgetRegistryEntries(entries: WidgetRegistryEntry[]): 
     }),
   })
   canonicalizeBuiltInForm({
-    formId: 'textGeneration.deerflow',
-    draft: buildTextGenerationRegistryDraft({
-      providerFamily: 'deerflow',
-      widgetTypeId: 'default',
-      formId: 'textGeneration.deerflow',
-    }),
-  })
-  canonicalizeBuiltInForm({
     formId: FLOW_VIDEO_TRANSCRIBER_FORM_ID,
     draft: buildVideoTranscriberRegistryDraft(),
   })
@@ -404,7 +396,6 @@ const DEPRECATED_GLOBAL_DEFAULT_WIDGET_REGISTRY_KEYS = new Set<string>([
   `${FLOW_TEXT_GENERATION_NODE_TYPE_ID}:default:${FLOW_VIDEO_SCRIPT_FORM_ID}`,
   `${FLOW_TEXT_GENERATION_NODE_TYPE_ID}:default:${FLOW_OPENAI_VIDEO_SCRIPT_FORM_ID}`,
   `${FLOW_TEXT_GENERATION_NODE_TYPE_ID}:default:textGeneration.openai`,
-  `${FLOW_TEXT_GENERATION_NODE_TYPE_ID}:default:textGeneration.deerflow`,
   `${FLOW_VIDEO_TRANSCRIBER_NODE_TYPE_ID}:default:${FLOW_VIDEO_TRANSCRIBER_FORM_ID}`,
   `${FLOW_STORYBOARD_ELEMENT_NODE_TYPE_ID}:default:${FLOW_STORYBOARD_ELEMENT_FORM_ID}`,
   `${FLOW_GRABMAPS_DISCOVERY_NODE_TYPE_ID}:${FLOW_GRABMAPS_DISCOVERY_WIDGET_TYPE_ID}:${FLOW_GRABMAPS_DISCOVERY_FORM_ID}`,

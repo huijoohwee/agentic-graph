@@ -13,19 +13,6 @@ export function getBytePlusSharedTextApiRowAnchorId(rowKey: string): string {
   return buildLocalRowAnchorId('byteplus-chat-api-row', rowKey)
 }
 
-export function getDeerFlowApiRowAnchorId(rowKey: string): string {
-  return buildLocalRowAnchorId('deerflow-api-row', rowKey)
-}
-
-export function mapOpenAiRowKeyToDeerFlowRowKey(rowKey: string): string {
-  const normalized = String(rowKey || '').trim()
-  if (!normalized) return ''
-  if (normalized.startsWith('openaiApi.')) {
-    return `deerflowApi.${normalized.slice('openaiApi.'.length)}`
-  }
-  return `deerflowApi.${normalized}`
-}
-
 export function getAgnesApiRowAnchorId(rowKey: string): string {
   return buildSettingsRowAnchorId('agnes-chat-api-row', rowKey)
 }

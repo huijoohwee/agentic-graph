@@ -2,7 +2,6 @@ import {
   CHAT_DEFAULT_PROVIDER,
   CHAT_PROVIDER_AGNES,
   CHAT_PROVIDER_BYTEPLUS,
-  CHAT_PROVIDER_DEERFLOW,
   CHAT_PROVIDER_GOOGLE_CLOUD,
   CHAT_PROVIDER_LM_STUDIO,
   CHAT_PROVIDER_MIROMIND,
@@ -23,7 +22,6 @@ export type TextGenerationProviderFamily =
   | 'byteplus'
   | 'lmstudio-local'
   | 'openai'
-  | 'deerflow'
   | 'miromind'
   | 'agnes'
   | 'sealion'
@@ -34,7 +32,6 @@ const PROVIDER_FAMILY_BY_ID: Partial<Record<ChatProviderId, TextGenerationProvid
   [CHAT_PROVIDER_BYTEPLUS]: 'byteplus',
   [CHAT_PROVIDER_LM_STUDIO]: 'lmstudio-local',
   [CHAT_PROVIDER_OPENAI]: 'openai',
-  [CHAT_PROVIDER_DEERFLOW]: 'deerflow',
   [CHAT_PROVIDER_MIROMIND]: 'miromind',
   [CHAT_PROVIDER_AGNES]: 'agnes',
   [CHAT_PROVIDER_SEALION]: 'sealion',
@@ -68,7 +65,6 @@ const providerFamilyFromConfiguredTuple = (args: {
 export const normalizeTextGenerationProviderFamily = (value: unknown): TextGenerationProviderFamily =>
   value === 'lmstudio-local'
   || value === 'openai'
-  || value === 'deerflow'
   || value === 'miromind'
   || value === 'agnes'
   || value === 'sealion'
@@ -90,7 +86,6 @@ export function inferTextGenerationProviderFamily(args: {
   const widgetTypeId = String(unwrapGraphCellValue(args.widgetTypeId) || '').trim().toLowerCase()
   const formId = String(unwrapGraphCellValue(args.formId) || '').trim().toLowerCase()
   if (widgetTypeId.includes('lmstudio') || widgetTypeId.includes('lm-studio') || formId.includes('lmstudio') || formId.includes('lm-studio')) return 'lmstudio-local'
-  if (widgetTypeId.includes('deerflow') || widgetTypeId.includes('deer-flow') || formId.includes('deerflow') || formId.includes('deer-flow')) return 'deerflow'
   if (widgetTypeId.includes('miromind') || widgetTypeId.includes('miro-mind') || formId.includes('miromind') || formId.includes('miro-mind')) return 'miromind'
   if (widgetTypeId.includes('agnes') || formId.includes('agnes')) return 'agnes'
   if (widgetTypeId.includes('sealion') || widgetTypeId.includes('sea-lion') || formId.includes('sealion') || formId.includes('sea-lion')) return 'sealion'

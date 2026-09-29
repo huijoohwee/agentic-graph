@@ -99,7 +99,8 @@ try {
     })
     const start = performance.now(), actions = []
     await page.goto(origin + '/agentic-graph/?openEditorWorkspace=1', { waitUntil: 'domcontentloaded', timeout: 60000 })
-    await page.getByRole('navigation', { name: 'Source files', exact: true }).waitFor({ timeout: 60000 })
+    // Boot readiness accepts multiple source roots; subsequent actions target their own named controls.
+    await page.getByRole('navigation', { name: 'Source files', exact: true }).first().waitFor({ timeout: 60000 })
     await page.getByRole('button', { name: 'Launch', exact: true }).click(); actions.push('Open Launch')
     const chooser = page.waitForEvent('filechooser')
     await page.getByText('Choose files', { exact: true }).click(); actions.push('Choose files')

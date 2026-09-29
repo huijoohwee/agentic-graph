@@ -162,11 +162,11 @@ export function CitySimPanelProjection({
     >
       <header className="flex items-start justify-between gap-2">
         <span className="min-w-0">
-          <b className="flex items-center gap-1 text-[10px]">
+          <b className="flex items-center gap-1 text-xs">
             <ProjectionIcon surface={surface} />
             {copy.title}
           </b>
-          <span className={cn('block text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <span className={cn('block text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Local-only · $0 default path
           </span>
         </span>
@@ -182,7 +182,7 @@ export function CitySimPanelProjection({
         </button>
       </header>
       <p
-        className={cn('text-[9px]', UI_THEME_TOKENS.text.secondary)}
+        className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}
         data-kg-city-sim-input-source={
           surface === 'motionControl' ? snapshot.lastInput?.source : undefined
         }
@@ -192,12 +192,12 @@ export function CitySimPanelProjection({
       >
         {projectionStatus(surface, snapshot)}
       </p>
-      <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+      <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
         {copy.ownership}
       </p>
       {error ? (
         <p
-          className={cn('break-words text-[9px]', UI_THEME_TOKENS.status.error)}
+          className={cn('break-words text-xs', UI_THEME_TOKENS.status.error)}
           role="alert"
           data-kg-city-sim-projection-error="1"
         >

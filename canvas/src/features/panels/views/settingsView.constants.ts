@@ -7,7 +7,6 @@ import { getGrabMapsDiscoveryWidgetLabel } from '@/features/storyboard-widget-ma
 import { BYTEPLUS_SHARED_TEXT_API_DOC_AREA } from './byteplusSharedTextApiDocs'
 import { OPENAI_CHAT_API_DOC_AREA } from './openaiChatApiDocs'
 import { OPENAI_IMAGES_API_DOC_AREA } from './openaiImagesApiDocs'
-import { DEERFLOW_API_DOC_AREA } from './deerflowApiDocs'
 import { MIROMIND_API_DOC_AREA, MIROMIND_API_DOCS_URL } from './miromindApiDocs'
 import { AGNES_API_DOC_AREA, AGNES_API_DOCS_URL } from './agnesApiDocs'
 import { QWEN_API_DOC_AREA, QWEN_API_DOCS_URL } from './qwenApiDocs'
@@ -114,12 +113,6 @@ export const INTEGRATIONS_SECTION_META: Readonly<Record<string, SectionMeta>> = 
     docsUrl: 'https://developers.openai.com/api/reference/resources/images',
     docsLabel: 'Open OpenAI Images API Docs',
     panelLabel: 'Open FloatingPanel Props Panel OpenAI Image Widget',
-    openPanel: () => emitPropsPanelOpen(),
-  },
-  [DEERFLOW_API_DOC_AREA]: {
-    docsUrl: 'https://github.com/bytedance/deer-flow',
-    docsLabel: 'Open DeerFlow Docs',
-    panelLabel: 'Open FloatingPanel Props Panel Widget Card',
     openPanel: () => emitPropsPanelOpen(),
   },
   [MIROMIND_API_DOC_AREA]: {

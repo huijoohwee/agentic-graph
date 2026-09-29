@@ -177,7 +177,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
     return () => observer.disconnect()
   }, [])
   const navClassBase = 'Island App-toolbar App-toolbar--compact w-fit'
-  const clampedMainPanelPos = isMainPanelOpen ? clampMainPanelPos(mainPanelDragPos) : mainPanelDragPos
+  const clampedMainPanelPos = isMainPanelOpen && mainPanelDragPos ? clampMainPanelPos(mainPanelDragPos) : mainPanelDragPos
   const isNarrowViewport = useMediaQuery('(max-width: 768px), (pointer: coarse)')
   const shouldUseToolbarRowScroll = isNarrowViewport || isWorkspaceOverlayMode
   const effectiveMainPanelPinned = isNarrowViewport ? true : mainPanelPinned
@@ -279,7 +279,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         onActivateGeoXrMode={actions.handleActivateGeoXrMode}
         onExitGeospatialMode={actions.handleExitGeospatialMode}
       />
-      <section className="App-toolbar__divider" />
+      <hr className="App-toolbar__divider" role="separator" aria-orientation="vertical" aria-label="Canvas mode and settings separator" />
       <IconButton
         className="App-toolbar__btn"
         title={UI_LABELS.settings}
@@ -339,8 +339,8 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
               ].join(' ')}
               style={{
                 position: 'absolute',
-                top: clampedMainPanelPos.top,
-                left: clampedMainPanelPos.left,
+                top: clampedMainPanelPos?.top ?? '50%',
+                left: clampedMainPanelPos?.left ?? '50%',
                 transform: 'translate(-50%, -50%)',
               }}
             >
@@ -374,7 +374,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         <HelpCircle className={iconSizeClass} strokeWidth={iconStrokeWidth} />
       </IconButton>
 
-      <section className="App-toolbar__divider" />
+      <hr className="App-toolbar__divider" role="separator" aria-orientation="vertical" aria-label="Workspace and editing actions separator" />
       <IconButton
         className="App-toolbar__btn"
         title={UI_LABELS.createNode}
@@ -445,7 +445,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
       </IconButton>
       <ZoomModeSelect iconSizeClass={iconSizeClass} iconStrokeWidth={iconStrokeWidth} onZoomSelection={onZoomSelection} />
       <HistoryUndoRedoControls iconSizeClass={iconSizeClass} iconStrokeWidth={iconStrokeWidth} />
-      <hr className="App-toolbar__divider" aria-hidden="true" />
+      <hr className="App-toolbar__divider" role="separator" aria-orientation="vertical" aria-label="History and search separator" />
       <IconButton
         className="App-toolbar__btn"
         ref={searchBtnRef}
@@ -509,7 +509,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
       )}
       <AgentRunCloseButton iconSizeClass={iconSizeClass} iconStrokeWidth={iconStrokeWidth} />
       {learningDocument ? <>
-        <hr className="App-toolbar__divider" aria-hidden="true" />
+        <hr className="App-toolbar__divider" role="separator" aria-orientation="vertical" aria-label="Learning editor separator" />
         <IconButton className="App-toolbar__btn" title="Edit Python code" ariaLabel="Edit Python code"
           tooltipContent="Edit Python code" showTooltip
           onClick={() => useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: true })}>

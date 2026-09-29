@@ -1,3 +1,4 @@
+import { readMenuOptions, selectMenuValue } from './helpers/semanticMenu'
 import React, { act } from 'react'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -62,14 +63,14 @@ const unmountAndFlush = async (root: ReturnType<typeof createRoot> | null) => {
   const win = (globalThis as unknown as { window?: Window }).window
   await unmountReactRoot(root, win ? { window: win } : undefined)
 }
-const getSelectOptionValues = (select: HTMLSelectElement): string[] =>
-  Array.from(select.options).map(option => option.value).filter(Boolean)
-const findModelSelectsWithOption = (container: Element, optionValue: string): HTMLSelectElement[] => (
-  Array.from(container.querySelectorAll('select')) as HTMLSelectElement[]
+const getSelectOptionValues = (select: HTMLButtonElement): string[] =>
+  Array.from(readMenuOptions(select)).map(option => option.value).filter(Boolean)
+const findModelSelectsWithOption = (container: Element, optionValue: string): HTMLButtonElement[] => (
+  Array.from(container.querySelectorAll('button[data-kg-select]')) as HTMLButtonElement[]
 ).filter(select => getSelectOptionValues(select).includes(optionValue))
 
 const hasSelectOption = (container: Element, optionValue: string): boolean =>
-  (Array.from(container.querySelectorAll('select')) as HTMLSelectElement[])
+  (Array.from(container.querySelectorAll('button[data-kg-select]')) as HTMLButtonElement[])
     .some(select => getSelectOptionValues(select).includes(optionValue))
 
 const findKtvRow = (container: Element, key: string): HTMLElement | undefined =>
@@ -119,6 +120,7 @@ export async function testIntegrationsHubReusesSettingsEntryList() {
     root = createRoot(container as unknown as HTMLElement)
     await renderAndFlush(root, React.createElement(IntegrationsHubView), anyWindow.requestAnimationFrame, 3)
     const text = container.textContent || ''
+    if (/deer[ -]?flow/i.test(text)) throw new Error('retired gateway must not appear in Integrations')
     const expectedTokens = [
       'Key',
       'Type',
@@ -153,12 +155,7 @@ export async function testIntegrationsHubReusesSettingsEntryList() {
       'openaiImageApi.prompt',
       'openaiImageApi.size',
       'openaiImageApi.output_format',
-      'DeerFlow Gateway API',
       'Open FloatingPanel Props Panel Widget Card',
-      'deerflowApi.provider',
-      'deerflowApi.endpoint_url',
-      'deerflowApi.model',
-      'deerflowApi.input',
       'MiroMind API',
       'Open FloatingPanel Chat UI (MiroMind)',
       'miromindApi.provider',
@@ -261,15 +258,14 @@ export async function testIntegrationsHubSectionLinksOpenFloatingPanels() {
     await clickButton('Open FloatingPanel Chat UI (Agnes)')
     for (let index = 0; index < 2; index += 1) await clickButton('Open FloatingPanel Props Panel Widget Card')
     await clickButton('Open FloatingPanel Props Panel OpenAI Image Widget')
-    await clickButton('Open FloatingPanel Props Panel Widget Card')
     await clickButton('Open FloatingPanel BytePlus Video Widget')
     await clickButton('Open FloatingPanel BytePlus Image Widget')
 
     if (floatingPanelEvents.filter(value => value === 'chat').length !== 2) {
       throw new Error(`expected chat section links to open floating chat twice, got ${JSON.stringify(floatingPanelEvents)}`)
     }
-    if (propsPanelEvents.length !== 6) {
-      throw new Error(`expected text/openai-chat/openai-images/deerflow/video/image section links to open floating props panel six times, got ${JSON.stringify(propsPanelEvents)}`)
+    if (propsPanelEvents.length !== 5) {
+      throw new Error(`expected text/openai-chat/openai-images/video/image section links to open floating props panel five times, got ${JSON.stringify(propsPanelEvents)}`)
     }
     eventWindow.dispatchEvent = originalDispatchEvent
   } finally {
@@ -311,7 +307,7 @@ export async function testMainPanelIntegrationsDefaultsToServerManagedAndMemoryO
     )
 
     const authValueCell = requireKtvValueCell(container, 'byteplus.auth_mode')
-    const authSelect = authValueCell.querySelector('select') as HTMLSelectElement | null
+    const authSelect = authValueCell.querySelector('button[data-kg-select]') as HTMLButtonElement | null
     if (!authSelect) {
       throw new Error(`expected byteplus.auth_mode to render an auth select, got ${JSON.stringify(authValueCell.textContent || '')}`)
     }
@@ -332,11 +328,10 @@ export async function testMainPanelIntegrationsDefaultsToServerManagedAndMemoryO
       })}`)
     }
 
-    const selectValueSetter = Object.getOwnPropertyDescriptor(dom.window.HTMLSelectElement.prototype, 'value')?.set
+    const selectValueSetter = selectMenuValue
     if (!selectValueSetter) throw new Error('expected DOM select value setter')
     await act(async () => {
-      selectValueSetter.call(authSelect, 'byok')
-      Simulate.change(authSelect)
+      selectValueSetter(authSelect, 'byok')
       await waitForFrames(anyWindow.requestAnimationFrame, 2)
     })
 
@@ -368,11 +363,10 @@ export async function testMainPanelIntegrationsDefaultsToServerManagedAndMemoryO
       })}`)
     }
 
-    const nextAuthSelect = requireKtvValueCell(container, 'byteplus.auth_mode').querySelector('select') as HTMLSelectElement | null
+    const nextAuthSelect = requireKtvValueCell(container, 'byteplus.auth_mode').querySelector('button[data-kg-select]') as HTMLButtonElement | null
     if (!nextAuthSelect) throw new Error('expected auth select to remain rendered after BYOK change')
     await act(async () => {
-      selectValueSetter.call(nextAuthSelect, 'serverManaged')
-      Simulate.change(nextAuthSelect)
+      selectValueSetter(nextAuthSelect, 'serverManaged')
       await waitForFrames(anyWindow.requestAnimationFrame, 2)
     })
     if (useGraphStore.getState().chatAuthMode !== 'serverManaged' || useGraphStore.getState().chatApiKey !== '') {
@@ -499,14 +493,14 @@ export async function testMainPanelRequestedIntegrationsSearchShowsAiControls() 
       throw new Error(`expected integrations search to render chatContextScope KTV row, got ${JSON.stringify(text)}`)
     }
     const contextValueCell = contextRow.children[2] as HTMLElement | undefined
-    const contextSelect = contextValueCell?.querySelector('select') as HTMLSelectElement | null
+    const contextSelect = contextValueCell?.querySelector('button[data-kg-select]') as HTMLButtonElement | null
     if (!contextValueCell || !contextSelect) {
       throw new Error(`expected chatContextScope Value column to render a dropdown, got ${JSON.stringify(contextRow.textContent || '')}`)
     }
     if (contextSelect.value !== 'hybrid') {
       throw new Error(`expected chatContextScope default dropdown value to be hybrid, got ${JSON.stringify(contextSelect.value)}`)
     }
-    const contextOptionLabels = Array.from(contextSelect.options).map(option => String(option.textContent || '').trim())
+    const contextOptionLabels = Array.from(readMenuOptions(contextSelect)).map(option => String(option.textContent || '').trim())
     ;[
       'Selection + Workspace (Default)',
       'Canvas Selection',
@@ -636,7 +630,7 @@ export async function testMainPanelRequestedIntegrationsSearchShowsBytePlusImage
       6,
     )
 
-    const text = container.textContent || ''
+    const text = (container.textContent || '') + [...container.querySelectorAll<HTMLButtonElement>('button[data-kg-select]')].flatMap(readMenuOptions).map(option => option.textContent).join(' ')
     ;[
       'BytePlus Image Generation API',
       'byteplusImageApi.size',
@@ -711,7 +705,7 @@ export async function testMainPanelRequestedIntegrationsSearchKeepsBytePlusProvi
         throw new Error(`expected BytePlus provider row search to include ${JSON.stringify(token)}, got ${JSON.stringify(text)}`)
       }
     })
-    const select = container.querySelector('select')
+    const select = container.querySelector('button[data-kg-select]')
     if (select) {
       throw new Error('expected BytePlus provider row to stop reusing the global chatProvider dropdown')
     }
@@ -1084,8 +1078,8 @@ export async function testMcpHubSurfacesGrabMapsMcpServerConfig() {
     await renderAndFlush(root, React.createElement(McpHubView), anyWindow.requestAnimationFrame, 4)
 
     const text = container.textContent || ''
-    const formValues = Array.from(container.querySelectorAll('input, textarea, select'))
-      .map(el => (el as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value)
+    const formValues = Array.from(container.querySelectorAll('input, textarea, button[data-kg-select]'))
+      .map(el => (el as HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement).value)
       .join('\n')
     const searchableText = `${text}\n${formValues}`
     assertMcpHubSurfacesGrabMapsMcpConfig(container)
@@ -1459,7 +1453,7 @@ export async function testMainPanelBytePlusModelRowNormalizesAwayOpenAiValueLeak
     if (modelSelects.length !== 1) {
       throw new Error(`expected filtered BytePlus API model search to render one shared model dropdown, got ${modelSelects.length}`)
     }
-    const bytePlusModelSelect = modelSelects[0] as HTMLSelectElement | undefined
+    const bytePlusModelSelect = modelSelects[0] as HTMLButtonElement | undefined
     if (!bytePlusModelSelect) {
       throw new Error('expected BytePlus API model dropdown to exist')
     }
@@ -1513,7 +1507,7 @@ export async function testMainPanelRequestedIntegrationsSearchUnifiesBytePlusVid
     if (text.includes('byteplusVideoApi.model')) {
       throw new Error('expected duplicate byteplusVideoApi.model alias row to be removed from integrations results')
     }
-    const selects = Array.from(container.querySelectorAll('select'))
+    const selects = Array.from(container.querySelectorAll('button[data-kg-select]'))
     if (selects.length !== 1) {
       throw new Error(`expected unified video model search to render one shared select editor, got ${selects.length}`)
     }
@@ -1944,11 +1938,11 @@ export async function testMainPanelRequestedIntegrationsSearchShowsOpenAiImagesA
     if (textEditors.length === 0) {
       throw new Error('expected OpenAI Images prompt row to render a configurable text input')
     }
-    const selects: HTMLSelectElement[] = Array.from(container.querySelectorAll('select') as NodeListOf<HTMLSelectElement>)
-    const findSelectWithOption = (optionValue: string): HTMLSelectElement | undefined => {
+    const selects: HTMLButtonElement[] = Array.from(container.querySelectorAll('button[data-kg-select]') as NodeListOf<HTMLButtonElement>)
+    const findSelectWithOption = (optionValue: string): HTMLButtonElement | undefined => {
       for (const select of selects) {
-        for (let index = 0; index < select.options.length; index += 1) {
-          const option = select.options.item(index) as HTMLOptionElement | null
+        for (let index = 0; index < readMenuOptions(select).length; index += 1) {
+          const option = readMenuOptions(select)[index] as HTMLButtonElement | null
           if (option?.value === optionValue) return select
         }
       }
@@ -2120,7 +2114,7 @@ export async function testMainPanelRequestedIntegrationsSearchShowsAgnesApiConfi
     const valueRows = Array.from(container.querySelectorAll('dl')) as HTMLElement[]
     const outputContractRow = valueRows.find(row => row.children[0]?.textContent?.includes('agnesApi.output_contract'))
     const outputContractValue = outputContractRow?.children[2] as HTMLElement | undefined
-    if (!outputContractValue?.querySelector('select')) {
+    if (!outputContractValue?.querySelector('button[data-kg-select]')) {
       throw new Error('expected Agnes output_contract Value cell to render a configurable select')
     }
     if (outputContractValue.textContent?.includes('Pins Agnes to the canonical')) {
@@ -2184,7 +2178,7 @@ export async function testMainPanelRequestedIntegrationsSearchShowsQwenApiConfig
     if (modelSelect.value !== CHAT_QWEN_MODEL_OPTIONS[0]) {
       throw new Error(`expected Qwen model dropdown to default to ${JSON.stringify(CHAT_QWEN_MODEL_OPTIONS[0])}, got ${JSON.stringify(modelSelect.value)}`)
     }
-    const endpointControls = Array.from(container.querySelectorAll('input, select')) as Array<HTMLInputElement | HTMLSelectElement>
+    const endpointControls = Array.from(container.querySelectorAll('input, button[data-kg-select]')) as Array<HTMLInputElement | HTMLButtonElement>
     const endpointControl = endpointControls.find(control => control.value === CHAT_QWEN_ENDPOINT_URL)
     if (!endpointControl) {
       throw new Error(`expected Qwen endpoint Value cell to expose configurable endpoint ${JSON.stringify(CHAT_QWEN_ENDPOINT_URL)}`)
@@ -2211,7 +2205,7 @@ export async function testMainPanelRequestedIntegrationsSearchShowsQwenApiConfig
     }
     const outputContractRow = valueRows.find(row => row.children[0]?.textContent?.includes('qwenApi.output_contract'))
     const outputContractValue = outputContractRow?.children[2] as HTMLElement | undefined
-    if (!outputContractValue?.querySelector('select')) {
+    if (!outputContractValue?.querySelector('button[data-kg-select]')) {
       throw new Error('expected Qwen output_contract Value cell to render a configurable select')
     }
     if (outputContractValue.textContent?.includes('Pins Qwen to the canonical')) {
@@ -2278,7 +2272,7 @@ export async function testMainPanelRequestedIntegrationsSearchShowsZaiApiReferen
       throw new Error('expected Z.AI runtime status to use the shared three-column Key-Type-Value row')
     }
     const runtimeStatusValue = runtimeStatusRow.children[2] as HTMLElement
-    if (runtimeStatusValue.querySelector('input, select, textarea')) {
+    if (runtimeStatusValue.querySelector('input, button[data-kg-select], textarea')) {
       throw new Error('expected Z.AI reference rows to remain non-editable until a provider runtime owner exists')
     }
     const quickStartLink = (Array.from(container.querySelectorAll('a')) as HTMLAnchorElement[])
@@ -2346,7 +2340,7 @@ export async function testMainPanelRequestedIntegrationsSearchShowsGoogleCloudAp
     if (modelSelect.value !== CHAT_GOOGLE_CLOUD_MODEL_OPTIONS[0]) {
       throw new Error(`expected Google Cloud model dropdown to default to ${JSON.stringify(CHAT_GOOGLE_CLOUD_MODEL_OPTIONS[0])}, got ${JSON.stringify(modelSelect.value)}`)
     }
-    const endpointControls = Array.from(container.querySelectorAll('input, select')) as Array<HTMLInputElement | HTMLSelectElement>
+    const endpointControls = Array.from(container.querySelectorAll('input, button[data-kg-select]')) as Array<HTMLInputElement | HTMLButtonElement>
     const endpointControl = endpointControls.find(control => control.value === CHAT_GOOGLE_CLOUD_ENDPOINT_URL)
     if (!endpointControl) {
       throw new Error(`expected Google Cloud endpoint Value cell to expose configurable endpoint ${JSON.stringify(CHAT_GOOGLE_CLOUD_ENDPOINT_URL)}`)
@@ -2381,7 +2375,7 @@ export async function testMainPanelRequestedIntegrationsSearchShowsGoogleCloudAp
     }
     const outputContractRow = valueRows.find(row => row.children[0]?.textContent?.includes('googleCloudApi.output_contract'))
     const outputContractValue = outputContractRow?.children[2] as HTMLElement | undefined
-    if (!outputContractValue?.querySelector('select')) {
+    if (!outputContractValue?.querySelector('button[data-kg-select]')) {
       throw new Error('expected Google Cloud output_contract Value cell to render a configurable select')
     }
     if (outputContractValue.textContent?.includes('Pins Google Cloud to the canonical')) {

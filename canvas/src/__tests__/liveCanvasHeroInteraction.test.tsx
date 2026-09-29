@@ -1,3 +1,4 @@
+import { readMenuOptions, selectMenuValue } from './helpers/semanticMenu'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
@@ -51,7 +52,7 @@ export async function testLiveCanvasHeroProductEntryPreset(): Promise<void> {
     try {
       await mountReactRoot(root, <LiveCanvasHeroEditorial model={model} promptPresetsRuntime={runtime} activateDemo={async selection => { submissions.push(selection.prompt) }} />,
         { window: dom.window as unknown as Window, frames: 3 })
-      const selector = container.querySelector('select') as HTMLSelectElement
+      const selector = container.querySelector('button[data-kg-select]') as HTMLButtonElement
       const proxy = container.querySelector('[data-kg-card-inline-viewer-edit-command-proxy="1"]') as HTMLTextAreaElement
       const run = container.querySelector('[data-kg-live-canvas-hero-enter="true"]') as HTMLButtonElement
       if (selector.value !== 'launch-copilot' || proxy.value || !run.disabled || requested.join(',') !== 'launch-copilot') {
@@ -67,8 +68,7 @@ export async function testLiveCanvasHeroProductEntryPreset(): Promise<void> {
           Simulate.input(editor)
         }
         if (scenario === 'switched') {
-          selector.value = 'video-agent'
-          Simulate.change(selector)
+          selectMenuValue(selector, 'video-agent')
         }
         await waitForFrames(dom.window as unknown as Window, 2)
         resolvePrompt(scenario === 'error' ? { ok: false, error: 'Preset source unavailable.' } : { ok: true, prompt: launchPrompt })
@@ -171,12 +171,11 @@ export async function testLiveCanvasHeroInteractionOpensPresetChat(): Promise<vo
       />
     ), { window: dom.window as unknown as Window, frames: 4 })
 
-    const initialSelect = container.querySelector('select') as HTMLSelectElement
+    const initialSelect = container.querySelector('button[data-kg-select]') as HTMLButtonElement
     const initialProxy = container.querySelector('textarea') as HTMLTextAreaElement
     if (initialSelect.value !== 'xr-physics' || initialProxy.value !== physicsPrompt) throw new Error('Apex must load the shared Physics Playground prompt')
     await act(async () => {
-      initialSelect.value = 'video-agent'
-      Simulate.change(initialSelect)
+      selectMenuValue(initialSelect, 'video-agent')
       await waitForFrames(dom.window as unknown as Window, 3)
     })
 
@@ -230,9 +229,9 @@ export async function testLiveCanvasHeroInteractionOpensPresetChat(): Promise<vo
     if (promptPresetsLabel?.textContent?.trim() !== 'Prompt Presets' || heroText.includes('Agentic Video Canvas')) {
       throw new Error(`expected Prompt Presets to replace the video-only Home label, got ${JSON.stringify(promptPresetsLabel?.textContent)}`)
     }
-    const presetSelect = container.querySelector('[data-kg-live-canvas-hero-prompt-preset-select="true"]') as HTMLSelectElement | null
+    const presetSelect = container.querySelector('[data-kg-live-canvas-hero-prompt-preset-select="true"]') as HTMLButtonElement | null
     const presetCatalog = container.querySelector('[data-kg-live-canvas-hero-prompt-presets="true"]')
-    const presetOptions = [...(presetSelect?.options || [])]
+    const presetOptions = [...(readMenuOptions(presetSelect) || [])]
     if (!presetSelect || presetOptions.map(option => option.value).join(',') !== promptPresets.map(preset => preset.id).join(',')) {
       throw new Error(`expected Home to render the shared Prompt Presets catalog as a dropdown, got ${presetOptions.map(option => option.value).join(',')}`)
     }
@@ -241,16 +240,14 @@ export async function testLiveCanvasHeroInteractionOpensPresetChat(): Promise<vo
     }
     if (submittedQueries.length !== 0 || completedCount !== 0) throw new Error('expected zero embedded Chat submissions on mount')
     await act(async () => {
-      presetSelect.value = 'launch-copilot'
-      Simulate.change(presetSelect)
+      selectMenuValue(presetSelect, 'launch-copilot')
       await waitForFrames(dom.window as unknown as Window, 3)
     })
     if (String(commandProxy.value) !== launchPrompt || submittedQueries.length !== 0) {
       throw new Error('Launch Copilot selection must seed the shared prompt without execution')
     }
     await act(async () => {
-      presetSelect.value = 'investment-research-agent'
-      Simulate.change(presetSelect)
+      selectMenuValue(presetSelect, 'investment-research-agent')
       await waitForFrames(dom.window as unknown as Window, 3)
     })
     const demo = buildLiveCanvasHeroPresetDemo(demoSelection)
@@ -282,8 +279,7 @@ export async function testLiveCanvasHeroInteractionOpensPresetChat(): Promise<vo
       throw new Error('expected parameter chips to edit locally without submitting')
     }
     await act(async () => {
-      presetSelect.value = 'video-agent'
-      Simulate.change(presetSelect)
+      selectMenuValue(presetSelect, 'video-agent')
       await waitForFrames(dom.window as unknown as Window, 3)
     })
     if (commandProxy.value !== expectedDefaultQuery || !container.querySelector('[data-kg-live-canvas-hero-invocation-group="provider"]')) {

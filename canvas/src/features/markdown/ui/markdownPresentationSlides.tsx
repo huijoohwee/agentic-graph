@@ -266,7 +266,7 @@ export const buildSlideBody = (args: BuildSlideBodyArgs): React.ReactNode => {
               {UI_COPY.markdownPresentationEmptyTitle}
             </section>
           </section>
-          <section className={`mt-1 text-[11px] ${UI_THEME_TOKENS.text.secondary}`}>
+          <section className={`mt-1 text-xs ${UI_THEME_TOKENS.text.secondary}`}>
             {UI_COPY.markdownPresentationEmptyBody}
           </section>
         </section>
@@ -453,7 +453,7 @@ export const buildSlidePreview = (args: BuildSlidePreviewArgs): React.ReactNode 
     fullDocTokens,
     previewDensity = 'presentation',
   } = args
-  const uiPanelMicroLabelTextSizeClass = uiPanelMicroLabelTextSizeClassRaw || 'text-[10px]'
+  const uiPanelMicroLabelTextSizeClass = uiPanelMicroLabelTextSizeClassRaw || 'text-xs'
   const compactCardPreview = previewDensity === 'gallery-card'
 
   const slide = slides[slideIdx]

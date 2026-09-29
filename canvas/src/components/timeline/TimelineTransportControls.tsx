@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import { Pause, Play, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -178,7 +179,7 @@ export function TimelineTransportMiniActionBar({
             onClick={action.onClick}
             data-kg-timeline-mini-action={action.id}
           >
-            <Icon className="size-3" aria-hidden />
+            <Icon className="size-3" role="img" aria-label={action.ariaLabel} />
           </button>
         )
       })}
@@ -208,6 +209,7 @@ export function TimelineTransportControls(props: TimelineTransportControlsProps)
     onTogglePlayback,
     onValueChange,
   } = props
+  const { panelTextClass } = usePanelTypography()
   const progressPercent = React.useMemo(() => {
     const span = Math.max(0, max - min)
     if (span <= 0) return 0
@@ -221,7 +223,7 @@ export function TimelineTransportControls(props: TimelineTransportControlsProps)
   }, [playbackRate, playbackRates])
   return (
     <section
-      className={cn('timeline-transport-shell', shellClassName)}
+      className={cn('timeline-transport-shell', shellClassName, panelTextClass)}
       data-kg-timeline-transport="shared"
       style={{ '--kg-timeline-progress': `${progressPercent}%` } as React.CSSProperties}
     >
@@ -234,13 +236,13 @@ export function TimelineTransportControls(props: TimelineTransportControlsProps)
           disabled={disabled}
           onClick={onTogglePlayback}
         >
-          {playing ? <Pause className="h-4 w-4" strokeWidth={2} aria-hidden={true} /> : <Play className="h-4 w-4" strokeWidth={2} aria-hidden={true} />}
+          {playing ? <Pause className="h-4 w-4" strokeWidth={2} role="img" aria-label="Pause" /> : <Play className="h-4 w-4" strokeWidth={2} role="img" aria-label="Play" />}
         </button>
         <section className="time timeline-timecode" aria-live="polite">
           <time className="timeline-timecode-current">{currentLabel}</time>
           {totalLabel ? (
             <>
-              <span className="timeline-timecode-divider" aria-hidden="true">
+              <span className="timeline-timecode-divider">
                 /
               </span>
               <time className="timeline-timecode-total">{totalLabel}</time>
@@ -280,7 +282,7 @@ export function TimelineTransportControls(props: TimelineTransportControlsProps)
       </section>
       {showRange ? (
         <section className={cn('timeline-player-range', rangeClassName)}>
-          <section className="timeline-player-range-rail" aria-hidden="true"></section>
+          <meter className="timeline-player-range-rail" aria-label="Timeline position" min={0} max={100} value={progressPercent} />
           <input
             aria-label={ariaLabel}
             className="timeline-player-range-input"

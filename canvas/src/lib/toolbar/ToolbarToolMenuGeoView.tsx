@@ -105,7 +105,7 @@ export const GeoView = React.memo(function GeoView(props: {
   return (
     <section className="h-full flex flex-col" aria-label="Geospatial panel">
       <section
-        className={cn('grid gap-0.5 border-b px-3 py-2 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
+        className={cn('grid gap-0.5 border-b px-3 py-2 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
         aria-label="Selected XR environment"
         data-kg-geo-xr-environment={selectedEnvironment.id}
         data-kg-geo-xr-environment-source="xr-motion-reference-runtime"

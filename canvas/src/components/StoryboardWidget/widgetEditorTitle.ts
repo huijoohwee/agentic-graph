@@ -106,7 +106,7 @@ export function resolveWidgetNodeTitle(args: {
   const fallback = normalizeWidgetLabelText(node.label) || String(node.id || '').trim() || 'Node'
   const specificTitle = resolveSpecificWidgetTitle(args)
   const isLegacyProviderTextWidgetLabel = node.type === FLOW_TEXT_GENERATION_NODE_TYPE_ID
-    && /^(?:openai|byteplus|deerflow|miromind|agnes|sealion|qwen|google(?: cloud)?)\s+text widget$/i.test(fallback)
+    && /^(?:openai|byteplus|miromind|agnes|sealion|qwen|google(?: cloud)?)\s+text widget$/i.test(fallback)
   const genericFallbacks = new Set([
     '',
     String(node.id || '').trim(),

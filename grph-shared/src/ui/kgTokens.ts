@@ -8,7 +8,7 @@ const tokenValues: readonly Pick<KgTokenDef, 'cssVar' | 'light' | 'dark'>[] = [
   { cssVar: '--kg-panel-bg', light: '#ffffff', dark: '#020b2a' },
   { cssVar: '--kg-panel-bg-hover', light: '#f9fafb', dark: 'rgba(11, 18, 32, 0.85)' },
   { cssVar: '--kg-border', light: '#e5e7eb', dark: '#4b5563' },
-  { cssVar: '--kg-divider', light: '#d1d5db', dark: '#4b5563' },
+  { cssVar: '--kg-divider', light: '#e5e7eb', dark: '#4b5563' },
   { cssVar: '--kg-text-primary', light: '#111827', dark: '#f3f4f6' },
   { cssVar: '--kg-text-secondary', light: '#4b5563', dark: '#9ca3af' },
   { cssVar: '--kg-text-tertiary', light: '#6b7280', dark: '#6b7280' },

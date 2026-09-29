@@ -259,50 +259,6 @@ export async function importUrlFallback(args: {
   }
 }
 
-export async function importUrlDeerFlowFallback(args: {
-  urlRaw: string
-  canvas2dRenderer?: WorkspaceUrlImportCanvasRendererId | null
-  documentSemanticMode?: WorkspaceUrlImportDocumentModeId | null
-  pushUiToast: PushUiToast
-}): Promise<void> {
-  const url = normalizeImportUrlInput(args.urlRaw)
-  if (!url) {
-    args.pushUiToast({
-      id: 'launch:import:url:deerflow',
-      kind: 'warning',
-      message: 'Enter a valid http(s) URL before importing',
-      ttlMs: UI_TOAST_TTL_MS.warningExtended,
-      dismissible: true,
-    })
-    return
-  }
-  const toastId = 'launch:import:url:deerflow'
-  args.pushUiToast({ id: toastId, kind: 'neutral', message: 'Importing URL (DeerFlow)…', ttlMs: null, dismissible: false })
-  try {
-    const { importUrlViaDeerFlowAndApply } = (await import(
-      '@/features/markdown-workspace/useWorkspaceFileActions/deerflowUrlImportAction'
-    )) as typeof import('@/features/markdown-workspace/useWorkspaceFileActions/deerflowUrlImportAction')
-    const canvas2dRenderer = isWorkspaceUrlImportCanvasRendererId(args.canvas2dRenderer) ? args.canvas2dRenderer : null
-    await importUrlViaDeerFlowAndApply({
-      urlRaw: url,
-      canvas2dRenderer,
-      documentSemanticMode: canvas2dRenderer ? normalizeWorkspaceUrlImportDocumentMode(args.documentSemanticMode) : null,
-      pushUiToast: args.pushUiToast,
-    })
-    if (canvas2dRenderer === 'design') {
-      activateDesignEditorSurface({ openFloatingPanel: true })
-    }
-  } catch (e) {
-    args.pushUiToast({
-      id: toastId,
-      kind: 'error',
-      message: `Import failed: ${String((e as { message?: unknown })?.message ?? e)}`,
-      ttlMs: UI_TOAST_TTL_MS.warningExtended,
-      dismissible: true,
-    })
-  }
-}
-
 export async function createNewFolderFallback(args: {
   pushUiToast: PushUiToast
 }): Promise<void> {

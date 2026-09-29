@@ -10,7 +10,7 @@ import type { CanvasViewOptionId, CanvasViewModelState } from '@/components/tool
 import { useAgentRunWorkspace, closeAgentRunInspection, activateAgentRunWorkspace } from '@/features/agent-ready/agentRunInspectionStore'
 import { buildCanvasViewOptions, getCanvasViewRendererOptions, getCanvasViewTriggerState } from '@/components/toolbar/canvasViewMenu'
 import { applyCanvasViewSelection } from '@/components/toolbar/canvasViewActions'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { buildCanvasViewOptionHelp } from './canvasViewOptionHelp'
 import { UI_RESPONSIVE_EXTRA_WIDE_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { SelectableRowValue } from '@/components/ui/SelectableRowValue'
 import { useMinimapCollapsed } from '@/features/minimap/minimapVisibility'
@@ -249,37 +249,23 @@ export function Canvas2dRendererSelect({
       disabled={false}
       onSelect={id => applyCanvasViewOption(id as CanvasViewOptionId)}
       renderButtonContent={() => <Eye className={iconSizeClass} strokeWidth={iconStrokeWidth} />}
-      renderOptionContent={option => (
-        <>
+      getOptionTooltip={buildCanvasViewOptionHelp}
+      renderOptionContent={option => {
+        // Setting rows name the feature; categorical choices already describe themselves.
+        const showFieldLabel = Boolean(option.children?.length)
+          || option.id.startsWith('document:')
+          || (option.id.startsWith('control:') && option.rowLabel !== 'Display')
+        return <>
           <option.Icon className={iconSizeClass} strokeWidth={iconStrokeWidth} />
-          <span className="kg-toolbar-dropdown-option-copy min-w-0 flex-1 text-left">
-            <span className={`block ${option.description || option.badges?.length ? 'break-words leading-4' : 'truncate'}`}>
-              {option.rowLabel || option.title}
-            </span>
-            {option.description || option.badges?.length ? (
-              <span className="mt-0.5 block min-w-0">
-                {option.description ? (
-                  <span className={`block text-[10px] leading-3 ${UI_THEME_TOKENS.text.tertiary}`}>
-                    {option.description}
-                  </span>
-                ) : null}
-                {option.badges?.length ? (
-                  <span className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
-                    {option.badges.slice(0, 2).map(badge => (
-                      <span key={badge} className={`shrink-0 rounded border px-1 py-0 text-[9px] leading-3 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.badge.chip}`}>
-                        {badge}
-                      </span>
-                    ))}
-                  </span>
-                ) : null}
-              </span>
-            ) : null}
-          </span>
+          {showFieldLabel || !option.valueLabel ? <span className="min-w-0 flex-1 truncate text-left">
+            {option.rowLabel || option.title}
+          </span> : null}
           {option.valueLabel ? (() => {
             const invocationOptionId = resolveInvocationOptionId(option)
             return <SelectableRowValue
               label={option.rowLabel || option.title}
               value={option.valueLabel}
+              className={showFieldLabel ? 'kg-toolbar-dropdown-option-value ml-auto text-xs' : 'min-w-0 flex-1 truncate text-left'}
               invocation={invocationOptionId ? buildCanvasViewInvocation(invocationOptionId) : undefined}
               mcpTool={invocationOptionId ? CANVAS_VIEW_MCP_TOOL_NAME : undefined}
               commandToken={invocationOptionId ? CANVAS_VIEW_COMMAND_TOKEN : undefined}
@@ -288,7 +274,7 @@ export function Canvas2dRendererSelect({
             />
           })() : null}
         </>
-      )}
+      }}
       menuWidthClass={UI_RESPONSIVE_EXTRA_WIDE_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME}
     />
   )

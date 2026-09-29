@@ -37,26 +37,26 @@ export function XrV2AuthoringStatusPanel({ sceneReady }: Readonly<{ sceneReady: 
     >
       <header className="flex items-start justify-between gap-2">
         <section className="min-w-0">
-          <h4 className={cn('m-0 text-[10px] font-semibold uppercase', UI_THEME_TOKENS.text.secondary)}>
+          <h4 className={cn('m-0 text-xs font-semibold uppercase', UI_THEME_TOKENS.text.secondary)}>
             XR v2 authoring adapters
           </h4>
-          <p className={cn('m-0 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Canonical ECS projection: {runtime.status}; {counts.entities} entities, {counts.materials} materials,
             {' '}{counts.behaviors} behaviors, {counts.particles} emitters, {counts.timelines} timelines.
           </p>
         </section>
         <output
-          className={cn('shrink-0 text-right text-[9px] uppercase tracking-wide', UI_THEME_TOKENS.text.tertiary)}
+          className={cn('shrink-0 text-right text-xs uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary)}
           data-kg-xr-v2-readiness-output="1"
         >
           {readiness.overall}<br />v{readiness.version}
         </output>
       </header>
-      <p className="m-0 rounded bg-amber-100 px-2 py-1 text-[10px] text-amber-900 dark:bg-amber-950/60 dark:text-amber-100">
+      <p className="m-0 rounded bg-amber-100 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950/60 dark:text-amber-100">
         Mounted authoring is measured from the canonical runtime. Depth-model and named physical-device proof remain explicit gates.
       </p>
       {runtime.error ? (
-        <p className="m-0 rounded bg-red-100 px-2 py-1 text-[10px] text-red-900 dark:bg-red-950/60 dark:text-red-100">
+        <p className="m-0 rounded bg-red-100 px-2 py-1 text-xs text-red-900 dark:bg-red-950/60 dark:text-red-100">
           {runtime.error.errorCode}: {runtime.error.message}
         </p>
       ) : null}

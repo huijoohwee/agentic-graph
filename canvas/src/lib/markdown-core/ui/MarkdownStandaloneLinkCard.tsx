@@ -67,7 +67,7 @@ export const StandaloneLinkCard = React.memo(function StandaloneLinkCard({ href,
             {truncatedUrl}
           </p>
           <section className="mt-2 sm:mt-auto">
-            <p className={`text-[10px] ${UI_THEME_TOKENS.text.secondary} font-mono`}>
+            <p className={`text-xs ${UI_THEME_TOKENS.text.secondary} font-mono`}>
               {domain}
             </p>
           </section>

@@ -4,7 +4,6 @@ import { postprocessMermaidSvg, renderPlainMermaidSvgCached } from '@/lib/mermai
 import { normalizeMermaidCodeForRuntime } from 'grph-shared/markdown/mermaidInput'
 import { applyPlainMermaidDiagramSelection } from '@/features/markdown/ui/PlainMermaidDiagram'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import type { Canvas2dRendererId } from '@/lib/config.render'
 
 export type InteractiveMermaidSelectionRow = {
@@ -373,6 +372,7 @@ export function InteractiveMermaidDiagram({
   dimUnselected = false,
   rendererId = 'gitGraph',
   svgSurfaceKey = rendererId,
+  ariaLabel = `${rendererId} diagram`,
   svgFitMode = 'auto',
   onSelectedLabelChange,
   onSelectedRowKeyChange,
@@ -384,6 +384,7 @@ export function InteractiveMermaidDiagram({
   selectedRowKey?: string
   dimUnselected?: boolean
   rendererId?: Canvas2dRendererId
+  ariaLabel?: string
   svgSurfaceKey?: string
   svgFitMode?: SvgSurfaceFitMode
   onSelectedLabelChange?: (label: string) => void
@@ -498,6 +499,13 @@ export function InteractiveMermaidDiagram({
     })
   }, [error, rendererId, upsertUiToast])
 
+  React.useLayoutEffect(() => {
+    const svg = svgHostRef.current?.querySelector('svg')
+    if (!svg) return
+    svg.setAttribute('aria-label', ariaLabel)
+    svg.removeAttribute('aria-labelledby')
+  }, [ariaLabel, selectedSvg])
+
   useSvgSurfaceZoomRuntime({
     active: !!selectedSvg && !error,
     rootRef,
@@ -528,7 +536,8 @@ export function InteractiveMermaidDiagram({
   return (
     <section
       ref={rootRef}
-      className={`relative h-full min-h-40 overflow-hidden rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}`}
+      className="relative h-full min-h-40 min-w-0 overflow-hidden"
+      aria-label={ariaLabel}
       data-kg-interactive-svg-diagram-surface="1"
       data-kg-interactive-svg-diagram-renderer={rendererId}
       data-kg-interactive-svg-diagram-key={svgSurfaceKey || undefined}

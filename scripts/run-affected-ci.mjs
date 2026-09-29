@@ -22,12 +22,11 @@ export function readExecutionPartition(args = []) {
 const extendedPartition = command => `extended-${createHash('sha256')
   .update(JSON.stringify(command)).digest('hex').slice(0, 12)}`
 
-// Each longer-budget command gets its own native check. Declared command digests
-// bind the stable selectors without duplicating the contract's command catalog.
+// Explicit command budgets also define isolated native checks. Command digests
+// retain stable selectors without duplicating the contract catalog or raising timeouts.
 export function partitionAffectedCommands(commands, contract) {
   const partitions = { standard: [] }
-  for (const { command, timeout_ms } of contract.ci_command_timeout_overrides ?? []) {
-    if (timeout_ms <= contract.ci_command_timeout_ms) continue
+  for (const { command } of contract.ci_command_timeout_overrides ?? []) {
     const partition = extendedPartition(command)
     if (Object.hasOwn(partitions, partition)) throw new Error('duplicate extended command partition')
     partitions[partition] = []
@@ -37,7 +36,7 @@ export function partitionAffectedCommands(commands, contract) {
     const key = JSON.stringify(command)
     if (seen.has(key)) throw new Error('affected validation selected a duplicate command')
     seen.add(key)
-    const partition = resolveCiCommandTimeoutMs(command, contract) > contract.ci_command_timeout_ms
+    const partition = Object.hasOwn(partitions, extendedPartition(command))
       ? extendedPartition(command) : 'standard'
     if (!Object.hasOwn(partitions, partition)) throw new Error('undeclared extended command partition')
     partitions[partition].push(command)

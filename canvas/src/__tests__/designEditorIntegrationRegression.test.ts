@@ -53,8 +53,6 @@ export function testImportUrlDesignSelectionActivatesSharedDesignSurface() {
   const importUrlItem = read('src/lib/toolbar/LaunchDropdownImportUrlItem.tsx')
   const importActions = read('src/features/markdown-workspace/useWorkspaceFileActions/importActions.ts')
   const fallbacks = read('src/features/toolbar/launchDropdownFallbacks.ts')
-  const deerflowAction = read('src/features/markdown-workspace/useWorkspaceFileActions/deerflowUrlImportAction.ts')
-  const deerflowImport = read('src/features/markdown-workspace/workspaceImport/deerflowUrlImport.ts')
   const rendererSelect = read('src/lib/toolbar/ImportUrlRendererSelect.tsx')
 
   if (!rendererSelect.includes("DESIGN_IMPORT_URL_RENDERER_SELECTION") || rendererSelect.includes("isWorkspaceUrlImportCanvasRendererId(value) ?")) {
@@ -64,13 +62,9 @@ export function testImportUrlDesignSelectionActivatesSharedDesignSurface() {
     ['LaunchDropdown URL item', importUrlItem],
     ['workspace import actions', importActions],
     ['launch fallback', fallbacks],
-    ['DeerFlow action', deerflowAction],
   ] as const) {
     if (!text.includes('activateDesignEditorSurface')) {
       throw new Error(`expected ${label} to activate the shared Design editor state for Design URL imports`)
     }
-  }
-  if (!deerflowImport.includes('getWorkspaceUrlImportCanvasPreset') || !deerflowImport.includes('buildWebpageWorkspaceEntryTextFromUpstreamMarkdown')) {
-    throw new Error('expected DeerFlow URL import to carry the same renderer preset frontmatter as regular Import URL')
   }
 }

@@ -1,3 +1,4 @@
+import { selectMenuOption } from './select-menu-option.mjs'
 import assert from 'node:assert/strict'
 
 export async function verifyFullCanvas(page) {
@@ -44,6 +45,8 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
 }
 
 async function configureWidget(frame, keyboard = false) {
+  // A saved/removed card can update before its asynchronous configuration close.
+  await frame.locator('section.kg-dashboard-widget-face[data-kg-widget-face="front"]').waitFor()
   if (keyboard) await frame.press('Enter')
   else await frame.click()
   assert.equal(await frame.getByRole('form', { name: 'Widget configuration' }).count(), 0, 'Selection must reveal actions, not configuration')
@@ -90,9 +93,9 @@ export async function verifyDashboardWidgets(page) {
   const templateBackSize = await templateFront.boundingBox()
   assert.equal(templateBackSize.width, templateSize.width)
   assert.equal(templateBackSize.height, templateSize.height, 'Flipping a template must preserve its dimensions')
-  await template.getByLabel('Widget', { exact: true }).selectOption('graph:node-types')
+  await selectMenuOption(template.getByLabel('Widget', { exact: true }), 'graph:node-types')
   await template.getByLabel('Title', { exact: true }).fill('My node types')
-  await template.getByLabel('Display', { exact: true }).selectOption('table')
+  await selectMenuOption(template.getByLabel('Display', { exact: true }), 'table')
   await template.getByRole('button', { name: 'Save widget', exact: true }).click()
   const card = dashboard.getByRole('group', { name: 'Dashboard card My node types', exact: true })
   await card.waitFor()
@@ -107,7 +110,7 @@ export async function verifyDashboardWidgets(page) {
   assert.equal(cardBackSize.height, cardSize.height, 'Flipping a placed card must preserve its dimensions')
   const back = dashboard.getByRole('form', { name: 'Widget configuration', exact: true })
   await back.getByLabel('Title', { exact: true }).fill('Node Types')
-  await back.getByLabel('Display', { exact: true }).selectOption('bar')
+  await selectMenuOption(back.getByLabel('Display', { exact: true }), 'bar')
   await back.getByRole('button', { name: 'Save widget', exact: true }).click()
   await dashboard.getByRole('group', { name: 'Dashboard card Node Types', exact: true }).waitFor()
   await page.getByRole('button', { name: 'Create Node', exact: true }).click()
@@ -118,13 +121,13 @@ export async function verifyDashboardWidgets(page) {
   const metricBackSize = await metricFrame.boundingBox()
   assert.equal(metricBackSize.width, metricSize.width)
   assert.equal(metricBackSize.height, metricSize.height, 'Compact metric backs must scroll within the original size')
-  await metric.getByLabel('Data source', { exact: true }).selectOption('graph:nodes')
+  await selectMenuOption(metric.getByLabel('Data source', { exact: true }), 'graph:nodes')
   await metric.getByLabel('Title', { exact: true }).fill('My metric')
   await metric.getByRole('button', { name: 'Add widget', exact: true }).click()
   await dashboard.getByRole('group', { name: 'Configure My metric', exact: true }).waitFor()
   assert.equal(await dashboard.locator('[data-kg-dashboard-metric]').count(), 6)
   await configureWidget(metricFrame)
-  await metric.getByLabel('Widget', { exact: true }).selectOption({ label: 'My metric' })
+  await selectMenuOption(metric.getByLabel('Widget', { exact: true }), { label: 'My metric' })
   await metric.getByRole('button', { name: 'Remove widget', exact: true }).click()
   await dashboard.getByRole('group', { name: 'Configure My metric', exact: true }).waitFor({ state: 'detached' })
   const source = await page.evaluate(async () => (await (await import('/src/features/workspace-fs/workspaceFs.ts')).getWorkspaceFs()).readFileText('/notes/dashboard.widgets.json'))

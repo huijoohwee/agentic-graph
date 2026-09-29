@@ -21,7 +21,7 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
   const denseFbfCssText = readSource('components', 'timeline', 'VideoSequenceTimelineDenseFbf.css')
   const rulerGeometryText = readSource('components', 'timeline', 'videoSequenceTimelineRulerGeometry.ts')
   const mermaidTransportCssText = readSource('components', 'timeline', 'TimelineTransportControlsMermaidGantt.css')
-  const transportCssText = readSource('components', 'timeline', 'TimelineTransportControls.css')
+  const transportCssText = ['TimelineTransportControls.css', 'TimelineTransportPlayer.css', 'TimelineTransportControlsMermaidGantt.css'].map(file => readSource('components', 'timeline', file)).join('\n')
   const timelineTransportText = readSource('components', 'timeline', 'timelineTransport.ts')
   const videoSequenceToolButtonText = readSource('components', 'timeline', 'VideoSequenceTimelineToolButton.tsx')
   const transportText = readSource('components', 'timeline', 'TimelineTransportControls.tsx')
@@ -107,7 +107,7 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
     '.timeline-transport-ruler--video-sequence .timeline-transport-ruler-tick',
     'height: 24px',
     'justify-content: flex-start',
-    'font-size: 8px',
+    'font-size: var(--kg-text-xs)',
     'font-variant-numeric: tabular-nums',
     '.timeline-transport-ruler--video-sequence .timeline-transport-ruler-tick-line',
     'height: 5px',
@@ -137,7 +137,7 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
     'transform: translateY(calc(var(--kg-video-sequence-sidebar-scroll-top, 0px) * -1))',
     '.timeline-video-sequence-ruler-content',
     'overflow: visible',
-    'border-bottom: 1px solid rgb(226 232 240 / 1)',
+    'border-bottom: var(--kg-surface-border)',
     'cursor: ew-resize',
     'pointer-events: auto',
     'touch-action: none',
@@ -148,7 +148,7 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
     'transform: translate(-50%, -50%)',
     '.timeline-video-sequence-ruler-playhead-marker',
     'padding-inline: 18px 12px',
-    'border-bottom: 1px solid rgb(203 213 225 / 0.34)',
+    'border-bottom: var(--kg-surface-border)',
     'margin-top: 0',
     '.timeline-video-sequence-ruler-surface',
   ], 'expected shared empty/source timeline visual style')
@@ -424,23 +424,21 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
   }
   expectSourceIncludes(mermaidTransportCssText, [
     '.timeline-transport-chrome--mermaid-gantt .timeline-player',
-    'height: var(--kg-main-toolbar-height, 38px)',
-    'flex: 0 0 26px',
+    'height: calc(var(--kg-control-height) + 8px)',
+    'flex: 0 0 var(--kg-control-height)',
     'isolation: isolate',
     'min-height: 100%',
     'gap: 0',
     'padding: 0',
-    'inset 0 -1px 0 color-mix(in srgb, var(--kg-border',
-    '.timeline-transport-chrome--mermaid-gantt[data-kg-video-sequence-timeline="source-backed"]',
-    '.timeline-transport-chrome--mermaid-gantt[data-kg-video-sequence-timeline="empty"]',
+    'box-shadow: none',
     'height: 100%',
-    'border-bottom: 1px solid var(--kg-border',
+    'border-bottom: var(--kg-surface-border)',
     '.timeline-transport-chrome--mermaid-gantt .timeline-transport-zoom-controls',
-    'height: 22px',
+    'height: var(--kg-control-height)',
     '.timeline-transport-chrome--mermaid-gantt .timeline-transport-zoom-label',
-    'flex: 0 0 28px',
+    'min-width: 0',
     '.timeline-transport-chrome--mermaid-gantt .timeline-video-sequence-tool-strip',
-    'border-inline: 1px solid color-mix(in srgb, var(--kg-border',
+    'border-inline: var(--kg-surface-border)',
     '.timeline-transport-chrome--mermaid-gantt .timeline-transport-header-tools',
     'justify-content: flex-start',
     '.timeline-transport-chrome--mermaid-gantt .timeline-transport-ruler-layout',

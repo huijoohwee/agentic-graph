@@ -63,13 +63,11 @@ import {
 import {
   getAgnesApiRowAnchorId,
   getBytePlusSharedTextApiRowAnchorId,
-  getDeerFlowApiRowAnchorId,
   getGoogleCloudApiRowAnchorId,
   getMiroMindApiRowAnchorId,
   getOpenAiChatApiRowAnchorId,
   getQwenApiRowAnchorId,
   getSealionApiRowAnchorId,
-  mapOpenAiRowKeyToDeerFlowRowKey,
 } from '@/features/panels/views/chatApiDocAnchors'
 import {
   inferTextGenerationProviderFamily,
@@ -182,7 +180,6 @@ export function resolveWidgetRegistryApiDocRef(args: {
     const isOpenAiCompatibleProvider =
       providerFamily === 'lmstudio-local'
       || providerFamily === 'openai'
-      || providerFamily === 'deerflow'
       || providerFamily === 'miromind'
       || providerFamily === 'agnes'
       || providerFamily === 'sealion'
@@ -193,9 +190,7 @@ export function resolveWidgetRegistryApiDocRef(args: {
       : resolveBytePlusTextWidgetSharedTextApiRowKey({ schemaPath, fieldKey, portKey })
     if (!rowKey) return null
     const normalizedRowKey =
-      providerFamily === 'deerflow'
-        ? mapOpenAiRowKeyToDeerFlowRowKey(rowKey)
-        : providerFamily === 'miromind' || providerFamily === 'agnes' || providerFamily === 'sealion' || providerFamily === 'qwen' || providerFamily === 'google-cloud'
+      providerFamily === 'miromind' || providerFamily === 'agnes' || providerFamily === 'sealion' || providerFamily === 'qwen' || providerFamily === 'google-cloud'
           ? mapOpenAiRowKeyToChatCompatibleProviderRowKey(rowKey, providerFamily)
           : rowKey
     if (!normalizedRowKey) return null
@@ -259,9 +254,7 @@ export function resolveWidgetRegistryMainPanelLink(args: {
       searchQuery: apiDocRef.rowKey,
       anchorId: providerFamily === 'openai' || providerFamily === 'lmstudio-local'
         ? getOpenAiChatApiRowAnchorId(apiDocRef.rowKey)
-        : providerFamily === 'deerflow'
-          ? getDeerFlowApiRowAnchorId(apiDocRef.rowKey)
-          : providerFamily === 'miromind'
+        : providerFamily === 'miromind'
             ? getMiroMindApiRowAnchorId(apiDocRef.rowKey)
             : providerFamily === 'agnes'
               ? getAgnesApiRowAnchorId(apiDocRef.rowKey)
@@ -499,7 +492,7 @@ export function buildTextGenerationRegistryDraft(args?: {
     formId: String(args?.formId || '').trim() || (providerFamily === 'byteplus' ? 'textGeneration' : `textGeneration.${providerFamily}`),
     fields: providerFamily === 'byteplus'
       ? buildBytePlusTextGenerationFields()
-      : buildOpenAiCompatibleTextGenerationFields({ providerFamily: providerFamily === 'deerflow' ? 'deerflow' : 'openai' }),
+      : buildOpenAiCompatibleTextGenerationFields(),
     ports: buildCommonTextGenerationPorts(),
     schemaMappings: [],
   }

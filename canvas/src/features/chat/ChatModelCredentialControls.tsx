@@ -96,8 +96,8 @@ export function ChatModelCredentialControls({
           aria-label={UI_COPY.chatModelSelectLabel}
           data-kg-chat-model-select="true"
           value={modelId}
-          onChange={event => {
-            const next = String(event.target.value || '').trim()
+          onValueChange={selectedValueInput => {
+            const next = String(selectedValueInput || '').trim()
             if (!next) return
             onModelChanged(next)
           }}
