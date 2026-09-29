@@ -48,7 +48,7 @@ export function AgenticRagNodeInspectorSection({
     s => s.uiPanelRowDensityCompactClass || 'py-0.5',
   )
   const inspectorPanelClassName = `mt-2 border ${UI_THEME_TOKENS.panel.border} rounded px-2 py-1`
-  const inspectorHeadingClassName = `${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} font-semibold uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`
+  const inspectorHeadingClassName = `${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} font-semibold uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`
   const inspectorMutedTextClassName = `${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.tertiary}`
   const inspectorBodyClassName = `text-xs ${UI_THEME_TOKENS.text.primary} space-y-1`
   const inspectorLabelClassName = UI_THEME_TOKENS.text.secondary

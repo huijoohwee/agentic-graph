@@ -32,17 +32,17 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--kg-text-primary, rgb(241 245 249 / 1));
-  font-size: 12px;
+  font-size: var(--kg-text-xs);
   font-weight: 700;
-  line-height: 16px;
+  line-height: var(--kg-text-xs-line);
 }
 .timeline-transport-chrome-subtitle {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--kg-text-secondary, rgb(148 163 184 / 1));
-  font-size: 11px;
-  line-height: 14px;
+  font-size: var(--kg-text-xs);
+  line-height: var(--kg-text-xs-line);
 }
 .timeline-transport-chrome-header-aside {
   min-width: 0;
@@ -174,7 +174,7 @@
   min-height: 30px;
   border-top: 1px solid var(--kg-border, rgb(51 65 85 / 1));
   color: var(--kg-text-tertiary, rgb(100 116 139 / 1));
-  font-size: 10px;
+  font-size: var(--kg-text-xs);
   line-height: 1;
   overflow: hidden;
 }
@@ -222,7 +222,7 @@
   justify-content: flex-end;
   gap: 2px;
   white-space: nowrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-family: var(--kg-font-mono);
   pointer-events: none;
 }
 .timeline-transport-ruler-tick-line {
@@ -373,9 +373,9 @@
   overflow: hidden;
   padding-inline: 3px;
   color: rgb(255 255 255 / 0.94);
-  font-size: 8px;
+  font-size: var(--kg-text-xs);
   font-weight: 700;
-  line-height: 12px;
+  line-height: var(--kg-text-xs-line);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -386,8 +386,8 @@
   min-width: max-content;
   transform: translateX(-50%);
   color: rgb(0 18 128 / 1);
-  font-size: 10px;
-  line-height: 12px;
+  font-size: var(--kg-text-xs);
+  line-height: var(--kg-text-xs-line);
 }
 .timeline-bottom-panel {
   background:
@@ -628,7 +628,7 @@
   flex: 1 1 auto;
   overflow: hidden;
   color: var(--kg-text-secondary, rgb(71 85 105 / 1));
-  font-size: 11px;
+  font-size: var(--kg-text-xs);
   line-height: 18px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -665,8 +665,8 @@
   align-items: center;
   gap: 5px;
   color: rgb(71 85 105 / 1);
-  font-size: 10px;
-  line-height: 16px;
+  font-size: var(--kg-text-xs);
+  line-height: var(--kg-text-xs-line);
 }
 .timeline-transport-export-session-detail,
 .timeline-transport-export-session-message {
@@ -848,7 +848,7 @@
   padding-inline: 18px 12px;
   border-bottom: 1px solid rgb(203 213 225 / 0.34);
   color: rgb(71 85 105 / 0.92);
-  font-size: 11px;
+  font-size: var(--kg-text-xs);
   font-weight: 700;
   line-height: var(--kg-video-sequence-lane-height);
   text-transform: uppercase;

@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.2.0"
+version: "1.3.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -176,3 +176,48 @@ also use the shared row primitive directly, without a rich Markdown dependency.
 GTM and rollback: Consistent controls reduce re-learning between panel surfaces.
 Keep the free/offline local workflow. Revert this successor commit to restore the
 previous presentation; workspace data and saved document content are unchanged.
+
+
+## Application typography — dashboard reference
+
+PRD: All application chrome uses the Markdown dashboard reference: system sans,
+12/16 px supporting text, 14/20 px controls, 14/21 px prose, 16/24 px section
+headings and 30/36 px dashboard titles. Keep semantic heading levels and code
+monospace. Operators must not encounter another tiny-label or font-stack variant
+when switching MainPanel, FloatingPanel, BottomPanel, Explorer or editor surfaces.
+
+TAD/ADR: `grph-shared/src/ui/typography.ts` owns font stacks and the text scale.
+The existing token generator emits CSS variables; Tailwind theme utilities, base
+styles, panel preferences, canvas measurement and exported viewers consume them.
+Markdown heading pixel measurements derive from the same utility scale. Persisted
+8–12 px arbitrary micro classes migrate idempotently to `text-xs`. Explicit other
+user typography preferences remain supported. No new dependency, network font,
+runtime stylesheet overlay, site-specific rule or eager feature loading is added.
+Imported document CSS and world-space/media geometry remain source data; application
+font defaults in those renderers still use the shared font owner.
+
+The source guard traverses Canvas, grph-shared and gympgrph production TS/TSX/MJS/CSS
+and rejects arbitrary numeric text utilities, custom letter spacing, duplicated
+font stacks and CSS labels below the shared caption size. Generated typography is
+checked against its source. Tests also parse exported SVG and check DOM/canvas
+heading parity and migration of saved preferences. Existing typography integration
+checks retain configurable fonts and nonlegacy sizes.
+
+MVP: 300-module ceiling; the initial 200 KB edit estimate expanded to a 650 KB patch
+budget after the traversal found long generated-viewer literals and 269 affected
+consumers. New shared owner is under 100 lines and needs no separate loaded chunk.
+Implementation and review are followed by live desktop/mobile measurements and the
+native affected checks. Focused evidence is not a claim of every possible UI state.
+
+GTM/rollback: This is a free, local/offline usability improvement. Publish the native
+review candidate, retaining the running checkout for live review. Deployment and
+protected integration need their own native authority. Revert the typography
+revision as one unit so the shared owner, generated CSS and consumers stay paired.
+
+Observed follow-up evidence: 10 focused cases passed, including actual SVG XML
+parsing and the existing MainPanel/inspector/table/widget preference integrations.
+Live dashboard retains 12/16, 14/21, 16/24 and 30/36 px reference roles. Twelve
+MainPanel tabs inherit the system sans / 14 px baseline; populated tabs expose
+12/14 px text with zero horizontal overflow. Mobile Settings at 390 × 844 stays
+within x=17..373 and has zero horizontal content overflow. The native affected
+receipt remains the authority for the final committed source revision.

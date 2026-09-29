@@ -189,15 +189,15 @@ export default function DatasetInspectorSection({
           ].join(' ')}
         >
           <section className="flex flex-col">
-            <span className={`uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`}>Nodes</span>
+            <span className={`uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`}>Nodes</span>
             <span className="font-semibold">{String(datasetStats.nodeCount)}</span>
           </section>
           <section className="flex flex-col">
-            <span className={`uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`}>Edges</span>
+            <span className={`uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`}>Edges</span>
             <span className="font-semibold">{String(datasetStats.edgeCount)}</span>
           </section>
           <section className="flex flex-col">
-            <span className={`uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`}>Distinct relationships</span>
+            <span className={`uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`}>Distinct relationships</span>
             <span className="font-semibold">{String(datasetStats.distinctTriples)}</span>
           </section>
         </section>

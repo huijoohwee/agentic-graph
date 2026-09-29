@@ -167,10 +167,10 @@
   min-width: 28px;
   justify-content: center;
   color: var(--kg-text-tertiary, rgb(107 114 128 / 1));
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-  font-size: 9px;
+  font-family: var(--kg-font-mono);
+  font-size: var(--kg-text-xs);
   font-variant-numeric: tabular-nums;
-  line-height: 14px;
+  line-height: var(--kg-text-xs-line);
 }
 
 .timeline-transport-chrome--mermaid-gantt .timeline-video-sequence-tool-strip button:hover:not(:disabled),
@@ -364,7 +364,7 @@
   border-right: 1px solid color-mix(in srgb, var(--kg-border, #e5e7eb) 72%, transparent);
   padding: 6px 12px;
   color: color-mix(in srgb, var(--kg-text-secondary, #475569) 86%, transparent);
-  font-size: 11px;
+  font-size: var(--kg-text-xs);
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -449,9 +449,9 @@
   border-radius: 4px;
   background: color-mix(in srgb, var(--kg-panel-bg, #fff) 86%, transparent);
   color: color-mix(in srgb, var(--kg-timeline-inline-clip-accent) 76%, var(--kg-text-primary, #0f172a) 24%);
-  font-size: 9px;
+  font-size: var(--kg-text-xs);
   font-weight: 700;
-  line-height: 16px;
+  line-height: var(--kg-text-xs-line);
   padding-inline: 5px;
 }
 
@@ -517,9 +517,9 @@
 .timeline-video-sequence-lane-label {
   justify-content: flex-start;
   color: color-mix(in srgb, var(--kg-text-secondary, #475569) 86%, transparent);
-  font-size: 11px;
+  font-size: var(--kg-text-xs);
   font-weight: 700;
-  letter-spacing: 0;
+  letter-spacing: normal;
 }
 
 .timeline-transport-chrome--mermaid-gantt .timeline-video-sequence-ruler-surface {

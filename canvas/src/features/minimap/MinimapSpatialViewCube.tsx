@@ -16,7 +16,7 @@ export function MinimapSpatialViewCube() {
       aria-label="Minimap XR spatial view cube"
       data-kg-minimap-xr-view-cube="1"
       data-kg-minimap-xr-view-cube-axis={spatialAxis}
-      className="kg-minimap-root kg-minimap-xr-view-cube grid size-[92px] place-items-center rounded-md border border-sky-400/60 bg-slate-950/36 text-[10px] font-bold text-white shadow-lg backdrop-blur"
+      className="kg-minimap-root kg-minimap-xr-view-cube grid size-[92px] place-items-center rounded-md border border-sky-400/60 bg-slate-950/36 text-xs font-bold text-white shadow-lg backdrop-blur"
     >
       <svg viewBox="0 0 92 92" role="img" aria-label="Minimap XR spatial view cube guide" className="absolute inset-0 h-full w-full" data-kg-minimap-xr-view-cube-guide="1">
         <line x1="42" y1="45" x2="68" y2="34" stroke="#fb7185" strokeWidth="2.2" strokeLinecap="round" />

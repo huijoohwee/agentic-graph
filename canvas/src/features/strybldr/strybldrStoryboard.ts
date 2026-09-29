@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import { hashText } from '@/features/parsers/hash'
 import type { CorpusSourceUnit } from '@/features/queryable-corpus/corpusGraph'
 import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
@@ -131,10 +132,10 @@ export const buildStrybldrLocalImageDataUri = (args: {
     '<defs>',
     '<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8fafc"/><stop offset="0.55" stop-color="#dbeafe"/><stop offset="1" stop-color="#fef3c7"/></linearGradient>',
     '<style>',
-    '.eyebrow{font:700 24px Inter,Arial,sans-serif;letter-spacing:0;fill:#475569}',
-    '.title{font:800 42px Inter,Arial,sans-serif;letter-spacing:0;fill:#0f172a}',
-    '.body{font:500 27px Inter,Arial,sans-serif;letter-spacing:0;fill:#1f2937}',
-    '.meta{font:600 21px Inter,Arial,sans-serif;letter-spacing:0;fill:#475569}',
+    `.eyebrow{font:700 24px ${UI_FONT_SANS};letter-spacing:0;fill:#475569}`,
+    `.title{font:800 42px ${UI_FONT_SANS};letter-spacing:0;fill:#0f172a}`,
+    `.body{font:500 27px ${UI_FONT_SANS};letter-spacing:0;fill:#1f2937}`,
+    `.meta{font:600 21px ${UI_FONT_SANS};letter-spacing:0;fill:#475569}`,
     '</style>',
     '</defs>',
     '<rect width="1280" height="720" fill="url(#bg)"/>',
@@ -980,7 +981,7 @@ const isExplainerVideoXrMode = (doc: StrybldrStoryboardDocument): boolean => cle
 const buildExplainerPanelSrcDoc = (title: string, text: string): string => {
   const safeTitle = htmlAttr(title || 'Explainer')
   const safeText = htmlAttr(text || '')
-  return `<article style="font:14px/1.5 system-ui,sans-serif;padding:20px;color:#17202a"><h1 style="font-size:20px;margin:0 0 12px">${safeTitle}</h1><pre style="white-space:pre-wrap;margin:0">${safeText}</pre></article>`
+  return `<article style="font:14px/1.5 ${UI_FONT_SANS};padding:20px;color:#17202a"><h1 style="font-size:20px;margin:0 0 12px">${safeTitle}</h1><pre style="white-space:pre-wrap;margin:0">${safeText}</pre></article>`
 }
 
 type StrytreeNodeRuntime = {
@@ -2111,7 +2112,7 @@ export const buildStrybldrLocalAnimaticHtml = (handoff: Pick<StrybldrVideoHandof
     '<title>Strybldr Local Generated Video</title>',
     '<style>',
     ':root{color-scheme:light;--ink:#172033;--muted:#5f6675;--line:#d7dde8;--paper:#f8fafc;--accent:#0f766e;--warm:#f59e0b}',
-    '*{box-sizing:border-box}body{margin:0;background:#e5e7eb;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink)}',
+    `*{box-sizing:border-box}body{margin:0;background:#e5e7eb;font-family:${UI_FONT_SANS};color:var(--ink)}`,
     '.kg-stage{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 34%;gap:28px;min-height:100vh;padding:34px;background:linear-gradient(135deg,#f8fafc 0%,#eef2ff 48%,#ecfdf5 100%);overflow:hidden}',
     '.kg-slides{position:relative;min-height:520px;border:1px solid var(--line);background:rgba(255,255,255,.82);box-shadow:0 18px 42px rgba(15,23,42,.14);overflow:hidden}',
     '.kg-slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:56px;opacity:0;transform:translateX(5%) scale(.98);animation:kgSlide var(--duration) linear infinite}',

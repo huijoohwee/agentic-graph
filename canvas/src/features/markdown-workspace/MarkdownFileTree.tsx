@@ -176,13 +176,13 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     if (isRoot && node.children.length === 0) {
       return (
         <section key={entry.path} className={`px-2 py-2 ${panelTypography.panelTextClass} ${UI_THEME_TOKENS.text.secondary}`} aria-label="Workspace help">
-          <h3 className={`${panelTypography.microLabelClass} font-semibold tracking-wide uppercase ${UI_THEME_TOKENS.text.secondary}`}>Workspace</h3>
+          <h3 className={`${panelTypography.microLabelClass} font-semibold tracking-normal uppercase ${UI_THEME_TOKENS.text.secondary}`}>Workspace</h3>
           <ul className="mt-1 list-disc pl-5">
             <li>Select a file in SOURCE FILES to load it into the editor.</li>
             <li>Headings show up in TOC.</li>
             <li>Wikilinks like <span className={UI_THEME_TOKENS.text.primary}>[[SomePage]]</span> create backlinks.</li>
           </ul>
-          <h4 className={`mt-2 ${panelTypography.microLabelClass} font-semibold tracking-wide uppercase ${UI_THEME_TOKENS.text.secondary}`}>Notes</h4>
+          <h4 className={`mt-2 ${panelTypography.microLabelClass} font-semibold tracking-normal uppercase ${UI_THEME_TOKENS.text.secondary}`}>Notes</h4>
           <p className="mt-1">This workspace is stored locally in your browser.</p>
         </section>
       )

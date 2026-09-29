@@ -18,7 +18,7 @@ export function uiMenuItemButtonClassName(variant: UiMenuButtonVariant, extra?: 
 }
 
 export function uiMenuPillButtonClassName(selected: boolean, extra?: string): string {
-  const base = 'text-[10px] px-2 py-1 rounded border'
+  const base = 'text-xs px-2 py-1 rounded border'
   if (selected) {
     return cn(base, UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeBorder, UI_THEME_TOKENS.button.activeText, extra)
   }

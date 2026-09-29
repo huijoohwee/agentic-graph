@@ -302,7 +302,7 @@ export function StoryboardEdgeNodeInsertionMenu(props: {
             zIndex: Z_INDEX_MENU,
           }}
         >
-          <header className={`px-2 py-1 text-[11px] font-semibold ${UI_THEME_TOKENS.text.tertiary}`}>Add node</header>
+          <header className={`px-2 py-1 text-xs font-semibold ${UI_THEME_TOKENS.text.tertiary}`}>Add node</header>
           {STORYBOARD_EDGE_INSERTION_OPTIONS.map(option => {
             const Icon = ICON_BY_KIND[option.kind]
             return (

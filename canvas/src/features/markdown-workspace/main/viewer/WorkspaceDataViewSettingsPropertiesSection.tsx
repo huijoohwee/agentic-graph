@@ -224,7 +224,7 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
                   <section className={['text-xs font-medium', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.primary].join(' ')}>
                     {column.name}
                   </section>
-                  <section className={['text-[10px]', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>
+                  <section className={['text-xs', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>
                     {column.kind}
                   </section>
                 </section>
@@ -256,7 +256,7 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
                   <section className={['text-xs font-medium', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.tertiary].join(' ')}>
                     {column.name}
                   </section>
-                  <section className={['text-[10px]', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>
+                  <section className={['text-xs', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>
                     {column.kind}
                   </section>
                 </section>

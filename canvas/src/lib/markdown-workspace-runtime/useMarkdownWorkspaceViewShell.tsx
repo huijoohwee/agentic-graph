@@ -119,7 +119,7 @@ export function useMarkdownWorkspaceViewShell(args: {
         if (summary) {
           return (
             <span
-              className="inline-flex items-center rounded border border-amber-300/70 bg-amber-500/10 px-1.5 py-0.5 text-[10px] leading-none text-amber-700"
+              className="inline-flex items-center rounded border border-amber-300/70 bg-amber-500/10 px-1.5 py-0.5 text-xs leading-none text-amber-700"
               aria-label={`Frontmatter warning in ${renderArgs.entry.name}`}
               title={summary}
             >

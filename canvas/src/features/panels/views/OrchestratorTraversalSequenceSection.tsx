@@ -71,7 +71,7 @@ export function TraversalSequenceSection({
           >
             <section
               className={[
-                `flex items-center gap-1 font-semibold uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`,
+                `flex items-center gap-1 font-semibold uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`,
                 uiPanelKeyValueTextSizeClass,
                 uiPanelTextFontClass,
               ].join(' ')}

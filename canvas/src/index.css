@@ -16,10 +16,16 @@
 @import './styles/page-responsive.css';
 @import './styles/markdown-media-responsive.css'; @import './styles/markdown-data-view-table.css';
 @import './styles/aie-book-demo-responsive.css';
+@layer base {
+  body { font-size: var(--kg-text-sm); }
+  h3, h4 { font-size: var(--kg-text-base); line-height: var(--kg-text-base-line); }
+}
+
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-family: var(--kg-font-sans);
   line-height: 1.5;
   font-weight: 400;
+  letter-spacing: normal;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -587,7 +593,7 @@ html, body, #root {
     align-items: center;
     justify-content: space-between;
     padding: 0.5rem 1rem;
-    font-size: 0.75rem;
+    font-size: var(--kg-text-xs);
     color: var(--kg-statusbar-text);
     background-color: var(--kg-statusbar-bg);
     border-top: 1px solid var(--island-border-color);
@@ -598,7 +604,7 @@ html, body, #root {
     border: 1px solid var(--island-border-color);
     border-radius: 0.5rem;
     box-shadow: 0 1px 2px rgba(0,0,0,0.08);
-    font-size: 0.875rem;
+    font-size: var(--kg-text-sm);
     z-index: 20;
   }
 

@@ -517,6 +517,11 @@
       "types": "./dist/spatial-review/index.d.ts",
       "import": "./dist/spatial-review/index.js",
       "default": "./dist/spatial-review/index.js"
+    },
+    "./ui/typography": {
+      "types": "./dist/ui/typography.d.ts",
+      "import": "./dist/ui/typography.js",
+      "default": "./dist/ui/typography.js"
     }
   },
   "files": [

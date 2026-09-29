@@ -40,8 +40,8 @@ function CommandPrefixType({
       title={title}
     >
       <Icon className={cn('h-3.5 w-3.5 shrink-0', UI_THEME_TOKENS.text.secondary)} strokeWidth={1.7} aria-hidden />
-      <span className="shrink-0 font-mono text-[11px]">{label}</span>
-      <span className={cn('min-w-0 truncate text-[11px]', UI_THEME_TOKENS.text.tertiary)}>{title}</span>
+      <span className="shrink-0 font-mono text-xs">{label}</span>
+      <span className={cn('min-w-0 truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{title}</span>
     </span>
   )
 }
@@ -75,14 +75,14 @@ function CommandCatalogRow({
             <span className={cn('truncate font-semibold', action.danger ? 'text-red-600 dark:text-red-300' : UI_THEME_TOKENS.text.primary)}>
               {action.label}
             </span>
-            <span className={cn('truncate font-mono text-[11px] font-normal', UI_THEME_TOKENS.text.tertiary)}>{action.id}</span>
+            <span className={cn('truncate font-mono text-xs font-normal', UI_THEME_TOKENS.text.tertiary)}>{action.id}</span>
           </span>
         )}
         typeNode={<CommandPrefixType Icon={Icon} label={prefix} title={title} />}
         valueNode={(
           <span className="flex min-w-0 flex-col leading-4">
-            <span className={cn('truncate text-[11px]', UI_THEME_TOKENS.text.secondary)}>{action.group}</span>
-            <span className={cn('truncate text-[11px]', UI_THEME_TOKENS.text.tertiary)} title={action.description}>
+            <span className={cn('truncate text-xs', UI_THEME_TOKENS.text.secondary)}>{action.group}</span>
+            <span className={cn('truncate text-xs', UI_THEME_TOKENS.text.tertiary)} title={action.description}>
               {action.description}
             </span>
           </span>
@@ -110,7 +110,7 @@ export function CommandMenuReferenceCatalog({
       <header className={cn('mb-1 flex items-center justify-between gap-2 px-1 py-1', compactHeader ? '' : UI_THEME_TOKENS.panel.bg)}>
         <section className="min-w-0">
           <h2 className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>{title}</h2>
-          <p className={cn('truncate text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{subtitle}</p>
+          <p className={cn('truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{subtitle}</p>
         </section>
         <section className="flex shrink-0 items-center gap-1" aria-label="Command prefixes">
           {commandMenuCatalogGroups.map(group => (

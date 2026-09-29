@@ -200,7 +200,7 @@ export function DocumentVersionGitGraphPanel({
             </span>
             <span className={UI_THEME_TOKENS.text.tertiary}>{formatTimestamp(selectedVersion.timestamp)}</span>
           </header>
-          <pre className={`whitespace-pre-wrap break-words px-3 pb-2 font-mono text-[11px] leading-4 ${UI_THEME_TOKENS.text.primary}`}>
+          <pre className={`whitespace-pre-wrap break-words px-3 pb-2 font-mono text-xs leading-4 ${UI_THEME_TOKENS.text.primary}`}>
             {selectedPatchText}
           </pre>
         </section>

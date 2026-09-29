@@ -191,7 +191,7 @@ export default function DesignDomTreePanel({ active }: { active: boolean }) {
     <section className={cn(UI_RESPONSIVE_FLOATING_PANEL_SUBPANEL_CLASSNAME, UI_THEME_TOKENS.panel.bg)} aria-label="DOM Tree" data-main-panel-no-drag="true">
       <section className={cn(UI_RESPONSIVE_DESIGN_PANEL_HEADER_ROW_CLASSNAME, UI_THEME_TOKENS.panel.border)} aria-label="DOM Tree header">
         <span className={cn('min-w-0 truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>DOM Tree</span>
-        <span className={cn('text-[10px] font-mono', UI_THEME_TOKENS.text.tertiary)}>
+        <span className={cn('text-xs font-mono', UI_THEME_TOKENS.text.tertiary)}>
           {hasLayout ? Object.keys(designRendererGraphNodesById || {}).length : 0}
         </span>
         <button
@@ -227,7 +227,7 @@ export default function DesignDomTreePanel({ active }: { active: boolean }) {
 
           <section className={cn(UI_RESPONSIVE_DESIGN_PANEL_CONTENT_CLASSNAME, panelTypography.fontClass)} aria-label="DOM tree content">
             {visibleIds.length === 0 ? (
-              <span className={cn(UI_RESPONSIVE_DESIGN_PANEL_EMPTY_ROW_CLASSNAME, 'text-[10px]', UI_THEME_TOKENS.text.tertiary)}>No matches.</span>
+              <span className={cn(UI_RESPONSIVE_DESIGN_PANEL_EMPTY_ROW_CLASSNAME, 'text-xs', UI_THEME_TOKENS.text.tertiary)}>No matches.</span>
             ) : (
               <ul className="m-0 p-0 list-none" aria-label="DOM nodes">
                 {visibleIds.map(({ id, depth }) => {
@@ -271,7 +271,7 @@ export default function DesignDomTreePanel({ active }: { active: boolean }) {
                           disabled={!active}
                         >
                           <span className={cn('block min-w-0 truncate text-xs font-semibold')}>{n.label}</span>
-                          <span className={cn('block min-w-0 truncate text-[10px] font-mono', UI_THEME_TOKENS.text.tertiary)}>
+                          <span className={cn('block min-w-0 truncate text-xs font-mono', UI_THEME_TOKENS.text.tertiary)}>
                             {n.tag ? `${n.tag} · ${n.id}` : n.id}
                           </span>
                         </button>

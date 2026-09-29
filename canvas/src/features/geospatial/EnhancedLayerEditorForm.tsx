@@ -42,9 +42,9 @@ function EditorField(props: {
         'aria-describedby': props.error ? errorId : undefined,
       })}
       {props.error ? (
-        <span id={errorId} className="text-[11px] text-red-600" role="alert">{props.error}</span>
+        <span id={errorId} className="text-xs text-red-600" role="alert">{props.error}</span>
       ) : props.hint ? (
-        <span className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{props.hint}</span>
+        <span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>{props.hint}</span>
       ) : null}
     </label>
   )
@@ -110,7 +110,7 @@ export function EnhancedLayerEditorForm(props: EnhancedLayerEditorFormProps) {
     >
       <header className="grid gap-0.5">
         <strong className="text-xs">{props.editingId ? `Edit ${props.editingId}` : 'Add enhanced layer'}</strong>
-        <span className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+        <span className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
           Configuration stays in this browser and updates the mounted map without reload.
         </span>
       </header>

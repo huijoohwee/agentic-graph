@@ -17,7 +17,7 @@ const sanitizeId = (raw: string): string => {
 }
 
 const SAFE_SVG_FALLBACK_STYLE_SENTINEL = 'kg:style:svg-fallback'
-const geoJsonOverlayBadgeClassName = `absolute bottom-2 right-2 z-20 pointer-events-none px-2 py-1 rounded-md text-[11px] ${UI_THEME_TOKENS.text.secondary} ${UI_THEME_TOKENS.panel.overlayBg} border ${UI_THEME_TOKENS.panel.border}`
+const geoJsonOverlayBadgeClassName = `absolute bottom-2 right-2 z-20 pointer-events-none px-2 py-1 rounded-md text-xs ${UI_THEME_TOKENS.text.secondary} ${UI_THEME_TOKENS.panel.overlayBg} border ${UI_THEME_TOKENS.panel.border}`
 
 function GeoJsonSvgPreview(args: {
   fc: MarkdownGeoParsedFeatureCollection

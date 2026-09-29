@@ -46,10 +46,10 @@ export function StrybldrCameraOpticsSection({ settings, onSettingsChange }: Stry
       data-kg-camera-optics={formatCameraOptics(settings)}
     >
       <header className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.12em]">
+        <span className="flex items-center gap-1 text-xs font-black uppercase tracking-normal">
           <Aperture className="size-3.5" aria-hidden /> Real optics
         </span>
-        <span className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Camera-owned · keyframable</span>
+        <span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Camera-owned · keyframable</span>
       </header>
 
       <section className="grid grid-cols-2 gap-2">
@@ -88,7 +88,7 @@ export function StrybldrCameraOpticsSection({ settings, onSettingsChange }: Stry
               onChange={event => update({ focalLengthMm: Number(event.target.value) })}
               data-kg-strybldr-camera-lens="1"
             />
-            <span className={cn('text-[9px] font-semibold', UI_THEME_TOKENS.text.tertiary)}>mm</span>
+            <span className={cn('text-xs font-semibold', UI_THEME_TOKENS.text.tertiary)}>mm</span>
             <datalist id={lensListId}>{CAMERA_PRIME_FOCAL_LENGTHS_MM.map(value => <option key={value} value={value} />)}</datalist>
           </section>
         </PanelField>
@@ -104,12 +104,12 @@ export function StrybldrCameraOpticsSection({ settings, onSettingsChange }: Stry
               onChange={event => update({ focusDistanceMeters: Number(event.target.value) })}
               data-kg-camera-focus-distance="1"
             />
-            <span className={cn('text-[9px] font-semibold', UI_THEME_TOKENS.text.tertiary)}>m</span>
+            <span className={cn('text-xs font-semibold', UI_THEME_TOKENS.text.tertiary)}>m</span>
           </section>
         </PanelField>
       </section>
 
-      <output className={cn('grid gap-0.5 text-[9px]', UI_THEME_TOKENS.text.tertiary)} data-kg-camera-optics-readout="1">
+      <output className={cn('grid gap-0.5 text-xs', UI_THEME_TOKENS.text.tertiary)} data-kg-camera-optics-readout="1">
         <span>{sensor.widthMm} × {sensor.heightMm}mm · {horizontalFov.toFixed(1)}° H × {verticalFov.toFixed(1)}° V</span>
         <span>{equivalentFocalLength}mm horizontal Full Frame equivalent</span>
         <span>Lens zoom and rack focus interpolate between Camera marks; aspect cuts at the mark.</span>

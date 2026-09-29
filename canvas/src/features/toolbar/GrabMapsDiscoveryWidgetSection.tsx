@@ -256,7 +256,7 @@ async function planOperations(args: {
 export function GrabMapsDiscoveryWidgetSection(): React.ReactElement {
   const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || 'text-xs')
   const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || 'font-sans')
-  const uiPanelMicroLabelTextSizeClass = useGraphStore(s => s.uiPanelMicroLabelTextSizeClass || 'text-[10px]')
+  const uiPanelMicroLabelTextSizeClass = useGraphStore(s => s.uiPanelMicroLabelTextSizeClass || 'text-xs')
   const grabMapsAuthMode = useGraphStore(s => s.grabMapsAuthMode)
   const grabMapsApiKey = useGraphStore(s => s.grabMapsApiKey)
   const chatAuthMode = useGraphStore(s => (s.chatAuthMode === 'byok' ? 'byok' : 'serverManaged'))

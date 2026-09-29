@@ -15,14 +15,14 @@
 
 .xr-camera-motion-retime-lane-label b {
   overflow: hidden;
-  font-size: 9px;
+  font-size: var(--kg-text-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .xr-camera-motion-retime-lane-label small {
   color: var(--kg-text-tertiary, #64748b);
-  font-size: 8px;
+  font-size: var(--kg-text-xs);
 }
 
 .xr-shot-target-lane-label {
@@ -128,7 +128,7 @@
 .xr-shot-target-timeline-bar span {
   display: block;
   overflow: hidden;
-  font-size: 8px;
+  font-size: var(--kg-text-xs);
   font-weight: 700;
   opacity: 0.72;
   text-overflow: ellipsis;
@@ -177,7 +177,7 @@
   border-radius: 5px;
   background: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 10%, var(--kg-panel-bg, #fff));
   color: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 82%, var(--kg-text-primary, #0f172a));
-  font-size: 9px;
+  font-size: var(--kg-text-xs);
   font-weight: 800;
   line-height: 18px;
   padding-inline: 6px;
@@ -190,7 +190,7 @@
   min-width: max-content;
   align-items: center;
   gap: 4px;
-  font-size: 9px;
+  font-size: var(--kg-text-xs);
 }
 
 .xr-timeline-scene-stage-control {
@@ -242,7 +242,7 @@
 .xr-timeline-scene-stage-select {
   width: clamp(92px, 14vw, 156px);
   height: 20px;
-  font-size: 9px;
+  font-size: var(--kg-text-xs);
   font-weight: 700;
 }
 
@@ -256,7 +256,7 @@
   min-width: 148px;
   max-width: 36%;
   overflow: hidden;
-  font-size: 8px;
+  font-size: var(--kg-text-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -311,15 +311,15 @@
 
 .xr-camera-motion-retime-lane-mark > span {
   display: grid;
-  width: 14px;
-  height: 14px;
+  min-width: 20px;
+  height: 20px;
   place-items: center;
   border: 1px solid rgb(255 255 255 / 0.92);
   border-radius: 999px;
   background: var(--kg-xr-ruler-mark-color, rgb(8 145 178));
   box-shadow: 0 1px 3px rgb(15 23 42 / 0.22);
   color: white;
-  font-size: 7px;
+  font-size: var(--kg-text-xs);
   font-weight: 800;
   line-height: 1;
 }
@@ -330,7 +330,7 @@
   left: 14px;
   transform: translateY(-50%);
   color: var(--kg-text-tertiary, #64748b);
-  font-size: 8px;
+  font-size: var(--kg-text-xs);
 }
 
 .xr-camera-motion-retime-lane-mark[aria-pressed="true"] {
@@ -379,7 +379,7 @@
   max-width: 76px;
   overflow: hidden;
   color: var(--kg-text-secondary, #475569);
-  font-size: 9px;
+  font-size: var(--kg-text-xs);
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
