@@ -21,7 +21,7 @@ import { numberLabel, record, workflowSourceLink, type TraceSpan } from './missi
 import { AgentMissionCodebaseGraphButton } from './agentMissionSourceFiles'
 
 const GraphInspection = React.lazy(() => import('@/components/GraphCanvas/GraphCanvasInspection'))
-const button = `rounded border px-3 py-2 text-xs disabled:opacity-50 ${UI_THEME_TOKENS.button.neutralMuted}`
+const button = `${UI_THEME_TOKENS.control.singleLine} inline-block rounded border text-xs disabled:opacity-50 ${UI_THEME_TOKENS.button.neutralMuted}`
 
 
 function CodebaseExplorer({ codebase, span, retainedGraph, onClear }: { codebase: MissionCodebaseIndex; span: TraceSpan | null; retainedGraph?: GraphData; onClear?: () => void }) {
@@ -122,13 +122,13 @@ export default function AgentMissionOverview({ children, retained, retainedSpanI
         <p className="text-xs text-sky-500">01 · INDEX</p><h4 className="font-semibold">{data ? model.sources : 'No linked'} sources</h4>
         <p className="py-1 text-xs">{data ? `${model.nodes} nodes · ${model.edges} relationships` : codebase.error || 'Load a retained native Codebase graph index.'}</p>
         {data && <p className="pb-2 text-xs">{model.complete ? 'Complete admitted-source index' : 'Partial index'} · {model.parsed} parsed · {model.reused} reused</p>}
-        <button className={button} disabled={!data} onClick={() => openFile(`${files.root}/codebase-index.manifest.json`)}>Index manifest</button>
+        <button className={button} title="Index manifest" disabled={!data} onClick={() => openFile(`${files.root}/codebase-index.manifest.json`)}>Index manifest</button>
       </li>
       <li className="min-w-0 rounded border border-violet-500/40 p-3">
         <p className="text-xs text-violet-500">02 · TRAVERSE & CONTEXTUALIZE</p><h4 className="font-semibold">Source knowledge graph</h4>
         <p className="py-1 text-xs">{data ? `${model.loadedNodes} nodes · ${model.loadedEdges} links in D3${model.truncated ? ' · Bounded projection' : ''}` : 'No graph projection available'}</p>
         <p className="pb-2 text-xs">Select nodes and follow source-backed relationship explanations.</p>
-        <button className={button} disabled={!data} aria-expanded={exploring} onClick={() => setExploring(value => !value)}>{exploring ? 'Hide codebase explorer' : 'Explore codebase · D3'}</button>
+        <button className={button} title="Index manifest" disabled={!data} aria-expanded={exploring} onClick={() => setExploring(value => !value)}>{exploring ? 'Hide codebase explorer' : 'Explore codebase · D3'}</button>
       </li>
       <li className="min-w-0 rounded border border-emerald-500/40 p-3">
         <p className="text-xs text-emerald-500">03 · OBSERVE & EVALUATE</p><h4 className="font-semibold">{trace.status} · {model.evaluation}</h4>

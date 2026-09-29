@@ -51,7 +51,13 @@ export function resolveThemeColors(): ThemeColors {
   }
 }
 
+const CONTROL_HEIGHT_CLASS_NAME = 'h-[var(--kg-control-height,28px)]'
+
 export const UI_THEME_TOKENS = {
+  control: {
+    height: CONTROL_HEIGHT_CLASS_NAME,
+    singleLine: `${CONTROL_HEIGHT_CLASS_NAME} box-border min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-2 py-0`,
+  },
   button: {
     text: 'text-[color:var(--kg-text-secondary)]',
     hoverText: 'hover:text-[color:var(--kg-text-primary)]',

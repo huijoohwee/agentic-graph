@@ -268,3 +268,29 @@ the theme, determinism, size-limit or byte-parity assertions.
 GTM/rollback: Improve consistency in the existing free local workflow. No measured
 usability or revenue claim. Revert this correction to restore the preceding role
 assignments; no data or preference migration is introduced.
+
+## Reference control height and overflow
+
+PRD: Dashboard actions, the run inspection selector, metric group, search field,
+and Geo actions share the reference control height. Long labels stay on one line
+and use ellipsis inside their available width; semantic names remain complete.
+
+TAD/ADR: The existing `--kg-control-height` token (28 px) owns height. Shared theme
+control classes supply the single-line box, zero vertical padding, width bounds
+and ellipsis. Mission overview, run inspection and Geo consume that owner instead
+of separate `h-9`, padding-derived heights or wrapping minimum heights. Metric
+segments shrink with their group and truncate their labels with full accessible
+names and hover text. Inputs and native selects retain their existing handlers.
+
+MVP/evidence: Seven modules, below the 10-module / 40 KB cap. GitHub's reference
+button measures 28 px. Live dashboard actions, selector, search and metric group
+also measure 28 px. At 390 px viewport width the metric group has equal client and
+scroll widths (314 px). At 1113 px the Geo location button remains 28 px high,
+ellipsizes its full label, and its value cell has equal client and scroll widths
+(135 px). View switching, metric toggling, search and whole-run selection work.
+Canvas checks, both shared package builds and the Geo composition check pass.
+The native affected receipt binds broader validation to the committed candidate.
+
+GTM/rollback: This improves the existing free local interface without adding a
+package or network request. Revert the revision as a unit to restore the previous
+control geometry; workspace data and preferences need no migration.
