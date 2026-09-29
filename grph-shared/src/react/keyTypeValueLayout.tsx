@@ -2,7 +2,7 @@ import type { HTMLAttributes, ReactNode } from 'react'
 import {
   KTV_DEFAULT_HEADER_LABELS,
   KTV_HEADER_LABEL_CLASS_NAME,
-  KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME,
+  KTV_FIELD_GRID_CLASS_NAME,
   KTV_ROW_LABEL_CELL_CLASS_NAME,
   KTV_ROW_VALUE_CELL_CLASS_NAME,
   KTV_SECTION_STACK_CLASS_NAME,
@@ -16,6 +16,7 @@ export interface KeyTypeValueHeaderProps {
   actions?: ReactNode
   stickyOffsetClassName?: string
   className?: string
+  typographyClassName?: string
 }
 
 export interface KeyTypeValueSectionStackProps extends HTMLAttributes<HTMLElement> {
@@ -29,17 +30,19 @@ export function KeyTypeValueHeader({
   actions,
   stickyOffsetClassName = 'top-0',
   className,
+  typographyClassName,
 }: KeyTypeValueHeaderProps) {
   const rootClassName = [
     `sticky ${stickyOffsetClassName} z-20 border-b ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} backdrop-blur-[4px]`,
     className || '',
+    typographyClassName || '',
   ]
     .filter(Boolean)
     .join(' ')
 
   return (
     <header className={rootClassName}>
-      <section className={`grid min-h-8 w-full ${KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME} items-center gap-x-2 gap-y-0 py-0`}>
+      <section className={`${KTV_FIELD_GRID_CLASS_NAME} min-h-8 items-center py-0`}>
         <section className={`${KTV_ROW_LABEL_CELL_CLASS_NAME} items-center gap-1 ${KTV_HEADER_LABEL_CLASS_NAME}`}>
           {keyLabel}
         </section>

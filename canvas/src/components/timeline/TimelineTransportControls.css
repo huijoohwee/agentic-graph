@@ -485,8 +485,8 @@
 .timeline-player .time {
   min-width: 146px;
   font-variant-numeric: tabular-nums;
-  font-size: 13px;
-  line-height: 20px;
+  font-size: inherit;
+  line-height: inherit;
 }
 .timeline-transport-chrome--mermaid-gantt .timeline-player .time {
   min-width: 80px;
@@ -576,10 +576,10 @@
   background: transparent;
   color: var(--kg-text-secondary, rgb(71 85 105 / 1));
   cursor: pointer;
-  font-size: 12px;
+  font-size: inherit;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-  line-height: 22px;
+  line-height: inherit;
   padding: 0 6px;
 }
 .timeline-rate-button:hover:not(:disabled),
@@ -692,8 +692,8 @@
   align-items: center;
   min-height: 24px;
   height: 24px;
-  font-size: 12px;
-  line-height: 22px;
+  font-size: inherit;
+  line-height: inherit;
   color: inherit;
 }
 .timeline-player-range {

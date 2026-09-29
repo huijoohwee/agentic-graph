@@ -503,4 +503,6 @@ export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
   ["workspace.import.localFiles.csvJson.pickerExportFidelity","@/__tests__/csvJsonConversion.test","testCsvJsonWorkspaceExportWritesExactPickerBlobText"],
   ["ui.mainPanel.sharedPresentation.accessibleControlsAndHelp","@/__tests__/mainPanelSharedPresentation.test","testMainPanelSharedPresentationKeepsAccessibleControlsAndHelp"],
   ...TEST_CASES_POST_PARSER_3_TAIL,
+  ["ui.panels.fields.presentation", "@/__tests__/panelFieldPresentation.test", "testPanelFieldsShareOnePresentationAndKeepInteractions"],
+  ["ui.panels.fields.forbidVariants", "@/__tests__/panelFieldPresentation.test", "testPanelFieldsForbidPresentationVariants"],
 ]

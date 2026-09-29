@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.1.0"
+version: "1.2.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -123,3 +123,53 @@ Publish the admitted candidate only after its required affected checks pass. The
 review lane is a successor of the existing native-import mission. Revert this
 presentation commit to restore prior layouts. Field values, imported files,
 collaboration transport and storage are not migrated by this change.
+
+
+## Cross-panel field alignment
+
+PRD: MainPanel, FloatingPanel and BottomPanel configuration fields use the same
+key/type/value columns, configured font and row density. A field does not change
+presentation when its surface or an older caller API changes.
+
+TAD: `KTV_FIELD_GRID_CLASS_NAME` owns the three responsive columns and 8 px column
+gap. Shared rows, headers and labeled form fields consume it. The two-column,
+icon-column and four-column grids are removed; existing layout inputs are
+contract-only adapters. Slider/number pairs stay together in the value column.
+The spacious value-row name also delegates to the single 4 px control gap.
+`panelFieldDecorationClassName` prevents caller typography, spacing or grid
+utilities from overriding field presentation while retaining color, borders,
+visibility and placement. Panel text/select/textarea controls resolve font from
+`usePanelTypography`; data-view line modes still own multiline behavior.
+
+Range card and inline range APIs delegate to `PanelLabeledRangeField`, with native
+label/input/output associations. `CollapsibleSubsection` delegates to the shared
+section owner. Record inspector properties use the same rows and central icons.
+BottomPanel and its shared transport controls now subscribe to panel typography;
+legacy playback time/rate font sizes are removed at their CSS owner. Media rulers,
+code editors, data tables and diagram geometry keep their content semantics.
+The unused inspector-specific grid token, stylesheet and import are removed.
+
+ADR: Consolidate existing owners without a new settings store, stylesheet overlay,
+network dependency or renderer. Compatibility names contain no alternate layouts.
+Enforce the contract with a source guard plus mounted interaction tests. Field
+labels, input handlers, numeric limits, collapse behavior and lazy panel loading
+remain governed by their existing feature owners.
+
+MVP: 30 source modules / 80 KB change cap, no dependencies; implementation window
+extended for source-contract migrations and live checks across three surfaces.
+Regression checks cover every old row signature, all range aliases, conflicting
+caller classes, live typography changes, accessible range labels, synchronized
+value updates, header reuse, inspector fields and BottomPanel transport fonts.
+The native affected receipt binds validation to the final commit. This is local
+and pull-request verification; no production release is authorized.
+
+Local verification: nine focused cases pass. Live MainPanel Settings and
+Collaboration share the same desktop columns, 14 px field text and 8 px gaps;
+FloatingPanel Renderer uses the same responsive contract. At 390 × 844, both
+MainPanel and FloatingPanel rows measure 356 px client/scroll width without
+overflow. BottomPanel playback time, rate and rate value inherit 14 px text.
+The desktop viewport and Dashboard view were restored after verification.
+
+GTM and rollback: Consistent controls reduce re-learning between panel surfaces.
+Keep the free/offline local workflow. Revert this successor commit to restore the
+previous presentation; workspace data and saved document content are unchanged.
