@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.23"
-date: "2026-09-29"
+version: "0.2.24"
+date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.native-web-import-crawler"
@@ -32,15 +32,27 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.22"
-prd_revision: "0.2.23"
-tad_revision: "0.2.23"
-adr_revision: "0.2.23"
-mvp_revision: "0.2.23"
-gtm_revision: "0.2.23"
+previous_document_version: "0.2.23"
+prd_revision: "0.2.24"
+tad_revision: "0.2.24"
+adr_revision: "0.2.24"
+mvp_revision: "0.2.24"
+gtm_revision: "0.2.24"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 reference implementation: website Markdown safety
+
+**Authorization and continuity.** The operator explicitly authorized implementation of the audit recommendations and supplied a live validation URL as external input. Bind this increment to `PLAN-AGENTIC-GRAPH-NATIVE-WEB-IMPORT-CRAWLER-PRD-TAD-ADR-MVP-GTM@0.2.24`, source base `2699bbb06228caa504cd64c53adf6026bb338e9d`, lane `website-markdown-safety`, actor `@codex`, action `/fix`, semantic `#website-markdown-safety`. The validation URL, captured remote content and private reference stay outside tracked source, fixtures, configuration and this plan. Authoring guidance: `huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md` at `deddd90682dc412f421e51bdd09c23bacd153505`; no guidance is copied.
+
+**PRD.** Existing import users need complete article text, independent concurrent imports and a consistent public-URL boundary. S1: static imports and redirects reject private destinations; static connections use the validated address. S2: concurrent new runs retain independent manifests; explicit reuse verifies the request and never overwrites incompatible or unbound data. S3: over-budget input is a visible failure, never a successful prefix. S4: CLI image exclusion works in every argument position. S5: the existing conversion owner is decomposed into modules below 600 lines without changing its public successful-result contract. The supplied live page validates generic behavior only; it must not become a product-specific code path.
+
+**TAD / ADR.** Reuse the static fetch API, native crawler, storage resolver and converter. A shared Node network policy owns public-address checks; static HTTP uses checked DNS addresses at connection time and revalidates redirects. Browser routing consumes the shared policy; browser/proxy connection-level DNS behavior is a separate runtime boundary. Atomic directory creation reserves a UTC-format run slot; actual wall time remains in manifest timestamps, and request bindings prevent unsafe reuse. Existing artifact readers retain the token grammar. A 32-million-character raw capture cap retains large hydration payloads; conversion excludes only JSON-shaped `data-*` attributes exceeding 64 KiB, then applies the existing normalized-content budgets. Body text and ordinary attributes remain intact. Over-budget content fails before parsing or fallback. Move existing HAST, media and layout behavior into focused helpers and remove no-op branches. No service, dependency, paid resource or second converter is added.
+
+**MVP and evidence.** Implement S1–S5 with synthetic regression fixtures, existing conversion/import tests, type checking, source hygiene and an external-input live-page run. New source cases cover default private-address rejection, mapped IPv6, redirect policy, byte limits, parallel admission, unchanged manifest replay, incompatible reuse, image options and explicit size failure. Local evidence: 11 new safety cases passed; 100 existing conversion/import cases passed; the Canvas-owned TypeScript and smoke check passed. The supplied live page completed in 17,915 ms: 16,880,900 HTML characters produced 151,759 Markdown bytes, with 41 discovered links and 304 Markdown links (single page, no downloads or proxy). Runtime inputs and captured content remain external. The repository hardcode guard exposed short-route false positives and five pre-existing remote fixture literals; preserve exact URL/authority-path and opaque-token checks, and replace those fixtures with synthetic addresses. Final local affected validation passed all 10 native partitions and all 9 selected commands (281 case executions, including overlapping suites), including the environment-supplied hardcode guard, Canvas type checking and browser-smoke runtime contract. This is affected-scope proof, not full-suite or production parity. Source publication remains a separate owner effect. Budget refreshed after the initial 30-active-minute sprint: 15 additional active minutes; at most 23 files, five helper modules and 100 KB changed text, no added dependencies. Five legacy test files receive literal-only replacements without line growth; their existing size is not expanded. New helper modules and the decomposed conversion owner stay below 600 lines.
+
+**GTM / rollback.** Rank accurate one-page Markdown first, a small selected documentation bundle second, and offline saved HTML third. The first-dollar hypothesis is a reviewed export using existing delivery capabilities; demand, willingness to pay and resource savings remain unmeasured. No outreach, payment or deployment is authorized by this code change. Revert the scoped source candidate to roll back; preserve existing artifacts and request bindings. Protected source release, deployment and runtime receipts remain separate. Development verification and remaining limitations will be appended before handoff.
 
 ## Product decision
 
