@@ -1,3 +1,4 @@
+import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
 import React from 'react'
 import { Settings as SettingsIcon, Tag as TagIcon } from 'lucide-react'
 import { ScopeIcon } from '@/features/graph-fields/ui/graphFieldIcons'
@@ -310,21 +311,16 @@ export const renderSettingInput = (
     const str = String(v || '')
     const fallback = colorKeyDefaults[key]
     const normalized = str.trim() || fallback
-    const colorValue =
-      normalized.startsWith('#') && (normalized.length === 4 || normalized.length === 7)
-        ? normalized
-        : '#000000'
     return (
       <section className={SETTINGS_PREVIEW_INLINE_ROW_CLASS_NAME}>
-        <input
-          type="color"
-          value={colorValue}
-          onChange={e => {
-            const next = e.target.value
+        <PanelColorPicker
+
+          value={normalized} aria-label={key}
+          onValueChange={nextColor => {
+            const next = nextColor
             dirtyRef.current.add(key)
             setValues(prev => ({ ...prev, [key]: next }))
           }}
-          className={`${UI_RESPONSIVE_COLOR_SWATCH_CLASSNAME} border ${UI_THEME_TOKENS.input.border} rounded cursor-pointer bg-transparent`}
         />
         {renderSharedTextInput({
           keyName: key,

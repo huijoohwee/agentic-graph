@@ -5,7 +5,7 @@ const readUtf8 = (relativePath: string): string => fs.readFileSync(path.resolve(
 
 export function testTwoColumnEditorGridUsesSharedMobileFirstOwner() {
   const ownerText = readUtf8('src/features/panels/ui/TwoColumnEditorGrid.tsx')
-  const ownerLiteral = 'grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2'
+  const ownerLiteral = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-2'
   const consumers = [
     'src/features/schema/ui/SchemaUiEditorRows.tsx',
     'src/features/graph-editor/panels/GraphEditorInspectorTab.tsx',

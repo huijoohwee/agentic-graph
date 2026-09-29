@@ -1,3 +1,4 @@
+import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
 import React from 'react';
 import {
   KeyTypeValueStaticRow,
@@ -16,7 +17,6 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens';
 import { PlainTextInputEditor } from '@/components/ui/PlainTextInputEditor';
 import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography';
 import {
-  UI_RESPONSIVE_COLOR_SWATCH_CLASSNAME,
   UI_RESPONSIVE_CONTROL_INLINE_FILL_CLASSNAME,
   UI_RESPONSIVE_CONTROL_VALUE_ROW_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses';
@@ -37,7 +37,7 @@ export function RendererPaletteSettings() {
     (s) => s.uiPanelRowDensityCompactClass || 'py-0.5'
   );
 
-  const { palette, handleUpdatePaletteColor, normalizeColorForPicker } = useRendererPalette();
+  const { palette, handleUpdatePaletteColor } = useRendererPalette();
 
   const nodeTypes = ['idea', 'hypothesis', 'execution', 'pivot', 'alert'] as const;
   const edgeTypes = ['critical', 'neutral'] as const;
@@ -82,14 +82,10 @@ export function RendererPaletteSettings() {
                 className="w-full"
               >
                 <section className={UI_RESPONSIVE_CONTROL_VALUE_ROW_CLASSNAME}>
-                  <input
-                    type="color"
-                    className={`${UI_RESPONSIVE_COLOR_SWATCH_CLASSNAME} border ${UI_THEME_TOKENS.input.border} rounded cursor-pointer bg-transparent`}
-                    value={normalizeColorForPicker(
-                      palette.nodes[type],
-                      MVP_COLOR_PALETTE.nodes[type as keyof typeof MVP_COLOR_PALETTE.nodes]
-                    )}
-                    onChange={(e) => handleUpdatePaletteColor('node', type, e.target.value)}
+                  <PanelColorPicker
+
+                    value={palette.nodes[type] || MVP_COLOR_PALETTE.nodes[type as keyof typeof MVP_COLOR_PALETTE.nodes]} aria-label={`${type} colour`}
+                    onValueChange={nextColor => handleUpdatePaletteColor('node', type, nextColor)}
                   />
                   <PlainTextInputEditor
                     className={`${UI_RESPONSIVE_CONTROL_INLINE_FILL_CLASSNAME} ${uiPanelKeyValueInputClass} ${UI_THEME_TOKENS.text.primary}`}
@@ -134,14 +130,10 @@ export function RendererPaletteSettings() {
                 className="w-full"
               >
                 <section className={UI_RESPONSIVE_CONTROL_VALUE_ROW_CLASSNAME}>
-                  <input
-                    type="color"
-                    className={`${UI_RESPONSIVE_COLOR_SWATCH_CLASSNAME} border ${UI_THEME_TOKENS.input.border} rounded cursor-pointer bg-transparent`}
-                    value={normalizeColorForPicker(
-                      palette.edges[type],
-                      MVP_COLOR_PALETTE.edges[type as keyof typeof MVP_COLOR_PALETTE.edges]
-                    )}
-                    onChange={(e) => handleUpdatePaletteColor('edge', type, e.target.value)}
+                  <PanelColorPicker
+
+                    value={palette.edges[type] || MVP_COLOR_PALETTE.edges[type as keyof typeof MVP_COLOR_PALETTE.edges]} aria-label={`${type} colour`}
+                    onValueChange={nextColor => handleUpdatePaletteColor('edge', type, nextColor)}
                   />
                   <PlainTextInputEditor
                     className={`${UI_RESPONSIVE_CONTROL_INLINE_FILL_CLASSNAME} ${uiPanelKeyValueInputClass} ${UI_THEME_TOKENS.text.primary}`}

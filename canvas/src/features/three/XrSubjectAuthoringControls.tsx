@@ -1,3 +1,4 @@
+import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -231,8 +232,8 @@ function XrSubjectPartEditor({ document, generation, selectedPart, busy, onSelec
       </PanelSelect></label>
       {vector('position', 'Position (m)')}{vector('pivot', 'Pivot (m)')}
       {vector('rotation', 'Rotation (degrees)')}{vector('size', 'Size (m)')}
-      <label className="flex items-center gap-2 text-xs">Part color<input type="color" aria-label="Part color" value={draft.color}
-        onChange={event => { const color = event.currentTarget.value; setDraft(previous => previous && { ...previous, color }) }} /></label>
+      <label className="flex items-center gap-2 text-xs">Part color<PanelColorPicker  aria-label="Part color" value={draft.color}
+        onValueChange={nextColor => { const color = nextColor; setDraft(previous => previous && { ...previous, color }) }} /></label>
       <label className="flex min-h-9 items-center gap-2 text-xs"><input type="checkbox" aria-label="Part visible" checked={draft.visible}
         onChange={event => { const visible = event.currentTarget.checked; setDraft(previous => previous && { ...previous, visible }) }} />Part visible</label>
       <p className="text-xs opacity-70">Transforms are local to the parent. Rotation uses the part’s pivot. Animated tracks can override the rest rotation. Bound dimensions and materials update the same procedural controls.</p>

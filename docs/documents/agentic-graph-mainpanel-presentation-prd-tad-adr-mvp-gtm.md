@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.4.0"
+version: "1.5.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -362,3 +362,46 @@ GTM: Removes an inspection and automation obstacle from the existing free, offli
 interface. No new package, service, model call or measured commercial claim.
 Rollback: revert this consolidation as one revision, including value-handler API
 migration and regression registration. Workspace data and saved values are unchanged.
+
+
+## Semantic colour palette and field layout (2026-09-29)
+
+PRD: Every applicable colour picker in Main, Floating and Bottom Panel editors must
+open an inspectable page palette. Graph Fields must leave enough room for editing,
+with compact shortcuts and clear schema headings rather than duplicate labels.
+
+TAD/ADR: `PanelColorPicker` owns the named button, current-colour SVG, shared square
+28 px control (44 px on touch layouts), focus and semantic overlay. Its lazy-loaded
+`ColorPalette` owns the pointer/keyboard saturation-brightness surface, hue range,
+shared MVP presets, RGB channels and validated hex input. Palette fields are native
+HTML buttons/inputs; no hidden native colour input, generic div or aria-hidden
+palette decoration remains. Shared colour conversion resolves CSS palette tokens;
+invalid hex drafts never reach the source callback. All former native colour inputs,
+including XR/procedural object editors in Bottom Panel, consume this owner. Existing
+free-text CSS colour fields retain their source syntax; opening a picker never
+rewrites it. No dependency, network request, eyedropper permission or model call.
+
+Graph Fields uses two balanced panes and a shared shortcut menu. Container width
+selects the stacked layout; inner field grids size from available space. Schema
+Metadata/Context editors stack in narrow panes, reuse the existing editor-height
+owner, and omit duplicated headings. Selection summaries truncate within the header.
+The shared colour swatch geometry replaces the old rectangular 32 × 24 px variant.
+
+MVP/evidence: cap 50 files / 180 KB patch; new owners remain below 600 lines and the
+palette loads only when opened. Registered checks cover colour round trips and
+clamps, keyboard activation, portal/tooltip behavior, valid and invalid hex input,
+RGB editing, focus return, disabled controls, and recursive prohibition of native
+colour variants. Existing procedural-save, responsive-owner and panel-form checks
+remain active. Live browser review covers named controls, actual pointer selection,
+colour readback, hit testing, responsive containment and Global Schema layout.
+The final 12 focused cases, TypeScript and changed-file hygiene pass. All 17 palette
+controls pass pointer hit testing in an unannotated browser tab. At 390 × 844,
+buttons and inputs have 44 px touch targets, the palette is 288 px wide, and both
+316 px stacked panes have equal client/scroll widths. Global Schema editors retain
+120 px height. The annotated tab's external comment overlay intercepts pointer input;
+keyboard editing and semantic discovery remain available there. Broader affected
+validation is separate candidate evidence, not production parity.
+
+GTM: Removes colour-editing and inspection friction in the existing free/offline
+workflow. No pricing or adoption claim. Rollback: revert this revision as a unit;
+colour values and workspace formats require no migration.

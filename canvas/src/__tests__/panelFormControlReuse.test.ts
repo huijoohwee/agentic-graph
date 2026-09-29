@@ -88,7 +88,7 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   if (
     !panelKeyTypeColorTextValueRowText.includes("from '@/lib/ui/panelFormControls'") ||
     !panelKeyTypeColorTextValueRowText.includes('PanelTextInput') ||
-    !panelKeyTypeColorTextValueRowText.includes('type="color"')
+    !panelKeyTypeColorTextValueRowText.includes('PanelColorPicker')
   ) {
     throw new Error('expected PanelKeyTypeColorTextValueRow to centralize the specialized color-swatch-plus-text input row on top of the shared panel text input primitive')
   }

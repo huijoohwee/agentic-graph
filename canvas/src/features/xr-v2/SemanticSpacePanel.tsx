@@ -1,3 +1,4 @@
+import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { publishCameraFramingRuntime } from '@/features/strybldr/cameraFramingRuntime'
@@ -404,10 +405,10 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
                 onClick={joinNeighbor}>Join beside object</button>
             </div></details>}
           {twinBinding?.recipe.controls.filter(control => control.type === 'color').slice(0, 1).map(control =>
-            <label key={control.id}>Model colour<input className={fieldClass} type="color"
-              value={String(twinBinding.recipe.values[control.id])} disabled={busy} onChange={event => {
+            <label key={control.id}>Model colour<PanelColorPicker className={fieldClass}
+              value={String(twinBinding.recipe.values[control.id])} disabled={busy} onValueChange={nextColor => {
                 void mutate({ operation: 'control-twin', requestId: actionId(), expectedRevision: document.revision,
-                  entityId: selected.id, controlId: control.id, value: event.currentTarget.value }, 'Model colour saved.')
+                  entityId: selected.id, controlId: control.id, value: nextColor }, 'Model colour saved.')
               }} /></label>)}
         </fieldset></div>)
   if (inspectorOnly && inspectorSpaceId && document?.id !== inspectorSpaceId) return <p>Choose an object in the current space.</p>

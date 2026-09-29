@@ -1,6 +1,9 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 import { TEST_CASES_POST_PARSER_3_TAIL } from './postParserCases3Tail'
 export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
+  ["ui.panels.colour.math", "@/__tests__/panelColorPicker.test", "testPanelColorMath"],
+  ["ui.panels.colour.interaction", "@/__tests__/panelColorPicker.test", "testPanelColorInteraction"],
+  ["ui.panels.colour.forbidNative", "@/__tests__/panelColorPicker.test", "testPanelColorForbidsNativeVariants"],
   ["ui.panels.dropdown.keyboard", "@/__tests__/semanticSelect.test", "testSemanticSelectKeyboardAndPortal"],
   ["ui.panels.dropdown.forms", "@/__tests__/semanticSelect.test", "testSemanticSelectFormsAndDisabled"],
   ["ui.panels.dropdown.options", "@/__tests__/semanticSelect.test", "testSemanticSelectOptionData"],

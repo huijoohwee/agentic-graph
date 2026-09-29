@@ -3,6 +3,7 @@
 @import 'katex/dist/katex.min.css';
 @import './styles/kgTokens.generated.css';
 @import './styles/application-typography.css';
+@import './styles/semantic-colour-palette.css';
 @import './styles/responsive-toolbar.css';
 @import './styles/responsive-canvas-toolbar.css';
 @import './styles/markdown-presentation-responsive.css';

@@ -1,3 +1,4 @@
+import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
@@ -28,7 +29,7 @@ export function XrSceneAppearanceControls({ compact = false, disabled = false }:
     <fieldset disabled={disabled} className="grid min-w-0 gap-3 border-0 p-0">
       <label className="grid gap-1 text-xs">Look{presets}</label>
       <section className="grid grid-cols-2 gap-2" aria-label="Scene palette">
-        {COLORS.map(([key, label]) => <label key={key} className="grid gap-1 text-xs">{label}<PanelTextInput type="color" className="min-h-11 w-full" aria-label={`Scene ${label.toLowerCase()} color`} value={appearance[key]} onChange={event => commit({ [key]: event.target.value })} /></label>)}
+        {COLORS.map(([key, label]) => <label key={key} className="grid gap-1 text-xs">{label}<PanelColorPicker  className="min-h-11 w-full" aria-label={`Scene ${label.toLowerCase()} color`} value={appearance[key]} onValueChange={nextColor => commit({ [key]: nextColor })} /></label>)}
       </section>
       {NUMBERS.map(([key, label, min, max, step]) => <label key={key} className="grid grid-cols-[1fr_5rem] items-center gap-2 text-xs">{label}<PanelTextInput key={appearance[key]} type="number" min={min} max={max} step={step} defaultValue={appearance[key]} aria-label={label} className="min-h-11" onBlur={event => {
         const value = event.currentTarget.valueAsNumber

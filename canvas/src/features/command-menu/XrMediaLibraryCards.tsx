@@ -1,3 +1,4 @@
+import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
 import type { XrMotionReferenceSubject } from '@/features/three/xrMotionReferenceModel'
 import type { XrSceneControlInput } from '@/features/three/xrSceneMcpRuntime'
 import { buildXrMediaInvocationControlInput } from './xrMediaInvocationRuntime'
@@ -324,12 +325,12 @@ export function XrSubjectTransformCard({ subject, sceneReady, runControl }: {
           })
         }}
       /></label>
-      <label className="grid gap-0.5 text-xs"><span className={UI_THEME_TOKENS.text.tertiary}>Color</span><PanelTextInput
-        type="color"
+      <label className="grid gap-0.5 text-xs"><span className={UI_THEME_TOKENS.text.tertiary}>Color</span><PanelColorPicker
+
         value={subject.color}
         aria-label={`${subject.label} color`}
         data-kg-media-xr-subject-color={subject.id}
-        onChange={event => setSubjectTransform(subject.id, { color: event.target.value })}
+        onValueChange={nextColor => setSubjectTransform(subject.id, { color: nextColor })}
       /></label>
     </section>
   </section>

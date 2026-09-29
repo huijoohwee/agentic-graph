@@ -1138,7 +1138,7 @@ export function testToolbarTouchErgonomicsStaySourceDriven() {
     storyboardWidgetInspectorTabsText.includes('menuWidthClass="w-40"') ||
     !searchPanelText.includes('UI_RESPONSIVE_WIDE_TOOLBAR_DROPDOWN_PANEL_CLASSNAME') ||
     !searchPanelText.includes('UI_RESPONSIVE_TOOLBAR_FIELD_CLASSNAME') ||
-    !toolbarDropdownSelectText.includes('UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME') ||
+    !toolbarDropdownSelectText.includes('dropdownMenuOptionClassName') || !readUtf8(path.resolve(root, 'src/lib/ui/dropdownMenu.tsx')).includes('UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME') ||
     !toolbarDropdownSelectText.includes('UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_META_CLASSNAME') ||
     !toolbarDropdownSelectText.includes('UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_HINT_CLASSNAME') ||
     !editorWorkspaceSelectText.includes('UI_RESPONSIVE_MENU_OPTION_ROW_CLASSNAME') ||
@@ -1660,8 +1660,8 @@ export function testToolbarTouchErgonomicsStaySourceDriven() {
   ]
   if (
     !settingsUiText.includes('UI_RESPONSIVE_COLOR_SWATCH_DASHED_CLASSNAME') ||
-    !colorSwatchConsumerTexts.every(text => text.includes('UI_RESPONSIVE_COLOR_SWATCH_CLASSNAME')) ||
-    !panelKeyTypeColorTextValueRowText.includes('UI_RESPONSIVE_COLOR_SWATCH_CLASSNAME') ||
+    !colorSwatchConsumerTexts.every(text => text.includes('PanelColorPicker')) ||
+    !panelKeyTypeColorTextValueRowText.includes('PanelColorPicker') ||
     ![threeViewBackgroundFogSectionText, threeViewStarfieldSectionText].every(text => text.includes('PanelKeyTypeColorTextValueRow')) ||
     colorSwatchConsumerTexts.some(text =>
       text.includes(staleColorSwatchSizingClass()) ||
@@ -1867,7 +1867,7 @@ export function testToolbarTouchErgonomicsStaySourceDriven() {
     !tabHeaderText.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
     !mainPanelFrameText.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
     !collapsibleSectionText.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
-    !collapsibleSubsectionText.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
+    !collapsibleSubsectionText.includes("export { default } from './CollapsibleSection'") ||
     !mainPanelStoryboardWidgetManagerHeaderText.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
     !storyboardWidgetPanelChromeText.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
     !toolMenuText.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
@@ -2852,7 +2852,7 @@ export function testCanvasTouchTargetsStayLargeAndViewportSuppressesBrowserGestu
   const viewportText = readUtf8(path.resolve(root, 'src/components/CanvasViewport.tsx'))
 
   if (
-    !dropdownText.includes('UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME') ||
+    !dropdownText.includes('dropdownMenuOptionClassName') || !readUtf8(path.resolve(root, 'src/lib/ui/dropdownMenu.tsx')).includes('UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME') ||
     !dropdownText.includes('UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME') ||
     !dropdownText.includes('toolbarDropdownChevronClassName')
   ) {
