@@ -1,4 +1,5 @@
 import { selectMenuOption } from './lib/select-menu-option.mjs'
+import { dismissVisibleFloatingPanel } from './lib/panel-close-helpers.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
@@ -36,7 +37,19 @@ async function verify() {
   try {
     await page.goto(base + '/?kgPath=%2Fagentic-graph%2F', { waitUntil: 'domcontentloaded' })
     await page.getByRole('button', { name: /^Canvas View Mode:/ }).first().waitFor({ timeout: 120000 })
-    await page.waitForFunction(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady(), undefined, { timeout: 120000 })
+    await page.waitForFunction(async () => {
+      const { readSourceFilesBootstrapReady } = await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')
+      const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+      const { useMarkdownExplorerStore } = await import('/src/features/markdown-explorer/store.ts')
+      const state = useGraphStore.getState(), path = useMarkdownExplorerStore.getState().activePath
+      return readSourceFilesBootstrapReady() && state.historyIndex >= 0 && !!path
+        && state.sourceFiles[0]?.source?.path === `workspace:${path}`
+    }, undefined, { timeout: 120000 })
+    // Finish seed activation, then dismiss overlays from front to back through rendered controls.
+    await dismissVisibleFloatingPanel(page)
+    const timeline = page.getByRole('complementary', { name: 'Strybldr Timeline', exact: true })
+    await timeline.getByRole('button', { name: 'Close', exact: true }).click()
+    await timeline.waitFor({ state: 'detached' })
     console.log('Design browser: canvas ready')
     await page.evaluate(async () => {
       const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
@@ -60,9 +73,6 @@ async function verify() {
       useGraphStore.getState().setFloatingPanelView('design')
       useGraphStore.getState().setFloatingPanelOpen(true)
     })
-    // The existing mobile Timeline covers other panels until closed through its own control.
-    const timeline = page.getByRole('complementary', { name: 'Strybldr Timeline', exact: true })
-    await timeline.getByRole('button', { name: 'Close', exact: true }).click()
     const panel = page.locator('[data-kg-floating-panel-root="true"]').getByRole('region', { name: 'Design panel', exact: true })
     await panel.getByRole('button', { name: 'Open Tokens', exact: true }).click()
     const review = panel.getByRole('region', { name: 'Design Tokens', exact: true })

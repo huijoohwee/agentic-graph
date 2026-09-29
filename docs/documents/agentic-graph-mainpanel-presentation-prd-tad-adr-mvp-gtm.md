@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.16.0"
+version: "1.17.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -577,11 +577,8 @@ GTM: consistent free/offline learning and inspection controls. Rollback: revert;
 
 ## Canvas setting descriptions (2026-09-29)
 
-PRD/TAD/ADR: Display Controls and Document Modes identify each setting visibly;
-On/Off and categorical values remain secondary. Shared Canvas View rows preserve
-native buttons, outputs, invocation metadata, height and ellipsis owners.
-MVP: cap 10 minutes, 6 files / 20 KB; browser/menu checks verify names and state.
-GTM: clearer free/offline controls. Rollback: revert; no data or dependency change.
+PRD/TAD/ADR: Display Controls and Document Modes identify settings visibly; values remain secondary. Shared rows preserve native buttons, outputs, invocation metadata, height and ellipsis owners.
+MVP: cap 10 minutes, 6 files / 20 KB; browser/menu checks verify names and state. GTM: clearer free/offline controls. Rollback: revert; no data or dependency change.
 
 ## XR hover fidelity (2026-09-29)
 
@@ -596,3 +593,7 @@ borders. Rollback: revert this successor; no data migration.
 PRD/TAD/ADR: Keep the authored scene visible through continuous playback. Canvas owns adaptive DPR through its declared prop; the frame budget reports changes to it. Remove frame-local DPR writes that race Canvas reconfiguration and repeatedly clear the drawing buffer. Reset resolution on renderer lifecycle changes; existing camera, asset, hover and source owners remain.
 
 MVP/evidence: cap 8 files / 30 KB; diagnosis extended beyond the initial 20 minutes. Reproduced transparent output with valid camera poses and draw calls; verified playback beyond the 13-second failure at DPR 0.5. Lifecycle/budget checks: 10/10. Release checks recorded separately. GTM: stable free/offline playback with bounded pixel work. Rollback: revert; no dependency, data migration or new module.
+
+## ADLC browser closeout (2026-09-29)
+
+PRD/TAD/ADR: Design review acceptance waits for source activation and dismisses overlapping mobile panels in visual stacking order through native Close buttons before opening Design. Reuse the floating-panel dismissal owner; retain pointer, keyboard, touch, theme and overflow checks. MVP/GTM: 20-minute repair, five files / 20 KB cap, free/offline, no new module or dependency. Exact local and protected CI receipts remain separate; END ADLC requires protected integration and authorized runtime delivery. Rollback: revert this test-only successor.
