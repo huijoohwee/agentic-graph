@@ -1305,12 +1305,8 @@
   }
 
   .kg-responsive-control-touch-target {
-    min-height: var(--kg-responsive-control-touch-target-min-height, var(--kg-touch-target, 44px));
-    min-block-size: var(--kg-responsive-control-touch-target-min-height, var(--kg-touch-target, 44px));
-  }
-
-  .kg-responsive-control-touch-target--compact {
-    --kg-responsive-control-touch-target-min-height: 2.25rem;
+    min-height: var(--kg-control-height);
+    min-block-size: var(--kg-control-height);
   }
 
   .kg-responsive-control-input,

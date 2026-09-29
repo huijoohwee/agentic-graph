@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.11.0"
+version: "1.12.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -542,3 +542,25 @@ Check named separators, keyboard menus, computed borders/heights and ellipsis at
 desktop/mobile widths; record type, focused and affected checks in the handoff.
 GTM: more consistent controls in the existing free/offline app. Rollback: revert
 this successor; no migration is required.
+
+
+## Timeline and renderer reference alignment (2026-09-29)
+
+PRD: Timeline, Flowchart, Architecture, Activity, GitGraph, Version Graph and
+Renderer topology reuse the Main/Floating/Bottom panel reference. Neutral edges
+are one 1 px stroke; applicable controls and labels use 28 px desktop or 44 px
+narrow/touch height. Long labels ellipsize inside their available width.
+
+TAD/ADR: Remove local timeline inset strokes and 20–26 px control variants; the
+shared border/control tokens own their replacement. Extract player styles from
+the oversized transport stylesheet, leaving the Gantt sibling as the sole owner
+of its variant. Activity and renderer rows consume PanelTextInput/PanelSelect.
+Graph headers and topology summaries have bounded semantic wrappers. Transport
+icons remain named and visible; compact clip move buttons retain hit testing.
+Graph data/selection colors and intentional diagram scrolling retain their roles.
+
+MVP/evidence: 45-minute implementation budget, 26 files / 100 KB patch, no dependency,
+service or storage-schema change. Verify desktop/mobile borders, heights, bounds,
+keyboard controls and pointer targets; report focused/type/affected checks in the
+candidate handoff. Reuse existing help and tooltip owners. GTM: consistent controls
+in the free/offline editor. Rollback: revert this successor as one unit; no migration.

@@ -104,7 +104,7 @@ export function testPanelFieldsForbidPresentationVariants() {
   const controls = read('src/lib/ui/panelFormControls.tsx')
   assert(!controls.includes("layout === 'compact'"), 'old form variants cannot select a different layout')
   assert(controls.includes('KTV_FIELD_GRID_CLASS_NAME'))
-  for (const stylesheet of ['TimelineTransportControls.css', 'TimelineTransportControlsMermaidGantt.css']) {
+  for (const stylesheet of ['TimelineTransportControls.css', 'TimelineTransportPlayer.css', 'TimelineTransportControlsMermaidGantt.css']) {
     const css = read(`src/components/timeline/${stylesheet}`)
     for (const block of css.matchAll(/[^{}]*(?:\.time\b|\.timeline-rate-button(?:-value)?\b)[^{}]*\{([^}]*)\}/g)) {
       assert(!/font-size:\s*[\d.]+px/.test(block[1]), 'transport field values must inherit panel typography')

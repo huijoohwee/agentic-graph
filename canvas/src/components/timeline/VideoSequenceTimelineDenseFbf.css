@@ -161,11 +161,11 @@
   background: transparent;
   box-shadow: none;
   outline: 0;
-  pointer-events: none;
 }
 
-.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-select-surface="1"] .timeline-transport-track-clip-move {
-  pointer-events: auto;
+/* Keep named move buttons hit-testable on clips that own selection. */
+.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not([data-kg-timeline-clip-select-surface="1"]):not(.timeline-transport-track-clip--lane-audio):not(.timeline-transport-track-clip--lane-fbf) .timeline-transport-track-clip-move {
+  pointer-events: none;
 }
 
 .timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"][data-kg-video-sequence-clip-thumbnail-reel="1"]:not(.timeline-transport-track-clip--lane-audio):not(.timeline-transport-track-clip--lane-fbf) .timeline-transport-track-clip-move {
