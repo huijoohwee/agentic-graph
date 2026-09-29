@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.27"
+version: "0.2.28"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.26"
-prd_revision: "0.2.27"
-tad_revision: "0.2.27"
-adr_revision: "0.2.27"
-mvp_revision: "0.2.27"
-gtm_revision: "0.2.27"
+previous_document_version: "0.2.27"
+prd_revision: "0.2.28"
+tad_revision: "0.2.28"
+adr_revision: "0.2.28"
+mvp_revision: "0.2.28"
+gtm_revision: "0.2.28"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -49,7 +49,8 @@ gtm_revision: "0.2.27"
 - ADR: reuse the Media catalog component, layout controls, search, and selection state. No duplicate media library, additional dependency, or paid service. Signal extraction excludes metadata, fenced code, image destinations, and URLs; bounded results disclose truncation and heuristic meaning.
 - MVP: native admission; at most 22 files / 80 KB diff; new modules under 600 lines; 45-minute target. Verify routing, source identity, extraction limits, Media selection, source jumps, and reload in the live local browser.
 - GTM: existing Preview actions and signal badges discover the same inspector. Local-only increment; publication requires native green receipts. Rollback is the scoped commit revert; imported documents and Media persistence remain intact.
-- Validation: TypeScript and three local runtime smoke contracts pass; six focused regression cases and the runtime-input hardcoding guard pass. Live browser verification confirms badge hit testing, PRICE/TIME routing, matching source-line selection, Media list/search/selection reuse, and repeat activation after full reload. The affected workflow requires a clean committed candidate for its mission browser stage; rerun that check after native release admission commits this increment. Runtime validation URLs and screenshots stay outside tracked files.
+- Validation: TypeScript and three local runtime smoke contracts pass; six focused regression cases and the runtime-input hardcoding guard pass. Live browser verification confirms badge hit testing, PRICE/TIME routing, matching source-line selection, Media list/search/selection reuse, and repeat activation after full reload. All ten affected partitions passed on clean candidate `719ba689306c71bf9c78d72688fc7b44c0c59599`, including its exact-candidate mission browser stage. Runtime validation URLs and screenshots stay outside tracked files.
+- Review continuation: native publication refused a stale protected base. After START readmission, merge protected `82276a39bde3ef861bd5db4091bde896ee204ddc` without rewriting the immutable predecessor or Preview candidate. The resulting tree preserves Preview and imports six protected files byte-for-byte, with no conflicts or feature edits. Native START rebinds the merged head before fresh affected checks and protected-review publication. Budget: 15 active minutes, one planning file, less than 4 KB authored changes, no new module. Preserve the running preview; keep exact validation and publication receipts outside source. This continuation requests source review only; production authority and deployment remain separate.
 
 ## 2026-09-30 imported document rendering repair
 
