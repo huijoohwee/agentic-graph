@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.22"
+version: "0.2.23"
 date: "2026-09-29"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,12 +32,12 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.21"
-prd_revision: "0.2.22"
-tad_revision: "0.2.22"
-adr_revision: "0.2.22"
-mvp_revision: "0.2.22"
-gtm_revision: "0.2.22"
+previous_document_version: "0.2.22"
+prd_revision: "0.2.23"
+tad_revision: "0.2.23"
+adr_revision: "0.2.23"
+mvp_revision: "0.2.23"
+gtm_revision: "0.2.23"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
@@ -47,6 +47,42 @@ gtm_revision: "0.2.22"
 Enhance the existing website-import job instead of adding a second crawler stack. The Import URL globe action discovers a selectable folder/page tree before starting a server-owned headless import of the chosen pages, materializes extracted pages through the existing Markdown workspace owner, creates a Canvas projection document, and exposes bounded HTML and downloaded-file artifacts. Import local files remains owned by the existing corpus import path, which already resolves source units and applies corpus-backed imports to Canvas.
 
 The external crawler project is a capability reference only. The implementation uses the repository's existing Playwright dependency and native Node.js modules. It does not copy or depend on the reference project.
+
+## 2026-09-29 URL import icon row
+
+**PRD.** The URL input has one icon row for standard import, Codebase graph mode,
+Design renderer, video validation/download, headless website crawl, and the existing
+provider-assisted import. Every icon has an accessible name and tooltip. Codebase
+graph retains its pressed-state mode; the separate label and help row are removed.
+The primary action identifies whether it imports a URL into the workspace or a
+codebase graph. Keyboard Enter retains the same dispatch.
+
+**TAD / ADR.** Extend the existing `ImportUrlPrompt` with an optional confirmation
+icon; other callers retain their text confirmation. Reuse the shared responsive
+control sizes and wrap the row on narrow screens. Keep the crawl globe visible
+when the Markdown workspace bridge is absent, and lazily reuse
+`importWebsiteViaWorkspaceRuntime` after the existing page-selection step. Preserve
+selected URLs, server-owned limits, source-backed invocation checks and visible
+errors. No new runtime module, dependency, service or paid resource.
+
+**MVP / verification.** Native successor of `d3063bdccc3fa67ab641f5119d2033f3f9d13c64`.
+Four files, source patch below 20 KiB, no new modules; implementation/check target
+was 20 minutes after owner handoff. The existing rate-limit recovery check now
+locates the accessible Codebase graph button instead of its removed visible text.
+All 20 focused import/conversion checks and seven page-selection checks pass,
+along with TypeScript, three browser-runtime policy checks and changed-file hygiene.
+These cover every command selected by the collaboration contract for this delta.
+The live task preview starts at `http://127.0.0.1:5175/`, but menu interaction and
+screenshot coordinates disagree in the in-app browser; desktop/mobile visual and
+live crawl confirmation remain unverified. Publication gets a separate five-minute
+local budget; provider checks are an external dependency. This bounded evidence
+does not establish full-suite, protected integration or Production deployment proof.
+
+**GTM / rollback.** Address the observed difficulty locating crawl and identifying
+Import actions. Demand, time savings and willingness to pay $1 remain unmeasured.
+Revert this scoped successor diff to restore the previous controls; imported files
+and the predecessor's changes remain intact. Release and Production receipts stay
+separate under the existing owner workflows.
 
 ## 2026-09-29 shared Settings typography and layout
 

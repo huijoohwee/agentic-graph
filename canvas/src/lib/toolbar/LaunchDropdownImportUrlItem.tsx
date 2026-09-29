@@ -1,5 +1,5 @@
 import React from 'react'
-import { ChevronDown, Download, GitBranch, Globe, Link, Palette, Sparkles, Workflow } from 'lucide-react'
+import { ChevronDown, Download, FileDown, GitBranch, Globe, Link, Palette, Sparkles, Workflow } from 'lucide-react'
 import type { UiToastInput } from '@/hooks/store/types'
 import { WORKSPACE_IMPORT_IMAGE_URL_TEST, WORKSPACE_IMPORT_URL_TEST } from '@/lib/config'
 import { readEnvString } from '@/lib/config.env'
@@ -283,7 +283,7 @@ export function LaunchDropdownImportUrlItem(props: {
         if (!selectedUrls?.length) return
         await targetSkillsCommandsCommand(NATIVE_CRAWLER_COMMAND)
         const importWebsite = getMarkdownWorkspaceActionBridge().importWebsite
-        if (!importWebsite) throw new Error('Website import is unavailable in this workspace')
+          ?? (await import('@/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction')).importWebsiteViaWorkspaceRuntime
         await importWebsite(nextUrl, { ...buildAutoWebsiteImportOptions(), selectedUrls })
       } catch (error) {
         reportSkillsCommandsResolutionFailure(error)
@@ -365,10 +365,29 @@ export function LaunchDropdownImportUrlItem(props: {
             onCancel={() => setUrlInputOpen(false)}
             autoFocus
             disabled={isImportingUrl}
-            confirmLabel="Import"
+            confirmLabel={agentGraphRepositoryMode || isLaunchAgentGraphRepositoryUrl(urlDraft) ? 'Import codebase graph' : 'Import URL into workspace'}
+            confirmIcon={<FileDown className={props.menuIconClass} strokeWidth={1.6} aria-hidden="true" />}
             onConfirm={runImportUrl}
             rightAddon={
-              <section className="flex min-w-0 flex-1 items-stretch gap-1">
+              <>
+                <button
+                  type="button"
+                  className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', agentGraphRepositoryMode ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)}
+                  title="Codebase graph: build a repository knowledge graph with local Git acquisition"
+                  aria-label="Codebase graph"
+                  aria-pressed={agentGraphRepositoryMode}
+                  data-kg-launch-import-url-repository-mode="true"
+                  onClick={() => {
+                    const next = !agentGraphRepositoryMode
+                    setAgentGraphRepositoryMode(next)
+                    setRateLimitRecoveryUrl(null)
+                    void targetSkillsCommands(next
+                      ? AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agentGraphIngest
+                      : IMPORT_URL_AGENT_READY_MCP_TOOL_NAME).catch(() => undefined)
+                  }}
+                >
+                  <GitBranch className={props.menuIconClass} strokeWidth={1.6} aria-hidden />
+                </button>
                 <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', importUrlRenderer === DESIGN_IMPORT_URL_RENDERER_SELECTION ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)} title="Design renderer" aria-label="Design renderer" aria-pressed={importUrlRenderer === DESIGN_IMPORT_URL_RENDERER_SELECTION} onClick={() => setImportUrlRenderer(prev => (prev === DESIGN_IMPORT_URL_RENDERER_SELECTION ? 'default' : DESIGN_IMPORT_URL_RENDERER_SELECTION))}>
                   <Palette className={props.menuIconClass} strokeWidth={1.6} aria-hidden={true} />
                 </button>
@@ -380,15 +399,13 @@ export function LaunchDropdownImportUrlItem(props: {
                     <Download className={props.menuIconClass} strokeWidth={1.6} aria-hidden="true" />
                   </button>
                 ) : null}
-                {typeof bridge.importWebsite === 'function' ? (
-                  <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)} title="Crawl website headlessly" aria-label="Crawl website headlessly" data-kg-launch-import-url-crawler-target={NATIVE_CRAWLER_COMMAND} onClick={() => { void runWebsiteCrawl(urlDraft) }}>
-                    <Globe className={props.menuIconClass} strokeWidth={1.6} />
-                  </button>
-                ) : null}
+                <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)} title="Crawl website headlessly" aria-label="Crawl website headlessly" data-kg-launch-import-url-crawler-target={NATIVE_CRAWLER_COMMAND} disabled={isImportingUrl || !urlDraft.trim()} onClick={() => { void runWebsiteCrawl(urlDraft) }}>
+                  <Globe className={props.menuIconClass} strokeWidth={1.6} aria-hidden="true" />
+                </button>
                 <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)} title="Import URL (DeerFlow)" aria-label="Import URL (DeerFlow)" data-kg-launch-import-url-provider-assisted-target={IMPORT_URL_AGENT_READY_MCP_TOOL_NAME} onClick={() => { void runImportUrlDeerFlow(urlDraft) }}>
                   <Sparkles className={props.menuIconClass} strokeWidth={1.6} />
                 </button>
-              </section>
+              </>
             }
           />
           <label className="mt-2 grid min-w-0 gap-1 px-1 text-xs">
@@ -396,32 +413,6 @@ export function LaunchDropdownImportUrlItem(props: {
             <ImportUrlRendererSelect value={importUrlRenderer} onChange={setImportUrlRenderer} />
             <span className={UI_THEME_TOKENS.text.secondary}>Images offer next steps after saving.</span>
           </label>
-          <section className="mt-1 flex min-w-0 flex-wrap items-center gap-1 text-xs" aria-label="Codebase graph import mode">
-            <button
-              type="button"
-              className={cn('inline-flex min-h-7 items-center gap-1 rounded border px-2', agentGraphRepositoryMode ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)}
-              title="Build a repository knowledge graph with local Git acquisition"
-              aria-label="Codebase graph"
-              aria-pressed={agentGraphRepositoryMode}
-              data-kg-launch-import-url-repository-mode="true"
-              onClick={() => {
-                const next = !agentGraphRepositoryMode
-                setAgentGraphRepositoryMode(next)
-                setRateLimitRecoveryUrl(null)
-                void targetSkillsCommands(next
-                  ? AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.agentGraphIngest
-                  : IMPORT_URL_AGENT_READY_MCP_TOOL_NAME).catch(() => undefined)
-              }}
-            >
-              <GitBranch className={props.menuIconClass} strokeWidth={1.6} aria-hidden />
-              <span>Codebase graph</span>
-            </button>
-            <span className={UI_THEME_TOKENS.text.secondary}>
-              {agentGraphRepositoryMode
-                ? 'Uses deterministic local Git acquisition.'
-                : 'Use this mode for repository knowledge graphs.'}
-            </span>
-          </section>
           {rateLimitRecoveryUrl ? (
             <section
               className={cn('mt-1 grid gap-1 rounded border p-2 text-xs', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.bg, UI_THEME_TOKENS.input.text)}

@@ -357,7 +357,9 @@ export async function testAgentGraphLaunchImportUrlOffersRateLimitedRepositoryRe
       disclosure.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForTasks(1)
     })
-    assert.match(container.textContent || '', /Codebase graph/)
+    const repositoryMode = container.querySelector('button[aria-label="Codebase graph"]')
+    assert.ok(repositoryMode instanceof dom.window.HTMLButtonElement)
+    assert.equal(repositoryMode.getAttribute('aria-pressed'), 'false')
 
     const input = container.querySelector('input.kg-import-url-input')
     const confirm = container.querySelector('button.kg-import-url-confirm')
