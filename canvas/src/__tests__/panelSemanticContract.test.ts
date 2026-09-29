@@ -1316,10 +1316,10 @@ export const testSettingsRowsUseEllipsisForLongMobileText = () => {
   }
 
   const specialValueNode = readUtf8(specialValueNodePath)
-  if (!specialValueNode.includes('specialValueRowClassName') || !specialValueNode.includes('uiToolbarRowScrollClassName')) {
+  if (!specialValueNode.includes('specialValueRowClassName') || !specialValueNode.includes('KTV_VALUE_ROW_SCROLL_SPACIOUS_CLASS_NAME')) {
     throw new Error('Expected Settings special value rows to scroll within the KTV value cell')
   }
-  if (!specialValueNode.includes('UI_RESPONSIVE_COMPACT_PANEL_FLEX_INPUT_CLASSNAME') || specialValueNode.includes('min-w-[7rem]')) {
+  if (!specialValueNode.includes('KTV_VALUE_ROW_INPUT_SHELL_CLASS_NAME') || specialValueNode.includes('min-w-[7rem]')) {
     throw new Error('Expected Settings special value input shells to use the shared compact panel flex-input owner')
   }
   if (specialValueNode.includes('flex items-center gap-2') || specialValueNode.includes('flex-1 min-w-0')) {
