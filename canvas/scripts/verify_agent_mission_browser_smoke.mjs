@@ -454,7 +454,7 @@ try {
   await selected.getByRole('button', { name: 'Zoom in', exact: true }).click()
   await selected.getByRole('button', { name: 'Fit topology', exact: true }).click()
   await page.screenshot({ path: resolve(output, 'mobile-topology.png') })
-  const canvas = selected.locator('svg[role="img"]')
+  const canvas = selected.getByRole('img', { name: 'Observed spans and causal links; use the node buttons below to select a span', exact: true })
   await canvas.scrollIntoViewIfNeeded()
   const point = await canvas.evaluate(element => {
     const box = element.getBoundingClientRect(), clips = [box, { left: 0, top: 0, right: innerWidth, bottom: innerHeight }]
