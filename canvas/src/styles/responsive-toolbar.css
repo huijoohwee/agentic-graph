@@ -142,12 +142,8 @@
     width: 100%;
     inline-size: 100%;
     box-sizing: border-box;
-    border-bottom: 1px solid var(--kg-border);
+    border-bottom: var(--kg-surface-border);
     background: var(--kg-panel-bg);
-  }
-
-  .kg-markdown-workspace-explorer-resize {
-    box-shadow: inset 1px 0 0 var(--kg-divider);
   }
 
   .kg-markdown-workspace-explorer-content {
@@ -303,7 +299,7 @@
     min-width: 0;
     max-width: 100%;
     padding-block-start: var(--kg-toolbar-settings-panel-subsection-padding-block-start, 0.5rem);
-    border-block-start: 1px solid var(--kg-border);
+    border-block-start: var(--kg-surface-border);
   }
 
   .kg-toolbar-settings-panel-subsection > :not([hidden]) ~ :not([hidden]) {
@@ -1982,7 +1978,7 @@
     max-width: 100%;
     margin-inline: 0;
     padding: 0 0 0 0.5rem;
-    border-left: 1px solid var(--kg-border);
+    border-left: var(--kg-surface-border);
     box-sizing: border-box;
   }
 
@@ -2511,7 +2507,7 @@
       width: 100%;
       inline-size: 100%;
       box-sizing: border-box;
-      border-top: 1px solid var(--kg-border);
+      border-top: var(--kg-surface-border);
     }
 
     .kg-markdown-workspace-main {
@@ -2561,24 +2557,10 @@
       width: 100% !important;
       min-width: 0;
       max-width: 100%;
-      height: min(40dvh, 16rem);
+      height: var(--kg-explorer-resize-height, min(40dvh, 16rem));
       max-height: 45%;
       border-right-width: 0;
       border-bottom-width: 1px;
-    }
-
-    .kg-markdown-workspace-explorer-resize {
-      display: block;
-      width: 100% !important;
-      inline-size: 100% !important;
-      min-height: 1px;
-      height: 1px !important;
-      block-size: 1px !important;
-      flex: 0 0 1px;
-      cursor: row-resize !important;
-      background-color: var(--kg-border) !important;
-      background-image: none !important;
-      box-shadow: none;
     }
 
     .MainPanelContainer {
@@ -2751,7 +2733,7 @@
     .kg-graph-record-inspector {
       width: 100% !important;
       max-height: 45dvh;
-      border-top: 1px solid var(--kg-border);
+      border-top: var(--kg-surface-border);
     }
 
     .HeaderBar,

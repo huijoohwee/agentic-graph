@@ -20,28 +20,28 @@ export const PANEL_FORM_LABEL_TEXT_CLASSNAME = cn('min-w-0', UI_THEME_TOKENS.tex
 export const PANEL_FORM_SECTION_LABEL_TEXT_CLASSNAME = cn('min-w-0', UI_THEME_TOKENS.text.secondary)
 
 const PANEL_FORM_SINGLE_LINE_FILLED_CONTROL_CLASSNAME = cn(
-  'w-full min-w-0 max-w-full rounded-md border',
+  'w-full min-w-0 max-w-full rounded-md',
   UI_THEME_TOKENS.input.bg,
-  UI_THEME_TOKENS.input.border,
+  UI_THEME_TOKENS.border.outline,
   UI_THEME_TOKENS.input.text,
 )
 
 const PANEL_FORM_MULTI_LINE_FILLED_CONTROL_CLASSNAME = cn(
-  'w-full min-w-0 max-w-full resize-y rounded-md border',
+  'w-full min-w-0 max-w-full resize-y rounded-md',
   UI_THEME_TOKENS.input.bg,
-  UI_THEME_TOKENS.input.border,
+  UI_THEME_TOKENS.border.outline,
   UI_THEME_TOKENS.input.text,
 )
 
 const PANEL_FORM_SINGLE_LINE_TRANSPARENT_CONTROL_CLASSNAME = cn(
-  'w-full min-w-0 max-w-full rounded border bg-transparent',
-  UI_THEME_TOKENS.panel.border,
+  'w-full min-w-0 max-w-full rounded bg-transparent',
+  UI_THEME_TOKENS.border.outline,
   UI_THEME_TOKENS.text.primary,
 )
 
 const PANEL_FORM_MULTI_LINE_TRANSPARENT_CONTROL_CLASSNAME = cn(
-  'w-full min-w-0 max-w-full resize-y rounded border bg-transparent',
-  UI_THEME_TOKENS.panel.border,
+  'w-full min-w-0 max-w-full resize-y rounded bg-transparent',
+  UI_THEME_TOKENS.border.outline,
   UI_THEME_TOKENS.text.primary,
 )
 
@@ -91,7 +91,7 @@ type PanelRangeInputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 't
 
 const PANEL_FORM_CHECKBOX_CLASSNAME = cn(
   `${UI_RESPONSIVE_SELECTION_CONTROL_CLASSNAME} rounded`,
-  UI_THEME_TOKENS.input.border,
+  UI_THEME_TOKENS.border.outline,
   UI_THEME_TOKENS.input.selectionControl,
 )
 
@@ -263,7 +263,7 @@ export function readPanelBooleanChoiceButtonClassName(options: {
   const { active, className } = options
   return cn(
     'App-toolbar__btn border',
-    UI_THEME_TOKENS.input.border,
+    UI_THEME_TOKENS.border.outline,
     active
       ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
       : `${UI_THEME_TOKENS.panel.headerBg} ${UI_THEME_TOKENS.text.primary}`,

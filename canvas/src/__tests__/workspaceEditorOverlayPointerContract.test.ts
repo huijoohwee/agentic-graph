@@ -167,7 +167,7 @@ export function testWorkspaceEditorOverlayDoesNotShrinkCanvasViewport() {
   if (!separatorText.includes("visualStyle?: 'line' | 'centerGrip'")) {
     throw new Error('expected VerticalResizeSeparatorHr to expose a dedicated centered grip variant')
   }
-  if (!separatorText.includes("backgroundSize: '1px 3.5rem'")) {
+  if (!separatorText.includes("'--kg-resize-line-length': visualStyle === 'centerGrip' ? '3.5rem' : '100%'")) {
     throw new Error('expected centered grip variant to render a short centered separator instead of a full-height stroke')
   }
   if (text.includes("${workspaceEditorOverlayOpen ? '' : 'hidden'}")) {

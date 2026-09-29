@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.6.0"
+version: "1.7.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -439,3 +439,35 @@ Affected release validation is reported per candidate, not inferred from this pr
 GTM: Reduces scanning and inspection effort in the existing free/offline interface.
 No adoption or revenue claim. Rollback: revert this revision as a unit, including
 its owner and regression updates; saved choices and source formats need no migration.
+
+
+## Shared neutral borders and resize affordances (2026-09-29)
+
+PRD: Main Panel, Floating Panel, Bottom Panel, toolbar and applicable form controls
+must share the reference border thickness and opacity. Explorer boundaries must
+remain visible, selectable and usable with pointer or keyboard input.
+
+TAD/ADR: The existing theme token owner exports neutral border width, color and
+outline utilities. Shared CSS owns the 1 px surface shorthand; toolbar, modal,
+panel, menu and workspace boundaries consume it. Panel/table dividers use the same
+neutral color as controls. Remove the darker explorer shadow and toolbar divider
+opacity override. Intent and focus colors retain their meaning.
+
+The semantic HR separator draws one 1 px neutral line inside an 8 px hit target.
+Full-length and centered-grip geometry share its color, thickness and interaction
+owner. No decorative child, generic div or aria-hidden affordance is introduced.
+The existing resize runtime handles axis arrows in 8 px steps (Shift: 32 px),
+reuses pointer bounds and cleans up its listeners. Both explorer implementations
+consume that runtime. When the workspace stacks, the explorer boundary changes
+to a horizontal separator and adjusts bounded pane height; desktop width remains
+independent. Saved workspace data and document formats are unchanged.
+
+MVP/evidence: cap 20 files / 80 KB patch; no dependencies or network services added.
+Registered guards prohibit the old filled separator and duplicate border rules;
+keyboard tests cover direction, bounds, modifiers, commit and listener disposal.
+Focused validation and live measurements are recorded in the candidate handoff.
+Release validation is separate evidence and does not establish production parity.
+
+GTM: Reduces visual inconsistency and resize friction in the existing free/offline
+editor. No pricing or adoption claim. Rollback: revert this revision as one unit;
+no storage or document migration is required.

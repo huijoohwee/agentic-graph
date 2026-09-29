@@ -1,7 +1,7 @@
 import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/workspaceUi'
 import type { MarkdownWorkspaceLoadedSnapshot, MarkdownWorkspaceExplorerPresentationArgs } from './markdownWorkspaceRuntime.types'
 import React from 'react'
-import { startPointerDrag } from 'grph-shared/dom/pointerDrag'
+import { bindMarkdownExplorerResize } from '@/features/markdown-workspace/bindMarkdownExplorerResize'
 import { LS_KEYS } from '@/lib/config'
 import { lsSetBool, lsSetInt } from '@/lib/persistence'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
@@ -515,27 +515,11 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
   React.useEffect(() => {
     const el = resizeHandleEl
     if (!el) return
-    const onDown = (ev: PointerEvent) => {
-      if (ev.button !== undefined && ev.button !== 0) return
-      const startX = ev.clientX
-      const startWidth = sidebarWidthPxRef.current
-      let pending = startWidth
-      startPointerDrag({
-        ev,
-        cursor: 'col-resize',
-        shouldStart: down => (down.button === undefined || down.button === 0),
-        onMove: mv => {
-          const dx = mv.clientX - startX
-          const next = Math.max(SIDEBAR_MIN_PX, Math.min(SIDEBAR_MAX_PX, Math.round(startWidth + dx)))
-          pending = next
-          setSidebarWidthPx(next)
-        },
-        onEnd: () => setSidebarWidthPx(pending),
-        onCancel: () => setSidebarWidthPx(pending),
-      })
-    }
-    el.addEventListener('pointerdown', onDown)
-    return () => el.removeEventListener('pointerdown', onDown)
+    return bindMarkdownExplorerResize({
+      el, minWidth: SIDEBAR_MIN_PX, maxWidth: SIDEBAR_MAX_PX,
+      readWidth: () => sidebarWidthPxRef.current,
+      setWidth: next => { sidebarWidthPxRef.current = next; setSidebarWidthPx(next) },
+    })
   }, [resizeHandleEl, setSidebarWidthPx])
 
   const sourceFilesExplorerEntries = React.useMemo(() => {

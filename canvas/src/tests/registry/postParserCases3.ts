@@ -1,6 +1,8 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 import { TEST_CASES_POST_PARSER_3_TAIL } from './postParserCases3Tail'
 export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
+  ["ui.panels.borders.sharedOwner", "@/__tests__/sharedPanelBorders.test", "testSharedPanelBordersForbidLegacyVariants"],
+  ["ui.panels.borders.resizeKeyboard", "@/__tests__/sharedPanelBorders.test", "testResizeSeparatorKeyboardUsesBoundedDragOwner"],
   ["ui.panels.colour.math", "@/__tests__/panelColorPicker.test", "testPanelColorMath"],
   ["ui.panels.colour.interaction", "@/__tests__/panelColorPicker.test", "testPanelColorInteraction"],
   ["ui.panels.colour.forbidNative", "@/__tests__/panelColorPicker.test", "testPanelColorForbidsNativeVariants"],

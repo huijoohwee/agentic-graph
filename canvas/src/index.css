@@ -4,6 +4,7 @@
 @import './styles/kgTokens.generated.css';
 @import './styles/application-typography.css';
 @import './styles/semantic-colour-palette.css';
+@import './styles/shared-borders.css';
 @import './styles/responsive-toolbar.css';
 @import './styles/responsive-canvas-toolbar.css';
 @import './styles/markdown-presentation-responsive.css';
@@ -23,7 +24,6 @@
   --padding: 0.5rem;
   --toolbar-gap: 0.5rem;
   --toolbar-padding: 0.5rem 0.75rem;
-  --kg-surface-border-width: 1px;
   --kg-toolbar-compact-pad-y: 0.25rem;
   --kg-toolbar-compact-pad-x: 0.5rem;
   --kg-toolbar-compact-padding: var(--kg-toolbar-compact-pad-y) var(--kg-toolbar-compact-pad-x);
@@ -211,7 +211,7 @@
   }
   .kg-panel-action-btn {
     background: var(--kg-panel-action-bg);
-    border: 1px solid var(--kg-border);
+    border: var(--kg-surface-border);
     transition: var(--kg-transition-action);
     touch-action: manipulation;
   }
@@ -431,17 +431,16 @@ html, body, #root {
   }
 
   .App-toolbar__divider {
-    width: 1px;
+    width: var(--kg-surface-border-width);
     height: calc(var(--kg-control-height, 28px) - 12px);
-    background-color: var(--divider-color);
+    background-color: var(--kg-border);
     border: none;
-    opacity: 0.7;
     margin-left: var(--toolbar-gap);
     margin-right: var(--toolbar-gap);
   }
   .Island {
     background-color: var(--island-bg);
-    border: var(--kg-surface-border-width) solid var(--island-border-color);
+    border: var(--kg-surface-border);
     border-radius: var(--island-radius);
     box-shadow: var(--island-shadow);
   }
@@ -451,7 +450,7 @@ html, body, #root {
     gap: var(--toolbar-gap);
     padding: var(--toolbar-padding);
     background-color: rgba(var(--panel-bg-rgb),var(--toolbar-opacity));
-    border: var(--kg-surface-border-width) solid var(--island-border-color);
+    border: var(--kg-surface-border);
     border-radius: var(--island-radius);
     box-shadow: var(--island-shadow);
     min-height: var(--kg-control-height, 36px);
@@ -539,7 +538,7 @@ html, body, #root {
   .ModalContainer {
     position: relative;
     background-color: rgba(var(--panel-bg-rgb), var(--panel-opacity));
-    border: 1px solid var(--island-border-color);
+    border: var(--kg-surface-border);
     border-radius: 0.5rem;
     box-shadow: 0 1px 2px rgba(0,0,0,0.08);
     padding: 1rem;
@@ -549,7 +548,7 @@ html, body, #root {
   .MainPanelContainer {
     position: relative;
     background-color: rgba(var(--panel-bg-rgb), var(--panel-opacity));
-    border: 1px solid var(--island-border-color);
+    border: var(--kg-surface-border);
     border-radius: 0.5rem;
     box-shadow: 0 1px 2px rgba(0,0,0,0.08);
     overflow: hidden;
@@ -560,7 +559,7 @@ html, body, #root {
     top: 0;
     z-index: 20;
     background-color: rgba(var(--panel-bg-rgb), var(--panel-opacity));
-    border-bottom: 1px solid var(--island-border-color);
+    border-bottom: var(--kg-surface-border);
     min-height: 36px;
   }
   .MainPanelContainer .FooterBar {
@@ -576,12 +575,12 @@ html, body, #root {
     font-size: var(--kg-text-xs);
     color: var(--kg-statusbar-text);
     background-color: var(--kg-statusbar-bg);
-    border-top: 1px solid var(--island-border-color);
+    border-top: var(--kg-surface-border);
   }
   .MenuPopover {
     position: absolute;
     background-color: rgba(var(--panel-bg-rgb), var(--panel-opacity));
-    border: 1px solid var(--island-border-color);
+    border: var(--kg-surface-border);
     border-radius: 0.5rem;
     box-shadow: 0 1px 2px rgba(0,0,0,0.08);
     font-size: var(--kg-text-sm);
@@ -594,6 +593,6 @@ html, body, #root {
 
   /* Keep Monaco gutter/line-number column visually separated from text area. */
   .kg-monaco-editor-host .monaco-editor .margin {
-    border-right: 1px solid var(--kg-divider) !important;
+    border-right: var(--kg-surface-border) !important;
   }
 }
