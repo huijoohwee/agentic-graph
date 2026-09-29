@@ -74,7 +74,7 @@
   left: 0;
   z-index: 1;
   height: var(--kg-video-sequence-lane-height, 61px);
-  border-bottom: 1px solid color-mix(in srgb, var(--kg-border, #cbd5e1) 58%, transparent);
+  border-bottom: var(--kg-surface-border);
   background: color-mix(in srgb, var(--kg-panel-bg, #fff) 97%, var(--kg-canvas-accent, #2563eb) 3%);
 }
 

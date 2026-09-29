@@ -244,36 +244,36 @@ export function RendererGraphTopologySummary({ graph }: { graph?: GraphData } = 
   if (!summary) return null
 
   return (
-    <section className={`rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.headerBg} px-2 py-2`} aria-label="Graph topology">
-      <section className={`mb-2 text-xs font-semibold ${UI_THEME_TOKENS.button.text}`}>Graph topology</section>
+    <section className={`min-w-0 rounded ${UI_THEME_TOKENS.border.outline} ${UI_THEME_TOKENS.panel.headerBg} px-2 py-2`} aria-label="Graph topology">
+      <section className={`${UI_THEME_TOKENS.control.height} min-w-0 content-center truncate text-xs font-semibold ${UI_THEME_TOKENS.button.text}`}>Graph topology</section>
       <section className={RENDERER_GRAPH_TOPOLOGY_STATS_GRID_CLASS_NAME}>
-        <section className="flex items-center justify-between gap-2">
+        <section className={`flex min-w-0 items-center justify-between gap-2 ${UI_THEME_TOKENS.control.height}`}>
           <span className={UI_THEME_TOKENS.text.tertiary}>Nodes</span>
           <span className={UI_THEME_TOKENS.text.primary}>{formatCount(summary.nodeCount)}</span>
         </section>
-        <section className="flex items-center justify-between gap-2">
+        <section className={`flex min-w-0 items-center justify-between gap-2 ${UI_THEME_TOKENS.control.height}`}>
           <span className={UI_THEME_TOKENS.text.tertiary}>Edges</span>
           <span className={UI_THEME_TOKENS.text.primary}>{formatCount(summary.edgeCount)}</span>
         </section>
-        <section className="flex items-center justify-between gap-2">
+        <section className={`flex min-w-0 items-center justify-between gap-2 ${UI_THEME_TOKENS.control.height}`}>
           <span className={UI_THEME_TOKENS.text.tertiary}>Connected</span>
           <span className={UI_THEME_TOKENS.text.primary}>{formatCount(summary.connectedNodeCount)}</span>
         </section>
-        <section className="flex items-center justify-between gap-2">
+        <section className={`flex min-w-0 items-center justify-between gap-2 ${UI_THEME_TOKENS.control.height}`}>
           <span className={UI_THEME_TOKENS.text.tertiary}>Structural</span>
           <span className={UI_THEME_TOKENS.text.primary}>{formatCount(summary.structuralEdgeCount)}</span>
         </section>
         {(prunedNodes > 0 || prunedEdges > 0) ? (
-          <section className={`col-span-2 flex items-center justify-between gap-2 ${UI_THEME_TOKENS.text.secondary}`}>
+          <section className={`sm:col-span-2 flex min-w-0 items-center justify-between gap-2 ${UI_THEME_TOKENS.text.secondary}`}>
             <span>Pruned</span>
             <span>{formatCount(prunedNodes)} nodes / {formatCount(prunedEdges)} edges</span>
           </section>
         ) : null}
       </section>
-      <section className={`mt-2 text-xs ${UI_THEME_TOKENS.text.tertiary}`}>
+      <section title={`Types: ${compactCounts(summary.topNodeTypes)}`} className={`${UI_THEME_TOKENS.control.height} min-w-0 content-center truncate text-xs ${UI_THEME_TOKENS.text.tertiary}`}>
         Types: {compactCounts(summary.topNodeTypes)}
       </section>
-      <section className={`mt-1 text-xs ${UI_THEME_TOKENS.text.tertiary}`}>
+      <section title={`Labels: ${compactCounts(summary.topEdgeLabels)}`} className={`${UI_THEME_TOKENS.control.height} min-w-0 content-center truncate text-xs ${UI_THEME_TOKENS.text.tertiary}`}>
         Labels: {compactCounts(summary.topEdgeLabels)}
       </section>
       {rendererHighlights.length > 0 ? (

@@ -1,17 +1,15 @@
-import { PanelSelect } from '@/lib/ui/panelFormControls'
+import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   UI_RESPONSIVE_CONTROL_ROW_CLASSNAME,
   UI_RESPONSIVE_CONTROL_INPUT_CLASSNAME,
-  UI_RESPONSIVE_CONTROL_SELECT_CLASSNAME,
   UI_RESPONSIVE_CONTROL_TOGGLE_BUTTON_CLASSNAME,
   UI_RESPONSIVE_CONTROL_TOGGLE_GROUP_CLASSNAME,
   UI_RESPONSIVE_CONTROL_TOGGLE_GROUP_END_CLASSNAME,
   UI_RESPONSIVE_SPLIT_CONTROL_HALF_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
 
 type ControlRowAlign = 'center' | 'start'
 
@@ -71,18 +69,23 @@ export function ResponsiveControlRow({
 }: ResponsiveControlRowProps) {
   const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || 'text-xs')
   const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || '')
+  const labelId = React.useId()
   const widthClassName = responsiveControlWidthClassName(compact)
   const alignClassName = align === 'start' ? 'items-start' : 'items-center'
 
   return (
     <section className={`flex ${UI_RESPONSIVE_CONTROL_ROW_CLASSNAME} ${compact ? 'flex-col' : `flex-row ${alignClassName}`} ${rowClassName || ''}`}>
-      <label
-        className={`${widthClassName} ${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} font-normal ${UI_THEME_TOKENS.text.secondary} ${labelClassName || ''}`}
+      <label id={labelId}
+        className={`${widthClassName} ${UI_THEME_TOKENS.control.height} min-w-0 content-center truncate ${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} font-normal ${UI_THEME_TOKENS.text.secondary} ${labelClassName || ''}`}
       >
         {label}
       </label>
       <section className={`${widthClassName} min-w-0 ${valueClassName || ''}`}>
-        {children}
+        {React.Children.map(children, child => {
+          if (!React.isValidElement<Record<string, unknown>>(child) || child.props['aria-label'] || child.props['aria-labelledby']) return child
+          const isField = child.type === PanelSelect || child.type === ResponsiveControlInput || child.type === 'input' || child.type === 'select'
+          return isField ? React.cloneElement(child, { 'aria-labelledby': labelId }) : child
+        })}
       </section>
     </section>
   )
@@ -94,14 +97,11 @@ export function ResponsiveControlInput({
 }: ResponsiveControlInputProps) {
   const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || 'text-xs')
   const uiPanelTextFontClass = useGraphStore(s => s.uiPanelTextFontClass || '')
-  const uiPanelKeyValueInputClass = useGraphStore(
-    s => s.uiPanelKeyValueInputClass || PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass,
-  )
 
   return (
-    <input
+    <PanelTextInput
       {...inputProps}
-      className={`${uiPanelKeyValueInputClass} ${uiPanelTextFontClass} ${uiPanelKeyValueTextSizeClass} ${UI_RESPONSIVE_CONTROL_INPUT_CLASSNAME} ${className || ''}`}
+      className={`${uiPanelTextFontClass} ${uiPanelKeyValueTextSizeClass} ${UI_RESPONSIVE_CONTROL_INPUT_CLASSNAME} ${className || ''}`}
     />
   )
 }
@@ -152,7 +152,7 @@ export function ResponsiveSelectRow({
   return (
     <ResponsiveControlRow label={label} compact={compact}>
       <PanelSelect
-        className={`${UI_RESPONSIVE_CONTROL_SELECT_CLASSNAME} border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.text.primary} ${uiPanelTextFontClass} ${uiPanelKeyValueTextSizeClass}`}
+        className={`${UI_THEME_TOKENS.border.outline} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.text.primary} ${uiPanelTextFontClass} ${uiPanelKeyValueTextSizeClass}`}
         value={value}
         disabled={disabled}
         onValueChange={selectedValueInput => onChange(String(selectedValueInput || ''))}

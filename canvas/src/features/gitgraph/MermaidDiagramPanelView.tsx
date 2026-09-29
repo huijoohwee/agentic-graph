@@ -132,11 +132,12 @@ function StructuredMermaidFallbackPreview({
   return (
     <section
       className={cn(
-        'relative min-h-0 overflow-auto rounded-md border',
+        'relative min-h-0 min-w-0 overflow-auto rounded-md border',
         compact ? 'max-h-36' : 'min-h-36 flex-1',
         UI_THEME_TOKENS.panel.border,
         UI_THEME_TOKENS.panel.bg,
       )}
+      aria-label={`${kind} diagram`}
       data-kg-mermaid-diagram-render="1"
       data-kg-mermaid-diagram-renderer="structured-fallback"
       data-kg-mermaid-diagram-kind={kind}
@@ -200,11 +201,12 @@ export function MermaidDiagramRenderPreview({
   return (
     <section
       className={cn(
-        'relative min-h-0 overflow-auto rounded-md border',
+        'relative min-h-0 min-w-0 overflow-auto rounded-md border',
         compact ? 'max-h-36' : 'min-h-36 flex-1',
         UI_THEME_TOKENS.panel.border,
         UI_THEME_TOKENS.panel.bg,
       )}
+      aria-label={`${kind} diagram`}
       data-kg-mermaid-diagram-render="1"
       data-kg-mermaid-diagram-kind={kind}
       data-kg-mermaid-diagram-selected-row={selectedRowKey || undefined}
@@ -313,14 +315,14 @@ export function MermaidDiagramPanelView({
 
   return (
     <section
-      className={cn('flex h-full min-h-0 flex-col gap-2', compact && 'gap-1')}
+      className={cn('flex h-full min-h-0 min-w-0 flex-col gap-2', compact && 'gap-1')}
       aria-label={panelAriaLabel}
       data-kg-mermaid-diagram-panel="1"
       data-kg-mermaid-diagram-kind={kind}
       data-kg-mermaid-diagram-surface={surface}
       data-kg-mermaid-diagram-render-mode={renderMode}
     >
-      <header className="flex min-w-0 items-center justify-between gap-2 px-1">
+      <header className={`flex min-w-0 items-center justify-between gap-2 px-1 ${UI_THEME_TOKENS.control.height}`}>
         <section className="min-w-0">
           <section className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>{title}</section>
           {showRowList ? (
