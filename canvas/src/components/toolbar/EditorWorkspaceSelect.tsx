@@ -1,4 +1,5 @@
 import React from 'react'
+import { SurfaceSeparator } from '@/components/ui/SurfaceSeparator'
 import { useShallow } from 'zustand/react/shallow'
 import { Database, FileCode, Link2, SaveAll } from 'lucide-react'
 import { UI_COPY, UI_LABELS } from '@/lib/config'
@@ -197,8 +198,8 @@ export function EditorWorkspaceSelect({ iconSizeClass, iconStrokeWidth, ensureBa
       )}
       renderMenuAppend={() => (
         <>
-          <li className="list-none px-1 py-0.5">
-            <hr className={`border-t ${UI_THEME_TOKENS.panel.border}`} />
+          <li className="list-none px-1">
+            <SurfaceSeparator label="Workspace sync controls separator" />
           </li>
           <li className="list-none">
             <button

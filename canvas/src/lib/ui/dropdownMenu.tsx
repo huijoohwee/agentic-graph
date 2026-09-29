@@ -9,5 +9,5 @@ export function DropdownMenuSurface({ className = '', ...props }: React.HTMLAttr
 }
 
 export function dropdownMenuOptionClassName(active: boolean): string {
-  return `${UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME} disabled:opacity-50 disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:cursor-not-allowed ${uiSelectableRowClassName(active)}`
+  return `${UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME} ${UI_THEME_TOKENS.control.singleLine} disabled:opacity-50 disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:cursor-not-allowed ${uiSelectableRowClassName(active)}`
 }

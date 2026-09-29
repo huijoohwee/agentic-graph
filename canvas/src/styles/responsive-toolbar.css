@@ -1,4 +1,4 @@
-:root { --kg-overlay-max-height: calc(100dvh - var(--kg-safe-top) - var(--kg-safe-bottom) - 1rem); }
+:root { --kg-control-height: 28px; --kg-overlay-max-height: calc(100dvh - var(--kg-safe-top) - var(--kg-safe-bottom) - 1rem); }
 
   .kg-collapsible-toolbar-overflow {
     max-width: calc(100vw - var(--kg-safe-left) - var(--kg-safe-right) - 1rem);
@@ -1969,7 +1969,7 @@
     max-inline-size: calc(100vw - var(--kg-safe-left) - var(--kg-safe-right) - var(--kg-toolbar-dropdown-inline-clearance, 1rem));
   }
 
-  .kg-toolbar-dropdown-menu .kg-menu-row { height: var(--kg-control-height, 28px); }
+  .kg-menu-row { height: var(--kg-control-height, 28px); min-height: var(--kg-control-height, 28px); padding-block: 0; }
   .kg-toolbar-dropdown-option-value { min-width: 0; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   .kg-click-expand-menu-children {
@@ -2003,8 +2003,8 @@
     flex: 1 1 0;
     min-width: 0;
     max-width: 100%;
-    height: var(--kg-column-header-filter-field-height, 1.75rem);
-    block-size: var(--kg-column-header-filter-field-height, 1.75rem);
+    height: var(--kg-control-height, 28px);
+    block-size: var(--kg-control-height, 28px);
     padding-inline: var(--kg-column-header-filter-field-padding-inline, 0.5rem);
   }
 
@@ -2014,8 +2014,8 @@
     justify-content: center;
     min-width: 0;
     max-width: 100%;
-    height: var(--kg-column-header-filter-action-height, 1.75rem);
-    block-size: var(--kg-column-header-filter-action-height, 1.75rem);
+    height: var(--kg-control-height, 28px);
+    block-size: var(--kg-control-height, 28px);
     padding-inline: var(--kg-column-header-filter-action-padding-inline, 0.5rem);
   }
 
@@ -2378,7 +2378,7 @@
   }
 
   @media (pointer: coarse), (max-width: 768px) {
-    :root { --kg-mobile-bottom-dock-clearance: calc(var(--kg-control-height, 28px) + 2.75rem); --kg-overlay-max-height: calc(100dvh - var(--kg-safe-top) - var(--kg-safe-bottom) - var(--kg-mobile-bottom-dock-clearance)); }
+    :root { --kg-control-height: var(--kg-touch-target, 44px); --kg-mobile-bottom-dock-clearance: calc(var(--kg-control-height, 28px) + 2.75rem); --kg-overlay-max-height: calc(100dvh - var(--kg-safe-top) - var(--kg-safe-bottom) - var(--kg-mobile-bottom-dock-clearance)); }
 
     .kg-canvas-diagnostic-panel {
       inset-block-end: calc(var(--kg-safe-bottom) + var(--kg-mobile-bottom-dock-clearance) + 0.5rem);
@@ -2540,9 +2540,9 @@
     }
 
     .kg-markdown-workspace-pane-divider {
-      width: auto;
-      height: 1px;
-      min-height: 1px;
+      width: 100%;
+      height: var(--kg-resize-separator-thickness);
+      min-height: var(--kg-resize-separator-thickness);
       align-self: stretch;
     }
 
@@ -2631,7 +2631,7 @@
     }
 
     .kg-touch-menu-row {
-      min-height: var(--kg-touch-target, 44px);
+      min-height: var(--kg-control-height, 28px);
     }
 
     .App-toolbar--touch-row-scroll {

@@ -13,6 +13,7 @@
 }
 
 @layer components {
+  .kg-surface-separator,
   .kg-resize-separator {
     flex-shrink: 0;
     margin: 0;
@@ -24,9 +25,13 @@
     background-position: center;
     background-repeat: no-repeat;
   }
+  .kg-surface-separator[aria-orientation="vertical"] { width: var(--kg-resize-separator-thickness); align-self: stretch; }
+  .kg-surface-separator[aria-orientation="horizontal"] { width: 100%; height: var(--kg-resize-separator-thickness); }
+  .kg-surface-separator[aria-orientation="vertical"],
   .kg-resize-separator[aria-orientation="vertical"] {
     background-size: var(--kg-surface-border-width) var(--kg-resize-line-length, 100%);
   }
+  .kg-surface-separator[aria-orientation="horizontal"],
   .kg-resize-separator[aria-orientation="horizontal"] {
     background-size: var(--kg-resize-line-length, 100%) var(--kg-surface-border-width);
   }

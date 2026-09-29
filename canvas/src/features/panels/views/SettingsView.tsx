@@ -488,7 +488,7 @@ export default function SettingsView({
             </section>
           )}
           {mode === 'payments' && (
-            <section className={`p-2 border-b border-white/10 ${UI_THEME_TOKENS.text.secondary}`}>
+            <section className={`p-2 border-b ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.text.secondary}`}>
               <section className="flex flex-wrap items-center gap-1">
                 <span className={`text-xs font-semibold ${UI_THEME_TOKENS.text.primary}`}>Providers</span>
                 {paymentsProviders.map(provider => (
