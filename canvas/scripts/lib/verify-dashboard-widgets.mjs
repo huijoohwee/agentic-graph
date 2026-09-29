@@ -47,6 +47,8 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
 async function configureWidget(frame, keyboard = false) {
   // A saved/removed card can update before its asynchronous configuration close.
   await frame.locator('section.kg-dashboard-widget-face[data-kg-widget-face="front"]').waitFor()
+  // Clear the prior selection so its docked Flip action cannot intercept the next card click.
+  await frame.press('Escape')
   if (keyboard) await frame.press('Enter')
   else await frame.click()
   assert.equal(await frame.getByRole('form', { name: 'Widget configuration' }).count(), 0, 'Selection must reveal actions, not configuration')
