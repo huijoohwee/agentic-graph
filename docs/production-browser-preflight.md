@@ -3,7 +3,7 @@ title: "Production browser preflight"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 status: "active"
 continuity_id: "GRAPH-BROWSER-PREFLIGHT-001"
-revision: 5
+revision: 6
 owner: "agentic-graph"
 frontmatter_contract: "required"
 version: "0.1.1"
@@ -27,6 +27,27 @@ gtm_revision: "0.1.1"
 ---
 
 # Production browser preflight
+
+## Revision 6: Source Files disclosure proof
+
+Release36616395606 passed Home, catalog, Physics and persisted-source recovery, then timed out
+opening `docs`. The verifier still clicked folder selection and expected a sibling `ul`; the
+shared DirectoryTree controls now expose a separate Expand/Collapse button and a labeled contents
+section. The source inventory requirement remains exact and unchanged.
+
+PRD/MVP: prove the complete visible canonical seed inventory through the user-facing tree.
+TAD/ADR: the fidelity owner imports one directory inventory helper, clicks only a collapsed
+disclosure, waits for its expanded state and labeled contents, and reads direct visible file rows.
+Nested and hidden files cannot satisfy the inventory; duplicates remain in the comparison.
+GTM: this is release-verifier compatibility, with no new product feature, dependency or spend.
+
+The release preflight regression bundles the real DirectoryTree controls, reproduces the old
+sibling-list timeout, and verifies disclosure idempotence, unchanged selection, nested-row
+exclusion, hidden-row rejection and duplicate preservation. The same owner remains required in
+the isolated artifact and live production gates. Budget: four files, 12 KiB authored delta,
+20 active implementation/proof minutes; provider CI and human decisions are external dependencies.
+This revision completes only implementation and focused proof; protected source integration,
+canonical Dev certification, exact production authorization and live release receipts remain required.
 
 ## PRD: browser acceptance
 
