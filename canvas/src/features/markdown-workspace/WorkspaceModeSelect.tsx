@@ -93,7 +93,7 @@ export function WorkspaceModeSelect<T extends string>(props: {
     <PanelSelect
       className={`kg-workspace-mode-select h-6 min-w-0 max-w-full rounded px-1 border-0 outline-none ${panelTypography.microLabelClass} font-medium ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.text} ${activeClass}`}
       value={props.value}
-      onChange={e => props.onChange(e.target.value as T)}
+      onValueChange={selectedValueInput => props.onChange(selectedValueInput as T)}
       aria-label={props.ariaLabel}
     >
       {props.options.map(o => (

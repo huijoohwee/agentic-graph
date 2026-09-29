@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import type { GraphSchema } from '@/lib/graph/schema'
 import { MarkdownStructuredTextEditor } from '@/features/markdown/ui/MarkdownStructuredTextEditor'
 import { Eraser } from 'lucide-react'
@@ -67,14 +68,14 @@ export function SchemaUiHeaderRow({
   return (
     <>
       <section className="Stack Stack_horizontal items-center gap-1 mb-1">
-        <select
+        <PanelSelect
           value={selectedKey}
-          onChange={e => setSelectedKey(e.target.value)}
+          onValueChange={selectedValueInput => setSelectedKey(selectedValueInput)}
           className={`${schemaInputClassName} ${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass}`}
         >
           {availableKeys.length === 0 && <option value="">(none)</option>}
           {availableKeys.map(k => <option key={k} value={k}>{k}</option>)}
-        </select>
+        </PanelSelect>
         <input
           value={newKey}
           onChange={e => setNewKey(e.target.value)}
@@ -259,10 +260,10 @@ export function SchemaUiValidationRulesRow({
             {propertyNames.map(p => (
               <section key={p} className="flex items-center gap-1">
                 <span className={`${schemaValueTextClassName} ${UI_RESPONSIVE_SCHEMA_PROPERTY_NAME_CLASSNAME}`}>{p}</span>
-                <select
+                <PanelSelect
                   value={typesMap[p] ?? 'string'}
-                  onChange={e => {
-                    const v = e.target.value as 'string' | 'number' | 'boolean' | 'array' | 'object'
+                  onValueChange={selectedValueInput => {
+                    const v = selectedValueInput as 'string' | 'number' | 'boolean' | 'array' | 'object'
                     setTypesMap({ ...typesMap, [p]: v })
                   }}
                   className={`${UI_RESPONSIVE_PANEL_INLINE_FIELD_CLASSNAME} text-xs rounded border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.text} ${UI_THEME_TOKENS.focus.primaryBorderRing} flex-1`}
@@ -272,7 +273,7 @@ export function SchemaUiValidationRulesRow({
                   <option value="boolean">boolean</option>
                   <option value="array">array</option>
                   <option value="object">object</option>
-                </select>
+                </PanelSelect>
               </section>
             ))}
           </section>
@@ -303,9 +304,9 @@ export function SchemaUiValidationRulesRow({
             <Eraser className="w-3.5 h-3.5" />
             {UI_COPY.validationClearRequiredButtonLabel}
           </button>
-          <select
+          <PanelSelect
             value={bulkType}
-            onChange={e => setBulkType(e.target.value as typeof bulkType)}
+            onValueChange={selectedValueInput => setBulkType(selectedValueInput as typeof bulkType)}
             className={`${schemaInputClassName} text-xs`}
           >
             <option value="string">string</option>
@@ -313,7 +314,7 @@ export function SchemaUiValidationRulesRow({
             <option value="boolean">boolean</option>
             <option value="array">array</option>
             <option value="object">object</option>
-          </select>
+          </PanelSelect>
           <button
             type="button"
             className={schemaActionButtonClassName}

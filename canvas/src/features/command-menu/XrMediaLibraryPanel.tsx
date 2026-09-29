@@ -201,7 +201,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
             <span className={UI_THEME_TOKENS.text.tertiary}>Terrain / Environment</span>
             <PanelSelect
               value={runtime.plan.stageId}
-              onChange={event => runInvocation(buildXrStageInvocation(event.target.value))}
+              onValueChange={selectedValueInput => runInvocation(buildXrStageInvocation(selectedValueInput))}
               aria-label="Change XR terrain or environment"
               data-kg-media-xr-terrain-selector="1"
               data-kg-media-xr-default-terrain={XR_MOTION_REFERENCE_DEFAULT_STAGE_ID}
@@ -215,7 +215,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
             <span className={UI_THEME_TOKENS.text.tertiary}>Add 3D Object / Asset</span>
             <PanelSelect
               value={selectedAsset?.id || XR_SCENE_LIBRARY_DEFAULT_ASSET_ID}
-              onChange={event => setSelectedAssetId(event.target.value)}
+              onValueChange={selectedValueInput => setSelectedAssetId(selectedValueInput)}
               aria-label="Select featured XR 3D object or asset"
               data-kg-media-xr-featured-asset-selector="1"
               data-kg-media-xr-default-asset={XR_SCENE_LIBRARY_DEFAULT_ASSET_ID}

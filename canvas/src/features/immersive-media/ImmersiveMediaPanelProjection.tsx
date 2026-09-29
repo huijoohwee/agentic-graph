@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import { ThreeRendererControls } from '@/lib/three/ThreeRendererControls'
 import React from 'react'
 import {
@@ -124,16 +125,16 @@ function MediaSourceControls() {
       }}
       aria-label="Immersive media source"
     >
-      <select
+      <PanelSelect
         className="App-toolbar__select min-w-0 text-xs"
         value={kind}
-        onChange={event => setKind(event.target.value as ImmersiveMediaSourceKind)}
+        onValueChange={selectedValueInput => setKind(selectedValueInput as ImmersiveMediaSourceKind)}
         aria-label="Source kind"
       >
         <option value="procedural">Zero config</option>
         <option value="image">Image</option>
         <option value="video">Video</option>
-      </select>
+      </PanelSelect>
       <input
         className="App-toolbar__input min-w-0 text-xs"
         value={url}
@@ -176,10 +177,10 @@ function SemanticSpaceMediaSource() {
   return <section className="grid gap-1 rounded border p-1 text-xs" aria-label="Current local image">
     {imported ? <strong>Image imported. Choose the next step.</strong> : null}
     <img className="max-h-28 w-full rounded object-contain" src={displayedImageUrl} alt="Current local space evidence" />
-    <label className="grid gap-1">Open 3D view as<select aria-label="Photo object presentation" className="min-h-11 w-full rounded border bg-transparent px-2"
-      value={objectPresentation} onChange={event => setObjectPresentation(event.currentTarget.value as 'photo' | 'layout' | 'models')}>
+    <label className="grid gap-1">Open 3D view as<PanelSelect aria-label="Photo object presentation" className="min-h-11 w-full rounded border bg-transparent px-2"
+      value={objectPresentation} onValueChange={selectedValueInput => setObjectPresentation(selectedValueInput as 'photo' | 'layout' | 'models')}>
       <option value="layout">Solid scene · orbit and select</option><option value="photo">Compare with photo</option><option value="models">Photo-aligned meshes only</option>
-    </select></label>
+    </PanelSelect></label>
     <p>{objectPresentation === 'layout' ? 'Explore saved solid objects. Use Compose solid scene below to turn box or contour regions into buildings, terrain and other shapes.' : 'Compare source regions with their models. The photograph is reference evidence, not reconstructed surroundings.'}</p>
     {(['objects', 'image'] as const).map(presentation => <button key={presentation} type="button" className="App-toolbar__btn min-h-11" disabled={opening} onClick={() => {
       const job = new AbortController(); openingRef.current?.abort(); openingRef.current = job

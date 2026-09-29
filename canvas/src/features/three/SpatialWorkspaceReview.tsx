@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { useSourceFilesBootstrapReady } from '../source-files/sourceFilesBootstrapReadiness'
 import { LearningOfflineControls } from '../python-learning/LearningOfflineControls'
@@ -59,9 +60,9 @@ export function SpatialWorkspaceReview() {
     {snapshot && !snapshot.ok && <><p role="status">{snapshot.message}</p><button type="button" className="min-h-11 rounded border px-3" onClick={() => setRefresh(value => value + 1)}>Refresh inspection</button></>}
     {snapshot?.ok && 'provenance' in snapshot && <p>Authored positions · metres. Simulated bounds · approximate. {snapshot.provenance.observation ? `Imported observation · ${snapshot.provenance.observation.availability} · ${snapshot.provenance.observation.units} · physical scale unknown.` : 'No observation linked.'}</p>}
     {!proposal && <fieldset disabled={working || review.preparing || !inspectionCurrent || !snapshot?.ok} className="grid min-w-0 gap-2">
-      <label className="grid gap-1">Object<select aria-label="Review object" value={subject?.id || ''} onChange={event => setSelected(event.target.value)} className="min-h-11 rounded border bg-transparent p-1">
+      <label className="grid gap-1">Object<PanelSelect aria-label="Review object" value={subject?.id || ''} onValueChange={selectedValueInput => setSelected(selectedValueInput)} className="min-h-11 rounded border bg-transparent p-1">
         {subjects.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
-      </select></label>
+      </PanelSelect></label>
       <label className="grid gap-1">Position in metres (x, y, z)<input aria-label="Proposed position" value={position} onChange={event => setPosition(event.target.value)} className="min-h-11 rounded border bg-transparent p-1" /></label>
       <label className="grid gap-1">Scale<input aria-label="Proposed scale" type="number" min="0.25" max="4" step="0.001" value={scale} onChange={event => setScale(event.target.value)} className="min-h-11 rounded border bg-transparent p-1" /></label>
       <button type="button" className="min-h-11 rounded border px-3" onClick={() => void run(async () => {

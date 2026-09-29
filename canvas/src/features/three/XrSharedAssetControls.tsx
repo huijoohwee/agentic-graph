@@ -140,7 +140,7 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
           <PanelSelect
             value={snapshot.selectedActorId || snapshot.selectedTargetId}
             disabled={!targetOptions.length}
-            onChange={event => run('select-target', { targetId: event.currentTarget.value })}
+            onValueChange={selectedValueInput => run('select-target', { targetId: selectedValueInput })}
             aria-label="Shared 3D for XR object, prop, subject, or NPC target"
             data-kg-xr-shared-asset-target-selector={surface}
           >
@@ -155,7 +155,7 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
           <PanelSelect
             value={selectedPreset}
             disabled={!compatiblePresets.length}
-            onChange={event => setPresetId(event.currentTarget.value as XrAnimationPresetId)}
+            onValueChange={selectedValueInput => setPresetId(selectedValueInput as XrAnimationPresetId)}
             aria-label="Shared 3D for XR animation preset"
             data-kg-xr-shared-asset-preset-selector={surface}
           >

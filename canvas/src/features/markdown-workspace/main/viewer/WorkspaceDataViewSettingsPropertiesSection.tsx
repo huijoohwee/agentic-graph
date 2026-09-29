@@ -462,8 +462,8 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
                         <WorkspaceDataViewFieldSelect
                           className={[UI_FOCUS_RING, MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME, 'w-full text-left', MAP_SELECT_CHEVRON_ALIGN_CLASS].join(' ')}
                           value={graphRole}
-                          onChange={e => {
-                            setColumnGraphRole(c.id, e.target.value as WorkspaceDataViewGraphColumnRole)
+                          onValueChange={selectedValueInput => {
+                            setColumnGraphRole(c.id, selectedValueInput as WorkspaceDataViewGraphColumnRole)
                           }}
                           disabled={!props.canMutate || props.view.graphEnabled !== true}
                         >
@@ -588,8 +588,8 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
                               <WorkspaceDataViewFieldSelect
                                 className={[UI_FOCUS_RING, MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME, 'w-full text-left', MAP_SELECT_CHEVRON_ALIGN_CLASS].join(' ')}
                                 value={graphRole}
-                                onChange={e => {
-                                  setColumnGraphRole(c.id, e.target.value as WorkspaceDataViewGraphColumnRole)
+                                onValueChange={selectedValueInput => {
+                                  setColumnGraphRole(c.id, selectedValueInput as WorkspaceDataViewGraphColumnRole)
                                 }}
                                 disabled={!props.canMutate || props.view.graphEnabled !== true}
                               >

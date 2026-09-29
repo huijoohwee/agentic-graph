@@ -404,7 +404,7 @@ export function MotionControlFloatingPanelView() {
             {!state.cameraActive ? <div className={cn('absolute inset-0 grid place-items-center text-center text-xs', UI_THEME_TOKENS.text.secondary)}>Camera stays off until Start.</div> : null}
           </div>
           <PanelField label="LiteRT accelerator">
-            <PanelSelect value={backend} disabled={startPending || stopPending || runtimeBusy} onChange={event => setBackend(event.currentTarget.value as MotionControlBackendPreference)} data-kg-motion-control-backend="1">
+            <PanelSelect value={backend} disabled={startPending || stopPending || runtimeBusy} onValueChange={selectedValueInput => setBackend(selectedValueInput as MotionControlBackendPreference)} data-kg-motion-control-backend="1">
               <option value="auto">Auto · WebGPU with Wasm fallback</option>
               <option value="webgpu">WebGPU preferred</option>
               <option value="wasm">Wasm CPU</option>

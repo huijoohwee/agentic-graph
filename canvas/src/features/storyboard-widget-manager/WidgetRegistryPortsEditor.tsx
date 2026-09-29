@@ -55,7 +55,7 @@ export default function WidgetRegistryPortsEditor({
                 <label className={cn(panelTypography.microLabelClass, UI_THEME_TOKENS.text.secondary)}>Direction</label>
                 <PanelSelect
                   value={p.direction}
-                  onChange={e => onChange(ports.map((x, i) => (i === idx ? { ...x, direction: e.target.value === 'output' ? 'output' : 'input' } : x)))}
+                  onValueChange={selectedValueInput => onChange(ports.map((x, i) => (i === idx ? { ...x, direction: selectedValueInput === 'output' ? 'output' : 'input' } : x)))}
                   className={fieldClassName}
                 >
                   <option value="input">input</option>

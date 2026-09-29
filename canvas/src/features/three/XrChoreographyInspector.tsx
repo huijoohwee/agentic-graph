@@ -164,7 +164,7 @@ export function XrChoreographyInspector({
           description="Configure easing, gait and position in BottomPanel Timeline. Drag numbered stage marks or use WASD or arrow keys with Shift for 0.05 m precision."
           invocation={projectedCastInvocation}
           metadata={`${track.animation ? `${resolveXrAnimationPreset(track.animation.presetId).label} · ` : 'Authored path · '}${track.marks.length} mark${track.marks.length === 1 ? '' : 's'} · mark ${castMarkIndex + 1} · ${castMark.timeSeconds}s`}
-          footer={<PanelSelect aria-label="Cast choreography mark" value={castMark.id} onChange={event => selectXrMotionReferenceCastMark(track.actorId, event.target.value)}>{track.marks.map((mark, index) => <option key={mark.id} value={mark.id}>Mark {index + 1} · {mark.timeSeconds}s</option>)}</PanelSelect>}
+          footer={<PanelSelect aria-label="Cast choreography mark" value={castMark.id} onValueChange={selectedValueInput => selectXrMotionReferenceCastMark(track.actorId, selectedValueInput)}>{track.marks.map((mark, index) => <option key={mark.id} value={mark.id}>Mark {index + 1} · {mark.timeSeconds}s</option>)}</PanelSelect>}
         />
       ) : (
         <ChoreographyCard Icon={Footprints} target="cast" title="Cast path" description="Select a cast actor to edit its path choreography." invocation={castInvocation || controlTool} metadata="No cast target selected" footer={<span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Choose a cast target above.</span>} />
@@ -177,7 +177,7 @@ export function XrChoreographyInspector({
           description="Configure easing and timing in BottomPanel Timeline. Frame in Camera → SHOOT."
           invocation={projectedCameraInvocation}
           metadata={`${runtime.plan.camera.length} mark${runtime.plan.camera.length === 1 ? '' : 's'} · ${cameraMark.rig} · mark ${cameraMarkIndex + 1} · ${cameraMark.timeSeconds}s`}
-          footer={<PanelSelect aria-label="Camera choreography mark" value={cameraMark.id} onChange={event => selectXrMotionReferenceCameraMark(event.target.value)}>{runtime.plan.camera.map((mark, index) => <option key={mark.id} value={mark.id}>Mark {index + 1} · {mark.timeSeconds}s</option>)}</PanelSelect>}
+          footer={<PanelSelect aria-label="Camera choreography mark" value={cameraMark.id} onValueChange={selectedValueInput => selectXrMotionReferenceCameraMark(selectedValueInput)}>{runtime.plan.camera.map((mark, index) => <option key={mark.id} value={mark.id}>Mark {index + 1} · {mark.timeSeconds}s</option>)}</PanelSelect>}
         />
       ) : (
         <ChoreographyCard Icon={Camera} target="camera" title="Camera path" description="Add camera marks in Camera → SHOOT; edit them in BottomPanel Timeline." invocation={cameraInvocation || controlTool} metadata="0 marks · Timeline owns time" footer={<span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>No camera marks yet.</span>} />
@@ -189,7 +189,7 @@ export function XrChoreographyInspector({
         </p>
         <label className="mt-2 grid gap-1">
           Find scene objects
-          <PanelSelect aria-label="Find scene objects" value={sceneCategory} onChange={event => setSceneCategory(event.target.value)}>
+          <PanelSelect aria-label="Find scene objects" value={sceneCategory} onValueChange={selectedValueInput => setSceneCategory(selectedValueInput)}>
             <option value="all">All</option>
             <option value="people">People</option>
             <option value="animals">Animals</option>
@@ -210,7 +210,7 @@ export function XrChoreographyInspector({
         {selectedSubject && studioScene.complete ? (
           <section className="grid gap-1">
             <label>Area around {selectedSubject.label}
-              <PanelSelect aria-label="Area radius" value={areaRadiusMeters} onChange={event => setAreaRadiusMeters(Number(event.target.value))}>
+              <PanelSelect aria-label="Area radius" value={areaRadiusMeters} onValueChange={selectedValueInput => setAreaRadiusMeters(Number(selectedValueInput))}>
                 <option value={1}>1 m</option><option value={2}>2 m</option><option value={5}>5 m</option>
               </PanelSelect>
             </label>

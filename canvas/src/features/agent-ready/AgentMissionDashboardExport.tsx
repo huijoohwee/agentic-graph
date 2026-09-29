@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { DASHBOARD_TEMPLATE_PATH, readDashboardTemplate } from '@/components/DashboardCanvas/dashboardTemplateSource'
 import { projectDashboardMarkdown, type DashboardEvent } from '@/components/DashboardCanvas/dashboardMarkdownDocument'
@@ -98,9 +99,9 @@ export default function AgentMissionDashboardExport() {
     <summary className="cursor-pointer text-sm font-semibold">Markdown dashboard</summary>
     <section className="mt-3 grid gap-3 text-xs">
       <p>Apply a Markdown template to a complete observation. Saved reports retain the Mission content and layout and reopen offline.</p>
-      <label className="flex min-w-0 items-center gap-2"><span className={`${UI_THEME_TOKENS.control.height} inline-flex shrink-0 items-center`}>Observation</span><select aria-label="Dashboard input source" className={`${UI_THEME_TOKENS.control.singleLine} rounded border bg-transparent`} value={source} disabled={busy} onChange={event => { setSource(event.target.value as typeof source); setStatus(''); setSavedFiles(null) }}>
+      <label className="flex min-w-0 items-center gap-2"><span className={`${UI_THEME_TOKENS.control.height} inline-flex shrink-0 items-center`}>Observation</span><PanelSelect aria-label="Dashboard input source" className={`${UI_THEME_TOKENS.control.singleLine} rounded border bg-transparent`} value={source} disabled={busy} onValueChange={selectedValueInput => { setSource(selectedValueInput as typeof source); setStatus(''); setSavedFiles(null) }}>
         <option value="workspace">Workspace · .workspace</option><option value="mission">Current Mission</option><option value="file">Imported snapshot</option>
-      </select></label>
+      </PanelSelect></label>
       {source === 'workspace' && <p>Reads the selected native .workspace archive when you save.</p>}
       {source === 'file' && <label>Import snapshot JSON / SSE<input aria-label="Import dashboard snapshot" type="file" accept=".json,.sse,application/json,text/event-stream" disabled={busy} className="ml-2"
         onChange={event => { void importFile(event.target.files?.[0]); event.target.value = '' }} /></label>}

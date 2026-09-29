@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
@@ -182,10 +183,10 @@ export function GraphEditorOutlineTab() {
                     </label>
                     <label className="block">
                       <section className={`text-xs ${UI_THEME_TOKENS.text.tertiary}`}>Parent</section>
-                      <select
+                      <PanelSelect
                         className={`mt-1 w-full rounded-md border px-2 py-1 text-sm ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.text}`}
                         value={sg.parentId || ''}
-                        onChange={e => updateOne(sg.id, { parentId: e.target.value || null }, 'Nest Subgraph')}
+                        onValueChange={selectedValueInput => updateOne(sg.id, { parentId: selectedValueInput || null }, 'Nest Subgraph')}
                         aria-label="Subgraph parent"
                       >
                         <option value="">None</option>
@@ -196,7 +197,7 @@ export function GraphEditorOutlineTab() {
                               {other.label}
                             </option>
                           ))}
-                      </select>
+                      </PanelSelect>
                     </label>
                   </TwoColumnEditorGrid>
 

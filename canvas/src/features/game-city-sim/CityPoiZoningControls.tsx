@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import type { RegionalPoiIdentity } from 'grph-shared/geospatial/regionalPoiGeo'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -30,7 +31,7 @@ export function CityPoiZoningControls(props: Readonly<{
       </legend>
       <label className="grid min-w-0 gap-1 text-xs">
         <span className={UI_THEME_TOKENS.text.tertiary}>Regional POI</span>
-        <select
+        <PanelSelect
           className={cn(
             'min-w-0 rounded border px-2 py-1',
             UI_THEME_TOKENS.panel.border,
@@ -48,9 +49,9 @@ export function CityPoiZoningControls(props: Readonly<{
           onKeyDown={() => {
             inputSourceRef.current = 'keyboard'
           }}
-          onChange={event => {
-            if (!event.currentTarget.value) return
-            props.onSelect(event.currentTarget.value, consumeInputSource())
+          onValueChange={selectedValueInput => {
+            if (!selectedValueInput) return
+            props.onSelect(selectedValueInput, consumeInputSource())
           }}
           data-kg-city-sim-poi-id="1"
         >
@@ -58,7 +59,7 @@ export function CityPoiZoningControls(props: Readonly<{
           {props.pois.map(poi => (
             <option key={poi.id} value={poi.id}>{poi.label}</option>
           ))}
-        </select>
+        </PanelSelect>
       </label>
     </fieldset>
   )

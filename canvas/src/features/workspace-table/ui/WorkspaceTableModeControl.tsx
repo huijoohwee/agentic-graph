@@ -85,8 +85,8 @@ export function WorkspaceTableModeControl({ className }: WorkspaceTableModeContr
   }, [editorWorkspacePane, setEditorWorkspacePane, setWorkspaceCanvasPaneOpen, setWorkspaceViewMode, setWorkspaceViewState, workspaceCanvasPaneOpen, workspaceViewMode])
 
   const handleWorkspaceEditorModeChanged = React.useCallback(
-    (event: React.ChangeEvent<HTMLSelectElement>) => {
-      const next = event.currentTarget.value as WorkspaceEditorMode
+    (nextValue: string) => {
+      const next = nextValue as WorkspaceEditorMode
       workspaceTablePreferencesStore.setWorkspaceEditorMode(next)
       openWorkspaceMultiDimTableFromControl()
     },
@@ -95,12 +95,12 @@ export function WorkspaceTableModeControl({ className }: WorkspaceTableModeContr
 
   const handleOpenTable = openWorkspaceMultiDimTableFromControl
 
-  const handleJsonImportTargetChanged = React.useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
-    workspaceTablePreferencesStore.setJsonImportTarget(event.currentTarget.value as JsonImportWorkspaceTarget)
+  const handleJsonImportTargetChanged = React.useCallback((nextValue: string) => {
+    workspaceTablePreferencesStore.setJsonImportTarget(nextValue as JsonImportWorkspaceTarget)
   }, [])
 
-  const handleJsonMarkdownModeChanged = React.useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
-    workspaceTablePreferencesStore.setJsonMarkdownMode(event.currentTarget.value as JsonToMarkdownMode)
+  const handleJsonMarkdownModeChanged = React.useCallback((nextValue: string) => {
+    workspaceTablePreferencesStore.setJsonMarkdownMode(nextValue as JsonToMarkdownMode)
   }, [])
 
   const handleJsonTableMaxRowsChanged = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,8 +111,8 @@ export function WorkspaceTableModeControl({ className }: WorkspaceTableModeContr
     workspaceTablePreferencesStore.setJsonTableMaxColumns(event.currentTarget.value)
   }, [])
 
-  const handleWorkspaceCellSelectPanelPlacementChanged = React.useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
-    workspaceTablePreferencesStore.setWorkspaceCellSelectPanelPlacement(event.currentTarget.value as WorkspaceCellSelectPanelPlacement)
+  const handleWorkspaceCellSelectPanelPlacementChanged = React.useCallback((nextValue: string) => {
+    workspaceTablePreferencesStore.setWorkspaceCellSelectPanelPlacement(nextValue as WorkspaceCellSelectPanelPlacement)
   }, [])
 
   const typography = usePanelTypography()
@@ -135,7 +135,7 @@ export function WorkspaceTableModeControl({ className }: WorkspaceTableModeContr
         <PanelSelect
           className={selectClassName}
           value={workspaceEditorMode}
-          onChange={handleWorkspaceEditorModeChanged}
+          onValueChange={handleWorkspaceEditorModeChanged}
           aria-label="Workspace editor view"
         >
           {WORKSPACE_EDITOR_MODE_OPTIONS.map(option => (
@@ -153,7 +153,7 @@ export function WorkspaceTableModeControl({ className }: WorkspaceTableModeContr
         <PanelSelect
           className={selectClassName}
           value={workspaceCellSelectPanelPlacement}
-          onChange={handleWorkspaceCellSelectPanelPlacementChanged}
+          onValueChange={handleWorkspaceCellSelectPanelPlacementChanged}
           aria-label="Select panel position"
         >
           {WORKSPACE_CELL_SELECT_PANEL_PLACEMENT_OPTIONS.map(option => (
@@ -168,7 +168,7 @@ export function WorkspaceTableModeControl({ className }: WorkspaceTableModeContr
         <PanelSelect
           className={selectClassName}
           value={jsonImportTarget}
-          onChange={handleJsonImportTargetChanged}
+          onValueChange={handleJsonImportTargetChanged}
           aria-label="JSON import target"
         >
           {JSON_IMPORT_WORKSPACE_TARGET_OPTIONS.map(option => (
@@ -183,7 +183,7 @@ export function WorkspaceTableModeControl({ className }: WorkspaceTableModeContr
         <PanelSelect
           className={selectClassName}
           value={jsonMarkdownMode}
-          onChange={handleJsonMarkdownModeChanged}
+          onValueChange={handleJsonMarkdownModeChanged}
           aria-label="JSON markdown mode"
         >
           {JSON_MARKDOWN_MODE_SELECT_OPTIONS.map(option => (

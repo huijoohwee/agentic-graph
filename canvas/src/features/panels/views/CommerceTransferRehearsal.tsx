@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { MainPanelIconButton } from '../ui/MainPanelIconButton'
@@ -44,23 +45,23 @@ export function CommerceTransferRehearsal({
           </section>
         </dl>
         <section className="mt-2 min-w-0">
-          <MainPanelField label="Demo recipient" type="list" help={{ role: 'Commerce operator', actions: ['Choose the fixture recipient'], outcome: 'review local simulation terms without moving money', value: { key: 'Demo recipient', type: 'list', defaultValue: 'demo-merchant', impact: 'Affects local simulation only.' } }}><select aria-label="Demo recipient" className={fieldClass} value={draft.recipient} onChange={event => store.edit({ recipient: event.target.value as typeof draft.recipient })}>
+          <MainPanelField label="Demo recipient" type="list" help={{ role: 'Commerce operator', actions: ['Choose the fixture recipient'], outcome: 'review local simulation terms without moving money', value: { key: 'Demo recipient', type: 'list', defaultValue: 'demo-merchant', impact: 'Affects local simulation only.' } }}><PanelSelect aria-label="Demo recipient" className={fieldClass} value={draft.recipient} onValueChange={selectedValueInput => store.edit({ recipient: selectedValueInput as typeof draft.recipient })}>
               <option value="demo-merchant">Demo merchant</option>
               <option value="demo-partner">Demo partner</option>
               <option value="unsupported">Unsupported recipient (blocked case)</option>
-            </select>
+            </PanelSelect>
           </MainPanelField>
           <MainPanelField label="Demo amount (minor units)" type="number" help={{ role: 'Commerce operator', actions: ['Set the fixture amount in minor units'], outcome: 'review local simulation terms without moving money', value: { key: 'Demo amount (minor units)', type: 'number', defaultValue: '1000', min: 1, max: 999999999, interval: 1, expansionNote: 'More increases the simulated amount', contractionNote: 'Fewer reduces it', impact: 'Affects local simulation only.' } }}><input aria-label="Demo amount (minor units)" className={fieldClass} type="text" inputMode="numeric" maxLength={9} value={draft.amountMinor} onChange={event => store.edit({ amountMinor: event.target.value })} />
           </MainPanelField>
-          <MainPanelField label="Demo asset" type="list" help={{ role: 'Commerce operator', actions: ['Choose the fixture asset'], outcome: 'review local simulation terms without moving money', value: { key: 'Demo asset', type: 'list', defaultValue: 'DEMO-SGD', impact: 'Affects local simulation only.' } }}><select aria-label="Demo asset" className={fieldClass} value={draft.asset} onChange={event => store.edit({ asset: event.target.value as typeof draft.asset })}>
+          <MainPanelField label="Demo asset" type="list" help={{ role: 'Commerce operator', actions: ['Choose the fixture asset'], outcome: 'review local simulation terms without moving money', value: { key: 'Demo asset', type: 'list', defaultValue: 'DEMO-SGD', impact: 'Affects local simulation only.' } }}><PanelSelect aria-label="Demo asset" className={fieldClass} value={draft.asset} onValueChange={selectedValueInput => store.edit({ asset: selectedValueInput as typeof draft.asset })}>
               <option value="DEMO-SGD">DEMO-SGD (not a token)</option>
               <option value="DEMO-USD">DEMO-USD (not a token)</option>
-            </select>
+            </PanelSelect>
           </MainPanelField>
-          <MainPanelField label="Demo network" type="list" help={{ role: 'Commerce operator', actions: ['Choose the local fixture network'], outcome: 'review local simulation terms without moving money', value: { key: 'Demo network', type: 'list', defaultValue: 'local-a', impact: 'Affects local simulation only.' } }}><select aria-label="Demo network" className={fieldClass} value={draft.network} onChange={event => store.edit({ network: event.target.value as typeof draft.network })}>
+          <MainPanelField label="Demo network" type="list" help={{ role: 'Commerce operator', actions: ['Choose the local fixture network'], outcome: 'review local simulation terms without moving money', value: { key: 'Demo network', type: 'list', defaultValue: 'local-a', impact: 'Affects local simulation only.' } }}><PanelSelect aria-label="Demo network" className={fieldClass} value={draft.network} onValueChange={selectedValueInput => store.edit({ network: selectedValueInput as typeof draft.network })}>
               <option value="local-a">Local fixture A</option>
               <option value="local-b">Local fixture B</option>
-            </select>
+            </PanelSelect>
           </MainPanelField>
         </section>
         <section className="mt-3 flex flex-wrap gap-2">

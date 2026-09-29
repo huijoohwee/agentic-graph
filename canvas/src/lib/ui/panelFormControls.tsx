@@ -1,3 +1,4 @@
+import { SemanticSelect, type SemanticSelectProps } from '@/lib/ui/SemanticSelect'
 import React from 'react'
 import { usePanelTypography } from './panelTypography'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
@@ -79,7 +80,7 @@ type PanelTextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
   rowHeightPreset?: DataViewRowHeightPreset
   fieldLineMode?: DataViewFieldLineMode
 }
-type PanelSelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
+export type PanelSelectProps = SemanticSelectProps & {
   variant?: PanelFormControlVariant
   density?: DataViewRowHeightPreset
 }
@@ -172,15 +173,16 @@ export const PanelTextarea = React.forwardRef<HTMLTextAreaElement, PanelTextarea
   )
 })
 
-export const PanelSelect = React.forwardRef<HTMLSelectElement, PanelSelectProps>(function PanelSelect(
+export const PanelSelect = React.forwardRef<HTMLButtonElement, PanelSelectProps>(function PanelSelect(
   { className, variant = 'filled', density, ...props },
   ref,
 ) {
   const { panelTextClass } = usePanelTypography()
   const densityContext = usePanelFormDensity()
   return (
-    <select
+    <SemanticSelect
       {...props}
+      menuTextClassName={panelTextClass}
       ref={ref}
       className={cn(
         variant === 'transparent' ? PANEL_FORM_SINGLE_LINE_TRANSPARENT_CONTROL_CLASSNAME : PANEL_FORM_SINGLE_LINE_FILLED_CONTROL_CLASSNAME,

@@ -115,7 +115,7 @@ export function GraphEditorInspectorTab() {
           <PanelSelect
             className="mt-1 text-sm"
             value={nodeSubgraphId}
-            onChange={e => setNodeSubgraph(e.target.value)}
+            onValueChange={selectedValueInput => setNodeSubgraph(selectedValueInput)}
             aria-label="Node subgraph"
           >
             <option value="">None</option>

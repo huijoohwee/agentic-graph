@@ -182,7 +182,7 @@ export function XrShootCameraSection() {
         <PanelSelect
           aria-label="XR camera source"
           value={nativeController.mode}
-          onChange={event => selectCameraSource(event.target.value as XrNativeControllerCameraMode)}
+          onValueChange={selectedValueInput => selectCameraSource(selectedValueInput as XrNativeControllerCameraMode)}
           data-kg-xr-camera-source="1"
         >
           {XR_NATIVE_CONTROLLER_CAMERA_MODES.map(mode => (
@@ -200,8 +200,8 @@ export function XrShootCameraSection() {
           aria-label="SHOOT scene or 3D object target"
           value={selectedShotTarget?.id || ''}
           disabled={!shotTargets.length}
-          onChange={event => {
-            const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: event.target.value })
+          onValueChange={selectedValueInput => {
+            const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: selectedValueInput })
             if (!result.ok) pushUiToast({ id: 'xr:shoot:select-target', kind: 'error', message: result.message })
           }}
           data-kg-xr-shoot-target="scene-or-object"
@@ -245,7 +245,7 @@ export function XrShootCameraSection() {
           <PanelSelect
             aria-label="SHOOT camera rig"
             value={runtime.selectedCameraRig}
-            onChange={event => setXrMotionReferenceCameraRig(event.target.value as XrMotionReferenceCameraRig)}
+            onValueChange={selectedValueInput => setXrMotionReferenceCameraRig(selectedValueInput as XrMotionReferenceCameraRig)}
             data-kg-xr-shoot-rig="1"
           >
             {XR_MOTION_REFERENCE_CAMERA_RIGS.map(rig => <option key={rig} value={rig}>{RIG_LABELS[rig]}</option>)}

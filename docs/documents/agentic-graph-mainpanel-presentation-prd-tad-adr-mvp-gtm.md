@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.3.2"
+version: "1.4.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -320,3 +320,41 @@ At 390 px, Integrations content/scroll widths are 356/356 px; dashboard form wid
 are 348/348 px. Native affected validation is recorded with release proof. Full-app boot readiness
 accepts multiple source roots; all subsequent named-control and storage assertions remain.
 Rollback: revert this follow-up; no content or storage-format migration is needed.
+
+
+## Semantic dropdown consolidation (2026-09-29)
+
+PRD: Main Panel, Floating Panel and Bottom Panel fields must expose dropdown
+choices as inspectable, hit-testable page controls. They reuse the Editor Workspace
+reference menu, shared typography, bounded labels and control height. Native OS
+select popups and new per-panel dropdown variants are forbidden in panel owners.
+
+TAD/ADR: `PanelSelect` delegates to `SemanticSelect`. Its button announces the field,
+expanded state and menu relationship. A shared `DropdownMenuSurface` and option-row
+class owner serve toolbar and field menus. Options are real `menuitemradio` buttons
+in the existing semantic `AnchorOverlay` portal; chevrons and selected indicators
+have named SVG semantics. Choice handlers use `onValueChange` directly. No synthetic
+select event or hidden native-select implementation remains. Form-value inputs are
+only a submission/required-validation bridge. The standalone PDF viewer remains
+outside panel/editor owners. All production dropdowns in features, components and
+lib use the shared owner, including nested Bottom Panel object/camera editors.
+
+Menus retain selected/disabled choices, groups, controlled and uncontrolled values,
+form reset, arrow/Home/End navigation, typeahead, Escape, Tab and focus return.
+The portal escapes clipped value cells and clamps to the viewport. Field tooltips
+dismiss on dropdown open and ignore focus from React portal descendants, preventing
+help from covering a menu option. Overlay attachment uses a stable ref callback.
+
+MVP/evidence: Four registered `ui.panels.dropdown.*` checks cover keyboard/portal/
+tooltip behavior, disabled choices and form reset, option parsing, and a recursive
+native-select prohibition across panel and nested editor source owners. TypeScript,
+shared builds and the local browser-runtime checks pass. Live Settings: each of the
+three options passes `elementFromPoint` hit testing; keyboard movement and Escape
+restore focus. At a 390 px viewport the menu is 220 px wide within x=29..249, all
+options have 44 px touch rows, and pointer selection closes the menu. Broader native
+validation and provider status remain separately reported exact-candidate evidence.
+
+GTM: Removes an inspection and automation obstacle from the existing free, offline
+interface. No new package, service, model call or measured commercial claim.
+Rollback: revert this consolidation as one revision, including value-handler API
+migration and regression registration. Workspace data and saved values are unchanged.

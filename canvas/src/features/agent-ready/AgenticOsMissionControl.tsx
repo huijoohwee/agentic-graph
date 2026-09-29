@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import type { MissionDashboardSnapshot } from './agentMissionDashboardSnapshot'
 import type { AgentRunView } from './agentRunInspectionStore'
 import { readWorkspaceObservation } from './workspaceObservation'
@@ -270,10 +271,10 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
     }}>
       <label className="grid min-w-0 flex-1 text-xs">Project<input name="projectId" maxLength={128} className={UI_THEME_TOKENS.control.singleLine} style={inputStyle} /></label>
       <label className="grid min-w-0 flex-1 text-xs">Agent<input name="agentId" maxLength={128} className={UI_THEME_TOKENS.control.singleLine} style={inputStyle} /></label>
-      <label className="grid text-xs">State<select name="status" className={UI_THEME_TOKENS.control.singleLine} style={inputStyle}>
+      <label className="grid text-xs">State<PanelSelect name="status" className={UI_THEME_TOKENS.control.singleLine} style={inputStyle}>
         <option value="">All</option>{['running', 'completed', 'failed', 'canceled'].map(s => <option key={s}>{s}</option>)}
-      </select></label>
-      <label className="grid text-xs">Window<select name="window" className={UI_THEME_TOKENS.control.singleLine} style={inputStyle}><option value="retained">Retention window</option><option value="15">Last 15 minutes</option></select></label>
+      </PanelSelect></label>
+      <label className="grid text-xs">Window<PanelSelect name="window" className={UI_THEME_TOKENS.control.singleLine} style={inputStyle}><option value="retained">Retention window</option><option value="15">Last 15 minutes</option></PanelSelect></label>
       <button className={button} disabled={busy || !online}>Apply filters</button>
     </form>}
     {index && <>
@@ -331,7 +332,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
         </details>}
       </section></details>
       <section aria-label="Span view controls" className="flex min-w-0 flex-wrap items-center gap-2 py-2 text-xs">
-        <label className="flex min-w-0 max-w-full items-center gap-1">Inspect <select aria-label="Inspect run details" title={views.find(item => item.key === view)?.label} value={view} onChange={event => setView(event.target.value)} className={UI_THEME_TOKENS.control.singleLine} style={inputStyle}>{views.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
+        <label className="flex min-w-0 max-w-full items-center gap-1">Inspect <PanelSelect aria-label="Inspect run details" title={views.find(item => item.key === view)?.label} value={view} onValueChange={selectedValueInput => setView(selectedValueInput)} className={UI_THEME_TOKENS.control.singleLine} style={inputStyle}>{views.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</PanelSelect></label>
         {view === 'tree' && <AgentRunMetricSelector value={spanMetrics} onToggle={metric => setSpanMetrics(current => toggleSpanMetric(current, metric))} />}
         <input aria-label="Search spans by name, kind or status" title={search || "Search spans by name, kind or status"} placeholder="Search spans by name, kind or status" value={search} onChange={event => setSearch(event.target.value)} className={UI_THEME_TOKENS.control.singleLine} style={inputStyle} />
       </section>
@@ -360,7 +361,7 @@ export default function AgenticOsMissionControl({ onOpenWorkspace, workspace = f
       </div> : <p className="py-2 text-xs">Allocation unavailable for this observation.</p>)}
         {view === 'table' && <AgentRunTable runId={trace.runId} spans={spans.map(row => row.span)} selectedId={selection.spanId} onSelect={chooseSpan} />}
         {view === 'tree' && <AgentRunSpanViews key={trace.runId} rows={spans} selectedId={selection.spanId} onSelect={chooseSpan} search={search} metrics={spanMetrics} />}
-        {view === 'topology' && topology && <><label className="flex items-center gap-2 text-xs">Topology detail<select aria-label="Topology detail" className={UI_THEME_TOKENS.control.singleLine} style={inputStyle} value={topologyDetail} onChange={event => setTopologyDetail(event.target.value as 'all' | 'agents')}><option value="agents">Agents</option><option value="all">All spans</option></select></label><p className="py-1 text-xs">Agent view shows containment and direct agent links. Runs without agent spans show all checks.</p><React.Suspense fallback={<p>Loading topology…</p>}><GraphCanvasInspection graph={topology}
+        {view === 'topology' && topology && <><label className="flex items-center gap-2 text-xs">Topology detail<PanelSelect aria-label="Topology detail" className={UI_THEME_TOKENS.control.singleLine} style={inputStyle} value={topologyDetail} onValueChange={selectedValueInput => setTopologyDetail(selectedValueInput as 'all' | 'agents')}><option value="agents">Agents</option><option value="all">All spans</option></PanelSelect></label><p className="py-1 text-xs">Agent view shows containment and direct agent links. Runs without agent spans show all checks.</p><React.Suspense fallback={<p>Loading topology…</p>}><GraphCanvasInspection graph={topology}
           selectedNodeId={selection.spanId ? spanNodeId(trace.runId, selection.spanId) : null}
           onSelect={id => { const item = trace.spans.find(s => spanNodeId(trace.runId, s.spanId) === id); if (item) chooseSpan(item.spanId) }} /></React.Suspense></>}
         {view === 'evidence' && <><p>Candidate: {trace.candidate.id} @ {trace.candidate.revision}</p>

@@ -12,7 +12,7 @@ import {
   UI_RESPONSIVE_PANEL_CODE_EDITOR_SMALL_FRAME_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS, normalizeSingleLineControlClassName, singleLineControlDecorationClassName } from '@/lib/ui/theme-tokens'
-import { PanelCheckbox, PanelTextarea, PanelTextInput } from '@/lib/ui/panelFormControls'
+import { PanelCheckbox, PanelTextarea, PanelTextInput, PanelSelect } from '@/lib/ui/panelFormControls'
 import { uiToolbarRowScrollClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
 import { renderChatContextScopeSettingInput, renderChatModelSettingInput, renderChatProviderSettingInput } from '@/features/settings/chatProviderSettingInput'
@@ -339,10 +339,10 @@ export const renderSettingInput = (
     const raw = String(v ?? '').trim()
     const normalized = raw === 'byok' ? 'byok' : 'serverManaged'
     return (
-      <select
+      <PanelSelect
         value={normalized}
-        onChange={e => {
-          const selected = e.target.value === 'byok' ? 'byok' : 'serverManaged'
+        onValueChange={selectedValueInput => {
+          const selected = selectedValueInput === 'byok' ? 'byok' : 'serverManaged'
           dirtyRef.current.add(key)
           setValues(prev => {
             const next: Record<string, string | number | boolean> = { ...prev, [key]: selected }
@@ -357,17 +357,17 @@ export const renderSettingInput = (
       >
         <option value="serverManaged">Server-managed Key</option>
         <option value="byok">BYOK</option>
-      </select>
+      </PanelSelect>
     )
   }
   if (key === 'maps.grabmaps.authMode') {
     const raw = String(v ?? '').trim().toLowerCase()
     const normalized = raw === 'byok' ? 'byok' : 'serverManaged'
     return (
-      <select
+      <PanelSelect
         value={normalized}
-        onChange={e => {
-          const selected = e.target.value === 'serverManaged' ? 'serverManaged' : 'byok'
+        onValueChange={selectedValueInput => {
+          const selected = selectedValueInput === 'serverManaged' ? 'serverManaged' : 'byok'
           dirtyRef.current.add(key)
           setValues(prev => {
             const next: Record<string, string | number | boolean> = { ...prev, [key]: selected }
@@ -382,7 +382,7 @@ export const renderSettingInput = (
       >
         <option value="serverManaged">Server-managed Key</option>
         <option value="byok">BYOK</option>
-      </select>
+      </PanelSelect>
     )
   }
 
@@ -409,10 +409,10 @@ export const renderSettingInput = (
     const raw = String(v ?? '').trim()
     const normalized = raw && options.includes(raw) ? raw : (options[0] || '')
     return (
-      <select
+      <PanelSelect
         value={normalized}
-        onChange={e => {
-          const selected = String(e.target.value || '').trim()
+        onValueChange={selectedValueInput => {
+          const selected = String(selectedValueInput || '').trim()
           dirtyRef.current.add(key)
           setValues(prev => ({ ...prev, [key]: selected }))
         }}
@@ -423,7 +423,7 @@ export const renderSettingInput = (
             {option}
           </option>
         ))}
-      </select>
+      </PanelSelect>
     )
   }
   if (key === 'maps.grabmaps.apiKey') {
@@ -509,10 +509,10 @@ export const renderSettingInput = (
     const raw = String(v ?? '')
     const normalized = options.includes(raw) ? raw : options[0]
     return (
-      <select
+      <PanelSelect
         value={normalized}
-        onChange={e => {
-          const val = e.target.value
+        onValueChange={selectedValueInput => {
+          const val = selectedValueInput
           const next = options.includes(val) ? val : options[0]
           dirtyRef.current.add(key)
           setValues(prev => ({ ...prev, [key]: next }))
@@ -524,7 +524,7 @@ export const renderSettingInput = (
             {option}
           </option>
         ))}
-      </select>
+      </PanelSelect>
     )
   }
   return (

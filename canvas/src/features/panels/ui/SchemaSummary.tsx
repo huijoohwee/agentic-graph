@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import Tooltip from '@/features/panels/ui/Tooltip'
 import { getPanelSurfaceLabel } from '@/features/panels/config'
@@ -103,11 +104,11 @@ export default function SchemaSummary({
         lintContent = (
           <>
             Lint: {lintCount} metadata {label}{' '}
-            <select
+            <PanelSelect
               className={`ml-1 px-1 py-0.5 text-xs border ${UI_THEME_TOKENS.input.border} rounded ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.text} ${UI_THEME_TOKENS.focus.primaryBorderRing}`}
               value={currentValue}
-              onChange={e => {
-                const nextPath = e.target.value
+              onValueChange={selectedValueInput => {
+                const nextPath = selectedValueInput
                 if (!nextPath) return
                 setSchemaLintActivePath(nextPath)
                 if (onOpenSchemaUiEditor) {
@@ -121,7 +122,7 @@ export default function SchemaSummary({
                   {path}
                 </option>
               ))}
-            </select>
+            </PanelSelect>
           </>
         )
       } else if (lintExamplePath) {

@@ -4,14 +4,12 @@ import IconButton from '@/components/IconButton'
 import { DropdownPanel } from '@/lib/ui/overlay'
 import { emitToolbarDropdownOpen, subscribeToolbarDropdownOpen } from '@/components/toolbar/dropdownOpenEvents'
 import { uiPrimaryIconActiveClassName, uiPrimaryIconInactiveClassName } from '@/features/toolbar/ui/toolbarStyles'
-import { uiSelectableRowClassName } from 'grph-shared/ui/selectedRowClasses'
 import {
   UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME,
   UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_HINT_CLASSNAME,
   UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_META_CLASSNAME,
-  UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { DropdownMenuSurface, dropdownMenuOptionClassName } from '@/lib/ui/dropdownMenu'
 import { SelectableRowValue } from '@/components/ui/SelectableRowValue'
 
 const toolbarDropdownChevronClassName = `${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} ml-auto opacity-70 transition-transform`
@@ -135,6 +133,9 @@ export function ToolbarDropdownSelect<T extends ToolbarDropdownOptionBase>({
         className={`App-toolbar__btn ${open || isButtonActive ? uiPrimaryIconActiveClassName : uiPrimaryIconInactiveClassName}`}
         title={title}
         ariaLabel={title}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={open ? dropdownIdRef.current : undefined}
         suppressTitleAttribute={!showTooltip}
         tooltipContent={tooltipContent}
         disabled={disabled}
@@ -167,8 +168,10 @@ export function ToolbarDropdownSelect<T extends ToolbarDropdownOptionBase>({
           }}
           align="bottom-center"
         >
-          <menu
-            className={`kg-toolbar-dropdown-menu p-1 flex flex-col gap-1 ${menuWidthClass} list-none m-0 ${UI_THEME_TOKENS.panel.bg} border ${UI_THEME_TOKENS.panel.border} rounded shadow-md`}
+          <DropdownMenuSurface
+            id={dropdownIdRef.current}
+            aria-label={title}
+            className={menuWidthClass}
             onKeyDown={e => {
               if (!enabledOptions.length) return
               const currentIndex = optionButtonRefs.current.findIndex(option => option === document.activeElement)
@@ -204,8 +207,8 @@ export function ToolbarDropdownSelect<T extends ToolbarDropdownOptionBase>({
               return (
                 <React.Fragment key={option.id}>
                   {option.dividerBefore ? (
-                    <li className="list-none px-1 py-0.5" aria-hidden="true">
-                      <hr className={`border-t ${UI_THEME_TOKENS.panel.border}`} />
+                    <li className="list-none px-1 py-0.5">
+                      <hr />
                     </li>
                   ) : null}
                   <li
@@ -216,7 +219,7 @@ export function ToolbarDropdownSelect<T extends ToolbarDropdownOptionBase>({
                         optionButtonRefs.current[index] = el
                       }}
                       type="button"
-                      className={`kg-toolbar-dropdown-section-toggle ${UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME} disabled:opacity-50 disabled:cursor-not-allowed ${uiSelectableRowClassName(isActive)}`}
+                      className={`kg-toolbar-dropdown-section-toggle ${dropdownMenuOptionClassName(isActive)}`}
                       disabled={option.disabled}
                       aria-label={option.title}
                       aria-expanded={hasChildren ? isExpanded : undefined}
@@ -252,7 +255,7 @@ export function ToolbarDropdownSelect<T extends ToolbarDropdownOptionBase>({
                       ) : hasChildren ? (
                         <ChevronDown
                           className={`${toolbarDropdownChevronClassName} ${isExpanded ? 'rotate-180' : ''}`}
-                          aria-hidden="true"
+                          role="img" aria-label="Expand choices"
                         />
                       ) : null}
                     </button>
@@ -271,7 +274,7 @@ export function ToolbarDropdownSelect<T extends ToolbarDropdownOptionBase>({
                             <li key={child.id} className="list-none">
                               <button
                                 type="button"
-                                className={`${UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME} disabled:opacity-50 disabled:cursor-not-allowed ${uiSelectableRowClassName(isChildActive)}`}
+                                className={dropdownMenuOptionClassName(isChildActive)}
                                 disabled={child.disabled}
                                 aria-label={child.title}
                                 onClick={() => {
@@ -313,7 +316,7 @@ export function ToolbarDropdownSelect<T extends ToolbarDropdownOptionBase>({
               )
             })}
             {renderMenuAppend ? renderMenuAppend() : null}
-          </menu>
+          </DropdownMenuSurface>
         </DropdownPanel>
       ) : null}
     </>

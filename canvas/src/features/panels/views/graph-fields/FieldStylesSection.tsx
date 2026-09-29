@@ -234,7 +234,7 @@ export default function FieldStylesSection({
                   aria-label="Edge start marker"
                   disabled={!hasOwner}
                   value={edgeMarkerStart}
-                  onChange={e => updateEdgeStyle(ownerKey, { markerStart: e.target.value as EdgeMarkerShape })}
+                  onValueChange={selectedValueInput => updateEdgeStyle(ownerKey, { markerStart: selectedValueInput as EdgeMarkerShape })}
                   className={`${uiPanelKeyValueInputClass} disabled:opacity-50`}
                 >
                   <option value="none">None</option>
@@ -257,8 +257,8 @@ export default function FieldStylesSection({
                   aria-label="Edge end marker"
                   disabled={!hasOwner}
                   value={edgeMarkerEnd}
-                  onChange={e => {
-                    const markerEnd = e.target.value as EdgeMarkerShape
+                  onValueChange={selectedValueInput => {
+                    const markerEnd = selectedValueInput as EdgeMarkerShape
                     updateEdgeStyle(ownerKey, { markerEnd, arrow: markerEnd === 'arrow' })
                   }}
                   className={`${uiPanelKeyValueInputClass} disabled:opacity-50`}
@@ -283,8 +283,8 @@ export default function FieldStylesSection({
                   aria-label="Edge marker size"
                   disabled={!hasOwner}
                   value={edgeMarkerSize}
-                  onChange={e => updateEdgeStyle(ownerKey, {
-                    markerSize: e.target.value as GraphSchema['edgeStyles'][string]['markerSize'],
+                  onValueChange={selectedValueInput => updateEdgeStyle(ownerKey, {
+                    markerSize: selectedValueInput as GraphSchema['edgeStyles'][string]['markerSize'],
                   })}
                   className={`${uiPanelKeyValueInputClass} disabled:opacity-50`}
                 >

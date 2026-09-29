@@ -1,6 +1,11 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 import { TEST_CASES_POST_PARSER_3_TAIL } from './postParserCases3Tail'
 export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
+  ["ui.panels.dropdown.keyboard", "@/__tests__/semanticSelect.test", "testSemanticSelectKeyboardAndPortal"],
+  ["ui.panels.dropdown.forms", "@/__tests__/semanticSelect.test", "testSemanticSelectFormsAndDisabled"],
+  ["ui.panels.dropdown.options", "@/__tests__/semanticSelect.test", "testSemanticSelectOptionData"],
+  ["ui.panels.dropdown.forbidNative", "@/__tests__/semanticSelect.test", "testSemanticSelectForbidsNativeVariants"],
+
   ["ui.typography.sourceRuntime", "@/__tests__/applicationTypography.test", "testApplicationTypographyLoadsBeforeBuild"],
   ["ui.typography.svgFonts", "@/__tests__/applicationTypography.test", "testApplicationTypographyExportsValidSvgFonts"],
   ["ui.typography.reference", "@/__tests__/applicationTypography.test", "testApplicationTypographyMatchesDashboardReference"],

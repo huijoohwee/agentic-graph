@@ -298,7 +298,7 @@ export const GraphFieldsListRow = React.memo(function GraphFieldsListRow({
                     />
                     <PanelSelect
                       value={settings.fieldType}
-                      onChange={e => updateGraphFieldSettings(field.id, { fieldType: e.target.value as GraphFieldType })}
+                      onValueChange={selectedValueInput => updateGraphFieldSettings(field.id, { fieldType: selectedValueInput as GraphFieldType })}
                       className={typeSelectClassName}
                       onClick={e => e.stopPropagation()}
                     >

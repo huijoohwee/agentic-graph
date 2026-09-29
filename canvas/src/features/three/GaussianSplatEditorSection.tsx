@@ -172,7 +172,7 @@ export function GaussianSplatEditorSection({
           <PanelSelect
             value={runtime.settings.visualization}
             aria-label="Gaussian splat visualization"
-            onChange={event => setting('visualization', event.target.value as GaussianSplatVisualization)}
+            onValueChange={selectedValueInput => setting('visualization', selectedValueInput as GaussianSplatVisualization)}
           >
             <option value="render">Rendered splats</option>
             <option value="centers">Centers</option>

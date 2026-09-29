@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import { RICH_MEDIA_OUTPUT_DRAFT_VERSION_ID } from '@/lib/render/richMediaOutputVersions'
 import type { RichMediaPanelProps } from './RichMediaPanel.types'
 
@@ -30,7 +31,7 @@ export function RichMediaOutputVersionSelector(props: {
       onClick={event => event.stopPropagation()}
     >
       <span className={inHeader || inToolbar ? 'sr-only' : undefined}>Output version</span>
-      <select
+      <PanelSelect
         aria-label="Output version"
         title="Select generated output version"
         value={selectedOutputVersionId}
@@ -38,10 +39,10 @@ export function RichMediaOutputVersionSelector(props: {
           ? 'max-w-24 rounded border bg-transparent px-1 py-0 text-xs leading-4'
           : 'max-w-40 rounded border bg-transparent px-1 py-0.5 text-xs'}
         style={{ borderColor: 'var(--kg-border)', color: 'var(--kg-foreground)' }}
-        onChange={event => onPanelChange?.({
+        onValueChange={selectedValueInput => onPanelChange?.({
           activeTab: 'text',
           freezeConnectedOutput: panel?.freezeConnectedOutput === true,
-          selectedOutputVersionId: event.currentTarget.value,
+          selectedOutputVersionId: selectedValueInput,
         })}
       >
         {selectedOutputVersionId === RICH_MEDIA_OUTPUT_DRAFT_VERSION_ID ? (
@@ -55,7 +56,7 @@ export function RichMediaOutputVersionSelector(props: {
             </option>
           )
         })}
-      </select>
+      </PanelSelect>
     </label>
   )
 }

@@ -381,7 +381,7 @@ export default function FieldSettingsPanel({
                       <GraphFieldsComfortableFieldSelect
                         id="graph-fields-type"
                         value={selectedSettings.fieldType}
-                        onChange={e => updateSelectedSettings({ fieldType: e.target.value as GraphFieldType })}
+                        onValueChange={selectedValueInput => updateSelectedSettings({ fieldType: selectedValueInput as GraphFieldType })}
                         className={comfortableSelectClassName}
                         textSizeClassName={uiPanelKeyValueTextSizeClass}
                       >

@@ -86,8 +86,8 @@ export function XrCameraMovePresetControl({
             aria-label="Camera move preset"
             value={moveId}
             disabled={disabled}
-            onChange={event => {
-              const nextMoveId = event.target.value as XrCameraMovePresetId
+            onValueChange={selectedValueInput => {
+              const nextMoveId = selectedValueInput as XrCameraMovePresetId
               setMoveId(nextMoveId)
               setMoveDurationSeconds(resolveXrCameraMovePreset(nextMoveId).defaultDurationSeconds)
             }}

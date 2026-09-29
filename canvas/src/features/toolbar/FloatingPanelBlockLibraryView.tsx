@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import * as React from 'react'
 import { BLOCK_DEFINITIONS, type BlockInsertPosition } from '@/features/block-editor/blockLibrary'
 import { readBlockSession, subscribeBlockSession } from '@/features/block-editor/blockSession'
@@ -80,9 +81,9 @@ export function FloatingPanelBlockLibraryView() {
       {selected ? <><p className="font-semibold">{selected.title} · {selected.category}</p><pre className="max-h-24 overflow-auto rounded border p-1.5 text-xs">{selected.snippet}</pre></> : <p>Select a block to preview it.</p>}
       <div className="flex items-center gap-1">
         <label htmlFor="block-insert-position">Place</label>
-        <select id="block-insert-position" value={position} onChange={event => setPosition(event.target.value as BlockInsertPosition)} className={`min-w-0 flex-1 rounded border bg-transparent px-1 py-1 ${UI_THEME_TOKENS.panel.border}`}>
+        <PanelSelect id="block-insert-position" value={position} onValueChange={selectedValueInput => setPosition(selectedValueInput as BlockInsertPosition)} className={`min-w-0 flex-1 rounded border bg-transparent px-1 py-1 ${UI_THEME_TOKENS.panel.border}`}>
           <option value="inside">Inside</option><option value="before">Before</option><option value="after">After</option>
-        </select>
+        </PanelSelect>
         <button type="button" disabled={!selected || !canInsert} onClick={insert} className="rounded border px-2 py-1 font-semibold disabled:opacity-50">Insert</button>
       </div>
       {feedback ? <p role="status" className="break-words">{feedback}</p> : null}

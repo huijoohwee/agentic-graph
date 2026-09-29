@@ -124,8 +124,8 @@ export const MotionControlTargetCards = React.memo(function MotionControlTargetC
             <PanelSelect
               value={selectedObject?.id || ''}
               disabled={!objectIdentification.records.length}
-              onChange={event => {
-                const targetId = event.currentTarget.value
+              onValueChange={selectedValueInput => {
+                const targetId = selectedValueInput
                 const result = controlXrSharedAssetControls({ operation: 'select-target', targetId })
                 if (!result.ok) selectBoundXrShotTarget(targetId)
               }}

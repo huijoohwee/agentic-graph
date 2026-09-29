@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { CloudDownload, CloudUpload, RefreshCw } from 'lucide-react'
 
@@ -183,9 +184,9 @@ export function XrV2CrossDeviceAssetPanel({
         </button>
       </div>
       {manifests.length ? (
-        <select className="min-w-0 rounded border bg-transparent p-1 text-xs" value={selectedAssetId} onChange={event => setSelectedAssetId(event.target.value)} aria-label="Shared XR asset manifest">
+        <PanelSelect className="min-w-0 rounded border bg-transparent p-1 text-xs" value={selectedAssetId} onValueChange={selectedValueInput => setSelectedAssetId(selectedValueInput)} aria-label="Shared XR asset manifest">
           {manifests.map(manifest => <option key={manifest.asset.asset_id} value={manifest.asset.asset_id}>{manifest.asset.asset_id}</option>)}
-        </select>
+        </PanelSelect>
       ) : null}
       <p className={cn('m-0 text-xs', phase === 'error' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.tertiary)} role="status">{message}</p>
       <p className="m-0 rounded bg-amber-100 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950/60 dark:text-amber-100">

@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import {
   DUCKDB_SQL_FIELD_TOOLTIP,
@@ -26,7 +27,6 @@ import {
   uiToolbarButtonPrimarySolidClassName,
 } from '@/features/toolbar/ui/toolbarStyles'
 import { KeyTypeValueStaticRow } from 'grph-shared/react/keyTypeValueRow'
-
 const inlineNodeButtonClassName = `${UI_RESPONSIVE_CHIP_CLASSNAME} border ${UI_THEME_TOKENS.input.border} rounded ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.text.primary} ${UI_THEME_TOKENS.button.hoverBg}`
 const helperPanelClassName = `mb-2 border ${UI_THEME_TOKENS.panel.border} rounded px-2 py-1`
 const helperTitleClassName = UI_THEME_TOKENS.text.tertiary
@@ -291,7 +291,7 @@ function DuckDbQueryPresetsSection({
                   contentClassName={`${UI_THEME_TOKENS.tooltip.bg} ${UI_THEME_TOKENS.tooltip.text}`}
                   className="w-full sm:w-auto"
                 >
-                  <select
+                  <PanelSelect
                     className={[
                       inlineSelectClassName,
                       UI_THEME_TOKENS.focus.primaryBorderRing,
@@ -299,14 +299,14 @@ function DuckDbQueryPresetsSection({
                       uiPanelTextFontClass,
                     ].join(' ')}
                     value={activePresetId}
-                    onChange={e => setActivePresetId(e.target.value)}
+                    onValueChange={selectedValueInput => setActivePresetId(selectedValueInput)}
                   >
                     {presets.map(preset => (
                       <option key={preset.id} value={preset.id}>
                         {preset.label}
                       </option>
                     ))}
-                  </select>
+                  </PanelSelect>
                 </Tooltip>
                 {activePreset.suggestedStartNodeId && (
                   <button

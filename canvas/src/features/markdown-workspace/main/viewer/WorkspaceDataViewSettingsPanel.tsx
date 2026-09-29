@@ -243,7 +243,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
                   <PanelSelect
                     className={[MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME, 'text-left'].join(' ')}
                     value={orientation}
-                    onChange={event => setOrientationFromWorkbench(event.target.value === 'columns' ? 'columns' : 'rows')}
+                    onValueChange={selectedValueInput => setOrientationFromWorkbench(selectedValueInput === 'columns' ? 'columns' : 'rows')}
                   >
                     <option value="rows">Rows as records</option>
                     <option value="columns">Columns as records</option>
@@ -263,7 +263,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
                   <PanelSelect
                     className={[MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME, 'w-full text-left'].join(' ')}
                     value={structuredSourceValueColumnMode}
-                    onChange={event => setStructuredSourceValueColumnMode(event.target.value === 'type-generic' ? 'type-generic' : 'type-specific')}
+                    onValueChange={selectedValueInput => setStructuredSourceValueColumnMode(selectedValueInput === 'type-generic' ? 'type-generic' : 'type-specific')}
                   >
                     <option value="type-specific">Type-specific value columns</option>
                     <option value="type-generic">Type-generic Value column</option>
@@ -498,8 +498,8 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
                 <PanelSelect
                   className={[MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME, 'w-full text-left'].join(' ')}
                   value={props.viewConfig.groupByColumnId || ''}
-                  onChange={e => {
-                    const nextGroupByColumnId = e.target.value || null
+                  onValueChange={selectedValueInput => {
+                    const nextGroupByColumnId = selectedValueInput || null
                     if ((props.viewConfig.groupByColumnId || null) === nextGroupByColumnId) return
                     props.setViewConfig({ ...props.viewConfig, groupByColumnId: nextGroupByColumnId })
                   }}

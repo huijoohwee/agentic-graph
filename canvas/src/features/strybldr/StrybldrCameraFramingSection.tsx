@@ -203,8 +203,8 @@ export function StrybldrCameraFramingSection() {
         <PanelSelect
           value={selectedCard?.id || ''}
           aria-label="Camera card"
-          onChange={event => {
-            const cardId = event.target.value
+          onValueChange={selectedValueInput => {
+            const cardId = selectedValueInput
             selectNode(cardId || null)
             if (cardId) return
             const current = readCameraFramingRuntime()

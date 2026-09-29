@@ -282,9 +282,9 @@ export function XrSimulationWorkbench({ sceneReady, runControl }: XrSimulationWo
           <PanelSelect
             value={selectedSubject?.id || ''}
             disabled={!subjects.length}
-            onChange={event => {
-              const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: event.target.value })
-              if (result.ok) setSelectedSubjectId(event.target.value)
+            onValueChange={selectedValueInput => {
+              const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: selectedValueInput })
+              if (result.ok) setSelectedSubjectId(selectedValueInput)
               else useGraphStore.getState().pushUiToast({ id: 'xr:simulation:select-target', kind: 'error', message: result.message })
             }}
             data-kg-media-xr-simulation-subject="1"
@@ -302,7 +302,7 @@ export function XrSimulationWorkbench({ sceneReady, runControl }: XrSimulationWo
           <PanelSelect
             value={bodyDraft.mode}
             disabled={bodyEditingDisabled}
-            onChange={event => setBodyDraft(current => ({ ...current, mode: event.target.value as XrPhysicsBodyMode }))}
+            onValueChange={selectedValueInput => setBodyDraft(current => ({ ...current, mode: selectedValueInput as XrPhysicsBodyMode }))}
             data-kg-media-xr-simulation-body-mode="1"
           >
             {XR_PHYSICS_BODY_MODES.map(mode => <option key={mode} value={mode}>{BODY_MODE_LABELS[mode]}</option>)}

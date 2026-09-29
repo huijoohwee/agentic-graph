@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { Headphones, Plane, Volume2 } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -152,36 +153,36 @@ export function FlightSimTrainingSurfaceProjection({
 
       <label className="grid gap-1 text-xs">
         <span>Training mission</span>
-        <select
+        <PanelSelect
           className="min-w-0 rounded border bg-transparent px-1 py-1 text-xs"
           value={training.missionId}
           disabled={selectionLocked}
-          onChange={event => selectFlightSimTrainingMission(
-            event.currentTarget.value as FlightSimTrainingMissionId,
+          onValueChange={selectedValueInput => selectFlightSimTrainingMission(
+            selectedValueInput as FlightSimTrainingMissionId,
           )}
           data-kg-flight-training-mission-select="1"
         >
           {FLIGHT_SIM_TRAINING_MISSIONS.map(mission => (
             <option key={mission.id} value={mission.id}>{mission.label}</option>
           ))}
-        </select>
+        </PanelSelect>
       </label>
 
       <label className="grid gap-1 text-xs">
         <span>Practice failure</span>
-        <select
+        <PanelSelect
           className="min-w-0 rounded border bg-transparent px-1 py-1 text-xs"
           value={training.failureId}
           disabled={selectionLocked}
-          onChange={event => selectFlightSimTrainingFailure(
-            event.currentTarget.value as FlightSimTrainingFailureId,
+          onValueChange={selectedValueInput => selectFlightSimTrainingFailure(
+            selectedValueInput as FlightSimTrainingFailureId,
           )}
           data-kg-flight-training-failure-select="1"
         >
           {FLIGHT_SIM_TRAINING_FAILURES.map(failure => (
             <option key={failure.id} value={failure.id}>{failure.label}</option>
           ))}
-        </select>
+        </PanelSelect>
       </label>
 
       <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>

@@ -58,7 +58,7 @@ export function StrybldrCameraOpticsSection({ settings, onSettingsChange }: Stry
             className="mt-1"
             aria-label="Camera sensor format"
             value={settings.sensorId}
-            onChange={event => update({ sensorId: event.target.value as CameraSensorFormatId })}
+            onValueChange={selectedValueInput => update({ sensorId: selectedValueInput as CameraSensorFormatId })}
             data-kg-camera-sensor="1"
           >
             {CAMERA_SENSOR_FORMATS.map(format => <option key={format.id} value={format.id}>{format.label}</option>)}
@@ -69,7 +69,7 @@ export function StrybldrCameraOpticsSection({ settings, onSettingsChange }: Stry
             className="mt-1"
             aria-label="Camera aspect mask"
             value={settings.aspectRatio}
-            onChange={event => update({ aspectRatio: event.target.value as CameraAspectRatioId })}
+            onValueChange={selectedValueInput => update({ aspectRatio: selectedValueInput as CameraAspectRatioId })}
             data-kg-camera-aspect-mask-control="1"
           >
             {CAMERA_ASPECT_RATIOS.map(aspect => <option key={aspect.id} value={aspect.id}>{aspect.label}</option>)}

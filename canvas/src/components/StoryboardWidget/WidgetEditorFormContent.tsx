@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import RichMediaPanel from '@/components/RichMediaPanel'
 import { CardInlineTextEditor } from '@/lib/cards/CardInlineTextEditor'
@@ -108,7 +109,7 @@ type WidgetEditorFormContentProps = {
   frontmatterEnvelopeRows: WidgetEditorKvRow[]
   isFrontmatterFlow: boolean
   registrySelectionId: string
-  handleRegistrySelect: (event: React.ChangeEvent<HTMLSelectElement>) => void
+  handleRegistrySelect: (nextValue: string) => void
   hasRegistryOptions: boolean
   registryOptions: ReadonlyArray<WidgetRegistryEntry>
   showRichMediaPanelKtvRows: boolean
@@ -368,16 +369,16 @@ export function WidgetEditorFormContent(props: WidgetEditorFormContentProps) {
               labelId: `${idBase}-kv-mapping-registry`,
               keyNode: <label className={cn(keyLabelClass, UI_THEME_TOKENS.text.secondary)} htmlFor={ids.registrySelect}>{UI_LABELS.flowWidget}</label>,
               valueNode: (
-                <select
+                <PanelSelect
                   id={ids.registrySelect}
                   className={cn(keyValueInputClass, textSizeClass, 'text-left', UI_THEME_TOKENS.input.bg, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.text)}
                   value={registrySelectionId}
-                  onChange={handleRegistrySelect}
+                  onValueChange={handleRegistrySelect}
                   disabled={!active || !hasRegistryOptions}
                 >
                   <option value="">{hasRegistryOptions ? UI_COPY.flowWidgetSelectPlaceholder : UI_LABELS.noneLabel}</option>
                   {registryOptions.map(entry => <option key={entry.id} value={entry.id}>{entry.id}</option>)}
-                </select>
+                </PanelSelect>
               ),
             }]}
           />

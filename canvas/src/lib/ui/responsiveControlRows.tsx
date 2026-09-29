@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
@@ -150,18 +151,18 @@ export function ResponsiveSelectRow({
 
   return (
     <ResponsiveControlRow label={label} compact={compact}>
-      <select
+      <PanelSelect
         className={`${UI_RESPONSIVE_CONTROL_SELECT_CLASSNAME} border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.text.primary} ${uiPanelTextFontClass} ${uiPanelKeyValueTextSizeClass}`}
         value={value}
         disabled={disabled}
-        onChange={e => onChange(String(e.target.value || ''))}
+        onValueChange={selectedValueInput => onChange(String(selectedValueInput || ''))}
       >
         {children || options?.map(option => (
           <option key={option} value={option}>
             {optionLabels?.[option] || option}
           </option>
         ))}
-      </select>
+      </PanelSelect>
     </ResponsiveControlRow>
   )
 }

@@ -43,11 +43,11 @@ export function XrChoreographyMarkControls({ target, warning, compact = false, s
           className={selectClass}
           aria-label={`${target.kind === 'cast' ? 'Cast' : 'Camera'} mark easing`}
           value={easing}
-          onChange={event => onChange({
+          onValueChange={selectedValueInput => onChange({
             kind: target.kind,
             ...(target.kind === 'cast' ? { actorId: target.actorId } : {}),
             markId: target.mark.id,
-            easing: event.target.value as XrChoreographyEasing,
+            easing: selectedValueInput as XrChoreographyEasing,
           } as XrChoreographyMarkUpdate)}
           data-kg-xr-mark-easing={target.mark.id}
         >
@@ -61,7 +61,7 @@ export function XrChoreographyMarkControls({ target, warning, compact = false, s
             className={selectClass}
             aria-label="Cast mark gait"
             value={target.mark.gait}
-            onChange={event => onChange({ kind: 'cast', actorId: target.actorId, markId: target.mark.id, gait: event.target.value as XrChoreographyGait })}
+            onValueChange={selectedValueInput => onChange({ kind: 'cast', actorId: target.actorId, markId: target.mark.id, gait: selectedValueInput as XrChoreographyGait })}
             data-kg-xr-mark-gait={target.mark.id}
           >
             {XR_CHOREOGRAPHY_GAITS.map(value => <option key={value} value={value}>{value}</option>)}

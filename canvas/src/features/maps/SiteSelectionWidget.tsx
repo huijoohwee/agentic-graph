@@ -197,7 +197,7 @@ export default function SiteSelectionWidget() {
             <PanelSelect
               variant="transparent"
               value={scenario}
-              onChange={e => setScenario(e.target.value)}
+              onValueChange={selectedValueInput => setScenario(selectedValueInput)}
               className="flex-1 min-w-0 px-1 text-xs"
             >
               <option value="baseline">Baseline</option>

@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { useDashboardSource } from './useDashboardSource'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -69,18 +70,18 @@ export default function DashboardWidgetConfiguration(props: DashboardWidgetEdito
       })
     }}>
 
-    {!props.widgetId && !missionId && <label className="block text-xs">Widget<select aria-label="Widget" className={control} value={selected} onChange={event => choose(event.target.value)}>
+    {!props.widgetId && !missionId && <label className="block text-xs">Widget<PanelSelect aria-label="Widget" className={control} value={selected} onValueChange={selectedValueInput => choose(selectedValueInput)}>
       <option value="">New widget</option>{existing.map(id => <option key={id} value={id}>{widgetSettings(config.document, id).title ?? sources.find(source => source.id === (widgetSettings(config.document, id).source ?? id))?.title ?? id}{widgetSettings(config.document, id).visible === false ? ' (hidden)' : ''}</option>)}
-    </select></label>}
-    {!missionId && !structural && <label className="block text-xs">Data source<select aria-label="Data source" className={control} value={sourceId} required onChange={event => change({ source: event.target.value })}>
+    </PanelSelect></label>}
+    {!missionId && !structural && <label className="block text-xs">Data source<PanelSelect aria-label="Data source" className={control} value={sourceId} required onValueChange={selectedValueInput => change({ source: selectedValueInput })}>
       <option value="">Choose a data source</option>{sources.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}
-    </select></label>}
+    </PanelSelect></label>}
     <label className="block text-xs">Title<input className={control} maxLength={256} value={draft.title ?? source?.title ?? props.title} onChange={event => change({ title: event.target.value })} /></label>
     <label className="block text-xs">Description<input className={control} maxLength={256} value={draft.subtitle ?? source?.subtitle ?? (missionId ? missionDescription : '')} onChange={event => change({ subtitle: event.target.value })} /></label>
     {props.template !== 'metric' && <label className="block text-xs">Note<textarea className={control} maxLength={256} value={draft.footnote ?? ''} onChange={event => change({ footnote: event.target.value })} /></label>}
-    {props.template !== 'metric' && !missionId && !structural && <label className="block text-xs">Display<select aria-label="Display" className={control} value={draft.kind ?? (source as DashboardCard)?.kind ?? props.template} onChange={event => change({ kind: event.target.value as DashboardCard['kind'] })}>
+    {props.template !== 'metric' && !missionId && !structural && <label className="block text-xs">Display<PanelSelect aria-label="Display" className={control} value={draft.kind ?? (source as DashboardCard)?.kind ?? props.template} onValueChange={selectedValueInput => change({ kind: selectedValueInput as DashboardCard['kind'] })}>
       {['bar', 'line', 'area', 'table'].map(kind => <option key={kind}>{kind}</option>)}
-    </select></label>}
+    </PanelSelect></label>}
     {(structural || props.template === 'table') && <section aria-label="Widget Markdown editor" className="rounded border p-2">
       <p className="mb-2 text-xs">Markdown · click a block to edit; click outside to return to View.</p>
       <DashboardMarkdown label="Widget Markdown" text={draft.markdown ?? (source && 'markdown' in source && typeof source.markdown === 'string' ? source.markdown : props.template === 'table' && source && 'rows' in source ? dashboardTableMarkdown(source as DashboardCard) : selected === 'graph:header' ? `Dashboard\n\n## ${model.title}\n\n${model.subtitle}` : props.template === 'heading' ? '## Heading' : props.template === 'divider' ? '---' : 'Write Markdown here.')}
@@ -88,13 +89,13 @@ export default function DashboardWidgetConfiguration(props: DashboardWidgetEdito
     </section>}
     {props.template === 'container' && <><label className="block text-xs">Columns<input aria-label="Container columns" className={control} type="number" min={1} max={12} value={draft.columns ?? 2} onChange={event => change({ columns: Number(event.target.value) })} /></label>
       <fieldset className="space-y-1 text-xs"><legend>Contained widgets</legend>{authoredDashboardWidgets(config.document, model.sections.flatMap(section => section.cards.map(item => `graph:${item.id}`))).filter(([id, item]) => id !== selected && item.template !== 'container').map(([id, item]) => <label key={id} className="flex gap-2"><input type="checkbox" checked={draft.children?.includes(id) ?? false} onChange={event => change({ children: event.target.checked ? [...(draft.children ?? []), id] : (draft.children ?? []).filter(child => child !== id) })} />{item.title ?? id}</label>)}</fieldset></>}
-    <label className="block text-xs">Aspect ratio<select aria-label="Widget aspect ratio" className={control} value={draft.aspectRatio ?? '16:9'} onChange={event => change({ aspectRatio: event.target.value as DashboardWidgetSettings['aspectRatio'] })}>
+    <label className="block text-xs">Aspect ratio<PanelSelect aria-label="Widget aspect ratio" className={control} value={draft.aspectRatio ?? '16:9'} onValueChange={selectedValueInput => change({ aspectRatio: selectedValueInput as DashboardWidgetSettings['aspectRatio'] })}>
       <option value="16:9">16:9 (Default)</option><option value="9:16">9:16</option><option value="custom">Custom · drag to resize</option>
-    </select></label>
+    </PanelSelect></label>
     {draft.aspectRatio === 'custom' && <section className="grid grid-cols-2 gap-2">{(['width', 'height'] as const).map(key => <label key={key} className="text-xs">{key}<input aria-label={`Widget ${key}`} className={control} type="number" min={120} max={4096} value={draft[key] ?? (key === 'width' ? 640 : 360)} onChange={event => change({ [key]: Number(event.target.value) })} /></label>)}</section>}
-    <label className="block text-xs">Card color<select aria-label="Color" className={control} value={draft.tone ?? source?.tone ?? 'blue'} onChange={event => change({ tone: event.target.value as DashboardCard['tone'] })}>
+    <label className="block text-xs">Card color<PanelSelect aria-label="Color" className={control} value={draft.tone ?? source?.tone ?? 'blue'} onValueChange={selectedValueInput => change({ tone: selectedValueInput as DashboardCard['tone'] })}>
       {['blue', 'green', 'amber', 'rose', 'slate'].map(tone => <option key={tone}>{tone}</option>)}
-    </select></label>
+    </PanelSelect></label>
     {!missionId && <label className="block text-xs">Order<input className={control} type="number" min={-10000} max={10000} step={1} value={draft.order ?? 0} onChange={event => change({ order: Number(event.target.value) })} /></label>}
     <label className="flex gap-2 text-xs"><input type="checkbox" checked={draft.expanded !== false} onChange={event => change({ expanded: event.target.checked })} />Expanded</label>
     <label className="flex gap-2 text-xs"><input type="checkbox" checked={draft.visible !== false} onChange={event => change({ visible: event.target.checked })} />Show on canvas</label>

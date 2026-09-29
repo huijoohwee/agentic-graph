@@ -205,7 +205,7 @@ export function XrAssetRow({
               className="w-20 shrink-0 text-xs"
               aria-label={`Path interpolation for ${asset.label}`}
               value={transition}
-              onChange={event => onTransitionChange(event.target.value as XrSceneTransition)}
+              onValueChange={selectedValueInput => onTransitionChange(selectedValueInput as XrSceneTransition)}
               data-kg-media-xr-asset-transition={asset.id}
             >
               <option value="linear">Travel</option>
@@ -249,7 +249,7 @@ export function XrSubjectTransformCard({ subject, sceneReady, runControl }: {
         value={subject.assetId}
         aria-label={`Change 3D object or asset for ${subject.label}`}
         data-kg-media-xr-subject-asset={subject.id}
-        onChange={event => setSubjectTransform(subject.id, { assetId: event.target.value })}
+        onValueChange={selectedValueInput => setSubjectTransform(subject.id, { assetId: selectedValueInput })}
       >
         {XR_SCENE_LIBRARY_ASSETS.map(asset => <option key={asset.id} value={asset.id}>{asset.label}</option>)}
       </PanelSelect>
