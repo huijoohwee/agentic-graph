@@ -1,6 +1,7 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 import { TEST_CASES_POST_PARSER_3_TAIL } from './postParserCases3Tail'
 export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
+  ["ui.typography.sourceRuntime", "@/__tests__/applicationTypography.test", "testApplicationTypographyLoadsBeforeBuild"],
   ["ui.typography.svgFonts", "@/__tests__/applicationTypography.test", "testApplicationTypographyExportsValidSvgFonts"],
   ["ui.typography.reference", "@/__tests__/applicationTypography.test", "testApplicationTypographyMatchesDashboardReference"],
   ["ui.typography.migration", "@/__tests__/applicationTypography.test", "testApplicationTypographyMigratesLegacyPreferences"],

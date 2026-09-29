@@ -2,8 +2,8 @@
  * CSS, DOM controls, canvas labels and generated viewers share this owner.
  * Imported document styles and world-space text retain their source dimensions.
  */
-export const UI_FONT_SANS = '-apple-system, BlinkMacSystemFont, Segoe UI, Noto Sans, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji'
-export const UI_FONT_MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
+import { UI_FONT_SANS, UI_FONT_MONO } from './fontStacks.mjs'
+export { UI_FONT_SANS, UI_FONT_MONO } from './fontStacks.mjs'
 
 export const UI_TEXT_SCALE = {
   xs: { size: 12, line: 16 },

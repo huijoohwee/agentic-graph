@@ -1,4 +1,4 @@
-import { UI_FONT_MONO, UI_FONT_SANS } from 'grph-shared/ui/typography'
+import { UI_FONT_MONO, UI_FONT_SANS } from 'grph-shared/ui/fontStacks'
 import {
   AGENTIC_OS_AGENT_READY_PROMPT_NAMES,
 } from './agentic-graph-agent-ready-prompt-contract.mjs'

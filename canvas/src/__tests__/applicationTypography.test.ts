@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
+import os from 'node:os'
+import { execFileSync } from 'node:child_process'
 import { JSDOM } from 'jsdom'
 import { exportGraphAsCenteredSvgMarkup } from '@/lib/graph/graphCenteredSvg'
 import { defaultSchema } from '@/lib/graph/schema'
@@ -23,6 +25,22 @@ export function testApplicationTypographyMatchesDashboardReference() {
     assert.equal(getMarkdownHeadingFontSizePx(args), tailwindTextSizeClassToPx(getMarkdownHeadingTextSizeClass(args)),
       'DOM and canvas/export headings must have identical measurements')
   }
+}
+
+export function testApplicationTypographyLoadsBeforeBuild() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'typography-source-'))
+  try {
+    const shared = path.join(root, 'node_modules/grph-shared')
+    fs.mkdirSync(path.join(shared, 'src/ui'), { recursive: true })
+    for (const file of ['package.json', 'src/ui/fontStacks.mjs']) {
+      fs.copyFileSync(path.resolve('../grph-shared', file), path.join(shared, file))
+    }
+    const output = execFileSync(process.execPath, ['--input-type=module', '-e',
+      "import { UI_FONT_SANS, UI_FONT_MONO } from 'grph-shared/ui/fontStacks'; console.log(JSON.stringify([UI_FONT_SANS, UI_FONT_MONO]))",
+    ], { cwd: root, encoding: 'utf8', env: { ...process.env, NODE_OPTIONS: '' } })
+    assert.deepEqual(JSON.parse(output), [UI_FONT_SANS, UI_FONT_MONO])
+    assert.equal(fs.existsSync(path.join(shared, 'dist')), false)
+  } finally { fs.rmSync(root, { recursive: true, force: true }) }
 }
 
 export function testApplicationTypographyMigratesLegacyPreferences() {
@@ -60,7 +78,7 @@ const sources = (root: string): string[] => fs.readdirSync(root, { withFileTypes
 export function testApplicationTypographyForbidsLegacyVariants() {
   const violations: string[] = []
   for (const root of ['src', '../grph-shared/src', '../gympgrph/src']) for (const file of sources(path.resolve(root))) {
-    if (file.endsWith('/ui/typography.ts') || file.endsWith('/kgTokens.generated.css')) continue
+    if (file.endsWith('/ui/typography.ts') || file.endsWith('/ui/fontStacks.mjs') || file.endsWith('/kgTokens.generated.css')) continue
     const content = fs.readFileSync(file, 'utf8')
     if (/text-\[\d+(?:\.\d+)?(?:px|rem)\]/.test(content)) violations.push(`${file}: use the shared text scale`)
     if (/tracking-(?:wide|wider|widest|tight|tighter)\b|tracking-\[[^\]]+\]/.test(content)) violations.push(`${file}: use normal letter spacing`)

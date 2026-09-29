@@ -186,7 +186,8 @@ headings and 30/36 px dashboard titles. Keep semantic heading levels and code
 monospace. Operators must not encounter another tiny-label or font-stack variant
 when switching MainPanel, FloatingPanel, BottomPanel, Explorer or editor surfaces.
 
-TAD/ADR: `grph-shared/src/ui/typography.ts` owns font stacks and the text scale.
+TAD/ADR: `grph-shared/src/ui/typography.ts` owns the text scale and reexports font
+stacks from `fontStacks.mjs`, a build-independent ESM owner shared with headless tools.
 The existing token generator emits CSS variables; Tailwind theme utilities, base
 styles, panel preferences, canvas measurement and exported viewers consume them.
 Markdown heading pixel measurements derive from the same utility scale. Persisted
@@ -214,7 +215,8 @@ review candidate, retaining the running checkout for live review. Deployment and
 protected integration need their own native authority. Revert the typography
 revision as one unit so the shared owner, generated CSS and consumers stay paired.
 
-Observed follow-up evidence: 10 focused cases passed, including actual SVG XML
+Observed follow-up evidence: 11 focused cases cover source-only font imports without
+a compiled package, actual SVG XML
 parsing and the existing MainPanel/inspector/table/widget preference integrations.
 Live dashboard retains 12/16, 14/21, 16/24 and 30/36 px reference roles. Twelve
 MainPanel tabs inherit the system sans / 14 px baseline; populated tabs expose
