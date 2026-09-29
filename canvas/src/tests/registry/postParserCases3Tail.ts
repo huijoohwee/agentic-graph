@@ -163,7 +163,6 @@ export const TEST_CASES_POST_PARSER_3_TAIL: TestCaseTuple[] = [
   ["storage.worker.crawlerRoutesReadOnly","@/__tests__/agentic-graph-storage-worker.test","testAgenticGraphStorageWorkerCrawlerRoutesStayReadOnly"],
   ["crawlerAccess.prdTad.implementedCommerceHandoff","@/__tests__/crawlerPrdTadDocs.test","testCrawlerPrdTadNamesImplementedCommerceHandoff"],
   ["agentReady.docs.canonicalImplementedContractNames","@/__tests__/agentReadyDocs.test","testAgentReadyDocsUseCanonicalImplementedContractNames"],
-  ["deerflow.prdTad.implementedGatewayOwners","@/__tests__/deerflowPrdTadDocs.test","testDeerFlowPrdTadUsesImplementedGatewayOwners"],
   ["mcpService.docs.implementedBaselineContract","@/__tests__/mcpServiceDocs.test","testMcpServiceDocsUseImplementedBaselineContract"],
   ["chat.responseContract.docs.agenticOsPromptContractCanonical","@/__tests__/agenticOsPromptContractDocs.test","testAgenticOsPromptContractDocsUseCanonicalImplementedNames"],
   ["tokenEconomics.prdTad.agenticOsSemanticOwners","@/__tests__/tokenEconomicsDocs.test","testTokenEconomicsPrdTadUsesAgenticOsSemanticOwners"],

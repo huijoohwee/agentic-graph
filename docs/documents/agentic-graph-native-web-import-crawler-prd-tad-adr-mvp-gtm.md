@@ -51,8 +51,7 @@ The external crawler project is a capability reference only. The implementation 
 ## 2026-09-29 URL import icon row
 
 **PRD.** The URL input has one icon row for standard import, Codebase graph mode,
-Design renderer, video validation/download, headless website crawl, and the existing
-provider-assisted import. Every icon has an accessible name and tooltip. Codebase
+Design renderer, video validation/download, and headless website crawl. Every icon has an accessible name and tooltip. Codebase
 graph retains its pressed-state mode; the separate label and help row are removed.
 The primary action identifies whether it imports a URL into the workspace or a
 codebase graph. Keyboard Enter retains the same dispatch.

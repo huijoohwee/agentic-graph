@@ -92,7 +92,6 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["mainPanel.storyboardWidgetManager.registry.preservesLmStudioLocalProviderProfile","@/__tests__/textGenerationLmStudioProviderProfile.test","testStoryboardWidgetManagerPreservesLmStudioLocalProviderProfile"],
   ["mainPanel.storyboardWidgetManager.registry.reusableTextDrafts","@/__tests__/storyboardWidgetManagerRegistry.test","testStoryboardWidgetManagerBuildsReusableTextRegistryDrafts"],
   ["mainPanel.storyboardWidgetManager.registry.omitsOpenAiTextDefault","@/__tests__/storyboardWidgetManagerRegistry.test","testStoryboardWidgetManagerDoesNotSeedOpenAiTextRegistryEntry"],
-  ["mainPanel.storyboardWidgetManager.registry.omitsDeerFlowTextDefault","@/__tests__/storyboardWidgetManagerRegistry.test","testStoryboardWidgetManagerDoesNotSeedDeerFlowTextRegistryEntry"],
   ["mainPanel.storyboardWidgetManager.registry.omitsGrabMapsDiscoveryDefault","@/__tests__/storyboardWidgetManagerRegistry.test","testStoryboardWidgetManagerDoesNotSeedGrabMapsDiscoveryRegistryEntry"],
   ["mainPanel.storyboardWidgetManager.registry.canonicalizesConflictingGrabMapsDiscoveryEntry","@/__tests__/storyboardWidgetManagerRegistry.test","testStoryboardWidgetManagerCanonicalizesConflictingGrabMapsDiscoveryRegistryEntry"],
   ["mainPanel.storyboardWidgetManager.registry.canonicalizesConflictingBuiltInWidgetForms","@/__tests__/storyboardWidgetManagerRegistry.test","testStoryboardWidgetManagerCanonicalizesConflictingBuiltInWidgetForms"],

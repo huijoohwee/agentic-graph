@@ -38,22 +38,6 @@ export function testStoryboardWidgetManagerResolvesWidgetRegistryApiDocRefs() {
     throw new Error(`expected OpenAI text widget prompt doc ref, got ${JSON.stringify(openAiPrompt)}`)
   }
 
-  const deerflowPrompt = resolveWidgetRegistryApiDocRef({
-    registryEntry: {
-      nodeTypeId: FLOW_TEXT_GENERATION_NODE_TYPE_ID,
-      widgetTypeId: 'default',
-      formId: 'textGeneration.deerflow',
-    },
-    properties: {
-      chatProvider: 'deerflow',
-    },
-    fieldKey: 'prompt',
-    schemaPath: 'properties.prompt',
-  })
-  if (!deerflowPrompt || deerflowPrompt.rowKey !== 'deerflowApi.input' || deerflowPrompt.apiKey !== 'input') {
-    throw new Error(`expected DeerFlow text widget prompt doc ref, got ${JSON.stringify(deerflowPrompt)}`)
-  }
-
   const videoOutput = resolveWidgetRegistryApiDocRef({
     registryEntry: {
       nodeTypeId: FLOW_VIDEO_GENERATION_NODE_TYPE_ID,
@@ -95,20 +79,5 @@ export function testStoryboardWidgetManagerResolvesWidgetRegistryMainPanelLinks(
   })
   if (!bytePlusVideoLink || bytePlusVideoLink.tab !== 'integrations' || bytePlusVideoLink.searchQuery !== 'byteplusVideoApi.polling_endpoint' || bytePlusVideoLink.anchorId !== 'byteplus-video-generation-api-row-byteplusvideoapi-polling-endpoint') {
     throw new Error(`expected BytePlus video widget main-panel link, got ${JSON.stringify(bytePlusVideoLink)}`)
-  }
-
-  const deerflowPromptLink = resolveWidgetRegistryMainPanelLink({
-    registryEntry: {
-      nodeTypeId: FLOW_TEXT_GENERATION_NODE_TYPE_ID,
-      widgetTypeId: 'default',
-      formId: 'textGeneration.deerflow',
-    },
-    properties: {
-      chatProvider: 'deerflow',
-    },
-    portKey: 'prompt_in',
-  })
-  if (!deerflowPromptLink || deerflowPromptLink.tab !== 'integrations' || deerflowPromptLink.searchQuery !== 'deerflowApi.input' || deerflowPromptLink.anchorId !== 'deerflow-api-row-deerflowapi-input') {
-    throw new Error(`expected DeerFlow text widget main-panel link, got ${JSON.stringify(deerflowPromptLink)}`)
   }
 }

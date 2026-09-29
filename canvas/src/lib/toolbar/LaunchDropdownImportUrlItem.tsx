@@ -1,5 +1,5 @@
 import React from 'react'
-import { ChevronDown, Download, FileDown, GitBranch, Globe, Link, Palette, Sparkles, Workflow } from 'lucide-react'
+import { ChevronDown, Download, FileDown, GitBranch, Globe, Link, Palette, Workflow } from 'lucide-react'
 import type { UiToastInput } from '@/hooks/store/types'
 import { WORKSPACE_IMPORT_IMAGE_URL_TEST, WORKSPACE_IMPORT_URL_TEST } from '@/lib/config'
 import { readEnvString } from '@/lib/config.env'
@@ -167,14 +167,6 @@ export function LaunchDropdownImportUrlItem(props: {
     [pushUiToast],
   )
 
-  const importUrlDeerFlowFallback = React.useCallback(
-    async (urlRaw: string, opts?: { canvas2dRenderer?: WorkspaceUrlImportCanvasRendererId | null; documentSemanticMode?: WorkspaceUrlImportDocumentModeId | null }) => {
-      const mod = await loadLaunchDropdownFallbackModule()
-      await mod.importUrlDeerFlowFallback({ urlRaw, canvas2dRenderer: opts?.canvas2dRenderer, documentSemanticMode: opts?.documentSemanticMode, pushUiToast })
-    },
-    [pushUiToast],
-  )
-
   const selectedImportOpts = React.useCallback(() => parseImportUrlRendererSelection(importUrlRenderer) || undefined, [importUrlRenderer])
 
   const runImportUrl = React.useCallback(
@@ -252,24 +244,6 @@ export function LaunchDropdownImportUrlItem(props: {
       }
     },
     [importUrlFallback, isImportingUrl, agentGraphRepositoryMode, onClose, pushUiToast, selectedImportOpts, targetSkillsCommands],
-  )
-
-  const runImportUrlDeerFlow = React.useCallback(
-    async (nextUrlRaw: string) => {
-      const nextUrl = String(nextUrlRaw || '').trim()
-      if (!nextUrl) return
-      try {
-        await targetSkillsCommands()
-      } catch {
-        return
-      }
-      onClose()
-      const opts = selectedImportOpts()
-      if (opts?.canvas2dRenderer === 'design') activateDesignEditorSurface({ openFloatingPanel: true })
-      void importUrlDeerFlowFallback(nextUrl, opts)
-      setUrlInputOpen(false)
-    },
-    [importUrlDeerFlowFallback, onClose, selectedImportOpts, targetSkillsCommands],
   )
 
   const runWebsiteCrawl = React.useCallback(
@@ -401,9 +375,6 @@ export function LaunchDropdownImportUrlItem(props: {
                 ) : null}
                 <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)} title="Crawl website headlessly" aria-label="Crawl website headlessly" data-kg-launch-import-url-crawler-target={NATIVE_CRAWLER_COMMAND} disabled={isImportingUrl || !urlDraft.trim()} onClick={() => { void runWebsiteCrawl(urlDraft) }}>
                   <Globe className={props.menuIconClass} strokeWidth={1.6} aria-hidden="true" />
-                </button>
-                <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)} title="Import URL (DeerFlow)" aria-label="Import URL (DeerFlow)" data-kg-launch-import-url-provider-assisted-target={IMPORT_URL_AGENT_READY_MCP_TOOL_NAME} onClick={() => { void runImportUrlDeerFlow(urlDraft) }}>
-                  <Sparkles className={props.menuIconClass} strokeWidth={1.6} />
                 </button>
               </>
             }

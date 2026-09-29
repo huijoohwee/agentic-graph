@@ -1869,36 +1869,6 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
     res.end(JSON.stringify(payload))
     return true
   }
-  const parseSseFrames = (buffer: string): { frames: Array<{ event: string; data: string }>; rest: string } => {
-    const lines = buffer.split(/\r?\n/)
-    const frames: Array<{ event: string; data: string }> = []
-    let eventName = 'message'
-    let dataLines: string[] = []
-    let idx = 0
-    while (idx < lines.length) {
-      const line = lines[idx]
-      idx += 1
-      if (line === '') {
-        if (dataLines.length) {
-          frames.push({ event: eventName, data: dataLines.join('\n') })
-        }
-        eventName = 'message'
-        dataLines = []
-        continue
-      }
-      if (line.startsWith('event:')) {
-        eventName = line.slice('event:'.length).trim() || 'message'
-        continue
-      }
-      if (line.startsWith('data:')) {
-        dataLines.push(line.slice('data:'.length).trim())
-      }
-    }
-    const terminated = /\r?\n\r?\n$/.test(buffer)
-    if (terminated) return { frames, rest: '' }
-    const restLines = lines.slice(Math.max(lines.length - 1, 0))
-    return { frames: frames.slice(0, Math.max(frames.length - (dataLines.length ? 1 : 0), 0)), rest: restLines.join('\n') }
-  }
   const toActionableChatProxyError = (message: string): string => {
     const normalized = String(message || '').trim()
     const lowered = normalized.toLowerCase()
@@ -1915,168 +1885,6 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
       return 'Local AI gateway is not running or unreachable. Start the gateway and retry.'
     }
     return normalized
-  }
-  const listLocalGatewayModelIds = async ({
-    upstreamBase,
-    controller,
-  }: {
-    upstreamBase: URL
-    controller: AbortController
-  }): Promise<string[]> => {
-    try {
-      const localGatewayModelsUrl = new URL('/api/models', upstreamBase)
-      const res = await fetch(localGatewayModelsUrl.toString(), {
-        method: 'GET',
-        signal: controller.signal,
-      })
-      if (res.ok) {
-        const data = (await res.json()) as { models?: Array<{ name?: unknown }> }
-        const fromApi = (Array.isArray(data.models) ? data.models : [])
-          .map(item => (typeof item?.name === 'string' ? item.name.trim() : ''))
-          .filter(Boolean)
-        if (fromApi.length) return fromApi
-      }
-    } catch {
-      void 0
-    }
-    return []
-  }
-  const handleLocalGatewayChatCompletions = async ({
-    body,
-    upstreamBase,
-    controller,
-    res,
-  }: {
-    body: Buffer
-    upstreamBase: URL
-    controller: AbortController
-    res: import('node:http').ServerResponse
-  }): Promise<void> => {
-    const payload = (() => {
-      try {
-        const parsed = JSON.parse(body.toString('utf8')) as {
-          model?: unknown
-          messages?: Array<{ role?: unknown; content?: unknown }>
-        }
-        return parsed
-      } catch {
-        return null
-      }
-    })()
-    if (!payload || !Array.isArray(payload.messages)) {
-      writeJson(res, 400, { ok: false, error: 'Invalid local gateway chat payload' })
-      return
-    }
-    const threadCreateUrl = new URL('/api/langgraph/threads', upstreamBase)
-    const normalizedMessages = payload.messages
-      .map(msg => {
-        const role = typeof msg?.role === 'string' ? msg.role.trim() : ''
-        const content = typeof msg?.content === 'string' ? msg.content : ''
-        if (!role || !content) return null
-        return { role, content }
-      })
-      .filter(Boolean) as Array<{ role: string; content: string }>
-    const requestedModel = typeof payload.model === 'string' ? payload.model.trim() : ''
-    const availableModelIds = await listLocalGatewayModelIds({
-      upstreamBase,
-      controller,
-    })
-    const effectiveModel = requestedModel && availableModelIds.includes(requestedModel)
-      ? requestedModel
-      : (availableModelIds[0] || requestedModel)
-    if (!effectiveModel) {
-      writeJson(
-        res,
-        502,
-        { ok: false, error: "No chat model could be resolved. Please configure at least one model in config.yaml or provide a valid 'model_name'/'model' in the request." },
-      )
-      return
-    }
-    const streamBody = {
-      assistant_id: 'lead_agent',
-      input: { messages: normalizedMessages },
-      config: {
-        configurable: {
-          model_name: effectiveModel,
-          model: effectiveModel,
-          thinking_enabled: false,
-          is_plan_mode: false,
-        },
-      },
-      stream_mode: ['messages', 'values', 'custom'],
-    }
-    const threadCreateRes = await fetch(threadCreateUrl.toString(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ metadata: { source: 'agentic-graph-chat-proxy' } }),
-      signal: controller.signal,
-    })
-    if (!threadCreateRes.ok) {
-      const detail = await threadCreateRes.text()
-      writeJson(res, threadCreateRes.status, { ok: false, error: detail || 'Failed to create local gateway thread' })
-      return
-    }
-    const threadData = (await threadCreateRes.json()) as { thread_id?: unknown }
-    const threadId = typeof threadData.thread_id === 'string' ? threadData.thread_id.trim() : ''
-    if (!threadId) {
-      writeJson(res, 502, { ok: false, error: 'Invalid local gateway thread response' })
-      return
-    }
-    const streamUrl = new URL(`/api/langgraph/threads/${encodeURIComponent(threadId)}/runs/stream`, upstreamBase)
-    const localGatewayRes = await fetch(streamUrl.toString(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'text/event-stream',
-      },
-      body: JSON.stringify(streamBody),
-      signal: controller.signal,
-    })
-    if (!localGatewayRes.ok) {
-      const detail = await localGatewayRes.text()
-      writeJson(res, localGatewayRes.status, { ok: false, error: detail || 'Local gateway run failed' })
-      return
-    }
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
-    res.setHeader('Cache-Control', 'no-store')
-    res.setHeader('Connection', 'keep-alive')
-    const reader = localGatewayRes.body?.getReader()
-    if (!reader) {
-      res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: '' } }] })}\n\n`)
-      res.write('data: [DONE]\n\n')
-      res.end()
-      return
-    }
-    let buffer = ''
-    while (true) {
-      const chunk = await reader.read()
-      if (chunk.done) break
-      if (!chunk.value || chunk.value.byteLength === 0) continue
-      buffer += Buffer.from(chunk.value).toString('utf8')
-      const parsed = parseSseFrames(buffer)
-      buffer = parsed.rest
-      parsed.frames.forEach(frame => {
-        if (!frame.data) return
-        if (frame.event === 'end') {
-          res.write('data: [DONE]\n\n')
-          return
-        }
-        let text = ''
-        try {
-          const data = JSON.parse(frame.data) as { content?: unknown; role?: unknown }
-          if (typeof data.content === 'string' && String(data.role || '').toLowerCase() === 'assistant') {
-            text = data.content
-          }
-        } catch {
-          text = ''
-        }
-        if (!text) return
-        res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`)
-      })
-    }
-    res.write('data: [DONE]\n\n')
-    res.end()
   }
   return async (req, res, next) => {
     const method = String(req.method || 'GET').toUpperCase()
@@ -2117,7 +1925,7 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
     const aiGatewayBaseRaw = String(process.env.AGENTIC_OS_CHAT_PROXY_AI_GATEWAY_BASE_URL || '').trim()
     const aiGatewayGatewayId = String(process.env.AGENTIC_OS_CHAT_PROXY_AI_GATEWAY_GATEWAY_ID || '').trim()
     const gatewayMode = String(process.env.AGENTIC_OS_CHAT_GATEWAY_MODE || '').trim().toLowerCase()
-    const localGatewayOnly = gatewayMode === 'local-only' || (gatewayMode.endsWith('-only') && gatewayMode !== 'openai-only')
+    const localGatewayOnly = gatewayMode === 'local-only'
     const localProviderSelected = providerHeader === 'lmstudio-local'
     const bytePlusProviderSelected = providerHeader === 'byteplus-modelark'
     const miromindProviderSelected = providerHeader === 'miromind'
@@ -2135,11 +1943,9 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
     const requestedUpstreamRaw = readSingleHeader(req.headers['x-kg-chat-upstream'])
     const aiGatewayRequested = providerHeader === 'openai' && !!aiGatewayBaseRaw && !!aiGatewayRoute
     const upstreamBaseRaw = (() => {
-      const legacyLocalUpstreamKey = ['AGENTIC_OS_CHAT_PROXY_', 'DEER', 'FLOW', '_UPSTREAM'].join('')
-      const legacyLocalUpstream = String((process.env as Record<string, string | undefined>)[legacyLocalUpstreamKey] || '').trim()
       const localGatewayBase = String(process.env.AGENTIC_OS_CHAT_PROXY_LOCAL_UPSTREAM || '').trim()
       if (localGatewayOnly || localProviderSelected) {
-        return localGatewayBase || legacyLocalUpstream || String(process.env.AGENTIC_OS_CHAT_PROXY_UPSTREAM || '').trim() || 'http://127.0.0.1:1234'
+        return localGatewayBase || String(process.env.AGENTIC_OS_CHAT_PROXY_UPSTREAM || '').trim() || 'http://127.0.0.1:1234'
       }
       if (aiGatewayRequested) return aiGatewayBaseRaw
       if (bytePlusProviderSelected) return requestedUpstreamRaw || `https://${CHAT_PROXY_BYTEPLUS_AP_SOUTHEAST_HOST}`
@@ -2336,42 +2142,6 @@ function createChatProxyHandler(): import('vite').Connect.NextHandleFunction {
       const ctrl = new AbortController()
       controller = ctrl
       timeoutId = setTimeout(() => ctrl.abort(), Math.max(15_000, Math.min(600_000, Math.floor(Number(process.env.AGENTIC_OS_CHAT_PROXY_TIMEOUT_MS) || 210_000))))
-      if (localProviderSelected && method === 'GET' && upstreamPath === '/v1/models') {
-        let localGatewayModelsRes: Response | null = null
-        try {
-          const localGatewayModelsUrl = new URL('/api/models', upstreamBase)
-          localGatewayModelsRes = await fetch(localGatewayModelsUrl.toString(), {
-            method: 'GET',
-            signal: ctrl.signal,
-          })
-        } catch {
-          localGatewayModelsRes = null
-        }
-        if (!localGatewayModelsRes) {
-          writeJson(res, 502, { ok: false, error: 'Failed to load local gateway models' })
-          return
-        }
-        const data = (await localGatewayModelsRes.json()) as { models?: Array<{ name?: unknown }> }
-        const list = Array.isArray(data.models) ? data.models : []
-        const mapped = list
-          .map(item => {
-            const id = typeof item?.name === 'string' ? item.name.trim() : ''
-            if (!id) return null
-            return { id, object: 'model' }
-          })
-          .filter(Boolean)
-        writeJson(res, localGatewayModelsRes.status, { data: mapped })
-        return
-      }
-      if (localProviderSelected && method === 'POST' && upstreamPath === '/v1/chat/completions') {
-        await handleLocalGatewayChatCompletions({
-          body,
-          upstreamBase,
-          controller: ctrl,
-          res,
-        })
-        return
-      }
       const headers = new Headers()
       const contentType = String(req.headers['content-type'] || '').trim()
       const accept = String(req.headers.accept || '').trim()

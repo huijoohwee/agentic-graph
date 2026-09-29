@@ -120,6 +120,7 @@ export async function testIntegrationsHubReusesSettingsEntryList() {
     root = createRoot(container as unknown as HTMLElement)
     await renderAndFlush(root, React.createElement(IntegrationsHubView), anyWindow.requestAnimationFrame, 3)
     const text = container.textContent || ''
+    if (/deer[ -]?flow/i.test(text)) throw new Error('retired gateway must not appear in Integrations')
     const expectedTokens = [
       'Key',
       'Type',
@@ -154,12 +155,7 @@ export async function testIntegrationsHubReusesSettingsEntryList() {
       'openaiImageApi.prompt',
       'openaiImageApi.size',
       'openaiImageApi.output_format',
-      'DeerFlow Gateway API',
       'Open FloatingPanel Props Panel Widget Card',
-      'deerflowApi.provider',
-      'deerflowApi.endpoint_url',
-      'deerflowApi.model',
-      'deerflowApi.input',
       'MiroMind API',
       'Open FloatingPanel Chat UI (MiroMind)',
       'miromindApi.provider',
@@ -262,15 +258,14 @@ export async function testIntegrationsHubSectionLinksOpenFloatingPanels() {
     await clickButton('Open FloatingPanel Chat UI (Agnes)')
     for (let index = 0; index < 2; index += 1) await clickButton('Open FloatingPanel Props Panel Widget Card')
     await clickButton('Open FloatingPanel Props Panel OpenAI Image Widget')
-    await clickButton('Open FloatingPanel Props Panel Widget Card')
     await clickButton('Open FloatingPanel BytePlus Video Widget')
     await clickButton('Open FloatingPanel BytePlus Image Widget')
 
     if (floatingPanelEvents.filter(value => value === 'chat').length !== 2) {
       throw new Error(`expected chat section links to open floating chat twice, got ${JSON.stringify(floatingPanelEvents)}`)
     }
-    if (propsPanelEvents.length !== 6) {
-      throw new Error(`expected text/openai-chat/openai-images/deerflow/video/image section links to open floating props panel six times, got ${JSON.stringify(propsPanelEvents)}`)
+    if (propsPanelEvents.length !== 5) {
+      throw new Error(`expected text/openai-chat/openai-images/video/image section links to open floating props panel five times, got ${JSON.stringify(propsPanelEvents)}`)
     }
     eventWindow.dispatchEvent = originalDispatchEvent
   } finally {

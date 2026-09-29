@@ -360,6 +360,10 @@ export async function testAgentGraphLaunchImportUrlOffersRateLimitedRepositoryRe
     const repositoryMode = container.querySelector('button[aria-label="Codebase graph"]')
     assert.ok(repositoryMode instanceof dom.window.HTMLButtonElement)
     assert.equal(repositoryMode.getAttribute('aria-pressed'), 'false')
+    const importControls = container.querySelector('[aria-label="URL import actions"]')
+    assert.ok(importControls)
+    assert.ok(importControls.querySelector('button[aria-label="Crawl website headlessly"]'))
+    assert.equal(importControls.querySelector('button[aria-label*="DeerFlow"]'), null)
 
     const input = container.querySelector('input.kg-import-url-input')
     const confirm = container.querySelector('button.kg-import-url-confirm')

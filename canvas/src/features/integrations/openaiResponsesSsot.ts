@@ -178,27 +178,13 @@ const OPENAI_TEXT_WIDGET_FIELD_BINDINGS: ReadonlyArray<WidgetRowBinding> = [
   },
 ]
 
-export function buildOpenAiCompatibleTextGenerationFields(args?: {
-  providerFamily?: 'openai' | 'deerflow'
-}): WidgetRegistryField[] {
-  const providerFamily = args?.providerFamily === 'deerflow' ? 'deerflow' : 'openai'
+export function buildOpenAiCompatibleTextGenerationFields(): WidgetRegistryField[] {
   const fields = OPENAI_TEXT_WIDGET_FIELD_BINDINGS
     .map(binding => binding.field)
     .filter((field): field is WidgetRegistryField => !!field)
     .map(field => ({ ...field }))
 
-  const normalizedFields = providerFamily === 'deerflow'
-    ? fields.map(field => {
-        if (field.fieldKey !== 'chatModel') return field
-        const { options, ...rest } = field
-        return {
-          ...rest,
-          fieldType: 'text',
-        }
-      })
-    : fields
-
-  return normalizedFields.concat([{ fieldKey: 'output', fieldType: 'textarea', schemaPath: 'properties.output', label: 'Output' }])
+  return fields.concat([{ fieldKey: 'output', fieldType: 'textarea', schemaPath: 'properties.output', label: 'Output' }])
 }
 
 const OPENAI_DOC_ROW_BY_ROW_KEY: Readonly<Record<string, OpenAiApiDocRow>> = {

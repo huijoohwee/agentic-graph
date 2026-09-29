@@ -13,10 +13,10 @@ kgFrontmatterModeEnabled: true
 $schema: "agentic-os-pipeline/v1"
 
 inputs:
-  text_provider_id: "deerflow"
-  # Keep endpoint runtime-resolved from MainPanel Integrations (Dev localhost or Prod Cloudflare Tunnel).
+  text_provider_id: "lmstudio-local"
+  # Keep the local endpoint runtime-resolved from MainPanel Integrations.
   text_endpoint_url: ""
-  text_model: "seed-2-0-lite-260228"
+  text_model: "qwen/qwen3.5-9b@q4_k_m"
   image_model: "seedream-4-0-250828"
   video_model: "seedance-1-0-pro-fast-251015"
   vibe: "vivid, photorealistic, magic-realist, warm cinematic light cross-cutting to surreal multiverse glow, 9:16 vertical, TikTok-native"

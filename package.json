@@ -35,7 +35,6 @@
     "demo:risk-copilot": "npm run dev:risk-copilot --workspace=@agentic-graph/canvas --",
     "demo:xr-physics": "npm run dev:xr-physics --workspace=@agentic-graph/canvas --",
     "demo:xr-v2": "npm run dev:xr-v2 --workspace=@agentic-graph/canvas --",
-    "dev:all": "bash scripts/dev-all.sh",
     "build": "npm run build --workspace=@agentic-graph/canvas",
     "geospatial-mode:test": "TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test scripts/__tests__/geospatial-*.test.ts scripts/__tests__/geo-authoring-fallback-readiness.test.ts && node --test mcp/__tests__/geospatial-layer-runtime.test.mjs && npm -C canvas run test:ci:unit -- geospatial.invocation && npm -C canvas run test:ci:unit -- geospatial.panel.composition.srpAndCatalogSeam",
     "geospatial-mode:check": "npm run build --workspace=grph-shared && npm run build --workspace=gympgrph && npm -C canvas run check && npm run geospatial-mode:test && AG_SKIP_DOCS_UPDATE=1 npm run build && node scripts/check-geospatial-mode-readiness.mjs",
