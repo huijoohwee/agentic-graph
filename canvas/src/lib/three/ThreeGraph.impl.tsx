@@ -25,6 +25,7 @@ import { shouldRenderCanvasAppliedModelAsset } from '@/lib/three/modelAssetActiv
 import { parseStandaloneSpatialCaptureManifest } from '@/features/markdown-workspace/workspaceImport/spatialCaptureFileset'
 import { SpatialCaptureManifestStage } from '@/features/three/SpatialCaptureManifestStage'
 import { XrEmptyWorldStage } from '@/features/three/XrEmptyWorldStage'
+import { XrSubjectHoverProvider } from '@/features/three/XrSubjectHover'
 import { XrEmptyWorldHud } from '@/features/three/XrEmptyWorldHud'
 import { useXrSceneMediaDrop } from '@/features/three/useXrSceneMediaDrop'
 import { XrCameraAspectMask } from '@/features/three/XrCameraAspectMask'
@@ -444,6 +445,8 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
         event.stopPropagation()
       }}
     >
+      <XrSubjectHoverProvider containerRef={containerRef} schema={effectiveSchema} documentKey={canvasMarkdownDocument.name || ''}
+        enabled={active && hoverEnabled && mode === 'xr' && !gameplayOverlayActive && !immersiveMediaStageActive && !learningScene}>
       <Canvas
         key={rendererLifecycleKey}
         data-kg-three-canvas-owner="1"
@@ -554,6 +557,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
           <OverlayFrameSync enabled={active && mode !== 'xr'} scheduleRef={scheduleRef} />
         </React.Suspense>
       </Canvas>
+      </XrSubjectHoverProvider>
       {mode === 'xr' && documentStageAuthority && !gameplayOverlayActive && !immersiveMediaStageActive ? <XrCameraAspectMask /> : null}
       {hasXrEmptyWorld && !gameplayOverlayActive ? <XrEmptyWorldHud /> : null}
       {immersiveMediaActive ? <ThreeGraphImmersiveMediaHud geospatialComposite={geospatialComposite} /> : null}
