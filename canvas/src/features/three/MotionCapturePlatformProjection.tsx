@@ -50,7 +50,7 @@ function MotionCaptureInvocationChip({ variant }: { variant: Exclude<MotionCaptu
     : buildMotionControlInvocation('open')
   return (
     <code
-      className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'min-w-0 overflow-hidden font-mono text-[9px]', UI_THEME_TOKENS.text.secondary)}
+      className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'min-w-0 overflow-hidden font-mono text-xs', UI_THEME_TOKENS.text.secondary)}
       data-kg-motion-capture-invocation="canonical"
       data-kg-motion-capture-invocation-chip-renderer="shared-markdown-sigil"
     >
@@ -173,7 +173,7 @@ export function MotionCapturePlatformProjection({
   if (variant !== 'full') {
     return (
       <section
-        className={cn('mx-1 mb-2 grid gap-1 rounded border p-2 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
+        className={cn('mx-1 mb-2 grid gap-1 rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
         aria-label={`${variant === 'skills' ? 'Skills and Commands' : 'Media'} motion capture runtime`}
         data-kg-motion-capture-projection={variant}
         data-kg-motion-capture-runtime-ready={captureSurfaceActive ? '1' : '0'}
@@ -215,15 +215,15 @@ export function MotionCapturePlatformProjection({
     >
       <header className="flex flex-wrap items-start justify-between gap-2">
         <span>
-          <h3 className="text-[11px] font-semibold">Capture platform</h3>
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Provider-neutral · derived landmarks only</p>
+          <h3 className="text-xs font-semibold">Capture platform</h3>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Provider-neutral · derived landmarks only</p>
         </span>
-        <span className={cn('rounded border px-1.5 py-0.5 text-[9px]', UI_THEME_TOKENS.panel.border, evidence.researchReady ? UI_THEME_TOKENS.status.success : UI_THEME_TOKENS.status.warning)}>
+        <span className={cn('rounded border px-1.5 py-0.5 text-xs', UI_THEME_TOKENS.panel.border, evidence.researchReady ? UI_THEME_TOKENS.status.success : UI_THEME_TOKENS.status.warning)}>
           {evidence.researchReady ? 'Research-ready evidence' : 'Not research-ready'}
         </span>
       </header>
 
-      <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]" aria-label="Motion capture session evidence">
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs" aria-label="Motion capture session evidence">
         <dt className={UI_THEME_TOKENS.text.tertiary}>Session</dt><dd>{shortOpaqueId(session.sessionId)}</dd>
         <dt className={UI_THEME_TOKENS.text.tertiary}>Quality tier</dt><dd>{tierLabel(evidence.tier)}</dd>
         <dt className={UI_THEME_TOKENS.text.tertiary}>Sources / synced</dt><dd>{evidence.activeSourceCount} / {evidence.synchronizedSourceCount}</dd>
@@ -234,9 +234,9 @@ export function MotionCapturePlatformProjection({
 
       <section className="grid gap-1" aria-label="Motion capture sources" data-kg-motion-capture-sources={session.sources.length}>
         {session.sources.length === 0 ? (
-          <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Start Motion Control to register the built-in, session-scoped source. Peer and hardware adapters register through the same runtime contract.</p>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Start Motion Control to register the built-in, session-scoped source. Peer and hardware adapters register through the same runtime contract.</p>
         ) : session.sources.map((source, index) => (
-          <article key={source.sourceId} className={cn('grid gap-1 rounded border p-1.5 text-[9px]', UI_THEME_TOKENS.panel.border)} data-kg-motion-capture-source={index + 1}>
+          <article key={source.sourceId} className={cn('grid gap-1 rounded border p-1.5 text-xs', UI_THEME_TOKENS.panel.border)} data-kg-motion-capture-source={index + 1}>
             <span className="flex flex-wrap items-center justify-between gap-1">
               <b>Source {index + 1} · {shortOpaqueId(source.sourceId)}</b>
               <span>{source.calibration.status} · {source.clockAlignment.status}</span>
@@ -249,7 +249,7 @@ export function MotionCapturePlatformProjection({
             </span>
           </article>
         ))}
-        <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Research readiness requires a validated SI-frame manifest; manual calibration status never qualifies it.</p>
+        <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Research readiness requires a validated SI-frame manifest; manual calibration status never qualifies it.</p>
       </section>
 
       <label className={cn('App-toolbar__btn w-fit cursor-pointer', recording.status === 'recording' || Boolean(pendingAction) ? 'pointer-events-none opacity-50' : '')} data-kg-motion-capture-research-evidence="import">
@@ -275,7 +275,7 @@ export function MotionCapturePlatformProjection({
         <button type="button" className="App-toolbar__btn" disabled={!exportReady || Boolean(pendingAction)} onClick={() => void exportRecording('csv')} data-kg-motion-capture-export="csv"><Download className="h-3 w-3" aria-hidden="true" /> CSV</button>
       </section>
 
-      <label className={cn('flex items-start gap-2 text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+      <label className={cn('flex items-start gap-2 text-xs', UI_THEME_TOKENS.text.secondary)}>
         <PanelCheckbox checked={peerSharing.enabled} disabled={!captureSurfaceActive || !peerSharing.available} onChange={event => {
           const enabled = event.currentTarget.checked
           runAction('peer-sharing', () => {
@@ -286,8 +286,8 @@ export function MotionCapturePlatformProjection({
         <span><b className="flex items-center gap-1"><Network className="h-3 w-3" aria-hidden="true" /> Peer-derived sharing</b>{peerStatus}. Derived observations only; no frames, raw tensors, stable device IDs, or endpoints.</span>
       </label>
 
-      {evidence.warnings.length > 0 ? <p className={cn('text-[9px]', UI_THEME_TOKENS.status.warning)} data-kg-motion-capture-warnings="1">Evidence: {evidence.warnings.map(warningLabel).join(' · ')}</p> : null}
-      <p className={cn('flex items-center gap-1 text-[9px]', UI_THEME_TOKENS.text.tertiary)}><ShieldCheck className="h-3 w-3" aria-hidden="true" /> Recording and export stay browser-local and bounded.</p>
+      {evidence.warnings.length > 0 ? <p className={cn('text-xs', UI_THEME_TOKENS.status.warning)} data-kg-motion-capture-warnings="1">Evidence: {evidence.warnings.map(warningLabel).join(' · ')}</p> : null}
+      <p className={cn('flex items-center gap-1 text-xs', UI_THEME_TOKENS.text.tertiary)}><ShieldCheck className="h-3 w-3" aria-hidden="true" /> Recording and export stay browser-local and bounded.</p>
     </section>
   )
 }

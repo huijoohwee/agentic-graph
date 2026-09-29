@@ -194,7 +194,7 @@ export function LaunchSpotlightTourCard({
             <section className="flex items-start justify-between mb-1">
               <section className="flex flex-col gap-0.5">
                 <span
-                  className={`${uiPanelKeyValueTextSizeClass} font-medium uppercase tracking-wide ${
+                  className={`${uiPanelKeyValueTextSizeClass} font-medium uppercase tracking-normal ${
                     current.variant === 'primary' ? 'text-blue-600' : UI_THEME_TOKENS.text.tertiary
                   }`}
                 >

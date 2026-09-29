@@ -201,7 +201,7 @@ export function DateCellEditor(props: {
       </section>
 
       {invalid ? (
-        <section className={`mt-1 text-[10px] ${UI_THEME_TOKENS.text.tertiary}`} aria-label="Invalid date message">
+        <section className={`mt-1 text-xs ${UI_THEME_TOKENS.text.tertiary}`} aria-label="Invalid date message">
           Invalid date
         </section>
       ) : null}
@@ -242,7 +242,7 @@ export function DateCellEditor(props: {
             <thead>
               <tr>
                 {weekdays.map(d => (
-                  <th key={d} className={`py-1 text-[10px] font-semibold ${UI_THEME_TOKENS.text.tertiary}`} scope="col">
+                  <th key={d} className={`py-1 text-xs font-semibold ${UI_THEME_TOKENS.text.tertiary}`} scope="col">
                     {d}
                   </th>
                 ))}

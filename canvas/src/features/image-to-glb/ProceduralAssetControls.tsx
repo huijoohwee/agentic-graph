@@ -1,3 +1,5 @@
+import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
@@ -89,18 +91,19 @@ export function ProceduralAssetControls(props: {
     <p className="text-xs opacity-70">Dimensions use scene units. Changes rebuild locally.</p>
     {recipe?.controls.map(control => {
       const id = `${props.nodeId}-procedural-${control.id}`
-      return <div key={control.id} className="flex min-w-0 flex-wrap items-center gap-2">
+      return <section key={control.id} className="flex min-w-0 flex-wrap items-center gap-2">
         <label className="min-w-24 text-xs" htmlFor={id}>{control.label}</label>
-        {control.type === 'enum' ? <select id={id} className={props.inputClassName} disabled={busy} value={String(values[control.id] ?? control.default)} onChange={e => setValues(v => ({ ...v, [control.id]: e.target.value }))}>
+        {control.type === 'enum' ? <PanelSelect id={id} className={props.inputClassName} disabled={busy} value={String(values[control.id] ?? control.default)} onValueChange={selectedValueInput => setValues(v => ({ ...v, [control.id]: selectedValueInput }))}>
           {control.options.map(option => <option key={option} value={option}>{option}</option>)}
-        </select> : <input id={id} className={props.inputClassName} disabled={busy}
-          type={control.type === 'boolean' ? 'checkbox' : control.type === 'color' ? 'color' : 'number'}
+        </PanelSelect> : control.type === 'color' ? <PanelColorPicker id={id} aria-label={control.label} disabled={busy}
+          value={String(values[control.id] ?? control.default)} onValueChange={color => setValues(v => ({ ...v, [control.id]: color }))} /> : <input id={id} className={props.inputClassName} disabled={busy}
+          type={control.type === 'boolean' ? 'checkbox' : 'number'}
           min={control.type === 'number' ? control.min : undefined} max={control.type === 'number' ? control.max : undefined} step={control.type === 'number' ? control.step : undefined}
           checked={control.type === 'boolean' ? values[control.id] === true : undefined}
           value={control.type === 'boolean' ? undefined : String(values[control.id] ?? control.default)}
           onChange={e => setValues(v => ({ ...v, [control.id]: control.type === 'boolean' ? e.target.checked : control.type === 'number' ? e.target.valueAsNumber : e.target.value }))} />}
         <button type="button" className="min-h-8 px-2 text-xs underline" disabled={busy} aria-label={`Reset ${control.label}`} onClick={() => setValues(v => ({ ...v, [control.id]: control.default }))}>Reset</button>
-      </div>
+      </section>
     })}
     <div className="flex flex-wrap gap-2">
       <button type="button" className="min-h-9 rounded border px-3 text-xs" disabled={!session || busy} onClick={() => void apply(false)}>Apply controls</button>

@@ -21,7 +21,7 @@ export const MARKDOWN_CODE_FENCE_PRE_SURFACE_BASE_CLASS = 'm-0 p-0 bg-transparen
 export const MARKDOWN_CODE_FENCE_EDITOR_LAYOUT_CLASS = 'block m-0 whitespace-pre overflow-auto p-4'
 export const MARKDOWN_CODE_FENCE_LINE_SPACING_CLASS = 'leading-[1.5em]'
 export const MARKDOWN_CODE_FENCE_LINE_ROW_HEIGHT_CLASS = 'h-[1.5em]'
-export const MARKDOWN_CODE_FENCE_ASCII_TEXT_COMPACT_CLASS = 'text-[10px] leading-4'
+export const MARKDOWN_CODE_FENCE_ASCII_TEXT_COMPACT_CLASS = 'text-xs leading-4'
 
 export const MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_WRAP_CLASS = 'whitespace-pre-wrap break-words'
 

@@ -1,3 +1,4 @@
+import { selectMenuOption } from './select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
@@ -46,8 +47,8 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     await route.fulfill({ contentType: 'text/event-stream', headers: { 'cache-control': 'no-store' }, body: `data: ${JSON.stringify(data)}\n\ndata: [DONE]\n\n` })
   })
   try {
-    const preset = page.getByRole('combobox', { name: 'Prompt preset', exact: true })
-    if (await preset.isVisible()) { await preset.selectOption('agent-observability'); await page.getByRole('button', { name: 'Open observability', exact: true }).click() }
+    const preset = page.getByRole('button', { name: 'Prompt preset', exact: true })
+    if (await preset.isVisible()) { await selectMenuOption(preset, 'agent-observability'); await page.getByRole('button', { name: 'Open observability', exact: true }).click() }
     else await openDashboard()
     const mission = page.getByRole('region', { name: 'Agent Mission', exact: true })
     const tree = mission.getByRole('tree', { name: 'Span hierarchy' })
@@ -68,7 +69,7 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     assert.equal((await dashboard.locator('[data-kg-dashboard-metric="nodes"]').innerText()).replace(/\s+/g, ' '), 'Nodes 1 1 types')
     assert.equal(await dashboard.locator('[data-kg-dashboard-card="numeric-summary"]').getByText('Visual StrokeWidth', { exact: true }).count(), 0, 'Renderer styling is not observation data')
     const metric = mission.getByRole('group', { name: 'Span metric', exact: true })
-    const inspectHeight = (await mission.getByRole('combobox', { name: 'Inspect run details', exact: true }).boundingBox()).height
+    const inspectHeight = (await mission.getByRole('button', { name: 'Inspect run details', exact: true }).boundingBox()).height
     assert.equal((await metric.boundingBox()).height, inspectHeight, 'Metric controls align with the Inspect selector')
     await metric.getByRole('button', { name: 'Show Exclusive observed', exact: true }).click()
     await tree.locator('[data-span-metric="exclusive"][data-span-metric-value="4"]').waitFor()
@@ -135,9 +136,9 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     assert.equal(await metric.getByRole('button', { name: 'Show Peak RSS', exact: true }).getAttribute('aria-pressed'), 'true', 'Metric selection survives streamed updates and flips')
     assert.equal(await metric.getByRole('button', { name: 'Show Time', exact: true }).getAttribute('aria-pressed'), 'true')
     await tree.locator('[data-span-timing]').waitFor()
-    const inspect = mission.getByRole('combobox', { name: 'Inspect run details', exact: true })
+    const inspect = mission.getByRole('button', { name: 'Inspect run details', exact: true })
     await mission.getByRole('button', { name: 'Select whole run', exact: true }).click()
-    await inspect.selectOption('table')
+    await selectMenuOption(inspect, 'table')
     const table = mission.getByRole('region', { name: 'Span Multi-dimensional Table', exact: true })
     await table.getByRole('button', { name: 'Layout: Multi-dimensional Table', exact: true }).waitFor()
     const nativeRow = table.getByRole('row').filter({ hasText: 'workspace-check-2' })
@@ -156,7 +157,7 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     await tableHeader.getByRole('textbox').fill('')
     await nativeRow.waitFor()
     assert.equal(await page.evaluate(() => Object.values(localStorage).some(value => value.includes('private-filter-no-match'))), false)
-    await inspect.selectOption('tree')
+    await selectMenuOption(inspect, 'tree')
     assert.equal(reads, 2, 'One initial source read and one timed refresh')
     await showMissionFace(mission, true); await mission.getByRole('checkbox', { name: 'Live · ≥5 s' }).uncheck()
     await page.clock.fastForward(15000); assert.equal(reads, 2, 'Paused stream performs no reads')

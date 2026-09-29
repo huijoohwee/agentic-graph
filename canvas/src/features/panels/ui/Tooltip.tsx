@@ -1,3 +1,4 @@
+import { subscribeToolbarDropdownOpen } from '@/components/toolbar/dropdownOpenEvents'
 import React from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
@@ -76,6 +77,8 @@ export default function Tooltip({ id, anchorElement, content, className, childre
     setUncontrolledOpen(true)
   }, [controlledOpen, updatePosition])
 
+  React.useEffect(() => subscribeToolbarDropdownOpen(() => setUncontrolledOpen(false)), [])
+
   const onLeave = React.useCallback(() => {
     if (typeof controlledOpen === 'boolean') {
       return
@@ -117,7 +120,7 @@ export default function Tooltip({ id, anchorElement, content, className, childre
     }, 30)
   }, [])
 
-  React.useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!open) return
     updatePosition()
     let frame: number | null = null
@@ -180,9 +183,9 @@ export default function Tooltip({ id, anchorElement, content, className, childre
         data-kg-tooltip-anchor="1"
         className={cn('inline-flex items-center', className)}
         style={anchorStyle}
-        onMouseEnter={onEnter}
+        onMouseEnter={event => { if (event.currentTarget.contains(event.target as Node)) onEnter() }}
         onMouseLeave={onLeave}
-        onFocusCapture={onEnter}
+        onFocusCapture={event => { if (event.currentTarget.contains(event.target as Node)) onEnter(); else onLeave() }}
         onBlurCapture={onLeave}
       >
         {children}

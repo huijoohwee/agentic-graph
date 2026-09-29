@@ -11,7 +11,7 @@ import { shouldStoryboardWidgetHeaderYieldToInteractiveTarget } from '@/componen
 import { CheckCircle, ChevronDown, ChevronUp, Maximize2, Minimize2 } from 'lucide-react'
 
 export const STORYBOARD_WIDGET_PANEL_TITLE_CLASS_NAME =
-  'min-w-0 flex-1 truncate text-[12px] font-semibold leading-4 text-[color:var(--kg-text-primary)]'
+  'min-w-0 flex-1 truncate text-xs font-semibold leading-4 text-[color:var(--kg-text-primary)]'
 
 export function StoryboardWidgetPanelChromeHeader(props: {
   active: boolean

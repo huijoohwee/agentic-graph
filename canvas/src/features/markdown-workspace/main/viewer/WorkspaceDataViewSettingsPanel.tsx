@@ -192,7 +192,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
           {summary.title}
         </span>
         {summary.value ? (
-          <span className={['shrink-0 text-[10px] uppercase tracking-wide', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+          <span className={['shrink-0 text-xs uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary].join(' ')}>
             {summary.value}
           </span>
         ) : null}
@@ -243,14 +243,14 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
                   <PanelSelect
                     className={[MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME, 'text-left'].join(' ')}
                     value={orientation}
-                    onChange={event => setOrientationFromWorkbench(event.target.value === 'columns' ? 'columns' : 'rows')}
+                    onValueChange={selectedValueInput => setOrientationFromWorkbench(selectedValueInput === 'columns' ? 'columns' : 'rows')}
                   >
                     <option value="rows">Rows as records</option>
                     <option value="columns">Columns as records</option>
                   </PanelSelect>
                 </span>
               </PanelField>
-              <section className={['text-[11px]', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')} aria-label="View query summary">
+              <section className={['text-xs', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')} aria-label="View query summary">
                 {`Projection: ${orientation === 'columns' ? 'columns as records' : 'rows as records'}`}
               </section>
               {canChooseStructuredSourceValueColumnMode ? (
@@ -263,7 +263,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
                   <PanelSelect
                     className={[MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME, 'w-full text-left'].join(' ')}
                     value={structuredSourceValueColumnMode}
-                    onChange={event => setStructuredSourceValueColumnMode(event.target.value === 'type-generic' ? 'type-generic' : 'type-specific')}
+                    onValueChange={selectedValueInput => setStructuredSourceValueColumnMode(selectedValueInput === 'type-generic' ? 'type-generic' : 'type-specific')}
                   >
                     <option value="type-specific">Type-specific value columns</option>
                     <option value="type-generic">Type-generic Value column</option>
@@ -386,7 +386,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
                             />
                             <span className={readPanelChoiceSurfaceClassName({ active })}>
                               <span className="block text-sm font-medium">{option.label}</span>
-                              <span className={['mt-1 block text-[11px]', active ? UI_THEME_TOKENS.button.activeText : UI_THEME_TOKENS.text.secondary].join(' ')}>
+                              <span className={['mt-1 block text-xs', active ? UI_THEME_TOKENS.button.activeText : UI_THEME_TOKENS.text.secondary].join(' ')}>
                                 {option.description}
                               </span>
                             </span>
@@ -421,7 +421,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
                             />
                             <span className={readPanelChoiceSurfaceClassName({ active, multiline: true })}>
                               <span className="block text-sm font-medium">{option.label}</span>
-                              <span className={['mt-1 block text-[11px]', active ? UI_THEME_TOKENS.button.activeText : UI_THEME_TOKENS.text.secondary].join(' ')}>
+                              <span className={['mt-1 block text-xs', active ? UI_THEME_TOKENS.button.activeText : UI_THEME_TOKENS.text.secondary].join(' ')}>
                                 {option.description}
                               </span>
                             </span>
@@ -498,8 +498,8 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
                 <PanelSelect
                   className={[MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME, 'w-full text-left'].join(' ')}
                   value={props.viewConfig.groupByColumnId || ''}
-                  onChange={e => {
-                    const nextGroupByColumnId = e.target.value || null
+                  onValueChange={selectedValueInput => {
+                    const nextGroupByColumnId = selectedValueInput || null
                     if ((props.viewConfig.groupByColumnId || null) === nextGroupByColumnId) return
                     props.setViewConfig({ ...props.viewConfig, groupByColumnId: nextGroupByColumnId })
                   }}

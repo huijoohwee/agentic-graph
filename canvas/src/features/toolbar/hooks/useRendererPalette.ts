@@ -54,16 +54,8 @@ export function useRendererPalette() {
     [schema, setSchema]
   );
 
-  const normalizeColorForPicker = (raw: string, fallback: string) => {
-    const v = String(raw || '').trim() || fallback;
-    if (!v.startsWith('#')) return '#000000';
-    if (v.length === 4 || v.length === 7) return v;
-    return '#000000';
-  };
-
   return {
     palette,
     handleUpdatePaletteColor,
-    normalizeColorForPicker,
   };
 }

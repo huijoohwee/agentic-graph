@@ -92,7 +92,7 @@
 .kg-block-suite[data-program='true'] { margin: -5px 0 0; padding: 0; background: transparent; }
 .kg-block-suite .kg-block-slot-label { padding: 3px 8px 4px; }
 .kg-block-socket { margin: 2px 8px 7px 12px; padding: 4px; border-radius: 12px; background: color-mix(in srgb, var(--kg-panel-bg, white) 85%, var(--block-tone)); }
-.kg-block-slot-label { padding: 0 6px 2px; font-size: 10px; font-weight: 500; opacity: .75; }
+.kg-block-slot-label { padding: 0 6px 2px; font-size: var(--kg-text-xs); font-weight: 500; opacity: .75; }
 .kg-block-assembly[data-compact='true'] .kg-block-heading { padding-top: 5px; padding-bottom: 5px; }
 .kg-block-assembly[data-compact='true'] > .kg-block-card { padding-top: 2px; padding-bottom: 2px; }
 .kg-block-assembly .kg-block-card[data-shape='container'] { padding-bottom: 13px; }

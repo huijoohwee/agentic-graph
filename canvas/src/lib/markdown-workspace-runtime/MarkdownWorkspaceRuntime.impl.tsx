@@ -490,7 +490,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     resolveFolderContractDocPath: explorerState.resolveFolderContractDocPath,
     pickFolderContractTargetPath: explorerState.pickFolderContractTargetPath,
     revealLineInEditor: interactionState.revealLineInEditor,
-    setStatusWithAutoClear,
+    setStatusWithAutoClear, setStatusError,
     streamingWorkspacePath: chatWorkspaceStreamingPath,
   })
   const saveEnabled = effectiveContent.saveEnabled
@@ -547,7 +547,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
           <VerticalResizeSeparatorHr
             ref={setResizeHandleEl}
             ariaLabel="Resize explorer"
-            visualStyle="centerGrip"
+            visualStyle="line"
             className="kg-markdown-workspace-explorer-resize"
           />
         </>
@@ -574,7 +574,6 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
         isMarkdown={effectiveContent.effectiveIsMarkdown}
         webpageWorkspaceMeta={derivedViews.webpageWorkspaceMeta}
         onWebpageChangeView={view => void derivedViews.switchActiveWebpageWorkspaceView(view)}
-        onWebpageUpdateMeta={patch => void derivedViews.updateActiveWebpageWorkspaceMeta(patch)}
         contentFormat={null}
         onContentFormatChange={undefined}
         activeText={effectiveContent.effectiveActiveText}

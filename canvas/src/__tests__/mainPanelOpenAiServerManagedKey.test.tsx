@@ -62,7 +62,7 @@ export async function testMainPanelOpenAiApiKeyUsesServerManagedProxyContract() 
     })
 
     const authValueCell = requireKtvValueCell(container, 'openaiApi.auth_mode')
-    const authSelect = authValueCell.querySelector('select') as HTMLSelectElement | null
+    const authSelect = authValueCell.querySelector('button[data-kg-select]') as HTMLButtonElement | null
     if (!authSelect || authSelect.value !== 'serverManaged') {
       throw new Error(`expected openaiApi.auth_mode to default to serverManaged, got ${JSON.stringify(authValueCell.textContent || '')}`)
     }

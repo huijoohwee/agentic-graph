@@ -1,3 +1,4 @@
+import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { useId, useMemo, useState, useSyncExternalStore } from 'react'
 import { readMotionControlSnapshot, subscribeMotionControl } from '@/features/three/motionControlRuntime'
 import { WAREHOUSE_INSPECTION_FPS, type WarehouseInspectionSample } from './warehouseCoverageRoutes'
@@ -5,6 +6,8 @@ import {
   sampleWarehouseCameraFrame, WAREHOUSE_CAMERA_IDS, WAREHOUSE_CAMERAS as cameras,
   WAREHOUSE_INFERENCE_MS, type WarehouseCameraId, type DetectionFixture,
 } from './warehouseCameraFrames'
+
+const actionClass = `${UI_THEME_TOKENS.control.singleLine} ${UI_THEME_TOKENS.border.outline} rounded text-xs`
 
 function RackFrame({ id, view, detections }: { id: string; view: string; detections: readonly DetectionFixture[] }) {
   return <>
@@ -72,11 +75,11 @@ export function WarehouseInspectionFeed({ seconds, sample }: { seconds: number; 
     } catch (error) { setNotice(error instanceof Error ? error.message : String(error)) }
     finally { setOpening(false) }
   }
-  return <section className="space-y-2 rounded border p-2 text-xs" aria-label="Simulated warehouse video pipeline">
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <strong>Camera → Wi-Fi → cloud detector · simulation</strong>
-      <button type="button" className="min-h-11 rounded border px-3" disabled={opening} onClick={() => void openMotionControl()}>Open Motion Control</button>
-    </div>
+  return <section className={`min-w-0 space-y-2 overflow-hidden rounded p-2 text-xs ${UI_THEME_TOKENS.border.outline}`} aria-label="Simulated warehouse video pipeline">
+    <header className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+      <strong className="min-w-0 truncate" title="Camera → Wi-Fi → cloud detector · simulation">Camera → Wi-Fi → cloud detector · simulation</strong>
+      <button type="button" className={actionClass} disabled={opening} onClick={() => void openMotionControl()}>Open Motion Control</button>
+    </header>
     <svg className="max-h-40 w-full rounded bg-slate-900" viewBox="0 0 640 360" role="img" aria-label={`${cameras[cameraId].label} synthetic camera frame${frame.frameIndex >= 0 ? ` ${frame.frameIndex}` : ' awaiting delivery'}`}
       data-warehouse-camera={cameraId} data-warehouse-camera-frame={frame.frameId ?? 'pending'} data-warehouse-bounds={boundsEnabled ? 'enabled' : 'disabled'}>
       <RackFrame id={id} view={frame.view} detections={frame.detections} />
@@ -90,14 +93,14 @@ export function WarehouseInspectionFeed({ seconds, sample }: { seconds: number; 
       <rect y="334" width="640" height="26" fill="#12232e" fillOpacity=".86" />
       <text x="10" y="351" fill="#e5f4f8" fontSize="11">{frame.target} · {boundsEnabled ? 'Bounds enabled by Motion Control' : 'Bounds disabled by Motion Control'}</text>
     </svg>
-    <div role="group" aria-label="Simulated camera source" className="flex flex-wrap gap-1">
-      {WAREHOUSE_CAMERA_IDS.map(value => <button key={value} type="button" className="min-h-11 rounded border px-3" aria-pressed={cameraId === value} onClick={() => setCameraId(value)}>{cameras[value].label}</button>)}
-    </div>
-    <div className="grid grid-cols-3 gap-1" aria-label="Simulated pipeline stages">
-      <div className="rounded border p-2"><strong>Camera</strong><p>Frame {frame.captureIndex} · {WAREHOUSE_INSPECTION_FPS} fps</p></div>
-      <div className="rounded border p-2"><strong>Wi-Fi</strong><p>{frame.wifiIndex < 0 ? 'Pending' : `Frame ${frame.wifiIndex}`} · {cameras[cameraId].wifiMs} ms modeled</p></div>
-      <div className="rounded border p-2"><strong>Cloud YOLO</strong><p>{frame.frameIndex < 0 ? 'Pending' : `Frame ${frame.frameIndex}`} · {WAREHOUSE_INFERENCE_MS} ms modeled</p></div>
-    </div>
+    <fieldset aria-label="Simulated camera source" className="m-0 flex min-w-0 flex-wrap gap-1 border-0 p-0">
+      {WAREHOUSE_CAMERA_IDS.map(value => <button key={value} type="button" className={actionClass} aria-pressed={cameraId === value} onClick={() => setCameraId(value)}>{cameras[value].label}</button>)}
+    </fieldset>
+    <section className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,100px),1fr))] gap-1" aria-label="Simulated pipeline stages">
+      <section className={`min-w-0 rounded p-2 ${UI_THEME_TOKENS.border.outline}`}><strong>Camera</strong><p>Frame {frame.captureIndex} · {WAREHOUSE_INSPECTION_FPS} fps</p></section>
+      <section className={`min-w-0 rounded p-2 ${UI_THEME_TOKENS.border.outline}`}><strong>Wi-Fi</strong><p>{frame.wifiIndex < 0 ? 'Pending' : `Frame ${frame.wifiIndex}`} · {cameras[cameraId].wifiMs} ms modeled</p></section>
+      <section className={`min-w-0 rounded p-2 ${UI_THEME_TOKENS.border.outline}`}><strong>Cloud YOLO</strong><p>{frame.frameIndex < 0 ? 'Pending' : `Frame ${frame.frameIndex}`} · {WAREHOUSE_INFERENCE_MS} ms modeled</p></section>
+    </section>
     <p>Illustrated synthetic frames and detection fixtures. No Wi-Fi connection, upload or YOLO inference. Displayed bounds belong to the displayed frame; scrubbing recomputes both.</p>
     <p>{sample.drone002Docked ? 'Drone 002 docked' : 'Drone 002 deployed'} · {sample.charging ? 'charging simulation' : 'charging idle'} · lid {(sample.lidAngleRadians * 180 / Math.PI).toFixed(0)}°</p>
     {notice && <p role="status">{notice}</p>}

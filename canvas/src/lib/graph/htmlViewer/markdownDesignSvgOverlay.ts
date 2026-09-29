@@ -1,3 +1,4 @@
+import { UI_FONT_MONO } from 'grph-shared/ui/typography'
 import type { MarkdownDesignBlock } from '@/features/markdown-edgeless/markdownDesignLayout'
 import {
   PANEL_FRAME_BODY_STYLE,
@@ -39,7 +40,7 @@ const renderBodyContent = (doc: Document, block: MarkdownDesignBlock): HTMLEleme
       [
         'width:100%',
         'border-collapse:collapse',
-        'font-size:11px',
+        'font-size:12px',
         'line-height:1.25',
         'color:var(--kg-text)',
       ].join(';'),
@@ -98,10 +99,10 @@ const renderBodyContent = (doc: Document, block: MarkdownDesignBlock): HTMLEleme
         'padding:6px',
         'border-radius:8px',
         'background:rgba(0,0,0,0.06)',
-        'font-size:11px',
+        'font-size:12px',
         'line-height:1.35',
         'overflow:hidden',
-        'font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+        `font-family:${UI_FONT_MONO}`,
         'white-space:pre',
         'color:var(--kg-text)',
       ].join(';'),

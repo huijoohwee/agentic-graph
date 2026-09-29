@@ -13,7 +13,7 @@ export default function MainPanelContainer({
   style?: React.CSSProperties
   ariaLabel: string
 }) {
-  const base = `MainPanelContainer flex min-w-0 max-w-full flex-col p-0 rounded-xl border ${UI_THEME_TOKENS.panel.border} shadow-lg shadow-gray-200/60 dark:shadow-black/60 overflow-hidden`
+  const base = `MainPanelContainer flex min-w-0 max-w-full flex-col p-0 rounded-xl ${UI_THEME_TOKENS.border.outline} shadow-lg shadow-gray-200/60 dark:shadow-black/60 overflow-hidden`
   return (
     <FloatingPanel
       as="aside"

@@ -212,7 +212,7 @@ export function GitGraphFloatingPanelView() {
       <header className="flex items-center justify-between gap-2 px-1">
         <section className="min-w-0">
           <section className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>GitGraph</section>
-          <section className={cn('truncate text-[11px]', UI_THEME_TOKENS.text.secondary)} data-kg-gitgraph-selected-command-label="1">
+          <section className={cn('truncate text-xs', UI_THEME_TOKENS.text.secondary)} data-kg-gitgraph-selected-command-label="1">
             {buildCommandDescription(selectedCommand)}
           </section>
         </section>
@@ -278,8 +278,8 @@ export function GitGraphFloatingPanelView() {
           canEdit={!!selectedCommand}
           editActivation="click"
           editRequestKey={editRequestKey}
-          displayClassName="min-h-8 rounded-md border border-[var(--kg-border)] bg-[var(--kg-panel-bg-hover)] px-2 py-1.5 font-mono text-[11px] leading-5 text-[var(--kg-text-primary)]"
-          editorClassName="min-h-8 rounded-md border border-[var(--kg-canvas-accent)] bg-[var(--kg-panel-bg)] px-2 py-1.5 font-mono text-[11px] leading-5 text-[var(--kg-text-primary)]"
+          displayClassName="min-h-8 rounded-md border border-[var(--kg-border)] bg-[var(--kg-panel-bg-hover)] px-2 py-1.5 font-mono text-xs leading-5 text-[var(--kg-text-primary)]"
+          editorClassName="min-h-8 rounded-md border border-[var(--kg-canvas-accent)] bg-[var(--kg-panel-bg)] px-2 py-1.5 font-mono text-xs leading-5 text-[var(--kg-text-primary)]"
           emptyClassName="text-[var(--kg-text-secondary)]"
           onCommit={updateSelectedCommand}
         />
@@ -315,14 +315,14 @@ export function GitGraphFloatingPanelView() {
               data-kg-gitgraph-command-dimmed={selectedCommand && !selected ? '1' : undefined}
               onClick={() => selectCommand(command)}
             >
-              <span className="w-16 shrink-0 text-[10px] uppercase tracking-normal">{command.kind}</span>
-              <span className="min-w-0 flex-1 truncate font-mono text-[11px]">{command.label}</span>
-              <span className="shrink-0 text-[10px] text-[var(--kg-text-tertiary)]">L{command.lineNumber}</span>
+              <span className="w-16 shrink-0 text-xs uppercase tracking-normal">{command.kind}</span>
+              <span className="min-w-0 flex-1 truncate font-mono text-xs">{command.label}</span>
+              <span className="shrink-0 text-xs text-[var(--kg-text-tertiary)]">L{command.lineNumber}</span>
             </button>
           )
         })}
       </section>
-      <section className="truncate px-1 text-[11px] text-[var(--kg-text-tertiary)]" data-kg-gitgraph-edit-status="1">
+      <section className="truncate px-1 text-xs text-[var(--kg-text-tertiary)]" data-kg-gitgraph-edit-status="1">
         {editStatus || `${gitGraphModel.commands.length} commands`}
       </section>
     </section>

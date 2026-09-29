@@ -1,3 +1,4 @@
+import { selectMenuOption } from './lib/select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { readFile, mkdir, writeFile } from 'node:fs/promises'
@@ -112,7 +113,7 @@ try {
   const save = await selectSceneClip(page)
   const saveRect = await save.boundingBox(), exportRect = await page.locator('[data-kg-xr-motion-export]').boundingBox()
   if (!desktop) assert.ok(saveRect.width >= 44 && saveRect.height >= 44 && exportRect.width >= 44 && exportRect.height >= 44)
-  await page.locator('[data-kg-xr-motion-stage-select="scene-clip"]').selectOption('neutral-volume')
+  await selectMenuOption(page.locator('[data-kg-xr-motion-stage-select="scene-clip"]'), 'neutral-volume')
   await save.click()
   try {
     await page.getByText('Scene saved to this browser. Reopen this source to verify it.', { exact: true }).waitFor({ timeout: 15000 })
@@ -176,7 +177,7 @@ try {
     console.error('Reopened scene UI:', (await page.locator('body').innerText()).slice(-2500))
     throw error
   }
-  assert.equal(await page.locator('[data-kg-xr-motion-stage-select="scene-clip"]').inputValue(), 'neutral-volume')
+  assert.equal(await page.locator('[data-kg-xr-motion-stage-select="scene-clip"]').getAttribute('value'), 'neutral-volume')
   const reopenedPackage = await exportPackage(page)
   assert.deepEqual(reopenedPackage.files, exported.files, 'offline reopened source exports identical reference files')
   assert.equal(reopenedPackage.source.motionFingerprint, exported.source.motionFingerprint)

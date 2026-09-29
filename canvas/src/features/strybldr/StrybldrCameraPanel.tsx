@@ -418,7 +418,7 @@ export function StrybldrCameraPanel({
           <Camera className="h-4 w-4 shrink-0" strokeWidth={1.7} aria-hidden={true} />
           <section className="min-w-0 text-xs font-semibold">Camera</section>
         </section>
-        <section className={cn('min-w-0 truncate text-[10px] font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary)}>
+        <section className={cn('min-w-0 truncate text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary)}>
           {getStrybldrCameraLabel(settings.angle)} · {getStrybldrCameraLabel(settings.level)}
         </section>
       </section>

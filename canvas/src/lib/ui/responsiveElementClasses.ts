@@ -260,9 +260,7 @@ export const UI_RESPONSIVE_SLIM_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME = 'kg-toolbar-d
 
 export const UI_RESPONSIVE_TINY_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME = 'kg-toolbar-dropdown-menu--tiny'
 
-export const UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_META_CLASSNAME = 'kg-toolbar-dropdown-option-meta'
 
-export const UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_HINT_CLASSNAME = 'kg-toolbar-dropdown-option-hint'
 
 export const UI_RESPONSIVE_COLUMN_HEADER_MENU_PANEL_CLASSNAME = 'kg-column-header-menu'
 

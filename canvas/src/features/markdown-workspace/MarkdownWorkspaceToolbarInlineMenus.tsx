@@ -115,7 +115,7 @@ export function MarkdownWorkspaceDisplayMenu(props: {
     'pointer-events-none absolute -right-1 -top-1',
     UI_RESPONSIVE_MARKDOWN_TOOLBAR_HIGHLIGHT_BADGE_CLASSNAME,
     getSemanticHighlightSurfaceClassName(SEMANTIC_HIGHLIGHT_SURFACES.markdownTextHighlight),
-    'rounded-sm border px-0.5 text-center text-[9px] leading-3',
+    'rounded-sm border px-0.5 text-center text-xs leading-3',
   ].join(' ')
   const highlightBadgeStyle = buildSemanticHighlightChipStyle({ defaultHighlight: true })
 

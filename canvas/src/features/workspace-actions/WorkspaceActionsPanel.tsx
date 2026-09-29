@@ -44,8 +44,8 @@ export function WorkspaceActionsPanel(props: { examples: ExampleConfig[]; onAppl
           <PanelSelect
             className={`w-full ${UI_RESPONSIVE_TOOLBAR_FIELD_CLASSNAME} px-2 rounded border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.text} ${uiPanelTextFontClass} ${uiPanelKeyValueTextSizeClass}`}
             value={selectedExampleId}
-            onChange={(e) => {
-              const id = e.target.value
+            onValueChange={selectedValueInput => {
+              const id = selectedValueInput
               setSelectedExampleId(id)
               if (id) onApplyExample(id as ExampleId)
               setTimeout(() => setSelectedExampleId(''), 0)

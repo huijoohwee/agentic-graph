@@ -39,12 +39,12 @@ export function XrSubjectTransformEditor() {
   }
   if (!subject && !stageObject) return <SpatialWorkspaceReview />
   const label = subject?.label || stageObject!.label
-  return <><SpatialWorkspaceReview /><details key={boundary.current.key} open className="shrink-0 border-b p-2" data-kg-xr-timeline-object-inspector={runtime.selectedShotTargetId}
+  return <><SpatialWorkspaceReview /><details key={boundary.current.key} open className="shrink-0 p-2" data-kg-xr-timeline-object-inspector={runtime.selectedShotTargetId}
     onFocusCapture={() => { draft.current = context }}>
     <summary className="cursor-pointer text-xs font-semibold">{label} · Object transform</summary>
     {subject ? <section className="mt-2 grid gap-2">
       <section className="grid gap-2">
-        <label className="grid gap-1 text-[10px]">Name<PanelTextInput key={`${subject.id}:${subject.label}`} defaultValue={subject.label}
+        <label className="grid gap-1 text-xs">Name<PanelTextInput key={`${subject.id}:${subject.label}`} defaultValue={subject.label}
           aria-label={`Rename ${subject.label}`} onBlur={event => {
             const value = event.currentTarget.value.trim()
             if (value !== subject.label && !runControl({ action: 'label', subjectId: subject.id, label: value }).ok) event.currentTarget.value = subject.label
