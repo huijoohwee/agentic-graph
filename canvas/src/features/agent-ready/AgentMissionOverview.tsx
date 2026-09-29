@@ -128,7 +128,7 @@ export default function AgentMissionOverview({ children, retained, retainedSpanI
         <p className="text-xs text-violet-500">02 · TRAVERSE & CONTEXTUALIZE</p><h4 className="font-semibold">Source knowledge graph</h4>
         <p className="py-1 text-xs">{data ? `${model.loadedNodes} nodes · ${model.loadedEdges} links in D3${model.truncated ? ' · Bounded projection' : ''}` : 'No graph projection available'}</p>
         <p className="pb-2 text-xs">Select nodes and follow source-backed relationship explanations.</p>
-        <button className={button} title="Index manifest" disabled={!data} aria-expanded={exploring} onClick={() => setExploring(value => !value)}>{exploring ? 'Hide codebase explorer' : 'Explore codebase · D3'}</button>
+        <button className={button} title={exploring ? 'Hide codebase explorer' : 'Explore codebase · D3'} disabled={!data} aria-expanded={exploring} onClick={() => setExploring(value => !value)}>{exploring ? 'Hide codebase explorer' : 'Explore codebase · D3'}</button>
       </li>
       <li className="min-w-0 rounded border border-emerald-500/40 p-3">
         <p className="text-xs text-emerald-500">03 · OBSERVE & EVALUATE</p><h4 className="font-semibold">{trace.status} · {model.evaluation}</h4>
