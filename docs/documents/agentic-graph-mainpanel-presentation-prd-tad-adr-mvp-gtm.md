@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.13.0"
+version: "1.14.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -124,7 +124,6 @@ review lane is a successor of the existing native-import mission. Revert this
 presentation commit to restore prior layouts. Field values, imported files,
 collaboration transport and storage are not migrated by this change.
 
-
 ## Cross-panel field alignment
 
 PRD: MainPanel, FloatingPanel and BottomPanel configuration fields use the same
@@ -176,7 +175,6 @@ also use the shared row primitive directly, without a rich Markdown dependency.
 GTM and rollback: Consistent controls reduce re-learning between panel surfaces.
 Keep the free/offline local workflow. Revert this successor commit to restore the
 previous presentation; workspace data and saved document content are unchanged.
-
 
 ## Application typography — dashboard reference
 
@@ -295,7 +293,6 @@ GTM/rollback: This improves the existing free local interface without adding a
 package or network request. Revert the revision as a unit to restore the previous
 control geometry; workspace data and preferences need no migration.
 
-
 ## Shared form height follow-up (2026-09-29)
 
 PRD: Match the reference 28 px height for dashboard source selection, source path
@@ -320,7 +317,6 @@ At 390 px, Integrations content/scroll widths are 356/356 px; dashboard form wid
 are 348/348 px. Native affected validation is recorded with release proof. Full-app boot readiness
 accepts multiple source roots; all subsequent named-control and storage assertions remain.
 Rollback: revert this follow-up; no content or storage-format migration is needed.
-
 
 ## Semantic dropdown consolidation (2026-09-29)
 
@@ -362,7 +358,6 @@ GTM: Removes an inspection and automation obstacle from the existing free, offli
 interface. No new package, service, model call or measured commercial claim.
 Rollback: revert this consolidation as one revision, including value-handler API
 migration and regression registration. Workspace data and saved values are unchanged.
-
 
 ## Semantic colour palette and field layout (2026-09-29)
 
@@ -439,7 +434,6 @@ Affected release validation is reported per candidate, not inferred from this pr
 GTM: Reduces scanning and inspection effort in the existing free/offline interface.
 No adoption or revenue claim. Rollback: revert this revision as a unit, including
 its owner and regression updates; saved choices and source formats need no migration.
-
 
 ## Shared neutral borders and resize affordances (2026-09-29)
 
@@ -523,7 +517,6 @@ Focused contracts, type checking, browser geometry and affected checks are recor
 in the handoff. GTM: consistent boundaries in the existing free/offline editor.
 Rollback: revert this follow-up as one unit; no data migration is required.
 
-
 ## Menu and form reference alignment (2026-09-29)
 
 PRD: Dropdown separators, labels, text inputs and choices match the shared border
@@ -542,7 +535,6 @@ Check named separators, keyboard menus, computed borders/heights and ellipsis at
 desktop/mobile widths; record type, focused and affected checks in the handoff.
 GTM: more consistent controls in the existing free/offline app. Rollback: revert
 this successor; no migration is required.
-
 
 ## Timeline and renderer reference alignment (2026-09-29)
 
@@ -564,7 +556,6 @@ service or storage-schema change. Verify desktop/mobile borders, heights, bounds
 keyboard controls and pointer targets; report focused/type/affected checks in the
 candidate handoff. Reuse existing help and tooltip owners. GTM: consistent controls
 in the free/offline editor. Rollback: revert this successor as one unit; no migration.
-
 
 ## Warehouse and semantic-space reference alignment (2026-09-29)
 
@@ -588,3 +579,13 @@ selection hit testing, TypeScript and the focused presentation contracts. Broade
 release evidence is recorded separately; focused checks do not establish parity.
 GTM: consistent free/offline learning and inspection controls. Rollback: revert
 this successor patch; no persisted-format migration.
+
+## Canvas setting descriptions (2026-09-29)
+
+PRD: Display Controls and Document Modes identify each setting visibly; On/Off
+and shape/layout values remain secondary. TAD/ADR: the shared Canvas View row
+renderer distinguishes named settings from categorical choices, preserving native
+buttons, selectable outputs, invocation metadata, height and ellipsis owners.
+MVP: 10-minute implementation cap, 6 files / 20 KB; browser and existing menu checks
+verify labels and state separately. GTM: clearer free/offline controls. Rollback:
+revert this successor; no data or dependency change.
