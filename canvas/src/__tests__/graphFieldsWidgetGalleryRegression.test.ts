@@ -12,7 +12,7 @@ export function testGraphFieldsViewAddsSmartMediaWidgetGalleryPresetSetup() {
     text.includes('entryShortcutLabels={WORKFLOW_MANAGER_GRAPH_FIELDS_COMMAND_ENTRY_LABELS}') && text.includes('onEntryShortcutClick={openEntryInFieldSettings}') && text.includes('entryOpenRequest={entryOpenRequest}') &&
     commandText.includes('Nodes · Widget Gallery') &&
     commandText.includes('Clusters · Samples') &&
-    graphFieldsViewText.includes('Entry shortcuts (click to open Field Settings)')
+    graphFieldsViewText.includes('aria-label="Open Field Settings"')
 
   if (text.includes('buildWidgetDraftFromSmartFields')) {
     throw new Error('expected Workflow Manager graph tab to avoid local widget preset setup logic after consolidation')

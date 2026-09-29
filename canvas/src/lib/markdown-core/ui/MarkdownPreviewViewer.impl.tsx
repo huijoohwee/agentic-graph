@@ -115,7 +115,7 @@ export type MarkdownPreviewViewerProps = {
 
 export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
   const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || 'text-xs')
-  const uiPanelMicroLabelTextSizeClass = useGraphStore(s => s.uiPanelMicroLabelTextSizeClass || 'text-[10px]')
+  const uiPanelMicroLabelTextSizeClass = useGraphStore(s => s.uiPanelMicroLabelTextSizeClass || 'text-xs')
   const {
     rootRef,
     tokens,

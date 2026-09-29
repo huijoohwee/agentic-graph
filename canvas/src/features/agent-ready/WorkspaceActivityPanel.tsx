@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { selectAgentRunInspection, useAgentRunInspection } from './agentRunInspectionStore'
@@ -16,13 +17,13 @@ export default function WorkspaceActivityPanel() {
   return <section className="grid min-w-0 gap-2 p-2 text-xs" aria-label="Activity">
     <header className="flex flex-wrap items-center gap-2">
       <h2 className="font-semibold">Activity</h2>
-      <label>Source <select className="min-h-11 rounded border bg-transparent px-2" value={source}
-        onChange={event => setSource(event.currentTarget.value as typeof source)} aria-label="Activity source">
+      <label>Source <PanelSelect className="min-h-11 rounded border bg-transparent px-2" value={source}
+        onValueChange={selectedValueInput => setSource(selectedValueInput as typeof source)} aria-label="Activity source">
         <option value="workspace">Workspace events</option><option value="mission">Mission spans</option>
-      </select></label>
+      </PanelSelect></label>
       <label className="flex min-w-0 flex-1 items-center gap-2">Find<input type="search" aria-label="Find activity" maxLength={160}
         className="min-h-11 min-w-0 flex-1 rounded border bg-transparent px-2" value={filter} onChange={event => setFilter(event.currentTarget.value)} /></label>
-      {source === 'workspace' && <label>Show <select aria-label="Activity filter" className="min-h-11 rounded border bg-transparent px-2" value={severity} onChange={event => setSeverity(event.currentTarget.value)}><option value="all">All events</option><option value="checks">Warnings / errors</option><option value="warehouse">Warehouse layout</option></select></label>}
+      {source === 'workspace' && <label>Show <PanelSelect aria-label="Activity filter" className="min-h-11 rounded border bg-transparent px-2" value={severity} onValueChange={selectedValueInput => setSeverity(selectedValueInput)}><option value="all">All events</option><option value="checks">Warnings / errors</option><option value="warehouse">Warehouse layout</option></PanelSelect></label>}
     </header>
     {source === 'workspace' ? <>
       <p className="opacity-70">{logs.length} retained workspace events · newest first · current session</p>

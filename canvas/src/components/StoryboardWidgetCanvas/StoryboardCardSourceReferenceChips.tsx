@@ -50,7 +50,7 @@ export function StoryboardCardSourceReferenceChips(props: {
             <button
               type="button"
               aria-label={`Source ${reference.label}`}
-              className={`inline-flex max-w-[8.75rem] cursor-pointer items-center gap-0.5 rounded-full border border-[color:var(--kg-border)] bg-[color:var(--kg-input-bg)] px-1.5 py-0.5 font-semibold text-[8px] text-[color:var(--kg-text-secondary)] hover:text-[color:var(--kg-text-primary)] ${UI_INLINE_CHIP_SHELL_15CH_CLASSNAME}`}
+              className={`inline-flex max-w-[8.75rem] cursor-pointer items-center gap-0.5 rounded-full border border-[color:var(--kg-border)] bg-[color:var(--kg-input-bg)] px-1.5 py-0.5 font-semibold text-xs text-[color:var(--kg-text-secondary)] hover:text-[color:var(--kg-text-primary)] ${UI_INLINE_CHIP_SHELL_15CH_CLASSNAME}`}
               data-kg-storyboard-card-source-reference-chip="1"
               data-kg-storyboard-card-source-node-id={reference.nodeId}
               data-kg-storyboard-card-source-target-fields={reference.targetFieldIds.join(',')}

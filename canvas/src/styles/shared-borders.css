@@ -1,0 +1,40 @@
+/* Neutral borders share the toolbar reference. Intent/focus colors stay explicit. */
+:root {
+  --kg-surface-border-width: 1px;
+  --kg-surface-border: var(--kg-surface-border-width) solid var(--kg-border);
+  --kg-resize-separator-thickness: 8px;
+}
+
+@layer components {
+  .kg-resize-separator {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    opacity: 1;
+    background-color: transparent;
+    background-image: linear-gradient(var(--kg-border), var(--kg-border));
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  .kg-resize-separator[aria-orientation="vertical"] {
+    background-size: var(--kg-surface-border-width) var(--kg-resize-line-length, 100%);
+  }
+  .kg-resize-separator[aria-orientation="horizontal"] {
+    background-size: var(--kg-resize-line-length, 100%) var(--kg-surface-border-width);
+  }
+  .kg-resize-separator:where(:hover, :focus-visible) {
+    background-color: var(--kg-panel-action-bg-hover);
+  }
+  @media (pointer: coarse), (max-width: 768px) {
+    .kg-markdown-workspace-explorer-resize {
+      width: 100% !important;
+      inline-size: 100% !important;
+      min-height: var(--kg-resize-separator-thickness);
+      height: var(--kg-resize-separator-thickness) !important;
+      block-size: var(--kg-resize-separator-thickness) !important;
+      flex: 0 0 var(--kg-resize-separator-thickness);
+      cursor: row-resize;
+    }
+  }
+}

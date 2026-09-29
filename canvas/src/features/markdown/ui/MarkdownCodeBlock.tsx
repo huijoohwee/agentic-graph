@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { WrapText } from 'lucide-react'
 import type { TokensCode } from './MarkdownTokens'
@@ -365,16 +366,15 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
       className={`flex items-center justify-between px-3 py-1.5 border-b ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.headerBg}`}
     >
       {canChangeFenceLanguage ? (
-        <select
+        <PanelSelect
           value={languageSelectValue}
           aria-label="Code fence language"
           className={`flex-1 min-w-0 h-6 px-1 rounded border-0 outline-none font-mono text-xs font-semibold ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.text}`}
           onMouseDown={event => event.stopPropagation()}
           onClick={event => event.stopPropagation()}
           onDoubleClick={event => event.stopPropagation()}
-          onChange={event => {
-            event.stopPropagation()
-            handleLanguageSelectChange(event.target.value)
+          onValueChange={selectedValueInput => {
+            handleLanguageSelectChange(selectedValueInput)
           }}
         >
           {languageSelectOptions.map(option => (
@@ -382,7 +382,7 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
               {option.label}
             </option>
           ))}
-        </select>
+        </PanelSelect>
       ) : (
         <span className={`flex-1 font-mono text-xs ${UI_THEME_TOKENS.text.secondary} font-semibold uppercase`}>
           {lang || 'text'}

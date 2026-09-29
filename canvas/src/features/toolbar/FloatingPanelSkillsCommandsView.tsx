@@ -319,7 +319,7 @@ export function FloatingPanelSkillsCommandsView({
                     key={option.groupBy}
                     type="button"
                     className={cn(
-                      'inline-flex h-full w-6 items-center justify-center border-0 px-0 text-[10px] font-semibold',
+                      'inline-flex h-full w-6 items-center justify-center border-0 px-0 text-xs font-semibold',
                       active ? 'bg-black/10 dark:bg-white/15' : UI_THEME_TOKENS.button.hoverBg,
                       UI_THEME_TOKENS.text.secondary,
                     )}

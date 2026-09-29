@@ -6,6 +6,7 @@ import { isStoryboardCanvas2dRenderer, isFrontmatterOnlyPolicyActive, resolveCan
 import { normalizeCanvas3dMode } from '@/lib/canvas/canvas3dMode'
 import {
   parseCanvasWorkspaceFrontmatterPreset,
+  parseWebsiteImportFrontmatterMeta,
   readBottomSurfaceTabPreset,
   readCanvasWorkspaceFrontmatterPresetFromMeta,
   readFloatingPanelViewPreset,
@@ -158,14 +159,20 @@ export function resolveCanvasFrontmatterPreset(args: {
   graphData?: GraphData | null
   rawText?: string | null
 }): CanvasWorkspaceFrontmatterPreset | null {
-  if (args.preset) return args.preset
   const rawText = String(args.rawText || '')
-  const fromText = rawText ? parseCanvasWorkspaceFrontmatterPreset(rawText) : null
-  if (fromText) return fromText
-
   const metadata = isRecord(args.graphData?.metadata) ? (args.graphData?.metadata as Record<string, unknown>) : null
   const frontmatterMeta = metadata && isRecord(metadata.frontmatterMeta) ? (metadata.frontmatterMeta as Record<string, unknown>) : null
-  return readCanvasWorkspaceFrontmatterPresetFromMeta(frontmatterMeta) || readNormalizedCanvasWorkspacePreset(metadata)
+  const preset = args.preset || (rawText ? parseCanvasWorkspaceFrontmatterPreset(rawText) : null)
+    || readCanvasWorkspaceFrontmatterPresetFromMeta(frontmatterMeta) || readNormalizedCanvasWorkspacePreset(metadata)
+  const websiteImport = parseWebsiteImportFrontmatterMeta(rawText)
+    || (frontmatterMeta?.kgWebsiteImportId && frontmatterMeta?.kgWebsiteNodeId)
+  // Older crawls predate persisted renderer defaults. Resolve their missing
+  // fields here as well, so opening a file cannot inherit another document's view.
+  return websiteImport ? {
+    ...preset,
+    canvasRenderMode: preset?.canvasRenderMode ?? '2d',
+    canvas2dRenderer: preset?.canvas2dRenderer ?? 'd3',
+  } : preset
 }
 
 export function applyCanvasFrontmatterPreset(args: {

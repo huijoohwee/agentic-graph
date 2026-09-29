@@ -140,7 +140,7 @@ export function DesignCanvasFrameShellLayer(props: {
                 <text x={12} y={22} fill="var(--kg-text-primary)" fontSize={12} fontWeight={600} style={{ pointerEvents: 'none' }}>
                   {labelText}
                 </text>
-                <text x={rect.w - 12} y={22} textAnchor="end" fill="var(--kg-text-tertiary)" fontSize={10} style={{ pointerEvents: 'none' }}>
+                <text x={rect.w - 12} y={22} textAnchor="end" fill="var(--kg-text-tertiary)" fontSize={12} style={{ pointerEvents: 'none' }}>
                   {typeText}
                 </text>
               </>

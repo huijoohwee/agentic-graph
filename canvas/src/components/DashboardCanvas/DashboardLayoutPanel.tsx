@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { useDashboardSource } from './useDashboardSource'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -26,7 +27,7 @@ export default function DashboardLayoutPanel() {
   return <details className="rounded border border-[var(--kg-border)] p-3" open>
     <summary className="text-sm font-semibold">Rows and columns</summary>
     <p className="my-2 text-xs">Apply columns here or drag beside a card. Both save the same layout.</p>
-    <label className="block text-xs">Container<select aria-label="Layout container" className="my-1 w-full rounded border bg-[var(--kg-surface)] p-2" value={selected} onChange={event => setSelected(event.target.value)}>{boards.filter((item, index) => boards.findIndex(other => other.id === item.id) === index).map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+    <label className="block text-xs">Container<PanelSelect aria-label="Layout container" className="my-1 w-full rounded border bg-[var(--kg-surface)] p-2" value={selected} onValueChange={selectedValueInput => setSelected(selectedValueInput)}>{boards.filter((item, index) => boards.findIndex(other => other.id === item.id) === index).map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</PanelSelect></label>
     <label className="block text-xs">Columns<input aria-label="Layout columns" type="number" min={1} max={12} className="my-1 w-full rounded border bg-[var(--kg-surface)] p-2" value={columns} onChange={event => setColumns(Number(event.target.value))} /></label>
     <p className="text-xs">{rows.length} rows · {rows.flat().length} widgets</p>
     <button type="button" className="my-2 rounded border px-3 py-2 text-xs" disabled={!config.ready || !Number.isInteger(columns) || columns < 1 || columns > 12} onClick={() => {

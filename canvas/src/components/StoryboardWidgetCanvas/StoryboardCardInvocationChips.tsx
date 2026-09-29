@@ -7,7 +7,7 @@ import { UI_INLINE_CHIP_LABEL_15CH_CLASSNAME, UI_TEXT_TRUNCATE_CHIP } from '@/li
 
 const tokenChipClassName = (token: string): string => resolveInlineInvocationChipClassName({
   value: token,
-  extraClassName: 'max-w-[7.5rem] text-[8px]',
+  extraClassName: 'max-w-[7.5rem] text-xs',
 })
 
 export function StoryboardCardInvocationChips(props: { tokens: readonly string[] }) {

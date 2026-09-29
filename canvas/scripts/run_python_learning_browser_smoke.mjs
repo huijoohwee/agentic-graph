@@ -1,3 +1,4 @@
+import { selectMenuOption } from './lib/select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdtemp, mkdir, writeFile, readFile, rm, realpath, symlink } from 'node:fs/promises'
@@ -77,7 +78,7 @@ try {
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle', 'returning visible cannot auto-run')
   for (const lesson of lessons) {
     checkpoint(`lesson:${lesson.id}`)
-    await page.getByLabel('Python lesson', { exact: true }).selectOption(lesson.id)
+    await selectMenuOption(page.getByLabel('Python lesson', { exact: true }), lesson.id)
     await page.getByRole('button', { name: 'Code', exact: true }).click()
     if (lesson.id === 'drone') {
       await page.getByRole('button', { name: 'Load flight example', exact: true }).click()
@@ -271,7 +272,7 @@ try {
   await pane.getByRole('button', { name: 'Code', exact: true }).click()
   await page.getByRole('button', { name: 'Load rich editor', exact: true }).click()
   await page.locator('.monaco-editor').first().waitFor({ timeout: 30000 })
-  await page.getByLabel('Python lesson', { exact: true }).selectOption(lessons.at(-1).id)
+  await selectMenuOption(page.getByLabel('Python lesson', { exact: true }), lessons.at(-1).id)
   await page.locator('.monaco-editor').first().click({ position: { x: 120, y: 40 } })
   await page.keyboard.press('ControlOrMeta+A')
   const desktopSource = lessons.at(-1).solution + '# Unicode 保留 🧭\n'
@@ -316,7 +317,7 @@ try {
     const catalogPage = await context.newPage()
     catalogPage.on('pageerror', error => errors.push(error.message))
     await catalogPage.goto(origin + proofPath + '?catalog=1')
-    await catalogPage.getByLabel('Prompt preset', { exact: true }).selectOption('programmatic-drone-flight')
+    await selectMenuOption(catalogPage.getByLabel('Prompt preset', { exact: true }), 'programmatic-drone-flight')
     const prompt = catalogPage.locator('[data-kg-card-inline-viewer-edit-command-proxy="1"]')
     await catalogPage.waitForFunction(() => document.querySelector('[data-kg-card-inline-viewer-edit-command-proxy="1"]')?.value === '/python.learning @canvas #learning operation=inspect lesson=drone')
     assert.equal(await catalogPage.getByRole('region', { name: 'Python learning workspace', exact: true }).count(), 0, 'selection cannot open or run a file')
@@ -325,7 +326,7 @@ try {
     const dronePane = catalogPage.getByRole('region', { name: 'Python learning workspace', exact: true })
     await dronePane.waitFor({ timeout: 30000 })
     assert.equal(await dronePane.getAttribute('data-learning-state'), 'idle')
-    assert.equal(await catalogPage.getByLabel('Python lesson', { exact: true }).inputValue(), 'drone')
+    assert.equal(await catalogPage.getByLabel('Python lesson', { exact: true }).getAttribute('value'), 'drone')
     const fresh = await catalogPage.evaluate(() => window.__pythonLearningProof.read().document)
     assert.match(fresh.documentId, /programmatic-drone-flight-.*\.py$/)
     assert.match(fresh.source, /^# agentic-graph lesson: drone\n/)

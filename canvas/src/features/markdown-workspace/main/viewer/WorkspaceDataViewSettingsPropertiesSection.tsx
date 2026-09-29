@@ -224,7 +224,7 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
                   <section className={['text-xs font-medium', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.primary].join(' ')}>
                     {column.name}
                   </section>
-                  <section className={['text-[10px]', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>
+                  <section className={['text-xs', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>
                     {column.kind}
                   </section>
                 </section>
@@ -256,7 +256,7 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
                   <section className={['text-xs font-medium', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.tertiary].join(' ')}>
                     {column.name}
                   </section>
-                  <section className={['text-[10px]', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>
+                  <section className={['text-xs', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>
                     {column.kind}
                   </section>
                 </section>
@@ -462,8 +462,8 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
                         <WorkspaceDataViewFieldSelect
                           className={[UI_FOCUS_RING, MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME, 'w-full text-left', MAP_SELECT_CHEVRON_ALIGN_CLASS].join(' ')}
                           value={graphRole}
-                          onChange={e => {
-                            setColumnGraphRole(c.id, e.target.value as WorkspaceDataViewGraphColumnRole)
+                          onValueChange={selectedValueInput => {
+                            setColumnGraphRole(c.id, selectedValueInput as WorkspaceDataViewGraphColumnRole)
                           }}
                           disabled={!props.canMutate || props.view.graphEnabled !== true}
                         >
@@ -588,8 +588,8 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
                               <WorkspaceDataViewFieldSelect
                                 className={[UI_FOCUS_RING, MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME, 'w-full text-left', MAP_SELECT_CHEVRON_ALIGN_CLASS].join(' ')}
                                 value={graphRole}
-                                onChange={e => {
-                                  setColumnGraphRole(c.id, e.target.value as WorkspaceDataViewGraphColumnRole)
+                                onValueChange={selectedValueInput => {
+                                  setColumnGraphRole(c.id, selectedValueInput as WorkspaceDataViewGraphColumnRole)
                                 }}
                                 disabled={!props.canMutate || props.view.graphEnabled !== true}
                               >

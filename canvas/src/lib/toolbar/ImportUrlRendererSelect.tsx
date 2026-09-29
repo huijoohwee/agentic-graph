@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { UI_RESPONSIVE_IMPORT_URL_FIELD_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -42,7 +43,7 @@ export function ImportUrlRendererSelect(props: {
   onChange: (next: ImportUrlRendererSelection) => void
 }) {
   return (
-    <select
+    <PanelSelect
       className={cn(
         UI_RESPONSIVE_IMPORT_URL_FIELD_CLASSNAME,
         'w-full min-h-11 rounded border text-xs',
@@ -51,7 +52,7 @@ export function ImportUrlRendererSelect(props: {
         UI_THEME_TOKENS.input.text,
       )}
       value={props.value}
-      onChange={e => props.onChange(normalizeImportUrlRendererSelection(e.target.value))}
+      onValueChange={selectedValueInput => props.onChange(normalizeImportUrlRendererSelection(selectedValueInput))}
       aria-label="Import URL renderer"
       title="Optional 2D Canvas layout"
     >
@@ -65,6 +66,6 @@ export function ImportUrlRendererSelect(props: {
           ))}
         </optgroup>
       ))}
-    </select>
+    </PanelSelect>
   )
 }

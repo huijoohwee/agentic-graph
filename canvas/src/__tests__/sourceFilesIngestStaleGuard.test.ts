@@ -1152,10 +1152,8 @@ export function testWorkspaceImportFocusDoesNotDuplicateGraphApply() {
 export function testWorkspaceManualRefreshActionsSuppressFollowUpFsEventRefresh() {
   const corePath = resolve(process.cwd(), 'src', 'features', 'markdown-workspace', 'useWorkspaceFileActions', 'core.ts')
   const mutationPath = resolve(process.cwd(), 'src', 'features', 'markdown-workspace', 'useWorkspaceFileActions', 'mutationActions.ts')
-  const websitePath = resolve(process.cwd(), 'src', 'features', 'markdown-workspace', 'useWorkspaceFileActions', 'websiteImportAction.ts')
   const coreText = readFileSync(corePath, 'utf8')
   const mutationText = readFileSync(mutationPath, 'utf8')
-  const websiteText = readFileSync(websitePath, 'utf8')
 
   if (!coreText.includes('runWorkspaceFsChangedBatch(async () => {') || !coreText.includes('suppressNextWorkspaceFsChangedEvent()')) {
     throw new Error('expected create file/folder actions to batch filesystem changes and suppress duplicate follow-up fs refresh')
@@ -1163,9 +1161,7 @@ export function testWorkspaceManualRefreshActionsSuppressFollowUpFsEventRefresh(
   if (!mutationText.includes('await runWorkspaceFsChangedBatch(async () => {') || !mutationText.includes('suppressNextWorkspaceFsChangedEvent()')) {
     throw new Error('expected delete/rename actions to batch filesystem changes and suppress duplicate follow-up fs refresh')
   }
-  if (!websiteText.includes('runWorkspaceFsChangedBatch(async () => {') || !websiteText.includes('suppressNextWorkspaceFsChangedEvent()')) {
-    throw new Error('expected website import action to suppress duplicate follow-up fs refresh when it manually refreshes workspace state')
-  }
+  // Progressive crawl refresh ownership is exercised by websiteImportProgress and websiteImportExplorerLifecycle.
 }
 
 export function testWorkspaceInlineTextOwnershipIsCentralized() {

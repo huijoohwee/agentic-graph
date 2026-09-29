@@ -51,7 +51,21 @@ export function resolveThemeColors(): ThemeColors {
   }
 }
 
+const NEUTRAL_BORDER_COLOR_CLASS_NAME = 'border-[color:var(--kg-border)]'
+const NEUTRAL_BORDER_WIDTH_CLASS_NAME = 'border-[length:var(--kg-surface-border-width,1px)]'
+
+const CONTROL_HEIGHT_CLASS_NAME = 'h-[var(--kg-control-height,28px)]'
+
 export const UI_THEME_TOKENS = {
+  border: {
+    width: NEUTRAL_BORDER_WIDTH_CLASS_NAME,
+    color: NEUTRAL_BORDER_COLOR_CLASS_NAME,
+    outline: `${NEUTRAL_BORDER_WIDTH_CLASS_NAME} ${NEUTRAL_BORDER_COLOR_CLASS_NAME}`,
+  },
+  control: {
+    height: CONTROL_HEIGHT_CLASS_NAME,
+    singleLine: `${CONTROL_HEIGHT_CLASS_NAME} box-border min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-2 py-0`,
+  },
   button: {
     text: 'text-[color:var(--kg-text-secondary)]',
     hoverText: 'hover:text-[color:var(--kg-text-primary)]',
@@ -75,12 +89,12 @@ export const UI_THEME_TOKENS = {
   },
   pill: {
     base: 'rounded-full px-2 py-0.5 border border-[color:var(--kg-border)]',
-    text: 'text-[10px] font-medium text-[color:var(--kg-text-secondary)]',
-    badgeText: 'text-[10px] font-bold',
+    text: 'text-xs font-medium text-[color:var(--kg-text-secondary)]',
+    badgeText: 'text-xs font-bold',
   },
   badge: {
     chip: 'rounded px-1.5 py-0.5 bg-black/5 dark:bg-white/5',
-    text: 'text-[10px] font-mono',
+    text: 'text-xs font-mono',
     toolbarGroup: 'rounded bg-black/5 dark:bg-white/5 p-0.5',
   },
   icon: {
@@ -90,9 +104,9 @@ export const UI_THEME_TOKENS = {
   panel: {
     bg: 'bg-[var(--kg-panel-bg)]',
     overlayBg: 'bg-[color-mix(in_srgb,var(--kg-panel-bg)_88%,transparent)] backdrop-blur-sm',
-    border: 'border-[color:var(--kg-border)]',
+    border: NEUTRAL_BORDER_COLOR_CLASS_NAME,
     headerBg: 'bg-[color-mix(in_srgb,var(--kg-panel-bg)_75%,transparent)]',
-    divider: 'border-[color:var(--kg-divider)]',
+    divider: NEUTRAL_BORDER_COLOR_CLASS_NAME,
   },
   kanban: {
     groupBg: 'bg-[var(--kg-kanban-group-bg)]',
@@ -113,8 +127,8 @@ export const UI_THEME_TOKENS = {
     headerBg: 'bg-gray-50 dark:bg-gray-800',
     rowHover: 'hover:bg-gray-50 dark:hover:bg-gray-800/50',
     rowHoverHighlight: 'hover:!bg-[var(--kg-panel-action-bg-hover)]',
-    rowDivider: 'divide-[color:var(--kg-divider)]',
-    cellBorder: 'border-[color:var(--kg-border)]',
+    rowDivider: 'divide-[color:var(--kg-border)]',
+    cellBorder: NEUTRAL_BORDER_COLOR_CLASS_NAME,
     text: 'text-[color:var(--kg-text-primary)]',
     textSecondary: 'text-[color:var(--kg-text-secondary)]',
     rowBg: 'bg-[var(--kg-panel-bg)]',
@@ -126,7 +140,7 @@ export const UI_THEME_TOKENS = {
   },
   input: {
     bg: 'bg-[var(--kg-panel-bg)]',
-    border: 'border-[color:var(--kg-border)]',
+    border: NEUTRAL_BORDER_COLOR_CLASS_NAME,
     hoverBorder: 'hover:border-blue-500/30 dark:hover:border-blue-400/40',
     placeholder: 'placeholder:text-[color:var(--kg-text-tertiary)]',
     selectionControl: 'text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400',
@@ -162,3 +176,16 @@ export const UI_THEME_TOKENS = {
     text: 'text-[color:var(--kg-code-text)]',
   },
 } as const
+
+/** Keep decoration; fixed geometry belongs to the shared single-line control. */
+export function singleLineControlDecorationClassName(className = ''): string {
+  return className.split(/\s+/).filter(token => {
+    const utility = token.replace(/^(?:(?:[\w-]+|\[[^\]]+\]):)+/, '').replace(/^!/, '')
+    return token && !/^(?:(?:min-|max-)?(?:h|size)-|(?:min|max)-w-|p[xytrblse]?-|leading-|whitespace-|overflow(?:-[xy])?-|text-(?:ellipsis|clip)$|box-)/.test(utility)
+  }).join(' ')
+}
+
+/** Normalize saved/caller classes so old sizes cannot override the shared owner. */
+export function normalizeSingleLineControlClassName(className = ''): string {
+  return [...new Set(`${singleLineControlDecorationClassName(className)} ${UI_THEME_TOKENS.control.singleLine}`.trim().split(/\s+/))].join(' ')
+}

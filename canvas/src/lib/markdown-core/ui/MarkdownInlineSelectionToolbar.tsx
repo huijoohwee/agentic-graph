@@ -44,7 +44,7 @@ import type { MarkdownInlineSelectionActions } from './markdownInlineSelectionAc
 const markdownInlineSelectionToolbarIconClassName = UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME
 const markdownInlineSelectionToolbarMenuIconClassName = `${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} mr-1`
 const markdownInlineSelectionToolbarClassName = [
-  'absolute rounded border shadow-sm z-20 m-0 p-1 text-[10px]',
+  'absolute rounded border shadow-sm z-20 m-0 p-1 text-xs',
   UI_THEME_TOKENS.panel.bg,
   UI_THEME_TOKENS.panel.border,
 ].join(' ')
@@ -299,7 +299,7 @@ export const MarkdownInlineSelectionToolbar = (props: {
           title="Math"
           aria-label="Math"
         >
-          <span className="text-[10px] leading-none">∑</span>
+          <span className="text-xs leading-none">∑</span>
         </button>
         {createLinkedWidget ? (
           <button

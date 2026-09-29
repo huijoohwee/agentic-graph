@@ -246,7 +246,7 @@ export const testResponsiveWorkspaceAndTableSurfacesStayBounded = () => {
   const graphTableInspector = readUtf8(graphTableInspectorPath)
   if (
     !graphTableInspector.includes('GRAPH_RECORD_INSPECTOR_ROOT_CLASS_NAME') ||
-    !graphTableInspector.includes('GRAPH_RECORD_INSPECTOR_DETAIL_GRID_CLASS_NAME') || graphTableInspector.includes('grid-cols-[minmax(0,120px)_minmax(0,1fr)]') ||
+    !graphTableInspector.includes('<CanvasEditableKeyTypeValueRow') || graphTableInspector.includes('grid-cols-[minmax(0,120px)_minmax(0,1fr)]') ||
     !graphTableInspector.includes('UI_RESPONSIVE_GRAPH_DATA_TABLE_CODE_EDITOR_CLASSNAME') ||
     graphTableInspector.includes('h-[220px]') ||
     !responsiveCss.includes('.kg-graph-data-table-code-editor')
@@ -529,8 +529,6 @@ export const testResponsiveMenusAndDataViewSurfacesStayBounded = () => {
     !responsiveElementClasses.includes('UI_RESPONSIVE_COMPACT_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME') ||
     !responsiveElementClasses.includes('UI_RESPONSIVE_SLIM_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME') ||
     !responsiveElementClasses.includes('UI_RESPONSIVE_TINY_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME') ||
-    !responsiveElementClasses.includes('UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_META_CLASSNAME') ||
-    !responsiveElementClasses.includes('UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_HINT_CLASSNAME') ||
     !responsiveElementClasses.includes('UI_RESPONSIVE_FLOATING_PANEL_SUBPANEL_CLASSNAME') ||
     !responsiveElementClasses.includes('UI_RESPONSIVE_PANEL_FLEX_INPUT_CLASSNAME') ||
     !responsiveElementClasses.includes('UI_RESPONSIVE_COMPACT_PANEL_FIELD_INPUT_CLASSNAME') ||
@@ -540,10 +538,10 @@ export const testResponsiveMenusAndDataViewSurfacesStayBounded = () => {
   ) {
     throw new Error('Expected data-view column, type, filter, kanban, toolbar dropdown, floating subpanel, and panel input surfaces to expose shared responsive owner class names')
   }
-  if (!responsiveCss.includes('.kg-toolbar-dropdown-menu') || !responsiveCss.includes('.kg-toolbar-dropdown-menu--wide') || !responsiveCss.includes('.kg-toolbar-dropdown-menu--extra-wide') || !responsiveCss.includes('--kg-toolbar-dropdown-inline-clearance') || !responsiveCss.includes('.kg-toolbar-dropdown-menu--narrow') || !responsiveCss.includes('.kg-toolbar-dropdown-menu--compact') || !responsiveCss.includes('.kg-toolbar-dropdown-menu--slim') || !responsiveCss.includes('.kg-toolbar-dropdown-menu--tiny') || !responsiveCss.includes('.kg-toolbar-dropdown-option-meta') || !responsiveCss.includes('--kg-toolbar-dropdown-option-meta-max-width') || !responsiveCss.includes('--kg-toolbar-dropdown-width') || !responsiveCss.includes('.kg-floating-panel-subpanel') || !responsiveCss.includes('--kg-floating-panel-subpanel-min-width') || !responsiveCss.includes('.kg-responsive-panel-flex-input') || !responsiveCss.includes('--kg-responsive-panel-flex-input-min-width') || !responsiveCss.includes('.kg-responsive-panel-inline-field') || !responsiveCss.includes('--kg-responsive-panel-inline-field-height') || !responsiveCss.includes('--kg-responsive-panel-inline-field-padding-inline') || !responsiveCss.includes('--kg-responsive-panel-inline-field-padding-block') || !responsiveCss.includes('.kg-column-header-menu')) {
+  if (!responsiveCss.includes('.kg-toolbar-dropdown-menu') || !responsiveCss.includes('.kg-toolbar-dropdown-menu--wide') || !responsiveCss.includes('.kg-toolbar-dropdown-menu--extra-wide') || !responsiveCss.includes('--kg-toolbar-dropdown-inline-clearance') || !responsiveCss.includes('.kg-toolbar-dropdown-menu--narrow') || !responsiveCss.includes('.kg-toolbar-dropdown-menu--compact') || !responsiveCss.includes('.kg-toolbar-dropdown-menu--slim') || !responsiveCss.includes('.kg-toolbar-dropdown-menu--tiny') || !responsiveCss.includes('--kg-toolbar-dropdown-width') || !responsiveCss.includes('.kg-floating-panel-subpanel') || !responsiveCss.includes('--kg-floating-panel-subpanel-min-width') || !responsiveCss.includes('.kg-responsive-panel-flex-input') || !responsiveCss.includes('--kg-responsive-panel-flex-input-min-width') || !responsiveCss.includes('.kg-responsive-panel-inline-field') || !responsiveCss.includes('--kg-responsive-panel-inline-field-height') || !responsiveCss.includes('--kg-responsive-panel-inline-field-padding-inline') || !responsiveCss.includes('--kg-responsive-panel-inline-field-padding-block') || !responsiveCss.includes('.kg-column-header-menu')) {
     throw new Error('Expected shared responsive CSS to bound toolbar and column menus')
   }
-  if (!responsiveCss.includes('.kg-menu-option-row') || !responsiveCss.includes('--kg-menu-option-row-padding-inline') || !responsiveCss.includes('.kg-toolbar-dropdown-option-hint') || !responsiveCss.includes('--kg-toolbar-dropdown-option-hint-padding-inline')) {
+  if (!responsiveCss.includes('.kg-menu-option-row') || !responsiveCss.includes('--kg-menu-option-row-padding-inline')) {
     throw new Error('Expected shared responsive CSS to own toolbar dropdown option row and hint sizing')
   }
   if (!responsiveCss.includes('.kg-column-header-filter-editor') || !responsiveCss.includes('.kg-column-header-filter-label') || !responsiveCss.includes('--kg-column-header-filter-label-width') || !responsiveCss.includes('.kg-column-header-filter-field') || !responsiveCss.includes('--kg-column-header-filter-field-height') || !responsiveCss.includes('--kg-column-header-filter-field-padding-inline') || !responsiveCss.includes('.kg-column-header-filter-action') || !responsiveCss.includes('--kg-column-header-filter-action-height') || !responsiveCss.includes('--kg-column-header-filter-action-padding-inline') || !responsiveCss.includes('.kg-column-header-type-value') || !responsiveCss.includes('--kg-column-header-type-value-max-width') || !responsiveCss.includes('.kg-type-menu') || !responsiveCss.includes('.kg-data-view-filter-menu')) {
@@ -560,7 +558,7 @@ export const testResponsiveMenusAndDataViewSurfacesStayBounded = () => {
     throw new Error('Expected AnchorOverlay to clamp dropdowns through placement code and shared responsive CSS')
   }
   const toolbarDropdown = readUtf8(toolbarDropdownPath)
-  if (!toolbarDropdown.includes('kg-toolbar-dropdown-menu') || !toolbarDropdown.includes('kg-toolbar-dropdown-children') || !toolbarDropdown.includes('aria-expanded') || !toolbarDropdown.includes('UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME') || !toolbarDropdown.includes('UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_META_CLASSNAME') || !toolbarDropdown.includes('UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_HINT_CLASSNAME') || !toolbarDropdown.includes('UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME') || !toolbarDropdown.includes('toolbarDropdownChevronClassName') || !toolbarDropdown.includes("menuWidthClass = ''") || toolbarDropdown.includes("menuWidthClass = 'w-72'") || toolbarDropdown.includes('max-w-[45%]') || toolbarDropdown.includes('gap-2 rounded px-2 py-1 text-sm') || toolbarDropdown.includes('px-2 py-0.5 text-[10px]') || toolbarDropdown.includes('h-3 w-3') || toolbarDropdown.includes('w-3 h-3')) {
+  if (!toolbarDropdown.includes('DropdownMenuSurface') || !toolbarDropdown.includes('kg-toolbar-dropdown-children') || !toolbarDropdown.includes('aria-expanded') || !toolbarDropdown.includes('dropdownMenuOptionClassName') || !toolbarDropdown.includes('UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME') || !toolbarDropdown.includes('toolbarDropdownChevronClassName') || !toolbarDropdown.includes("menuWidthClass = ''") || toolbarDropdown.includes("menuWidthClass = 'w-72'") || toolbarDropdown.includes('max-w-[45%]') || toolbarDropdown.includes('gap-2 rounded px-2 py-1 text-sm') || toolbarDropdown.includes('px-2 py-0.5 text-[10px]') || toolbarDropdown.includes('h-3 w-3') || toolbarDropdown.includes('w-3 h-3')) {
     throw new Error('Expected toolbar dropdown groups, hints, and nested chevrons to use shared responsive owners')
   }
   const editorWorkspaceSelect = readUtf8(editorWorkspaceSelectPath)
@@ -1203,19 +1201,19 @@ export const testKeyValueRowsKeepMobileGridConsistency = () => {
     throw new Error('Expected the upstream shared KTV row runtime to preserve grid columns on narrow widths instead of introducing ad hoc breakpoint overrides')
   }
   if (
-    !sharedKtvRow.includes('KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME')
+    !sharedKtvRow.includes('KTV_FIELD_GRID_CLASS_NAME')
     || !sharedKtvRows.includes('grid-cols-[minmax(0,0.95fr)_minmax(2.75rem,0.42fr)_minmax(0,1.2fr)]')
     || !sharedKtvRows.includes('sm:grid-cols-[minmax(0,1fr)_minmax(3rem,4.75rem)_minmax(0,1.45fr)]')
   ) {
     throw new Error('Expected the upstream shared KTV row runtime to keep the shared default Key/Type/Value grid with a wider bounded Value column')
   }
   if (
-    !sharedKtvRow.includes('KTV_KEY_VALUE_GRID_CLASS_NAME')
-    || !sharedKtvRows.includes('grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]')
+    sharedKtvRow.includes('KTV_KEY_VALUE_GRID_CLASS_NAME')
+    || sharedKtvRows.includes('grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]')
   ) {
-    throw new Error('Expected the upstream shared KTV row runtime to keep the shared simple Key/Value mobile two-column grid')
+    throw new Error('Expected the upstream shared KTV row runtime to retire the separate two-column grid')
   }
-  if (!sharedKtvRow.includes('flex min-w-0 items-center justify-center')) {
+  if (!sharedKtvRow.includes("layout === 'keyIconSliderInput' ? null : typeNode")) {
     throw new Error('Expected the upstream shared KTV row runtime to preserve icon spacer cells in the mobile grid instead of hiding them')
   }
   if (!sharedKtvRow.includes('justify-start sm:justify-end')) {
@@ -1316,10 +1314,10 @@ export const testSettingsRowsUseEllipsisForLongMobileText = () => {
   }
 
   const specialValueNode = readUtf8(specialValueNodePath)
-  if (!specialValueNode.includes('specialValueRowClassName') || !specialValueNode.includes('uiToolbarRowScrollClassName')) {
+  if (!specialValueNode.includes('specialValueRowClassName') || !specialValueNode.includes('KTV_VALUE_ROW_SCROLL_SPACIOUS_CLASS_NAME')) {
     throw new Error('Expected Settings special value rows to scroll within the KTV value cell')
   }
-  if (!specialValueNode.includes('UI_RESPONSIVE_COMPACT_PANEL_FLEX_INPUT_CLASSNAME') || specialValueNode.includes('min-w-[7rem]')) {
+  if (!specialValueNode.includes('KTV_VALUE_ROW_INPUT_SHELL_CLASS_NAME') || specialValueNode.includes('min-w-[7rem]')) {
     throw new Error('Expected Settings special value input shells to use the shared compact panel flex-input owner')
   }
   if (specialValueNode.includes('flex items-center gap-2') || specialValueNode.includes('flex-1 min-w-0')) {
@@ -1330,8 +1328,8 @@ export const testSettingsRowsUseEllipsisForLongMobileText = () => {
   if (!settingsUi.includes('overflow-hidden text-ellipsis whitespace-nowrap')) {
     throw new Error('Expected read-only settings values to ellipsize on mobile')
   }
-  if (!settingsUi.includes('w-full min-w-0 max-w-full h-6')) {
-    throw new Error('Expected settings inputs and selects to keep responsive width constraints')
+  if (!settingsUi.includes('normalizeSingleLineControlClassName') || settingsUi.includes('w-full min-w-0 max-w-full h-6')) {
+    throw new Error('Expected settings inputs and selects to reuse shared height and responsive width constraints')
   }
 }
 

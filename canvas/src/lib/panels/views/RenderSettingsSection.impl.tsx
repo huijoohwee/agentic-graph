@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { runMarkdownPipelineWithStatus } from '@/features/panels/hooks/markdownPipelineActions'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
@@ -20,7 +21,6 @@ import { UI_RESPONSIVE_BADGE_CHIP_CLASSNAME } from '@/lib/ui/responsiveElementCl
 export const RENDER_SETTINGS_PRESETS_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2'
 type GraphSelectMode = NonNullable<GraphBehavior['selectMode']>
 type GraphCreateMode = NonNullable<GraphBehavior['createMode']>
-
 interface ThreeGroupsCollapsed {
   links: boolean
   layout: boolean
@@ -393,47 +393,47 @@ export default function RenderSettingsSection({
               <section className={`${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.primary}`}>
                 Render Mode
               </section>
-              <select
+              <PanelSelect
                 className={uiPanelKeyValueInputClass}
                 disabled={inspection}
                 value={canvasRenderMode}
-                onChange={e => {
+                onValueChange={selectedValueInput => {
                   if (!ensureBaselineUnlocked()) return
-                  setCanvasRenderMode(e.target.value === '3d' ? '3d' : '2d')
+                  setCanvasRenderMode(selectedValueInput === '3d' ? '3d' : '2d')
                 }}
               >
                 <option value="2d">2d</option>
                 <option value="3d">3d</option>
-              </select>
+              </PanelSelect>
             </section>
             <section className="flex items-center justify-between gap-2">
               <section className={`${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.primary}`}>
                 Viewport Controls
               </section>
-              <select
+              <PanelSelect
                 className={uiPanelKeyValueInputClass}
                 disabled={inspection}
                 value={viewportControlsPreset || 'map'}
-                onChange={e => {
-                  const raw = e.target.value
+                onValueChange={selectedValueInput => {
+                  const raw = selectedValueInput
                   setViewportControlsPreset(raw === 'design' ? 'design' : 'map')
                 }}
               >
                 <option value="map">map</option>
                 <option value="design">design</option>
-              </select>
+              </PanelSelect>
             </section>
             <section className="flex items-center justify-between gap-2">
               <section className={`${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.primary}`}>
                 3D Mode
               </section>
-              <select
+              <PanelSelect
                 className={uiPanelKeyValueInputClass}
                 value={canvas3dMode}
                 disabled={inspection || canvasRenderMode !== '3d'}
-                onChange={e => {
+                onValueChange={selectedValueInput => {
                   if (!ensureBaselineUnlocked()) return
-                  const raw = e.target.value
+                  const raw = selectedValueInput
                   const next = raw === 'voxel' ? 'voxel' : raw === 'xr' ? 'xr' : '3d'
                   if (next === 'voxel' && !voxelApplicable) return
                   setCanvas3dMode(next)
@@ -442,19 +442,19 @@ export default function RenderSettingsSection({
                 <option value="3d">3d</option>
                 <option value="xr">xr</option>
                 <option value="voxel" disabled={!voxelApplicable}>voxel</option>
-              </select>
+              </PanelSelect>
             </section>
             <section className="flex items-center justify-between gap-2">
               <section className={`${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.primary}`}>
                 Selection Mode
               </section>
-              <select
+              <PanelSelect
                 className={uiPanelKeyValueInputClass}
                 disabled={inspection}
                 value={(schema.behavior?.selectMode ?? 'single') as GraphSelectMode}
-                onChange={e => {
+                onValueChange={selectedValueInput => {
                   if (!ensureBaselineUnlocked()) return
-                  const raw = e.target.value
+                  const raw = selectedValueInput
                   const next: GraphSelectMode =
                     raw === 'multi' || raw === 'lasso' ? (raw as GraphSelectMode) : 'single'
                   setSelectMode(next)
@@ -463,19 +463,19 @@ export default function RenderSettingsSection({
                 <option value="single">single</option>
                 <option value="multi">multi</option>
                 <option value="lasso">lasso</option>
-              </select>
+              </PanelSelect>
             </section>
             <section className="flex items-center justify-between gap-2">
               <section className={`${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.primary}`}>
                 Create Mode
               </section>
-              <select
+              <PanelSelect
                 className={uiPanelKeyValueInputClass}
                 disabled={inspection}
                 value={(schema.behavior?.createMode ?? 'shift-drag') as GraphCreateMode}
-                onChange={e => {
+                onValueChange={selectedValueInput => {
                   if (!ensureBaselineUnlocked()) return
-                  const raw = e.target.value
+                  const raw = selectedValueInput
                   const next: GraphCreateMode =
                     raw === 'click-source-target' || raw === 'panel-only'
                       ? (raw as GraphCreateMode)
@@ -486,7 +486,7 @@ export default function RenderSettingsSection({
                 <option value="shift-drag">shift-drag</option>
                 <option value="click-source-target">click-source-target</option>
                 <option value="panel-only">panel-only</option>
-              </select>
+              </PanelSelect>
             </section>
 
           </section>
