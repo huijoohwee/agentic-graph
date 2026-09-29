@@ -109,7 +109,6 @@ superagent_harness_demo:
   task_levels: ["quick_triage", "bounded_compile", "deep_research", "parallel_build"]
   native_owners:
     - "docs/documents/agentic-graph-research-agent-prd-tad-adr-mvp-gtm.md"
-    - "docs/documents/agentic-graph-deerflow/agentic-graph-deerflow-prd-tad-adr-mvp-gtm.md"
     - "canvas/src/features/research-agent/researchThesisContract.ts"
     - "canvas/src/features/research-agent/researchThesisTypes.ts"
     - "canvas/src/features/chat/chatAgenticOsCanvasApply.ts"
@@ -118,7 +117,7 @@ superagent_harness_demo:
     - "cloudflare/pages/agentic-graph-agent-ready.mjs"
   runtime_surfaces:
     message_gateway:
-      ingress: ["MainPanel Integrations", "FloatingPanel Chat", "Agent-ready WebMCP", "optional DeerFlow local gateway provider"]
+      ingress: ["MainPanel Integrations", "FloatingPanel Chat", "Agent-ready WebMCP"]
       thread_state: "run manifest plus review audit"
     sandbox: "bounded workspace execution with artifacts written through Source Files or shared rich-media owners"
     memory: "source hashes, run manifest, evidence ledger, cost log, and review audit"

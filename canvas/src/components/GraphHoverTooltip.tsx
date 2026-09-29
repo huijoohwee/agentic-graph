@@ -123,7 +123,7 @@ function buildNodeContent(
             const pct = Math.round(v * 100)
             return (
               <section key={d.key} className="space-y-0.5">
-                <section className={`text-[10px] ${UI_THEME_TOKENS.tooltip.textSecondary} flex justify-between gap-2`}>
+                <section className={`text-xs ${UI_THEME_TOKENS.tooltip.textSecondary} flex justify-between gap-2`}>
                   <span className="font-semibold">{d.label}</span>
                   <span>{`${pct}%`}</span>
                 </section>
@@ -149,7 +149,7 @@ function buildNodeContent(
             />
             <section className="min-w-0 flex-1">
               {imageCount > 1 ? (
-                <section className={`text-[10px] ${UI_THEME_TOKENS.tooltip.textTertiary} font-semibold`}>{`+${imageCount - 1}`}</section>
+                <section className={`text-xs ${UI_THEME_TOKENS.tooltip.textTertiary} font-semibold`}>{`+${imageCount - 1}`}</section>
               ) : null}
             </section>
           </section>
@@ -374,7 +374,7 @@ export function GraphHoverTooltip({ hoverInfo, containerRef, nodes, edges, schem
   const uiIconBadgeChipClass = useGraphStore(s => s.uiIconBadgeChipClass)
   const uiIconBadgeChipTextSizeClass = useGraphStore(s => s.uiIconBadgeChipTextSizeClass)
   const uiPanelMicroLabelTextSizeClass = useGraphStore(
-    s => s.uiPanelMicroLabelTextSizeClass || s.uiIconBadgeChipTextSizeClass || 'text-[9px]',
+    s => s.uiPanelMicroLabelTextSizeClass || s.uiIconBadgeChipTextSizeClass || 'text-xs',
   )
   const graphHoverPreviewConfig = useGraphStore(s => s.graphHoverPreviewConfig)
   const uiOverlayOpacity = useGraphStore(s => s.uiOverlayOpacity)

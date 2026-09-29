@@ -1,6 +1,21 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 import { TEST_CASES_POST_PARSER_3_TAIL } from './postParserCases3Tail'
 export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
+  ["ui.panels.borders.sharedOwner", "@/__tests__/sharedPanelBorders.test", "testSharedPanelBordersForbidLegacyVariants"],
+  ["ui.panels.borders.resizeKeyboard", "@/__tests__/sharedPanelBorders.test", "testResizeSeparatorKeyboardUsesBoundedDragOwner"],
+  ["ui.panels.colour.math", "@/__tests__/panelColorPicker.test", "testPanelColorMath"],
+  ["ui.panels.colour.interaction", "@/__tests__/panelColorPicker.test", "testPanelColorInteraction"],
+  ["ui.panels.colour.forbidNative", "@/__tests__/panelColorPicker.test", "testPanelColorForbidsNativeVariants"],
+  ["ui.panels.dropdown.keyboard", "@/__tests__/semanticSelect.test", "testSemanticSelectKeyboardAndPortal"],
+  ["ui.panels.dropdown.forms", "@/__tests__/semanticSelect.test", "testSemanticSelectFormsAndDisabled"],
+  ["ui.panels.dropdown.options", "@/__tests__/semanticSelect.test", "testSemanticSelectOptionData"],
+  ["ui.panels.dropdown.forbidNative", "@/__tests__/semanticSelect.test", "testSemanticSelectForbidsNativeVariants"],
+
+  ["ui.typography.sourceRuntime", "@/__tests__/applicationTypography.test", "testApplicationTypographyLoadsBeforeBuild"],
+  ["ui.typography.svgFonts", "@/__tests__/applicationTypography.test", "testApplicationTypographyExportsValidSvgFonts"],
+  ["ui.typography.reference", "@/__tests__/applicationTypography.test", "testApplicationTypographyMatchesDashboardReference"],
+  ["ui.typography.migration", "@/__tests__/applicationTypography.test", "testApplicationTypographyMigratesLegacyPreferences"],
+  ["ui.typography.noLegacyVariants", "@/__tests__/applicationTypography.test", "testApplicationTypographyForbidsLegacyVariants"],
   ["smeCareAgent.canvasEvidence.runtimeReady","@/__tests__/smeCareAgentCanvasEvidence.test","testSmeCareAgentRuntimeEvidenceParsesAndRendersOnCanvas"], ["workspace.activeMaterialization.replaysYamlAfterSuppressedViewPreset","@/__tests__/sourceFilesRuntimeMaterialization.test","testActiveWorkspaceMarkdownReapplyReplaysYamlWhenEditorWorkspaceOpen"], ["workspace.activeMaterialization.keyTracksSelectedDocumentOnly","@/__tests__/sourceFilesRuntimeMaterialization.test","testMaterializedWorkspaceActivePathKeyTracksSelectedContentAndActiveDocumentOnly"], ["docs.documents.statusCompliance","@/__tests__/docsDocumentsStatusCompliance.test","testDocsDocumentsForbidDraftAndProposedPrdTadMarkers"], ["provider.docs.implementedOrReferenceOwners","@/__tests__/providerPrdTadDocs.test","testProviderPrdTadDocsUseImplementedOrReferenceOwners"], ["manus.docs.referenceOnlyUntilSourceOwners","@/__tests__/manusPrdTadDocs.test","testManusPrdTadStaysReferenceOnlyUntilSourceOwnersExist"], ["researchAgent.docs.implementedDevSourceOwners","@/__tests__/researchAgentPrdTadDocs.test","testResearchAgentPrdTadUsesImplementedDevSourceOwners"], ["researchAgent.compile.manifestAndInvalidInput","@/__tests__/researchThesisContract.test","testResearchThesisCompileWritesManifestAndRejectsInvalidInputBeforeModelCall"], ["researchAgent.compile.budgetAndCacheGuardrails","@/__tests__/researchThesisContract.test","testResearchThesisBudgetAndCacheGuardrailsStopChurn"], ["researchAgent.review.stagedEvidenceLedger","@/__tests__/researchThesisContract.test","testResearchThesisEvidenceLedgerAndReviewAuditStayStaged"], ["researchAgent.owners.sourceMap","@/__tests__/researchThesisContract.test","testResearchThesisSourceOwnerMapExistsAndAvoidsAliases"], ["researchAgent.ui.sourceFileBackedReviewSurface","@/__tests__/researchCompilerPanel.test","testResearchCompilerPanelBuildsSourceFileBackedReviewSurface"], ["researchAgent.ui.mainPanelSharedOwners","@/__tests__/researchCompilerPanel.test","testResearchCompilerMainPanelTabUsesSharedSourceOwners"], ["researchAgent.demo.ingestParseRender","@/__tests__/researchAgentDemoPipeline.test","testResearchAgentDemoIngestsParsesAndBuildsFlowScene"], ["researchAgent.worker.compileStatusCommit","@/__tests__/researchThesisWorker.test","testResearchThesisWorkerCompileStatusCandidatesAndCommit"], ["researchAgent.worker.queueMessage","@/__tests__/researchThesisWorker.test","testResearchThesisWorkerQueueProcessesCompileMessage"], ["multiUserCollaboration.docs.implementedP2POwners","@/__tests__/multiUserCollaborationDocs.test","testMultiUserCollaborationDocsUseImplementedP2POwners"], ["collaboration.protocol.inviteAnswerRoster.preserveOwnerMetadata","@/__tests__/mainPanelCollaboration.test.tsx","testP2PCollaborationProtocolPreservesOwnerInviteAndRosterMetadata"],
   ["collaboration.store.followTarget.scopedToLiveRemotePeers","@/__tests__/mainPanelCollaboration.test.tsx","testP2PCollaborationStoreScopesFollowTargetToLiveRemotePeers"],
   ["ui.mainPanel.collaboration.rendersPeerOwnershipRoster","@/__tests__/mainPanelCollaboration.test.tsx","testMainPanelCollaborationViewRendersPeerOwnershipRoster"],
@@ -501,5 +516,8 @@ export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
   ["workspace.import.localFiles.csvJson.toCsv","@/__tests__/csvJsonConversion.test","testWorkspaceLocalJsonImportWritesFormulaSafeCsv"],
   ["workspace.import.localFiles.csvJson.exportFidelity","@/__tests__/csvJsonConversion.test","testWorkspaceLocalCsvAndJsonImportExportFidelity"],
   ["workspace.import.localFiles.csvJson.pickerExportFidelity","@/__tests__/csvJsonConversion.test","testCsvJsonWorkspaceExportWritesExactPickerBlobText"],
+  ["ui.mainPanel.sharedPresentation.accessibleControlsAndHelp","@/__tests__/mainPanelSharedPresentation.test","testMainPanelSharedPresentationKeepsAccessibleControlsAndHelp"],
   ...TEST_CASES_POST_PARSER_3_TAIL,
+  ["ui.panels.fields.presentation", "@/__tests__/panelFieldPresentation.test", "testPanelFieldsShareOnePresentationAndKeepInteractions"],
+  ["ui.panels.fields.forbidVariants", "@/__tests__/panelFieldPresentation.test", "testPanelFieldsForbidPresentationVariants"],
 ]

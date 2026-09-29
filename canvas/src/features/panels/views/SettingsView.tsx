@@ -104,10 +104,6 @@ export default function SettingsView({
     grabMapsHealthDetails,
     isCheckingGrabMapsHealth,
     checkGrabMapsHealth,
-    deerFlowHealthOk,
-    deerFlowHealthDetails,
-    isCheckingDeerFlowHealth,
-    checkDeerFlowHealth,
     isCheckingBytePlusVideoModelPreview,
     checkBytePlusVideoModelPreview,
     onGlobalReset,
@@ -270,20 +266,16 @@ export default function SettingsView({
     checkBytePlusHealth,
     checkBytePlusVideoModelPreview,
     checkChatHealth,
-    checkDeerFlowHealth,
     checkGrabMapsHealth,
     createAndSelectChatHistoryFile,
     createAndSelectAgenticGraphFile,
     dirtyRef,
-    deerFlowHealthDetails,
-    deerFlowHealthOk,
     grabMapsHealthDetails,
     grabMapsHealthOk,
     importCloudUrlForChatHistory,
     importCloudUrlForAgenticGraph,
     isCheckingBytePlusHealth,
     isCheckingBytePlusVideoModelPreview,
-    isCheckingDeerFlowHealth,
     isCheckingGrabMapsHealth,
     isCheckingHealth,
     isUpdatingChatHistoryPath,
@@ -488,7 +480,7 @@ export default function SettingsView({
             </section>
           )}
           {mode === 'payments' && (
-            <section className={`p-2 border-b border-white/10 ${UI_THEME_TOKENS.text.secondary}`}>
+            <section className={`p-2 border-b ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.text.secondary}`}>
               <section className="flex flex-wrap items-center gap-1">
                 <span className={`text-xs font-semibold ${UI_THEME_TOKENS.text.primary}`}>Providers</span>
                 {paymentsProviders.map(provider => (
@@ -522,9 +514,7 @@ export default function SettingsView({
             </section>
           )}
           {mode === 'all' && (
-            <section className="p-2 border-b border-white/10">
-              <WorkspaceTableModeControl />
-            </section>
+            <WorkspaceTableModeControl />
           )}
           <SettingsSections
             applyUiPanelDensityPreset={applyUiPanelDensityPreset}
@@ -548,7 +538,7 @@ export default function SettingsView({
               title="Resets and data"
               collapsed={false}
               onToggle={() => void 0}
-              className={`mt-2 pt-2 border-t ${UI_COLOR_DANGER_RED_BORDER}`}
+              className={UI_COLOR_DANGER_RED_BORDER}
             >
               <section className={`space-y-1 text-xs ${UI_THEME_TOKENS.text.primary}`}>
                 <section>

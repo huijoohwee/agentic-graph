@@ -15,7 +15,7 @@ import {
 import { cn } from '@/lib/utils'
 
 export const CARD_MEDIA_DROP_ZONE_FRAME_CLASS_NAME = 'relative m-0 flex min-h-0 min-w-0 items-center justify-center overflow-hidden rounded border bg-[color:var(--kg-input-bg)]'
-export const CARD_MEDIA_DROP_ZONE_EMPTY_PLACEHOLDER_CLASS_NAME = 'text-[18px] font-semibold text-[color:var(--kg-text-tertiary)]'
+export const CARD_MEDIA_DROP_ZONE_EMPTY_PLACEHOLDER_CLASS_NAME = 'text-lg font-semibold text-[color:var(--kg-text-tertiary)]'
 
 export function useCardMediaDropZone(args: {
   onDropMedia?: (payload: MediaDragPayload) => void

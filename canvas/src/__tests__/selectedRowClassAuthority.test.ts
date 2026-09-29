@@ -46,7 +46,8 @@ export function testSelectedRowClassAuthorityForbidsLegacyDuplicateVariants() {
   const toolbarDropdownSource = readFileSync(resolve(repositoryRoot, 'canvas/src/components/toolbar/ToolbarDropdownSelect.tsx'), 'utf8')
   const rowValueSource = readFileSync(resolve(repositoryRoot, 'canvas/src/components/ui/SelectableRowValue.tsx'), 'utf8')
   const uiCopySource = readFileSync(resolve(repositoryRoot, 'canvas/src/lib/config-copy/uiCopy.ts'), 'utf8')
-  if ((toolbarDropdownSource.match(/uiSelectableRowClassName\(/g) || []).length !== 2) {
+  const dropdownMenuSource = readFileSync(resolve(repositoryRoot, 'canvas/src/lib/ui/dropdownMenu.tsx'), 'utf8')
+  if ((toolbarDropdownSource.match(/dropdownMenuOptionClassName\(/g) || []).length !== 2 || !dropdownMenuSource.includes('uiSelectableRowClassName(active)')) {
     throw new Error('expected parent and child toolbar rows to share the full selectable-row utility')
   }
   if (toolbarDropdownSource.includes('UI_THEME_TOKENS.button.hoverBg')) {

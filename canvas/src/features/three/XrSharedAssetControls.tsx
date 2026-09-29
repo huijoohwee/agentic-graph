@@ -127,20 +127,20 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
       data-kg-xr-shared-asset-timeline-playing={snapshot.timelinePlaying ? '1' : '0'}
     >
       <header className="flex min-w-0 items-center justify-between gap-2">
-        <h3 className="flex min-w-0 items-center gap-1 text-[11px] font-semibold">
+        <h3 className="flex min-w-0 items-center gap-1 text-xs font-semibold">
           <Target className="size-3.5 shrink-0" aria-hidden />
           <span className="truncate">XR Asset Control</span>
         </h3>
-        <output className={cn('truncate text-[9px]', UI_THEME_TOKENS.text.tertiary)}>{status}</output>
+        <output className={cn('truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{status}</output>
       </header>
       <XrRehearsalStatus />
       <section className={cn("grid min-w-0 gap-1", authorsMotion ? "grid-cols-2" : "grid-cols-1")}>
-        <label className="grid min-w-0 gap-0.5 text-[9px]">
+        <label className="grid min-w-0 gap-0.5 text-xs">
           <span className={UI_THEME_TOKENS.text.tertiary}>3D / NPC target</span>
           <PanelSelect
             value={snapshot.selectedActorId || snapshot.selectedTargetId}
             disabled={!targetOptions.length}
-            onChange={event => run('select-target', { targetId: event.currentTarget.value })}
+            onValueChange={selectedValueInput => run('select-target', { targetId: selectedValueInput })}
             aria-label="Shared 3D for XR object, prop, subject, or NPC target"
             data-kg-xr-shared-asset-target-selector={surface}
           >
@@ -150,12 +150,12 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
             ))}
           </PanelSelect>
         </label>
-        {authorsMotion ? <label className="grid min-w-0 gap-0.5 text-[9px]">
+        {authorsMotion ? <label className="grid min-w-0 gap-0.5 text-xs">
           <span className={UI_THEME_TOKENS.text.tertiary}>Motion</span>
           <PanelSelect
             value={selectedPreset}
             disabled={!compatiblePresets.length}
-            onChange={event => setPresetId(event.currentTarget.value as XrAnimationPresetId)}
+            onValueChange={selectedValueInput => setPresetId(selectedValueInput as XrAnimationPresetId)}
             aria-label="Shared 3D for XR animation preset"
             data-kg-xr-shared-asset-preset-selector={surface}
           >

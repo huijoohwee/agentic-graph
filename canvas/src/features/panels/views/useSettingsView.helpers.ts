@@ -5,7 +5,6 @@ import { buildMainPanelVirtualSettingMeta } from '@/features/panels/mainPanelVir
 import { BYTEPLUS_SHARED_TEXT_API_DOC_AREA } from './byteplusSharedTextApiDocs'
 import { OPENAI_CHAT_API_DOC_AREA } from './openaiChatApiDocs'
 import { OPENAI_IMAGES_API_DOC_AREA } from './openaiImagesApiDocs'
-import { DEERFLOW_API_DOC_AREA } from './deerflowApiDocs'
 import { MIROMIND_API_DOC_AREA } from './miromindApiDocs'
 import { AGNES_API_DOC_AREA } from './agnesApiDocs'
 import { SEALION_API_DOC_AREA } from './sealionApiDocs'
@@ -136,7 +135,6 @@ const SETTINGS_AREA_ORDER: readonly string[] = [
   GOOGLE_CLOUD_API_DOC_AREA,
   OPENAI_CHAT_API_DOC_AREA,
   OPENAI_IMAGES_API_DOC_AREA,
-  DEERFLOW_API_DOC_AREA,
 ]
 
 const SETTINGS_AREA_CANONICAL: Readonly<Record<string, string>> = {
@@ -183,7 +181,6 @@ export function isIntegrationsOwnedSetting(key: string, areaRaw: string): boolea
     || area === GOOGLE_CLOUD_API_DOC_AREA
     || area === OPENAI_CHAT_API_DOC_AREA
     || area === OPENAI_IMAGES_API_DOC_AREA
-    || area === DEERFLOW_API_DOC_AREA
     || area === BYTEPLUS_MODELARK_MCP_DOC_AREA
     || area === OPERATOR_DEPLOY_MCP_DOC_AREA
   ) {

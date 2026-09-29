@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import type { SpaceDocument } from './semanticSpaceRuntime'
 import { readSemanticSpace, runSemanticSpaceAction } from './semanticSpaceStore'
@@ -32,10 +33,10 @@ export default function SemanticSceneOutline({ space, evidenceSha256, disabled =
         placeholder="Name, shape or ID" maxLength={80} value={query} onChange={event => setQuery(event.currentTarget.value)} />
     </label>
     <label className="flex min-w-0 items-center gap-2 text-xs">Show
-      <select className="min-h-11 min-w-0 flex-1 rounded border bg-transparent px-2" value={filter}
-        onChange={event => setFilter(event.currentTarget.value as OutlineFilter)}>
+      <PanelSelect className="min-h-11 min-w-0 flex-1 rounded border bg-transparent px-2" value={filter}
+        onValueChange={selectedValueInput => setFilter(selectedValueInput as OutlineFilter)}>
         <option value="all">All objects</option><option value="visible">Visible objects</option><option value="hidden">Hidden objects</option>
-      </select>
+      </PanelSelect>
     </label>
     <ul className="m-0 grid max-h-64 list-none gap-1 overflow-auto p-0" aria-label="Scene object list">
       {outline.rows.map(row => <li key={row.id} className="flex min-w-0 items-stretch gap-1 rounded border">

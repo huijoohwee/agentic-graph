@@ -13,7 +13,7 @@ const readUtf8 = (relativePath: string): string => fs.readFileSync(path.resolve(
 
 export function testTimelineTransportRateSelectUsesSharedResponsiveCssOwner() {
   const transportText = readUtf8('src/components/timeline/TimelineTransportControls.tsx')
-  const cssText = readUtf8('src/components/timeline/TimelineTransportControls.css')
+  const cssText = ['TimelineTransportControls.css', 'TimelineTransportPlayer.css', 'TimelineTransportControlsMermaidGantt.css'].map(file => readUtf8(`src/components/timeline/${file}`)).join('\n')
 
   if (!transportText.includes('timeline-rate-button') || transportText.includes('<select')) {
     throw new Error('expected timeline transport rate control to use the shared compact button owner without hidden select options')
@@ -52,8 +52,8 @@ export function testTimelineTransportRateSelectUsesSharedResponsiveCssOwner() {
     'rgb(0 18 128 / 1)',
     '.timeline-transport-track-clip--lane-mask',
     '.timeline-transport-track-clip--lane-grade',
-    '--kg-main-toolbar-height: 38px',
-    '--kg-timeline-toolbar-button-size: 28px',
+    '--kg-main-toolbar-height: calc(var(--kg-control-height) + 10px)',
+    '--kg-timeline-toolbar-button-size: var(--kg-control-height)',
     '--kg-timeline-bar-height: calc(var(--kg-main-toolbar-height) * 1.5)',
     '.timeline-transport-track-clip--milestone .timeline-transport-track-handle',
     'opacity: 0;',

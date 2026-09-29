@@ -12,9 +12,8 @@ import { isImageToThreeJsSkillNode } from '@/features/image-to-threejs/imageToTh
 import { FLOW_WIDGET_FORM_ID_KEY } from '@/features/storyboard-widget-manager/resolveWidgetRegistry'
 import { downloadBlob, saveBlobWithPicker } from '@/lib/graph/save'
 import type { GeneratedBinaryAsset, RunGenerationConfig } from './byteplusRunGeneration'
-import { CHAT_PROVIDER_DEERFLOW, CHAT_PROVIDER_GEMINI, normalizeChatProviderId } from '@/lib/chatEndpoint'
+import { CHAT_PROVIDER_GEMINI, normalizeChatProviderId } from '@/lib/chatEndpoint'
 import { generateRunImageWithBytePlus, generateRunVideoWithBytePlus } from './byteplusRunGeneration'
-import { generateRunImageWithDeerFlow, generateRunVideoWithDeerFlow } from './deerflowRunGeneration'
 import { generateRunVideoWithGemini } from './geminiRunGeneration'
 import { resolveWorkspaceSiblingArtifactPath, writeWorkspaceBlobArtifactAtPath, writeWorkspaceTextArtifactAtPath } from './chatHistoryWorkspace.output'
 import { buildTextWidgetOutputSrcDoc } from '@/lib/render/widgetOutputSrcDoc'
@@ -492,25 +491,6 @@ export const runRichMediaWidgetGeneration = async (args: {
   const normalizedProvider = normalizeChatProviderId(args.generationConfig.provider)
   const asset = (() => {
     if (request.kind === 'image') {
-      if (normalizedProvider === CHAT_PROVIDER_DEERFLOW) {
-        return generateRunImageWithDeerFlow({
-          config: args.generationConfig,
-          prompt: request.prompt,
-          options: {
-            model: request.model,
-            size: request.size,
-            outputFormat: request.outputFormat,
-            responseFormat: request.responseFormat,
-            optimizePromptOptions: request.optimizePromptOptions,
-            aspectRatio: request.aspectRatio,
-            stream: request.stream,
-            watermark: request.watermark,
-            seed: request.seed,
-            guidanceScale: request.guidanceScale,
-            referenceImageUrl: request.referenceImageUrl,
-          },
-        })
-      }
       return generateRunImageWithBytePlus({
         config: args.generationConfig,
         prompt: request.prompt,
@@ -525,23 +505,6 @@ export const runRichMediaWidgetGeneration = async (args: {
           watermark: request.watermark,
           seed: request.seed,
           guidanceScale: request.guidanceScale,
-          referenceImageUrl: request.referenceImageUrl,
-        },
-      })
-    }
-    if (normalizedProvider === CHAT_PROVIDER_DEERFLOW) {
-      return generateRunVideoWithDeerFlow({
-        config: args.generationConfig,
-        prompt: request.prompt,
-        options: {
-          model: request.model,
-          ratio: request.ratio,
-          resolution: request.resolution,
-          duration: request.duration,
-          generateAudio: request.generateAudio,
-          draft: request.draft,
-          cameraFixed: request.cameraFixed,
-          imageUrlUrl: request.imageUrlUrl,
           referenceImageUrl: request.referenceImageUrl,
         },
       })

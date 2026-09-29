@@ -1,4 +1,5 @@
 import React from 'react'
+import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { readAgenticGraphSourceRevision } from '../runtime-identity/agentic-graph-runtime-identity'
 
 type Evidence = { revision: string; digest: string; bytes: number; files: number }
@@ -21,6 +22,7 @@ async function offlineRequest(operation: 'install' | 'verify' | 'recover'): Prom
   })
 }
 export function LearningOfflineControls({ purpose = 'learning' }: { purpose?: 'learning' | 'studio' }) {
+  const buttonClass = `${UI_THEME_TOKENS.control.singleLine} ${UI_THEME_TOKENS.border.outline} rounded`
   const studio = purpose === 'studio'
   const [busy, setBusy] = React.useState(false), [notice, setNotice] = React.useState(''), [evidence, setEvidence] = React.useState<Evidence | null>(null)
   const live = React.useRef(true)
@@ -40,14 +42,14 @@ export function LearningOfflineControls({ purpose = 'learning' }: { purpose?: 'l
     url.searchParams.set(studio ? 'studio-offline' : 'python-learning-offline', evidence.revision)
     url.searchParams.set('openEditorWorkspace', '1'); location.assign(url.href)
   }
-  return <details><summary>{studio ? 'Offline Studio' : 'Offline lessons'}</summary>
+  return <details className="min-w-0"><summary className={`${UI_THEME_TOKENS.control.singleLine} content-center cursor-pointer`}>{studio ? 'Offline Studio' : 'Offline lessons'}</summary>
     <p>{studio ? 'Install the application assets while connected. Save the editable scene source separately and verify it after reopening. The previous complete installation is retained for recovery; browser storage can still be evicted.' : 'Install the application assets while connected. Source and debriefs stay in this browser. The previous complete installation is retained for recovery; browser storage can still be evicted.'}</p>
-    <div className={studio ? 'flex flex-wrap items-center gap-2 border-b p-2 [&>button]:min-h-11' : 'python-learning-controls'}>
-      <button disabled={busy} onClick={() => void act('install')}>Install offline {studio ? 'Studio' : 'lessons'}</button>
-      <button disabled={busy} onClick={() => void act('verify')}>Verify installation</button>
-      <button disabled={busy} onClick={() => void act('recover')}>Recover previous installation</button>
-      <button disabled={busy || !evidence} onClick={open}>Open verified offline workspace</button>
-    </div>
+    <nav aria-label="Offline installation controls" className="flex min-w-0 flex-wrap items-center gap-2 p-2">
+      <button className={buttonClass} disabled={busy} onClick={() => void act('install')}>Install offline {studio ? 'Studio' : 'lessons'}</button>
+      <button className={buttonClass} disabled={busy} onClick={() => void act('verify')}>Verify installation</button>
+      <button className={buttonClass} disabled={busy} onClick={() => void act('recover')}>Recover previous installation</button>
+      <button className={buttonClass} disabled={busy || !evidence} onClick={open}>Open verified offline workspace</button>
+    </nav>
     {notice ? <p role="status">{notice}</p> : null}
   </details>
 }

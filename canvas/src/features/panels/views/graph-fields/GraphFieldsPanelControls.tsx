@@ -1,3 +1,4 @@
+import type { PanelSelectProps } from '@/lib/ui/panelFormControls'
 import React from 'react'
 
 import { PanelCheckbox, PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
@@ -106,11 +107,11 @@ export const GraphFieldsComfortableTextInput = React.forwardRef<HTMLInputElement
   },
 )
 
-type GraphFieldsFieldSelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
+type GraphFieldsFieldSelectProps = PanelSelectProps & {
   textSizeClassName?: string
 }
 
-export const GraphFieldsFieldSelect = React.forwardRef<HTMLSelectElement, GraphFieldsFieldSelectProps>(
+export const GraphFieldsFieldSelect = React.forwardRef<HTMLButtonElement, GraphFieldsFieldSelectProps>(
   function GraphFieldsFieldSelect({ className, textSizeClassName, ...props }, ref) {
     return (
       <PanelSelect
@@ -131,11 +132,11 @@ export const GraphFieldsFieldSelect = React.forwardRef<HTMLSelectElement, GraphF
   },
 )
 
-type GraphFieldsComfortableFieldSelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
+type GraphFieldsComfortableFieldSelectProps = PanelSelectProps & {
   textSizeClassName?: string
 }
 
-export const GraphFieldsComfortableFieldSelect = React.forwardRef<HTMLSelectElement, GraphFieldsComfortableFieldSelectProps>(
+export const GraphFieldsComfortableFieldSelect = React.forwardRef<HTMLButtonElement, GraphFieldsComfortableFieldSelectProps>(
   function GraphFieldsComfortableFieldSelect({ className, textSizeClassName, ...props }, ref) {
     return (
       <PanelSelect

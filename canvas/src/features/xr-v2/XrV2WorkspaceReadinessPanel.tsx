@@ -42,7 +42,7 @@ function XrV2ImmersiveSessionControls({ readiness }: Readonly<{
   const busy = immersive.phase === 'requesting' || immersive.phase === 'ending'
   return (
     <section
-      className={cn('grid gap-1 rounded border p-2 text-[9px]', UI_THEME_TOKENS.panel.border)}
+      className={cn('grid gap-1 rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border)}
       aria-label="XR v2 immersive session"
       data-kg-xr-v2-immersive-session={immersive.phase}
       data-kg-xr-v2-immersive-tier-admitted={admitted ? 'true' : 'false'}
@@ -86,15 +86,15 @@ export function XrV2WorkspaceReadinessPanelView({
     >
       <header className="flex items-start justify-between gap-2">
         <section className="min-w-0">
-          <h4 className={cn('m-0 text-[10px] font-semibold uppercase', UI_THEME_TOKENS.text.secondary)}>
+          <h4 className={cn('m-0 text-xs font-semibold uppercase', UI_THEME_TOKENS.text.secondary)}>
             Pinned XR v2 runtime readiness
           </h4>
-          <p className={cn('m-0 text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Source 42005d75 · local, zero-token browser probes
           </p>
         </section>
         <output
-          className={cn('shrink-0 rounded border px-2 py-1 text-[9px] font-semibold', UI_THEME_TOKENS.panel.border)}
+          className={cn('shrink-0 rounded border px-2 py-1 text-xs font-semibold', UI_THEME_TOKENS.panel.border)}
           aria-live="polite"
           data-kg-xr-v2-capability-tier-output="1"
         >
@@ -102,7 +102,7 @@ export function XrV2WorkspaceReadinessPanelView({
         </output>
       </header>
 
-      <p className="m-0 rounded bg-cyan-100 px-2 py-1 text-[9px] text-cyan-950 dark:bg-cyan-950/60 dark:text-cyan-100">
+      <p className="m-0 rounded bg-cyan-100 px-2 py-1 text-xs text-cyan-950 dark:bg-cyan-950/60 dark:text-cyan-100">
         Capability is resolved before Start/Enable becomes available. Camera, sensors, and immersive sessions remain three separate explicit user actions; this probe requests none.
       </p>
 
@@ -126,7 +126,7 @@ export function XrV2WorkspaceReadinessPanelView({
 
       <XrV2DeliveryValidationPanel actionsEnabled={snapshot.canOfferUserActions} />
 
-      <dl className={cn('m-0 grid grid-cols-2 gap-x-2 gap-y-1 text-[9px]', UI_THEME_TOKENS.text.secondary)}>
+      <dl className={cn('m-0 grid grid-cols-2 gap-x-2 gap-y-1 text-xs', UI_THEME_TOKENS.text.secondary)}>
         <div><dt className="font-semibold">Viewer</dt><dd className="m-0" data-kg-xr-v2-progressive-viewer={viewerTier}>{viewerTier}</dd></div>
         <div><dt className="font-semibold">Physical proof</dt><dd className="m-0">external required</dd></div>
         <div><dt className="font-semibold">Asset tier</dt><dd className="m-0">{metadata?.xr_capability_tier || 'pending'}</dd></div>
@@ -135,7 +135,7 @@ export function XrV2WorkspaceReadinessPanelView({
         <div><dt className="font-semibold">Fallback triggered</dt><dd className="m-0">{String(metadata?.fallback_triggered ?? false)}</dd></div>
       </dl>
 
-      <section aria-label="XR browser API probes" className="flex flex-wrap gap-1 text-[8px]">
+      <section aria-label="XR browser API probes" className="flex flex-wrap gap-1 text-xs">
         {Object.entries(snapshot.browserApis).map(([name, available]) => (
           <span
             key={name}
@@ -152,7 +152,7 @@ export function XrV2WorkspaceReadinessPanelView({
         {snapshot.criteria.map(criterion => (
           <li
             key={criterion.id}
-            className={cn('rounded border px-2 py-1 text-[9px]', UI_THEME_TOKENS.panel.border)}
+            className={cn('rounded border px-2 py-1 text-xs', UI_THEME_TOKENS.panel.border)}
             data-kg-xr-v2-ac={criterion.id}
             data-kg-xr-v2-ac-local-evidence={criterion.localEvidence}
             data-kg-xr-v2-ac-external-required={criterion.externalEvidenceRequired.length > 0 ? 'true' : 'false'}
@@ -172,7 +172,7 @@ export function XrV2WorkspaceReadinessPanelView({
       </ol>
 
       {snapshot.error ? (
-        <p className="m-0 rounded bg-red-100 px-2 py-1 text-[9px] text-red-900 dark:bg-red-950/60 dark:text-red-100" role="alert">
+        <p className="m-0 rounded bg-red-100 px-2 py-1 text-xs text-red-900 dark:bg-red-950/60 dark:text-red-100" role="alert">
           {snapshot.error}
         </p>
       ) : null}

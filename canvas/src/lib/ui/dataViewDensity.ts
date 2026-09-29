@@ -1,3 +1,5 @@
+import { UI_THEME_TOKENS } from './theme-tokens'
+
 export type DataViewRowHeightPreset = 'compact' | 'comfortable'
 export type DataViewFieldLineMode = 'single' | 'double' | 'flex'
 
@@ -73,8 +75,8 @@ export function readDataViewFieldLineClassName(mode: DataViewFieldLineMode): str
     : 'block truncate'
 }
 
-export function readDataViewSingleLineControlClassName(preset: DataViewRowHeightPreset): string {
-  return preset === 'compact' ? 'h-6 px-2 py-1 text-xs' : 'h-7 px-3 py-1.5 text-xs'
+export function readDataViewSingleLineControlClassName(_preset: DataViewRowHeightPreset): string {
+  return `${UI_THEME_TOKENS.control.singleLine} text-xs`
 }
 
 export function readDataViewControlPaddingClassName(preset: DataViewRowHeightPreset): string {

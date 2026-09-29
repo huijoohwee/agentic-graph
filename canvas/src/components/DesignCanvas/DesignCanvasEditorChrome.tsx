@@ -123,10 +123,10 @@ export function DesignCanvasEditorChrome(props: {
         )}
         aria-label="Design status"
       >
-        <span className={cn('text-[10px] font-semibold', UI_THEME_TOKENS.text.primary)}>Design</span>
-        <span className="font-mono text-[10px]">{mode}</span>
-        <span className="font-mono text-[10px]">{props.selectedCount} selected</span>
-        <span className="hidden font-mono text-[10px] sm:inline">{props.layerCount} layers</span>
+        <span className={cn('text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>Design</span>
+        <span className="font-mono text-xs">{mode}</span>
+        <span className="font-mono text-xs">{props.selectedCount} selected</span>
+        <span className="hidden font-mono text-xs sm:inline">{props.layerCount} layers</span>
       </section>
     </section>
   )

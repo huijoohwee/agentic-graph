@@ -10,7 +10,7 @@ import { ORCHESTRATOR_AGENTIC_COPY } from '@/features/panels/config'
 import { type AgenticPathInfo } from '@/features/panels/views/AgenticRagNodeInspectorSectionModel'
 import { SimpleKeyValueRow } from 'grph-shared/react/keyTypeValueRow'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { getChipClass } from '@/lib/ui'
+import { getChipClass } from '@/lib/ui/icons'
 import {
   AGENTIC_RAG_SCHEMA_LABEL,
   AGENTIC_RAG_CONTEXT_LABEL,
@@ -48,7 +48,7 @@ export function AgenticRagNodeInspectorSection({
     s => s.uiPanelRowDensityCompactClass || 'py-0.5',
   )
   const inspectorPanelClassName = `mt-2 border ${UI_THEME_TOKENS.panel.border} rounded px-2 py-1`
-  const inspectorHeadingClassName = `${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} font-semibold uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary}`
+  const inspectorHeadingClassName = `${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} font-semibold uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary}`
   const inspectorMutedTextClassName = `${uiPanelKeyValueTextSizeClass} ${uiPanelTextFontClass} ${UI_THEME_TOKENS.text.tertiary}`
   const inspectorBodyClassName = `text-xs ${UI_THEME_TOKENS.text.primary} space-y-1`
   const inspectorLabelClassName = UI_THEME_TOKENS.text.secondary

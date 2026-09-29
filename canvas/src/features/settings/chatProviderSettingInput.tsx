@@ -58,8 +58,8 @@ export const renderChatModelSettingInput = (args: {
   return (
     <PanelSelect
       value={resolved || normalized}
-      onChange={event => {
-        const next = String(event.target.value || '').trim()
+      onValueChange={selectedValueInput => {
+        const next = String(selectedValueInput || '').trim()
         args.dirtyRef.current.add('chatProvider')
         args.dirtyRef.current.add('chatEndpointUrl')
         args.dirtyRef.current.add('chatModel')
@@ -95,8 +95,8 @@ export const renderChatContextScopeSettingInput = (args: {
   return (
     <PanelSelect
       value={normalized}
-      onChange={event => {
-        const value = event.target.value
+      onValueChange={selectedValueInput => {
+        const value = selectedValueInput
         const selected = value === 'selection' || value === 'workspace' ? value : 'hybrid'
         args.dirtyRef.current.add('chatContextScope')
         args.setValues(prev => ({ ...prev, chatContextScope: selected }))

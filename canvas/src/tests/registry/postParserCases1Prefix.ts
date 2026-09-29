@@ -38,7 +38,6 @@ export const TEST_CASES_POST_PARSER_1_PREFIX: TestCaseTuple[] = [
   ["policy.forbidVdeoxplnDemoCopyHardcodes","@/__tests__/strytreeCopyHardcodeGuard.test","testForbidVdeoxplnDemoCopyHardcodes"],
   ["vdeoxpln.demo.visualExplanationInput","@/__tests__/strytreeCopyHardcodeGuard.test","testVdeoxplnDemoInputRendersInteractiveVisualExplanation"],
   ["policy.forbidPenpotRepoLiteral","@/__tests__/forbidPenpotRepoLiteral.test","testForbidPenpotRepoLiteral"],
-  ["policy.docsSsotFixture.forbidHardcodedDeerFlowEndpointLiterals","@/__tests__/docsSsotFixtureHardcodeGuard.test","testDocsSsotValidationFixtureForbidsHardcodedEndpointLiterals"],
   ["policy.docsSsotFixture.hackamap.forbidHardcodedVolatileLiterals","@/__tests__/hackamapFixturePolicyGuard.test","testHackamapDocsFixtureForbidsHardcodedVolatileLiterals"],
   ["policy.docsSsotFixture.hackamap.painpointDemoProduct.semanticMapping","@/__tests__/hackamapFixturePolicyGuard.test","testHackamapDocsFixtureDeclaresPainPointDemoProductSemanticMapping"],
   ["policy.pdfPresentationScrollState.forbidHardcodedReset","@/__tests__/presentationPdfScrollFidelityRegression.test","testPresentationPdfScrollViewportPreservesWorkspaceState"],

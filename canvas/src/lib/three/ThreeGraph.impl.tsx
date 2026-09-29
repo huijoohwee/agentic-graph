@@ -25,6 +25,7 @@ import { shouldRenderCanvasAppliedModelAsset } from '@/lib/three/modelAssetActiv
 import { parseStandaloneSpatialCaptureManifest } from '@/features/markdown-workspace/workspaceImport/spatialCaptureFileset'
 import { SpatialCaptureManifestStage } from '@/features/three/SpatialCaptureManifestStage'
 import { XrEmptyWorldStage } from '@/features/three/XrEmptyWorldStage'
+import { XrSubjectHoverProvider } from '@/features/three/XrSubjectHover'
 import { XrEmptyWorldHud } from '@/features/three/XrEmptyWorldHud'
 import { useXrSceneMediaDrop } from '@/features/three/useXrSceneMediaDrop'
 import { XrCameraAspectMask } from '@/features/three/XrCameraAspectMask'
@@ -253,6 +254,9 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     ? 0
     : learningScene || immersiveMediaStageActive || hasXrEmptyWorld || hasGraph ? 1 : 0
   const rendererLifecycleKey = resolveThreeRendererLifecycleKey(mode) + `-${rendererBackend.key}`
+  const [resolution, setResolution] = useState<{ key: string; dpr: number } | null>(null)
+  const canvasDpr = resolution?.key === rendererLifecycleKey ? resolution.dpr : [1, 2] as [number, number]
+  const setCanvasDpr = useCallback((dpr: number) => setResolution({ key: rendererLifecycleKey, dpr }), [rendererLifecycleKey])
   const rendererMounted = shouldMountThreeRenderer({
     mode,
     hasRenderableScene,
@@ -444,6 +448,8 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
         event.stopPropagation()
       }}
     >
+      <XrSubjectHoverProvider containerRef={containerRef} schema={effectiveSchema} documentKey={canvasMarkdownDocument.name || ''}
+        enabled={active && hoverEnabled && mode === 'xr' && !gameplayOverlayActive && !immersiveMediaStageActive && !learningScene}>
       <Canvas
         key={rendererLifecycleKey}
         data-kg-three-canvas-owner="1"
@@ -452,7 +458,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
         camera={{ position: [0, 0, 220], fov: 50 }}
         shadows
         gl={rendererBackend.gl}
-        dpr={[1, 2]}
+        dpr={canvasDpr}
         style={geospatialComposite ? { pointerEvents: 'none' } : undefined}
         onCreated={state => configureThreeGraphRenderer(state, {
           mode, glCanvasRef, threeGlRef, threeCameraRef, threeSceneRef, applySemanticCanvasOwner,
@@ -551,9 +557,10 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
               }
             }}
           /> : null}
-          <OverlayFrameSync enabled={active && mode !== 'xr'} scheduleRef={scheduleRef} />
+          <OverlayFrameSync enabled={active && mode !== 'xr'} scheduleRef={scheduleRef} onResolutionChange={setCanvasDpr} />
         </React.Suspense>
       </Canvas>
+      </XrSubjectHoverProvider>
       {mode === 'xr' && documentStageAuthority && !gameplayOverlayActive && !immersiveMediaStageActive ? <XrCameraAspectMask /> : null}
       {hasXrEmptyWorld && !gameplayOverlayActive ? <XrEmptyWorldHud /> : null}
       {immersiveMediaActive ? <ThreeGraphImmersiveMediaHud geospatialComposite={geospatialComposite} /> : null}

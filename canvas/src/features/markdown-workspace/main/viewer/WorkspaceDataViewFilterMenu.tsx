@@ -135,7 +135,7 @@ export function WorkspaceDataViewFilterMenu(props: {
                     type="button"
                     className={[
                       UI_RESPONSIVE_ACTION_ROW_CLASSNAME,
-                      'text-[10px] px-2 py-1 rounded border',
+                      'text-xs px-2 py-1 rounded border',
                       draftValue === o ? [UI_THEME_TOKENS.button.primarySolid, UI_THEME_TOKENS.button.activeBorder].join(' ') : [UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.secondary, UI_THEME_TOKENS.button.hoverBg].join(' '),
                     ].join(' ')}
                     onClick={() => setDraftValue(o)}

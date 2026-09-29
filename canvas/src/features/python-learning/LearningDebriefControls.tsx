@@ -23,7 +23,7 @@ export function LearningDebriefControls({ onRestore, readOnly }: { onRestore: (s
   }
   const finished = !snapshot.stale && !!snapshot.result?.trace && ['completed', 'failed'].includes(snapshot.state)
   return <section aria-label="Learning debriefs">
-    <div className="python-learning-controls">
+    <nav className="python-learning-controls" aria-label="Learning debrief controls">
       <button disabled={busy || readOnly || !finished} onClick={() => void act(async signal => {
         const record = await captureLearningDebrief(snapshot)
         return `Saved locally: ${await saveLearningDebrief(record, signal)}`
@@ -56,7 +56,7 @@ export function LearningDebriefControls({ onRestore, readOnly }: { onRestore: (s
           if (!signal.aborted) setRecords([record]); return 'Imported for inspection. No source was executed or saved.'
         })
       }} /></label>
-    </div>
+    </nav>
     {snapshot.document?.lessonId === 'drone' ? <LearningFlightTransferControls /> : null}
     {snapshot.document?.lessonId === 'drone' ? <details><summary>GameXR drone bench log</summary>
       <p>Inspect an exported simulated receiver session. Recorded setpoints are control requests; measured attitude and battery are unavailable. Receiver control stays in GameXR.</p>
@@ -70,12 +70,12 @@ export function LearningDebriefControls({ onRestore, readOnly }: { onRestore: (s
           return 'GameXR log imported for inspection. No flight or receiver command was executed.'
         }) }
       }} /></label>
-      {bench ? <div aria-label="GameXR bench log summary">
+      {bench ? <section aria-label="GameXR bench log summary">
         <p>{bench.records} events · {bench.controlRequests} control requests · {bench.receiverReports} receiver reports · {bench.inhibitions} inhibitions</p>
         <p>Imported file contents; authenticity and command acceptance are not verified.</p>
         <pre>{bench.lastSetpoint ? JSON.stringify(bench.lastSetpoint, null, 2) : 'No receiver setpoint report.'}</pre>
         {bench.lastPathPose ? <p>Last recorded path setpoint [tick, x, z, heading, altitude]: {JSON.stringify(bench.lastPathPose)}</p> : null}
-      </div> : null}
+      </section> : null}
     </details> : null}
     {message ? <p role="status">{message}</p> : null}
     {records.map(record => <details key={record.result.identity.runId}><summary>{record.result.identity.lessonId} · {record.savedAt} · saved observation</summary>

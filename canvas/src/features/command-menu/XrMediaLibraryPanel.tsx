@@ -181,7 +181,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
         <section className="flex items-start gap-2">
           <XrMediaLibrarySummary metadataReady={sourceMetadataReady} metadataStatus={grammarCatalog.hydration.status} />
           <section className="flex shrink-0 items-center gap-1">
-            <output className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{runtime.plan.subjects.length} placed</output>
+            <output className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>{runtime.plan.subjects.length} placed</output>
             <ExpandCollapseAllButton
               allCollapsed={allLibrarySectionsCollapsed}
               onExpandAll={expandAllLibrarySections}
@@ -191,17 +191,17 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
             />
           </section>
         </section>
-        {!sceneReady ? <p className="rounded bg-amber-100 px-2 py-1 text-[10px] text-amber-900 dark:bg-amber-950/60 dark:text-amber-100">Open or create a graph document to place and persist XR scene media.</p> : null}
-        <label className="grid gap-1 text-[10px]">
+        {!sceneReady ? <p className="rounded bg-amber-100 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950/60 dark:text-amber-100">Open or create a graph document to place and persist XR scene media.</p> : null}
+        <label className="grid gap-1 text-xs">
           <span className={UI_THEME_TOKENS.text.tertiary}>Label next subject</span>
           <PanelTextInput value={nextLabel} maxLength={80} placeholder="Optional subject label, e.g. THIEF" onChange={event => setNextLabel(event.target.value)} data-kg-media-xr-next-label="1" />
         </label>
         <section className="grid grid-cols-2 gap-2" aria-label="XR terrain and featured asset controls">
-          <label className="grid min-w-0 gap-1 text-[10px]">
+          <label className="grid min-w-0 gap-1 text-xs">
             <span className={UI_THEME_TOKENS.text.tertiary}>Terrain / Environment</span>
             <PanelSelect
               value={runtime.plan.stageId}
-              onChange={event => runInvocation(buildXrStageInvocation(event.target.value))}
+              onValueChange={selectedValueInput => runInvocation(buildXrStageInvocation(selectedValueInput))}
               aria-label="Change XR terrain or environment"
               data-kg-media-xr-terrain-selector="1"
               data-kg-media-xr-default-terrain={XR_MOTION_REFERENCE_DEFAULT_STAGE_ID}
@@ -211,11 +211,11 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
               ))}
             </PanelSelect>
           </label>
-          <label className="grid min-w-0 gap-1 text-[10px]">
+          <label className="grid min-w-0 gap-1 text-xs">
             <span className={UI_THEME_TOKENS.text.tertiary}>Add 3D Object / Asset</span>
             <PanelSelect
               value={selectedAsset?.id || XR_SCENE_LIBRARY_DEFAULT_ASSET_ID}
-              onChange={event => setSelectedAssetId(event.target.value)}
+              onValueChange={selectedValueInput => setSelectedAssetId(selectedValueInput)}
               aria-label="Select featured XR 3D object or asset"
               data-kg-media-xr-featured-asset-selector="1"
               data-kg-media-xr-default-asset={XR_SCENE_LIBRARY_DEFAULT_ASSET_ID}
@@ -243,7 +243,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
       <XrSceneAppearanceControls disabled={!sceneReady} />
 
       <CollapsibleSection
-        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-[11px] font-semibold uppercase">Terrain / Environment Kits</span><output className={cn('shrink-0 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{visibleEnvironments.length}</output></span>}
+        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Terrain / Environment Kits</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{visibleEnvironments.length}</output></span>}
         collapsed={collapsedLibrarySectionKeys.has('environments')}
         onToggle={collapsed => setLibrarySectionCollapsed('environments', collapsed)}
         defaultCollapsed={false}
@@ -279,7 +279,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
       </CollapsibleSection></>}
 
       <CollapsibleSection
-        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-[11px] font-semibold uppercase">Subjects &amp; Props</span><output className={cn('shrink-0 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{subjectView === 'scene' ? visibleSubjects.length + stageObjects.length : visibleAssets.length}</output></span>}
+        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Subjects &amp; Props</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{subjectView === 'scene' ? visibleSubjects.length + stageObjects.length : visibleAssets.length}</output></span>}
         collapsed={collapsedLibrarySectionKeys.has('subjects-props')}
         onToggle={collapsed => setLibrarySectionCollapsed('subjects-props', collapsed)}
         defaultCollapsed={false}
@@ -368,7 +368,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
 
       {presentation === 'full' && <>
       <CollapsibleSection
-        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-[11px] font-semibold uppercase">Simulation</span><output className={cn('shrink-0 text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{runtime.plan.subjects.length} subjects</output></span>}
+        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Simulation</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{runtime.plan.subjects.length} subjects</output></span>}
         collapsed={collapsedLibrarySectionKeys.has('simulation')}
         onToggle={collapsed => setLibrarySectionCollapsed('simulation', collapsed)}
         defaultCollapsed={false}

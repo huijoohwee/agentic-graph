@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
 import { getNodeRenderRadius, getThreeConfig, type GraphSchema } from '@/lib/graph/schema'
 import { getEdgeBaseStroke, getNodeBaseFill } from '@/lib/graph/visualStyles'
@@ -332,7 +333,7 @@ export function exportGraphAsCentered3dSvgMarkup(args: {
         return `<circle data-role="node-shape" cx="${fmt(cx0)}" cy="${fmt(cy0)}" r="${fmt(r)}" fill="${escapeXml(nd.fill)}" stroke="${escapeXml(nodeStrokeParsed.color)}" stroke-width="1" fill-opacity="${fmtOp(fillOp)}" stroke-opacity="${fmtOp(strokeOp)}"/>`
       })()
       const labelMarkup = includeLabels
-        ? `<text data-role="node-label" x="${fmt(pr.x)}" y="${fmt(pr.y - r - labelPadY)}" font-size="${fontSizePx}" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial" text-anchor="middle" fill="${escapeXml(labelFillParsed.color)}" opacity="${fmtOp(textOp)}">${escapeXml(nd.label)}</text>`
+        ? `<text data-role="node-label" x="${fmt(pr.x)}" y="${fmt(pr.y - r - labelPadY)}" font-size="${fontSizePx}" font-family="${UI_FONT_SANS}" text-anchor="middle" fill="${escapeXml(labelFillParsed.color)}" opacity="${fmtOp(textOp)}">${escapeXml(nd.label)}</text>`
         : ''
       nodeParts.push(`<g data-node-id="${escapeXml(nd.id)}">${shapeMarkup}${labelMarkup}</g>`)
     }

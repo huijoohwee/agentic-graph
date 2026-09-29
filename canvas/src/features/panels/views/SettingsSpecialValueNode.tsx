@@ -1,8 +1,7 @@
 import React from 'react'
 import StatusBadge from '@/features/panels/ui/StatusBadge'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { CHAT_PROVIDER_BYTEPLUS, CHAT_PROVIDER_DEERFLOW } from '@/lib/chatEndpoint'
-import { DEERFLOW_API_DOC_AREA } from './deerflowApiDocs'
+import { CHAT_PROVIDER_BYTEPLUS } from '@/lib/chatEndpoint'
 import type { SettingsRowActions, SettingsRowRefs, SettingsRowStatusState, SettingsRowUi } from './settingsRowTypes'
 import { STRIPE_PAYMENT_SERVER_SECRET_ENV_SUMMARY } from 'grph-shared/payments/stripePaymentSsot'
 import {
@@ -25,7 +24,6 @@ type SettingsSpecialValueNodeProps = {
     | 'checkBytePlusHealth'
     | 'checkBytePlusVideoModelPreview'
     | 'checkChatHealth'
-    | 'checkDeerFlowHealth'
     | 'checkGrabMapsHealth'
     | 'createAndSelectChatHistoryFile'
     | 'createAndSelectAgenticGraphFile'
@@ -59,7 +57,6 @@ export function shouldRenderSettingsSpecialValueNode({
 }): boolean {
   return (
     sKey === 'chatSystemPrompt'
-    || (area === DEERFLOW_API_DOC_AREA && sKey === 'deerflowApi.provider')
     || resolvedValueKey === 'maps.grabmaps.apiKey'
     || sKey === 'stripeApi.auth.secret_key'
     || sKey === 'stripeApi.webhooks.signing_secret'
@@ -110,16 +107,6 @@ export function SettingsSpecialValueNode(props: SettingsSpecialValueNodeProps): 
             />
           </section>
         ) : null}
-        {status.normalizedChatProvider === CHAT_PROVIDER_DEERFLOW ? (
-          <section className={specialValueStatusShellClassName} title={status.deerFlowHealthDetails || undefined}>
-            <StatusBadge
-              label="DeerFlow Gateway"
-              ok={status.isCheckingDeerFlowHealth ? null : (status.deerFlowHealthOk ?? null)}
-              msg={status.isCheckingDeerFlowHealth ? 'Checking...' : status.deerFlowHealthOk === true ? 'Success' : status.deerFlowHealthOk === false ? 'Failed' : 'Idle'}
-              details={status.deerFlowHealthDetails || undefined}
-            />
-          </section>
-        ) : null}
         <button
           type="button"
           onClick={e => {
@@ -128,42 +115,12 @@ export function SettingsSpecialValueNode(props: SettingsSpecialValueNodeProps): 
             if (status.normalizedChatProvider !== CHAT_PROVIDER_BYTEPLUS) {
               actions.checkBytePlusHealth()
             }
-            if (status.normalizedChatProvider === CHAT_PROVIDER_DEERFLOW) {
-              actions.checkDeerFlowHealth()
-            }
             actions.checkBytePlusVideoModelPreview()
           }}
-          disabled={status.isCheckingHealth || status.isCheckingBytePlusHealth || status.isCheckingDeerFlowHealth || status.isCheckingBytePlusVideoModelPreview}
+          disabled={status.isCheckingHealth || status.isCheckingBytePlusHealth || status.isCheckingBytePlusVideoModelPreview}
           className={sectionActionClassName}
         >
-          {status.isCheckingHealth || status.isCheckingBytePlusHealth || status.isCheckingDeerFlowHealth || status.isCheckingBytePlusVideoModelPreview ? 'Checking...' : 'Check Health'}
-        </button>
-      </section>
-    )
-  }
-
-  if (area === DEERFLOW_API_DOC_AREA && sKey === 'deerflowApi.provider') {
-    return (
-      <section className={specialValueRowClassName}>
-        <section className={specialValueInputShellClassName}>{inputNode}</section>
-        <section className={specialValueStatusShellClassName} title={status.deerFlowHealthDetails || undefined}>
-          <StatusBadge
-            label="DeerFlow Gateway"
-            ok={status.isCheckingDeerFlowHealth ? null : (status.deerFlowHealthOk ?? null)}
-            msg={status.isCheckingDeerFlowHealth ? 'Checking...' : status.deerFlowHealthOk === true ? 'Success' : status.deerFlowHealthOk === false ? 'Failed' : 'Idle'}
-            details={status.deerFlowHealthDetails || undefined}
-          />
-        </section>
-        <button
-          type="button"
-          onClick={e => {
-            e.stopPropagation()
-            actions.checkDeerFlowHealth()
-          }}
-          disabled={status.isCheckingDeerFlowHealth}
-          className={sectionActionClassName}
-        >
-          {status.isCheckingDeerFlowHealth ? 'Checking...' : 'Check Health'}
+          {status.isCheckingHealth || status.isCheckingBytePlusHealth || status.isCheckingBytePlusVideoModelPreview ? 'Checking...' : 'Check Health'}
         </button>
       </section>
     )

@@ -53,7 +53,7 @@ Three concrete use cases anchor the requirements:
    revise content collaboratively under a shared creative brief.
 
 The audit baseline is the agentic-graph codebase as of 2026-06-19, including:
-Strybldr, Strytree, Vdeoxpln, SuperAgent harness, DeerFlow gateway, memory layer (Mem0),
+Strybldr, Strytree, Vdeoxpln, SuperAgent harness, memory layer (Mem0),
 research-agent compiler, swarm-prediction engine, MCP service, VideoDB integration, storage
 sync, and the agentic-os-computing-flow/v1 canvas.
 
@@ -111,7 +111,6 @@ re-implemented:
 | MCP local tool surface | `mcp/server.js`, `mcp/local-tool-contract.js` | Implemented |
 | Storyboard Widget computing-flow (agentic-os-computing-flow/v1) | `canvas/src/features/storyboard-widget-manager/` | Implemented |
 | Rich Media Panel (text/image/video/audio) | `canvas/src/features/chat/richMediaRun.ts` | Implemented |
-| DeerFlow gateway (SSE, image, video) | `canvas/src/features/chat/deerflowRunGeneration.ts` | Implemented |
 | VideoDB (upload/index/search/stream/AI gen) | `canvas/src/features/integrations/videodbSsot.ts` (planned) | Integration contract |
 | Token budget / approval gate | `canvas/src/features/token-budget/` | Implemented |
 | Source Files + Storage Sync (D1 / R2) | `canvas/src/lib/storage/` | Implemented |

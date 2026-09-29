@@ -46,7 +46,7 @@ The implemented adjacent surfaces are:
 | Queryable corpus | `docs/documents/agentic-graph-query-prd-tad-adr-mvp-gtm.md` |
 | AGENTIC_OS prompt and canvas apply contract | `docs/documents/agentic-graph-llm-prompt-contract-prd-tad-adr-mvp-gtm.md` |
 | Agent-ready WebMCP/runtime readiness | `docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.md` |
-| DeerFlow local gateway provider | `docs/documents/agentic-graph-deerflow/agentic-graph-deerflow-prd-tad-adr-mvp-gtm.md` |
+| Retired gateway integration record | `docs/documents/agentic-graph-deerflow/agentic-graph-deerflow-prd-tad-adr-mvp-gtm.md` |
 | Long-horizon SuperAgent harness | `docs/documents/agentic-graph-superagent-harness.md` |
 | Swarm prediction baseline | `docs/documents/agentic-graph-swarm-prediction-engine-prd-tad-adr-mvp-gtm.md` |
 | Research-thesis harness | `canvas/src/features/research-agent/researchThesisContract.ts` |

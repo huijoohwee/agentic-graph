@@ -371,7 +371,7 @@ async function buildPresentationFidelityDeckTarget(markdownText: string): Promis
             selectionKind: null,
             uiPanelTextFontClass: '',
             uiPanelMonospaceTextClass: '',
-            uiPanelMicroLabelTextSizeClass: 'text-[10px]',
+            uiPanelMicroLabelTextSizeClass: 'text-xs',
             previewOverlayScope: 'container',
             previewOverlayPortalTarget: null,
             activeFragmentConfig: { enabled: false, classNames: [], tags: [], steps: 0 },
