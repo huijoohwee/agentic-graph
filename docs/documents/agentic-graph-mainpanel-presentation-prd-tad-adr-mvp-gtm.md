@@ -260,6 +260,11 @@ client and scroll width. Keyboard tab activation and section expansion work.
 This evidence covers the reported desktop states; native affected validation and
 provider checks bind the committed candidate separately.
 
+Affected validation also exposed an earlier stale token-export assertion that
+rebuilt only the theme blocks. Its exact stylesheet comparison now includes the
+typography generator, matching the production CLI composition without dropping
+the theme, determinism, size-limit or byte-parity assertions.
+
 GTM/rollback: Improve consistency in the existing free local workflow. No measured
 usability or revenue claim. Revert this correction to restore the preceding role
 assignments; no data or preference migration is introduced.
