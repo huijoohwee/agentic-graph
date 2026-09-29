@@ -177,11 +177,13 @@ export const normalizeVerticalCjkHeadingRuns = (text: string): SanitizeResult =>
 
 export const normalizeMarkdownDecorationResidue = (text: string): SanitizeResult => {
   const lines = String(text || '').split(/\r?\n/g)
+  const headerEnd = lines[0]?.trim() === '---' ? lines.findIndex((line, index) => index > 0 && line.trim() === '---') : -1
   let inFence = false
   let fence = ''
   let changed = false
   const out: string[] = []
-  for (const line of lines) {
+  for (const [index, line] of lines.entries()) {
+    if (index <= headerEnd) { out.push(line); continue }
     const trimmed = line.trim()
     const mFence = trimmed.match(/^(```+|~~~+)(.*)$/)
     if (mFence) {

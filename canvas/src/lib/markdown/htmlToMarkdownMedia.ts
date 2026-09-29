@@ -31,6 +31,7 @@ export function buildHtmlToMarkdownHandlers(toHtml: (node: never) => string, fid
     return (_state: unknown, node: unknown) => {
       let value = String(toHtml(node as never) || '')
       if (!value.trim()) return { type: 'html', value, position: null }
+      value = value.replace(/\saria-hidden\s*=\s*["'][^"']*["']/gi, '')
       const useRef = value.match(/<(?:\s*use\b)[^>]*\s(?:xlink:href|href)\s*=\s*["']\s*#([^"'\s>]+)\s*["'][^>]*>/i)
       if (useRef) {
         const id = String(useRef[1] || '').trim()
@@ -49,25 +50,24 @@ export function buildHtmlToMarkdownHandlers(toHtml: (node: never) => string, fid
         }
       }
       const maxSvgCharsForDataUri = 24_000
-      const maxSvgBase64Chars = 100
+      const maxSvgBase64Chars = 32_000
       const altMatch =
         value.match(/\baria-label\s*=\s*["']([^"']+)["']/i) ||
         value.match(/\bdata-icon\s*=\s*["']([^"']+)["']/i) ||
         value.match(/<\s*title[^>]*>([^<]{1,80})<\/\s*title\s*>/i)
-      const alt = String(altMatch?.[1] || '').trim()
+      const alt = String(altMatch?.[1] || 'SVG image').trim()
       const withoutScripts = value.length <= maxSvgCharsForDataUri
         ? value.replace(/<\s*script\b[\s\S]*?<\/\s*script\s*>/gi, '')
         : ''
-      const placeholderSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>'
       let url = ''
       try {
         const b64 = withoutScripts ? encodeUtf8ToBase64(withoutScripts) : ''
-        const cappedB64 = b64 && b64.length <= maxSvgBase64Chars ? b64 : encodeUtf8ToBase64(placeholderSvg)
+        const cappedB64 = b64 && b64.length <= maxSvgBase64Chars ? b64 : ''
         url = cappedB64 ? `data:image/svg+xml;base64,${cappedB64}` : ''
       } catch {
         url = ''
       }
-      if (!url) return { type: 'html', value, position: null }
+      if (!url) return { type: 'text', value: `${alt} (exceeds inline image limit)`, position: null }
       return { type: 'image', url, alt, title: null, position: null }
     }
   }
@@ -246,4 +246,3 @@ export const replaceMediaEmbedsWithLinks = (tree: HastNode) => {
 
   visit(tree)
 }
-

@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.25"
+version: "0.2.26"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,25 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.24"
-prd_revision: "0.2.25"
-tad_revision: "0.2.25"
-adr_revision: "0.2.25"
-mvp_revision: "0.2.25"
-gtm_revision: "0.2.25"
+previous_document_version: "0.2.25"
+prd_revision: "0.2.26"
+tad_revision: "0.2.26"
+adr_revision: "0.2.26"
+mvp_revision: "0.2.26"
+gtm_revision: "0.2.26"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 imported document rendering repair
+
+**PRD.** `/fix #website-markdown-ui-e2e @codex`: the selected imported document must render content, preserve source metadata, and expose real semantic media to selection tools. Bind this continuation to plan revision 0.2.26 and retained source `3afccea3d12adde168f91ab840bc8fe98eaba8dc`. Initial 30-minute target, extended by 15 active minutes for live browser recovery and shared media verification; cap refreshed from six to eleven existing files, 50 KB changed text, no new dependency or module.
+
+**TAD / ADR.** Correct the sanitizer that classified YAML fences as decoration. Preserve the complete first metadata block. Recover only app-owned, quoted webpage import metadata followed by a heading when both fences were removed; leave arbitrary prose intact. Normalize recovered text through the existing active-document owner. Preserve bounded SVG geometry through conversion and indexing instead of transparent replacement, expose oversized media as an explicit visible limit message, and name the existing semantic document article. Compact SVG viewboxes keep their dimensions on a contrasting surface; standalone images expose hit-testable selection surfaces and existing preview interactions. Saved-capture refresh shares the 32-million-character raw cap while retaining the 10-million-character normalized-content limit. Linked images reuse the same media owner. Existing oversized UI/sanitizer owners receive no line growth; other modified source remains below 600 lines. Keep external runtime inputs and captures outside source.
+
+**MVP.** Ten conversion and saved-refresh regressions pass, including repeated indexing, damaged-header recovery, retained SVG geometry and large inert hydration. The 76 existing conversion/frontmatter tests, Canvas type check plus three smoke contracts, and external-input hardcode guard pass. Native affected validation passes all ten selected partitions. Six of eight supplemental media checks pass; the two failures (unknown semantic chip color and shared card text frame contract) reproduce unchanged on baseline `3afccea3d12adde168f91ab840bc8fe98eaba8dc`. Live UI refresh restores content; a named article exposes loaded media, a compact 34-pixel SVG and actual IMG hit targets with selection markers. Clicking the icon opens its linked article. Reload retains repaired metadata and visible icons; no console errors were observed in the final tab. A stalled browser tab required a fresh tab; this is bounded desktop proof, not full-suite or mobile parity. Evidence and supplied target remain outside source.
+
+**GTM / rollback.** Fix the first saved-page reading experience before expanding crawl scope. No demand, revenue or production claim. Revert the scoped repair to roll back behavior; preserve saved imports and immutable published source. Publication and deployment retain separate owner receipts.
 
 ## 2026-09-30 live UI verification
 
