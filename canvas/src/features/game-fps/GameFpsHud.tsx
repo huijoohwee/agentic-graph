@@ -135,29 +135,29 @@ export function GameFpsHud() {
     >
       <header className="absolute left-3 right-3 top-3 flex items-start justify-between gap-3 pt-[env(safe-area-inset-top)]">
         <section className="min-w-0 max-w-[58vw] rounded-xl border border-white/20 bg-slate-950/75 px-3 py-2 shadow-lg backdrop-blur-sm">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-200">Mission 1 · Local deterministic ECS</p>
+          <p className="text-xs font-semibold uppercase tracking-normal text-cyan-200">Mission 1 · Local deterministic ECS</p>
           <p className="mt-1 text-sm font-semibold" data-kg-game-fps-objective>{phaseLabel}</p>
-          <p className="mt-1 text-[11px] text-slate-300">{saveLabel}</p>
+          <p className="mt-1 text-xs text-slate-300">{saveLabel}</p>
           {save.error ? (
-            <p className="mt-1 max-w-[70vw] break-words text-[11px] text-rose-200" role="alert">
+            <p className="mt-1 max-w-[70vw] break-words text-xs text-rose-200" role="alert">
               {save.error}
             </p>
           ) : null}
           {mission.runtimeError ? (
-            <p className="mt-1 max-w-[70vw] break-words text-[11px] text-rose-200" role="alert">
+            <p className="mt-1 max-w-[70vw] break-words text-xs text-rose-200" role="alert">
               {mission.runtimeError}
             </p>
           ) : null}
           {gameModeError && gameModeError !== mission.runtimeError && gameModeError !== save.error ? (
-            <p className="mt-1 max-w-[70vw] break-words text-[11px] text-rose-200" role="alert">
+            <p className="mt-1 max-w-[70vw] break-words text-xs text-rose-200" role="alert">
               {gameModeError}
             </p>
           ) : null}
         </section>
         <section className="grid min-w-[7.25rem] shrink-0 grid-cols-3 gap-2 rounded-xl border border-white/20 bg-slate-950/75 px-2 py-2 text-center shadow-lg backdrop-blur-sm">
-          <span className="text-[10px] text-slate-300">HEALTH<strong className="block text-sm text-white">{mission.player.health}</strong></span>
-          <span className="text-[10px] text-slate-300">AMMO<strong className="block text-sm text-white">{mission.ammo}/{mission.reserve}</strong></span>
-          <span className="text-[10px] text-slate-300">NPC<strong className="block text-sm text-white">{mission.enemiesAlive}</strong></span>
+          <span className="text-xs text-slate-300">HEALTH<strong className="block text-sm text-white">{mission.player.health}</strong></span>
+          <span className="text-xs text-slate-300">AMMO<strong className="block text-sm text-white">{mission.ammo}/{mission.reserve}</strong></span>
+          <span className="text-xs text-slate-300">NPC<strong className="block text-sm text-white">{mission.enemiesAlive}</strong></span>
         </section>
       </header>
 

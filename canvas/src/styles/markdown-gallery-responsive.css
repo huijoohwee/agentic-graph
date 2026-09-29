@@ -1,8 +1,8 @@
 .kg-markdown-gallery-card-preview-frame {
   box-sizing: border-box;
   container-type: inline-size;
-  font-size: clamp(0.58rem, 2cqi, 0.72rem);
-  line-height: 1.22;
+  font-size: var(--kg-text-xs);
+  line-height: var(--kg-text-xs-line);
 }
 
 .kg-markdown-gallery-card-preview-frame > * {
@@ -37,32 +37,32 @@
   max-width: 100%;
   margin: 0 0 0.35rem !important;
   overflow: hidden;
-  line-height: 1.08 !important;
+  line-height: 1.25 !important;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .kg-markdown-gallery-card-preview-frame h1 {
-  font-size: clamp(1.15rem, 5.2cqi, 1.85rem) !important;
+  font-size: var(--kg-text-3xl) !important;
 }
 
 .kg-markdown-gallery-card-preview-frame h2 {
-  font-size: clamp(0.98rem, 4cqi, 1.35rem) !important;
+  font-size: var(--kg-text-2xl) !important;
 }
 
 .kg-markdown-gallery-card-preview-frame h3,
 .kg-markdown-gallery-card-preview-frame h4,
 .kg-markdown-gallery-card-preview-frame h5,
 .kg-markdown-gallery-card-preview-frame h6 {
-  font-size: clamp(0.78rem, 2.6cqi, 1rem) !important;
+  font-size: var(--kg-text-base) !important;
 }
 
 .kg-markdown-gallery-card-preview-frame p,
 .kg-markdown-gallery-card-preview-frame li,
 .kg-markdown-gallery-card-preview-frame td,
 .kg-markdown-gallery-card-preview-frame th {
-  font-size: clamp(0.56rem, 1.8cqi, 0.72rem) !important;
-  line-height: 1.22 !important;
+  font-size: var(--kg-text-xs) !important;
+  line-height: var(--kg-text-xs-line) !important;
 }
 
 .kg-markdown-gallery-card-preview-frame p,
@@ -90,12 +90,12 @@
 
 .kg-markdown-gallery-card-preview-frame pre,
 .kg-markdown-gallery-card-preview-frame code {
-  font-size: clamp(0.52rem, 1.5cqi, 0.64rem) !important;
-  line-height: 1.16 !important;
+  font-size: var(--kg-text-xs) !important;
+  line-height: var(--kg-text-xs-line) !important;
 }
 
 .kg-markdown-gallery-card-preview-frame button {
   min-width: 1.35rem;
   min-height: 1.35rem;
-  font-size: 0.62rem;
+  font-size: var(--kg-text-xs);
 }

@@ -255,7 +255,7 @@ export function WidgetEditorFormContent(props: WidgetEditorFormContentProps) {
 
       {!isRichMediaPanelWidget && (
         <section className="min-w-0 mt-4 space-y-1" aria-label={`Model for flow widget ${String(nodeHelperSnapshot.label || nodeHelperSnapshot.id || '')}`}>
-          <p className={cn('m-0 text-[10px] font-semibold uppercase tracking-[0.08em]', UI_THEME_TOKENS.text.tertiary)}>{UI_COPY.chatModelSelectLabel}</p>
+          <p className={cn('m-0 text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary)}>{UI_COPY.chatModelSelectLabel}</p>
           <ChatModelCredentialControls
             apiKeyPrompt={widgetApiKeyPrompt}
             modelId={widgetModelSelect.modelId}

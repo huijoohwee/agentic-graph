@@ -75,12 +75,12 @@ export const UI_THEME_TOKENS = {
   },
   pill: {
     base: 'rounded-full px-2 py-0.5 border border-[color:var(--kg-border)]',
-    text: 'text-[10px] font-medium text-[color:var(--kg-text-secondary)]',
-    badgeText: 'text-[10px] font-bold',
+    text: 'text-xs font-medium text-[color:var(--kg-text-secondary)]',
+    badgeText: 'text-xs font-bold',
   },
   badge: {
     chip: 'rounded px-1.5 py-0.5 bg-black/5 dark:bg-white/5',
-    text: 'text-[10px] font-mono',
+    text: 'text-xs font-mono',
     toolbarGroup: 'rounded bg-black/5 dark:bg-white/5 p-0.5',
   },
   icon: {

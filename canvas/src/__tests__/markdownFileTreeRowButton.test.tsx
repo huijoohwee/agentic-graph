@@ -1,9 +1,13 @@
+import assert from 'node:assert/strict'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { useMarkdownWorkspaceBootstrapState } from '@/lib/markdown-workspace-runtime/useMarkdownWorkspaceBootstrapState'
 import { MarkdownFileTree } from '@/features/markdown-workspace/MarkdownFileTree'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
+import { closeAgentRunInspection, readAgentRunWorkspace, selectAgentRunSource, useAgentRunFolderSelection } from '@/features/agent-ready/agentRunInspectionStore'
+import { AgentMissionSourceFile } from '@/features/agent-ready/agentMissionSourceFiles'
+import { SourceFileCloudSyncIndicator } from '@/features/markdown-workspace/SourceFileCloudSyncIndicator'
 import { MarkdownFileTreeRowButton } from '@/features/markdown-workspace/MarkdownFileTreeRowButton'
 
 export async function testMarkdownFileTreeRowButtonReusesSharedRowShell() {
@@ -71,7 +75,7 @@ export async function testMarkdownFileTreeRevealsActiveSourceWithoutStealingFocu
   function Harness({ activePath }: { activePath: string | null }) {
     const state = useMarkdownWorkspaceBootstrapState({ activePath, effectiveBottomSurfaceCollapsed: false })
     return <MarkdownFileTree entries={entries} activePath={activePath} expandedPaths={state.expandedPaths}
-      toggleExpanded={() => {}} onSelectFile={() => {}} />
+      toggleExpanded={() => {}} onSelectFile={() => {}} onSelectFolder={() => {}} />
   }
   try {
     dom.window.localStorage.clear()
@@ -92,6 +96,7 @@ export async function testMarkdownFileTreeRevealsActiveSourceWithoutStealingFocu
 }
 
 export async function testMarkdownFileTreeReadOnlyContextMenuCopiesPaths() {
+  await testSourceFileSelectionAndAffordances()
   const { dom, restore } = initJsdomHarness()
   const container = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(container)
@@ -102,7 +107,7 @@ export async function testMarkdownFileTreeReadOnlyContextMenuCopiesPaths() {
   try {
     await act(async () => { root.render(<MarkdownFileTree readOnly entries={[
       { path, parentPath: '/', kind: 'file', name: 'agent-mission.manifest.json', updatedAtMs: 1 },
-    ]} expandedPaths={new Set()} activePath={path} toggleExpanded={() => {}} onSelectFile={() => {}}
+    ]} expandedPaths={new Set()} activePath={path} toggleExpanded={() => {}} onSelectFile={() => {}} onSelectFolder={() => {}}
       onRenameEntry={() => { throw Error('Read-only rename') }} onDeleteEntry={() => { throw Error('Read-only delete') }} />) })
     const row = container.querySelector('button[aria-label="File agent-mission.manifest.json"]')!
     for (const label of ['Copy Path', 'Copy Relative Path']) {
@@ -120,6 +125,85 @@ export async function testMarkdownFileTreeReadOnlyContextMenuCopiesPaths() {
     await act(async () => { root.unmount() })
     if (originalClipboard) Object.defineProperty(navigator, 'clipboard', originalClipboard)
     else Reflect.deleteProperty(navigator, 'clipboard')
+    restore()
+  }
+}
+
+async function testSourceFileSelectionAndAffordances() {
+  const { dom, restore } = initJsdomHarness()
+  dom.window.matchMedia = (media: string) => ({ matches: false, media, onchange: null,
+    addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {}, dispatchEvent: () => true })
+  const browserErrors: string[] = []
+  dom.window.addEventListener('error', event => { browserErrors.push(event.message) })
+  const container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container)
+  const entry: WorkspaceEntry = { path: '/article.md', parentPath: '/', kind: 'file', name: 'article.md', updatedAtMs: 1 }
+  let opens = 0, uploads = 0
+  function Harness({ activePath, url = 'https://example.org/article' }: { activePath: string | null; url?: string }) {
+    const selectedFolder = useAgentRunFolderSelection()
+    const selectedPath = selectedFolder ?? activePath
+    return <><AgentMissionSourceFile activePath={selectedPath} /><MarkdownFileTree entries={[entry]}
+      expandedPaths={new Set()} toggleExpanded={() => {}} activePath={selectedPath}
+      onSelectFile={() => { selectAgentRunSource(null); opens++ }} onSelectFolder={() => {}} sourcesByPath={{ [entry.path]: { kind: 'url', url } }}
+      renderFileRight={() => <SourceFileCloudSyncIndicator entry={entry} status="local" onUpload={() => { uploads++ }} />} /></>
+  }
+  try {
+    await act(async () => { root.render(<Harness activePath={null} />) })
+    assert.equal(container.querySelectorAll('[aria-current]').length, 0, 'An inactive mission must not select its fallback inspection file')
+    let mission = container.querySelector('button[aria-label="File agent-mission.inspection.json"]')!
+    const missionPath = mission.getAttribute('title')!
+    const folderName = container.querySelector('button[aria-label="Folder unobserved"]')!
+    const disclosure = container.querySelector('button[aria-label="Collapse folder unobserved"]')!
+    const folderRow = container.querySelector('button[aria-label="Folder unobserved"]')!
+    await act(async () => { (folderName as HTMLButtonElement).click() })
+    assert.equal(container.querySelector('[aria-current]'), folderRow, 'Read-only mission folder name must select its folder')
+    assert.equal(disclosure.getAttribute('aria-expanded'), 'true', 'Mission folder selection must preserve expansion')
+    assert.equal(readAgentRunWorkspace(), null, 'Selecting a folder must not activate a mission Canvas or document')
+    await act(async () => { (disclosure as HTMLButtonElement).click() })
+    assert.equal(disclosure.getAttribute('aria-expanded'), 'false')
+    assert.equal(container.querySelector('[aria-current]'), folderRow, 'Collapsing must retain mission folder selection')
+    await act(async () => { (disclosure as HTMLButtonElement).click(); selectAgentRunSource(null) })
+    assert.equal(container.querySelector('[aria-current]'), null, 'Leaving mission sources must clear folder selection')
+    mission = container.querySelector('button[aria-label="File agent-mission.inspection.json"]')!
+    await act(async () => { (container.querySelector('button[aria-label="Select file agent-mission.inspection.json"]') as HTMLButtonElement).click() })
+    assert.equal(readAgentRunWorkspace()?.source, missionPath, 'Mission file icon must open the selected document')
+    await act(async () => { (folderName as HTMLButtonElement).click() })
+    assert.equal(readAgentRunWorkspace()?.source, missionPath, 'Folder selection must preserve the open mission document')
+    assert.equal(container.querySelector('[aria-current]')?.getAttribute('aria-label'), 'Folder unobserved')
+    await act(async () => { selectAgentRunSource(null) })
+    await act(async () => { root.render(<Harness activePath={missionPath} />) })
+    assert.equal(container.querySelector('[aria-current]'), mission, 'Explicit mission selection must highlight the visible mission document')
+    await act(async () => { root.render(<Harness activePath={entry.path} />) })
+    assert.equal(mission.hasAttribute('aria-current'), false, 'Opening an authored file must clear mission selection')
+    const file = container.querySelector('button[aria-label="File article.md"]')!
+    assert.deepEqual([...container.querySelectorAll('[aria-current]')], [file], 'Both source trees must share one current selection')
+    const row = file.parentElement!, link = row.querySelector('a')!, cloud = row.querySelector('[data-source-file-cloud-status]')!
+    assert.equal(link.href, 'https://example.org/article')
+    assert.equal(link.getAttribute('aria-label'), 'Open source URL for article.md')
+    assert.equal(link.previousElementSibling, file, 'Source URL must follow the expanding filename control')
+    assert.equal(link.nextElementSibling?.contains(cloud), true, 'Source URL must precede cloud status')
+    assert.equal(link.getAttribute('target'), '_blank')
+    assert.equal(link.getAttribute('rel'), 'noopener noreferrer')
+    assert.equal(container.querySelector('div, [aria-hidden="true"], button button, button a'), null)
+    for (const svg of container.querySelectorAll('svg')) {
+      assert.equal(svg.getAttribute('role'), 'img')
+      assert.ok(svg.getAttribute('aria-label'), 'Every tree glyph must have a visible semantic name')
+    }
+    await act(async () => { row.querySelector('button[aria-label="Select file article.md"] svg')!.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })) })
+    assert.equal(opens, 1, 'File icon must activate the file')
+    const fileIcon = row.querySelector('button[aria-label="Select file article.md"]')!
+    assert.equal(fileIcon.getAttribute('aria-pressed'), 'true')
+    assert.ok(fileIcon.classList.contains('kg-data-view-icon-action--sm'), 'File selection must reuse the shared square control')
+    await act(async () => { cloud.querySelector('svg')!.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })) })
+    assert.equal(uploads, 1, 'Cloud icon must activate only its cloud control')
+    assert.equal(opens, 1)
+    await act(async () => { root.render(<Harness activePath={entry.path} url="javascript:alert(1)" />) })
+    assert.equal(container.querySelector('a'), null, 'Untrusted source protocols must never become executable links')
+    assert.deepEqual(browserErrors, [], 'Source selection handlers must finish without browser errors')
+  } finally {
+    await act(async () => { root.unmount() })
+    closeAgentRunInspection()
     restore()
   }
 }

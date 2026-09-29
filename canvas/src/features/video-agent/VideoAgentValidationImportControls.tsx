@@ -169,7 +169,7 @@ export function VideoAgentValidationImportControls({
       aria-busy={importRunning}
       data-kg-storyboard-widget-video-agent-validation-controls={storyboardWidgetDataHook ? '1' : undefined}
     >
-      <label className={cn(showFieldLabels && 'grid min-w-0 gap-1 text-[11px]')}>
+      <label className={cn(showFieldLabels && 'grid min-w-0 gap-1 text-xs')}>
         {showFieldLabels ? <span className="truncate">{docPathLabel}</span> : null}
         <input
           className={fieldClassName}
@@ -179,7 +179,7 @@ export function VideoAgentValidationImportControls({
           onChange={event => updateValidationDocPath(event.target.value)}
         />
       </label>
-      <label className={cn(showFieldLabels && 'grid min-w-0 gap-1 text-[11px]')}>
+      <label className={cn(showFieldLabels && 'grid min-w-0 gap-1 text-xs')}>
         {showFieldLabels ? <span className="truncate">{urlsLabel}</span> : null}
         <textarea
           className={textAreaClassName || fieldClassName}

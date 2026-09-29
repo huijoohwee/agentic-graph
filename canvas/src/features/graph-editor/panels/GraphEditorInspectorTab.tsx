@@ -159,7 +159,7 @@ export function GraphEditorInspectorTab() {
         <PanelReadOnlyField label="Nodes" value={`${selectedSubgraph.memberNodeIds.length} nodes`} valueClassName="text-sm" />
         {selectedGroupBoundsOverride.source ? (
           <section className="space-y-2" aria-label="Bounds override">
-            <section className={`text-[10px] ${UI_THEME_TOKENS.text.tertiary}`}>Bounds override</section>
+            <section className={`text-xs ${UI_THEME_TOKENS.text.tertiary}`}>Bounds override</section>
             <PanelReadOnlyField label="Source" value={selectedGroupBoundsOverride.source} />
             <button
               type="button"
@@ -183,7 +183,7 @@ export function GraphEditorInspectorTab() {
         <section className={`font-mono text-xs ${UI_THEME_TOKENS.text.secondary}`}>{selectedGroupId}</section>
         {selectedGroupBoundsOverride.source ? (
           <section className="space-y-2" aria-label="Bounds override">
-            <section className={`text-[10px] ${UI_THEME_TOKENS.text.tertiary}`}>Bounds override</section>
+            <section className={`text-xs ${UI_THEME_TOKENS.text.tertiary}`}>Bounds override</section>
             <PanelReadOnlyField label="Source" value={selectedGroupBoundsOverride.source} />
             <button
               type="button"

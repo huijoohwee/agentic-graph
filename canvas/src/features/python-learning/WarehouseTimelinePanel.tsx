@@ -71,7 +71,7 @@ export function WarehouseTimelinePanel({ compact = true }: { compact?: boolean }
           <div className="relative h-12 w-full">
             {cues.map(cue => <button key={cue.id} type="button" title={`${cue.label} · ${cue.startSeconds.toFixed(1)}–${cue.endSeconds.toFixed(1)} s`}
               aria-label={`Seek ${cue.label}`} onClick={() => seek(cue.startSeconds)}
-              className="absolute top-0 h-11 overflow-hidden rounded border px-1 text-left text-[10px] text-white"
+              className="absolute top-0 h-11 overflow-hidden rounded border px-1 text-left text-xs text-white"
               style={{ left: `${cue.startSeconds / scaleSeconds * 100}%`, width: `${Math.max(0.15, (cue.endSeconds - cue.startSeconds) / scaleSeconds * 100)}%`, background: colors[index % colors.length] }}>
               {cue.label}
             </button>)}

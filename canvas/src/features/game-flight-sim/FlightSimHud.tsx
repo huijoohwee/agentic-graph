@@ -218,7 +218,7 @@ export function FlightSimHud() {
         className={`absolute left-3 right-3 top-3 grid grid-cols-1 gap-2 pt-[env(safe-area-inset-top)] ${floatingPanelOpen ? 'sm:right-[var(--kg-flight-sim-panel-clearance)]' : 'sm:flex sm:items-start sm:justify-between sm:gap-3'}`}
       >
         <section className={`max-w-none rounded-xl border px-3 py-2 shadow-lg backdrop-blur-sm sm:max-w-[58vw] ${hudPanelClassName}`}>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-200">Local deterministic flight mission</p>
+          <p className="text-xs font-semibold uppercase tracking-normal text-cyan-200">Local deterministic flight mission</p>
           <p
             className="mt-1 text-sm font-semibold"
             role="status"
@@ -229,7 +229,7 @@ export function FlightSimHud() {
           </p>
           {flight.active && courseDirector ? (
             <p
-              className="mt-1 text-[11px] font-semibold text-amber-200"
+              className="mt-1 text-xs font-semibold text-amber-200"
               aria-label={`Course director: ${courseDirector.label}`}
               data-kg-flight-sim-course-director="hud"
               data-kg-flight-sim-course-heading-error={
@@ -239,17 +239,17 @@ export function FlightSimHud() {
               {courseDirector.label}
             </p>
           ) : null}
-          <p className="mt-1 text-[11px] text-slate-300">{projection.save.label}</p>
-          {flight.runtimeError ? <p className="mt-1 text-[11px] text-rose-200" role="alert">{flight.runtimeError}</p> : null}
-          {save.error ? <p className="mt-1 text-[11px] text-rose-200" role="alert">{save.error}</p> : null}
+          <p className="mt-1 text-xs text-slate-300">{projection.save.label}</p>
+          {flight.runtimeError ? <p className="mt-1 text-xs text-rose-200" role="alert">{flight.runtimeError}</p> : null}
+          {save.error ? <p className="mt-1 text-xs text-rose-200" role="alert">{save.error}</p> : null}
         </section>
         <section className={`grid min-w-0 grid-cols-3 gap-2 rounded-xl border px-2 py-2 text-center shadow-lg backdrop-blur-sm sm:grid-cols-6 ${hudPanelClassName} ${floatingPanelOpen ? '' : 'sm:min-w-[22rem]'}`}>
-          <span className="text-[10px] text-slate-300">KTS<strong className="block text-sm text-white">{training.airspeedReliable ? (projection.airspeed * 1.94384).toFixed(0) : '---'}</strong></span>
-          <span className="text-[10px] text-slate-300">ALT<strong className="block text-sm text-white">{flight.aircraft.position[1].toFixed(1)}</strong></span>
-          <span className="text-[10px] text-slate-300">HDG<strong className="block text-sm text-white">{projection.headingDegrees.toFixed(0)}°</strong></span>
-          <span className="text-[10px] text-slate-300">PIT<strong className="block text-sm text-white">{(flight.aircraft.pitch * 180 / Math.PI).toFixed(1)}°</strong></span>
-          <span className="text-[10px] text-slate-300">ROL<strong className="block text-sm text-white">{(flight.aircraft.roll * 180 / Math.PI).toFixed(1)}°</strong></span>
-          <span className="text-[10px] text-slate-300">THR<strong className="block text-sm text-white">{Math.round(flight.aircraft.throttle * 100)}%</strong></span>
+          <span className="text-xs text-slate-300">KTS<strong className="block text-sm text-white">{training.airspeedReliable ? (projection.airspeed * 1.94384).toFixed(0) : '---'}</strong></span>
+          <span className="text-xs text-slate-300">ALT<strong className="block text-sm text-white">{flight.aircraft.position[1].toFixed(1)}</strong></span>
+          <span className="text-xs text-slate-300">HDG<strong className="block text-sm text-white">{projection.headingDegrees.toFixed(0)}°</strong></span>
+          <span className="text-xs text-slate-300">PIT<strong className="block text-sm text-white">{(flight.aircraft.pitch * 180 / Math.PI).toFixed(1)}°</strong></span>
+          <span className="text-xs text-slate-300">ROL<strong className="block text-sm text-white">{(flight.aircraft.roll * 180 / Math.PI).toFixed(1)}°</strong></span>
+          <span className="text-xs text-slate-300">THR<strong className="block text-sm text-white">{Math.round(flight.aircraft.throttle * 100)}%</strong></span>
         </section>
       </header>
 
@@ -259,9 +259,9 @@ export function FlightSimHud() {
           aria-label="Flight envelope director"
           role={training.envelope.severity === 'warning' ? 'alert' : 'status'}
         >
-          <p className="text-xs font-bold uppercase tracking-[0.14em]">{training.envelope.label}</p>
-          <p className="mt-0.5 text-[10px] opacity-90">{training.envelope.recoveryCue}</p>
-          <p className="mt-1 text-[9px] font-semibold opacity-80">
+          <p className="text-xs font-bold uppercase tracking-normal">{training.envelope.label}</p>
+          <p className="mt-0.5 text-xs opacity-90">{training.envelope.recoveryCue}</p>
+          <p className="mt-1 text-xs font-semibold opacity-80">
             Target {training.envelope.targetSpeedMetersPerSecond[0]}–{training.envelope.targetSpeedMetersPerSecond[1]} m/s
             {' · '}Control {Math.round(training.envelope.controlAuthority * 100)}%
           </p>
@@ -308,7 +308,7 @@ export function FlightSimHud() {
         </button>
         <button className={buttonClass} type="button" disabled={!flightControlsEnabled} {...touchHandlers('yaw-left')}>Yaw ◀</button>
         <button className={buttonClass} type="button" disabled={!flightControlsEnabled} {...touchHandlers('yaw-right')}>Yaw ▶</button>
-        <label className="rounded-xl border border-white/25 bg-slate-950/75 px-2 py-1 text-[10px] font-semibold">
+        <label className="rounded-xl border border-white/25 bg-slate-950/75 px-2 py-1 text-xs font-semibold">
           THROTTLE
           <input
             className="block w-28"

@@ -1,3 +1,4 @@
+import { normalizeUiTextClasses } from 'grph-shared/ui/typography'
 
 import type { StoreApi } from 'zustand'
 import type { GraphState } from '@/hooks/store/types'
@@ -363,7 +364,7 @@ export const createUiInitialState = (
     uiPanelKeyValueTextSizeClass: lsJson<string>(
       LS_KEYS.panelKeyValueTextSizeClass,
       'text-sm',
-      value => (typeof value === 'string' ? value : 'text-sm'),
+      value => (typeof value === 'string' ? normalizeUiTextClasses(value) : 'text-sm'),
     ),
 
     uiPanelTextFontClass: lsJson<string>(
@@ -377,7 +378,7 @@ export const createUiInitialState = (
       PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass,
       value =>
         typeof value === 'string'
-          ? value
+          ? normalizeUiTextClasses(value)
           : PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass,
     ),
 
@@ -396,12 +397,12 @@ export const createUiInitialState = (
     uiPanelMonospaceTextClass: lsJson<string>(
       LS_KEYS.panelMonospaceTextClass,
       'font-mono text-xs',
-      value => (typeof value === 'string' ? value : 'font-mono text-xs'),
+      value => (typeof value === 'string' ? normalizeUiTextClasses(value) : 'font-mono text-xs'),
     ),
     uiPanelMicroLabelTextSizeClass: lsJson<string>(
       LS_KEYS.panelMicroLabelTextSizeClass,
       '',
-      value => (typeof value === 'string' ? value : ''),
+      value => (typeof value === 'string' ? normalizeUiTextClasses(value) : ''),
     ),
 
     uiHeaderRowHeightClass: lsJson<string>(
@@ -470,18 +471,18 @@ export const createUiInitialState = (
     ),
     uiIconBadgeChipTextSizeClass: lsJson<string>(
       LS_KEYS.iconBadgeChipTextSizeClass,
-      'text-[9px]',
-      value => (typeof value === 'string' ? value : 'text-[9px]'),
+      'text-xs',
+      value => (typeof value === 'string' ? normalizeUiTextClasses(value) : 'text-xs'),
     ),
     uiIconPillLegendTextSizeClass: lsJson<string>(
       LS_KEYS.iconPillLegendTextSizeClass,
       'text-xs',
-      value => (typeof value === 'string' ? value : 'text-xs'),
+      value => (typeof value === 'string' ? normalizeUiTextClasses(value) : 'text-xs'),
     ),
     uiIconPillBadgeTextSizeClass: lsJson<string>(
       LS_KEYS.iconPillBadgeTextSizeClass,
-      'text-[9px]',
-      value => (typeof value === 'string' ? value : 'text-[9px]'),
+      'text-xs',
+      value => (typeof value === 'string' ? normalizeUiTextClasses(value) : 'text-xs'),
     ),
     uiIconAnimationEnabled: lsBool(LS_KEYS.iconAnimationEnabled, true),
     uiOverlayOpacity: lsNum(LS_KEYS.overlayOpacity, 0.95),

@@ -1,7 +1,12 @@
-import React from 'react'
+import React, { useId } from 'react'
 import { PanelRangeInput } from '@/lib/ui/panelFormControls'
+import { KeyTypeValueStaticRow } from 'grph-shared/react/keyTypeValueRow'
+import { useCanvasKeyTypeValueStaticRowProps } from './canvasKeyTypeValueRuntime'
+import { RightAlignedValueCell } from './canvasKeyTypeValueValueCell'
+import { MainPanelTypeIcon } from './mainPanelHelpIconLibrary'
+import { panelFieldDecorationClassName } from 'grph-shared/ui/keyTypeValueRows'
 
-type PanelLabeledRangeFieldProps = {
+export type PanelLabeledRangeFieldProps = {
   label: React.ReactNode
   valueLabel: React.ReactNode
   min: number | string
@@ -16,33 +21,18 @@ type PanelLabeledRangeFieldProps = {
   disabled?: boolean
 }
 
-export function PanelLabeledRangeField({
-  label,
-  valueLabel,
-  min,
-  max,
-  step,
-  value,
-  onChange,
-  className,
-  labelClassName,
-  valueClassName,
-  rangeClassName,
-  disabled,
+export function PanelLabeledRangeField({ label, valueLabel, min, max, step, value, onChange,
+  className, labelClassName, valueClassName, rangeClassName, disabled,
 }: PanelLabeledRangeFieldProps) {
-  return (
-    <section className={['flex flex-col', className].filter(Boolean).join(' ')}>
-      <label className={labelClassName}>{label}</label>
-      <PanelRangeInput
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        disabled={disabled}
-        onChange={event => onChange(Number(event.target.value))}
-        className={rangeClassName}
-      />
-      <section className={valueClassName}>{valueLabel}</section>
-    </section>
-  )
+  const id = useId()
+  const row = useCanvasKeyTypeValueStaticRowProps()
+  return <KeyTypeValueStaticRow {...row} className={className}
+    keyNode={<label htmlFor={id} className={panelFieldDecorationClassName(labelClassName)}>{label}</label>}
+    typeNode={<MainPanelTypeIcon iconKey="setting.number" className="h-4 w-4" />}
+    valueNode={<RightAlignedValueCell>
+      <PanelRangeInput id={id} min={min} max={max} step={step} value={value} disabled={disabled}
+        onChange={event => onChange(Number(event.target.value))} className={rangeClassName} />
+      <output htmlFor={id} className={panelFieldDecorationClassName(valueClassName)}>{valueLabel}</output>
+    </RightAlignedValueCell>}
+  />
 }

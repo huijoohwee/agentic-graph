@@ -1,9 +1,11 @@
 import React from 'react'
-import { ChevronDown, ChevronRight, FileText, Folder, Link as LinkIcon, ShieldCheck } from 'lucide-react'
+import { Link as LinkIcon, ShieldCheck } from 'lucide-react'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
 import { WORKSPACE_ROOT_PATH } from '@/features/workspace-fs/path'
 import { sortWorkspaceEntriesForExplorer } from '@/features/workspace-fs/workspaceFs'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { DirectoryTreeBranch, DirectoryTreeRow, DirectoryTreeDisclosure, DirectoryTreeFileButton, DirectoryTreeChildren } from '@/lib/ui/DirectoryTreeControls'
+import { normalizeImportUrlInput } from '@/lib/url'
 import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { subscribePointerDownDismiss, subscribeWindowEscapeDismiss } from '@/lib/browser/dismissEvents'
@@ -53,7 +55,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
   toggleExpanded: (path: WorkspacePath) => void
   activePath: WorkspacePath | null
   onSelectFile: (path: WorkspacePath) => void
-  onSelectFolder?: (path: WorkspacePath) => void
+  onSelectFolder: (path: WorkspacePath) => void
   sourcesByPath?: WorkspaceSourceIndex | null
   onCreateNewFile?: (parentPath: WorkspacePath) => void
   onRevealInFinder?: (path: WorkspacePath) => void
@@ -174,13 +176,13 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     if (isRoot && node.children.length === 0) {
       return (
         <section key={entry.path} className={`px-2 py-2 ${panelTypography.panelTextClass} ${UI_THEME_TOKENS.text.secondary}`} aria-label="Workspace help">
-          <h3 className={`${panelTypography.microLabelClass} font-semibold tracking-wide uppercase ${UI_THEME_TOKENS.text.secondary}`}>Workspace</h3>
+          <h3 className={`${panelTypography.microLabelClass} font-semibold tracking-normal uppercase ${UI_THEME_TOKENS.text.secondary}`}>Workspace</h3>
           <ul className="mt-1 list-disc pl-5">
             <li>Select a file in SOURCE FILES to load it into the editor.</li>
             <li>Headings show up in TOC.</li>
             <li>Wikilinks like <span className={UI_THEME_TOKENS.text.primary}>[[SomePage]]</span> create backlinks.</li>
           </ul>
-          <h4 className={`mt-2 ${panelTypography.microLabelClass} font-semibold tracking-wide uppercase ${UI_THEME_TOKENS.text.secondary}`}>Notes</h4>
+          <h4 className={`mt-2 ${panelTypography.microLabelClass} font-semibold tracking-normal uppercase ${UI_THEME_TOKENS.text.secondary}`}>Notes</h4>
           <p className="mt-1">This workspace is stored locally in your browser.</p>
         </section>
       )
@@ -193,75 +195,64 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
       )
     }
 
-    const indent = Math.min(28, depth * 12)
     const isFolder = entry.kind === 'folder'
     const isExpanded = expandedPaths.has(entry.path)
     const isActive = activePath === entry.path
     const source = sourcesByPath ? sourcesByPath[entry.path] : null
-    const isUrlSource = source && source.kind === 'url'
+    const sourceUrl = source?.kind === 'url' ? normalizeImportUrlInput(source.url) : ''
     const isWorkspaceSeedsAuthorityRoot = isAgenticGraphWorkspaceSeedsRootPath(entry.path)
+    const selectEntry = () => isFolder ? onSelectFolder(entry.path) : onSelectFile(entry.path)
+    const openContextMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault()
+      event.stopPropagation()
+      const pos = clampOverlayTopLeftFullyInViewport({
+        pos: { left: event.clientX, top: event.clientY }, size: { width: 220, height: 260 },
+        viewport: { width: window.innerWidth || document.documentElement.clientWidth || 1,
+          height: window.innerHeight || document.documentElement.clientHeight || 1 }, snapPx: 1,
+      })
+      setContextMenu({ x: pos.left, y: pos.top, entry })
+    }
 
     return (
-      <li key={entry.path} className="list-none">
-        <section className="group flex items-center" aria-label={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}>
+      <DirectoryTreeBranch key={entry.path}>
+        <DirectoryTreeRow depth={depth} label={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}>
+          {isFolder
+            ? <DirectoryTreeDisclosure name={entry.name} path={entry.path} expanded={isExpanded} onToggle={() => toggleExpanded(entry.path)} />
+            : <DirectoryTreeFileButton name={entry.name} path={entry.path} selected={isActive} onSelect={selectEntry} onContextMenu={openContextMenu} />}
           <MarkdownFileTreeRowButton
             ariaLabel={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}
             title={entry.path}
-            indent={indent}
+            indent={0}
             isActive={isActive}
             textClassName={panelTypography.panelTextClass}
-            onClick={() => {
-              if (isFolder) {
-                if (onSelectFolder) onSelectFolder(entry.path)
-                toggleExpanded(entry.path)
-                return
-              } else {
-                onSelectFile(entry.path)
-              }
-            }}
-            onContextMenu={event => {
-              event.preventDefault()
-              event.stopPropagation()
-              const pos = clampOverlayTopLeftFullyInViewport({
-                pos: { left: event.clientX, top: event.clientY },
-                size: { width: 220, height: 260 },
-                viewport: {
-                  width: window.innerWidth || document.documentElement.clientWidth || 1,
-                  height: window.innerHeight || document.documentElement.clientHeight || 1,
-                },
-                snapPx: 1,
-              })
-              setContextMenu({ x: pos.left, y: pos.top, entry })
-            }}
+            onClick={selectEntry}
+            onContextMenu={openContextMenu}
           >
-            {isFolder ? (
-              isExpanded ? (
-                <ChevronDown className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />
-              ) : (
-                <ChevronRight className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />
-              )
-            ) : (
-              <span className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />
-            )}
-            {isFolder ? <Folder className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} /> : <FileText className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />}
             <span className="truncate">{entry.name || (isFolder ? 'folder' : 'file')}</span>
             {isWorkspaceSeedsAuthorityRoot ? (
-              <span title="Canonical source: GitHub/agentic-graph/docs/workspace-seeds" aria-label="agentic-graph workspace-seed authority">
-                <ShieldCheck className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-80`} aria-hidden="true" />
-              </span>
+              <ShieldCheck role="img" aria-label="agentic-graph workspace-seed authority"
+                className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-80`} />
             ) : null}
-            {isUrlSource ? <LinkIcon className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-70`} aria-label="Imported from URL" /> : null}
           </MarkdownFileTreeRowButton>
+          {sourceUrl ? (
+            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open source URL for ${entry.name}`}
+              title={sourceUrl}
+              className={`shrink-0 inline-flex h-5 w-5 items-center justify-center rounded ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing}`}>
+              <LinkIcon role="img" aria-label="Imported from URL" className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-70`} />
+            </a>
+          ) : null}
           {renderFileRight ? (
             <span className="shrink-0" onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
               {renderFileRight({ entry, isActive })}
             </span>
           ) : null}
-        </section>
+        </DirectoryTreeRow>
         {isFolder && isExpanded && node.children.length > 0 ? (
-          <ul className="list-none m-0 p-0">{node.children.map(child => renderNode(child, depth + 1))}</ul>
+          <DirectoryTreeChildren name={entry.name} path={entry.path} depth={depth} onSelect={selectEntry}>
+            <ul className="list-none m-0 p-0">{node.children.map(child => renderNode(child, depth + 1))}</ul>
+          </DirectoryTreeChildren>
         ) : null}
-      </li>
+      </DirectoryTreeBranch>
     )
   }
 
@@ -274,11 +265,11 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
         <h2 id="workspace-delete-title">Delete source file?</h2>
         <p className="break-words">{deleteTarget}</p>
         <p>This removes the workspace entry. The original imported file on your device is unchanged.</p>
-        <div className="flex justify-end gap-2">
+        <footer className="flex justify-end gap-2">
           <button type="button" autoFocus className="min-h-11 rounded border px-3" onClick={() => answerDelete(false)}>Cancel</button>
           <button type="button" disabled={props.readOnly} className={`min-h-11 rounded border px-3 ${UI_THEME_TOKENS.status.error}`}
             onClick={() => answerDelete(true)}>Delete from workspace</button>
-        </div>
+        </footer>
       </dialog>}
       {contextMenu ? (
         <section

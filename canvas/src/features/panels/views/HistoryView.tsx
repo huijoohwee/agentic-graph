@@ -1,23 +1,13 @@
 import React from 'react'
+import { usePanelTypography } from '@/lib/ui/panelTypography'
+import { MainPanelIconButton } from '../ui/MainPanelIconButton'
+import { getMainPanelTypeIconComponent } from '../ui/mainPanelHelpIconLibrary'
 import { HistoryUndoRedoControls } from '@/features/history/HistoryUndoRedoControls'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import IconButton from '@/components/IconButton'
 import { UiActionButtons } from '@/components/ui/UiActionButtons'
 // import { performMarkdownImport } from '@/features/toolbar/markdownImportAction'
 // import { performJsonImport } from '@/features/toolbar/jsonImportAction'
-import {
-  FileCode,
-  FileJson,
-  FileText,
-  FileType,
-  History as HistoryIcon,
-  Link as LinkIcon,
-  ListChecks,
-  MessageCircle,
-  RotateCcw as ResetIcon,
-  RotateCcw as RestoreIcon,
-  Save as SaveIcon,
-} from 'lucide-react'
 import { formatTimestamp } from '@/features/panels/utils/time'
 import { normalized as normalizeText } from '@/features/panels/utils/json'
 import { UI_COPY, UI_LABELS } from '@/lib/config'
@@ -36,6 +26,11 @@ import {
   uiToolbarRowScrollClassName,
 } from '@/features/toolbar/ui/toolbarStyles'
 
+const HistoryIcon = getMainPanelTypeIconComponent('mainPanel.history')
+const MessageCircle = getMainPanelTypeIconComponent('floatingPanel.chat')
+const ListChecks = getMainPanelTypeIconComponent('setting.list')
+const FileText = getMainPanelTypeIconComponent('setting.text')
+
 type HistorySubTab = 'chat' | 'history' | 'log'
 type HistorySectionTab = {
   id: HistorySubTab
@@ -44,6 +39,8 @@ type HistorySectionTab = {
     className?: string
     strokeWidth?: number | string
     'aria-hidden'?: boolean | 'true' | 'false'
+    'aria-label'?: string
+    role?: React.AriaRole
   }>
 }
 type HistoryEntry = GraphState['history'][number]
@@ -138,19 +135,20 @@ function getFileIcon(type: RecentFileEntry['type']) {
   switch (type) {
     case 'json':
     case 'jsonld':
-      return FileJson
+      return getMainPanelTypeIconComponent('field.type.json')
     case 'markdown':
       return FileText
     case 'csv':
-      return FileType
+      return getMainPanelTypeIconComponent('setting.list')
     case 'url':
-      return LinkIcon
+      return getMainPanelTypeIconComponent('setting.url')
     default:
-      return FileCode
+      return getMainPanelTypeIconComponent('setting.object')
   }
 }
 
 export default function HistoryView({ searchQuery }: { searchQuery: string }) {
+  const typography = usePanelTypography()
   const {
     history: historyRaw,
     historyIndex,
@@ -314,27 +312,19 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
   // }, [])
 
   return (
-    <article className="h-full flex flex-col">
-      <header className={`px-3 py-2 border-b ${UI_THEME_TOKENS.panel.border}`}>
+    <article className={`h-full min-h-0 flex flex-col ${typography.panelTextClass}`} aria-label="History">
+      <header className={`px-2 py-1 border-b ${UI_THEME_TOKENS.panel.border}`}>
         <section className="flex items-center justify-between gap-2">
           <section className="flex items-center gap-2">
             <HistoryUndoRedoControls iconSizeClass={iconSizeClass} iconStrokeWidth={uiIconStrokeWidth} />
-            <IconButton className="App-toolbar__btn" title="Snapshot" onClick={applySnapshot} showTooltip>
-              <SaveIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-            </IconButton>
+            <MainPanelIconButton iconKey="action.save" label="Snapshot" onClick={applySnapshot} />
             {tab === 'chat' && (
-              <IconButton className="App-toolbar__btn" title={UI_LABELS.clear} onClick={() => clearChatExchangeLogs()} showTooltip>
-                <ResetIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
+              <MainPanelIconButton iconKey="action.clear" label={UI_LABELS.clear} onClick={() => clearChatExchangeLogs()} />
             )}
             {tab === 'log' && (
               <>
-                <IconButton className="App-toolbar__btn" title="Export Markdown" onClick={exportLogMarkdown} showTooltip>
-                  <FileText className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-                </IconButton>
-                <IconButton className="App-toolbar__btn" title={UI_LABELS.clear} onClick={() => clearUiLog()} showTooltip>
-                  <ResetIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-                </IconButton>
+                <MainPanelIconButton iconKey="action.export" label="Export Markdown" onClick={exportLogMarkdown} />
+                <MainPanelIconButton iconKey="action.clear" label={UI_LABELS.clear} onClick={() => clearUiLog()} />
               </>
             )}
           </section>
@@ -362,7 +352,7 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
                     onClick={() => setTab(item.id)}
                     data-kg-history-section-tab={item.id}
                   >
-                    <SectionIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
+                    <SectionIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} role="img" aria-label={item.title} />
                   </IconButton>
                 )
               })}
@@ -378,7 +368,7 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
       >
         {tab === 'history' && filteredRecent.length > 0 && (
           <section>
-            <h3 className={`text-xs font-semibold ${UI_THEME_TOKENS.text.secondary} mb-2 uppercase tracking-wider`}>
+            <h3 className={`text-inherit font-semibold ${UI_THEME_TOKENS.text.secondary} mb-2 uppercase tracking-normal`}>
               Recent Files
             </h3>
             <ul className="space-y-1">
@@ -387,12 +377,12 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
                 return (
                   <li
                     key={f.id}
-                    className={`px-3 py-2 text-sm flex items-center gap-3 rounded hover:${UI_THEME_TOKENS.table.rowHover} group`}
+                    className={`px-3 py-2 text-inherit flex items-center gap-3 rounded hover:${UI_THEME_TOKENS.table.rowHover} group`}
                   >
-                    <Icon className={`${iconSizeClass} ${UI_THEME_TOKENS.text.secondary}`} strokeWidth={uiIconStrokeWidth} />
+                    <Icon className={`${iconSizeClass} ${UI_THEME_TOKENS.text.secondary}`} strokeWidth={uiIconStrokeWidth} role="img" aria-label={`${f.type} file`} />
                     <section className="min-w-0 flex-1">
                       <section className={`${UI_THEME_TOKENS.text.primary} truncate`} title={f.name}>{f.name}</section>
-                      <section className="flex items-center gap-2 text-xs">
+                      <section className="flex items-center gap-2 text-inherit">
                         <span className={`${UI_THEME_TOKENS.text.tertiary} ${UI_RESPONSIVE_HISTORY_RECENT_FILE_LOCATION_CLASSNAME}`} title={f.path || f.url}>
                           {f.path || f.url || 'Local Memory'}
                         </span>
@@ -408,11 +398,11 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
 
         {tab === 'history' && (
           <section>
-          <h3 className={`text-xs font-semibold ${UI_THEME_TOKENS.text.secondary} mb-2 uppercase tracking-wider`}>
+          <h3 className={`text-inherit font-semibold ${UI_THEME_TOKENS.text.secondary} mb-2 uppercase tracking-normal`}>
             Edit History
           </h3>
           {filteredHistory.length === 0 ? (
-            <section className={`px-3 py-2 text-sm ${UI_THEME_TOKENS.text.tertiary}`}>{UI_COPY.historyNoHistoryYet}</section>
+            <section className={`px-3 py-2 text-inherit ${UI_THEME_TOKENS.text.tertiary}`}>{UI_COPY.historyNoHistoryYet}</section>
           ) : (
             <ul className="space-y-1">
               {filteredHistory.map((h) => {
@@ -421,7 +411,7 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
                 return (
                 <li
                   key={h.id}
-                  className={`group px-3 py-2 text-sm flex items-center justify-between rounded ${
+                  className={`group px-3 py-2 text-inherit flex items-center justify-between rounded ${
                     isSelected ? uiSelectedRowStateClassName(true) : `hover:${UI_THEME_TOKENS.table.rowHover}`
                   }`}
                 >
@@ -436,19 +426,17 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
                     data-kg-version-history-index={originalIndex >= 0 ? originalIndex : undefined}
                   >
                     <span className={`block ${UI_THEME_TOKENS.text.primary}`}>{h.label}</span>
-                    <span className={`block text-xs ${UI_THEME_TOKENS.text.tertiary}`}>{formatTimestamp(h.timestamp)}</span>
+                    <span className={`block text-inherit ${UI_THEME_TOKENS.text.tertiary}`}>{formatTimestamp(h.timestamp)}</span>
                   </button>
-                  <IconButton
+                  <MainPanelIconButton
+                    iconKey="action.restore"
                     className="App-toolbar__btn opacity-0 group-hover:opacity-100 focus:opacity-100"
-                    title={UI_LABELS.restore}
+                    label={UI_LABELS.restore}
                     onClick={() => {
                       if (originalIndex < 0) return
                       restoreHistory(originalIndex)
                     }}
-                    showTooltip
-                  >
-                    <RestoreIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-                  </IconButton>
+                  />
                 </li>
                 )
               })}
@@ -459,7 +447,7 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
 
         {tab === 'log' && (
           <section>
-            <h3 className={`text-xs font-semibold ${UI_THEME_TOKENS.text.secondary} mb-2 uppercase tracking-wider`}>
+            <h3 className={`text-inherit font-semibold ${UI_THEME_TOKENS.text.secondary} mb-2 uppercase tracking-normal`}>
               {UI_LABELS.log}
             </h3>
             {hasRelayLogEntries ? (
@@ -483,28 +471,28 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
               </section>
             ) : null}
             {filteredLog.length === 0 ? (
-              <section className={`px-3 py-2 text-sm ${UI_THEME_TOKENS.text.tertiary}`}>No log entries.</section>
+              <section className={`px-3 py-2 text-inherit ${UI_THEME_TOKENS.text.tertiary}`}>No log entries.</section>
             ) : (
               <section className={`rounded border ${UI_THEME_TOKENS.panel.border} overflow-hidden`}>
-                <table className="w-full text-sm" aria-label="History Log Table">
+                <table className="w-full text-inherit" aria-label="History Log Table">
                   <thead className={`${UI_THEME_TOKENS.panel.bg} border-b ${UI_THEME_TOKENS.panel.border}`}>
                     <tr>
-                      <th className={`text-left px-3 py-2 text-xs ${UI_THEME_TOKENS.text.secondary}`}>Timestamp</th>
-                      <th className={`text-left px-3 py-2 text-xs ${UI_THEME_TOKENS.text.secondary}`}>Message</th>
-                      <th className={`text-left px-3 py-2 text-xs ${UI_THEME_TOKENS.text.secondary}`}>Source</th>
-                      <th className={`text-left px-3 py-2 text-xs ${UI_THEME_TOKENS.text.secondary}`}>Kind</th>
+                      <th className={`text-left px-3 py-2 text-inherit ${UI_THEME_TOKENS.text.secondary}`}>Timestamp</th>
+                      <th className={`text-left px-3 py-2 text-inherit ${UI_THEME_TOKENS.text.secondary}`}>Message</th>
+                      <th className={`text-left px-3 py-2 text-inherit ${UI_THEME_TOKENS.text.secondary}`}>Source</th>
+                      <th className={`text-left px-3 py-2 text-inherit ${UI_THEME_TOKENS.text.secondary}`}>Kind</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredLog.map(row => (
                       <tr key={row.id} className={`hover:${UI_THEME_TOKENS.table.rowHover}`}>
-                        <td className={`px-3 py-2 align-top text-xs ${UI_THEME_TOKENS.text.tertiary} whitespace-nowrap`}>{formatTimestamp(row.tsMs)}</td>
+                        <td className={`px-3 py-2 align-top text-inherit ${UI_THEME_TOKENS.text.tertiary} whitespace-nowrap`}>{formatTimestamp(row.tsMs)}</td>
                         <td className={`px-3 py-2 align-top ${UI_THEME_TOKENS.text.primary} break-words`}>
                           <section>{row.message}</section>
                           <UiActionButtons actions={row.actions} className="mt-2" />
                         </td>
-                        <td className={`px-3 py-2 align-top text-xs ${UI_THEME_TOKENS.text.tertiary} whitespace-nowrap`}>{row.source || ''}</td>
-                        <td className={`px-3 py-2 align-top text-xs ${UI_THEME_TOKENS.text.secondary} whitespace-nowrap`}>{row.kind}</td>
+                        <td className={`px-3 py-2 align-top text-inherit ${UI_THEME_TOKENS.text.tertiary} whitespace-nowrap`}>{row.source || ''}</td>
+                        <td className={`px-3 py-2 align-top text-inherit ${UI_THEME_TOKENS.text.secondary} whitespace-nowrap`}>{row.kind}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -515,20 +503,20 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
         )}
         {tab === 'chat' && (
           <section>
-            <h3 className={`text-xs font-semibold ${UI_THEME_TOKENS.text.secondary} mb-2 uppercase tracking-wider`}>
+            <h3 className={`text-inherit font-semibold ${UI_THEME_TOKENS.text.secondary} mb-2 uppercase tracking-normal`}>
               Chat
             </h3>
             {filteredChatLogs.length === 0 ? (
-              <section className={`px-3 py-2 text-sm ${UI_THEME_TOKENS.text.tertiary}`}>No chat entries.</section>
+              <section className={`px-3 py-2 text-inherit ${UI_THEME_TOKENS.text.tertiary}`}>No chat entries.</section>
             ) : (
               <section className={`rounded border ${UI_THEME_TOKENS.panel.border} overflow-hidden`}>
-                <table className="w-full text-sm" aria-label="Chat Exchange Table">
+                <table className="w-full text-inherit" aria-label="Chat Exchange Table">
                   <thead className={`${UI_THEME_TOKENS.panel.bg} border-b ${UI_THEME_TOKENS.panel.border}`}>
                     <tr>
-                      <th className={`text-left px-3 py-2 text-xs ${UI_THEME_TOKENS.text.secondary}`}>User Request / AI Response</th>
-                      <th className={`text-left px-3 py-2 text-xs ${UI_THEME_TOKENS.text.secondary}`}>Snippet</th>
-                      <th className={`text-left px-3 py-2 text-xs ${UI_THEME_TOKENS.text.secondary}`}>Timestamp</th>
-                      <th className={`text-left px-3 py-2 text-xs ${UI_THEME_TOKENS.text.secondary}`}>Status</th>
+                      <th className={`text-left px-3 py-2 text-inherit ${UI_THEME_TOKENS.text.secondary}`}>User Request / AI Response</th>
+                      <th className={`text-left px-3 py-2 text-inherit ${UI_THEME_TOKENS.text.secondary}`}>Snippet</th>
+                      <th className={`text-left px-3 py-2 text-inherit ${UI_THEME_TOKENS.text.secondary}`}>Timestamp</th>
+                      <th className={`text-left px-3 py-2 text-inherit ${UI_THEME_TOKENS.text.secondary}`}>Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -544,21 +532,21 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
                             <td className="px-3 py-2 align-top">
                               <button
                                 type="button"
-                                className={`App-toolbar__btn text-xs ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}
+                                className={`App-toolbar__btn text-inherit ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}
                                 onClick={() => {
                                   setExpandedChatLogIds(prev => ({ ...prev, [row.id]: !isExpanded }))
                                 }}
                               >
                                 {isExpanded ? 'Collapse' : 'Expand'}
                               </button>
-                              <section className={`mt-1 text-xs ${UI_THEME_TOKENS.text.tertiary}`}>{row.snippet || '—'}</section>
+                              <section className={`mt-1 text-inherit ${UI_THEME_TOKENS.text.tertiary}`}>{row.snippet || '—'}</section>
                             </td>
-                            <td className={`px-3 py-2 align-top text-xs ${UI_THEME_TOKENS.text.tertiary} whitespace-nowrap`}>{formatTimestamp(row.tsMs)}</td>
-                            <td className={`px-3 py-2 align-top text-xs ${UI_THEME_TOKENS.text.secondary} whitespace-nowrap`}>{row.status}</td>
+                            <td className={`px-3 py-2 align-top text-inherit ${UI_THEME_TOKENS.text.tertiary} whitespace-nowrap`}>{formatTimestamp(row.tsMs)}</td>
+                            <td className={`px-3 py-2 align-top text-inherit ${UI_THEME_TOKENS.text.secondary} whitespace-nowrap`}>{row.status}</td>
                           </tr>
                           {isExpanded && (
                             <tr className={`${UI_THEME_TOKENS.panel.bg}`}>
-                              <td colSpan={4} className={`px-3 py-2 text-xs ${UI_THEME_TOKENS.text.primary} border-t ${UI_THEME_TOKENS.panel.border}`}>
+                              <td colSpan={4} className={`px-3 py-2 text-inherit ${UI_THEME_TOKENS.text.primary} border-t ${UI_THEME_TOKENS.panel.border}`}>
                                 <section className="space-y-2">
                                   <section>
                                     <section className={`font-semibold ${UI_THEME_TOKENS.text.secondary}`}>User Request</section>

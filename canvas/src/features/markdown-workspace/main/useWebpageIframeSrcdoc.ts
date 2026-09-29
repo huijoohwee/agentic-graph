@@ -194,7 +194,8 @@ export function useWebpageIframeSrcdoc(args: {
                 signal: ctrl.signal,
               })
               if (t && t.trim()) return t
-            } catch {
+            } catch (error) {
+              if (ctrl.signal.aborted) throw error
               void 0
             }
           }
@@ -240,7 +241,8 @@ export function useWebpageIframeSrcdoc(args: {
               kind: 'rawHtml',
               signal: ctrl.signal,
             })
-          } catch {
+          } catch (error) {
+            if (ctrl.signal.aborted) throw error
             void 0
           }
         }
@@ -257,6 +259,7 @@ export function useWebpageIframeSrcdoc(args: {
         })
       })()
 
+      if (ctrl.signal.aborted) throw new DOMException('Aborted', 'AbortError')
       const scriptPolicy = (() => {
         const p = preferEmbed ? 'allow' : inferIframeScriptPolicyFromHtml(rawHtml)
         try {
