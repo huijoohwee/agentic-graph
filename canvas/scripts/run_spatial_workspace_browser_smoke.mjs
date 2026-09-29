@@ -91,6 +91,14 @@ if (!process.argv.includes('--verify')) {
       await page.getByRole('button', { name: 'Preview change', exact: true }).click()
       await page.getByRole('button', { name: 'Apply reviewed change', exact: true }).waitFor()
       assert.equal(await page.evaluate(() => window.spatialFixture.store.getState().markdownDocumentText), await page.evaluate(() => window.spatialFixture.initialText))
+      // An editor transition can begin after preview. Keep its mutation fence
+      // visible at the action boundary without requiring another operator click.
+      await page.evaluate(() => window.spatialFixture.store.setState({ markdownWorkspaceIndexingInFlight: true }))
+      await page.getByText('Wait for the source editor to settle before reviewing the scene.', { exact: true }).waitFor()
+      assert.equal(await page.getByRole('button', { name: 'Apply reviewed change', exact: true }).isEnabled(), false)
+      assert.equal(await page.getByRole('button', { name: 'Cancel proposal', exact: true }).isEnabled(), true)
+      assert.equal(await page.evaluate(async () => { const f = window.spatialFixture; return await f.fs.readFileText(f.path) === f.initialText }), true)
+      await page.evaluate(() => window.spatialFixture.store.setState({ markdownWorkspaceIndexingInFlight: false }))
       await page.getByRole('button', { name: 'Apply reviewed change', exact: true }).click()
       await page.waitForFunction(() => [...document.querySelectorAll('[role="status"]')].some(node => /applied|unverified|changed|refused|unavailable/.test(node.textContent || '')))
       const status = await page.locator('[role="status"]').allTextContents()
@@ -99,6 +107,10 @@ if (!process.argv.includes('--verify')) {
         return { same: stored === expected, expectedLength: expected?.length, storedLength: stored?.length, document: f.store.getState().markdownDocumentName, receiptCount: f.store.getState().graphData?.metadata?.kgSpatialWorkspaceReview?.receipts?.length }
       }) }))
       const applyMs = Date.now() - started
+      await page.evaluate(() => window.spatialFixture.store.setState({ workspaceGraphMutationBlockUntilMs: Date.now() + 1500 }))
+      await page.getByText('Wait for the source editor to settle before reviewing the scene.', { exact: true }).waitFor()
+      assert.equal(await page.getByRole('button', { name: 'Undo last reviewed change', exact: true }).count(), 0)
+      // The product timer must re-enable Undo when this existing fence expires.
       await page.getByRole('button', { name: 'Undo last reviewed change', exact: true }).click()
       await page.getByText('Change undone and verified in local storage.', { exact: true }).waitFor()
       if (canvasClient) {
