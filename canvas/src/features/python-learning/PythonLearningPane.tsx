@@ -46,7 +46,7 @@ export default function PythonLearningPane(props: {
       ? `${result.grade.passed ? 'Goal reached' : 'Goal not reached'} · ${result.grade.criteria.filter(criterion => criterion.passed).length}/4 checks · position (${result.scene.x.toFixed(2)}, ${result.scene.z.toFixed(2)}) m${outputPreview ? ` · output: ${outputPreview}` : ''}`
       : running ? 'Running this source…' : ''
   return <section className="python-learning" aria-label="Python learning workspace" data-learning-state={snapshot.state}>
-    <div className="python-learning-controls">
+    <nav className="python-learning-controls" aria-label="Python lesson controls">
       <button onClick={() => useGraphStore.getState().setWorkspaceViewState({ mode: 'canvas' })}>View Canvas</button>
       <label>Lesson <PanelSelect aria-label="Python lesson" value={lessonId} onValueChange={selectedValueInput => { setLessonId(selectedValueInput); setNotice('Lesson changed. Source is preserved.'); }}>
         {LEARNING_LESSONS.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}
@@ -63,20 +63,20 @@ export default function PythonLearningPane(props: {
       {(['validate', 'run', 'step', 'pause', 'stop', 'reset', 'hint'] as const).map(operation => <button key={operation}
         disabled={operation === 'hint' ? false : operation === 'stop' || operation === 'reset' ? false : operation === 'pause' ? !running : disabled || running}
         onClick={() => void control(operation)}>{operation[0].toUpperCase() + operation.slice(1)}</button>)}
-    </div>
+    </nav>
     <p className="python-learning-objective">{lesson.objective}</p>
     {lesson.vehicle === 'drone' ? <p>The starter is an incomplete exercise. Load flight example, then Run to watch the full nine-second flight. Pause holds the current pose.</p> : null}
     {notice ? <p role="status">{notice}</p> : null}
     {snapshot.error ? <p role="alert"><button onClick={() => props.editorRef.current?.revealLine?.(snapshot.error!.span.line)}>Line {snapshot.error.span.line}</button>: {snapshot.error.message}</p> : null}
-    {runFeedback ? <div className="python-learning-run-feedback" role="status">
+    {runFeedback ? <section className="python-learning-run-feedback" role="status">
       <span>{runFeedback}</span>
       {result && !snapshot.stale ? <button onClick={() => setMobileView('result')}>View results</button> : null}
-    </div> : null}
-    <div className="python-learning-mobile-views" role="group" aria-label="Python workspace view">
+    </section> : null}
+    <nav className="python-learning-mobile-views" role="group" aria-label="Python workspace view">
       <button aria-pressed={mobileView === 'code'} onClick={() => setMobileView('code')}>Code</button>
       <button aria-pressed={mobileView === 'result'} onClick={() => setMobileView('result')}>Results</button>
-    </div>
-    <div className="python-learning-body" data-mobile-view={mobileView}>
+    </nav>
+    <section aria-label="Python workspace panes" className="python-learning-body" data-mobile-view={mobileView}>
       <section className="python-learning-code" aria-label="Python source">
         <MarkdownEditorPane value={props.source} onChange={props.onChange} language="python" uri={props.uri} readOnly={props.readOnly}
           editorRef={props.editorRef} onCaretLine={props.onCaretLine} wordWrap={props.wordWrap} themeMode={props.themeMode}
@@ -102,6 +102,6 @@ export default function PythonLearningPane(props: {
         <LearningOfflineControls />
         <small>{PYTHON_RUNTIME_REVISION} · local worker · no model calls</small>
       </section>
-    </div>
+    </section>
   </section>
 }

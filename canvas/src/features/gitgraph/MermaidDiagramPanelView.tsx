@@ -214,6 +214,7 @@ export function MermaidDiagramRenderPreview({
     >
       <InteractiveMermaidDiagram
         code={code}
+        ariaLabel={`${kind} diagram`}
         rootThemeMode={rootThemeMode}
         svgSurfaceKey={`mermaid:${kind}`}
         selectedLabels={selectedLabels}
