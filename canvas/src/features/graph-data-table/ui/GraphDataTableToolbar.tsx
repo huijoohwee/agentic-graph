@@ -186,7 +186,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
                   <PanelSelect
                     variant="transparent"
                     value={props.filterMatch}
-                    onChange={e => props.setFilterMatch(e.target.value === 'any' ? 'any' : 'all')}
+                    onValueChange={selectedValueInput => props.setFilterMatch(selectedValueInput === 'any' ? 'any' : 'all')}
                     className={toolbarFieldClass}
                   >
                     <option value="all">All</option>
@@ -200,7 +200,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
                     <PanelSelect
                       variant="transparent"
                       value={clause.columnId}
-                      onChange={e => updateFilterClause(clause.id, { columnId: e.target.value })}
+                      onValueChange={selectedValueInput => updateFilterClause(clause.id, { columnId: selectedValueInput })}
                       className={toolbarFieldClass}
                     >
                       {props.columns.map(c => (
@@ -214,7 +214,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
                     <PanelSelect
                       variant="transparent"
                       value={clause.operator}
-                      onChange={e => updateFilterClause(clause.id, { operator: e.target.value as GraphDataTableFilterOperator })}
+                      onValueChange={selectedValueInput => updateFilterClause(clause.id, { operator: selectedValueInput as GraphDataTableFilterOperator })}
                       className={toolbarFieldClass}
                     >
                       <option value="contains">contains</option>
@@ -270,7 +270,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
       >
         <PanelSelect
           value={props.groupBy}
-          onChange={e => props.setGroupBy(e.target.value)}
+          onValueChange={selectedValueInput => props.setGroupBy(selectedValueInput)}
           className={toolbarFieldClass}
         >
           <option value="">None</option>
@@ -298,7 +298,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
                     <PanelSelect
                       variant="transparent"
                       value={rule.columnId}
-                      onChange={e => updateSortRule(rule.id, { columnId: e.target.value })}
+                      onValueChange={selectedValueInput => updateSortRule(rule.id, { columnId: selectedValueInput })}
                       className={toolbarFieldClass}
                     >
                       {props.columns.map(c => (
@@ -312,7 +312,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
                     <PanelSelect
                       variant="transparent"
                       value={rule.direction}
-                      onChange={e => updateSortRule(rule.id, { direction: e.target.value as GraphDataTableSortDirection })}
+                      onValueChange={selectedValueInput => updateSortRule(rule.id, { direction: selectedValueInput as GraphDataTableSortDirection })}
                       className={toolbarFieldClass}
                     >
                       <option value="asc">asc</option>
@@ -353,7 +353,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
         <span className={UI_TEXT_TRUNCATE}>{`Row height: ${readDataViewRowHeightLabel(props.rowHeightPreset)}`}</span>
         <PanelSelect
           value={props.rowHeightPreset}
-          onChange={e => props.setRowHeightPreset(e.target.value === 'compact' ? 'compact' : 'comfortable')}
+          onValueChange={selectedValueInput => props.setRowHeightPreset(selectedValueInput === 'compact' ? 'compact' : 'comfortable')}
           className={toolbarFieldClass}
         >
           {DATA_VIEW_ROW_HEIGHT_OPTIONS.map(option => (

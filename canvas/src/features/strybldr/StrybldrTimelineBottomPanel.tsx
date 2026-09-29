@@ -1,3 +1,4 @@
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import IconButton from '@/components/IconButton'
 import { FloatingPanel } from '@/components/ui/FloatingPanel'
@@ -57,6 +58,7 @@ export function StrybldrTimelineBottomPanel({
   initialView?: TimelineBottomPanelView
   workspaceEditorOverlayOpen?: boolean
 }) {
+  const { panelTextClass } = usePanelTypography()
   const { active: warehouseInspectionActive } = useWarehouseInspectionMode()
   const rootLayerRef = React.useRef<HTMLElement | null>(null)
   const layerRef = React.useRef<HTMLElement | null>(null)
@@ -533,7 +535,7 @@ export function StrybldrTimelineBottomPanel({
           </header>
           {!minimized ? (
             <section
-              className="min-h-0 flex-1 overflow-y-auto px-2 pb-2 overscroll-contain"
+              className={cn("min-h-0 flex-1 overflow-y-auto px-2 pb-2 overscroll-contain", panelTextClass)}
               aria-label="Timeline bottom panel body"
               data-kg-strybldr-bottom-timeline-scroll="body"
             >

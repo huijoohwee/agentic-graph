@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import { binarySearchFloor, clamp, getVisibleColumnsRange, getVisibleRange } from './fastGridMath'
 import { parseGeodataValueToLatLng } from '@/features/geospatial/geodataValue'
 
@@ -103,7 +104,7 @@ export function readGridTheme(viewportEl: HTMLElement): GridTheme {
   const computedRoot = window.getComputedStyle(document.documentElement)
 
   const fontSize = computedViewport.fontSize || '12px'
-  const fontFamily = computedViewport.fontFamily || 'ui-sans-serif'
+  const fontFamily = computedViewport.fontFamily || UI_FONT_SANS
 
   const divider = computedRoot.getPropertyValue('--kg-divider')?.trim() || 'rgba(0,0,0,0.12)'
   const border = computedRoot.getPropertyValue('--kg-border')?.trim() || 'rgba(0,0,0,0.18)'
@@ -430,7 +431,7 @@ export function drawGrid<RowT extends { id: string; __order?: number }>(args: {
     if (sortMeta) {
       ctx.save()
       ctx.fillStyle = textTertiary
-      ctx.font = `600 10px ${fontFamily}`
+      ctx.font = `600 12px ${fontFamily}`
       ctx.fillText(sortMeta.dir === 'desc' ? `↓${sortMeta.index}` : `↑${sortMeta.index}`, x + cellW - 24, headerHeight / 2)
       ctx.restore()
     }

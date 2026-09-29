@@ -51,7 +51,13 @@ export function resolveThemeColors(): ThemeColors {
   }
 }
 
+const CONTROL_HEIGHT_CLASS_NAME = 'h-[var(--kg-control-height,28px)]'
+
 export const UI_THEME_TOKENS = {
+  control: {
+    height: CONTROL_HEIGHT_CLASS_NAME,
+    singleLine: `${CONTROL_HEIGHT_CLASS_NAME} box-border min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-2 py-0`,
+  },
   button: {
     text: 'text-[color:var(--kg-text-secondary)]',
     hoverText: 'hover:text-[color:var(--kg-text-primary)]',
@@ -75,12 +81,12 @@ export const UI_THEME_TOKENS = {
   },
   pill: {
     base: 'rounded-full px-2 py-0.5 border border-[color:var(--kg-border)]',
-    text: 'text-[10px] font-medium text-[color:var(--kg-text-secondary)]',
-    badgeText: 'text-[10px] font-bold',
+    text: 'text-xs font-medium text-[color:var(--kg-text-secondary)]',
+    badgeText: 'text-xs font-bold',
   },
   badge: {
     chip: 'rounded px-1.5 py-0.5 bg-black/5 dark:bg-white/5',
-    text: 'text-[10px] font-mono',
+    text: 'text-xs font-mono',
     toolbarGroup: 'rounded bg-black/5 dark:bg-white/5 p-0.5',
   },
   icon: {
@@ -162,3 +168,16 @@ export const UI_THEME_TOKENS = {
     text: 'text-[color:var(--kg-code-text)]',
   },
 } as const
+
+/** Keep decoration; fixed geometry belongs to the shared single-line control. */
+export function singleLineControlDecorationClassName(className = ''): string {
+  return className.split(/\s+/).filter(token => {
+    const utility = token.replace(/^(?:(?:[\w-]+|\[[^\]]+\]):)+/, '').replace(/^!/, '')
+    return token && !/^(?:(?:min-|max-)?(?:h|size)-|(?:min|max)-w-|p[xytrblse]?-|leading-|whitespace-|overflow(?:-[xy])?-|text-(?:ellipsis|clip)$|box-)/.test(utility)
+  }).join(' ')
+}
+
+/** Normalize saved/caller classes so old sizes cannot override the shared owner. */
+export function normalizeSingleLineControlClassName(className = ''): string {
+  return [...new Set(`${singleLineControlDecorationClassName(className)} ${UI_THEME_TOKENS.control.singleLine}`.trim().split(/\s+/))].join(' ')
+}

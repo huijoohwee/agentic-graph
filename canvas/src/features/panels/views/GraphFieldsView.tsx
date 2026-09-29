@@ -1,3 +1,5 @@
+import './graph-fields/graphFieldLayout.css'
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_ANCHORS, UI_COPY } from '@/lib/config'
@@ -260,10 +262,10 @@ export default function GraphFieldsView({
 
   const content = (
     <article
-      className="min-h-full flex flex-col overflow-visible"
+      className="kg-graph-fields-surface h-full min-h-0 min-w-0 flex flex-col"
       data-kg-anchor={UI_ANCHORS.graphFields}
     >
-      <section className="min-h-0">
+      <section className="h-full min-h-0">
         <section className={GRAPH_FIELDS_MAIN_SPLIT_GRID_CLASS_NAME}>
           <section className={GRAPH_FIELDS_MAIN_LIST_PANE_CLASS_NAME}>
             <GraphFieldsListPanel
@@ -315,25 +317,14 @@ export default function GraphFieldsView({
           <MainPanelGraphFieldsHeader agenticLegend={agenticLegend} />
         </section>
         {entryShortcutLabels.length > 0 && onEntryShortcutClick ? (
-          <section className="mb-2 rounded border border-white/10 p-2" aria-label="Graph Fields entry shortcuts">
-            <section className={cn('text-[10px] mb-2', UI_THEME_TOKENS.text.tertiary)}>
-              Entry shortcuts (click to open Field Settings)
-            </section>
-            <section className="flex flex-wrap gap-1">
-              {entryShortcutLabels.map((label, index) => (
-                <button
-                  key={`entry-shortcut:${label}:${index}`}
-                  type="button"
-                  className={cn('App-toolbar__btn text-xs', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}
-                  onClick={() => onEntryShortcutClick(label)}
-                >
-                  {label}
-                </button>
-              ))}
-            </section>
-          </section>
+          <nav className="mb-2 flex min-w-0 items-center gap-2" aria-label="Graph Fields entry shortcuts">
+            <PanelSelect aria-label="Open Field Settings" value="" onValueChange={onEntryShortcutClick}>
+              <option value="">Field shortcuts…</option>
+              {entryShortcutLabels.map(label => <option key={label} value={label}>{label}</option>)}
+            </PanelSelect>
+          </nav>
         ) : null}
-        <section className="flex-1 min-h-0 w-full overflow-auto">
+        <section className="flex-1 min-h-0 w-full overflow-hidden">
           {content}
         </section>
       </section>

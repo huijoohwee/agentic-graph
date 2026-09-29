@@ -44,12 +44,12 @@ export function MainPanelSettingsPanelShell(props: {
           headerClassName,
         )}
       >
-        <section className="flex-1 min-w-0">{titleNode}</section>
+        <section className="min-w-0 shrink-0 max-w-[50%]">{titleNode}</section>
         {secondaryNode != null ? (
           <section
             className={cn(
               UI_RESPONSIVE_PANEL_HEADER_SECONDARY_CLASSNAME,
-              `${uiPanelKeyValueTextSizeClass} ${UI_THEME_TOKENS.text.tertiary} whitespace-nowrap truncate text-right`,
+              `${uiPanelKeyValueTextSizeClass} ${UI_THEME_TOKENS.text.tertiary} min-w-0 flex-1 whitespace-nowrap truncate text-right`,
               secondaryNodeClassName,
             )}
             aria-label="Selection summary"

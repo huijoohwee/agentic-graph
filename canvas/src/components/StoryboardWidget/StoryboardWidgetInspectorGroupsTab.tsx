@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import type { UserSubgraph } from '@/lib/graph/subgraphs'
 import { subgraphGroupId } from '@/lib/graph/subgraphs'
@@ -71,16 +72,16 @@ export function StoryboardWidgetInspectorGroupsTab(props: {
       <label className={cn('mt-3 block', keyLabelClass, UI_THEME_TOKENS.text.secondary)} htmlFor="storyboard-widget-new-subgraph-kind">
         Kind
       </label>
-      <select
+      <PanelSelect
         id="storyboard-widget-new-subgraph-kind"
         className={cn('mt-1 w-full rounded-md', keyValueInputClass, textSizeClass, UI_THEME_TOKENS.input.bg, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.text)}
         value={newSubgraphKind}
-        onChange={e => setNewSubgraphKind(e.target.value === 'cluster' ? 'cluster' : 'subgraph')}
+        onValueChange={selectedValueInput => setNewSubgraphKind(selectedValueInput === 'cluster' ? 'cluster' : 'subgraph')}
         disabled={!active}
       >
         <option value="subgraph">Subgraph</option>
         <option value="cluster">Cluster</option>
-      </select>
+      </PanelSelect>
       <button
         type="button"
         className={`mt-2 App-toolbar__btn ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}
@@ -130,31 +131,31 @@ export function StoryboardWidgetInspectorGroupsTab(props: {
                     <label className={cn('mt-2 block', keyLabelClass, UI_THEME_TOKENS.text.secondary)} htmlFor={`storyboard-widget-subgraph-kind-${sg.id}`}>
                       Kind
                     </label>
-                    <select
+                    <PanelSelect
                       id={`storyboard-widget-subgraph-kind-${sg.id}`}
                       className={cn('mt-1 w-full rounded-md', keyValueInputClass, textSizeClass, UI_THEME_TOKENS.input.bg, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.text)}
                       value={sg.kind === 'cluster' ? 'cluster' : 'subgraph'}
-                      onChange={e => onSetSubgraphKind(sg.id, e.target.value === 'cluster' ? 'cluster' : 'subgraph')}
+                      onValueChange={selectedValueInput => onSetSubgraphKind(sg.id, selectedValueInput === 'cluster' ? 'cluster' : 'subgraph')}
                       disabled={!active}
                     >
                       <option value="subgraph">Subgraph</option>
                       <option value="cluster">Cluster</option>
-                    </select>
+                    </PanelSelect>
                     <label className={cn('mt-2 block', keyLabelClass, UI_THEME_TOKENS.text.secondary)} htmlFor={`storyboard-widget-subgraph-parent-${sg.id}`}>
                       Parent
                     </label>
-                    <select
+                    <PanelSelect
                       id={`storyboard-widget-subgraph-parent-${sg.id}`}
                       className={cn('mt-1 w-full rounded-md', keyValueInputClass, textSizeClass, UI_THEME_TOKENS.input.bg, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.text)}
                       value={sg.parentId == null ? '' : String(sg.parentId)}
-                      onChange={e => onSetSubgraphParent(sg.id, e.target.value ? e.target.value : null)}
+                      onValueChange={selectedValueInput => onSetSubgraphParent(sg.id, selectedValueInput ? selectedValueInput : null)}
                       disabled={!active}
                     >
                       <option value="">(none)</option>
                       {subgraphs.filter(parent => parent.id !== sg.id).map(parent => (
                         <option key={parent.id} value={parent.id}>{parent.label}</option>
                       ))}
-                    </select>
+                    </PanelSelect>
                   </article>
                 </li>
               )

@@ -35,7 +35,7 @@ type Option = {
   key: EditorWorkspaceOptionKey
   label: string
   tooltip: string
-  Icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }>
+  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
 }
 
 export function EditorWorkspaceSelect({ iconSizeClass, iconStrokeWidth, ensureBaselineUnlocked }: EditorWorkspaceSelectProps) {
@@ -187,17 +187,17 @@ export function EditorWorkspaceSelect({ iconSizeClass, iconStrokeWidth, ensureBa
       onSelect={id => apply(id)}
       onTriggerClick={handleTriggerClick}
       renderButtonContent={() =>
-        <FileCode className={iconSizeClass} strokeWidth={iconStrokeWidth} />
+        <FileCode role="img" aria-label="Editor Workspace" className={iconSizeClass} strokeWidth={iconStrokeWidth} />
       }
       renderOptionContent={option => (
         <>
-          <option.Icon className={iconSizeClass} strokeWidth={iconStrokeWidth} />
+          <option.Icon role="img" aria-label={option.title} className={iconSizeClass} strokeWidth={iconStrokeWidth} />
           <span className="truncate">{option.title}</span>
         </>
       )}
       renderMenuAppend={() => (
         <>
-          <li className="list-none px-1 py-0.5" aria-hidden="true">
+          <li className="list-none px-1 py-0.5">
             <hr className={`border-t ${UI_THEME_TOKENS.panel.border}`} />
           </li>
           <li className="list-none">
@@ -213,7 +213,7 @@ export function EditorWorkspaceSelect({ iconSizeClass, iconStrokeWidth, ensureBa
                   : UI_COPY.canvasWorkspaceSyncManualTooltip
               }
             >
-              <Link2 className={`${iconSizeClass} shrink-0`} strokeWidth={iconStrokeWidth} />
+              <Link2 role="img" aria-label="Workspace Sync Mode" className={`${iconSizeClass} shrink-0`} strokeWidth={iconStrokeWidth} />
               <span className="truncate">{UI_LABELS.workspaceSyncMode}</span>
               <SelectableRowValue label={UI_LABELS.workspaceSyncMode} value={syncIndicatorLabel} />
             </button>
@@ -227,7 +227,7 @@ export function EditorWorkspaceSelect({ iconSizeClass, iconStrokeWidth, ensureBa
               aria-label={`Autosave: ${uiBooleanRowValue(workspaceAutosaveEnabled)}`}
               title={workspaceAutosaveEnabled ? 'Autosave is enabled.' : 'Autosave is disabled; use Save to persist changes.'}
             >
-              <SaveAll className={`${iconSizeClass} shrink-0`} strokeWidth={iconStrokeWidth} />
+              <SaveAll role="img" aria-label="Autosave" className={`${iconSizeClass} shrink-0`} strokeWidth={iconStrokeWidth} />
               <span className="truncate">Autosave</span>
               <SelectableRowValue label="Autosave" value={uiBooleanRowValue(workspaceAutosaveEnabled)} />
             </button>
@@ -245,7 +245,7 @@ export function EditorWorkspaceSelect({ iconSizeClass, iconStrokeWidth, ensureBa
                   : UI_COPY.storageSyncOffTooltip
               }
             >
-              <Database className={`${iconSizeClass} shrink-0`} strokeWidth={iconStrokeWidth} />
+              <Database role="img" aria-label="Storage Sync" className={`${iconSizeClass} shrink-0`} strokeWidth={iconStrokeWidth} />
               <span className="truncate">{UI_LABELS.storageSync}</span>
               <SelectableRowValue label={UI_LABELS.storageSync} value={storageSyncLabel} />
             </button>

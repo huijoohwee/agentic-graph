@@ -460,7 +460,7 @@ export const KanbanCard = React.memo(function KanbanCard(props: KanbanCardProps)
             {paragraphEntries.map(entry => {
               return (
                 <section key={`${props.row.id}:text:${entry.id}`} className="rounded border border-black/5 bg-black/[0.025] px-2.5 py-2">
-                  <p className={['m-0 text-[10px] font-semibold uppercase tracking-[0.08em]', UI_THEME_TOKENS.text.tertiary].join(' ')}>
+                  <p className={['m-0 text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary].join(' ')}>
                     {entry.label}
                   </p>
                   <CardInlineTextEditor

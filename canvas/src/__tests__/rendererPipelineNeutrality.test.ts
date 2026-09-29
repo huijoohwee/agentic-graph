@@ -5,7 +5,7 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   const root = resolve(process.cwd(), 'src')
   const renderConfigText = readFileSync(resolve(root, 'lib', 'config.render.ts'), 'utf8')
   const canvasViewportText = readFileSync(resolve(root, 'components', 'CanvasViewport.tsx'), 'utf8')
-  const dashboardCanvasText = readFileSync(resolve(root, 'components', 'DashboardCanvas', 'index.tsx'), 'utf8')
+  const dashboardCanvasText = ['index.tsx', 'DashboardCharts.tsx'].map(file => readFileSync(resolve(root, 'components', 'DashboardCanvas', file), 'utf8')).join('\n')
   const dashboardModelText = readFileSync(resolve(root, 'components', 'DashboardCanvas', 'dashboardModel.ts'), 'utf8')
   const rendererSelectText = readFileSync(resolve(root, 'components', 'toolbar', 'Canvas2dRendererSelect.tsx'), 'utf8')
   const canvasViewMenuText = readFileSync(resolve(root, 'components', 'toolbar', 'canvasViewMenu.ts'), 'utf8')
@@ -114,7 +114,7 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   if (!canvasViewportText.includes('getCanvas2dSurfaceId(canvas2dRenderer)')) {
     throw new Error('expected CanvasViewport to derive the active 2D surface from the shared renderer surface helper')
   }
-  if (!canvasViewportText.includes("import('@/components/DashboardCanvas')") || !canvasViewportText.includes("active2dSurface === 'dashboard'")) {
+  if (!canvasViewportText.includes("import('@/components/DashboardCanvas/Surface')") || !canvasViewportText.includes("active2dSurface === 'dashboard'")) {
     throw new Error('expected CanvasViewport to mount Dashboard through the shared 2D surface branch')
   }
   if (!canvasViewportText.includes("import('@/components/MediaCanvas')") || !canvasViewportText.includes("active2dSurface === 'media'")) {
@@ -527,11 +527,11 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   if (!canvasViewMenuText.includes('getCanvas2dRendererMenuDescription(id)') || !canvasViewMenuText.includes('getCanvas2dRendererMenuBadges(id)')) {
     throw new Error('expected Canvas view menu renderer options to derive UX metadata from the shared renderer spec')
   }
-  if (!rendererSelectText.includes('option.description') || !rendererSelectText.includes('option.badges')) {
-    throw new Error('expected Canvas2dRendererSelect to render shared renderer UX metadata without local option aliases')
+  if (!rendererSelectText.includes('getOptionTooltip={buildCanvasViewOptionHelp}')) {
+    throw new Error('expected Canvas2dRendererSelect to delegate renderer UX metadata to shared hover/focus help')
   }
-  if (!rendererSelectText.includes('kg-toolbar-dropdown-option-copy') || !responsiveToolbarCssText.includes('--kg-toolbar-dropdown-width')) {
-    throw new Error('expected rich renderer menu metadata to use shared toolbar sizing and copy wrapping primitives')
+  if (rendererSelectText.includes('kg-toolbar-dropdown-option-copy') || !responsiveToolbarCssText.includes('--kg-toolbar-dropdown-width')) {
+    throw new Error('expected renderer rows to use shared toolbar sizing without legacy wrapping metadata')
   }
   if (!animaticTimelineModelText.includes('buildScopedGraphSemanticKey') || !animaticTimelineModelText.includes("'animatic-timeline-model'")) {
     throw new Error('expected Animatic timeline model caching to reuse the shared graph semantic-key helper')

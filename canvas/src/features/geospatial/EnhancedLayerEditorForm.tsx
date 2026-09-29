@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
@@ -42,9 +43,9 @@ function EditorField(props: {
         'aria-describedby': props.error ? errorId : undefined,
       })}
       {props.error ? (
-        <span id={errorId} className="text-[11px] text-red-600" role="alert">{props.error}</span>
+        <span id={errorId} className="text-xs text-red-600" role="alert">{props.error}</span>
       ) : props.hint ? (
-        <span className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{props.hint}</span>
+        <span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>{props.hint}</span>
       ) : null}
     </label>
   )
@@ -110,7 +111,7 @@ export function EnhancedLayerEditorForm(props: EnhancedLayerEditorFormProps) {
     >
       <header className="grid gap-0.5">
         <strong className="text-xs">{props.editingId ? `Edit ${props.editingId}` : 'Add enhanced layer'}</strong>
-        <span className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+        <span className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
           Configuration stays in this browser and updates the mounted map without reload.
         </span>
       </header>
@@ -127,17 +128,17 @@ export function EnhancedLayerEditorForm(props: EnhancedLayerEditorFormProps) {
           />
         </EditorField>
         <EditorField field="kind" label="Layer kind" error={errors.kind}>
-          <select
+          <PanelSelect
             className={INPUT_CLASSNAME}
             name="enhanced-layer-kind"
             aria-label="Enhanced layer kind"
             value={draft.kind}
-            onChange={event => update('kind', event.currentTarget.value as EnhancedLayerDraft['kind'])}
+            onValueChange={selectedValueInput => update('kind', selectedValueInput as EnhancedLayerDraft['kind'])}
           >
             <option value="building">Building extrusion</option>
             <option value="road">Road extrusion</option>
             <option value="asset3d">3D asset</option>
-          </select>
+          </PanelSelect>
         </EditorField>
       </div>
 

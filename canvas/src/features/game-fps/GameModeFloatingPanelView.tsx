@@ -71,7 +71,7 @@ const GAME_MODE_REQUIRED_TOKENS = Object.freeze([
 
 function Invocation({ operation }: { operation: GameModeOperation }) {
   return (
-    <code className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'min-w-0 overflow-hidden font-mono text-[9px]', UI_THEME_TOKENS.text.secondary)}>
+    <code className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'min-w-0 overflow-hidden font-mono text-xs', UI_THEME_TOKENS.text.secondary)}>
       {renderMarkdownSigilInlineText(buildGameModeInvocation(operation), {
         renderKeywordChip: ({ value, className }) => renderAgenticOsInvocationKeywordChip({ value, className, sourceLink: false }),
       })}
@@ -198,7 +198,7 @@ export function GameModeFloatingPanelView() {
         </>}
       />
       <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
-        <section className={cn('grid grid-cols-3 gap-2 rounded border p-2 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Game Mode telemetry">
+        <section className={cn('grid grid-cols-3 gap-2 rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Game Mode telemetry">
           <span><b>Status</b><br />{gameMode.launchStatus} · {gameMode.simulationStatus}</span>
           <span><b>Mission</b><br />{mission.phase}</span>
           <span><b>Surface</b><br />{gameMode.surfaceMode}</span>
@@ -211,12 +211,12 @@ export function GameModeFloatingPanelView() {
         </section>
 
         <section className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Game Mode runtime status">
-          <p className="flex items-center gap-1 text-[11px] font-semibold"><MonitorSmartphone className="h-3.5 w-3.5" aria-hidden="true" /> Desktop, pointer, touch, Motion Control</p>
-          <p className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)}>{gameMode.message}</p>
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>One existing R3F Canvas · synchronous WebGL guard · fixed native Agentic ECS ticks · normalized slab AABB hitscan.</p>
-          {mission.runtimeError ? <p className={cn('text-[10px]', UI_THEME_TOKENS.status.error)} role="alert" data-kg-game-mode-runtime-error="1"><ShieldAlert className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />{mission.runtimeError}</p> : null}
-          {decisions.error ? <p className={cn('break-words text-[10px]', UI_THEME_TOKENS.status.error)} role="alert" data-kg-game-mode-save-error="1">{decisions.error}</p> : null}
-          <p className={cn('break-all text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Decision owner · {GAME_FPS_SAVE_PATH}</p>
+          <p className="flex items-center gap-1 text-xs font-semibold"><MonitorSmartphone className="h-3.5 w-3.5" aria-hidden="true" /> Desktop, pointer, touch, Motion Control</p>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>{gameMode.message}</p>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>One existing R3F Canvas · synchronous WebGL guard · fixed native Agentic ECS ticks · normalized slab AABB hitscan.</p>
+          {mission.runtimeError ? <p className={cn('text-xs', UI_THEME_TOKENS.status.error)} role="alert" data-kg-game-mode-runtime-error="1"><ShieldAlert className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />{mission.runtimeError}</p> : null}
+          {decisions.error ? <p className={cn('break-words text-xs', UI_THEME_TOKENS.status.error)} role="alert" data-kg-game-mode-save-error="1">{decisions.error}</p> : null}
+          <p className={cn('break-all text-xs', UI_THEME_TOKENS.text.tertiary)}>Decision owner · {GAME_FPS_SAVE_PATH}</p>
         </section>
 
         <section className={cn('grid grid-cols-3 gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Game Mode controls">
@@ -234,7 +234,7 @@ export function GameModeFloatingPanelView() {
             <article
               key={npc.id}
               className={cn(
-                'grid gap-1 rounded border p-2 text-[9px]',
+                'grid gap-1 rounded border p-2 text-xs',
                 UI_THEME_TOKENS.panel.border,
                 UI_THEME_TOKENS.panel.bg,
                 sharedAssetControls.selectedKind === 'npc' && sharedAssetControls.selectedTargetId === npc.id ? UI_THEME_TOKENS.button.activeBg : '',
@@ -243,7 +243,7 @@ export function GameModeFloatingPanelView() {
               data-kg-xr-shared-asset-target={npc.id}
               data-kg-xr-shared-gameplay-npc-selected={sharedAssetControls.selectedKind === 'npc' && sharedAssetControls.selectedTargetId === npc.id ? '1' : undefined}
             >
-              <header className="flex items-center justify-between gap-2 text-[10px]">
+              <header className="flex items-center justify-between gap-2 text-xs">
                 <b>{npc.id}</b>
                 <span>{npc.action} · {npc.health} HP</span>
                 <button
@@ -265,25 +265,25 @@ export function GameModeFloatingPanelView() {
         </section>
 
         <section className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Game Mode companions">
-          <h3 className="text-[11px] font-semibold">Motion Control · XR Mode</h3>
+          <h3 className="text-xs font-semibold">Motion Control · XR Mode</h3>
           <div className="flex flex-wrap gap-1">
             <button type="button" className="App-toolbar__btn" onClick={() => switchCompanion('motion-control')} data-kg-game-mode-open-companion="motion-control">Motion Control</button>
             <button type="button" className="App-toolbar__btn" onClick={() => switchCompanion('xr-3d')} data-kg-game-mode-open-companion="xr"><View className="h-3.5 w-3.5" aria-hidden="true" /> XR Mode</button>
           </div>
           <XrSharedAssetControls surface="game-mode" embedded />
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>On XR, Game Mode retains the paused authored scene while its first-person overlay owns camera and gameplay; exit resumes the shared controller owner.</p>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>On XR, Game Mode retains the paused authored scene while its first-person overlay owns camera and gameplay; exit resumes the shared controller owner.</p>
         </section>
 
         <FlightSimTrainingSurfaceProjection surface="game-mode" />
 
         <section className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-game-mode-invocations="shared-catalog">
-          <h3 className="text-[11px] font-semibold">MCP · / · @ · #</h3>
-          {!sourceMetadataReady ? <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Agentic OS Game Mode metadata is {grammarCatalog.hydration.status}; native invocation remains ready.</p> : null}
+          <h3 className="text-xs font-semibold">MCP · / · @ · #</h3>
+          {!sourceMetadataReady ? <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Agentic OS Game Mode metadata is {grammarCatalog.hydration.status}; native invocation remains ready.</p> : null}
           <Invocation operation="open" />
           <Invocation operation="start" />
           <Invocation operation="fire" />
           <Invocation operation="save" />
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>WebMCP · agentic-graph.control_local_game_mode</p>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>WebMCP · agentic-graph.control_local_game_mode</p>
         </section>
       </section>
     </section>

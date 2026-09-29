@@ -1,3 +1,4 @@
+import { selectMenuValue } from './helpers/semanticMenu'
 import assert from 'node:assert/strict'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -72,10 +73,9 @@ export async function testXrSceneAppearancePanelsAndEditorShareSavedSource() {
     hydrateCanonicalXrMotionReferenceRuntime()
     const panels = () => <><Editor /><XrSceneAppearanceControls compact /><XrSceneAppearanceControls /></>
     await mountReactRoot(root, panels())
-    const selects = () => [...container.querySelectorAll<HTMLSelectElement>('[aria-label="Scene appearance"]')]
+    const selects = () => [...container.querySelectorAll<HTMLButtonElement>('[aria-label="Scene appearance"]')]
     await act(async () => {
-      selects()[0]!.value = 'golden'
-      selects()[0]!.dispatchEvent(new env.dom.window.Event('change', { bubbles: true }))
+      selectMenuValue(selects()[0]!, 'golden')
     })
     assert.deepEqual(selects().map(select => select.value), ['golden', 'golden'])
     const text = useGraphStore.getState().markdownDocumentText!

@@ -227,7 +227,7 @@ export function CardMediaLoadingSkeleton({
       <span
         style={{
           display: 'block',
-          fontSize: 11,
+          fontSize: 12,
           lineHeight: 1.3,
           color: 'var(--kg-muted-foreground, rgba(0,0,0,0.62))',
         }}

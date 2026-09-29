@@ -1,3 +1,5 @@
+import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { ancestorPathsForWorkspacePath } from '@/features/workspace-fs/path'
@@ -161,15 +163,15 @@ function XrSubjectPlaybackEditor({ construction, busy, onApply }: {
   const [loop, setLoop] = React.useState(current.loop)
   return <fieldset disabled={busy} className="grid min-w-0 gap-2 border-t pt-2">
     <legend className="text-xs font-medium">Clip playback</legend>
-    <label className="grid gap-1 text-xs">Authored clip<select aria-label="Authored clip" className="min-h-9 rounded border bg-transparent px-2" value={clipId || ''}
-      onChange={event => setClipId(event.currentTarget.value || null)}>
+    <label className="grid gap-1 text-xs">Authored clip<PanelSelect aria-label="Authored clip" className="min-h-9 rounded border bg-transparent px-2" value={clipId || ''}
+      onValueChange={selectedValueInput => setClipId(selectedValueInput || null)}>
       <option value="">Rest pose</option>
       {current.clips.map(clip => <option key={clip.id} value={clip.id}>{clip.id} · {clip.duration} s</option>)}
-    </select></label>
-    <label className="grid gap-1 text-xs">At clip end<select aria-label="At clip end" className="min-h-9 rounded border bg-transparent px-2" value={loop ? 'repeat' : 'hold'} disabled={!clipId}
-      onChange={event => setLoop(event.currentTarget.value === 'repeat')}>
+    </PanelSelect></label>
+    <label className="grid gap-1 text-xs">At clip end<PanelSelect aria-label="At clip end" className="min-h-9 rounded border bg-transparent px-2" value={loop ? 'repeat' : 'hold'} disabled={!clipId}
+      onValueChange={selectedValueInput => setLoop(selectedValueInput === 'repeat')}>
       <option value="repeat">Repeat</option><option value="hold">Hold final pose</option>
-    </select></label>
+    </PanelSelect></label>
     <p className="text-xs opacity-70">Clips start at scene time zero. Use the Timeline to play or seek. Playback choices stay with the scene; model GLB includes all authored clips.</p>
     <button type="button" className="min-h-9 rounded border px-3 text-xs" onClick={() => onApply({ clipId, loop })}>Apply playback</button>
   </fieldset>
@@ -203,7 +205,7 @@ function XrSubjectPartEditor({ document, generation, selectedPart, busy, onSelec
     <div className="grid grid-cols-3 gap-1">{(['X', 'Y', 'Z'] as const).map((axis, index) => {
       const control = field === 'size' ? recipe?.controls.find(item => item.partId === draft.id && item.target === ['width', 'height', 'depth'][index]) : undefined
       const value = draft[field][index] * (field === 'rotation' ? 180 / Math.PI : 1)
-      return <label key={axis} className="min-w-0 text-[10px]">{axis}<input type="number" aria-label={`${label} ${axis}`} className={inputClass}
+      return <label key={axis} className="min-w-0 text-xs">{axis}<input type="number" aria-label={`${label} ${axis}`} className={inputClass}
         min={control?.type === 'number' ? control.min : field === 'size' ? 0.01 : field === 'rotation' ? -180 : -100}
         max={control?.type === 'number' ? control.max : field === 'size' ? 20 : field === 'rotation' ? 180 : 100}
         step="any" value={Number.isFinite(value) ? value : ''} onChange={event => {
@@ -215,23 +217,23 @@ function XrSubjectPartEditor({ document, generation, selectedPart, busy, onSelec
   return <details onToggle={event => setOpen(event.currentTarget.open)}>
     <summary className="min-h-9 cursor-pointer text-xs font-medium">Parts &amp; rig</summary>
     {recipe && draft ? <fieldset disabled={busy} className="grid min-w-0 gap-2">
-      <label className="grid gap-1 text-xs">Part<select aria-label="Part" className={inputClass} value={draft.id}
-        onChange={event => onSelect(event.currentTarget.value)}>
+      <label className="grid gap-1 text-xs">Part<PanelSelect aria-label="Part" className={inputClass} value={draft.id}
+        onValueChange={selectedValueInput => onSelect(selectedValueInput)}>
         {recipe.parts.map(part => <option key={part.id} value={part.id}>{part.id}</option>)}
-      </select></label>
-      <label className="grid gap-1 text-xs">Parent part<select aria-label="Parent part" className={inputClass} value={draft.parentId || ''}
-        onChange={event => { const parentId = event.currentTarget.value || null; setDraft(previous => previous && { ...previous, parentId }) }}>
+      </PanelSelect></label>
+      <label className="grid gap-1 text-xs">Parent part<PanelSelect aria-label="Parent part" className={inputClass} value={draft.parentId || ''}
+        onValueChange={selectedValueInput => { const parentId = selectedValueInput || null; setDraft(previous => previous && { ...previous, parentId }) }}>
         <option value="">Scene root</option>
         {recipe.parts.filter(part => part.id !== draft.id).map(part => <option key={part.id} value={part.id}>{part.id}</option>)}
-      </select></label>
-      <label className="grid gap-1 text-xs">Shape<select aria-label="Part shape" className={inputClass} value={draft.primitive}
-        onChange={event => { const primitive = event.currentTarget.value as AssetPart['primitive']; setDraft(previous => previous && { ...previous, primitive }) }}>
+      </PanelSelect></label>
+      <label className="grid gap-1 text-xs">Shape<PanelSelect aria-label="Part shape" className={inputClass} value={draft.primitive}
+        onValueChange={selectedValueInput => { const primitive = selectedValueInput as AssetPart['primitive']; setDraft(previous => previous && { ...previous, primitive }) }}>
         {(['box', 'sphere', 'cylinder', 'cone'] as const).map(shape => <option key={shape}>{shape}</option>)}
-      </select></label>
+      </PanelSelect></label>
       {vector('position', 'Position (m)')}{vector('pivot', 'Pivot (m)')}
       {vector('rotation', 'Rotation (degrees)')}{vector('size', 'Size (m)')}
-      <label className="flex items-center gap-2 text-xs">Part color<input type="color" aria-label="Part color" value={draft.color}
-        onChange={event => { const color = event.currentTarget.value; setDraft(previous => previous && { ...previous, color }) }} /></label>
+      <label className="flex items-center gap-2 text-xs">Part color<PanelColorPicker  aria-label="Part color" value={draft.color}
+        onValueChange={nextColor => { const color = nextColor; setDraft(previous => previous && { ...previous, color }) }} /></label>
       <label className="flex min-h-9 items-center gap-2 text-xs"><input type="checkbox" aria-label="Part visible" checked={draft.visible}
         onChange={event => { const visible = event.currentTarget.checked; setDraft(previous => previous && { ...previous, visible }) }} />Part visible</label>
       <p className="text-xs opacity-70">Transforms are local to the parent. Rotation uses the part’s pivot. Animated tracks can override the rest rotation. Bound dimensions and materials update the same procedural controls.</p>

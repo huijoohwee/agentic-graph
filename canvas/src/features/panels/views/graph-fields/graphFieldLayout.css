@@ -1,0 +1,6 @@
+.kg-graph-fields-surface { container: graph-fields / inline-size; }
+.kg-graph-fields-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.kg-graph-fields-list, .kg-graph-fields-settings { overscroll-behavior: contain; }
+@container graph-fields (max-width: 680px) {
+  .kg-graph-fields-split { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(160px, 1fr) minmax(220px, 1fr); }
+}

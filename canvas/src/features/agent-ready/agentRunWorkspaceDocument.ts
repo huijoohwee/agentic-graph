@@ -58,7 +58,7 @@ export function useAgentRunWorkspaceDocument() {
     editorTextOverride: null, viewerTextOverride: null, webpageWorkspaceMeta: null, webpageHtmlOverride: null,
     disableEditorMutations: true, disableViewerMutations: true, widgetModeActive: false,
     geoDatasetIntegration: undefined, highlightedLineRange: null, liveTextTailFollowKey: null,
-    onSaveAs: undefined, onWebpageChangeView: undefined, onWebpageUpdateMeta: undefined,
+    onSaveAs: undefined, onWebpageChangeView: undefined,
     onEditorCaretLine: noop, onViewerInlineEditStateChange: noop,
     editorUri: `inmemory://agent-run/${encodeURIComponent(inspection?.trace.runId ?? 'unobserved')}/${inspection?.trace.subjectDigest || inspection?.trace.observedAt || 'empty'}${sourcePath}`,
     editorLanguage: jsonSelected ? 'json' : 'markdown',

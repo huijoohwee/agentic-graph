@@ -1,3 +1,4 @@
+import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { readSemanticObjectViewMarkdown } from './semanticObjectView'
@@ -238,11 +239,11 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
     <button type="button" className={button} disabled={busy} onClick={() => void markObject(true, 'landscape')}>Mark terrain or transport</button>
     {marking && <section className="grid gap-2 rounded border p-2" aria-label="Individual object marking">
       <label className="grid gap-1">Shape for next mark
-        <select className="min-h-11 w-full min-w-0 rounded border bg-transparent px-2"
-          value={markShape} disabled={busy || !!saved.current} onChange={event => setMarkShape(event.currentTarget.value as TwinTemplate)}>
+        <PanelSelect className="min-h-11 w-full min-w-0 rounded border bg-transparent px-2"
+          value={markShape} disabled={busy || !!saved.current} onValueChange={selectedValueInput => setMarkShape(selectedValueInput as TwinTemplate)}>
           {SEMANTIC_TWIN_TEMPLATES.filter(shape => !['contour', 'relief'].includes(shape)).map(shape =>
             <option key={shape} value={shape}>{semanticTwinTemplateLabel(shape)}</option>)}
-        </select>
+        </PanelSelect>
       </label>
       <p className="m-0">{broadSurface
         ? 'Mark a continuous land or water area, including broad, low-contrast surfaces. It becomes a selectable terrain model.'
@@ -291,20 +292,20 @@ export default function SemanticImagePerceptionChoice({ sourceUrl }: { sourceUrl
           setLabels(current => current.filter((_, i) => i !== index)); setShapes(current => current.filter((_, i) => i !== index))
           setSelected(current => current.filter(i => i !== index).map(i => i > index ? i - 1 : i))
         }}>Remove mark {index + 1}</button>}<label className="grid gap-1">3D shape
-          <select className="min-h-11 w-full min-w-0 rounded border bg-transparent px-2" aria-label={`Region ${index + 1} shape`}
+          <PanelSelect className="min-h-11 w-full min-w-0 rounded border bg-transparent px-2" aria-label={`Region ${index + 1} shape`}
             value={shapes[index]} disabled={busy || !!saved.current}
-            onChange={event => { const value = event.currentTarget.value as TwinTemplate; setShapes(current => current.map((shape, i) => i === index ? value : shape)) }}>
+            onValueChange={selectedValueInput => { const value = selectedValueInput as TwinTemplate; setShapes(current => current.map((shape, i) => i === index ? value : shape)) }}>
             {SEMANTIC_TWIN_TEMPLATES.filter(shape => (!objectMode || shape !== 'relief') && (shape !== 'contour' || draft.result.proposals[index].silhouette) && (shape !== 'relief' || draft.result.proposals[index].relief))
               .map(shape => <option key={shape} value={shape}>{semanticTwinTemplateLabel(shape)}</option>)}
-          </select></label></div>)}</div>
+          </PanelSelect></label></div>)}</div>
       <p className="m-0">Choose terrain, water, aircraft, vessel, car, building, tree or furniture. Each selected region becomes its own selectable model.
         These are reviewed approximations: object identity, hidden surfaces and real depth are not recovered. Models use authored template proportions. Edit dimensions and placement in Timeline.</p>
       {objectMode && <label className="grid gap-1">Object layout
-        <select className="min-h-11 w-full rounded border bg-transparent px-2" value={layout} disabled={busy || !!saved.current}
-          onChange={event => setLayout(event.currentTarget.value as typeof layout)}>
+        <PanelSelect className="min-h-11 w-full rounded border bg-transparent px-2" value={layout} disabled={busy || !!saved.current}
+          onValueChange={selectedValueInput => setLayout(selectedValueInput as typeof layout)}>
           <option value="image">Image positions</option>
           <option value="contiguous-row">Contiguous row · separate blocks</option>
-        </select>
+        </PanelSelect>
         {layout === 'contiguous-row' && <span>Place selected objects edge-to-edge in review order, with aligned front faces. This is an authored arrangement.</span>}
       </label>}
       <button type="button" className={button} disabled={busy || !selected.length || selected.some(i => !labels[i]?.trim())}

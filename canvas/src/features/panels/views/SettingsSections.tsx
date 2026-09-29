@@ -143,7 +143,7 @@ export function SettingsSections({
           >
             <span className="inline-flex min-w-0 max-w-full items-center gap-1 overflow-hidden">
               <span className={UI_TEXT_TRUNCATE}>{area}</span>
-              <span className={`shrink-0 text-xs uppercase tracking-wide ${UI_THEME_TOKENS.text.tertiary} ml-1`}>
+              <span className={`shrink-0 text-xs uppercase tracking-normal ${UI_THEME_TOKENS.text.tertiary} ml-1`}>
                 {itemCount} items
               </span>
             </span>

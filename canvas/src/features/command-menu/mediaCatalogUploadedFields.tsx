@@ -85,7 +85,7 @@ export function UploadedMediaDescriptionInput({
       placeholder="Add media description"
       aria-label={`Describe ${item.name}`}
       className={cn(
-        'min-w-0 max-w-full truncate rounded border border-transparent bg-transparent px-1 py-0 text-[11px] outline-none',
+        'min-w-0 max-w-full truncate rounded border border-transparent bg-transparent px-1 py-0 text-xs outline-none',
         '!inline-block',
         UI_THEME_TOKENS.text.secondary,
         'focus:border-[color:var(--kg-border)] focus:bg-[color:var(--kg-panel-bg)]',
@@ -126,7 +126,7 @@ export function UploadedMediaInlineFieldEditor({
         value={value}
         aria-label={`Edit # metadata for ${item.name}`}
         className={cn(
-          'min-w-[7rem] max-w-full flex-1 truncate rounded border border-transparent bg-transparent px-1 py-0 font-mono text-[10px] outline-none',
+          'min-w-[7rem] max-w-full flex-1 truncate rounded border border-transparent bg-transparent px-1 py-0 font-mono text-xs outline-none',
           UI_THEME_TOKENS.text.tertiary,
           'focus:border-[color:var(--kg-border)] focus:bg-[color:var(--kg-panel-bg)]',
           className,

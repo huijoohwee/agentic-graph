@@ -1,3 +1,4 @@
+import { selectMenuOption } from './select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { expect } from 'playwright/test'
@@ -12,13 +13,13 @@ export async function proveWarehouseRehearsal({
   page, pane, lessons, inspect, selectPython, selectSurface, editRichSource, awaitStoredSource, output,
 }) {
   console.log('Warehouse rehearsal: checking assets and native timeline')
-  const originalLesson = await pane.getByLabel('Python lesson', { exact: true }).inputValue()
+  const originalLesson = await pane.getByLabel('Python lesson', { exact: true }).getAttribute('value')
   const restoreLesson = lessons.find(lesson => lesson.id === originalLesson)
   assert.ok(restoreLesson, 'offline proof must restore its existing lesson')
   const originalBinding = (await inspect()).binding
   const drone = lessons.find(lesson => lesson.id === 'drone')
   assert.ok(drone, 'warehouse rehearsal requires the existing drone lesson')
-  await pane.getByLabel('Python lesson', { exact: true }).selectOption(drone.id)
+  await selectMenuOption(pane.getByLabel('Python lesson', { exact: true }), drone.id)
   await pane.getByRole('button', { name: 'Code', exact: true }).click()
   await editRichSource(drone.solution)
   await pane.getByRole('button', { name: 'Run', exact: true }).click()
@@ -163,7 +164,7 @@ export async function proveWarehouseRehearsal({
   assert.equal(returned.stale, false)
 
   // Resume the owner's saved travel lesson before its independent worker-corruption proof.
-  await pane.getByLabel('Python lesson', { exact: true }).selectOption(originalLesson)
+  await selectMenuOption(pane.getByLabel('Python lesson', { exact: true }), originalLesson)
   await pane.getByRole('button', { name: 'Code', exact: true }).click()
   await editRichSource(restoreLesson.solution)
   assert.equal((await inspect()).binding.sourceDigest, originalBinding.sourceDigest, 'the surrounding offline source is restored exactly')
