@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.8.0"
+version: "1.9.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -478,14 +478,30 @@ PRD: Explorer and editor boundaries must remain perceptible across the full pane
 including the Source Files header and Monaco line-number gutter. Resize targets
 remain semantic and keyboard usable.
 
-TAD/ADR: Shared border CSS derives one stronger workspace divider from the active
-theme's secondary text and panel surface, retaining the 1 px reference width.
+TAD/ADR: Shared border CSS uses a stronger neutral workspace divider with the
+1 px reference width.
 Explorer separators draw a full-length line within their 8 px hit area. The
 Source Files header, workspace toolbar and Monaco gutter consume the same divider;
-surface control outlines keep their existing neutral token.
+surface control outlines use the same neutral token.
 
 MVP/evidence: cap 10 files / 20 KB patch; no dependencies, services or stored-data
 changes. Browser measurements confirm full-length separator geometry and 1 px
 header and gutter borders. Focused contracts, type checking and the affected gate
 are reported in the candidate handoff. GTM: clearer pane boundaries in the local,
 offline editor. Rollback: revert this revision; no migration is required.
+
+## Reference border parity (2026-09-29)
+
+PRD: Explorer, toolbar, Main Panel and Settings use one visible 1 px border.
+Resize and menu controls remain selectable.
+
+TAD/ADR: The shared border token owns color (`#9ca3af` light; dark values
+unchanged). The 1 px utility feeds headers, toolbar, gutter and panels. Explorer
+and toolbar separators center the line in 8 px hit areas. Collapsed explorer
+sections omit duplicate borders. Toolbar groups use named `hr` elements;
+native buttons and resize controls retain interaction.
+
+MVP/evidence: cap 11 files / 20 KB; no dependency or data change. Focused tests,
+types, browser styles and affected gate are in the handoff. The storage-auth
+smoke reads the semantic select button value and passes. GTM: clearer borders
+in the free offline app. Rollback: revert this revision; no migration.

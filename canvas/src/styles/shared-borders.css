@@ -2,8 +2,6 @@
 :root {
   --kg-surface-border-width: 1px;
   --kg-surface-border: var(--kg-surface-border-width) solid var(--kg-border);
-  --kg-workspace-divider-color: color-mix(in srgb, var(--kg-text-secondary) 55%, var(--kg-panel-bg));
-  --kg-workspace-divider: var(--kg-surface-border-width) solid var(--kg-workspace-divider-color);
   --kg-resize-separator-thickness: 8px;
 }
 
@@ -15,7 +13,7 @@
     border: 0;
     opacity: 1;
     background-color: transparent;
-    background-image: linear-gradient(var(--kg-workspace-divider-color), var(--kg-workspace-divider-color));
+    background-image: linear-gradient(var(--kg-border), var(--kg-border));
     background-position: center;
     background-repeat: no-repeat;
   }
@@ -29,7 +27,7 @@
     background-color: var(--kg-panel-action-bg-hover);
   }
   .kg-workspace-section-header {
-    border-bottom: var(--kg-workspace-divider);
+    border-bottom: var(--kg-surface-border);
   }
   @media (pointer: coarse), (max-width: 768px) {
     .kg-markdown-workspace-explorer-resize {
