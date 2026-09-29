@@ -1,4 +1,5 @@
 import React from 'react'
+import { usePanelTypography } from '@/lib/ui/panelTypography'
 import type { GraphSchema } from '@/lib/graph/schema'
 import type { GraphFieldsSelectedView } from '@/features/panels/views/GraphFieldsView'
 import { type GraphField, type GraphFieldId, type GraphFieldSettingsById, type GraphFieldSettingsResolved, type GraphFieldType } from '@/features/graph-fields/graphFields'
@@ -146,6 +147,7 @@ export function GraphFieldsListPanelBody({
   localSchemaNodeTypes,
   localSchemaEdgeLabels,
 }: GraphFieldsListPanelBodyProps) {
+  const panelTypography = usePanelTypography()
   const selectGraphField = React.useCallback((id: GraphFieldId | null) => {
     setSelectedFieldId(id)
     if (id) setSelectedGlobalView(null)
@@ -395,10 +397,10 @@ export function GraphFieldsListPanelBody({
                   >
                     <GraphFieldsIcon className={`${iconSizeClass} ${UI_THEME_TOKENS.text.tertiary}`} aria-hidden={true} />
                     <section className="min-w-0 flex-1">
-                      <section className={`flex items-center gap-1 min-w-0 text-xs ${UI_THEME_TOKENS.text.primary} truncate`}>
+                      <section className={`flex items-center gap-1 min-w-0 ${panelTypography.panelTextClass} ${UI_THEME_TOKENS.text.primary} truncate`}>
                         <span className="truncate">{globalSchemaLabel}</span>
                       </section>
-                      <section className={`${uiPanelKeyValueTextSizeClass} ${UI_THEME_TOKENS.text.tertiary} truncate`}>
+                      <section className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.tertiary} truncate`}>
                         {SCHEMA_KEYS.globalSchema}
                       </section>
                     </section>
@@ -415,10 +417,10 @@ export function GraphFieldsListPanelBody({
                     >
                       <GraphFieldsIcon className={`${iconSizeClass} ${UI_THEME_TOKENS.text.tertiary}`} aria-hidden={true} />
                       <section className="min-w-0 flex-1">
-                        <section className={`flex items-center gap-1 min-w-0 text-xs ${UI_THEME_TOKENS.text.primary} truncate`}>
+                        <section className={`flex items-center gap-1 min-w-0 ${panelTypography.panelTextClass} ${UI_THEME_TOKENS.text.primary} truncate`}>
                           <span className="truncate">{localSchemaValidationLabel}</span>
                         </section>
-                        <section className={`${uiPanelKeyValueTextSizeClass} ${UI_THEME_TOKENS.text.tertiary} truncate`}>
+                        <section className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.tertiary} truncate`}>
                           {formatLocalSubtitle('validation')}
                         </section>
                       </section>
@@ -442,10 +444,10 @@ export function GraphFieldsListPanelBody({
                     >
                       <GraphFieldsIcon className={`${iconSizeClass} ${UI_THEME_TOKENS.text.tertiary}`} aria-hidden={true} />
                       <section className="min-w-0 flex-1">
-                        <section className={`flex items-center gap-1 min-w-0 text-xs ${UI_THEME_TOKENS.text.primary} truncate`}>
+                        <section className={`flex items-center gap-1 min-w-0 ${panelTypography.panelTextClass} ${UI_THEME_TOKENS.text.primary} truncate`}>
                           <span className="truncate">{localSchemaPropsLabel}</span>
                         </section>
-                        <section className={`${uiPanelKeyValueTextSizeClass} ${UI_THEME_TOKENS.text.tertiary} truncate`}>
+                        <section className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.tertiary} truncate`}>
                           {formatLocalSubtitle('properties')}
                         </section>
                       </section>
@@ -471,10 +473,10 @@ export function GraphFieldsListPanelBody({
                     >
                       <GraphFieldsIcon className={`${iconSizeClass} ${UI_THEME_TOKENS.text.tertiary}`} aria-hidden={true} />
                       <section className="min-w-0 flex-1">
-                        <section className={`flex items-center gap-1 min-w-0 text-xs ${UI_THEME_TOKENS.text.primary} truncate`}>
+                        <section className={`flex items-center gap-1 min-w-0 ${panelTypography.panelTextClass} ${UI_THEME_TOKENS.text.primary} truncate`}>
                           <span className="truncate">{localSchemaTemplateLabel}</span>
                         </section>
-                        <section className={`${uiPanelKeyValueTextSizeClass} ${UI_THEME_TOKENS.text.tertiary} truncate`}>
+                        <section className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.tertiary} truncate`}>
                           {formatLocalSubtitle('template')}
                         </section>
                       </section>
@@ -499,10 +501,10 @@ export function GraphFieldsListPanelBody({
                     >
                       <GraphFieldsIcon className={`${iconSizeClass} ${UI_THEME_TOKENS.text.tertiary}`} aria-hidden={true} />
                       <section className="min-w-0 flex-1">
-                        <section className={`flex items-center gap-1 min-w-0 text-xs ${UI_THEME_TOKENS.text.primary} truncate`}>
+                        <section className={`flex items-center gap-1 min-w-0 ${panelTypography.panelTextClass} ${UI_THEME_TOKENS.text.primary} truncate`}>
                           <span className="truncate">{localSchemaLocalRulesLabel}</span>
                         </section>
-                        <section className={`${uiPanelKeyValueTextSizeClass} ${UI_THEME_TOKENS.text.tertiary} truncate`}>
+                        <section className={`${panelTypography.microLabelClass} ${UI_THEME_TOKENS.text.tertiary} truncate`}>
                           {formatLocalSubtitle('localRules')}
                         </section>
                       </section>

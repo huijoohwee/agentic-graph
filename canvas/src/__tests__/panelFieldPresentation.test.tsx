@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
+import { PanelCode } from '@/features/panels/ui/PanelText'
+import { HelpKtvCode, HelpKtvMutedText } from '@/features/panels/views/HelpKtvLayout'
+import { useSchemaEditorUiClasses } from '@/features/schema-editor/useSchemaEditorUiClasses'
 import React, { act, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
@@ -18,10 +21,18 @@ export async function testPanelFieldsShareOnePresentationAndKeepInteractions() {
   const { restore } = initJsdomHarness()
   const host = document.createElement('section'); document.body.append(host)
   const root = createRoot(host), previous = useGraphStore.getState()
+  function SchemaCaption() {
+    const ui = useSchemaEditorUiClasses()
+    return <small data-schema-caption className={ui.uiPanelMicroLabelTextSizeClass}>Schema hint</small>
+  }
   function Fields() {
     const [value, setValue] = useState(2)
     return <>
       <KeyTypeValueHeader />
+      <PanelCode className="text-lg" data-role-code>revision-id</PanelCode>
+      <HelpKtvCode className="text-lg" data-role-help-code>WASD</HelpKtvCode>
+      <HelpKtvMutedText className="text-lg">Supporting help</HelpKtvMutedText>
+      <SchemaCaption />
       {(['keyTypeValue', 'keyValue', 'keyIconValue', 'keyIconSliderInput'] as const).map(layout =>
         <CanvasEditableKeyTypeValueRow key={layout} layout={layout} keyNode={layout}
           className="grid-cols-2 gap-8 text-[9px] font-mono py-9" typeNode={<span>Type</span>} valueNode={<input aria-label={layout} defaultValue="value" />} />)}
@@ -37,8 +48,15 @@ export async function testPanelFieldsShareOnePresentationAndKeepInteractions() {
     </>
   }
   try {
-    useGraphStore.setState({ uiPanelTextFontClass: 'font-serif', uiPanelKeyValueTextSizeClass: 'text-[15px]', uiPanelRowDensityDefaultClass: 'py-2' })
+    useGraphStore.setState({ uiPanelTextFontClass: 'font-serif', uiPanelKeyValueTextSizeClass: 'text-[15px]', uiPanelRowDensityDefaultClass: 'py-2', uiPanelMicroLabelTextSizeClass: 'text-xs', uiPanelMonospaceTextClass: 'font-mono text-xs' })
     await act(async () => root.render(<Fields />))
+    for (const code of host.querySelectorAll('[data-role-code], [data-role-help-code]')) {
+      assert.equal(code.tagName, 'CODE')
+      assert(code.classList.contains('font-mono') && code.classList.contains('text-xs'), 'code uses its 12 px role inside a larger field')
+      assert(!code.classList.contains('text-lg'), 'caller typography cannot replace the shared code role')
+    }
+    assert.equal(host.querySelector('[data-role-help-code]')?.textContent, 'WASD', 'help forwards semantic attributes')
+    for (const caption of host.querySelectorAll('small')) assert(caption.classList.contains('font-serif') && caption.classList.contains('text-xs'), 'supporting help and schema hints share the caption role')
     const rows = Array.from(host.querySelectorAll<HTMLElement>('[data-panel-field-row]'))
     assert.equal(rows.length, 10)
     for (const row of rows) {
@@ -59,18 +77,21 @@ export async function testPanelFieldsShareOnePresentationAndKeepInteractions() {
       range.dispatchEvent(new window.Event('input', { bubbles: true }))
     })
     assert(Array.from(host.querySelectorAll('output')).every(output => output.textContent === '5'), 'shared range handlers update each control')
-    await act(async () => useGraphStore.setState({ uiPanelTextFontClass: 'font-sans', uiPanelKeyValueTextSizeClass: 'text-xs' }))
+    await act(async () => useGraphStore.setState({ uiPanelTextFontClass: 'font-sans', uiPanelKeyValueTextSizeClass: 'text-xs', uiPanelMonospaceTextClass: 'font-mono text-sm', uiPanelMicroLabelTextSizeClass: 'text-sm' }))
+    assert([...host.querySelectorAll('small, [data-role-code], [data-role-help-code]')].every(el => el.classList.contains('text-sm')), 'mounted supporting roles follow their shared preferences')
     assert(rows.every(row => row.classList.contains('text-xs') && row.classList.contains('font-sans')), 'preferences update mounted fields')
     assert(host.querySelector('[data-kg-timeline-transport]')?.classList.contains('text-xs'), 'BottomPanel transport uses the same font owner')
   } finally {
     await act(async () => root.unmount())
-    useGraphStore.setState({ uiPanelTextFontClass: previous.uiPanelTextFontClass, uiPanelKeyValueTextSizeClass: previous.uiPanelKeyValueTextSizeClass, uiPanelRowDensityDefaultClass: previous.uiPanelRowDensityDefaultClass })
+    useGraphStore.setState({ uiPanelTextFontClass: previous.uiPanelTextFontClass, uiPanelKeyValueTextSizeClass: previous.uiPanelKeyValueTextSizeClass, uiPanelRowDensityDefaultClass: previous.uiPanelRowDensityDefaultClass, uiPanelMonospaceTextClass: previous.uiPanelMonospaceTextClass, uiPanelMicroLabelTextSizeClass: previous.uiPanelMicroLabelTextSizeClass })
     host.remove(); restore()
   }
 }
 
 export function testPanelFieldsForbidPresentationVariants() {
   const read = (file: string) => fs.readFileSync(path.resolve(process.cwd(), file), 'utf8')
+  for (const file of ['CrossDeviceIdentitySettingsRows.tsx', 'CanvasEmbedSettingsRows.tsx', 'HelpShortcutsSection.tsx']) assert(!/<code(?:\s|>)/.test(read(`src/features/panels/views/${file}`)), `${file} must resolve code typography through PanelCode`)
+  assert(!/useGraphStore/.test(read('src/features/schema-editor/useSchemaEditorUiClasses.ts')), 'schema typography delegates to the shared resolver')
   const contract = read('../grph-shared/src/ui/keyTypeValueRows.ts')
   for (const legacy of ['KTV_KEY_VALUE_GRID_CLASS_NAME', 'KTV_KEY_ICON_VALUE_GRID_CLASS_NAME', 'KTV_KEY_ICON_SLIDER_INPUT_GRID_CLASS_NAME']) assert(!contract.includes(legacy))
   assert.equal(panelFieldDecorationClassName('grid-cols-2 sm:grid-cols-4 gap-8 text-xs font-mono py-8 rounded border text-red-500'), 'rounded border text-red-500')

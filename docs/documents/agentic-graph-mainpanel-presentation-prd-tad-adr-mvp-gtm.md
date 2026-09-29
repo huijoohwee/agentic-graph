@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.3.0"
+version: "1.3.1"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -230,3 +230,36 @@ MainPanel tabs inherit the system sans / 14 px baseline; populated tabs expose
 within x=17..373 and has zero horizontal content overflow. The offline lesson regression uses semantic folder disclosure buttons after the
 Explorer selection/expansion split. The native affected
 receipt remains the authority for the final committed source revision.
+
+## Panel text role correction
+
+PRD: Help, Settings and Workflow Manager must apply the reference roles to nested
+content, including code examples, diagnostic identifiers, field names and hints.
+Sharing a root font alone does not establish the intended text hierarchy.
+
+TAD/ADR: Semantic `PanelCode` and `PanelCaption` reuse `usePanelTypography` and
+override conflicting caller size classes. Help rows use the shared Canvas row
+adapter; code forwards semantic attributes and no longer inherits field size.
+Settings diagnostics and embed transport code use the same code owner. Graph
+field names use the primary panel role; supporting IDs and field hints use the
+caption role. Schema-editor typography resolves through the existing panel hook.
+Remove direct fallback variants and Help's alternate line-height utility. Keep
+explicit user typography preferences, field handlers and lazy loading.
+
+MVP: 12-module / 60 KB cap; the 20-minute implementation window extended for live
+verification and the native release checks. No new dependencies or network fonts.
+Mounted regression checks cover semantic code/caption elements, rejected caller
+overrides, live preference changes and Help attribute forwarding. Source guards
+reject raw code in migrated consumers and direct schema-editor typography reads.
+
+Observed local evidence: both focused panel cases, Canvas typecheck/runtime tests,
+and source hygiene pass. Live Help code/captions and Settings diagnostic code use
+12/16 px; field labels and controls use 14/20 px. Workflow Manager names use 14/20
+px while their IDs and hints use 12/16 px. All three tab panels measure 864 px
+client and scroll width. Keyboard tab activation and section expansion work.
+This evidence covers the reported desktop states; native affected validation and
+provider checks bind the committed candidate separately.
+
+GTM/rollback: Improve consistency in the existing free local workflow. No measured
+usability or revenue claim. Revert this correction to restore the preceding role
+assignments; no data or preference migration is introduced.
