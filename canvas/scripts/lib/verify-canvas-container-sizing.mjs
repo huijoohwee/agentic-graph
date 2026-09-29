@@ -14,7 +14,7 @@ export async function verifyCanvasContainerSizing(page) {
     await page.getByRole('button', { name: 'Settings', exact: true }).click()
     const panel = page.getByRole('complementary', { name: 'Main panel', exact: true })
     await panel.getByRole('textbox', { name: 'Search settings…', exact: true }).fill('canvas.container.sizing')
-    await selectMenuOption(panel.locator('button[data-kg-select]'), mode)
+    await selectMenuOption(panel.getByRole('button', { name: 'canvas.container.sizing', exact: true }), mode)
     await panel.getByRole('button', { name: 'Apply', exact: true }).click()
     await panel.getByRole('button', { name: 'Close', exact: true }).click()
     await openEditorWorkspace(page)
