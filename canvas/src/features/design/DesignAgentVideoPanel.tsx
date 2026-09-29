@@ -141,37 +141,37 @@ export function DesignAgentVideoPanel({ active }: { active: boolean }) {
         ].map(([label, value]) => (
           <section key={String(label)} className={cn('rounded border px-2 py-1', UI_THEME_TOKENS.panel.border)}>
             <dt className={cn(panelTypography.microLabelClass, UI_THEME_TOKENS.text.tertiary)}>{label}</dt>
-            <dd className={cn('m-0 mt-0.5 truncate font-mono text-[11px]', UI_THEME_TOKENS.text.primary)}>{value}</dd>
+            <dd className={cn('m-0 mt-0.5 truncate font-mono text-xs', UI_THEME_TOKENS.text.primary)}>{value}</dd>
           </section>
         ))}
       </dl>
       <section className="mt-2 grid min-w-0 gap-2 xl:grid-cols-2" aria-label="Agent video workspace">
         <section className={cn('rounded border p-2', UI_THEME_TOKENS.panel.border)}>
-          <header className={cn('mb-1 flex min-w-0 items-center gap-1 text-[11px] font-semibold', UI_THEME_TOKENS.text.primary)}>
+          <header className={cn('mb-1 flex min-w-0 items-center gap-1 text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>
             <FileCode className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
             <span>Workspace files</span>
           </header>
           <ol className="grid min-w-0 gap-1" aria-label="Design video workspace files">
             {stagedArtifact.manifest.workspaceFiles.map(file => (
               <li key={file.path} className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
-                <span className={cn('font-mono text-[10px] uppercase', UI_THEME_TOKENS.text.tertiary)}>{file.kind}</span>
-                <span className={cn('truncate font-mono text-[11px]', UI_THEME_TOKENS.text.primary)}>{file.path}</span>
-                <span className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{file.role}</span>
+                <span className={cn('font-mono text-xs uppercase', UI_THEME_TOKENS.text.tertiary)}>{file.kind}</span>
+                <span className={cn('truncate font-mono text-xs', UI_THEME_TOKENS.text.primary)}>{file.path}</span>
+                <span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>{file.role}</span>
               </li>
             ))}
           </ol>
         </section>
         <section className={cn('rounded border p-2', UI_THEME_TOKENS.panel.border)}>
-          <header className={cn('mb-1 flex min-w-0 items-center gap-1 text-[11px] font-semibold', UI_THEME_TOKENS.text.primary)}>
+          <header className={cn('mb-1 flex min-w-0 items-center gap-1 text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>
             <ListTree className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
             <span>Compositions</span>
           </header>
           <ol className="grid min-w-0 gap-1" aria-label="Design video compositions">
             {stagedArtifact.manifest.compositions.slice(0, 6).map(composition => (
               <li key={composition.id} className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
-                <span className={cn('font-mono text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{composition.trackIndex}</span>
-                <span className={cn('truncate text-[11px]', UI_THEME_TOKENS.text.primary)}>{composition.label}</span>
-                <span className={cn('font-mono text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
+                <span className={cn('font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>{composition.trackIndex}</span>
+                <span className={cn('truncate text-xs', UI_THEME_TOKENS.text.primary)}>{composition.label}</span>
+                <span className={cn('font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>
                   {formatTimelineSeconds(composition.startMs)}
                 </span>
               </li>
@@ -179,30 +179,30 @@ export function DesignAgentVideoPanel({ active }: { active: boolean }) {
           </ol>
         </section>
         <section className={cn('rounded border p-2', UI_THEME_TOKENS.panel.border)}>
-          <header className={cn('mb-1 flex min-w-0 items-center gap-1 text-[11px] font-semibold', UI_THEME_TOKENS.text.primary)}>
+          <header className={cn('mb-1 flex min-w-0 items-center gap-1 text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>
             <Images className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
             <span>Assets</span>
           </header>
           <ol className="grid min-w-0 gap-1" aria-label="Design video assets">
             {stagedArtifact.manifest.assets.slice(0, 6).map(asset => (
               <li key={asset.id} className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
-                <span className={cn('font-mono text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{asset.kind}</span>
-                <span className={cn('truncate text-[11px]', UI_THEME_TOKENS.text.primary)}>{asset.label}</span>
+                <span className={cn('font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>{asset.kind}</span>
+                <span className={cn('truncate text-xs', UI_THEME_TOKENS.text.primary)}>{asset.label}</span>
               </li>
             ))}
           </ol>
         </section>
         <section className={cn('rounded border p-2', UI_THEME_TOKENS.panel.border)}>
-          <header className={cn('mb-1 flex min-w-0 items-center gap-1 text-[11px] font-semibold', UI_THEME_TOKENS.text.primary)}>
+          <header className={cn('mb-1 flex min-w-0 items-center gap-1 text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>
             <Rows3 className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
             <span>Timeline lanes</span>
           </header>
           <ol className="grid min-w-0 gap-1" aria-label="Design video timeline tracks">
             {stagedArtifact.manifest.timelineLanes.flatMap(lane => lane.tracks.slice(0, 6).map(track => (
               <li key={`${lane.id}:${track.id}`} className={cn('grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded border px-2 py-1', UI_THEME_TOKENS.panel.border)}>
-                <span className={cn('font-mono text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{track.trackIndex}</span>
-                <span className={cn('truncate text-[11px]', UI_THEME_TOKENS.text.primary)}>{track.label}</span>
-                <span className={cn('font-mono text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
+                <span className={cn('font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>{track.trackIndex}</span>
+                <span className={cn('truncate text-xs', UI_THEME_TOKENS.text.primary)}>{track.label}</span>
+                <span className={cn('font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>
                   {formatTimelineSeconds(track.startMs)}
                 </span>
               </li>
@@ -213,7 +213,7 @@ export function DesignAgentVideoPanel({ active }: { active: boolean }) {
       {previewUrl ? (
         <figure className="mt-2">
           <video className="block aspect-video w-full rounded border object-cover" src={previewUrl} controls={true} playsInline={true} />
-          <figcaption className={cn('mt-1 truncate font-mono text-[11px]', UI_THEME_TOKENS.text.tertiary)}>
+          <figcaption className={cn('mt-1 truncate font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>
             {artifact?.semanticKey || 'design-agent-video'}
           </figcaption>
         </figure>

@@ -324,7 +324,7 @@ export function MermaidDiagramPanelView({
         <section className="min-w-0">
           <section className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>{title}</section>
           {showRowList ? (
-            <section className={cn('truncate text-[11px]', UI_THEME_TOKENS.text.secondary)}>
+            <section className={cn('truncate text-xs', UI_THEME_TOKENS.text.secondary)}>
               {rowEntries.length === model.rows.length
                 ? `${model.rows.length} parsed rows`
                 : `${rowEntries.length} / ${model.rows.length} parsed rows`}
@@ -398,9 +398,9 @@ export function MermaidDiagramPanelView({
                       }}
                     >
                       {treeNode.leadingControl}
-                      <span className="w-16 shrink-0 text-[10px] uppercase tracking-normal text-[var(--kg-text-tertiary)]">{row.kind}</span>
-                      <span className="min-w-0 flex-1 truncate font-mono text-[11px]">{row.label}</span>
-                      <span className="shrink-0 text-[10px] text-[var(--kg-text-tertiary)]">L{row.lineNumber}</span>
+                      <span className="w-16 shrink-0 text-xs uppercase tracking-normal text-[var(--kg-text-tertiary)]">{row.kind}</span>
+                      <span className="min-w-0 flex-1 truncate font-mono text-xs">{row.label}</span>
+                      <span className="shrink-0 text-xs text-[var(--kg-text-tertiary)]">L{row.lineNumber}</span>
                     </article>
                   </li>
                 )
@@ -429,9 +429,9 @@ export function MermaidDiagramPanelView({
                 data-kg-mermaid-diagram-command-selected={selected ? '1' : undefined}
                 onClick={() => setSelectedRowKey(key)}
               >
-                <span className="w-16 shrink-0 text-[10px] uppercase tracking-normal text-[var(--kg-text-tertiary)]">{row.kind}</span>
-                <span className="min-w-0 flex-1 truncate font-mono text-[11px]">{row.label}</span>
-                <span className="shrink-0 text-[10px] text-[var(--kg-text-tertiary)]">L{row.lineNumber}</span>
+                <span className="w-16 shrink-0 text-xs uppercase tracking-normal text-[var(--kg-text-tertiary)]">{row.kind}</span>
+                <span className="min-w-0 flex-1 truncate font-mono text-xs">{row.label}</span>
+                <span className="shrink-0 text-xs text-[var(--kg-text-tertiary)]">L{row.lineNumber}</span>
               </button>
             )
           })}

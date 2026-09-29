@@ -1,4 +1,8 @@
 import React from 'react'
+import { usePanelTypography } from './panelTypography'
+import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
+import { KeyTypeValueStaticRow } from 'grph-shared/react/keyTypeValueRow'
+import { KTV_FIELD_GRID_CLASS_NAME, KTV_ROW_LABEL_CELL_CLASS_NAME, KTV_ROW_VALUE_CELL_CLASS_NAME, panelFieldDecorationClassName } from 'grph-shared/ui/keyTypeValueRows'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
   readDataViewControlPaddingClassName,
@@ -11,8 +15,8 @@ import {
 import { UI_RESPONSIVE_SELECTION_CONTROL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { cn } from '@/lib/utils'
 
-export const PANEL_FORM_LABEL_TEXT_CLASSNAME = cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)
-export const PANEL_FORM_SECTION_LABEL_TEXT_CLASSNAME = cn('block text-xs mb-1', UI_THEME_TOKENS.text.secondary)
+export const PANEL_FORM_LABEL_TEXT_CLASSNAME = cn('min-w-0', UI_THEME_TOKENS.text.tertiary)
+export const PANEL_FORM_SECTION_LABEL_TEXT_CLASSNAME = cn('min-w-0', UI_THEME_TOKENS.text.secondary)
 
 const PANEL_FORM_SINGLE_LINE_FILLED_CONTROL_CLASSNAME = cn(
   'w-full min-w-0 max-w-full rounded-md border',
@@ -124,6 +128,7 @@ export const PanelTextInput = React.forwardRef<HTMLInputElement, PanelTextInputP
   { className, variant = 'filled', density, ...props },
   ref,
 ) {
+  const { panelTextClass } = usePanelTypography()
   const densityContext = usePanelFormDensity()
   return (
     <input
@@ -133,6 +138,7 @@ export const PanelTextInput = React.forwardRef<HTMLInputElement, PanelTextInputP
         variant === 'transparent' ? PANEL_FORM_SINGLE_LINE_TRANSPARENT_CONTROL_CLASSNAME : PANEL_FORM_SINGLE_LINE_FILLED_CONTROL_CLASSNAME,
         readDataViewSingleLineControlClassName(density || densityContext?.rowHeightPreset || 'compact'),
         className,
+        panelTextClass,
       )}
     />
   )
@@ -142,6 +148,7 @@ export const PanelTextarea = React.forwardRef<HTMLTextAreaElement, PanelTextarea
   { className, variant = 'filled', rowHeightPreset, fieldLineMode, rows, ...props },
   ref,
 ) {
+  const { panelTextClass } = usePanelTypography()
   const densityContext = usePanelFormDensity()
   const nextRowHeightPreset = rowHeightPreset || densityContext?.rowHeightPreset || 'compact'
   const nextFieldLineMode = fieldLineMode || densityContext?.fieldLineMode || null
@@ -160,6 +167,7 @@ export const PanelTextarea = React.forwardRef<HTMLTextAreaElement, PanelTextarea
           })
           : readDataViewControlPaddingClassName(nextRowHeightPreset),
         className,
+        panelTextClass,
       )}
     />
   )
@@ -169,6 +177,7 @@ export const PanelSelect = React.forwardRef<HTMLSelectElement, PanelSelectProps>
   { className, variant = 'filled', density, ...props },
   ref,
 ) {
+  const { panelTextClass } = usePanelTypography()
   const densityContext = usePanelFormDensity()
   return (
     <select
@@ -178,6 +187,7 @@ export const PanelSelect = React.forwardRef<HTMLSelectElement, PanelSelectProps>
         variant === 'transparent' ? PANEL_FORM_SINGLE_LINE_TRANSPARENT_CONTROL_CLASSNAME : PANEL_FORM_SINGLE_LINE_FILLED_CONTROL_CLASSNAME,
         readDataViewSingleLineControlClassName(density || densityContext?.rowHeightPreset || 'compact'),
         className,
+        panelTextClass,
       )}
     />
   )
@@ -207,51 +217,28 @@ export const PanelRangeInput = React.forwardRef<HTMLInputElement, PanelRangeInpu
   )
 })
 
-export function PanelField({
-  label,
-  children,
-  className,
-  labelClassName,
-  variant = 'micro',
-  layout = 'block',
-}: PanelFieldProps) {
+// variant/layout are accepted for older callers only; there is one field presentation.
+export function PanelField({ label, children, className, labelClassName }: PanelFieldProps) {
+  const row = useCanvasKeyTypeValueStaticRowProps()
   return (
-    <label className={cn(layout === 'compact' ? 'grid gap-1' : 'block', className)}>
-      <span
-        className={cn(
-          variant === 'section' ? PANEL_FORM_SECTION_LABEL_TEXT_CLASSNAME : PANEL_FORM_LABEL_TEXT_CLASSNAME,
-          labelClassName,
-        )}
-      >
-        {label}
-      </span>
-      {children}
+    <label data-panel-field-row="true" className={cn(
+      panelFieldDecorationClassName(className), KTV_FIELD_GRID_CLASS_NAME,
+      'col-span-full items-center', row.fontClassName, row.textSizeClassName, row.densityClassName,
+    )}>
+      <span className={cn(KTV_ROW_LABEL_CELL_CLASS_NAME, panelFieldDecorationClassName(labelClassName))}>{label}</span>
+      <span />
+      <span className={cn(KTV_ROW_VALUE_CELL_CLASS_NAME, 'items-center')}>{children}</span>
     </label>
   )
 }
 
-export function PanelReadOnlyField({
-  label,
-  value,
-  className,
-  labelClassName,
-  valueClassName,
-  variant = 'micro',
-  layout = 'block',
-}: PanelReadOnlyFieldProps) {
-  return (
-    <dl className={cn(layout === 'compact' ? 'grid gap-1' : 'space-y-0.5', className)}>
-      <dt
-        className={cn(
-          variant === 'section' ? PANEL_FORM_SECTION_LABEL_TEXT_CLASSNAME : PANEL_FORM_LABEL_TEXT_CLASSNAME,
-          labelClassName,
-        )}
-      >
-        {label}
-      </dt>
-      <dd className={cn('m-0 text-xs', UI_THEME_TOKENS.text.secondary, valueClassName)}>{value}</dd>
-    </dl>
-  )
+export function PanelReadOnlyField({ label, value, className, labelClassName, valueClassName }: PanelReadOnlyFieldProps) {
+  const row = useCanvasKeyTypeValueStaticRowProps()
+  return <KeyTypeValueStaticRow {...row}
+    className={cn('col-span-full', panelFieldDecorationClassName(className))}
+    keyNode={<span className={panelFieldDecorationClassName(labelClassName)}>{label}</span>}
+    valueNode={<span className={panelFieldDecorationClassName(valueClassName)}>{value}</span>}
+  />
 }
 
 export function readPanelChoiceSurfaceClassName(options: {
@@ -261,7 +248,7 @@ export function readPanelChoiceSurfaceClassName(options: {
 }): string {
   const { active, multiline = false, className } = options
   return cn(
-    multiline ? 'block min-h-14 w-full rounded-md border px-2 py-1 text-left text-xs' : 'block w-full rounded-md border px-2 py-1 text-left text-xs',
+    multiline ? 'block min-h-14 w-full rounded-md border px-2 py-1 text-left text-inherit' : 'block w-full rounded-md border px-2 py-1 text-left text-inherit',
     active
       ? `${UI_THEME_TOKENS.button.activeBorder} ${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
       : `${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.text}`,

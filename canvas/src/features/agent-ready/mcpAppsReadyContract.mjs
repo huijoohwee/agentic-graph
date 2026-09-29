@@ -1,6 +1,5 @@
-import {
-  AGENTIC_OS_AGENT_READY_PROMPT_NAMES,
-} from './agentic-graph-agent-ready-prompt-contract.mjs'
+import { UI_FONT_MONO, UI_FONT_SANS } from 'grph-shared/ui/fontStacks'
+import { AGENTIC_OS_AGENT_READY_PROMPT_NAMES } from './agentic-graph-agent-ready-prompt-contract.mjs'
 import { AGENTIC_OS_SOURCE_FILE_RESOURCE_URI_TEMPLATE } from './agentic-graph-agent-ready-resource-contract.mjs'
 import { resolveAgenticOsControlPlaneMcpUrl } from './agenticOsControlPlane.mjs'
 import {
@@ -579,7 +578,7 @@ export const buildAgenticGraphMcpAppsHtml = (args = {}) => {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>agentic-graph Agent Ready</title>
   <style>
-    :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    :root { color-scheme: light dark; font-family: ${UI_FONT_SANS}; }
     * { box-sizing: border-box; }
     body { margin: 0; background: Canvas; color: CanvasText; }
     main { display: grid; gap: 12px; min-height: 100vh; padding: 16px; }
@@ -592,7 +591,7 @@ export const buildAgenticGraphMcpAppsHtml = (args = {}) => {
     dl { display: grid; grid-template-columns: minmax(110px, max-content) 1fr; gap: 6px 10px; margin: 0; font-size: 12px; }
     dt { color: color-mix(in srgb, CanvasText 62%, transparent); }
     dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
-    pre { margin: 0; max-height: 48vh; overflow: auto; border: 1px solid color-mix(in srgb, CanvasText 18%, transparent); border-radius: 6px; padding: 10px; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; background: color-mix(in srgb, Canvas 94%, CanvasText 6%); }
+    pre { margin: 0; max-height: 48vh; overflow: auto; border: 1px solid color-mix(in srgb, CanvasText 18%, transparent); border-radius: 6px; padding: 10px; font: 12px/1.45 ${UI_FONT_MONO}; white-space: pre-wrap; overflow-wrap: anywhere; background: color-mix(in srgb, Canvas 94%, CanvasText 6%); }
     .actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
     .status { font-size: 12px; color: color-mix(in srgb, CanvasText 66%, transparent); }
     .readiness { border: 1px solid color-mix(in srgb, CanvasText 18%, transparent); border-radius: 6px; padding: 10px; background: color-mix(in srgb, Canvas 96%, CanvasText 4%); font-size: 12px; }

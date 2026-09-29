@@ -311,15 +311,15 @@ export function SourceFileCloudSyncIndicator(props: {
       : UI_THEME_TOKENS.text.tertiary
   const iconClassName = `${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} ${tone}`
   const icon = status === 'cloud'
-    ? <Cloud className={iconClassName} aria-hidden="true" />
+    ? <Cloud className={iconClassName} role="img" aria-label="Cloud synced" />
     : status === 'error'
       || status === 'auth-required'
       || status === 'access-required'
       || status === 'unavailable'
-      ? <CloudOff className={iconClassName} aria-hidden="true" />
+      ? <CloudOff className={iconClassName} role="img" aria-label="Cloud sync unavailable" />
       : status === 'checking' || status === 'uploading'
-        ? <LoaderCircle className={`${iconClassName} animate-spin`} aria-hidden="true" />
-        : <HardDrive className={iconClassName} aria-hidden="true" />
+        ? <LoaderCircle className={`${iconClassName} animate-spin`} role="img" aria-label={status === 'uploading' ? 'Uploading' : 'Checking sync'} />
+        : <HardDrive className={iconClassName} role="img" aria-label="Saved locally" />
 
   return (
     <button

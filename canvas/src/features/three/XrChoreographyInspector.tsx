@@ -56,15 +56,15 @@ function ChoreographyCard({
           <h3 className="truncate text-xs font-semibold" title={title}>{title}</h3>
         </header>
         <section className="grid min-w-0 gap-0.5" data-kg-xr-choreography-card-row="meta">
-          <p className={cn('m-0 line-clamp-2 text-[11px]', UI_THEME_TOKENS.text.secondary)}>{description}</p>
-          <p className={cn('m-0 truncate text-[10px] uppercase tracking-wide', UI_THEME_TOKENS.text.tertiary)}>{metadata}</p>
+          <p className={cn('m-0 line-clamp-2 text-xs', UI_THEME_TOKENS.text.secondary)}>{description}</p>
+          <p className={cn('m-0 truncate text-xs uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary)}>{metadata}</p>
         </section>
         <footer className="flex min-w-0 items-center gap-1 overflow-x-auto" data-kg-xr-choreography-card-row="action">{footer}</footer>
       </section>
       <section className={cn('col-span-2 grid gap-1 border-t pt-2', UI_THEME_TOKENS.panel.border)} data-kg-xr-choreography-card-row="controls">
-        {controls || <span className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Edit parameters in BottomPanel Timeline</span>}
+        {controls || <span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Edit parameters in BottomPanel Timeline</span>}
         <output
-          className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'font-mono text-[9px]', UI_THEME_TOKENS.text.tertiary)}
+          className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}
           title={invocation}
           aria-label={`${title} invocation parameters`}
           data-kg-xr-choreography-card-row="invocation"
@@ -141,13 +141,13 @@ export function XrChoreographyInspector({
     <section className="grid gap-2" aria-label="Choreography" data-kg-xr-choreography-inspector="shared-runtime">
       <header className="flex items-center justify-between gap-2">
         <section className="min-w-0">
-          <h2 className="text-[11px] font-semibold uppercase">Choreography</h2>
-          <p className={cn('m-0 text-[9px]', UI_THEME_TOKENS.text.tertiary)}>One mark model · Configure selected marks in Timeline</p>
+          <h2 className="text-xs font-semibold uppercase">Choreography</h2>
+          <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>One mark model · Configure selected marks in Timeline</p>
         </section>
         <section className="grid shrink-0 justify-items-end gap-0.5">
-          <output className={cn('text-[9px]', warnings.length ? 'text-amber-700 dark:text-amber-300' : UI_THEME_TOKENS.text.tertiary)} data-kg-xr-speed-warning-count={warnings.length}>{warnings.length ? `${warnings.length} speed warning${warnings.length === 1 ? '' : 's'}` : 'Speed sane'}</output>
+          <output className={cn('text-xs', warnings.length ? 'text-amber-700 dark:text-amber-300' : UI_THEME_TOKENS.text.tertiary)} data-kg-xr-speed-warning-count={warnings.length}>{warnings.length ? `${warnings.length} speed warning${warnings.length === 1 ? '' : 's'}` : 'Speed sane'}</output>
           <output
-            className={cn('text-[9px]', invocationReady ? 'text-emerald-700 dark:text-emerald-300' : UI_THEME_TOKENS.text.tertiary)}
+            className={cn('text-xs', invocationReady ? 'text-emerald-700 dark:text-emerald-300' : UI_THEME_TOKENS.text.tertiary)}
             title={controlTool}
             data-kg-xr-choreography-runtime-ready={invocationReady ? '1' : '0'}
             data-kg-xr-choreography-mcp={controlTool}
@@ -167,7 +167,7 @@ export function XrChoreographyInspector({
           footer={<PanelSelect aria-label="Cast choreography mark" value={castMark.id} onChange={event => selectXrMotionReferenceCastMark(track.actorId, event.target.value)}>{track.marks.map((mark, index) => <option key={mark.id} value={mark.id}>Mark {index + 1} · {mark.timeSeconds}s</option>)}</PanelSelect>}
         />
       ) : (
-        <ChoreographyCard Icon={Footprints} target="cast" title="Cast path" description="Select a cast actor to edit its path choreography." invocation={castInvocation || controlTool} metadata="No cast target selected" footer={<span className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>Choose a cast target above.</span>} />
+        <ChoreographyCard Icon={Footprints} target="cast" title="Cast path" description="Select a cast actor to edit its path choreography." invocation={castInvocation || controlTool} metadata="No cast target selected" footer={<span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Choose a cast target above.</span>} />
       )}
       {cameraMark ? (
         <ChoreographyCard
@@ -180,9 +180,9 @@ export function XrChoreographyInspector({
           footer={<PanelSelect aria-label="Camera choreography mark" value={cameraMark.id} onChange={event => selectXrMotionReferenceCameraMark(event.target.value)}>{runtime.plan.camera.map((mark, index) => <option key={mark.id} value={mark.id}>Mark {index + 1} · {mark.timeSeconds}s</option>)}</PanelSelect>}
         />
       ) : (
-        <ChoreographyCard Icon={Camera} target="camera" title="Camera path" description="Add camera marks in Camera → SHOOT; edit them in BottomPanel Timeline." invocation={cameraInvocation || controlTool} metadata="0 marks · Timeline owns time" footer={<span className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>No camera marks yet.</span>} />
+        <ChoreographyCard Icon={Camera} target="camera" title="Camera path" description="Add camera marks in Camera → SHOOT; edit them in BottomPanel Timeline." invocation={cameraInvocation || controlTool} metadata="0 marks · Timeline owns time" footer={<span className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>No camera marks yet.</span>} />
       )}
-      <details className={cn('rounded border p-2 text-[11px]', UI_THEME_TOKENS.panel.border)} data-kg-xr-studio="authored-scene">
+      <details className={cn('rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border)} data-kg-xr-studio="authored-scene">
         <summary className="cursor-pointer font-semibold">Scene and rehearsal exercises</summary>
         <p className={cn('m-0 mt-1', UI_THEME_TOKENS.text.tertiary)}>
           Authored stage · {studioScene.timeSeconds.toFixed(2)} s · revision {studioScene.revision}

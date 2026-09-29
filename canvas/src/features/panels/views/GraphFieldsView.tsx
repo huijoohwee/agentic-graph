@@ -316,7 +316,7 @@ export default function GraphFieldsView({
         </section>
         {entryShortcutLabels.length > 0 && onEntryShortcutClick ? (
           <section className="mb-2 rounded border border-white/10 p-2" aria-label="Graph Fields entry shortcuts">
-            <section className={cn('text-[10px] mb-2', UI_THEME_TOKENS.text.tertiary)}>
+            <section className={cn('text-xs mb-2', UI_THEME_TOKENS.text.tertiary)}>
               Entry shortcuts (click to open Field Settings)
             </section>
             <section className="flex flex-wrap gap-1">

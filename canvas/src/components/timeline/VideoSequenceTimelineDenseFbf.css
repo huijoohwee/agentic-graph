@@ -188,7 +188,7 @@
   background: color-mix(in srgb, var(--kg-panel-bg, #fff) 86%, transparent);
   box-shadow: 0 1px 2px color-mix(in srgb, var(--kg-text-primary, #0f172a) 14%, transparent);
   color: color-mix(in srgb, var(--kg-canvas-accent, rgb(37 99 235 / 1)) 78%, var(--kg-text-primary, #0f172a) 22%);
-  font-size: 10px;
+  font-size: var(--kg-text-xs);
   font-weight: 400;
   line-height: 1.1;
   padding-inline: 4px;
@@ -202,8 +202,8 @@
   left: 8px;
   z-index: 9;
   max-width: calc(100% - 38px);
-  font-size: 9px;
-  line-height: 12px;
+  font-size: var(--kg-text-xs);
+  line-height: var(--kg-text-xs-line);
   pointer-events: none;
 }
 
@@ -317,10 +317,10 @@
   border-radius: 4px;
   background: color-mix(in srgb, var(--kg-canvas-accent, rgb(37 99 235 / 1)) 82%, var(--kg-panel-bg, #fff) 18%);
   color: var(--kg-panel-bg, #fff);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-  font-size: 8px;
+  font-family: var(--kg-font-mono);
+  font-size: var(--kg-text-xs);
   font-weight: 800;
-  line-height: 12px;
+  line-height: var(--kg-text-xs-line);
   padding-inline: 4px;
   pointer-events: none;
   translate: 0 -50%;

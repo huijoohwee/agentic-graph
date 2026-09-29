@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import { HTML_VIDEO_ENGINE_IDS, type RenderSpec } from '@/features/html-video-renderer'
 import { FLOW_HTML_VIDEO_RENDERER_NODE_LABEL, FLOW_HTML_VIDEO_RENDERER_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
@@ -304,7 +305,7 @@ const buildCss = (): string => `
   height: 100%;
   color: #0f172a;
   background: #f8fafc;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: ${UI_FONT_SANS};
 }
 .kg-design-video-header,
 .kg-design-video-footer {

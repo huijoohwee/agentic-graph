@@ -172,7 +172,7 @@ export function GraphEditorOutlineTab() {
 
                   <TwoColumnEditorGrid className="mt-2">
                     <label className="block">
-                      <section className={`text-[10px] ${UI_THEME_TOKENS.text.tertiary}`}>Label</section>
+                      <section className={`text-xs ${UI_THEME_TOKENS.text.tertiary}`}>Label</section>
                       <input
                         className={`mt-1 w-full rounded-md border px-2 py-1 text-sm ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.text}`}
                         value={sg.label}
@@ -181,7 +181,7 @@ export function GraphEditorOutlineTab() {
                       />
                     </label>
                     <label className="block">
-                      <section className={`text-[10px] ${UI_THEME_TOKENS.text.tertiary}`}>Parent</section>
+                      <section className={`text-xs ${UI_THEME_TOKENS.text.tertiary}`}>Parent</section>
                       <select
                         className={`mt-1 w-full rounded-md border px-2 py-1 text-sm ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.input.text}`}
                         value={sg.parentId || ''}
@@ -267,7 +267,7 @@ export function GraphEditorOutlineTab() {
                 >
                   {String(n.label || id) || id}
                 </button>
-                <span className={`shrink-0 font-mono text-[10px] ${UI_THEME_TOKENS.text.tertiary}`}>{String(n.type || '')}</span>
+                <span className={`shrink-0 font-mono text-xs ${UI_THEME_TOKENS.text.tertiary}`}>{String(n.type || '')}</span>
               </section>
             )
           })}

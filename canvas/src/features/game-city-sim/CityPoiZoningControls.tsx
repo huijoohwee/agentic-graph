@@ -25,10 +25,10 @@ export function CityPoiZoningControls(props: Readonly<{
       className="grid gap-1"
       data-kg-city-sim-poi-select="identity"
     >
-      <legend className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+      <legend className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
         POI zoning target
       </legend>
-      <label className="grid min-w-0 gap-1 text-[10px]">
+      <label className="grid min-w-0 gap-1 text-xs">
         <span className={UI_THEME_TOKENS.text.tertiary}>Regional POI</span>
         <select
           className={cn(

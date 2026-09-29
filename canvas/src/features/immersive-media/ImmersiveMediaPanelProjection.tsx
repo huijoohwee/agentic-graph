@@ -125,7 +125,7 @@ function MediaSourceControls() {
       aria-label="Immersive media source"
     >
       <select
-        className="App-toolbar__select min-w-0 text-[10px]"
+        className="App-toolbar__select min-w-0 text-xs"
         value={kind}
         onChange={event => setKind(event.target.value as ImmersiveMediaSourceKind)}
         aria-label="Source kind"
@@ -135,7 +135,7 @@ function MediaSourceControls() {
         <option value="video">Video</option>
       </select>
       <input
-        className="App-toolbar__input min-w-0 text-[10px]"
+        className="App-toolbar__input min-w-0 text-xs"
         value={url}
         disabled={kind === 'procedural'}
         onChange={event => setUrl(event.target.value)}
@@ -173,7 +173,7 @@ function SemanticSpaceMediaSource() {
   const displayedImageUrl = imported?.mediaUrl || selectedSourceImage || (media.source.kind === 'image' ? media.source.url : '') || imageUrl
   React.useEffect(() => () => openingRef.current?.abort(), [displayedImageUrl])
   if (!displayedImageUrl) return null
-  return <section className="grid gap-1 rounded border p-1 text-[10px]" aria-label="Current local image">
+  return <section className="grid gap-1 rounded border p-1 text-xs" aria-label="Current local image">
     {imported ? <strong>Image imported. Choose the next step.</strong> : null}
     <img className="max-h-28 w-full rounded object-contain" src={displayedImageUrl} alt="Current local space evidence" />
     <label className="grid gap-1">Open 3D view as<select aria-label="Photo object presentation" className="min-h-11 w-full rounded border bg-transparent px-2"
@@ -247,7 +247,7 @@ function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface
         <button type="button" className="App-toolbar__btn" onClick={transitionImmersiveMedia}>
           <Clapperboard className="h-3.5 w-3.5" aria-hidden="true" /> Transition
         </button>
-        <span className={cn('self-center text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+        <span className={cn('self-center text-xs', UI_THEME_TOKENS.text.tertiary)}>
           {snapshot.transitionDurationMs} ms · revision {snapshot.transitionRevision}
         </span>
       </section>
@@ -270,7 +270,7 @@ function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface
         >
           <MousePointer2 className="h-3.5 w-3.5" aria-hidden="true" /> Double click
         </ToggleButton>
-        <span className={cn('self-center text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+        <span className={cn('self-center text-xs', UI_THEME_TOKENS.text.tertiary)}>
           Drag to look · WASD/arrows · +/- · 0 · I
         </span>
       </section>
@@ -289,7 +289,7 @@ function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface
         >
           <Focus className="h-3.5 w-3.5" aria-hidden="true" /> Fisheye
         </ToggleButton>
-        <span className={cn('self-center text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+        <span className={cn('self-center text-xs', UI_THEME_TOKENS.text.tertiary)}>
           {Math.round(snapshot.view.fieldOfViewDegrees)}° · yaw {Math.round(snapshot.view.yawDegrees)}°
         </span>
       </section>
@@ -368,8 +368,8 @@ export function ImmersiveMediaPanelProjection({
     >
       <header className="flex items-start justify-between gap-2">
         <span className="min-w-0">
-          <b className="flex items-center gap-1 text-[10px]"><SurfaceIcon surface={surface} />{copy.title}</b>
-          <span className={cn('block truncate text-[9px]', UI_THEME_TOKENS.text.tertiary)}>{copy.subtitle} · local $0 default</span>
+          <b className="flex items-center gap-1 text-xs"><SurfaceIcon surface={surface} />{copy.title}</b>
+          <span className={cn('block truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{copy.subtitle} · local $0 default</span>
         </span>
         <span className="flex shrink-0 gap-1">
           <button
@@ -386,7 +386,7 @@ export function ImmersiveMediaPanelProjection({
           </button>
         </span>
       </header>
-      <p className={cn('text-[9px]', UI_THEME_TOKENS.text.secondary)}>{snapshot.description}</p>
+      <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>{snapshot.description}</p>
       <nav
         className="flex flex-wrap gap-1"
         aria-label="Custom immersive navigation"
@@ -447,7 +447,7 @@ export function ImmersiveMediaPanelProjection({
       <SurfaceControls surface={surface} />
       <p
         className={cn(
-          'min-h-4 rounded px-1 py-0.5 text-[9px]',
+          'min-h-4 rounded px-1 py-0.5 text-xs',
           snapshot.error ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.secondary,
         )}
         role={snapshot.error ? 'alert' : 'status'}

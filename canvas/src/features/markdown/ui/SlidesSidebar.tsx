@@ -89,7 +89,7 @@ export function SlidesSidebar(props: SlidesSidebarProps) {
       {selectedSlideIds.length > 0 ? (
         <button
           type="button"
-          className={`text-[10px] mr-1 ${UI_THEME_TOKENS.text.tertiary} ${UI_THEME_TOKENS.button.hoverBg} rounded px-1`}
+          className={`text-xs mr-1 ${UI_THEME_TOKENS.text.tertiary} ${UI_THEME_TOKENS.button.hoverBg} rounded px-1`}
           onClick={() => setSelectedSlideIds([])}
         >
           {UI_COPY.markdownSlidesSidebarClearSelectionLabel}
@@ -115,7 +115,7 @@ export function SlidesSidebar(props: SlidesSidebarProps) {
       <span className={['text-xs font-semibold uppercase truncate', UI_THEME_TOKENS.text.tertiary].join(' ')}>
         {UI_COPY.markdownSlidesSidebarViewTitle}
       </span>
-      <span className={`mt-0.5 block text-[10px] ${UI_THEME_TOKENS.text.secondary} truncate`}>
+      <span className={`mt-0.5 block text-xs ${UI_THEME_TOKENS.text.secondary} truncate`}>
         {slideCount} {UI_COPY.markdownSlidesSidebarSlidesSuffix}
         {activeSlideHeading ? ` · ${activeSlideHeading}` : ''}
       </span>

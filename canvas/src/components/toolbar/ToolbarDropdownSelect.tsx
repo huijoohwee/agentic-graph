@@ -246,7 +246,7 @@ export function ToolbarDropdownSelect<T extends ToolbarDropdownOptionBase>({
                         </>
                       )}
                       {option.disabled && (option.disabledReason || option.enableHint) ? (
-                        <span className={`${UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_META_CLASSNAME} ml-auto text-[10px] text-amber-500/90 text-right`}>
+                        <span className={`${UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_META_CLASSNAME} ml-auto text-xs text-amber-500/90 text-right`}>
                           {option.disabledReason || option.enableHint}
                         </span>
                       ) : hasChildren ? (
@@ -295,7 +295,7 @@ export function ToolbarDropdownSelect<T extends ToolbarDropdownOptionBase>({
                                   </>
                                 )}
                                 {child.disabled && (child.disabledReason || child.enableHint) ? (
-                                  <span className={`${UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_META_CLASSNAME} ml-auto text-[10px] text-amber-500/90 text-right`}>
+                                  <span className={`${UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_META_CLASSNAME} ml-auto text-xs text-amber-500/90 text-right`}>
                                     {child.disabledReason || child.enableHint}
                                   </span>
                                 ) : null}

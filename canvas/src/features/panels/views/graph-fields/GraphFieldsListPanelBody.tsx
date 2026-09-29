@@ -326,7 +326,7 @@ export function GraphFieldsListPanelBody({
             )
           }
 
-          const sectionHeaderClass = `mt-2 border-t ${UI_THEME_TOKENS.panel.border} px-2 pt-1 ${uiPanelKeyValueTextSizeClass} font-medium tracking-wide ${UI_THEME_TOKENS.text.tertiary}`
+          const sectionHeaderClass = `mt-2 border-t ${UI_THEME_TOKENS.panel.border} px-2 pt-1 ${uiPanelKeyValueTextSizeClass} font-medium tracking-normal ${UI_THEME_TOKENS.text.tertiary}`
 
           const hasAnyRows =
             globalSchemaVisible ||

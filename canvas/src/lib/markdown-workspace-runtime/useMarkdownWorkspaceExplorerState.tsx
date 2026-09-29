@@ -61,7 +61,6 @@ import {
   resolveWorkspaceFolderContractTargetPath,
 } from './workspaceFolderContractTarget'
 import { readWorkspaceExplorerReadOnlySnapshot } from './workspaceExplorerReadOnlySnapshot'
-
 type ExplorerRefreshOptions = { silent?: boolean; reconcileSeed?: boolean }
 
 const hasNonWorkspaceSourceFile = (sourceFiles: ReturnType<typeof useGraphStore.getState>['sourceFiles']): boolean => {
@@ -115,7 +114,6 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     setWorkspaceSeedSyncPollMs(readWorkspaceSeedSyncPollMsSetting())
     setWorkspaceSeedSyncIdleMaxMs(readWorkspaceSeedSyncIdleMaxMsSetting())
   }, [workspaceSyncSettingsRev])
-
   const getFs = React.useCallback(async () => {
     const existing = workspaceFsRef.current
     if (existing) return existing
@@ -123,10 +121,8 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     workspaceFsRef.current = fs
     return fs
   }, [])
-
   const runtimeRef = React.useRef(args)
   runtimeRef.current = args
-
   const scheduleApplyComposedFromSourceFiles = React.useCallback(async () => {
     try {
       const mod = (await import('@/features/source-files/applyComposedGraphFromSourceFiles')) as typeof import('@/features/source-files/applyComposedGraphFromSourceFiles')
@@ -341,15 +337,19 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
       })
       idleStreak = next.nextIdleStreak
       if (stopped) return
+      if (timer != null) window.clearTimeout(timer)
       timer = window.setTimeout(() => {
         timer = null
         void ensureSeedTick()
       }, next.nextDelayMs)
     }
     const ensureSeedTick = async () => {
-      if (stopped || seedSyncInFlightRef.current) return
+      if (stopped) return
       const runtime = runtimeRef.current
-      if (runtime.viewerInlineEditActiveRef.current) return
+      if (seedSyncInFlightRef.current || runtime.viewerInlineEditActiveRef.current) {
+        scheduleNextSeedSync(false, ensureSeedTick)
+        return
+      }
       const finishSeedSyncTask = beginWorkspaceSeedSyncTask()
       if (!finishSeedSyncTask) {
         scheduleNextSeedSync(false, ensureSeedTick)
@@ -423,7 +423,6 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
       document.removeEventListener('visibilitychange', onWake)
     }
   }, [args.active, getFs, refresh, workspaceAutoRefreshEnabled, workspaceSeedSyncEnabled, workspaceSeedSyncPollMs, workspaceSeedSyncIdleMaxMs])
-
   const persistWorkspacePrefsPendingRef = React.useRef<{
     sidebarWidthPx: number
     explorerOpen: boolean
