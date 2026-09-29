@@ -25,7 +25,7 @@ export const KanbanCell = React.memo(function KanbanCell(props: KanbanCellProps)
       <button
         type="button"
         aria-label="Status"
-        className={['w-full text-left text-[10px] px-2 py-1 rounded border', UI_THEME_TOKENS.kanban.cellBg, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.text].join(' ')}
+        className={['w-full text-left text-xs px-2 py-1 rounded border', UI_THEME_TOKENS.kanban.cellBg, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.text].join(' ')}
         onClick={e => e.stopPropagation()}
         onMouseDown={e => e.stopPropagation()}
         onKeyDown={e => {

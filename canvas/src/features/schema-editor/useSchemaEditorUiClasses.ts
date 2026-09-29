@@ -17,7 +17,7 @@ export function useSchemaEditorUiClasses() {
     s =>
       s.uiPanelMicroLabelTextSizeClass ||
       s.uiIconBadgeChipTextSizeClass ||
-      'text-[9px]',
+      'text-xs',
   )
 
   return {

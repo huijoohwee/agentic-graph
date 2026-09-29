@@ -157,7 +157,7 @@ export function ImmersiveMediaGeoProjection({
           />
         ) : null}
         <figcaption
-          className="pointer-events-auto absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-cyan-200/35 bg-slate-950/45 px-3 py-1 text-[9px] font-semibold tracking-[0.16em] text-cyan-50 backdrop-blur"
+          className="pointer-events-auto absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-cyan-200/35 bg-slate-950/45 px-3 py-1 text-xs font-semibold tracking-normal text-cyan-50 backdrop-blur"
           aria-label="Immersive flight context media"
           data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
         >
@@ -174,7 +174,7 @@ export function ImmersiveMediaGeoProjection({
           aria-orientation="vertical"
         />
         <abbr
-          className="pointer-events-none absolute left-1/2 top-[9%] -translate-x-1/2 text-[9px] font-bold text-cyan-50/80 no-underline"
+          className="pointer-events-none absolute left-1/2 top-[9%] -translate-x-1/2 text-xs font-bold text-cyan-50/80 no-underline"
           title="North"
         >
           N
@@ -220,7 +220,7 @@ export function ImmersiveMediaGeoProjection({
                 }`}
                 style={{ borderColor: marker.color }}
               />
-              <strong className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-slate-950/60 px-1.5 py-0.5 text-[8px] font-normal text-white/90 backdrop-blur">
+              <strong className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-slate-950/60 px-1.5 py-0.5 text-xs font-normal text-white/90 backdrop-blur">
                 {edge ? '‹ ' : ''}{marker.label}{edge ? ' ›' : ''}
               </strong>
             </button>
@@ -228,7 +228,7 @@ export function ImmersiveMediaGeoProjection({
         })}
         {selectedMarker ? (
           <output
-            className="absolute bottom-3 left-1/2 max-w-[70%] -translate-x-1/2 rounded border border-cyan-200/35 bg-slate-950/55 px-3 py-1.5 text-center text-[9px] text-cyan-50 backdrop-blur"
+            className="absolute bottom-3 left-1/2 max-w-[70%] -translate-x-1/2 rounded border border-cyan-200/35 bg-slate-950/55 px-3 py-1.5 text-center text-xs text-cyan-50 backdrop-blur"
             aria-label="Selected immersive marker details"
             aria-live="polite"
           >

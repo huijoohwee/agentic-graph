@@ -157,7 +157,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
         className="pointer-events-auto absolute bottom-[calc(var(--kg-safe-bottom,0px)+var(--kg-canvas-viewport-edge-gap,12px)+var(--kg-toolbar-compact-surface-height,38px)+12px)] left-4 right-4 flex max-h-[calc(100dvh-var(--kg-main-toolbar-height,38px)-var(--kg-toolbar-compact-surface-height,38px)-4rem)] flex-col overflow-y-auto pr-1 md:bottom-auto md:left-8 md:right-auto md:top-1/2 md:w-[min(34rem,calc(100%-4rem))] md:max-h-[calc(100dvh-var(--kg-main-toolbar-height,38px)-2.5rem)] md:-translate-y-1/2 lg:left-12 lg:w-[34rem]"
         data-kg-live-canvas-hero-editorial="overlay"
       >
-        <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--kg-text-secondary)]">
+        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-[var(--kg-text-secondary)]">
           <span
             className="h-3 w-3 shrink-0 bg-contain bg-center bg-no-repeat"
             style={{ backgroundImage: "url('/favicon.svg?v=airvio')" }}
@@ -166,7 +166,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
           />
           {content.eyebrow}
         </p>
-        <h1 id="agentic-graph-live-canvas-hero-title" className="mt-3 text-balance text-3xl font-semibold leading-[1.02] tracking-[-0.045em] md:mt-4 md:text-5xl lg:text-[3.5rem]">
+        <h1 id="agentic-graph-live-canvas-hero-title" className="mt-3 text-balance text-3xl font-semibold leading-[1.02] tracking-normal md:mt-4 md:text-5xl lg:text-5xl">
           <span className="block">{content.headline[0]}</span>
           <span className="block">{content.headline[1]}</span>
           <span className="block text-[var(--kg-canvas-accent)]">{content.headline[2]}</span>
@@ -189,18 +189,18 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
               setErrorText('')
             }}
           />
-          <label className="mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--kg-text-secondary)]" htmlFor="agentic-graph-live-canvas-hero-query">
+          <label className="mt-3 text-xs font-semibold uppercase tracking-normal text-[var(--kg-text-secondary)]" htmlFor="agentic-graph-live-canvas-hero-query">
             Prompt Presets
           </label>
           <LiveCanvasHeroQueryEditor value={draft} onChange={value => { if (!demoPending.current) setDraft(value) }} />
           {presetLoading ? <p className="mt-2 text-xs text-[var(--kg-text-secondary)]" role="status">Loading prompt preset…</p> : null}
-          {selectedPromptPresetId === 'video-agent' && model.sourceLabel ? <p className="mt-2 truncate text-[10px] text-[var(--kg-text-secondary)]" title={model.sourceWorkspacePath || model.sourceLabel}>Script: {model.sourceLabel}</p> : null}
+          {selectedPromptPresetId === 'video-agent' && model.sourceLabel ? <p className="mt-2 truncate text-xs text-[var(--kg-text-secondary)]" title={model.sourceWorkspacePath || model.sourceLabel}>Script: {model.sourceLabel}</p> : null}
           <section className="mt-3 h-24 shrink-0 overflow-y-auto overscroll-contain pr-1" aria-label="Prompt preset controls" data-kg-live-canvas-hero-prompt-controls-scroll="fixed">
             <section className="grid gap-2">
             {observationPreset && <p className="text-xs">Import local run or workflow JSON → inspect spans, resources and source → review evaluation/comparison → export. MCP: <code>{CANVAS_VIEW_MCP_TOOL_NAME}</code> accepts <code>{JSON.stringify({ invocation: draft })}</code>.</p>}
             {!invocation && promptParameters.length ? (
               <fieldset className="h-16 overflow-hidden" data-kg-live-canvas-hero-prompt-parameters="true">
-                <legend className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--kg-text-secondary)]">
+                <legend className="text-xs font-semibold uppercase tracking-normal text-[var(--kg-text-secondary)]">
                   Parameters
                 </legend>
                 <nav className="mt-1 flex max-h-11 flex-wrap gap-1.5 overflow-y-auto overscroll-contain pr-1" aria-label="Prompt parameters">
@@ -210,7 +210,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
                       <button
                         key={parameter}
                         type="button"
-                        className={`shrink-0 rounded-full border px-2.5 py-1 font-mono text-[10px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--kg-canvas-accent)] ${active ? 'border-[var(--kg-canvas-accent)] bg-[color-mix(in_srgb,var(--kg-canvas-accent)_16%,transparent)] text-[var(--kg-text-primary)]' : 'border-[color:var(--kg-border)] bg-[color:var(--kg-panel-bg)]/70 text-[var(--kg-text-secondary)] hover:text-[var(--kg-text-primary)]'}`}
+                        className={`shrink-0 rounded-full border px-2.5 py-1 font-mono text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--kg-canvas-accent)] ${active ? 'border-[var(--kg-canvas-accent)] bg-[color-mix(in_srgb,var(--kg-canvas-accent)_16%,transparent)] text-[var(--kg-text-primary)]' : 'border-[color:var(--kg-border)] bg-[color:var(--kg-panel-bg)]/70 text-[var(--kg-text-secondary)] hover:text-[var(--kg-text-primary)]'}`}
                         aria-pressed={active}
                         title={`${active ? 'Remove' : 'Add'} ${parameter}`}
                         data-kg-live-canvas-hero-prompt-parameter={parameter}
@@ -226,7 +226,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
             {invocation ? (
               <section className="grid gap-2" aria-label="Video prompt invocation controls">
                 {(['Route', 'Provider', 'Specification', 'Outputs'] as const).map(group => <fieldset key={group} data-kg-live-canvas-hero-invocation-group={group.toLowerCase()}>
-                  <legend className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--kg-text-secondary)]">{group}</legend>
+                  <legend className="text-xs font-semibold uppercase tracking-normal text-[var(--kg-text-secondary)]">{group}</legend>
                   <nav className="mt-1 flex flex-wrap gap-1.5" aria-label={`${group} invocations`}>{model.invocations.filter(invocation => invocation.group === group).map(invocation => {
                     const active = liveCanvasHeroQueryHasToken(draft, invocation.token)
                     const attrs = buildAgenticOsInvocationChipAttrs(invocation.token) || {}
@@ -234,7 +234,7 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
                       <button
                         key={invocation.token}
                         type="button"
-                        className={`shrink-0 rounded-full border px-2.5 py-1 font-mono text-[10px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--kg-canvas-accent)] ${active ? 'border-[var(--kg-canvas-accent)] bg-[color-mix(in_srgb,var(--kg-canvas-accent)_16%,transparent)] text-[var(--kg-text-primary)]' : 'border-[color:var(--kg-border)] bg-[color:var(--kg-panel-bg)]/70 text-[var(--kg-text-secondary)] hover:text-[var(--kg-text-primary)]'}`}
+                        className={`shrink-0 rounded-full border px-2.5 py-1 font-mono text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--kg-canvas-accent)] ${active ? 'border-[var(--kg-canvas-accent)] bg-[color-mix(in_srgb,var(--kg-canvas-accent)_16%,transparent)] text-[var(--kg-text-primary)]' : 'border-[color:var(--kg-border)] bg-[color:var(--kg-panel-bg)]/70 text-[var(--kg-text-secondary)] hover:text-[var(--kg-text-primary)]'}`}
                         aria-pressed={active}
                         title={buildAgenticOsInvocationChipTitle(invocation.token) || invocation.summary}
                         data-kg-live-canvas-hero-invocation-token={invocation.token}
@@ -290,13 +290,13 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
                   importAgentRunFile(file, props.onEnter, 'canvas')).then(handled => { if (!handled) setErrorText('Choose native run or workflow JSON, or an exported inspection.') })
                   .catch(reason => setErrorText(reason instanceof Error ? reason.message : 'Unable to import this observation.'))
               }} />}
-            <kbd className="rounded-md border border-[color:var(--kg-border)] px-2 py-1 font-mono text-[10px] text-[var(--kg-text-secondary)]" title="Open Demo shortcut">Ctrl/⌘↵</kbd>
+            <kbd className="rounded-md border border-[color:var(--kg-border)] px-2 py-1 font-mono text-xs text-[var(--kg-text-secondary)]" title="Open Demo shortcut">Ctrl/⌘↵</kbd>
           </section>
           </fieldset>
           {errorText || presetError ? <p className="mt-2 text-xs text-red-500" role="alert">{errorText || presetError}</p> : null}
         </form>
 
-        <ul className="mt-3 hidden flex-wrap gap-2 text-[10px] text-[var(--kg-text-secondary)] md:flex" aria-label="Agent-ready execution posture">
+        <ul className="mt-3 hidden flex-wrap gap-2 text-xs text-[var(--kg-text-secondary)] md:flex" aria-label="Agent-ready execution posture">
           {content.posture.map(label => (
             <li key={label} className="rounded-full border border-[color:var(--kg-border)] bg-[color-mix(in_srgb,var(--kg-panel-bg)_54%,transparent)] px-2.5 py-1 backdrop-blur-md">
               {label}

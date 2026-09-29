@@ -129,7 +129,7 @@ export function YouTubeTimestampPreviewLink({
               style={{ borderRadius: 0 }}
             />
           </span>
-          <span className={`block px-2 py-1 text-[11px] leading-tight ${UI_THEME_TOKENS.tooltip.text}`}>
+          <span className={`block px-2 py-1 text-xs leading-tight ${UI_THEME_TOKENS.tooltip.text}`}>
             {timestampLabel}
           </span>
         </>}

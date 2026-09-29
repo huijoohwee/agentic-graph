@@ -595,7 +595,7 @@ export function MarkdownWorkspaceDerivedViewer(props: {
           className={`h-full w-full overflow-auto ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.primary} ${props.uiPanelMonospaceTextClass}`}
           aria-label="JSON viewer"
         >
-          <pre className="m-0 p-3 text-[11px] leading-snug whitespace-pre-wrap break-words">{props.markdownText}</pre>
+          <pre className="m-0 p-3 text-xs leading-snug whitespace-pre-wrap break-words">{props.markdownText}</pre>
         </section>
       )
     }

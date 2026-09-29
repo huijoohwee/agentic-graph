@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 // Extracted helpers from printElementToPdf.ts
 const captureVideoFrameAsDataUrl = (video: HTMLVideoElement): string | null => {
   try {
@@ -172,8 +173,8 @@ const buildVideoFallbackSvgThumbnail = (href: string): string => {
   <rect width="1280" height="720" fill="url(#g)"/>
   <circle cx="640" cy="360" r="86" fill="rgba(255,255,255,0.16)"/>
   <polygon points="622,322 622,398 690,360" fill="#ffffff"/>
-  <text x="640" y="500" fill="rgba(255,255,255,0.95)" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="44" text-anchor="middle">${esc(label)}</text>
-  <text x="640" y="540" fill="rgba(255,255,255,0.70)" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="24" text-anchor="middle">${esc(host)}</text>
+  <text x="640" y="500" fill="rgba(255,255,255,0.95)" font-family="${UI_FONT_SANS}" font-size="44" text-anchor="middle">${esc(label)}</text>
+  <text x="640" y="540" fill="rgba(255,255,255,0.70)" font-family="${UI_FONT_SANS}" font-size="24" text-anchor="middle">${esc(host)}</text>
 </svg>`.trim()
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 }
@@ -231,11 +232,11 @@ const createVideoEmbedPreview = (thumbSrc: string, alt: string, href: string): H
   const titleBar = document.createElement('figcaption')
   titleBar.style.cssText = 'position:absolute;bottom:0;left:0;right:0;padding:10px 12px;display:flex;align-items:center;gap:8px;pointer-events:none'
   const titleText = document.createElement('span')
-  titleText.style.cssText = 'color:#fff;font-size:12px;font-family:system-ui,-apple-system,sans-serif;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1'
+  titleText.style.cssText = `color:#fff;font-size:12px;font-family:${UI_FONT_SANS};font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1`
   titleText.textContent = label
   titleBar.appendChild(titleText)
   const linkHint = document.createElement('span')
-  linkHint.style.cssText = 'color:rgba(255,255,255,0.6);font-size:9px;font-family:system-ui,-apple-system,sans-serif;white-space:nowrap;letter-spacing:0.5px'
+  linkHint.style.cssText = `color:rgba(255,255,255,0.6);font-size:12px;font-family:${UI_FONT_SANS};white-space:nowrap;letter-spacing:0.5px`
   linkHint.textContent = 'OPEN \u2192'
   titleBar.appendChild(linkHint)
 

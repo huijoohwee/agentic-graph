@@ -202,7 +202,7 @@ export const renderSettingInput = (
   }
   if (key === 'uiIconPillLegendTextSizeClass' || key === 'uiIconPillBadgeTextSizeClass') {
     const str = String(v || '')
-    const placeholder = key === 'uiIconPillLegendTextSizeClass' ? 'text-xs' : 'text-[9px]'
+    const placeholder = 'text-xs'
     const appliedClass = str.trim().length > 0 ? str : placeholder
     const legendPreviewClass =
       key === 'uiIconPillLegendTextSizeClass'
@@ -281,7 +281,7 @@ export const renderSettingInput = (
     const str = String(v || '')
     const placeholder = UI_RESPONSIVE_BADGE_CHIP_DEFAULT_CLASSNAME
     const appliedClass = str.trim().length > 0 ? str : placeholder
-    const previewClass = `${appliedClass} ${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME} ${UI_RESPONSIVE_BADGE_CHIP_CLASSNAME} justify-center gap-1 h-6 box-border ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.text.primary} text-[9px]`
+    const previewClass = `${appliedClass} ${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME} ${UI_RESPONSIVE_BADGE_CHIP_CLASSNAME} justify-center gap-1 h-6 box-border ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.text.primary} text-xs`
     return (
       <section className={SETTINGS_PREVIEW_INLINE_ROW_CLASS_NAME}>
         <section className={previewClass}>
@@ -299,7 +299,7 @@ export const renderSettingInput = (
   }
   if (key === 'uiIconBadgeChipTextSizeClass') {
     const str = String(v || '')
-    const placeholder = 'text-[9px]'
+    const placeholder = 'text-xs'
     const appliedClass = str.trim().length > 0 ? str : placeholder
     const previewClass = `${badgeChipBaseClass} ${appliedClass} gap-1 h-6 box-border ${UI_THEME_TOKENS.text.primary}`
     return (

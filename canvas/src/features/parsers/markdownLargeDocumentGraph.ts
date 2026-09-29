@@ -4,13 +4,15 @@ import { slugify } from './markdownJsonLd'
 
 const MARKDOWN_FULL_GRAPH_MAX_CHARS = 500_000
 const MARKDOWN_FULL_GRAPH_MAX_LINES = 8_000
+const MARKDOWN_FULL_GRAPH_MAX_NODES = 500
+const MARKDOWN_FULL_GRAPH_MAX_EDGES = 1_000
 const MARKDOWN_SUMMARY_PREVIEW_CHARS = 32_000
 const FLOW_SCAN_PREFIX_CHARS = 64_000
 
 type MarkdownLargeDocumentProfile = {
   lineCount: number
   originalLength: number
-  reason: 'chars' | 'lines' | null
+  reason: 'chars' | 'lines' | 'structure' | null
 }
 
 function countLines(text: string): number {
@@ -62,6 +64,12 @@ export function shouldUseSummaryGraphForMarkdown(rawText: string): boolean {
   const profile = readMarkdownLargeDocumentProfile(rawText)
   if (!profile.reason) return false
   return !mayContainFlowGraphDeclaration(rawText)
+}
+
+// Apply only to the automatic document projection, after explicit flow graphs
+// have been routed. Compact lists can produce large continuously simulated graphs.
+export function exceedsMarkdownDocumentGraphBudget(graph: GraphData): boolean {
+  return graph.nodes.length > MARKDOWN_FULL_GRAPH_MAX_NODES || graph.edges.length > MARKDOWN_FULL_GRAPH_MAX_EDGES
 }
 
 export function buildMarkdownLargeDocumentGraph(args: {
