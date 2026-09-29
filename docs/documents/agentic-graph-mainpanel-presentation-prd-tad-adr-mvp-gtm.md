@@ -492,21 +492,16 @@ offline editor. Rollback: revert this revision; no migration is required.
 
 ## Reference border parity (2026-09-29)
 
-PRD: Explorer, Source Files, toolbar, Main Panel controls, and Settings section
-boundaries must show the same 1 px neutral line in light and dark themes. Resize
-handles and menu controls remain selectable and usable.
+PRD: Explorer, toolbar, Main Panel and Settings use one visible 1 px border.
+Resize and menu controls remain selectable.
 
-TAD/ADR: The shared theme token is the neutral line color owner. Its light value
-is strengthened to `#9ca3af`; dark and black values keep their existing contrast.
-The 1 px surface border utility feeds explorer headers, workspace toolbar,
-Monaco gutter, and panel borders. Explorer's 8 px resize target and toolbar
-separators center the same line within a usable hit area. Collapsed explorer
-sections omit a duplicate outer border. Toolbar groups use named semantic `hr`
-separators in place of empty sections or hidden decoration. Native buttons,
-headers, and resize controls retain their accessible interaction owners.
+TAD/ADR: The shared border token owns color (`#9ca3af` light; dark values
+unchanged). The 1 px utility feeds headers, toolbar, gutter and panels. Explorer
+and toolbar separators center the line in 8 px hit areas. Collapsed explorer
+sections omit duplicate borders. Toolbar groups use named `hr` elements;
+native buttons and resize controls retain interaction.
 
-MVP/evidence: cap 10 files / 20 KB patch; no dependency, service, or data change.
-Focused border and responsive contracts, type checking, browser computed styles,
-and affected release gate are recorded in candidate handoff. GTM: clearer
-boundaries in the existing free, offline interface. Rollback: revert this
-revision as one unit; saved settings require no migration.
+MVP/evidence: cap 11 files / 20 KB; no dependency or data change. Focused tests,
+types, browser styles and affected gate are in the handoff. The storage-auth
+smoke reads the semantic select button value and passes. GTM: clearer borders
+in the free offline app. Rollback: revert this revision; no migration.
