@@ -250,10 +250,14 @@ export function Canvas2dRendererSelect({
       onSelect={id => applyCanvasViewOption(id as CanvasViewOptionId)}
       renderButtonContent={() => <Eye className={iconSizeClass} strokeWidth={iconStrokeWidth} />}
       getOptionTooltip={buildCanvasViewOptionHelp}
-      renderOptionContent={option => (
-        <>
+      renderOptionContent={option => {
+        // Setting rows name the feature; categorical choices already describe themselves.
+        const showFieldLabel = Boolean(option.children?.length)
+          || option.id.startsWith('document:')
+          || (option.id.startsWith('control:') && option.rowLabel !== 'Display')
+        return <>
           <option.Icon className={iconSizeClass} strokeWidth={iconStrokeWidth} />
-          {option.children?.length || !option.valueLabel ? <span className="min-w-0 flex-1 truncate text-left">
+          {showFieldLabel || !option.valueLabel ? <span className="min-w-0 flex-1 truncate text-left">
             {option.rowLabel || option.title}
           </span> : null}
           {option.valueLabel ? (() => {
@@ -261,7 +265,7 @@ export function Canvas2dRendererSelect({
             return <SelectableRowValue
               label={option.rowLabel || option.title}
               value={option.valueLabel}
-              className={option.children?.length ? 'kg-toolbar-dropdown-option-value ml-auto text-xs' : 'min-w-0 flex-1 truncate text-left'}
+              className={showFieldLabel ? 'kg-toolbar-dropdown-option-value ml-auto text-xs' : 'min-w-0 flex-1 truncate text-left'}
               invocation={invocationOptionId ? buildCanvasViewInvocation(invocationOptionId) : undefined}
               mcpTool={invocationOptionId ? CANVAS_VIEW_MCP_TOOL_NAME : undefined}
               commandToken={invocationOptionId ? CANVAS_VIEW_COMMAND_TOKEN : undefined}
@@ -270,7 +274,7 @@ export function Canvas2dRendererSelect({
             />
           })() : null}
         </>
-      )}
+      }}
       menuWidthClass={UI_RESPONSIVE_EXTRA_WIDE_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME}
     />
   )
