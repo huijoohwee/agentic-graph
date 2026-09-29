@@ -52,7 +52,7 @@ export default function DashboardWidgetFlip(props: DashboardWidgetEditorProps & 
     if (flipped) { close(); return }
     const rect = frame.current?.getBoundingClientRect()
     if (rect && rect.width > 0 && rect.height > 0) setFrontSize({ width: rect.width, height: rect.height })
-    setTurned(true); setFlipped(true)
+    setToolbarVisible(false); setTurned(true); setFlipped(true)
   }
   const select = () => setToolbarVisible(true)
   return <article ref={frame} className={`kg-dashboard-widget relative min-w-0 ${props.widgetId ? 'kg-dashboard-widget-sized' : 'h-full'} ${WIDGET_SELECTION_SURFACE_CLASS_NAME} ${getStoryboardWidgetPanelSelectionChromeClassName(toolbarVisible)}`} tabIndex={flipped ? -1 : 0} role="group"
