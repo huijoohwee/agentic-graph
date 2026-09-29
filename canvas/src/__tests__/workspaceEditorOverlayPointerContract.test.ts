@@ -161,8 +161,8 @@ export function testWorkspaceEditorOverlayDoesNotShrinkCanvasViewport() {
   if (text.includes("style={effectiveWorkspaceViewMode === 'editor' ? (workspaceCanvasPaneOpen ? { width: `${workspacePreviewWidthPx}px` } : undefined) : undefined}")) {
     throw new Error('expected Canvas pane width not to be reduced by workspace editor mode')
   }
-  if (!text.includes('visualStyle="centerGrip"')) {
-    throw new Error('expected Workspace Editor overlay to use centered resize grip styling instead of a full-height line')
+  if (!text.includes('visualStyle="line"') || text.includes('border-r border-[var(--kg-border)]')) {
+    throw new Error('expected the canvas resize separator to own the full-height boundary without a duplicate pane border')
   }
   if (!separatorText.includes("visualStyle?: 'line' | 'centerGrip'")) {
     throw new Error('expected VerticalResizeSeparatorHr to expose a dedicated centered grip variant')

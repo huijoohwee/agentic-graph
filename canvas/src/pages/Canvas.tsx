@@ -348,7 +348,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
                       onPointerDown={() => setToolbarHeaderElevated(false)}
                     >
                       <section
-                        className={`absolute inset-y-0 left-0 pointer-events-auto overflow-hidden bg-[var(--kg-panel-bg)] ${workspaceCanvasPaneVisible ? 'border-r border-[var(--kg-border)] shadow-2xl' : ''}`}
+                        className={`absolute inset-y-0 left-0 pointer-events-auto overflow-hidden bg-[var(--kg-panel-bg)] ${workspaceCanvasPaneVisible ? 'shadow-2xl' : ''}`}
                         style={{ width: workspaceCanvasPaneVisible ? workspacePaneBoundaryCss : '100%' }}
                         aria-label="Workspace left pane"
                         data-kg-workspace-left-pane="1"
@@ -365,7 +365,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
                         <VerticalResizeSeparatorHr
                           ref={setResizeHandleEl}
                           ariaLabel="Resize canvas"
-                          visualStyle="centerGrip"
+                          visualStyle="line"
                           className="absolute inset-y-0 left-0 z-[301] h-full -translate-x-1/2 pointer-events-auto"
                           style={{ left: workspacePaneBoundaryCss }}
                         />

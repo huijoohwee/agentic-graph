@@ -5,6 +5,13 @@
   --kg-resize-separator-thickness: 8px;
 }
 
+/* Structural edge ownership must take precedence over the frame's border utility. */
+[data-kg-workspace-left-pane]:has(+ .kg-resize-separator) .kg-markdown-workspace-shell {
+  border-right-width: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
 @layer components {
   .kg-resize-separator {
     flex-shrink: 0;
