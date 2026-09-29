@@ -236,8 +236,8 @@ const buildLuminaSourceImageDataUrl = (args: { path: string; title: string; kind
     '<rect x="48" y="48" width="864" height="444" rx="24" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>',
     '<circle cx="126" cy="126" r="34" fill="#e0f2fe" stroke="#38bdf8" stroke-width="2"/>',
     '<path d="M111 134l23-28 34 45H94l17-17z" fill="#0284c7"/>',
-    `<text x="190" y="125" font-family="${UI_FONT_SANS}" font-size="34" font-weight="700" fill="#0f172a">${escapeSvgText(title)}</text>`,
-    `<text x="190" y="172" font-family="${UI_FONT_SANS}" font-size="22" fill="#475569">${escapeSvgText(normalizeText(args.path))}</text>`,
+    `<text x="190" y="125" font-family="${UI_FONT_SANS}" font-size="36" font-weight="700" fill="#0f172a">${escapeSvgText(title)}</text>`,
+    `<text x="190" y="172" font-family="${UI_FONT_SANS}" font-size="24" fill="#475569">${escapeSvgText(normalizeText(args.path))}</text>`,
     `<text x="190" y="224" font-family="${UI_FONT_SANS}" font-size="18" fill="#64748b">Lumina source media reference</text>`,
     '</svg>',
   ].join('')

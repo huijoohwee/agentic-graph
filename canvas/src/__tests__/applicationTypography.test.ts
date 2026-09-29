@@ -83,7 +83,14 @@ export function testApplicationTypographyForbidsLegacyVariants() {
     if (/text-\[\d+(?:\.\d+)?(?:px|rem)\]/.test(content)) violations.push(`${file}: use the shared text scale`)
     if (/tracking-(?:wide|wider|widest|tight|tighter)\b|tracking-\[[^\]]+\]/.test(content)) violations.push(`${file}: use normal letter spacing`)
     if (/(?:-apple-system|SFMono-Regular|BlinkMacSystemFont|system-ui|sans-serif)/.test(content)) violations.push(`${file}: import the shared font stack`)
-    if (file.endsWith('.css') && /font-size:\s*(?:[0-9]|1[01])px\b/.test(content)) violations.push(`${file}: caption text must use the shared minimum`)
+    if (/letter-spacing\s*:\s*[.\d]+(?:px|em)/.test(content)) violations.push(`${file}: use normal letter spacing in exports`)
+    const sizes = Object.values(UI_TEXT_SCALE).map(role => Number(role.size))
+    for (const pattern of [/font-size\s*:\s*(\d+(?:\.\d+)?)px/g, /font-size=["'](\d+(?:\.\d+)?)["']/g,
+      /fontSize[:=]\s*\{?(\d+(?:\.\d+)?)(?=\s*[,}])/g, /\.font\s*=\s*`(?:\d+ )?(\d+(?:\.\d+)?)px/g]) {
+      for (const match of content.matchAll(pattern)) if (Number(match[1]) >= 1 && !sizes.includes(Number(match[1]))) {
+        violations.push(`${file}: font size ${match[1]} must use the shared scale`)
+      }
+    }
   }
   assert.deepEqual(violations, [], 'Legacy typography must not return through a local override')
 }

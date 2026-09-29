@@ -51,7 +51,7 @@ export function buildVideoAgentDatasetPanelSrcDoc(datasetRuntime: VideoAgentData
     '</main>',
     '<style>',
     `main{box-sizing:border-box;display:grid;gap:12px;width:100%;min-height:100%;padding:16px;background:#07111f;color:#f8fafc;font-family:${UI_FONT_SANS}}`,
-    'header p,h1,h2,p{margin:0}header p{color:#5eead4;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}h1{font-size:24px}h2{font-size:13px;color:#cbd5e1}',
+    'header p,h1,h2,p{margin:0}header p{color:#5eead4;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:normal}h1{font-size:24px}h2{font-size:14px;color:#cbd5e1}',
     `section{display:grid;gap:8px;border:1px solid #334155;border-radius:8px;background:#0f172a;padding:10px}ol{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:7px;margin:0;padding:0}li{list-style:none;display:grid;gap:4px;border:1px solid #334155;border-radius:7px;background:#111827;padding:8px}li span,li p,li small,time{color:#cbd5e1;font-size:12px}li strong{font-size:16px}li header{display:flex;justify-content:space-between;gap:8px}output{color:#fbbf24;font:12px ${UI_FONT_MONO}}[hidden]{display:none!important}`,
     '</style>',
     '<script>',

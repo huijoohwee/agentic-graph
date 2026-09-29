@@ -131,7 +131,7 @@ export function buildVideoAgentTranscriptPanelSrcDoc(args: {
     '</main>',
     '<style>',
     `main{box-sizing:border-box;display:grid;grid-template-rows:auto 1fr;gap:12px;width:100%;min-height:100%;padding:16px;background:#07111f;color:#f8fafc;font-family:${UI_FONT_SANS};overflow:hidden}`,
-    'header p,h1,p{margin:0}main>header p{color:#5eead4;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}h1{font-size:24px}',
+    'header p,h1,p{margin:0}main>header p{color:#5eead4;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:normal}h1{font-size:24px}',
     `section{min-height:0;overflow:auto;border:1px solid #334155;border-radius:8px;background:#0f172a;padding:8px}ol{display:grid;gap:7px;margin:0;padding:0}li{list-style:none;border:1px solid #334155;border-radius:7px;background:#111827}li article{display:grid;gap:4px;padding:8px}li[aria-current="true"]{border-color:#5eead4;background:#083344;box-shadow:0 0 0 1px rgba(94,234,212,.24)}li header{display:flex;align-items:center;gap:8px;color:#93c5fd;font:12px ${UI_FONT_MONO}}li p{color:#e2e8f0;font-size:12px;line-height:1.45}[data-kg-video-agent-transcript-empty]{border:1px solid #334155;border-radius:7px;background:#111827;color:#cbd5e1;font-size:12px;line-height:1.45;padding:10px}a{color:inherit;text-decoration:none}a:focus-visible{outline:2px solid #5eead4;outline-offset:2px}`,
     '</style>',
     '<script>',

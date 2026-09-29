@@ -64,9 +64,9 @@ function useInstructionTexture(kind: 'ball' | 'rocket') {
     context.strokeRect(10, 10, canvas.width - 20, canvas.height - 20)
     context.fillStyle = '#26334a'
     context.textAlign = 'left'
-    context.font = `700 38px ${UI_FONT_SANS}`
+    context.font = `700 36px ${UI_FONT_SANS}`
     context.fillText(kind === 'ball' ? 'BEACH BALL' : 'ROCKET', 42, 62)
-    context.font = `700 27px ${UI_FONT_SANS}`
+    context.font = `700 30px ${UI_FONT_SANS}`
     const rows = kind === 'ball'
       ? [['W A S D', 'move'], ['SPACE', 'jump'], ['SHIFT', 'turbo (hold)']]
       : [['W A S D', 'move'], ['SPACE', 'booster'], ['SHIFT', 'lander (hold)']]
@@ -80,9 +80,9 @@ function useInstructionTexture(kind: 'ball' | 'rocket') {
       context.fill()
       context.stroke()
       context.fillStyle = '#26334a'
-      context.font = `700 23px ${UI_FONT_MONO}`
+      context.font = `700 24px ${UI_FONT_MONO}`
       context.fillText(key, 61, y - 4)
-      context.font = `600 25px ${UI_FONT_SANS}`
+      context.font = `600 24px ${UI_FONT_SANS}`
       context.fillText(label, 340, y - 4)
     })
     const next = new CanvasTexture(canvas)

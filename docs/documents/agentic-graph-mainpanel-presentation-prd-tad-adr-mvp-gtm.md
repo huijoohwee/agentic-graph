@@ -204,7 +204,8 @@ font defaults in those renderers still use the shared font owner.
 
 The source guard traverses Canvas, grph-shared and gympgrph production TS/TSX/JS/MJS/CSS
 and rejects arbitrary numeric text utilities, custom letter spacing, duplicated
-font stacks and CSS labels below the shared caption size. Generated typography is
+font stacks and text sizes outside the shared scale, including inline CSS, SVG,
+canvas labels and generated viewers. Export letter spacing uses the same rule. Generated typography is
 checked against its source. Tests also parse exported SVG and check DOM/canvas
 heading parity and migration of saved preferences. Existing typography integration
 checks retain configurable fonts and nonlegacy sizes.
@@ -226,5 +227,6 @@ parsing and the existing MainPanel/inspector/table/widget preference integration
 Live dashboard retains 12/16, 14/21, 16/24 and 30/36 px reference roles. Twelve
 MainPanel tabs inherit the system sans / 14 px baseline; populated tabs expose
 12/14 px text with zero horizontal overflow. Mobile Settings at 390 × 844 stays
-within x=17..373 and has zero horizontal content overflow. The native affected
+within x=17..373 and has zero horizontal content overflow. The offline lesson regression uses semantic folder disclosure buttons after the
+Explorer selection/expansion split. The native affected
 receipt remains the authority for the final committed source revision.

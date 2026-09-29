@@ -327,7 +327,7 @@ const buildCss = (): string => `
 .kg-design-video-header h1 {
   margin: 8px 0 0;
   color: #020617;
-  font-size: 38px;
+  font-size: 36px;
   line-height: 1.05;
   letter-spacing: 0;
 }
@@ -373,7 +373,7 @@ const buildCss = (): string => `
   white-space: nowrap;
 }
 .kg-design-video-layer strong {
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.2;
 }
 .kg-design-video-layer span {

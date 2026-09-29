@@ -173,7 +173,7 @@ const buildVideoFallbackSvgThumbnail = (href: string): string => {
   <rect width="1280" height="720" fill="url(#g)"/>
   <circle cx="640" cy="360" r="86" fill="rgba(255,255,255,0.16)"/>
   <polygon points="622,322 622,398 690,360" fill="#ffffff"/>
-  <text x="640" y="500" fill="rgba(255,255,255,0.95)" font-family="${UI_FONT_SANS}" font-size="44" text-anchor="middle">${esc(label)}</text>
+  <text x="640" y="500" fill="rgba(255,255,255,0.95)" font-family="${UI_FONT_SANS}" font-size="48" text-anchor="middle">${esc(label)}</text>
   <text x="640" y="540" fill="rgba(255,255,255,0.70)" font-family="${UI_FONT_SANS}" font-size="24" text-anchor="middle">${esc(host)}</text>
 </svg>`.trim()
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
@@ -236,7 +236,7 @@ const createVideoEmbedPreview = (thumbSrc: string, alt: string, href: string): H
   titleText.textContent = label
   titleBar.appendChild(titleText)
   const linkHint = document.createElement('span')
-  linkHint.style.cssText = `color:rgba(255,255,255,0.6);font-size:12px;font-family:${UI_FONT_SANS};white-space:nowrap;letter-spacing:0.5px`
+  linkHint.style.cssText = `color:rgba(255,255,255,0.6);font-size:12px;font-family:${UI_FONT_SANS};white-space:nowrap;letter-spacing:normal`
   linkHint.textContent = 'OPEN \u2192'
   titleBar.appendChild(linkHint)
 

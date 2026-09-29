@@ -584,7 +584,7 @@ export const buildAgenticGraphMcpAppsHtml = (args = {}) => {
     main { display: grid; gap: 12px; min-height: 100vh; padding: 16px; }
     header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; border-bottom: 1px solid color-mix(in srgb, CanvasText 18%, transparent); padding-bottom: 10px; }
     h1 { margin: 0; font-size: 16px; line-height: 1.25; letter-spacing: 0; }
-    p { margin: 4px 0 0; color: color-mix(in srgb, CanvasText 72%, transparent); font-size: 13px; line-height: 1.45; }
+    p { margin: 4px 0 0; color: color-mix(in srgb, CanvasText 72%, transparent); font-size: 14px; line-height: 1.45; }
     button, a { border: 1px solid color-mix(in srgb, CanvasText 24%, transparent); border-radius: 6px; background: color-mix(in srgb, Canvas 88%, CanvasText 12%); color: CanvasText; font: inherit; padding: 7px 10px; text-decoration: none; }
     button { cursor: pointer; }
     section { display: grid; gap: 8px; }
@@ -595,7 +595,7 @@ export const buildAgenticGraphMcpAppsHtml = (args = {}) => {
     .actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
     .status { font-size: 12px; color: color-mix(in srgb, CanvasText 66%, transparent); }
     .readiness { border: 1px solid color-mix(in srgb, CanvasText 18%, transparent); border-radius: 6px; padding: 10px; background: color-mix(in srgb, Canvas 96%, CanvasText 4%); font-size: 12px; }
-    .readiness strong { display: block; font-size: 13px; margin-bottom: 3px; }
+    .readiness strong { display: block; font-size: 14px; margin-bottom: 3px; }
     .readiness ol { display: grid; gap: 6px; margin: 8px 0 0; padding-left: 18px; }
     .readiness ul { display: grid; gap: 4px; margin: 8px 0 0; padding: 0; list-style: none; }
     .check { min-width: 0; overflow-wrap: anywhere; }
