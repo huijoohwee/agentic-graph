@@ -10,6 +10,8 @@ export type WorkspaceImportUrlOpts = {
 }
 
 export type WorkspaceImportWebsiteOpts = {
+  /** Exact page selection. When present, link following is disabled. */
+  selectedUrls?: string[]
   generateArtifactDocs?: boolean
   browserEnhance?: boolean
   headless?: boolean

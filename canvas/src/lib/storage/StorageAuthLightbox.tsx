@@ -118,7 +118,7 @@ function StorageAuthLightbox({ loginUrl, onClose, readSession }: { loginUrl: str
         </button>
         <header className="mb-7 pr-7">
           <p className="mb-4 flex items-center gap-2 text-sm font-semibold"><AgenticGraphIcon className="h-6 w-6" />airvio</p>
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+          <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
           <p className={'mt-2 text-sm leading-relaxed ' + theme.text.secondary}>
             {authenticated ? 'Choose where to sync your files. Your local copies stay available.'
               : signup ? 'Create a private workspace with your existing provider account.'

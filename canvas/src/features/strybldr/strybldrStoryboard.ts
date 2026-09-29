@@ -1,3 +1,4 @@
+import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import { hashText } from '@/features/parsers/hash'
 import type { CorpusSourceUnit } from '@/features/queryable-corpus/corpusGraph'
 import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
@@ -131,10 +132,10 @@ export const buildStrybldrLocalImageDataUri = (args: {
     '<defs>',
     '<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8fafc"/><stop offset="0.55" stop-color="#dbeafe"/><stop offset="1" stop-color="#fef3c7"/></linearGradient>',
     '<style>',
-    '.eyebrow{font:700 24px Inter,Arial,sans-serif;letter-spacing:0;fill:#475569}',
-    '.title{font:800 42px Inter,Arial,sans-serif;letter-spacing:0;fill:#0f172a}',
-    '.body{font:500 27px Inter,Arial,sans-serif;letter-spacing:0;fill:#1f2937}',
-    '.meta{font:600 21px Inter,Arial,sans-serif;letter-spacing:0;fill:#475569}',
+    `.eyebrow{font:700 24px ${UI_FONT_SANS};letter-spacing:0;fill:#475569}`,
+    `.title{font:800 42px ${UI_FONT_SANS};letter-spacing:0;fill:#0f172a}`,
+    `.body{font:500 27px ${UI_FONT_SANS};letter-spacing:0;fill:#1f2937}`,
+    `.meta{font:600 21px ${UI_FONT_SANS};letter-spacing:0;fill:#475569}`,
     '</style>',
     '</defs>',
     '<rect width="1280" height="720" fill="url(#bg)"/>',
@@ -978,9 +979,7 @@ const resolveStrybldrElementLane = (args: {
 const isExplainerVideoXrMode = (doc: StrybldrStoryboardDocument): boolean => cleanText(doc.explainerVideo?.mode).toLowerCase() === 'xr'
 
 const buildExplainerPanelSrcDoc = (title: string, text: string): string => {
-  const safeTitle = htmlAttr(title || 'Explainer')
-  const safeText = htmlAttr(text || '')
-  return `<article style="font:14px/1.5 system-ui,sans-serif;padding:20px;color:#17202a"><h1 style="font-size:20px;margin:0 0 12px">${safeTitle}</h1><pre style="white-space:pre-wrap;margin:0">${safeText}</pre></article>`
+  return `<article style="font:14px/1.5 ${UI_FONT_SANS};padding:20px;color:#17202a"><h1 style="font-size:20px;margin:0 0 12px">${htmlAttr(title || 'Explainer')}</h1><pre style="white-space:pre-wrap;margin:0">${htmlAttr(text || '')}</pre></article>`
 }
 
 type StrytreeNodeRuntime = {
@@ -2111,21 +2110,21 @@ export const buildStrybldrLocalAnimaticHtml = (handoff: Pick<StrybldrVideoHandof
     '<title>Strybldr Local Generated Video</title>',
     '<style>',
     ':root{color-scheme:light;--ink:#172033;--muted:#5f6675;--line:#d7dde8;--paper:#f8fafc;--accent:#0f766e;--warm:#f59e0b}',
-    '*{box-sizing:border-box}body{margin:0;background:#e5e7eb;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink)}',
+    `*{box-sizing:border-box}body{margin:0;background:#e5e7eb;font-family:${UI_FONT_SANS};color:var(--ink)}`,
     '.kg-stage{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 34%;gap:28px;min-height:100vh;padding:34px;background:linear-gradient(135deg,#f8fafc 0%,#eef2ff 48%,#ecfdf5 100%);overflow:hidden}',
     '.kg-slides{position:relative;min-height:520px;border:1px solid var(--line);background:rgba(255,255,255,.82);box-shadow:0 18px 42px rgba(15,23,42,.14);overflow:hidden}',
     '.kg-slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:56px;opacity:0;transform:translateX(5%) scale(.98);animation:kgSlide var(--duration) linear infinite}',
     '.kg-slide:before{content:"";position:absolute;inset:24px;border:1px solid rgba(15,118,110,.2);pointer-events:none}',
-    '.kg-kicker{margin:0;font-size:13px;text-transform:uppercase;color:var(--accent);font-weight:800;letter-spacing:0}',
-    'h1{margin:0;max-width:840px;font-size:44px;line-height:1.02;letter-spacing:0}p{margin:0;max-width:760px;font-size:20px;line-height:1.45;color:var(--muted)}.kg-action{color:#7c2d12;font-weight:700}',
+    '.kg-kicker{margin:0;font-size:14px;text-transform:uppercase;color:var(--accent);font-weight:800;letter-spacing:0}',
+    'h1{margin:0;max-width:840px;font-size:48px;line-height:1.02;letter-spacing:0}p{margin:0;max-width:760px;font-size:20px;line-height:1.45;color:var(--muted)}.kg-action{color:#7c2d12;font-weight:700}',
     '.kg-side{display:flex;min-width:0;flex-direction:column;justify-content:space-between;gap:18px}.kg-poster{width:100%;aspect-ratio:16/9;object-fit:cover;border:1px solid var(--line);background:#111827}',
     '.kg-meter{height:8px;background:#dbe4ef;overflow:hidden}.kg-meter:before{content:"";display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--accent),var(--warm));transform-origin:left;animation:kgMeter var(--duration) linear infinite}',
     '.kg-meta{display:grid;gap:12px}.kg-label{font-size:12px;text-transform:uppercase;color:var(--muted);font-weight:800;letter-spacing:0}.kg-value{font-size:16px;font-weight:800}.kg-source{color:#0f766e;text-decoration:none;font-weight:800;overflow-wrap:anywhere}',
-    '.kg-chapters{display:grid;gap:8px;margin:0;padding:0;list-style:none}.kg-chapters li{display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px;align-items:center;border-top:1px solid var(--line);padding-top:8px}.kg-chapters span{font-size:12px;color:var(--muted);font-weight:800}.kg-chapters strong{font-size:13px;line-height:1.3}',
+    '.kg-chapters{display:grid;gap:8px;margin:0;padding:0;list-style:none}.kg-chapters li{display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px;align-items:center;border-top:1px solid var(--line);padding-top:8px}.kg-chapters span{font-size:12px;color:var(--muted);font-weight:800}.kg-chapters strong{font-size:14px;line-height:1.3}',
     '@keyframes kgMeter{from{transform:scaleX(0)}to{transform:scaleX(1)}}',
     '@keyframes kgSlide{0%,100%{opacity:0;transform:translateX(5%) scale(.98)}4%,22%{opacity:1;transform:translateX(0) scale(1)}26%{opacity:0;transform:translateX(-5%) scale(.98)}}',
     cards.map((_, index) => `.kg-slide:nth-child(${index + 1}){animation-delay:calc(var(--duration) * ${index / Math.max(1, cards.length)} * -1)}`).join(''),
-    '@media(max-width:860px){.kg-stage{grid-template-columns:1fr;padding:18px}.kg-slides{min-height:480px}.kg-slide{padding:34px}h1{font-size:34px}p{font-size:17px}}',
+    '@media(max-width:860px){.kg-stage{grid-template-columns:1fr;padding:18px}.kg-slides{min-height:480px}.kg-slide{padding:34px}h1{font-size:36px}p{font-size:18px}}',
     '</style>',
     '</head>',
     `<body style="--duration:${durationSeconds}s">`,

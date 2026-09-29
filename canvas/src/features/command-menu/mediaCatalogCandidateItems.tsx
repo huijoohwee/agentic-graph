@@ -78,12 +78,12 @@ export function MediaCandidateRow({
             onDraftChange={onNameDraftChange}
             onRename={onRename}
           />
-          <span className={cn('shrink-0 font-mono text-[10px]', UI_THEME_TOKENS.text.tertiary)}>@</span>
+          <span className={cn('shrink-0 font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>@</span>
         </header>
         <section className="flex min-w-0 items-center gap-1" data-kg-media-list-row-section="meta">
-          <span className={cn('min-w-0 truncate text-[11px]', UI_THEME_TOKENS.text.secondary)} title={source}>{source}</span>
+          <span className={cn('min-w-0 truncate text-xs', UI_THEME_TOKENS.text.secondary)} title={source}>{source}</span>
         </section>
-        <p className={cn('m-0 truncate text-[11px]', UI_THEME_TOKENS.text.tertiary)} title={description} data-kg-media-list-row-section="description">
+        <p className={cn('m-0 truncate text-xs', UI_THEME_TOKENS.text.tertiary)} title={description} data-kg-media-list-row-section="description">
           {description}
         </p>
       </section>
@@ -147,12 +147,12 @@ export function MediaCandidateCard({
         />
       </header>
       <section className="min-w-0 px-2 pt-1">
-        <p className={cn('m-0 mt-2 truncate text-[11px]', UI_THEME_TOKENS.text.secondary)} title={source}>{source}</p>
-        <p className={cn('m-0 mt-1 line-clamp-2 text-[11px] leading-4', UI_THEME_TOKENS.text.tertiary)} title={description}>{description}</p>
+        <p className={cn('m-0 mt-2 truncate text-xs', UI_THEME_TOKENS.text.secondary)} title={source}>{source}</p>
+        <p className={cn('m-0 mt-1 line-clamp-2 text-xs leading-4', UI_THEME_TOKENS.text.tertiary)} title={description}>{description}</p>
       </section>
       <footer className={cn('mt-2 flex items-center justify-between gap-2 border-t px-2 py-2', UI_THEME_TOKENS.panel.border)}>
-        <span className={cn('truncate font-mono text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{item.source}</span>
-        <span className={cn('font-mono text-[10px]', UI_THEME_TOKENS.text.tertiary)}>@</span>
+        <span className={cn('truncate font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>{item.source}</span>
+        <span className={cn('font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>@</span>
       </footer>
     </article>
   )
@@ -327,12 +327,12 @@ export function MediaSourceMetadataRow({ item }: { item: MediaCatalogSourceMetad
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1" aria-label={`${item.name} source metadata`}>
         <header className="flex min-w-0 items-center justify-between gap-2" data-kg-media-list-row-section="title">
           <h3 className={cn('m-0 truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)} title={item.name}>{item.name}</h3>
-          <span className={cn('shrink-0 font-mono text-[10px]', UI_THEME_TOKENS.text.tertiary)}>source</span>
+          <span className={cn('shrink-0 font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>source</span>
         </header>
         <section className="flex min-w-0 flex-wrap items-center gap-1" data-kg-media-list-row-section="meta">
-          {tags.map(tag => <span key={tag} className={cn('rounded border px-1.5 py-0.5 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.secondary)}>{tag}</span>)}
+          {tags.map(tag => <span key={tag} className={cn('rounded border px-1.5 py-0.5 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.secondary)}>{tag}</span>)}
         </section>
-        <p className={cn('m-0 truncate text-[11px]', UI_THEME_TOKENS.text.tertiary)} title={item.sourceUrl} data-kg-media-list-row-section="description">
+        <p className={cn('m-0 truncate text-xs', UI_THEME_TOKENS.text.tertiary)} title={item.sourceUrl} data-kg-media-list-row-section="description">
           Source-backed video sequence metadata
         </p>
       </section>
@@ -350,14 +350,14 @@ export function MediaSourceMetadataCard({ item }: { item: MediaCatalogSourceMeta
       <header className="flex min-w-0 items-start justify-between gap-2 px-2 pt-2">
         <section className="min-w-0">
           <h3 className={cn('m-0 truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)} title={item.name}>{item.name}</h3>
-          <p className={cn('m-0 mt-1 truncate font-mono text-[10px]', UI_THEME_TOKENS.text.tertiary)}>source-backed</p>
+          <p className={cn('m-0 mt-1 truncate font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>source-backed</p>
         </section>
         <ResponsiveInlineIconBadge Icon={Video} label="video" />
       </header>
       <section className="flex min-w-0 flex-wrap gap-1 px-2 pt-2">
-        {tags.map(tag => <span key={tag} className={cn('rounded border px-1.5 py-0.5 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.secondary)}>{tag}</span>)}
+        {tags.map(tag => <span key={tag} className={cn('rounded border px-1.5 py-0.5 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.secondary)}>{tag}</span>)}
       </section>
-      <p className={cn('m-0 mt-2 truncate px-2 pb-2 text-[11px]', UI_THEME_TOKENS.text.tertiary)} title={item.sourceUrl}>Source-backed video sequence metadata</p>
+      <p className={cn('m-0 mt-2 truncate px-2 pb-2 text-xs', UI_THEME_TOKENS.text.tertiary)} title={item.sourceUrl}>Source-backed video sequence metadata</p>
     </article>
   )
 }
@@ -406,12 +406,12 @@ export function MediaActionRow({
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1" aria-label={`${action.label} action summary`}>
         <header className="flex min-w-0 items-center justify-between gap-2" data-kg-media-list-row-section="title">
           <span className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>{action.label}</span>
-          <span className={cn('shrink-0 font-mono text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{prefix}</span>
+          <span className={cn('shrink-0 font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>{prefix}</span>
         </header>
         <section className="flex min-w-0 items-center gap-1" data-kg-media-list-row-section="meta">
-          <span className={cn('min-w-0 truncate text-[11px]', UI_THEME_TOKENS.text.secondary)}>{action.group}</span>
+          <span className={cn('min-w-0 truncate text-xs', UI_THEME_TOKENS.text.secondary)}>{action.group}</span>
         </section>
-        <p className={cn('m-0 truncate text-[11px]', UI_THEME_TOKENS.text.tertiary)} title={action.description} data-kg-media-list-row-section="description">
+        <p className={cn('m-0 truncate text-xs', UI_THEME_TOKENS.text.tertiary)} title={action.description} data-kg-media-list-row-section="description">
           {action.description}
         </p>
       </section>
@@ -466,12 +466,12 @@ export function MediaActionCard({
       <header className="flex min-w-0 items-start justify-between gap-2 px-2 pt-2">
         <section className="min-w-0">
           <h3 className={cn('m-0 truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>{action.label}</h3>
-          <p className={cn('m-0 mt-1 truncate font-mono text-[10px]', UI_THEME_TOKENS.text.tertiary)}>{action.id}</p>
+          <p className={cn('m-0 mt-1 truncate font-mono text-xs', UI_THEME_TOKENS.text.tertiary)}>{action.id}</p>
         </section>
         <ResponsiveInlineIconBadge Icon={Icon} label={prefix} />
       </header>
-      <p className={cn('m-0 mt-2 truncate px-2 text-[11px]', UI_THEME_TOKENS.text.secondary)}>{action.group}</p>
-      <p className={cn('m-0 mt-1 line-clamp-2 px-2 pb-2 text-[11px] leading-4', UI_THEME_TOKENS.text.tertiary)} title={action.description}>
+      <p className={cn('m-0 mt-2 truncate px-2 text-xs', UI_THEME_TOKENS.text.secondary)}>{action.group}</p>
+      <p className={cn('m-0 mt-1 line-clamp-2 px-2 pb-2 text-xs leading-4', UI_THEME_TOKENS.text.tertiary)} title={action.description}>
         {action.description}
       </p>
     </article>

@@ -26,7 +26,7 @@ export function XrTimelineRehearsalControls({ durationSeconds, fps, disabled = f
         disabled={disabled || transport.timeSeconds <= 0} onClick={() => step('previous')}>
         <ChevronLeft className="size-4" aria-hidden />
       </button>
-      <output className="whitespace-nowrap text-[10px] tabular-nums" aria-label="XR animation frame">
+      <output className="whitespace-nowrap text-xs tabular-nums" aria-label="XR animation frame">
         Frame {transport.frame} · {fps} fps
       </output>
       <button type="button" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded hover:bg-black/5 disabled:opacity-40 focus-visible:outline" aria-label="Next XR animation frame"

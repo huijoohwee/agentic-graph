@@ -13,7 +13,6 @@ import { useMediaQuery } from '@/lib/ui/useMediaQuery'
 import type { MarkdownPresentationApi } from './markdownWorkspaceTypes'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { PanelCheckbox } from '@/lib/ui/panelFormControls'
-import { WorkspaceModeSelect } from './WorkspaceModeSelect'
 import type { WebpageFrontmatterMeta, WebpageViewMode } from '@/lib/markdown/frontmatter'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_LABELS } from '@/lib/config'
@@ -85,7 +84,6 @@ export type MarkdownWorkspaceToolbarProps = {
 
   webpageWorkspaceMeta?: WebpageFrontmatterMeta | null
   onWebpageChangeView?: (view: WebpageViewMode) => void
-  onWebpageUpdateMeta?: (patch: { fidelityLevel?: 1 | 2 | 3 | 4 }) => void
   contentFormat?: 'markdown' | 'json' | null
   onContentFormatChange?: (format: 'markdown' | 'json') => void | Promise<void>
   forceMarkdownEditorInEditorMode?: boolean
@@ -171,7 +169,6 @@ export function MarkdownWorkspaceToolbar({
   webpageSignalSummary,
   webpageWorkspaceMeta,
   onWebpageChangeView,
-  onWebpageUpdateMeta,
   contentFormat,
   onContentFormatChange,
   forceMarkdownEditorInEditorMode,
@@ -204,18 +201,7 @@ export function MarkdownWorkspaceToolbar({
   const webpageControls = React.useMemo(() => {
     const meta = webpageWorkspaceMeta
     if (!meta || !meta.url) return null
-    const view = meta.view
-    const fidelityMode: 'inherit' | '1' | '2' | '3' | '4' =
-      meta.fidelityLevel === 1
-        ? '1'
-        : meta.fidelityLevel === 2
-          ? '2'
-          : meta.fidelityLevel === 3
-            ? '3'
-            : meta.fidelityLevel === 4
-              ? '4'
-              : 'inherit'
-    return { view, fidelityMode }
+    return { view: meta.view }
   }, [webpageWorkspaceMeta])
   const visiblePaneCount = React.useCallback((current: MarkdownWorkspacePaneVisibility) => (
     Number(!!current.python && !!effectivePaneAvailability.python) +
@@ -366,29 +352,6 @@ export function MarkdownWorkspaceToolbar({
           <span className="sr-only">Workspace editor</span>
         )}
         <CollapsibleToolbar forceExpanded={isTouchToolbarViewport} className={`kg-toolbar kg-markdown-workspace-toolbar-controls kg-workspace-toolbar-controls ${uiToolbarRowScrollClassName} gap-1`} ariaLabel="Markdown view controls">
-          {webpageControls && onWebpageChangeView && onWebpageUpdateMeta ? (
-            <menu className={`${uiToolbarRowScrollListClassName} gap-1`} aria-label="Webpage">
-            <li className="list-none">
-              <WorkspaceModeSelect<'inherit' | '1' | '2' | '3' | '4'>
-                ariaLabel="Webpage fidelity level"
-                value={webpageControls.fidelityMode}
-                isActive={true}
-                options={[
-                  { value: 'inherit', label: 'Fid: Auto' },
-                  { value: '1', label: 'Fid: 1' },
-                  { value: '2', label: 'Fid: 2' },
-                  { value: '3', label: 'Fid: 3' },
-                  { value: '4', label: 'Fid: 4' },
-                ]}
-                onChange={next => {
-                  const level = next === 'inherit' ? undefined : (Number.parseInt(next, 10) as 1 | 2 | 3 | 4)
-                  onWebpageUpdateMeta({ fidelityLevel: level })
-                }}
-              />
-            </li>
-          </menu>
-        ) : null}
-
         <menu className={`${uiToolbarRowScrollListClassName} gap-1`} aria-label="Layout mode">
           <li className="kg-workspace-pane-toggles-item list-none">
             <fieldset

@@ -109,7 +109,7 @@ export const KanbanGroup = React.memo(function KanbanGroup(props: KanbanGroupPro
             )}
             <h3 className="min-w-0 flex items-center gap-2 m-0 text-sm font-medium">
               <DataViewTagChip value={props.group.key} />
-              <span className={['inline-flex items-center justify-center w-5 h-5 rounded', UI_THEME_TOKENS.badge.chip, UI_THEME_TOKENS.text.secondary, 'text-[11px]'].join(' ')}>
+              <span className={['inline-flex items-center justify-center w-5 h-5 rounded', UI_THEME_TOKENS.badge.chip, UI_THEME_TOKENS.text.secondary, 'text-xs'].join(' ')}>
                 {props.group.rows.length}
               </span>
             </h3>

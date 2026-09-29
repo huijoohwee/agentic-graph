@@ -74,7 +74,7 @@ function Invocation({
   return (
     <code className={cn(
       UI_INLINE_CHIP_GROUP_CLASSNAME,
-      'min-w-0 overflow-hidden font-mono text-[9px]',
+      'min-w-0 overflow-hidden font-mono text-xs',
       UI_THEME_TOKENS.text.secondary,
     )}>
       {renderMarkdownSigilInlineText(buildFlightSimInvocation(operation, throttle), {
@@ -247,7 +247,7 @@ export function FlightSimFloatingPanelView() {
       <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
         <section
           className={cn(
-            'grid grid-cols-3 gap-2 rounded border p-2 text-[10px]',
+            'grid grid-cols-3 gap-2 rounded border p-2 text-xs',
             UI_THEME_TOKENS.panel.border,
             UI_THEME_TOKENS.panel.bg,
           )}
@@ -284,7 +284,7 @@ export function FlightSimFloatingPanelView() {
           className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
           aria-label="Flight camera and navigation"
         >
-          <p className="flex items-center gap-1 text-[11px] font-semibold">
+          <p className="flex items-center gap-1 text-xs font-semibold">
             <View className="h-3.5 w-3.5" aria-hidden="true" />
             Camera view · {FLIGHT_SIM_CAMERA_VIEW_OPTIONS.find(option => option.id === camera.view)?.label}
           </p>
@@ -304,7 +304,7 @@ export function FlightSimFloatingPanelView() {
             ))}
           </div>
           <FlightSimNavigationInset flight={flight} />
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Press C to cycle views · north-up route is derived from the authored local mission only.
           </p>
         </section>
@@ -315,29 +315,29 @@ export function FlightSimFloatingPanelView() {
           className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
           aria-label="Flight Sim runtime status"
         >
-          <p className="flex items-center gap-1 text-[11px] font-semibold">
+          <p className="flex items-center gap-1 text-xs font-semibold">
             <Gauge className="h-3.5 w-3.5" aria-hidden="true" />
             Desktop, pointer, touch, gamepad, Motion Control
           </p>
-          <p className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)}>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>
             {flight.currentWaypointId
               ? `Proceed to ${flight.currentWaypointId}.`
               : flight.phase === 'completed'
                 ? 'Mission complete. Save the validated Decisions locally.'
                 : `The ${environment.label} XR terrain remains the only world owner.`}
           </p>
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
             One existing R3F Canvas · fixed native ECS ticks · swept AABB collision · zero runtime network or model calls.
           </p>
           <p
-            className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}
+            className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}
             data-kg-flight-sim-geography-boundary="not-rendered"
           >
             The local XR stage is aligned to Singapore’s Flight anchor; it is not a Singapore geographic boundary.
           </p>
           <p
             className={cn(
-              'text-[10px]',
+              'text-xs',
               motionControl.phase === 'running'
                 ? UI_THEME_TOKENS.status.success
                 : UI_THEME_TOKENS.text.tertiary,
@@ -353,7 +353,7 @@ export function FlightSimFloatingPanelView() {
           </p>
           {flight.runtimeError ? (
             <p
-              className={cn('text-[10px]', UI_THEME_TOKENS.status.error)}
+              className={cn('text-xs', UI_THEME_TOKENS.status.error)}
               role="alert"
               data-kg-flight-sim-runtime-error="1"
             >
@@ -363,14 +363,14 @@ export function FlightSimFloatingPanelView() {
           ) : null}
           {decisions.error ? (
             <p
-              className={cn('break-words text-[10px]', UI_THEME_TOKENS.status.error)}
+              className={cn('break-words text-xs', UI_THEME_TOKENS.status.error)}
               role="alert"
               data-kg-flight-sim-save-error="1"
             >
               {decisions.error}
             </p>
           ) : null}
-          <p className={cn('break-all text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('break-all text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Decision owner · {FLIGHT_SIM_SAVE_PATH}
           </p>
         </section>
@@ -379,7 +379,7 @@ export function FlightSimFloatingPanelView() {
           className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
           aria-label="Flight Sim controls"
         >
-          <label className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-[10px]">
+          <label className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-xs">
             <span>Throttle</span>
             <input
               type="range"
@@ -459,7 +459,7 @@ export function FlightSimFloatingPanelView() {
           className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
           aria-label="Flight Sim companions"
         >
-          <h3 className="text-[11px] font-semibold">Motion Control · XR Mode</h3>
+          <h3 className="text-xs font-semibold">Motion Control · XR Mode</h3>
           <div className="flex flex-wrap gap-1">
             <button
               type="button"
@@ -478,7 +478,7 @@ export function FlightSimFloatingPanelView() {
               <View className="h-3.5 w-3.5" aria-hidden="true" /> XR Mode
             </button>
           </div>
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Motion Control keeps the aircraft and camera capture live across the panel handoff. XR Mode exits the aircraft overlay and restores the authored scene controller.
           </p>
         </section>
@@ -487,12 +487,12 @@ export function FlightSimFloatingPanelView() {
           className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
           data-kg-flight-sim-invocations="native"
         >
-          <h3 className="text-[11px] font-semibold">WebMCP · / · @ · #</h3>
+          <h3 className="text-xs font-semibold">WebMCP · / · @ · #</h3>
           <Invocation operation="open" />
           <Invocation operation="start" />
           <Invocation operation="throttle" throttle={0.75} />
           <Invocation operation="save" />
-          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Browser tools · agentic-graph.inspect_local_flight_sim · agentic-graph.control_local_flight_sim
           </p>
         </section>

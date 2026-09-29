@@ -11,27 +11,16 @@ import {
   UI_RESPONSIVE_PANEL_CODE_EDITOR_FRAME_CLASSNAME,
   UI_RESPONSIVE_PANEL_CODE_EDITOR_SMALL_FRAME_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { UI_THEME_TOKENS, normalizeSingleLineControlClassName, singleLineControlDecorationClassName } from '@/lib/ui/theme-tokens'
 import { PanelCheckbox, PanelTextarea, PanelTextInput } from '@/lib/ui/panelFormControls'
 import { uiToolbarRowScrollClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
 import { renderChatContextScopeSettingInput, renderChatModelSettingInput, renderChatProviderSettingInput } from '@/features/settings/chatProviderSettingInput'
 
-const PANEL_VALUE_INPUT_REQUIRED_CLASS_NAME = 'w-full min-w-0 max-w-full h-6'
 export const SETTINGS_PREVIEW_INLINE_ROW_CLASS_NAME = 'flex w-full min-w-0 items-center gap-2'
 
-const normalizePanelValueInputClassName = (
-  className: string,
-  alignment: 'left' | 'right' = 'right',
-) => {
-  const alignmentClass = alignment === 'left' ? 'text-left' : 'text-right'
-  const requiredTokens = PANEL_VALUE_INPUT_REQUIRED_CLASS_NAME.split(/\s+/)
-  const requiredTokenSet = new Set(requiredTokens)
-  const tokens = className
-    .split(/\s+/)
-    .filter(token => token && token !== 'text-left' && token !== 'text-right' && !requiredTokenSet.has(token))
-  return [...requiredTokens, ...tokens, alignmentClass].join(' ')
-}
+const normalizePanelValueInputClassName = (className: string, alignment: 'left' | 'right' = 'right') =>
+  normalizeSingleLineControlClassName(`w-full ${className.split(/\s+/).filter(token => token !== 'text-left' && token !== 'text-right').join(' ')} text-${alignment}`)
 
 export const renderSettingInput = (
   key: string,
@@ -65,7 +54,7 @@ export const renderSettingInput = (
       ? normalizePanelValueInputClassName(rawPanelInputClass)
       : normalizePanelValueInputClassName(PANEL_TYPOGRAPHY_DEFAULTS.keyValueInputClass)
   const uiPanelKeyValueInputLeftClass = normalizePanelValueInputClassName(uiPanelKeyValueInputClass, 'left')
-  const uiPanelKeyValueTextareaClass = `${uiPanelKeyValueInputClass.split(/\s+/).filter(token => token && token !== 'h-6' && token !== 'text-left' && token !== 'text-right').join(' ')} py-1 text-left font-mono text-xs`
+  const uiPanelKeyValueTextareaClass = `${singleLineControlDecorationClassName(uiPanelKeyValueInputClass).replace(/\btext-(left|right)\b/g, '')} px-2 py-1 text-left font-mono text-xs`
   const iconSizeClass = getIconSizeClass(values.uiIconScale === 'compact' ? 'compact' : 'default')
   const iconStrokeWidth =
     typeof values.uiIconStrokeWidth === 'number' && Number.isFinite(values.uiIconStrokeWidth)
@@ -202,7 +191,7 @@ export const renderSettingInput = (
   }
   if (key === 'uiIconPillLegendTextSizeClass' || key === 'uiIconPillBadgeTextSizeClass') {
     const str = String(v || '')
-    const placeholder = key === 'uiIconPillLegendTextSizeClass' ? 'text-xs' : 'text-[9px]'
+    const placeholder = 'text-xs'
     const appliedClass = str.trim().length > 0 ? str : placeholder
     const legendPreviewClass =
       key === 'uiIconPillLegendTextSizeClass'
@@ -281,7 +270,7 @@ export const renderSettingInput = (
     const str = String(v || '')
     const placeholder = UI_RESPONSIVE_BADGE_CHIP_DEFAULT_CLASSNAME
     const appliedClass = str.trim().length > 0 ? str : placeholder
-    const previewClass = `${appliedClass} ${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME} ${UI_RESPONSIVE_BADGE_CHIP_CLASSNAME} justify-center gap-1 h-6 box-border ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.text.primary} text-[9px]`
+    const previewClass = `${appliedClass} ${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME} ${UI_RESPONSIVE_BADGE_CHIP_CLASSNAME} justify-center gap-1 h-6 box-border ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.text.primary} text-xs`
     return (
       <section className={SETTINGS_PREVIEW_INLINE_ROW_CLASS_NAME}>
         <section className={previewClass}>
@@ -299,7 +288,7 @@ export const renderSettingInput = (
   }
   if (key === 'uiIconBadgeChipTextSizeClass') {
     const str = String(v || '')
-    const placeholder = 'text-[9px]'
+    const placeholder = 'text-xs'
     const appliedClass = str.trim().length > 0 ? str : placeholder
     const previewClass = `${badgeChipBaseClass} ${appliedClass} gap-1 h-6 box-border ${UI_THEME_TOKENS.text.primary}`
     return (

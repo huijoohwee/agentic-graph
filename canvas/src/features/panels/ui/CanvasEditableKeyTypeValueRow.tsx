@@ -1,3 +1,4 @@
+import { renderMainPanelRowHelp } from './mainPanelRowHelp'
 import React from 'react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { renderKeyTypeValueMarkdownSigilBridgeNode } from '@/features/panels/ui/canvasKeyTypeValueMarkdownBridge'
@@ -9,6 +10,7 @@ export type CanvasEditableKeyTypeValueRowProps = KeyTypeValueRowProps
 
 export function CanvasEditableKeyTypeValueRow({
   keyNode,
+  help,
   typeNode,
   valueNode,
   align,
@@ -27,9 +29,9 @@ export function CanvasEditableKeyTypeValueRow({
     <KeyTypeValueStaticRow
       id={id}
       data-kg-anchor={dataKgAnchor}
-      keyNode={renderKeyTypeValueMarkdownSigilBridgeNode(keyNode, useMarkdownSigilBridge)}
+      keyNode={renderMainPanelRowHelp(renderKeyTypeValueMarkdownSigilBridgeNode(keyNode, useMarkdownSigilBridge), help, 'key')}
       typeNode={renderKeyTypeValueMarkdownSigilBridgeNode(typeNode, useMarkdownSigilBridge)}
-      valueNode={renderKeyTypeValueMarkdownSigilBridgeNode(valueNode, useMarkdownSigilBridge)}
+      valueNode={renderMainPanelRowHelp(renderKeyTypeValueMarkdownSigilBridgeNode(valueNode, useMarkdownSigilBridge), help, 'value')}
       align={align}
       layout={layout}
       onClick={onClick}

@@ -1,8 +1,9 @@
+import { pickBestContentRoot } from './htmlContentRoot'
 import { hashText } from '../../features/parsers/hash'
 import { LRUCache } from '../cache/LRUCache'
 import { postprocessWebpageMarkdownSsot } from './webpageMarkdownPostprocess'
 import { pickFirstSrcsetUrl } from 'grph-shared/markdown/mediaHtml'
-import { looksLikePlaceholderMediaSrc, scoreHtmlContentRootCandidate, shouldPreserveRawHtmlMarkdownLine } from './htmlToMarkdownHeuristics'
+import { looksLikePlaceholderMediaSrc, shouldPreserveRawHtmlMarkdownLine } from './htmlToMarkdownHeuristics'
 import { serializeMarkdownPipeTable } from '@/features/markdown/ui/markdownDataViewSerialize'
 
 type HastNode = {
@@ -80,39 +81,6 @@ const stripHastComments = (node: HastNode): void => {
     next.push(k)
   }
   node.children = next
-}
-
-const extractTextLen = (node: HastNode): number => {
-  return extractHastText(node).replace(/\s+/g, ' ').trim().length
-}
-
-const pickBestContentRoot = (root: HastNode): HastNode | null => {
-  let best: { node: HastNode; score: number } | null = null
-
-  const getProp = (node: HastNode, key: string): string => {
-    const props = node && typeof node.properties === 'object' && node.properties ? (node.properties as Record<string, unknown>) : null
-    if (!props) return ''
-    const v = props[key]
-    if (typeof v === 'string') return v
-    if (Array.isArray(v)) return v.map(x => String(x || '')).join(' ').trim()
-    return ''
-  }
-
-  const visit = (node: HastNode): void => {
-    const t = typeof node?.type === 'string' ? node.type : ''
-    const tag = t === 'element' && typeof node?.tagName === 'string' ? node.tagName.toLowerCase() : ''
-    const candidateBoost = tag ? scoreHtmlContentRootCandidate({ tag, id: getProp(node, 'id'), className: getProp(node, 'className') || getProp(node, 'class'), role: getProp(node, 'role') }) : 0
-
-    if (candidateBoost > 0) { const score = extractTextLen(node) + candidateBoost; if (!best || score > best.score) best = { node, score } }
-
-    const kids = Array.isArray(node.children) ? (node.children as HastNode[]) : null
-    if (!kids || kids.length === 0) return
-    for (const k of kids) visit(k)
-  }
-
-  visit(root)
-  if (!best) return null
-  return extractTextLen(best.node) < 300 ? null : best.node
 }
 
 const fillEmptyAnchorText = (root: HastNode): void => {
@@ -445,6 +413,8 @@ const restoreSourceJoinedAsciiTokens = (markdown: string, sourceHtml: string): s
 
 export async function convertHtmlToMarkdownUnified(args: {
   html: string
+  /** Used only when the captured document has no rendered body content. */
+  fallbackMarkdown?: string
   baseUrl?: string
   maxInputChars?: number
   includeImages?: boolean
@@ -457,6 +427,7 @@ export async function convertHtmlToMarkdownUnified(args: {
   try {
     const raw = String(args.html || '')
     const baseUrl = typeof args.baseUrl === 'string' ? args.baseUrl.trim() : ''
+    const fallbackMarkdown = String(args.fallbackMarkdown || '').trim()
     const includeImages = args.includeImages !== false
     const includeHeadSection = args.includeHeadSection === true
     const preferContentRoot = args.preferContentRoot !== false
@@ -491,6 +462,7 @@ export async function convertHtmlToMarkdownUnified(args: {
       includeImages ? 'img:1' : 'img:0',
       `fid:${fidelityLevel}`,
       includeHeadSection ? 'head:1' : 'head:0',
+      hashText(fallbackMarkdown),
       preferContentRoot ? 'root:1' : 'root:0',
       injectTitleHeading ? 'title:1' : 'title:0',
       'post:webpage:3',
@@ -634,7 +606,15 @@ export async function convertHtmlToMarkdownUnified(args: {
           }
         }
         const anyState = state as unknown as { all?: (n: unknown) => unknown }
-        if (typeof anyState?.all === 'function') return anyState.all(node)
+        if (typeof anyState?.all === 'function') {
+          const children = anyState.all(node)
+          // Linearize a visual row as its own paragraph; adjacent cells need a separator.
+          const phrasing = new Set(['text', 'link', 'image', 'inlineCode', 'strong', 'emphasis', 'delete', 'break'])
+          if (looksGridOrColumnsOrFlex && Array.isArray(children) && children.length > 1 && children.every(child => phrasing.has(String(child?.type)))) {
+            return { type: 'paragraph', children: children.flatMap((child, index) => index ? [{ type: 'text', value: ' ' }, child] : [child]) }
+          }
+          return children
+        }
         return preserveAsHtmlHandler()(state, node)
       }
     }
@@ -1381,7 +1361,7 @@ export async function convertHtmlToMarkdownUnified(args: {
       return out.join('\n').replace(/\n{3,}/g, '\n\n').trim()
     }
 
-    const coreMarkdown = dedupeMarkdownParagraphs(postprocessMarkdownLayout(coreMarkdownRaw))
+    const coreMarkdown = dedupeMarkdownParagraphs(postprocessMarkdownLayout(coreMarkdownRaw)) || fallbackMarkdown
 
     const headSection = (() => {
       if (!extractedHead) return ''

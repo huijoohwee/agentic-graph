@@ -231,15 +231,15 @@ export function XrV2DeliveryValidationPanel({
       data-kg-xr-v2-ac-12-viewer-render-revision={previewEvidence?.viewerRenderRevision ?? 0}
     >
       <header>
-        <strong className="text-[9px]">Browser delivery validation · explicit actions</strong>
-        <p className={cn('m-0 text-[8px]', UI_THEME_TOKENS.text.tertiary)}>
+        <strong className="text-xs">Browser delivery validation · explicit actions</strong>
+        <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>
           No action runs on mount. Packaging requires the currently opened persisted capture; preview derives its edit from the mounted authored scene. Camera, sensors, immersive sessions, and remote signalling remain untouched.
         </p>
       </header>
 
       <section className={cn('grid gap-1 rounded border p-1', UI_THEME_TOKENS.panel.border)} aria-label="AC-11 browser packaging action">
         <div className="flex flex-wrap items-center justify-between gap-1">
-          <strong className="text-[9px]">AC-11 · package &amp; play</strong>
+          <strong className="text-xs">AC-11 · package &amp; play</strong>
           <button
             type="button"
             className="App-toolbar__btn"
@@ -251,18 +251,18 @@ export function XrV2DeliveryValidationPanel({
           </button>
         </div>
         <video ref={videoRef} className="aspect-video w-full rounded bg-black" controls muted playsInline aria-label="AC-11 packaged WebM playback" data-kg-xr-v2-ac-11-video="1" />
-        <p className={cn('m-0 text-[8px]', UI_THEME_TOKENS.text.tertiary)}>
+        <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>
           {presentation.selected
             ? `Source: persisted asset ${presentation.selected.asset.asset_id}`
             : 'Open a saved capture in the catalog before packaging.'}
         </p>
-        <p className={cn('m-0 text-[8px]', packagingPhase === 'failed' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.tertiary)} role="status">{packagingMessage}</p>
-        {packagingEvidence ? <code className="break-all text-[8px]">{JSON.stringify(packagingEvidence)}</code> : null}
+        <p className={cn('m-0 text-xs', packagingPhase === 'failed' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.tertiary)} role="status">{packagingMessage}</p>
+        {packagingEvidence ? <code className="break-all text-xs">{JSON.stringify(packagingEvidence)}</code> : null}
       </section>
 
       <section className={cn('grid gap-1 rounded border p-1', UI_THEME_TOKENS.panel.border)} aria-label="AC-12 connected preview action">
         <div className="flex flex-wrap items-center justify-between gap-1">
-          <strong className="text-[9px]">AC-12 · connected preview</strong>
+          <strong className="text-xs">AC-12 · connected preview</strong>
           <button
             type="button"
             className="App-toolbar__btn"
@@ -279,11 +279,11 @@ export function XrV2DeliveryValidationPanel({
           aria-label="Connected XR viewer render surface"
           data-kg-xr-v2-connected-viewer-surface="1"
         />
-        <p className={cn('m-0 text-[8px]', previewPhase === 'failed' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.tertiary)} role="status">{previewMessage}</p>
-        {previewEvidence ? <code className="break-all text-[8px]">{JSON.stringify(previewEvidence)}</code> : null}
+        <p className={cn('m-0 text-xs', previewPhase === 'failed' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.tertiary)} role="status">{previewMessage}</p>
+        {previewEvidence ? <code className="break-all text-xs">{JSON.stringify(previewEvidence)}</code> : null}
       </section>
 
-      <p className="m-0 rounded bg-amber-100 px-2 py-1 text-[8px] text-amber-900 dark:bg-amber-950/60 dark:text-amber-100" data-kg-xr-v2-cross-device-scope={XR_V2_SAVED_ASSET_SCOPE}>
+      <p className="m-0 rounded bg-amber-100 px-2 py-1 text-xs text-amber-900 dark:bg-amber-950/60 dark:text-amber-100" data-kg-xr-v2-cross-device-scope={XR_V2_SAVED_ASSET_SCOPE}>
         Saved XR assets are local-first with explicit existing-storage publish/reopen. {XR_V2_CROSS_DEVICE_BLOCKER.message}
       </p>
     </section>
