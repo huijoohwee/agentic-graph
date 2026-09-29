@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.14.0"
+version: "1.15.0"
 status: "Accepted and implemented"
 date: "2026-09-29"
 authors: ["airvio"]
@@ -572,9 +572,7 @@ use a bounded adaptive grid with internal scrolling. Authored wrappers use named
 sections, headers, navigation and figures; confirmed image regions are native
 select buttons. Existing data, playback and camera permission owners remain.
 
-MVP/evidence: 25-minute implementation target; cap 15 files / 75 KB patch after the added
-Semantic space request (13 files / 68 KB measured), no new
-dependencies. Check duplicate frames, desktop/touch sizing, constrained clips,
+MVP/evidence: cap 15 files / 75 KB (13 files / 68 KB measured), no new dependencies. Check duplicate frames, desktop/touch sizing, constrained clips,
 selection hit testing, TypeScript and the focused presentation contracts. Broader
 release evidence is recorded separately; focused checks do not establish parity.
 GTM: consistent free/offline learning and inspection controls. Rollback: revert
@@ -589,3 +587,12 @@ buttons, selectable outputs, invocation metadata, height and ellipsis owners.
 MVP: 10-minute implementation cap, 6 files / 20 KB; browser and existing menu checks
 verify labels and state separately. GTM: clearer free/offline controls. Rollback:
 revert this successor; no data or dependency change.
+
+## XR hover fidelity (2026-09-29)
+
+PRD/TAD/ADR: XR subjects reuse the interactive graph hover box for crisp HTML
+names/details; remove overlapping name sprites. Pointer exit bridges to the box,
+removal/document changes clear stale content, and tapping preserves selection.
+The timeline owns its top edge; remove the transform inspector's adjacent stroke.
+MVP/GTM: free/offline, cap 8 files / 30 KB / 20 minutes; verify hover, selection,
+borders and existing contracts. Rollback: revert this successor; no data migration.

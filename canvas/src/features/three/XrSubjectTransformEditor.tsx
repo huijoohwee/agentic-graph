@@ -39,7 +39,7 @@ export function XrSubjectTransformEditor() {
   }
   if (!subject && !stageObject) return <SpatialWorkspaceReview />
   const label = subject?.label || stageObject!.label
-  return <><SpatialWorkspaceReview /><details key={boundary.current.key} open className="shrink-0 border-b p-2" data-kg-xr-timeline-object-inspector={runtime.selectedShotTargetId}
+  return <><SpatialWorkspaceReview /><details key={boundary.current.key} open className="shrink-0 p-2" data-kg-xr-timeline-object-inspector={runtime.selectedShotTargetId}
     onFocusCapture={() => { draft.current = context }}>
     <summary className="cursor-pointer text-xs font-semibold">{label} · Object transform</summary>
     {subject ? <section className="mt-2 grid gap-2">
