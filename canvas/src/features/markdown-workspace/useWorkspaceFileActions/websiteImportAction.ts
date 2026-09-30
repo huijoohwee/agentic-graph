@@ -10,6 +10,7 @@ import { ancestorPathsForWorkspacePath } from '@/features/workspace-fs/path'
 import { beginWebsiteImportExplorerUpdates } from '@/features/workspace-fs/websiteImportRefreshGuard'
 import { MARKDOWN_EXPLORER_OPEN_SOURCE_FILES_EVENT } from '@/features/markdown/ui/useMarkdownExplorerSectionCollapseState'
 import { addCompletedWebsiteFileToExplorer } from './websiteImportExplorerProgress'
+import { D3_URL_IMPORT_CANVAS_PRESET } from '../workspaceImport/canvasPresets'
 export { importWebsiteViaWorkspaceRuntime, useWorkspaceWebsiteImportAction } from './websiteImportRuntimeFacade'
 
 type WebsiteImportSettings = {
@@ -228,7 +229,7 @@ export async function runWorkspaceWebsiteImport(args: {
   if (settings.applyToCanvas) {
     const { applyCanvasFrontmatterPreset } = await import('@/features/parsers/canvasFrontmatterPreset')
     if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
-    applyCanvasFrontmatterPreset({ preset: { canvasRenderMode: '2d', canvas2dRenderer: 'd3' } })
+    applyCanvasFrontmatterPreset({ preset: D3_URL_IMPORT_CANVAS_PRESET })
   }
   let fs: WorkspaceFs | null = null
   let writer: Awaited<ReturnType<typeof createWebsiteImportWorkspaceWriter>> | null = null

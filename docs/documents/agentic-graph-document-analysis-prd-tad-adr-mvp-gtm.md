@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.0"
+version: "1.0.1"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.0"
-tad_revision: "1.0.0"
-adr_revision: "1.0.0"
-mvp_revision: "1.0.0"
-gtm_revision: "1.0.0"
+prd_revision: "1.0.1"
+tad_revision: "1.0.1"
+adr_revision: "1.0.1"
+mvp_revision: "1.0.1"
+gtm_revision: "1.0.1"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.0. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.1. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -37,7 +37,10 @@ navigation. An ordinary document toolbar can open insights without website metad
 Acceptance: Unicode normalization preserves original offsets; repeated phrase counts are exact within
 declared bounds; phrases do not cross sentence/newline boundaries; user phrases and language tags
 work locally; selected keyword candidates select their contexts; stale source navigation is rejected;
-ordinary graphs retain a useful Dashboard without text metadata.
+ordinary graphs retain a useful Dashboard without text metadata. The active source remains identifiable
+by its complete path when the tree is filtered or collapsed; reveal restores its row without reopening
+the document. Headless URL crawl starts in D3, and generated page, canvas and sitemap documents
+retain that default when reopened after another renderer.
 
 ## TAD
 
@@ -56,6 +59,9 @@ describes the existing graph-analysis text. These scopes are stated in the UI.
 Keyword inspection loads lazily when Document insights opens. User phrases and locale are transient
 inspection controls, not document edits or a second settings store. Graph selection uses existing IDs;
 navigation uses the existing source-revision guard. Optional Dashboard cards consume evidence only.
+Explorer reveals the active opaque workspace path through existing search, expansion and scroll controls,
+without loading the document again. Crawl startup reuses the shared D3 document preset; sitemap
+frontmatter now declares the same renderer as the generated page and crawl canvas.
 
 ## ADR
 
@@ -66,6 +72,8 @@ navigation uses the existing source-revision guard. Optional Dashboard cards con
 - Preserve literal counts independently of ranking. Heuristic relationships and co-occurrence are
   labeled as such; neither is named-entity recognition, dependency parsing or causal evidence.
 - Retain graph-wide Dashboard scope; Mission evidence is optional and never the required source.
+- The active source control applies to every workspace file; source names and domains never select
+  visibility behavior. Renderer defaults belong to the crawl workflow and generated artifact contract.
 - Runtime validation inputs stay outside the repository; regression fixtures are independent examples.
 
 ## MVP
@@ -73,7 +81,8 @@ navigation uses the existing source-revision guard. Optional Dashboard cards con
 Bounds: 60,000 characters, 12,000 tokens, 800 evidence labels, 12 tokens per phrase, three contexts
 per phrase; inspection shows up to 24 phrases. Partial final words are discarded, and truncation is
 visible. Context display uses bounded source lines. Existing graph node/edge budgets remain in force.
-Implementation budget: 16 production modules, less than 30 KB added source, no packages or assets.
+Initial implementation budget: 16 production modules, less than 30 KB added source, no packages or assets.
+Visibility/default follow-up: at most six production modules and 12 KB added source, plus tests and docs.
 No service is contacted during analysis; loading the application and optional source import are
 separate operations. Cold offline application installation and full linguistic-model parity are out of scope.
 
@@ -83,14 +92,20 @@ controls, graph selection, source navigation and stale rejection. The collaborat
 these tests with existing keyword, signal, Dashboard and runtime-input guards. Type checking and
 affected checks gate delivery. An externally supplied rendered page is used only as a temporary local
 input; an independent occurrence counter and blocked fetch verify the analysis without a golden corpus.
+`activeWorkspaceSourceVisibility.test.tsx` exercises repeated reveal through filters and collapsed folders,
+duplicate basenames, Unicode paths and editor preservation. `websiteImportRendererDefaults.test.ts`
+checks all generated artifact defaults and crawl startup after conflicting document modes.
 
 Rollback: revert this source change, retaining user documents and existing generic Dashboard behavior.
 Invalidate keyword caches again if their semantics change; never reinterpret old cached frequencies.
-Keep the task lane while its local preview or review delivery needs it.
+For the visibility/default follow-up, revert the Explorer control, crawl startup and sitemap additions;
+existing imported documents retain their stored frontmatter. Keep the task lane while its local preview
+or review delivery needs it.
 
 ## GTM
 
 Initial user: a reader checking repeated themes and evidence in a local document. The near-built path
 reuses existing preview, graph and Dashboard controls. First value is a counted phrase with a source
 jump, requiring no account, paid plan or model download. Measure successful source jumps and time
-to verify a term before expanding linguistic features. Willingness to pay and revenue are unvalidated.
+to verify a term before expanding linguistic features. A visible source path and consistent crawl
+renderer reduce the time spent finding the document behind a graph. Willingness to pay and revenue are unvalidated.

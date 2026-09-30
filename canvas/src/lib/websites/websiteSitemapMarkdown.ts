@@ -104,6 +104,9 @@ export function buildWebsiteSitemapMarkdown(args: {
 
   const doc: string[] = []
   doc.push('---')
+  doc.push('kgCanvas2dRenderer: "d3"')
+  doc.push('kgCanvasRenderMode: "2d"')
+  doc.push('kgCanvasSurfaceMode: "2d"')
   if (rootUrl) doc.push(`kgWebpageUrl: "${rootUrl.replace(/"/g, '\\"')}"`)
   doc.push(`kgWebpageView: "markdown"`)
   if (importId) doc.push(`kgWebsiteImportId: "${importId.replace(/"/g, '\\"')}"`)

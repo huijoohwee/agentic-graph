@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 75
+contract_version: 76
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -76,6 +76,10 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  website_import_visibility:
+    roots: ["canvas/src/features/markdown-workspace/MarkdownWorkspaceExplorer.tsx", "canvas/src/lib/websites/websiteSitemapMarkdown.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction.ts", "canvas/src/__tests__/activeWorkspaceSourceVisibility.test.tsx", "canvas/src/__tests__/websiteImportRendererDefaults.test.ts"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/activeWorkspaceSourceVisibility.test.tsx", "canvas/src/__tests__/websiteImportRendererDefaults.test.ts"]
   native_document_analysis:
     roots: ["canvas/src/lib/graph/textAnalysis/", "canvas/src/lib/graph/graphragTextAnalytics.ts", "canvas/src/lib/graph/graphragTextPipeline.ts", "canvas/src/lib/graph/extractiveSummarization.ts", "canvas/src/lib/semantic-mode/keyword", "canvas/src/features/semantic-mode/keywordStopwords.ts", "canvas/src/features/panels/views/DocumentInsights.tsx", "canvas/src/features/panels/views/DocumentKeywordInsights.tsx", "canvas/src/components/DashboardCanvas/", "canvas/src/__tests__/nativeDocumentAnalysis", "canvas/src/__tests__/keywordMode.test.ts"]
     commands:
