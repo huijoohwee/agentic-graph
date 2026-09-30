@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.2"
+version: "1.0.3"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.2"
-tad_revision: "1.0.2"
-adr_revision: "1.0.2"
-mvp_revision: "1.0.2"
-gtm_revision: "1.0.2"
+prd_revision: "1.0.3"
+tad_revision: "1.0.3"
+adr_revision: "1.0.3"
+mvp_revision: "1.0.3"
+gtm_revision: "1.0.3"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.2. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.3. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -43,6 +43,9 @@ the document. Headless URL crawl starts in D3, and generated page, canvas and si
 retain that default when reopened after another renderer. Import acceptance requires persisted page,
 canvas and sitemap entries in the workspace being reviewed, including after reopening it; an analysis
 note containing rendered page text does not prove that website import completed.
+
+Captured pages must remain reopenable even when raw HTML contains large application-state attributes.
+The HTML preview reports its limit and offers Markdown as the reading path; full capture/export stays intact.
 
 ## TAD
 
@@ -68,6 +71,12 @@ records use IndexedDB under the current origin. Changing the preview host or por
 local workspace; it does not migrate existing imports. Keep validation on the same preview origin,
 and use the native import flow when website documents are needed in a different workspace.
 
+The shared HTML preview budget is 500,000 UTF-8 bytes, checked before hashing, rewriting or sanitizing
+and again after iframe markup injection. Preview fetches reject excessive Content-Length and streamed
+bytes, cancel the body, and use separate cache keys from full-source reads. Limit failures do not trigger
+a live-site fallback. Captures default to stripping source scripts; an explicit policy still takes precedence.
+Equivalent import identifiers keep the same load; a source change aborts the previous request.
+
 ## ADR
 
 - Native, original implementation: no Stanza, spaCy, NLTK, model, corpus, copied rules or new dependency.
@@ -83,6 +92,10 @@ and use the native import flow when website documents are needed in a different 
   Inspect the original workspace without modifying it; importing into another workspace creates
   independent documents and preserves the original records. No implicit cross-origin storage bridge.
 - Runtime validation inputs stay outside the repository; regression fixtures are independent examples.
+
+The preview limit replaces heuristic multi-megabyte shrinking, which left large attributes untouched.
+It applies uniformly to every source. No dependencies, domain exceptions, copied code or model assets
+are introduced. The existing raw-artifact retrieval limit is unchanged for capture/export consumers.
 
 ## MVP
 
@@ -108,6 +121,13 @@ page documents plus the crawl canvas and sitemap appeared in Source Files and su
 the same preview. D3 remained selected, and the library page opened through the tree. The original workspace still contained its
 older imports. This establishes local workspace persistence, not cloud sync or Production delivery.
 Recovery follow-up: zero production modules or dependency changes; evidence and requirements only.
+Crash follow-up: four production modules, fewer than 15 KB added source, plus tests/docs. Regression
+checks cover header/stream cancellation, UTF-8 limits, cache isolation, sync/async builders, normal
+HTML, explicit script policy, metadata stability and late completion after switching sources.
+The external validation capture was 16,903,271 bytes; both preview builders returned a 2,759-byte
+notice, and a before/after SHA-256 check confirmed that the stored capture was unchanged.
+The same browser origin reopened with 37 Source Files and the affected page displayed the limit
+notice while its Markdown remained available. This is local preview evidence only.
 
 Rollback: revert this source change, retaining user documents and existing generic Dashboard behavior.
 Invalidate keyword caches again if their semantics change; never reinterpret old cached frequencies.
@@ -115,6 +135,9 @@ For the visibility/default follow-up, revert the Explorer control, crawl startup
 existing imported documents retain their stored frontmatter. Keep the task lane while its local preview
 or review delivery needs it. Native re-import creates a separate timestamped folder; recovery rollback
 can remove that new folder through workspace controls while retaining the original workspace.
+
+Crash rollback: revert the preview budget and hook changes without deleting captures or workspace
+records. Reopening unbounded captures can reproduce the renderer failure, so prefer Markdown first.
 
 ## GTM
 
@@ -124,3 +147,5 @@ jump, requiring no account, paid plan or model download. Measure successful sour
 to verify a term before expanding linguistic features. A visible source path and consistent crawl
 renderer reduce the time spent finding the document behind a graph. Measure successful reopening of
 imported documents in the reviewed workspace, separately from successful text analysis. Willingness to pay and revenue are unvalidated.
+
+A bounded HTML notice keeps the workspace responsive while readers continue in Markdown; measure successful reopening without losing captured sources.

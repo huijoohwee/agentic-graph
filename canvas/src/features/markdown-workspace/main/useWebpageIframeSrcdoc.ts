@@ -1,4 +1,5 @@
 import React from 'react'
+import { assertWebpageHtmlPreviewBudget, WebpageHtmlPreviewLimitError } from '@/lib/websites/webpageHtmlPreviewBudget'
 import { useDebouncedValue } from '@/features/hooks/useDebouncedValue'
 import { runInIdle } from '@/features/panels/utils/idle'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -93,13 +94,6 @@ function resolveDirectHtmlProxyScriptPolicy(args: {
 }): 'strip' | 'allow' {
   if (args.explicitPolicy === 'allow') return 'allow'
   if (args.explicitPolicy === 'strip') return 'strip'
-  try {
-    const u = new URL(args.url)
-    const host = String(u.hostname || '').toLowerCase()
-    if (host === 'aljazeera.com' || host.endsWith('.aljazeera.com')) return 'strip'
-  } catch {
-    void 0
-  }
   const storePolicy = useGraphStore.getState().webpageViewerScriptPolicy
   return storePolicy === 'strip' ? 'strip' : 'allow'
 }
@@ -122,8 +116,6 @@ export function useWebpageIframeSrcdoc(args: {
     error: null,
   })
 
-  const loopGuardRef = React.useRef<{ key: string; count: number; sinceMs: number }>({ key: '', count: 0, sinceMs: 0 })
-
   const onStatusProgressRef = React.useRef(args.onStatusProgress)
   const onStatusWithAutoClearRef = React.useRef(args.onStatusWithAutoClear)
   React.useEffect(() => {
@@ -131,38 +123,14 @@ export function useWebpageIframeSrcdoc(args: {
     onStatusWithAutoClearRef.current = args.onStatusWithAutoClear
   }, [args.onStatusProgress, args.onStatusWithAutoClear])
 
+  const importId = args.websiteImportMeta?.importId
+  const nodeId = args.websiteImportMeta?.nodeId
+  const outputDirRel = args.websiteImportMeta?.outputDirRel
   const debouncedUrl = useDebouncedValue(args.url, 120, args.enabled)
   const debouncedHtmlOverride = useDebouncedValue(args.htmlOverride ?? null, 250, args.enabled)
 
   React.useEffect(() => {
-    const loopKey = [
-      args.enabled ? '1' : '0',
-      String(args.view || ''),
-      String(debouncedUrl || '').trim(),
-      String(args.siteRootRel || ''),
-      String(args.scriptPolicy || ''),
-      String(args.websiteImportMeta?.importId || ''),
-      String(args.websiteImportMeta?.nodeId || ''),
-      String(args.websiteImportMeta?.outputDirRel || ''),
-      args.includeImages == null ? 'inherit' : (args.includeImages ? 'on' : 'off'),
-      typeof debouncedHtmlOverride === 'string' ? String(debouncedHtmlOverride.length) : 'null',
-    ].join('|')
-    try {
-      const now = Date.now()
-      if (loopGuardRef.current.key === loopKey && now - loopGuardRef.current.sinceMs < 1500) {
-        loopGuardRef.current.count += 1
-      } else {
-        loopGuardRef.current.key = loopKey
-        loopGuardRef.current.count = 1
-        loopGuardRef.current.sinceMs = now
-      }
-      if (loopGuardRef.current.count > 24) {
-        return
-      }
-    } catch {
-      void 0
-    }
-
+    const websiteImportMeta = importId && nodeId ? { importId, nodeId, outputDirRel } : null
     if (!args.enabled) {
       setState(prev => (prev.srcDoc === null && prev.src === null && prev.error === null ? prev : { srcDoc: null, src: null, error: null }))
       return
@@ -184,12 +152,12 @@ export function useWebpageIframeSrcdoc(args: {
       if (args.view === 'json') {
         onStatusProgressRef.current?.('Loading JSON')
         const rawJson = await (async () => {
-          if (args.websiteImportMeta) {
+          if (websiteImportMeta) {
             try {
               const t = await fetchWebsiteImportArtifact({
-                importId: args.websiteImportMeta.importId,
-                nodeId: args.websiteImportMeta.nodeId,
-                outputDirRel: args.websiteImportMeta.outputDirRel,
+                importId: websiteImportMeta.importId,
+                nodeId: websiteImportMeta.nodeId,
+                outputDirRel: websiteImportMeta.outputDirRel,
                 kind: 'conversionJson',
                 signal: ctrl.signal,
               })
@@ -223,7 +191,7 @@ export function useWebpageIframeSrcdoc(args: {
       }
 
       const override = typeof debouncedHtmlOverride === 'string' && debouncedHtmlOverride.trim() ? debouncedHtmlOverride : null
-      if (args.view === 'html' && override == null && !args.websiteImportMeta && isHttpUrl(url)) {
+      if (args.view === 'html' && override == null && !websiteImportMeta && isHttpUrl(url)) {
         const scriptPolicy = resolveDirectHtmlProxyScriptPolicy({ url, explicitPolicy: args.scriptPolicy })
         const nextSrc = buildWebpageProxyUrl(url, scriptPolicy)
         return { kind: 'proxy' as const, src: nextSrc }
@@ -232,22 +200,24 @@ export function useWebpageIframeSrcdoc(args: {
       onStatusProgressRef.current?.('Loading HTML')
       const rawHtml = await (async () => {
         if (override) return override
-        if (args.websiteImportMeta) {
+        if (websiteImportMeta) {
           try {
             return await fetchWebsiteImportArtifact({
-              importId: args.websiteImportMeta.importId,
-              nodeId: args.websiteImportMeta.nodeId,
-              outputDirRel: args.websiteImportMeta.outputDirRel,
+              importId: websiteImportMeta.importId,
+              nodeId: websiteImportMeta.nodeId,
+              outputDirRel: websiteImportMeta.outputDirRel,
               kind: 'rawHtml',
+              htmlPreview: true,
               signal: ctrl.signal,
             })
           } catch (error) {
-            if (ctrl.signal.aborted) throw error
+            if (ctrl.signal.aborted || error instanceof WebpageHtmlPreviewLimitError) throw error
             void 0
           }
         }
         return await fetchWebpageHtmlAuto({
           url,
+          htmlPreview: true,
           signal: ctrl.signal,
           onProgress: (bytes, bytesTotal) => {
             try {
@@ -260,17 +230,10 @@ export function useWebpageIframeSrcdoc(args: {
       })()
 
       if (ctrl.signal.aborted) throw new DOMException('Aborted', 'AbortError')
-      const scriptPolicy = (() => {
-        const p = preferEmbed ? 'allow' : inferIframeScriptPolicyFromHtml(rawHtml)
-        try {
-          const u = new URL(url)
-          const host = String(u.hostname || '').toLowerCase()
-          if (host === 'aljazeera.com' || host.endsWith('.aljazeera.com')) return 'strip'
-        } catch {
-          void 0
-        }
-        return p
-      })()
+      assertWebpageHtmlPreviewBudget(rawHtml)
+      // Captures already contain rendered content; replaying scripts can rehydrate the entire site.
+      const scriptPolicy = args.scriptPolicy ?? (websiteImportMeta
+        ? 'strip' : preferEmbed ? 'allow' : inferIframeScriptPolicyFromHtml(rawHtml))
 
       const siteRootRel = String(args.siteRootRel || '').trim().replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '')
       const localDirRel = (() => {
@@ -294,18 +257,21 @@ export function useWebpageIframeSrcdoc(args: {
 
       onStatusProgressRef.current?.('Rendering HTML')
       const built = await runInIdle(
-        () => buildWebpageHtmlSrcdocAsync({
-          html: htmlPreprocessed,
-          baseHref,
-          scriptPolicy,
-          onProgress: (step) => {
-            try {
-              onStatusProgressRef.current?.(`Sanitizing HTML: ${step}`)
-            } catch {
-              void 0
-            }
-          },
-        }),
+        () => {
+          if (ctrl.signal.aborted) throw new DOMException('Aborted', 'AbortError')
+          return buildWebpageHtmlSrcdocAsync({
+            html: htmlPreprocessed,
+            baseHref,
+            scriptPolicy,
+            onProgress: (step) => {
+              try {
+                onStatusProgressRef.current?.(`Sanitizing HTML: ${step}`)
+              } catch {
+                void 0
+              }
+            },
+          })
+        },
         { timeoutMs: 50 },
       )
       return { url, scriptPolicy, built }
@@ -342,6 +308,7 @@ export function useWebpageIframeSrcdoc(args: {
           onStatusWithAutoClearRef.current?.('Cancelled', 800)
           return
         }
+        onStatusWithAutoClearRef.current?.('Preview unavailable', 2400)
         const fallback = buildCodeViewerSrcdoc({ baseHref: url, title: url, mode: 'text', text: msg || 'Request failed' })
         setState(prev =>
           prev.srcDoc === fallback && prev.src === null && prev.error === (msg || 'Request failed')
@@ -366,10 +333,9 @@ export function useWebpageIframeSrcdoc(args: {
     args.siteRootRel,
     args.scriptPolicy,
     args.includeImages,
-    args.websiteImportMeta,
-    args.websiteImportMeta?.importId,
-    args.websiteImportMeta?.nodeId,
-    args.websiteImportMeta?.outputDirRel,
+    importId,
+    nodeId,
+    outputDirRel,
   ])
 
   return state
