@@ -1,3 +1,4 @@
+import { exceedsWebpageHtmlPreviewBudget, WEBPAGE_HTML_PREVIEW_LIMIT_MESSAGE } from './webpageHtmlPreviewBudget'
 import { UI_FONT_MONO } from 'grph-shared/ui/typography'
 import { buildWebpageAssetPathProxyUrl, shouldUseWebpageAssetPathProxyUrl } from '../url'
 import { pickFirstSrcsetUrl } from 'grph-shared/markdown/mediaHtml'
@@ -389,49 +390,6 @@ function writeCachedSrcdoc(cacheKey: string, value: string): void {
   }
 }
 
-const stripHtmlComments = (html: string): string => {
-  const s = String(html || '')
-  if (!s.includes('<!--')) return s
-  return s.replace(/<!--[\s\S]*?-->/g, '')
-}
-
-const stripOversizeStyleTags = (html: string, maxStyleChars: number): string => {
-  const s = String(html || '')
-  if (!/<style\b/i.test(s)) return s
-  return s.replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, (m) => {
-    if (m.length <= maxStyleChars) return m
-    return '<style>/* omitted */</style>'
-  })
-}
-
-const stripOversizeInlineSvg = (html: string, maxSvgChars: number): string => {
-  const s = String(html || '')
-  if (!/<svg\b/i.test(s)) return s
-  return s.replace(/<svg\b[\s\S]*?<\/svg\s*>/gi, (m) => {
-    if (m.length <= maxSvgChars) return m
-    return ''
-  })
-}
-
-const stripDataImageSrc = (html: string): string => {
-  const s = String(html || '')
-  if (!s.includes('data:image/')) return s
-  return s
-    .replace(/\bsrc\s*=\s*("|')\s*data:image\/[a-zA-Z0-9.+-]+;base64,[^"']*\1/gi, 'src="data:,"')
-    .replace(/url\(\s*("|')?\s*data:image\/[a-zA-Z0-9.+-]+;base64,[^)"']*("|')?\s*\)/gi, 'url(data:,)')
-}
-
-const compactWhitespace = (html: string): string => {
-  const s = String(html || '')
-  if (s.length < 50_000) return s
-  let next = s
-  next = next.replace(/\r/g, '')
-  next = next.replace(/\n{3,}/g, '\n\n')
-  next = next.replace(/>\s{2,}</g, '><')
-  next = next.replace(/[\t ]{2,}/g, ' ')
-  return next
-}
-
 const injectViewportCss = (html: string): string => {
   const css = [
     'html,body{margin:0;padding:0;width:100%;max-width:100%;overflow-x:hidden!important;}',
@@ -462,14 +420,21 @@ export function buildWebpageSandboxCsp(scriptPolicy: WebpageSandboxScriptPolicy)
     : "default-src 'none'; img-src https: http: data: blob:; media-src https: http: data: blob:; style-src 'unsafe-inline' https: http:; font-src https: http: data: blob:; connect-src https: http:; frame-src https: http:; script-src 'unsafe-inline'"
 }
 
+function boundedHtmlNotice(html: string, baseHref: string): string {
+  return exceedsWebpageHtmlPreviewBudget(html)
+    ? buildCodeViewerSrcdoc({ baseHref, title: 'HTML preview', mode: 'text', text: WEBPAGE_HTML_PREVIEW_LIMIT_MESSAGE })
+    : html
+}
+
 async function buildSandboxHtmlAsync(args: {
   html: string
   baseHref: string
   scriptPolicy: WebpageSandboxScriptPolicy
   onProgress?: (step: string) => void
 }): Promise<string> {
-  const rawHtml = String(args.html || '')
+  const rawHtml = boundedHtmlNotice(String(args.html || ''), args.baseHref)
   const baseHref = String(args.baseHref || '').trim() || 'https://example.invalid/'
+  if (rawHtml !== args.html) return rawHtml
   const scriptPolicy = args.scriptPolicy
 
   const cacheKey = `srcdoc:v${SRCDOC_CACHE_VERSION}:${scriptPolicy}:${baseHref}:${readRuntimeOrigin()}:${rawHtml.length}:${hash32(rawHtml)}`
@@ -487,45 +452,24 @@ async function buildSandboxHtmlAsync(args: {
       if (current.length > 50_000) await yieldToMain()
     }
 
-    if (scriptPolicy === 'allow') {
-      await stepYield('Sanitizing CSP')
-      current = stripWebpageCspMeta(current)
+    await stepYield('Sanitizing CSP')
+    current = stripWebpageCspMeta(current)
 
-      await stepYield('Sanitizing Refresh')
-      current = stripWebpageRefreshMeta(current)
+    await stepYield('Sanitizing Refresh')
+    current = stripWebpageRefreshMeta(current)
 
-      await stepYield('Unhiding Content')
-      current = revealHiddenContentRoots(current)
+    await stepYield('Unhiding Content')
+    current = revealHiddenContentRoots(current)
 
-      await stepYield('Fixing Lazy Images')
-      current = proxyAssetPathImages(promoteLazyLoadedImages(current))
-    } else {
-      await stepYield('Sanitizing CSP')
-      current = stripWebpageCspMeta(current)
+    await stepYield('Fixing Lazy Images')
+    current = proxyAssetPathImages(promoteLazyLoadedImages(current))
 
-      await stepYield('Sanitizing Refresh')
-      current = stripWebpageRefreshMeta(current)
-
-      await stepYield('Unhiding Content')
-      current = revealHiddenContentRoots(current)
-
-      await stepYield('Fixing Lazy Images')
-      current = proxyAssetPathImages(promoteLazyLoadedImages(current))
-
+    if (scriptPolicy === 'strip') {
       await stepYield('Stripping Scripts')
       current = stripWebpageScriptTags(current)
 
       await stepYield('Stripping Handlers')
       current = stripWebpageInlineEventHandlers(current)
-    }
-
-    if (current.length > 1_500_000) {
-      await stepYield('Shrinking HTML')
-      current = stripHtmlComments(current)
-      current = stripDataImageSrc(current)
-      current = stripOversizeInlineSvg(current, 180_000)
-      current = stripOversizeStyleTags(current, 220_000)
-      current = compactWhitespace(current)
     }
 
     const runtimeOrigin = readRuntimeOrigin()
@@ -545,7 +489,7 @@ async function buildSandboxHtmlAsync(args: {
     const withViewport = injectViewportCss(withCsp)
 
     await stepYield('Injecting Scroll Sync')
-    const built = injectScrollSync(withViewport)
+    const built = boundedHtmlNotice(injectScrollSync(withViewport), baseHref)
 
     writeCachedSrcdoc(cacheKey, built)
     return built
@@ -579,7 +523,8 @@ export async function buildWebpageSandboxHtmlAsync(args: {
 
 export function buildWebpageHtmlSrcdoc(args: { html: string; baseHref: string; scriptPolicy?: WebpageSandboxScriptPolicy }): string {
   const baseHref = String(args.baseHref || '').trim() || 'https://example.invalid/'
-  const rawHtml = String(args.html || '')
+  const rawHtml = boundedHtmlNotice(String(args.html || ''), args.baseHref)
+  if (rawHtml !== args.html) return rawHtml
   const scriptPolicy: WebpageSandboxScriptPolicy = args.scriptPolicy === 'allow' ? 'allow' : 'strip'
 
   let current = rawHtml
@@ -597,10 +542,6 @@ export function buildWebpageHtmlSrcdoc(args: { html: string; baseHref: string; s
     )
   }
 
-  if (current.length > 1_500_000) {
-    current = compactWhitespace(stripOversizeStyleTags(stripOversizeInlineSvg(stripDataImageSrc(stripHtmlComments(current)), 180_000), 220_000))
-  }
-
   const runtimeOrigin = readRuntimeOrigin()
   if (runtimeOrigin) {
     current = absolutizeLocalProxyPaths(current, runtimeOrigin)
@@ -610,7 +551,7 @@ export function buildWebpageHtmlSrcdoc(args: { html: string; baseHref: string; s
   const withBase = upsertBaseTag(current, chosenBaseHref)
   const withCsp = upsertSandboxCspMeta(withBase, buildWebpageSandboxCsp(scriptPolicy))
   const withViewport = injectViewportCss(withCsp)
-  return injectScrollSync(withViewport)
+  return boundedHtmlNotice(injectScrollSync(withViewport), baseHref)
 }
 
 export function clearWebpageSandboxDocCaches(): void {
