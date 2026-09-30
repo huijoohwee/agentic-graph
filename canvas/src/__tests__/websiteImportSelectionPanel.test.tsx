@@ -382,17 +382,24 @@ test('discovery opens existing ancestor folders and distinguishes saved files fr
 })
 
 
-test('large discovery inventories page and search without losing saved history or exceeding selection limits', () => {
-  const { restore } = initJsdomHarness()
+test('large discovery inventories recover filtered pagination without network work or lost history and selection', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const host = document.createElement('section'), root = createRoot(host)
+  let requests = 0
+  globalThis.fetch = (async () => { requests++; throw new Error('Pagination must stay local') }) as typeof fetch
   try {
     const pages = Array.from({ length: 650 }, (_, index) => ({ url: sourceUrl + `item-${index}`, path: `/library/item-${index}` }))
-    const session = { id: 990, url: sourceUrl, pages, selected: new Set<string>(), visited: new Set<string>(), busy: false, error: '', limited: false, query: '' }
+    const session = { id: 990, url: sourceUrl, sourcePath: sourceEntry.path, pages, selected: new Set<string>(), visited: new Set<string>(), busy: false, error: '', limited: false, query: '' }
     useWebsiteImportSelectionSession.setState({ session, recoveryError: '' })
     assert.equal(visibleWebsiteSelectionPages(session).length, 100)
     showMoreWebsiteSelectionPages()
     assert.equal(visibleWebsiteSelectionPages(useWebsiteImportSelectionSession.getState().session!).length, 200)
     toggleWebsiteSelection(pages.map(page => page.url), true)
     assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 500)
+    setWebsiteSelectionQuery('item-1')
+    showMoreWebsiteSelectionPages()
+    assert.equal(visibleWebsiteSelectionPages(useWebsiteImportSelectionSession.getState().session!).length, 111)
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.query, 'item-1', 'show matching pages before offering to clear')
     setWebsiteSelectionQuery('item-649')
     const current = useWebsiteImportSelectionSession.getState().session!
     assert.deepEqual(visibleWebsiteSelectionPages(current), [pages[649]])
@@ -400,7 +407,35 @@ test('large discovery inventories page and search without losing saved history o
     const projected = projectWebsiteImportTree(history, null, current)
     assert.ok(history.every(entry => projected.entries.includes(entry)), 'past saved copies remain alongside filtered discovery')
     assert.equal(projected.savedPaths.size, 2)
-  } finally { finishWebsiteImportSelection(null); restore() }
+    await act(async () => root.render(<SourceFilesHarness />))
+    await openFileActions(host)
+    const more = () => document.querySelector<HTMLButtonElement>('button[aria-label^="Show more pages"]')!
+    const summary = () => document.querySelector('section[aria-label="Website discovery status"]')?.textContent || ''
+    assert.match(summary(), /650 discovered pages · 1 match filter · 1 shown · 500 selected/)
+    assert.equal(more().getAttribute('aria-label'), 'Show more pages (clear filter)')
+    assert.equal(more().title, 'Clear filter to browse 649 other discovered pages')
+    await act(async () => useWebsiteImportSelectionSession.setState({ session: { ...current, importing: true } }))
+    assert.equal(more().disabled, true)
+    showMoreWebsiteSelectionPages()
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.query, 'item-649')
+    await act(async () => useWebsiteImportSelectionSession.setState({ session: current }))
+    await act(async () => more().click())
+    assert.equal(host.querySelector<HTMLInputElement>('input[placeholder="Filter discovered pages"]')!.value, '')
+    assert.match(summary(), /650 discovered pages · 100 shown · 500 selected/)
+    await act(async () => more().click())
+    assert.match(summary(), /650 discovered pages · 200 shown · 500 selected/)
+    await act(async () => setWebsiteSelectionQuery('no matching pages'))
+    assert.match(summary(), /0 match filter · 0 shown/)
+    assert.equal(more().disabled, false, 'zero matches still offers filter recovery')
+    await act(async () => more().click())
+    await act(async () => { for (let index = 0; index < 6; index++) showMoreWebsiteSelectionPages() })
+    assert.match(summary(), /650 discovered pages · 650 shown · 500 selected/)
+    assert.equal(more().disabled, true, 'only the exhausted unfiltered inventory disables pagination')
+    const exhausted = useWebsiteImportSelectionSession.getState().session
+    showMoreWebsiteSelectionPages()
+    assert.equal(useWebsiteImportSelectionSession.getState().session, exhausted, 'exhausted action is inert')
+    assert.equal(requests, 0)
+  } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); globalThis.fetch = previousFetch; restore() }
 })
 
 

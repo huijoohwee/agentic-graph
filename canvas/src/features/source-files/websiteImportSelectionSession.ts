@@ -161,14 +161,24 @@ export function toggleWebsiteSelection(urls: string[], checked: boolean) {
   })
 }
 
-export function visibleWebsiteSelectionPages(session: WebsiteSelectionSession) {
+export function websiteSelectionPagination(session: WebsiteSelectionSession) {
   const query = session.query.trim().toLowerCase()
-  return session.pages.filter(page => `${page.url} ${page.title || ''}`.toLowerCase().includes(query)).slice(0, session.visibleCount || 100)
+  const matches = session.pages.filter(page => `${page.url} ${page.title || ''}`.toLowerCase().includes(query))
+  const visible = matches.slice(0, session.visibleCount || 100)
+  return { visible, matching: matches.length, remaining: matches.length - visible.length,
+    hiddenByFilter: session.pages.length - matches.length, filtered: !!query }
+}
+
+export function visibleWebsiteSelectionPages(session: WebsiteSelectionSession) {
+  return websiteSelectionPagination(session).visible
 }
 
 export function showMoreWebsiteSelectionPages() {
   const session = useWebsiteImportSelectionSession.getState().session
-  if (session) updateSession(session.id, current => ({ ...current, visibleCount: (current.visibleCount || 100) + 100 }))
+  if (!session || session.importing) return
+  const { remaining, hiddenByFilter } = websiteSelectionPagination(session)
+  if (remaining > 0) updateSession(session.id, current => ({ ...current, visibleCount: (current.visibleCount || 100) + 100 }))
+  else if (hiddenByFilter > 0) setWebsiteSelectionQuery('')
 }
 
 export function setWebsiteSelectionQuery(query: string) {

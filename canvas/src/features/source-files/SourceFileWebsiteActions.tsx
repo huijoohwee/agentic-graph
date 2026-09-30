@@ -6,7 +6,7 @@ import { sourceFileWebsiteUrl } from './websiteImportTreeProjection'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { useWebsiteImportSelectionSession, importWebsiteFromSourceFiles, importDiscoveredWebsitePage, discoverWebsiteSelection, finishWebsiteImportSelection, confirmRestoredWebsiteSelection, cancelWebsiteImportSelection, visibleWebsiteSelectionPages, showMoreWebsiteSelectionPages } from './websiteImportSelectionSession'
+import { useWebsiteImportSelectionSession, importWebsiteFromSourceFiles, importDiscoveredWebsitePage, discoverWebsiteSelection, finishWebsiteImportSelection, confirmRestoredWebsiteSelection, cancelWebsiteImportSelection, websiteSelectionPagination, showMoreWebsiteSelectionPages } from './websiteImportSelectionSession'
 
 const icons = { discover: Link, refresh: RefreshCcw, more: ListPlus, status: Info, import: Download, cancel: X, clear: Eraser } satisfies Record<string, LucideIcon>
 export function SourceImportAction({ action, label, type = 'button', ...props }: Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & { action: keyof typeof icons; label: string }) {
@@ -51,8 +51,9 @@ export function SourceFileWebsiteActions({ entry, source, urlOverride, destinati
   const confirmSelection = ownsSession && !fileRequired && !!session.selected.size
   const importPage = !fileRequired && hasDiscovery && !!url && session.pages.some(page => page.url === url)
   const refreshInventory = hasDiscovery && (ownsSession || fileRequired)
-  const remaining = session ? session.pages.filter(page => `${page.url} ${page.title || ''}`.toLowerCase().includes(session.query.trim().toLowerCase())).length - visibleWebsiteSelectionPages(session).length : 0
-  const moreDisabled = !hasDiscovery || !!session?.importing || remaining <= 0
+  const { remaining = 0, hiddenByFilter = 0 } = session ? websiteSelectionPagination(session) : {}
+  const clearsFilter = remaining === 0 && hiddenByFilter > 0
+  const moreDisabled = !hasDiscovery || !!session?.importing || (remaining === 0 && !clearsFilter)
   const cancelDisabled = !hasDiscovery || !!session?.importing || (!session?.busy && !session?.selected.size)
   return <>
     <SourceImportAction action={refreshInventory ? 'refresh' : 'discover'} label={refreshInventory ? 'Refresh discovered pages' : fileRequired ? `Find links unavailable for ${entry.name} — requires a source file` : url ? `Find pages linked from ${url}` : `Find links unavailable for ${entry.name}`}
@@ -62,8 +63,8 @@ export function SourceFileWebsiteActions({ entry, source, urlOverride, destinati
       label={confirmSelection ? `Import selected (${session.selected.size}) for ${entry.name}` : importPage ? `Import page ${entry.name}` : ownsSession && !fileRequired ? `Import selected (${session.selected.size}) for ${entry.name}` : `Import unavailable for ${entry.name}`}
       disabled={(!confirmSelection && !importPage) || !!session?.busy || !!session?.importing}
       onClick={() => { onShowDetails?.(); if (confirmSelection) confirmWebsiteSelection(); else if (importPage) void importDiscoveredWebsitePage(session.id, url, destinationPath).catch(reportSourceImportFailure) }} />
-    <SourceImportAction action="more" label={`Show more pages (${remaining} remaining)`} disabled={moreDisabled}
-      title={!hasDiscovery ? 'Show more pages — this item is outside the current discovery' : session?.importing ? 'Show more pages — import in progress' : remaining <= 0 ? 'Show more pages — all matching pages are shown' : undefined}
+    <SourceImportAction action="more" label={clearsFilter ? 'Show more pages (clear filter)' : `Show more pages (${remaining} remaining)`} disabled={moreDisabled}
+      title={!hasDiscovery ? 'Show more pages — this item is outside the current discovery' : session?.importing ? 'Show more pages — import in progress' : clearsFilter ? `Clear filter to browse ${hiddenByFilter} other discovered pages` : remaining === 0 ? 'Show more pages — all discovered pages are shown' : undefined}
       onClick={() => { onShowDetails?.(); showMoreWebsiteSelectionPages() }} />
     <SourceImportAction action="cancel" label="Cancel import selection" disabled={cancelDisabled}
       title={!hasDiscovery ? 'Cancel import selection — this item is outside the current discovery' : session?.importing ? 'Cancel import selection — import in progress' : cancelDisabled ? 'Cancel import selection — nothing selected or pending' : undefined}

@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.17"
-date: "2026-09-30"
+version: "1.0.18"
+date: "2026-10-01"
 lang: "en-US"
-prd_revision: "1.0.17"
-tad_revision: "1.0.17"
-adr_revision: "1.0.17"
-mvp_revision: "1.0.17"
-gtm_revision: "1.0.17"
+prd_revision: "1.0.18"
+tad_revision: "1.0.18"
+adr_revision: "1.0.18"
+mvp_revision: "1.0.18"
+gtm_revision: "1.0.18"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.17. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.18. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -92,6 +92,11 @@ Website imports share the earliest existing collection folder for a host. Consol
 folders on durable workspace initialization, retaining every file, distinct query variants and capture
 identities. Colliding names receive the originating capture suffix; no document is discarded. Reload
 must show one collection, and Reveal must use the corresponding stable workspace location.
+
+Filtered discovery must distinguish total inventory, matching pages and displayed pages. Show more
+first expands matching pages in batches of 100. When every match is displayed and other known pages
+are hidden, the same icon explicitly offers to clear the filter and browse those pages. Zero matches
+must remain recoverable. Selection, saved documents and discovery completeness stay unchanged.
 
 ## TAD
 
@@ -210,6 +215,12 @@ same collection root from existing captured documents and retain colliding captu
 the same capture reuses its output paths and conditionally updates its summaries; different captures
 retain earlier document bytes.
 
+The selection-session owner derives matching, visible and remaining counts once through a shared
+pagination helper. The existing toolbar and summary consume that result. The more action clears an
+exhausted filter only when its label explicitly says so, resets the display bound to 100, and persists
+the cleared query through the existing draft. Pagination performs no network or import work and is
+inert during import or when the inventory is exhausted. Saved history remains independently visible.
+
 ## ADR
 
 - Finder reveals a stable named copy tree; content hashes identify private revision backups only.
@@ -258,7 +269,22 @@ collection retains its identity; capture timestamps remain metadata and filename
 needed. This keeps one physical workspace owner while preserving every prior capture. Do not merge
 hosts or collapse query variants based on matching titles.
 
+Reuse the existing more slot with an explicit clear-filter action after matching results are exhausted.
+A permanently disabled icon leaves known pages unreachable through that action; silently ignoring the
+filter makes search misleading. The chosen label communicates the state transition without adding a
+second toolbar. Revisit if readers cannot predict it; rollback the helper and both UI consumers together.
+
 ## MVP
+
+Filtered-pagination increment: three production modules, under 5 KB added source, no dependencies.
+Verify matching and unfiltered pagination, zero results, exhausted inventory, import locking, retained
+selection and absence of network work. Live verification must reproduce the reported filtered state,
+clear it through the shared icon, load the next batch and preserve saved-file count after reload.
+Twenty-nine focused discovery/selection checks pass, including zero-match recovery, import locking,
+selection preservation and zero pagination fetches. Live shared-toolbar activation recovered the
+reported 1,100-page inventory from three filtered matches to 100 and then 200 shown. Reload retained
+all 45 saved files, the cleared filter and the single collection folder; the summary remained hidden
+until icon activation. The repository affected gate must pass before review publication.
 
 Collection consolidation increment: nine production modules, under 20 KB added source, no dependencies.
 Acceptance requires concurrent migration and reload coverage, intact file bytes, collision-safe names,
@@ -462,3 +488,7 @@ in-place opening and duplicate-folder count; capture history remains independent
 
 One collection per website reduces repeat navigation. Measure duplicate timestamp folders after
 reload and successful opening of migrated pages; no account, service charge or revenue claim is added.
+
+Explicit filter recovery reduces repeated refresh attempts while readers browse already discovered
+pages. Measure successful access to the next batch without a new fetch; pricing and revenue remain
+unvalidated, and no account or paid service is introduced.
