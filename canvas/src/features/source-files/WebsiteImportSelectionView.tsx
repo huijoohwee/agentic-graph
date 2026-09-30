@@ -15,7 +15,7 @@ export default function WebsiteImportSelectionView() {
     <h3 className="font-semibold">Choose folder(s)/page(s) to import</h3>
     {session ? <>
       <p className="break-all text-xs">{session.url}</p>
-      <p className="text-xs">Select visible to show page checkboxes in the tree; clearing the selection restores file icons and folder arrows. Use Explorer search above to filter, then Import selected beside cloud sync. Discovered pages stay local until imported.</p>
+      <p className="text-xs">Select visible to replace file icons and folder arrows with page checkboxes. While selecting, use folder names to expand or collapse; clearing the selection restores the icons. Use Explorer search above to filter, then Import selected beside cloud sync. Discovered pages stay local until imported.</p>
       <nav className="flex flex-wrap items-center gap-1" aria-label="Import selection controls">
         <span className="inline-flex items-center gap-1"><WebsiteSelectionCheckbox label="Select all visible pages" urls={visible.map(page => page.url)} selected={session.selected} toggle={toggleWebsiteSelection} disabled={!!session.importing} />Select visible</span>
         <SourceImportAction action="clear" label="Clear selection" disabled={!session.selected.size || !!session.importing} onClick={() => toggleWebsiteSelection(session.pages.map(page => page.url), false)} />

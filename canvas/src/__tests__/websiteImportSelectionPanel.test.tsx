@@ -49,6 +49,13 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     assert.equal(checkbox('File agent-mission.inspection.json is outside this website import').disabled, true)
     assert.equal(host.querySelector('section[aria-label="File agent-mission.inspection.json"] button[aria-label="Select file agent-mission.inspection.json"]'), null, 'mission file icon swaps to a disabled leading checkbox')
     assert.equal(host.querySelector('section[aria-label="File a"] button[aria-label="Select file a"]'), null, 'selected page icon swaps to a leading checkbox')
+    assert.equal(host.querySelector('section[aria-label="Folder .workspace"] svg.lucide-chevron-down'), null, 'mission folder chevron is replaced')
+    assert.equal(control('Collapse folder .workspace').getAttribute('aria-expanded'), 'true', 'folder name exposes its expansion state')
+    await act(async () => control('Collapse folder .workspace').click())
+    assert.equal(checkbox('File agent-mission.inspection.json is outside this website import'), undefined)
+    await act(async () => control('Expand folder .workspace').click())
+    assert.equal(checkbox('File agent-mission.inspection.json is outside this website import').disabled, true)
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 3, 'mission folder expansion does not change page selection')
     await act(async () => checkbox('Select all visible pages').click())
     assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 0)
     assert.equal(checkbox('Folder .workspace is outside this website import'), undefined, 'clearing selection restores normal folder controls')
@@ -69,6 +76,7 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     assert.equal(host.querySelector('section[aria-label="Choose folder(s)/page(s) to import"] input[type=search]'), null)
     await act(async () => control('Collapse folder library').click())
     assert.equal(checkbox(`Select page ${source}a`), undefined)
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 1, 'folder name collapses without changing selection')
     await act(async () => control('Expand folder library').click())
     assert.equal(checkbox(`Select page ${source}a`).checked, true)
     assert.deepEqual(resolutions, [])
@@ -82,7 +90,9 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     const following = row.ownerDocument.defaultView!.Node.DOCUMENT_POSITION_FOLLOWING
     assert.ok(Boolean(rowCheckbox.compareDocumentPosition(sourceLink) & following), 'selection precedes the source link')
     const folderRow = host.querySelector('section[aria-label="Folder library"]')!
-    assert.ok(Boolean(folderRow.querySelector('input[type=checkbox]')!.compareDocumentPosition(folderRow.querySelector('button[aria-label="Collapse folder library"]')!) & following), 'folder checkbox replaces the leading chevron while disclosure remains available')
+    assert.ok(Boolean(folderRow.querySelector('input[type=checkbox]')!.compareDocumentPosition(folderRow.querySelector('button[aria-label="Collapse folder library"]')!) & following), 'folder checkbox precedes the expandable name')
+    assert.equal(folderRow.querySelector('svg.lucide-chevron-down'), null, 'website folder has no duplicate chevron in selection mode')
+    assert.equal(folderRow.querySelector('button[aria-label="Collapse folder library"]')?.getAttribute('aria-expanded'), 'true')
     const pendingRow = host.querySelector('section[aria-label="File a"]')!
     const actionGroups = [pendingRow, row].map(item => item.querySelector<HTMLElement>('[data-source-file-actions]')!)
     assert.ok(actionGroups.every(group => group.style.minWidth === actionGroups[0].style.minWidth), 'remaining source actions share one column start')

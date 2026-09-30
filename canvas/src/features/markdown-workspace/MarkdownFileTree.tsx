@@ -207,6 +207,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const source = sourcesByPath ? sourcesByPath[entry.path] : null
     const sourceUrl = source?.kind === 'url' ? normalizeImportUrlInput(source.url) : ''
     const entryLeading = renderEntryLeading?.(entry)
+    const selectionFolder = isFolder && Boolean(entryLeading)
     const fileRight = renderFileRight?.({ entry, isActive })
     const isWorkspaceSeedsAuthorityRoot = isAgenticGraphWorkspaceSeedsRootPath(entry.path)
     const selectEntry = () => isFolder ? onSelectFolder(entry.path) : onSelectFile(entry.path)
@@ -228,14 +229,14 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
           {entryLeading ? <span className="ml-1 inline-flex shrink-0">{entryLeading}</span> : isFolder
             ? <DirectoryTreeDisclosure name={entry.name} path={entry.path} expanded={isExpanded} onToggle={() => toggleExpanded(entry.path)} />
             : <DirectoryTreeFileButton name={entry.name} path={entry.path} selected={isActive} onSelect={selectEntry} onContextMenu={openContextMenu} />}
-          {entryLeading && isFolder ? <DirectoryTreeDisclosure name={entry.name} path={entry.path} expanded={isExpanded} onToggle={() => toggleExpanded(entry.path)} /> : null}
           <MarkdownFileTreeRowButton
-            ariaLabel={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}
+            ariaLabel={selectionFolder ? `${isExpanded ? 'Collapse' : 'Expand'} folder ${entry.name}` : isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}
             title={entry.path}
             indent={0}
             isActive={isActive}
+            ariaExpanded={selectionFolder ? isExpanded : undefined}
             textClassName={panelTypography.panelTextClass}
-            onClick={selectEntry}
+            onClick={selectionFolder ? () => toggleExpanded(entry.path) : selectEntry}
             onContextMenu={openContextMenu}
           >
             <span className="truncate">{entry.name || (isFolder ? 'folder' : 'file')}</span>

@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.34"
+version: "0.2.35"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,22 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.33"
-prd_revision: "0.2.34"
-tad_revision: "0.2.34"
-adr_revision: "0.2.34"
-mvp_revision: "0.2.34"
-gtm_revision: "0.2.34"
+previous_document_version: "0.2.34"
+prd_revision: "0.2.35"
+tad_revision: "0.2.35"
+adr_revision: "0.2.35"
+mvp_revision: "0.2.35"
+gtm_revision: "0.2.35"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 checkbox replaces folder chevron
+
+- PRD: `/fix #source-files-replace-chevron @codex` removes the duplicate folder chevron while page selection is active. The existing checkbox occupies that leading slot; clicking the folder name expands or collapses its children without changing selected pages. When selection clears, normal chevrons return.
+- TAD / ADR: the shared tree routes the folder name button to its existing expansion owner only when a leading selection control exists. Its accessible name and expanded state describe that action. The selection checkbox retains exact URL ownership; unrelated mission folders have disabled selection but remain expandable by name. No new storage, network effect, dependency, or site-specific branch.
+- MVP: five existing files, 14 KB incremental diff and 15 active minutes. Check folder selection versus expansion, mission and website rows, selected versus unselected icon state, keyboard-accessible name buttons, live UI, and the exact clean affected validation receipt. Runtime validation input and captures stay outside source.
+- GTM / rollback: remove the extra adjacent control in the existing page picker. No buyer or revenue outcome is claimed. Revert this scoped successor to restore the adjacent chevron; protected integration and deployment remain separately authorized.
 
 ## 2026-09-30 leading Source Files selection
 
