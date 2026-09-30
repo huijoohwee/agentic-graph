@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.18"
+version: "1.0.19"
 date: "2026-10-01"
 lang: "en-US"
-prd_revision: "1.0.18"
-tad_revision: "1.0.18"
-adr_revision: "1.0.18"
-mvp_revision: "1.0.18"
-gtm_revision: "1.0.18"
+prd_revision: "1.0.19"
+tad_revision: "1.0.19"
+adr_revision: "1.0.19"
+mvp_revision: "1.0.19"
+gtm_revision: "1.0.19"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.18. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.19. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -97,6 +97,10 @@ Filtered discovery must distinguish total inventory, matching pages and displaye
 first expands matching pages in batches of 100. When every match is displayed and other known pages
 are hidden, the same icon explicitly offers to clear the filter and browse those pages. Zero matches
 must remain recoverable. Selection, saved documents and discovery completeness stay unchanged.
+
+Webpage link previews must fill their allocated media frame and retain the source link label. A loaded
+thumbnail must remain visible even when a layout snapshot is unavailable. Keyboard and screen-reader
+users must receive the same meaningful preview name. Keep existing explicit open and preview actions.
 
 ## TAD
 
@@ -221,6 +225,11 @@ exhausted filter only when its label explicitly says so, resets the display boun
 the cleared query through the existing draft. Pagination performs no network or import work and is
 inert during import or when the inventory is exhausted. Saved history remains independently visible.
 
+The shared webpage snapshot surface owns its full-width/full-height box for Markdown and canvas
+consumers. Caller classes and styles remain supported. Interactive thumbnails use the source label as
+their accessible name; paragraph rendering passes its existing extracted label, falling back to the
+hostname. Existing image, layout, fallback and network lifecycle owners remain unchanged.
+
 ## ADR
 
 - Finder reveals a stable named copy tree; content hashes identify private revision backups only.
@@ -274,7 +283,23 @@ A permanently disabled icon leaves known pages unreachable through that action; 
 filter makes search misleading. The chosen label communicates the state transition without adding a
 second toolbar. Revisit if readers cannot predict it; rollback the helper and both UI consumers together.
 
+Repair sizing in the shared surface rather than adding a Markdown-only replacement. Its absolutely
+positioned children require a nonzero containing box; otherwise a successfully loaded favicon can
+appear blank. When no page image or layout is available, place the fallback icon beside its label
+so overlay text cannot cover it in narrow frames. Preserve the authored link identity instead of
+substituting a generic media-type label.
+
 ## MVP
+
+Webpage-preview increment: two production modules, under 5 KB added source, no dependencies. Verify
+meaningful accessible names for standalone links and embedded previews, and use the live browser to
+check the reported thumbnail fills its frame at narrow width and after reload. Existing media actions
+must remain available. Rollback both shared-surface sizing and paragraph-label changes together.
+The focused Markdown snapshot group and shared-media contract check pass, covering source labels,
+Enter/Space open actions and existing embedded/video behavior. Live UI confirmed the reported loaded
+favicon had a zero-height owner before the fix; afterward the shared surface filled its narrow frame,
+with no icon/label overlap. Reload preserved both corrected previews and all 46 saved files. No live
+iframe was introduced. The native affected gate must pass before review publication.
 
 Filtered-pagination increment: three production modules, under 5 KB added source, no dependencies.
 Verify matching and unfiltered pagination, zero results, exhausted inventory, import locking, retained
@@ -492,3 +517,6 @@ reload and successful opening of migrated pages; no account, service charge or r
 Explicit filter recovery reduces repeated refresh attempts while readers browse already discovered
 pages. Measure successful access to the next batch without a new fetch; pricing and revenue remain
 unvalidated, and no account or paid service is introduced.
+
+Readable webpage thumbnails and source labels reduce failed navigation from imported documents.
+Measure visible media and successful existing open actions; no paid service or new fetch is introduced.
