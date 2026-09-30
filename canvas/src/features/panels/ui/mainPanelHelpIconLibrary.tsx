@@ -416,7 +416,6 @@ export const MAIN_PANEL_TAB_TYPE_ICON_KEY_BY_TAB = {
   workflowManager: 'mainPanel.workflowManager',
   websiteImport: 'mainPanel.websiteImport',
   dashboard: 'mainPanel.dashboard',
-  preview: 'mainPanel.preview',
   settings: 'mainPanel.settings',
   history: 'mainPanel.history',
   help: 'mainPanel.help',
@@ -437,6 +436,7 @@ export type FloatingPanelTypeIconView =
   | 'promptPresets'
   | 'view'
   | 'media'
+  | 'preview'
   | 'animation'
   | 'motionControl'
   | 'gameMode'
@@ -463,6 +463,7 @@ export const FLOATING_PANEL_TYPE_ICON_KEY_BY_VIEW = {
   promptPresets: 'floatingPanel.promptPresets',
   view: 'floatingPanel.view',
   media: 'floatingPanel.media',
+  preview: 'mainPanel.preview',
   animation: 'floatingPanel.animation',
   motionControl: 'floatingPanel.motionControl',
   gameMode: 'floatingPanel.gameMode',

@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.23"
-date: "2026-09-29"
+version: "0.2.28"
+date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.native-web-import-crawler"
@@ -32,15 +32,59 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.22"
-prd_revision: "0.2.23"
-tad_revision: "0.2.23"
-adr_revision: "0.2.23"
-mvp_revision: "0.2.23"
-gtm_revision: "0.2.23"
+previous_document_version: "0.2.27"
+prd_revision: "0.2.28"
+tad_revision: "0.2.28"
+adr_revision: "0.2.28"
+mvp_revision: "0.2.28"
+gtm_revision: "0.2.28"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 FloatingPanel Preview migration
+
+- PRD: move Preview Panel out of MainPanel; reuse the FloatingPanel Media catalog and make document signal badges actionable.
+- TAD: lazy FloatingPanel Preview owns selected media/diagrams, the existing Media catalog, and collapsible source-linked Document insights. A document-bound subscription supplies current editor text and jump callbacks. Existing MainPanel preview event requests redirect to the single FloatingPanel owner.
+- ADR: reuse the Media catalog component, layout controls, search, and selection state. No duplicate media library, additional dependency, or paid service. Signal extraction excludes metadata, fenced code, image destinations, and URLs; bounded results disclose truncation and heuristic meaning.
+- MVP: native admission; at most 22 files / 80 KB diff; new modules under 600 lines; 45-minute target. Verify routing, source identity, extraction limits, Media selection, source jumps, and reload in the live local browser.
+- GTM: existing Preview actions and signal badges discover the same inspector. Local-only increment; publication requires native green receipts. Rollback is the scoped commit revert; imported documents and Media persistence remain intact.
+- Validation: TypeScript and three local runtime smoke contracts pass; six focused regression cases and the runtime-input hardcoding guard pass. Live browser verification confirms badge hit testing, PRICE/TIME routing, matching source-line selection, Media list/search/selection reuse, and repeat activation after full reload. All ten affected partitions passed on clean candidate `719ba689306c71bf9c78d72688fc7b44c0c59599`, including its exact-candidate mission browser stage. Runtime validation URLs and screenshots stay outside tracked files.
+- Review continuation: native publication refused a stale protected base. After START readmission, merge protected `82276a39bde3ef861bd5db4091bde896ee204ddc` without rewriting the immutable predecessor or Preview candidate. The resulting tree preserves Preview and imports six protected files byte-for-byte, with no conflicts or feature edits. Native START rebinds the merged head before fresh affected checks and protected-review publication. Budget: 15 active minutes, one planning file, less than 4 KB authored changes, no new module. Preserve the running preview; keep exact validation and publication receipts outside source. This continuation requests source review only; production authority and deployment remain separate.
+
+## 2026-09-30 imported document rendering repair
+
+**PRD.** `/fix #website-markdown-ui-e2e @codex`: the selected imported document must render content, preserve source metadata, and expose real semantic media to selection tools. Bind this continuation to plan revision 0.2.26 and retained source `3afccea3d12adde168f91ab840bc8fe98eaba8dc`. Initial 30-minute target, extended by 15 active minutes for live browser recovery and shared media verification; cap refreshed from six to eleven existing files, 50 KB changed text, no new dependency or module.
+
+**TAD / ADR.** Correct the sanitizer that classified YAML fences as decoration. Preserve the complete first metadata block. Recover only app-owned, quoted webpage import metadata followed by a heading when both fences were removed; leave arbitrary prose intact. Normalize recovered text through the existing active-document owner. Preserve bounded SVG geometry through conversion and indexing instead of transparent replacement, expose oversized media as an explicit visible limit message, and name the existing semantic document article. Compact SVG viewboxes keep their dimensions on a contrasting surface; standalone images expose hit-testable selection surfaces and existing preview interactions. Saved-capture refresh shares the 32-million-character raw cap while retaining the 10-million-character normalized-content limit. Linked images reuse the same media owner. Existing oversized UI/sanitizer owners receive no line growth; other modified source remains below 600 lines. Keep external runtime inputs and captures outside source.
+
+**MVP.** Ten conversion and saved-refresh regressions pass, including repeated indexing, damaged-header recovery, retained SVG geometry and large inert hydration. The 76 existing conversion/frontmatter tests, Canvas type check plus three smoke contracts, and external-input hardcode guard pass. Native affected validation passes all ten selected partitions. Six of eight supplemental media checks pass; the two failures (unknown semantic chip color and shared card text frame contract) reproduce unchanged on baseline `3afccea3d12adde168f91ab840bc8fe98eaba8dc`. Live UI refresh restores content; a named article exposes loaded media, a compact 34-pixel SVG and actual IMG hit targets with selection markers. Clicking the icon opens its linked article. Reload retains repaired metadata and visible icons; no console errors were observed in the final tab. A stalled browser tab required a fresh tab; this is bounded desktop proof, not full-suite or mobile parity. Evidence and supplied target remain outside source.
+
+**GTM / rollback.** Fix the first saved-page reading experience before expanding crawl scope. No demand, revenue or production claim. Revert the scoped repair to roll back behavior; preserve saved imports and immutable published source. Publication and deployment retain separate owner receipts.
+
+## 2026-09-30 live UI verification
+
+**PRD / scope.** Verify the implemented website import through the actual browser UI, saved document and reload. Bind source behavior to `768003ca22e0562dd69e355cd6df6faec5a0cc5a`, and documentation continuity to this plan at 0.2.25, successor `website-markdown-ui-e2e`. Use the operator-supplied target only as an external runtime input. Initial sprint: 20 active minutes; refreshed by 10 minutes to resolve covered controls and complete reload readback. Cap: one documentation file, less than 8 KB new text, no new module, dependency or paid resource.
+
+**TAD / ADR.** Run the candidate's native dev command on a separate loopback origin with a task-owned external artifact store. Use visible controls for Launch, URL entry, page selection and import; browser-local runtime identity proves the source revision. Preserve browser-policy failures as failures. Do not substitute the earlier headless conversion receipt for UI completion. Existing helper modules and published source remain unchanged.
+
+**MVP / observed results.** The predecessor's protected Integration Gate passed. The actual desktop UI completed Launch → Import URL → Crawl website headlessly → page selection → import. Discovery returned three pages; one selected page completed in 20,354 ms without manifest errors. Artifacts contain 16,903,437 raw HTML bytes, 151,985 Markdown bytes and 24 downloaded images totaling 652,985 bytes. Source Files displayed the page, sitemap and Canvas document. Opening the page visibly rendered its title and content; two DOM readbacks timed out while the large page loaded. Reload recovered responsiveness and retained the selected local Markdown file, source content and title in the table of contents. The browser console reported no warnings/errors after reload. Evidence belongs to the task's external `website-markdown-ui-e2e.json` and before/after screenshots; source receipt remains the exact candidate above.
+
+**Partial-pass boundaries.** The ordinary Import URL path did not complete in the in-app browser: hidden document requests were rejected with `ERR_BLOCKED_BY_CLIENT`, reason `inspector`. Browser automation required the screenshot coordinate offset; pinned panels covered controls until closed. Source inspection also identified an existing five-million-character slice in `workspaceImport/urlContent.ts` before ordinary conversion, requiring a separate implementation follow-up. This verification update changes no runtime behavior. One-page local import and persistence pass; ordinary import, full-site discovery completeness, responsive mobile behavior, offline use and production delivery remain unverified.
+
+**GTM / rollback.** This increment adds verification evidence only and makes no revenue or deployment claim. Retain the test-owned store and screenshots outside source. Stop the task-owned preview to release runtime resources; preserve the published candidate and stored user imports. Rollback of this documentation update is a source revert; production activation requires separate authority and receipts.
+
+## 2026-09-30 reference implementation: website Markdown safety
+
+**Authorization and continuity.** The operator explicitly authorized implementation of the audit recommendations and supplied a live validation URL as external input. Bind this increment to `PLAN-AGENTIC-GRAPH-NATIVE-WEB-IMPORT-CRAWLER-PRD-TAD-ADR-MVP-GTM@0.2.24`, source base `2699bbb06228caa504cd64c53adf6026bb338e9d`, lane `website-markdown-safety`, actor `@codex`, action `/fix`, semantic `#website-markdown-safety`. The validation URL, captured remote content and private reference stay outside tracked source, fixtures, configuration and this plan. Authoring guidance: `huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md` at `deddd90682dc412f421e51bdd09c23bacd153505`; no guidance is copied.
+
+**PRD.** Existing import users need complete article text, independent concurrent imports and a consistent public-URL boundary. S1: static imports and redirects reject private destinations; static connections use the validated address. S2: concurrent new runs retain independent manifests; explicit reuse verifies the request and never overwrites incompatible or unbound data. S3: over-budget input is a visible failure, never a successful prefix. S4: CLI image exclusion works in every argument position. S5: the existing conversion owner is decomposed into modules below 600 lines without changing its public successful-result contract. The supplied live page validates generic behavior only; it must not become a product-specific code path.
+
+**TAD / ADR.** Reuse the static fetch API, native crawler, storage resolver and converter. A shared Node network policy owns public-address checks; static HTTP uses checked DNS addresses at connection time and revalidates redirects. Browser routing consumes the shared policy; browser/proxy connection-level DNS behavior is a separate runtime boundary. Atomic directory creation reserves a UTC-format run slot; actual wall time remains in manifest timestamps, and request bindings prevent unsafe reuse. Existing artifact readers retain the token grammar. A 32-million-character raw capture cap retains large hydration payloads; conversion excludes only JSON-shaped `data-*` attributes exceeding 64 KiB, then applies the existing normalized-content budgets. Body text and ordinary attributes remain intact. Over-budget content fails before parsing or fallback. Move existing HAST, media and layout behavior into focused helpers and remove no-op branches. No service, dependency, paid resource or second converter is added.
+
+**MVP and evidence.** Implement S1–S5 with synthetic regression fixtures, existing conversion/import tests, type checking, source hygiene and an external-input live-page run. New source cases cover default private-address rejection, mapped IPv6, redirect policy, byte limits, parallel admission, unchanged manifest replay, incompatible reuse, image options and explicit size failure. Local evidence: 11 new safety cases passed; 100 existing conversion/import cases passed; the Canvas-owned TypeScript and smoke check passed. The supplied live page completed in 17,915 ms: 16,880,900 HTML characters produced 151,759 Markdown bytes, with 41 discovered links and 304 Markdown links (single page, no downloads or proxy). Runtime inputs and captured content remain external. The repository hardcode guard exposed short-route false positives and five pre-existing remote fixture literals; preserve exact URL/authority-path and opaque-token checks, and replace those fixtures with synthetic addresses. Final local affected validation passed all 10 native partitions and all 9 selected commands (281 case executions, including overlapping suites), including the environment-supplied hardcode guard, Canvas type checking and browser-smoke runtime contract. This is affected-scope proof, not full-suite or production parity. Source publication remains a separate owner effect. Budget refreshed after the initial 30-active-minute sprint: 15 additional active minutes; at most 23 files, five helper modules and 100 KB changed text, no added dependencies. Five legacy test files receive literal-only replacements without line growth; their existing size is not expanded. New helper modules and the decomposed conversion owner stay below 600 lines.
+
+**GTM / rollback.** Rank accurate one-page Markdown first, a small selected documentation bundle second, and offline saved HTML third. The first-dollar hypothesis is a reviewed export using existing delivery capabilities; demand, willingness to pay and resource savings remain unmeasured. No outreach, payment or deployment is authorized by this code change. Revert the scoped source candidate to roll back; preserve existing artifacts and request bindings. Protected source release, deployment and runtime receipts remain separate. Development verification and remaining limitations will be appended before handoff.
 
 ## Product decision
 
