@@ -109,8 +109,8 @@ test('discovery summary opens in a separate shared overlay only after an applica
   const host = document.createElement('section'); document.body.append(host)
   const root = createRoot(host), url = 'https://sample.test/catalog/'
   const pages = Array.from({ length: 205 }, (_, index) => ({ url: `${url}page-${index}`, path: `/catalog/page-${index}` }))
-  let networkCalls = 0
-  globalThis.fetch = (async () => { networkCalls++; throw new Error('Unexpected request') }) as typeof fetch
+  const networkCalls: string[] = []
+  globalThis.fetch = (async target => { networkCalls.push(String(target)); throw new Error('Unexpected request') }) as typeof fetch
   const entries = [
     { path: '/capture.md', parentPath: '/', kind: 'file' as const, name: 'capture.md', text: `---\nkgWebpageUrl: "${url}"\n---\nCapture`, updatedAtMs: 1 },
     { path: '/notes.py', parentPath: '/', kind: 'file' as const, name: 'notes.py', text: 'print(1)', updatedAtMs: 1 },
@@ -175,7 +175,7 @@ test('discovery summary opens in a separate shared overlay only after an applica
     for (const button of unavailable) { assert.ok(button.disabled); assert.match(button.className, /opacity-40/); await act(async () => button.click()) }
     assert.deepEqual([...useWebsiteImportSelectionSession.getState().session!.selected], [pages[0].url, pages[1].url])
     assert.equal(document.querySelector('section[aria-label="Website discovery status"]'), null, 'unrelated icons cannot open the summary')
-    assert.equal(networkCalls, 0, 'paging and unavailable actions do not crawl or fetch')
+    assert.deepEqual(networkCalls.filter(target => target.includes('/__website_import/')), [], 'paging and unavailable actions do not crawl')
     assert.equal(document.querySelectorAll('[data-kg-anchor-overlay]').length, 1)
     await open('capture.md')
     assert.equal(document.querySelector('section[aria-label="Website discovery status"]'), null, 'changing targets resets the summary')

@@ -10,7 +10,7 @@ type MarkdownFileTreeRowButtonProps = {
   isActive: boolean
   ariaExpanded?: boolean
   textClassName: string
-  onClick: () => void
+  onClick: React.MouseEventHandler<HTMLButtonElement>
   onContextMenu: (event: React.MouseEvent<HTMLButtonElement> | React.KeyboardEvent<HTMLButtonElement>) => void
   children: React.ReactNode
 }

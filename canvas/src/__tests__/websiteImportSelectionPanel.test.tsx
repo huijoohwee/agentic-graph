@@ -14,10 +14,10 @@ import { MAIN_PANEL_TABS } from '@/features/panels/mainPanelTabs'
 
 const sourceUrl = 'https://example.test/library/'
 const sourceEntry = { path: '/imported.md', parentPath: '/', name: 'imported.md', kind: 'file' as const, updatedAtMs: 0, text: `---\nkgWebpageUrl: "${sourceUrl}"\n---\n# Imported` }
-function SourceFilesHarness({ activePath = sourceEntry.path }: { activePath?: string | null }) {
+function SourceFilesHarness({ activePath = sourceEntry.path, onSelectFile = () => {} }: { activePath?: string | null; onSelectFile?: (path: string) => void }) {
   const [search, setSearch] = React.useState('saved search')
   return <><ExplorerSearchControl search={search} setSearch={setSearch} panelTextClass="text-xs" /><MarkdownWorkspaceSourceFilesList loading={false} loadError="" textSizeClass="text-xs" entries={[sourceEntry]} expandedPaths={new Set()} activePath={activePath}
-    toggleExpanded={() => {}} onSelectFile={() => {}} onSelectFolder={() => {}} sourcesByPath={{ [sourceEntry.path]: { kind: 'url', url: sourceUrl } }}
+    toggleExpanded={() => {}} onSelectFile={onSelectFile} onSelectFolder={() => {}} sourcesByPath={{ [sourceEntry.path]: { kind: 'url', url: sourceUrl } }}
     onCreateNewFile={() => {}} onRevealInFinder={() => {}} onClearFile={() => {}} onRenameEntry={() => {}} onDeleteEntry={() => {}} /></>
 }
 
@@ -88,7 +88,7 @@ test('one Source Files tree supports folder selection, collapse and read-only di
   const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
   const host = document.createElement('section'); document.body.append(host)
   const root = createRoot(host), source = sourceUrl
-  const requests: string[] = [], resolutions: Array<string[] | null> = []
+  const requests: string[] = [], resolutions: Array<string[] | null> = [], opened: string[] = []
   globalThis.fetch = (async url => {
     requests.push(String(url))
     return new Response(JSON.stringify({ ok: true, pages: [source, source + 'a', source + 'b'].map(url => ({ url, path: new URL(url).pathname })), limited: false }))
@@ -96,7 +96,7 @@ test('one Source Files tree supports folder selection, collapse and read-only di
   const checkbox = (label: string) => Array.from(host.querySelectorAll<HTMLInputElement>('input[type=checkbox]')).find(input => input.getAttribute('aria-label') === label)!
   const control = (prefix: string) => Array.from(new Set([...host.querySelectorAll<HTMLButtonElement>('button'), ...document.querySelectorAll<HTMLButtonElement>('.kg-data-view-floating-menu button')])).find(button => button.getAttribute('aria-label')?.startsWith(prefix))!
   try {
-    await act(async () => { void chooseWebsiteImportPages(source, sourceEntry.path).then(urls => resolutions.push(urls)); root.render(<SourceFilesHarness />) })
+    await act(async () => { void chooseWebsiteImportPages(source, sourceEntry.path).then(urls => resolutions.push(urls)); root.render(<SourceFilesHarness onSelectFile={path => opened.push(path)} />) })
     assert.equal(host.querySelector('[aria-label="Website page tree"]'), null, 'no separate discovery tree')
     assert.equal(host.querySelector('dialog'), null)
     await openFileActions(host)
@@ -107,6 +107,22 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     assert.ok(host.querySelector('section[aria-label="File agent-mission.inspection.json"] button[aria-label="Select file agent-mission.inspection.json"]'), 'mission file starts with its normal icon')
     assert.ok(host.querySelector('section[aria-label="File a"] button[aria-label="Select file a"]'), 'discovered page starts with its file icon')
     assert.ok(host.querySelector('section[aria-label="Folder .workspace"] button[aria-label="Collapse folder .workspace"]'), 'mission folder remains independently collapsible')
+    await act(async () => control('File imported.md').click())
+    assert.deepEqual(opened, [sourceEntry.path], 'saved filename opens its document')
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 0, 'opening a saved document does not select it for crawling')
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Select file imported.md"]')!.click())
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.has(source), true, 'saved website icon selects its page for crawling')
+    assert.deepEqual(opened, [sourceEntry.path], 'selecting the saved page icon does not open it again')
+    await act(async () => checkbox(`Select page ${source}`).click())
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 0)
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="File a"]')!.click())
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 0, 'discovered filename does not select its page')
+    assert.ok(document.querySelector('[role="toolbar"][aria-label="Actions for a"]'), 'discovered filename opens its actions')
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Select file a"]')!.click())
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.has(source + 'a'), true, 'discovered page icon alone selects the page')
+    await act(async () => checkbox(`Select page ${source}a`).click())
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 0, 'page icon selection can be reversed')
+    await openFileActions(host)
     await act(async () => checkbox('Select all visible pages').click())
     const chooser = host.querySelector('section[aria-label="Choose folder(s)/page(s) to import"]')!
     assert.equal(chooser.querySelectorAll('input').length, 1, 'active chooser retains only the Select visible checkbox')

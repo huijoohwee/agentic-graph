@@ -206,7 +206,8 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
       event.stopPropagation()
       event.currentTarget.focus({ preventScroll: true })
       const rect = event.currentTarget.getBoundingClientRect()
-      setContextMenu({ x: 'clientX' in event ? event.clientX : rect.left, y: 'clientY' in event ? event.clientY : rect.bottom, entry })
+      const hasPointerPosition = 'clientX' in event && (event.clientX !== 0 || event.clientY !== 0)
+      setContextMenu({ x: hasPointerPosition ? event.clientX : rect.left, y: hasPointerPosition ? event.clientY : rect.bottom, entry })
     }
 
     return (
@@ -222,7 +223,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
             isActive={isActive}
             ariaExpanded={selectionFolder ? isExpanded : undefined}
             textClassName={panelTypography.panelTextClass}
-            onClick={selectionFolder ? () => toggleExpanded(entry.path) : selectEntry}
+            onClick={selectionFolder ? () => toggleExpanded(entry.path) : !isFolder && isEntrySaved?.(entry) === false ? openContextMenu : selectEntry}
             onContextMenu={openContextMenu}
           >
             <span className="truncate">{entry.name || (isFolder ? 'folder' : 'file')}</span>

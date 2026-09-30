@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.11"
+version: "1.0.12"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.11"
-tad_revision: "1.0.11"
-adr_revision: "1.0.11"
-mvp_revision: "1.0.11"
-gtm_revision: "1.0.11"
+prd_revision: "1.0.12"
+tad_revision: "1.0.12"
+adr_revision: "1.0.12"
+mvp_revision: "1.0.12"
+gtm_revision: "1.0.12"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.11. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.12. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -59,6 +59,10 @@ workspace entries belong in the copy; discovered pages are not downloaded by Rev
 Source Files must show discovered pages together with prior saved crawl files. Distinct file icons
 identify saved website documents and discovered pages that have not been saved. Finding pages does
 not import them; the reader selects pages or folders before starting a headless crawl.
+Clicking a saved filename opens its document without changing crawl selection. Clicking a discovered
+filename opens its file actions without selecting the page. When a discovered inventory is active,
+the leading icons of saved and discovered website pages select them for crawl. Ordinary file icons
+retain their document-selection action.
 
 Source Files exposes file and folder actions in one icon context toolbar. Remove the row action
 strip and text-menu variant; retain the existing compact icon size, accessible labels, tooltips and
@@ -151,6 +155,10 @@ A shared dismissal group keeps both panels open during interaction within either
 outside clicks dismiss both. The summary does not steal focus from the invoking toolbar icon. The existing website-action owner handles paging,
 refresh and cancel, with applicability derived from the current tree projection rather than names.
 Unrelated rows retain grey discovery slots. Paging changes visibility without changing selection.
+The tree checks its existing saved-entry projection at filename activation. Unsaved names invoke the
+shared file toolbar; saved names keep the document-open callback. Leading website file controls
+toggle the existing page selection when an inventory is active. No additional selection state or
+overlay owner is introduced.
 
 ## ADR
 
@@ -298,6 +306,11 @@ pagination, unchanged selection, related-folder refresh, disabled unrelated-file
 retained cancellation/restart behavior. Live preview preserves 477 pages, 200 shown and 100 selected
 while moving the controls. Native affected validation gates publication. Rollback this presentation
 increment together; retain the discovery session, browser documents and saved crawl artifacts.
+
+File-activation increment: three production modules, no dependency. Focused regression coverage checks
+saved filename opening, unchanged crawl selection, discovered filename actions and icon-only selection
+for saved and unsaved website pages. Native affected validation gates publication. Rollback this event-routing change while
+retaining discovery drafts and saved files.
 
 ## GTM
 

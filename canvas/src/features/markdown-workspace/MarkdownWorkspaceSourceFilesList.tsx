@@ -167,7 +167,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
       const status = pending ? 'Discovered page — not saved' : 'Saved website file'
       return <button type="button" aria-label={`Select file ${entry.name}`} title={status}
         className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded ${UI_THEME_TOKENS.focus.primaryRing}`}
-        onClick={() => { const url = projection.pageUrls.get(entry.path); if (pending && url) toggleWebsiteSelection([url], true); else onSelectFile(entry.path) }}>
+        onClick={() => { const url = projection.pageUrls.get(entry.path); if (url && importSession) toggleWebsiteSelection([url], !importSession.selected.has(url)); else onSelectFile(entry.path) }}>
         <Icon className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} role="img" aria-label={status} />
       </button>
     }
