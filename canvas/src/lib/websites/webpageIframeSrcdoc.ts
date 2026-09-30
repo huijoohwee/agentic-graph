@@ -2,6 +2,7 @@ import { buildCodebaseFilePath, buildWebpageProxyUrl, isHttpUrl } from '@/lib/ur
 import { clearWebpageSandboxDocCaches } from './webpageSandboxDoc'
 import { clearWebpageSandboxBlobUrlCache } from './webpageSandboxBlobUrlCache'
 import { createWebpageTextRequestCache } from './webpageTextRequestCache'
+import { WEBPAGE_HTML_PREVIEW_MAX_BYTES, WebpageHtmlPreviewLimitError } from './webpageHtmlPreviewBudget'
 
 export type WebpageIframeMode = 'html' | 'json' | 'text'
 
@@ -48,11 +49,12 @@ const fetchBoundedText = async (
   res: Response,
   limit: number,
   onProgress?: (bytes: number, bytesTotal?: number | null) => void,
+  htmlPreview = false,
 ): Promise<string> => {
-  const tooLarge = () => new Error(`Response too large (> ${(limit / 1024 / 1024).toFixed(1)}MB)`)
+  const tooLarge = () => htmlPreview ? new WebpageHtmlPreviewLimitError() : new Error(`Response too large (> ${(limit / 1024 / 1024).toFixed(1)}MB)`)
   const bytesTotal = readContentLength(res)
   if (bytesTotal != null && bytesTotal > limit) {
-    await res.body?.cancel()
+    try { await res.body?.cancel() } catch { /* Preserve the limit error; never retry this body. */ }
     throw tooLarge()
   }
   if (!res.body) {
@@ -104,17 +106,18 @@ export async function fetchWebpageHtmlViaProxy(args: {
   onProgress?: (bytes: number, bytesTotal?: number | null) => void
   bypassCache?: boolean
   fetchImpl?: typeof fetch
+  htmlPreview?: boolean
 }): Promise<string> {
   const u = String(args.url || '').trim()
   if (!u) return ''
-  const key = `proxy:${u}`
+  const key = `proxy:${u}:preview:${args.htmlPreview === true}`
   return fetchCached(
     key,
     async (signal) => {
       const fetchFn = typeof args.fetchImpl === 'function' ? args.fetchImpl : fetch
       const res = await fetchFn(buildWebpageProxyUrl(u, 'strip'), { signal, headers: { Accept: 'text/html,*/*;q=0.9' } })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await fetchBoundedText(res, 5_000_000, args.onProgress)
+      return await fetchBoundedText(res, args.htmlPreview ? WEBPAGE_HTML_PREVIEW_MAX_BYTES : 5_000_000, args.onProgress, args.htmlPreview)
     },
     args.signal,
     { bypassCache: args.bypassCache },
@@ -127,6 +130,7 @@ export async function fetchWebpageHtmlFromRepoFile(args: {
   onProgress?: (bytes: number, bytesTotal?: number | null) => void
   bypassCache?: boolean
   fetchImpl?: typeof fetch
+  htmlPreview?: boolean
 }): Promise<string> {
   const rel = String(args.relPath || '')
     .trim()
@@ -136,14 +140,14 @@ export async function fetchWebpageHtmlFromRepoFile(args: {
     .replace(/^\/+/, '')
     .split(/[?#]/)[0]
   if (!rel || rel.includes('..')) return ''
-  const key = `repo:${rel}`
+  const key = `repo:${rel}:preview:${args.htmlPreview === true}`
   return fetchCached(
     key,
     async (signal) => {
       const fetchFn = typeof args.fetchImpl === 'function' ? args.fetchImpl : fetch
       const res = await fetchFn(buildCodebaseFilePath(rel), { signal, headers: { Accept: 'text/html,*/*;q=0.9' } })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await fetchBoundedText(res, 8_000_000, args.onProgress)
+      return await fetchBoundedText(res, args.htmlPreview ? WEBPAGE_HTML_PREVIEW_MAX_BYTES : 8_000_000, args.onProgress, args.htmlPreview)
     },
     args.signal,
     { bypassCache: args.bypassCache },
@@ -156,6 +160,7 @@ export async function fetchWebpageHtmlAuto(args: {
   onProgress?: (bytes: number, bytesTotal?: number | null) => void
   bypassCache?: boolean
   fetchImpl?: typeof fetch
+  htmlPreview?: boolean
 }): Promise<string> {
   const u = String(args.url || '').trim()
   if (!u) return ''
@@ -166,6 +171,7 @@ export async function fetchWebpageHtmlAuto(args: {
       onProgress: args.onProgress,
       bypassCache: args.bypassCache,
       fetchImpl: args.fetchImpl,
+      htmlPreview: args.htmlPreview,
     })
   }
   return await fetchWebpageHtmlFromRepoFile({
@@ -174,6 +180,7 @@ export async function fetchWebpageHtmlAuto(args: {
     onProgress: args.onProgress,
     bypassCache: args.bypassCache,
     fetchImpl: args.fetchImpl,
+    htmlPreview: args.htmlPreview,
   })
 }
 
@@ -246,14 +253,16 @@ export async function fetchWebsiteImportArtifact(args: {
   nodeId: string
   outputDirRel?: string
   kind: 'rawHtml' | 'markdown' | 'conversionJson'
+  htmlPreview?: boolean
   signal: AbortSignal
 }): Promise<string> {
   const importId = String(args.importId || '').trim()
   const nodeId = String(args.nodeId || '').trim()
   const outputDirRel = String(args.outputDirRel || '').trim()
   const kind = args.kind
+  const htmlPreview = kind === 'rawHtml' && args.htmlPreview === true
   if (!importId || !nodeId) return ''
-  const key = `artifact:${outputDirRel}:${importId}:${nodeId}:${kind}`
+  const key = `artifact:${outputDirRel}:${importId}:${nodeId}:${kind}:preview:${htmlPreview}`
   return fetchCached(
     key,
     async (signal) => {
@@ -263,7 +272,7 @@ export async function fetchWebsiteImportArtifact(args: {
         { signal, headers: { Accept: '*/*' } },
       )
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await fetchBoundedText(res, 32 * 1024 * 1024)
+      return await fetchBoundedText(res, htmlPreview ? WEBPAGE_HTML_PREVIEW_MAX_BYTES : 32 * 1024 * 1024, undefined, htmlPreview)
     },
     args.signal,
   )

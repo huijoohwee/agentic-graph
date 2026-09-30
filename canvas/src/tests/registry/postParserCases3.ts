@@ -385,7 +385,7 @@ export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
   ["richMedia.panel.cardMarkdown.tableSyntax","@/__tests__/cardMarkdownPreviewUtils.test","testCardMarkdownPreviewSyntaxDetectsMarkdownTables"],
   ["richMedia.panel.surfaceMode.matrix","@/__tests__/richMediaSurfaceCoverage.test","testRichMediaPanelMarkdownPayloadCoversRendererModeMatrix"],
   ["richMedia.panel.surfaceMode.sharedOwners","@/__tests__/richMediaSurfaceCoverage.test","testRichMediaSurfaceRuntimePathsReuseSharedOverlayOwners"],
-  ["richMedia.panel.surfaceMode.3dStacking","@/__tests__/richMediaSurfaceCoverage.test","testThreeRichMediaLayoutStacksOverlappingPanelsByScreenPositionAndSelection"],
+  ["richMedia.panel.surfaceMode.3dStacking","@/__tests__/richMediaSurfaceCoverage.test","testThreeRichMediaLayoutStacksLargerPeersUnderneath"],
   ["richMedia.panel.surfaceMode.3dUnanchoredVisibility","@/__tests__/richMediaSurfaceCoverage.test","testThreeRichMediaLayoutKeepsUnanchoredPanelsVisible"],
   ["markdown.tableGraph.cache.semanticKey","@/__tests__/richMediaPanelMarkdownSrcDoc.test","testMarkdownTableGraphCacheUsesSharedSemanticKey"],
   ["graph.topology.cacheInvalidatesSameCountEndpointMutation","@/__tests__/graphTopologyPipeline.test","testGraphTopologyCacheInvalidatesSameCountEndpointMutation"],

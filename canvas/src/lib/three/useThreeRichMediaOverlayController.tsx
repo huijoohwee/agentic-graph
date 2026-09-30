@@ -120,14 +120,12 @@ export function useThreeRichMediaOverlayController(args: {
   const refFnByIdRef = React.useRef<Map<string, (el: HTMLElement | null) => void>>(new Map())
   const scheduleRafRef = React.useRef<number | null>(null)
   const schedulePendingRef = React.useRef<boolean>(false)
-  const missFramesRef = React.useRef<Map<string, number>>(new Map())
   const pointerOverrideActiveRef = React.useRef<boolean>(false)
   const pointerOverrideResetTimerRef = React.useRef<number | null>(null)
   const localPositionsRef = React.useRef<Record<string, [number, number, number]>>({})
   const localPanelSizesRef = React.useRef<Record<string, { w: number; h: number }>>({})
   const localPinnedRef = React.useRef<Record<string, boolean>>({})
   const localScreenAnchorsRef = React.useRef<Record<string, { sx: number; sy: number }>>({})
-  const localZIndexRef = React.useRef<Record<string, number>>({})
   const dragOverridesRef = React.useRef<Record<string, [number, number, number]>>({})
   const screenDragOverridesRef = React.useRef<Record<string, { sx: number; sy: number }>>({})
   const headerDragRef = React.useRef<null | RichMediaHeaderDragState3d>(null)
@@ -196,8 +194,6 @@ export function useThreeRichMediaOverlayController(args: {
     return Number.isFinite(sx) && Number.isFinite(sy) ? { sx, sy } : null
   }, [readNodeProperties])
   const getPanelZIndexForId = React.useCallback((id: string): number => {
-    const local = localZIndexRef.current[id]
-    if (Number.isFinite(local)) return Number(local)
     const z = Number(readNodeProperties(id)['visual:zIndex'])
     return Number.isFinite(z) ? z : 0
   }, [readNodeProperties])
@@ -276,7 +272,6 @@ export function useThreeRichMediaOverlayController(args: {
     const fn = (el: HTMLElement | null) => {
       if (!el) {
         overlayElsRef.current.delete(key)
-        missFramesRef.current.delete(key)
         return
       }
       const prev = overlayElsRef.current.get(key)
@@ -287,7 +282,7 @@ export function useThreeRichMediaOverlayController(args: {
         el.style.top = '-99999px'
         el.style.width = '1px'
         el.style.height = '1px'
-        el.style.display = 'block'
+        el.style.display = 'none'
         requestSchedule()
       } catch {
         void 0
@@ -301,7 +296,6 @@ export function useThreeRichMediaOverlayController(args: {
     const keep = new Set<string>(overlayNodesPool.map(n => n.id))
     for (const [id] of overlayElsRef.current) if (!keep.has(id)) overlayElsRef.current.delete(id)
     for (const [id] of refFnByIdRef.current) if (!keep.has(id)) refFnByIdRef.current.delete(id)
-    for (const [id] of missFramesRef.current) if (!keep.has(id)) missFramesRef.current.delete(id)
   }, [mediaNodesKey, overlayNodesPool])
 
   React.useEffect(() => {
@@ -317,7 +311,6 @@ export function useThreeRichMediaOverlayController(args: {
         dragOverrides: dragOverridesRef.current,
         screenDragOverrides: screenDragOverridesRef.current,
         overlayEls: overlayElsRef.current,
-        missFrames: missFramesRef.current,
         prevVisibleIds: visibleIdsRef.current,
         effectiveSchema: args.effectiveSchema,
         scratch: scratchRef.current,
@@ -416,7 +409,8 @@ export function useThreeRichMediaOverlayController(args: {
       el.style.width = `${nextW}px`
       el.style.height = `${nextH}px`
     }
-  }, [])
+    requestSchedule()
+  }, [requestSchedule])
 
   const endResize = React.useCallback((id: string, pointerId: number) => {
     const drag = resizeRef.current
@@ -488,6 +482,7 @@ export function useThreeRichMediaOverlayController(args: {
           ref={getOverlayRefForId(n.id)}
           overlayId={n.id}
           className="absolute left-0 top-0 pointer-events-auto"
+          style={{ position: 'absolute' }}
           title={n.title}
           url={n.url}
           srcDoc={n.srcDoc}

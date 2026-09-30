@@ -227,6 +227,8 @@ export function useOverlayInteractions2d(args: {
   const endHeaderDrag = useCallback(() => {
     const st = headerDragRef.current
     if (!st) return
+    // Consume the last pointer sample while its drag state is still available.
+    headerDragMoveSchedulerRef.current.flush()
     headerDragRef.current = null
     unlockGlobalUserSelect()
     const svgEl = svgRef.current
@@ -242,11 +244,6 @@ export function useOverlayInteractions2d(args: {
       } catch {
         void 0
       }
-    }
-    try {
-      headerDragMoveSchedulerRef.current.flush()
-    } catch {
-      void 0
     }
     if (!node) return
     const workspaceViewModeAtEnd = useGraphStore.getState().workspaceViewMode === 'editor' ? 'editor' : 'canvas'
@@ -278,7 +275,10 @@ export function useOverlayInteractions2d(args: {
         void 0
       }
     }
-  }, [readOverlayInteractionNodeById, schemaRef, simulationRef, svgRef])
+    const tickHandler = sim?.on('tick')
+    if (typeof tickHandler === 'function') (tickHandler as () => void)()
+    requestOverlaySchedule?.()
+  }, [readOverlayInteractionNodeById, requestOverlaySchedule, schemaRef, simulationRef, svgRef])
 
   const startOverlayPan = useCallback(
     (args0: { pointerId: number; clientX: number; clientY: number }) => {

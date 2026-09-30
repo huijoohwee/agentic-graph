@@ -8,6 +8,7 @@ import {
   XR_PHYSICS_MEDIA_STAGE_DATA_ATTRIBUTES,
   XR_PHYSICS_MEDIA_STAGE_LABEL,
 } from '@/features/three/xrPhysicsMediaSurface'
+import { resolveThreeCanvasSemanticLabel } from '@/features/three/XrPhysicsSemanticMediaSurface'
 import { SemanticMediaFigure } from '@/lib/cards/SemanticMediaFigure'
 import {
   MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR,
@@ -100,10 +101,39 @@ export function testXrPhysicsSemanticOwnerIsBoundAfterThreeCreatesItsCanvas() {
     /active && !geospatialComposite \? 'auto' : 'none'/,
   )
   assert.match(threeGraph, /useThreeCanvasSemanticOwner\(semanticMediaOwner\)/)
-  assert.match(threeGraph, /applySemanticCanvasOwner\(glCanvasRef\.current\)/)
+  assert.match(threeGraph, /configureThreeGraphRenderer\(state, \{/)
+  const renderer = readFileSync(resolve(process.cwd(), 'src/lib/three/ThreeGraphSnapshots.ts'), 'utf8')
+  assert.match(renderer, /args\.applySemanticCanvasOwner\(gl\.domElement\)/)
   assert.doesNotMatch(
     threeGraph.match(/<Canvas[\s\S]*?>/)?.[0] || '',
     /data-kg-rich-media-selectable-surface|aria-labelledby|aria-label=/,
     'selection and accessible ownership must bind to gl.domElement, not the generic R3F wrapper',
   )
+}
+
+export function testThreeGraphModesReuseSemanticCanvasOwner() {
+  for (const mode of ['3d', 'xr', 'voxel'] as const) {
+    const label = resolveThreeCanvasSemanticLabel(mode, false)
+    const markup = renderToStaticMarkup(
+      <SemanticMediaFigure active label={label} selectionTarget="descendant">
+        {captionId => <canvas data-caption-id={captionId} />}
+      </SemanticMediaFigure>,
+    )
+    const dom = new JSDOM(markup)
+    const canvas = dom.window.document.querySelector('canvas')!
+    const caption = dom.window.document.querySelector('figcaption')!
+    const release = bindThreeCanvasSemanticOwner(canvas, { captionId: caption.id, label })
+    assert.equal(canvas.getAttribute('aria-label'), label)
+    assert.equal(canvas.getAttribute('role'), 'region')
+    assert.equal(canvas.getAttribute(MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR), '1')
+    assert.equal(dom.window.document.querySelectorAll(`[${MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR}="1"]`).length, 1)
+    assert.doesNotMatch(markup, /role="presentation"|aria-hidden|<div\b/)
+    assert.equal(resolveThreeCanvasSemanticLabel(mode, true), XR_PHYSICS_MEDIA_STAGE_LABEL)
+    release?.()
+    assert.equal(canvas.hasAttribute(MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR), false)
+    dom.window.close()
+  }
+  const source = readFileSync(resolve(process.cwd(), 'src/features/three/XrPhysicsSemanticMediaSurface.tsx'), 'utf8')
+  assert.match(source, /const semanticActive = active\s/)
+  assert.match(source, /physicsRunReady \? XR_PHYSICS_MEDIA_STAGE_DATA_ATTRIBUTES : undefined/)
 }

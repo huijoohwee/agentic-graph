@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict'
+import { JSDOM } from 'jsdom'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { PerspectiveCamera, type WebGLRenderer } from 'three'
@@ -199,6 +201,7 @@ export function testRichMediaSurfaceRuntimePathsReuseSharedOverlayOwners() {
     'localPositionsRef.current[n.id]',
     'const getPanelZIndexForId = React.useCallback',
     "const z = Number(readNodeProperties(id)['visual:zIndex'])",
+    "style={{ position: 'absolute' }}",
     'resizable={true}',
     'widgetToolbarActive={true}',
     'headerPinned={readPanelPinned(n.id)}',
@@ -250,67 +253,65 @@ function makeRichMediaPanelElement(): HTMLElement {
   } as unknown as HTMLElement
 }
 
-export function testThreeRichMediaLayoutStacksOverlappingPanelsByScreenPositionAndSelection() {
+export function testThreeRichMediaLayoutStacksLargerPeersUnderneath() {
   const camera = new PerspectiveCamera(50, 960 / 640, 0.1, 1000)
   camera.position.set(0, 0, 220)
   camera.lookAt(0, 0, 0)
   camera.updateProjectionMatrix()
   camera.updateMatrixWorld(true)
-  camera.matrixWorldInverse.copy(camera.matrixWorld).invert()
-  const upper = makeRichMediaPanelElement()
-  const lower = makeRichMediaPanelElement()
-  updateThreeMediaOverlayLayout({
+  const dom = new JSDOM('<main><section id="large"><img alt="Large media"></section><section id="small"><img alt="Small media"></section></main>')
+  const large = dom.window.document.getElementById('large')!
+  const small = dom.window.document.getElementById('small')!
+  let largeSize = { w: 400, h: 240 }
+  const args: Parameters<typeof updateThreeMediaOverlayLayout>[0] = {
     camera,
     gl: { domElement: { clientWidth: 960, clientHeight: 640 } } as unknown as WebGLRenderer,
-    overlayNodesPool: [{ id: 'upper-media' }, { id: 'lower-media' }],
-    positions: { 'upper-media': [0, 12, 0], 'lower-media': [0, -12, 0] },
-    dragOverrides: {},
-    overlayEls: new Map([['upper-media', upper], ['lower-media', lower]]),
-    missFrames: new Map(),
+    overlayNodesPool: [{ id: 'large' }, { id: 'small' }],
+    positions: { large: [0, 0, 0], small: [0, 0, 0] },
+    dragOverrides: { large: [0, -12, 0] },
+    overlayEls: new Map([['large', large], ['small', small]]),
     prevVisibleIds: new Set(),
     effectiveSchema: defaultSchema,
     scratch: createThreeMediaOverlayLayoutScratch(),
-    getPanelSizeForId: () => ({ w: 320, h: 220 }),
+    getPanelSizeForId: id => id === 'large' ? largeSize : { w: 180, h: 110 },
+    selectedNodeId: 'large',
     mediaPanelDensity: 'default',
     threeIframeOverlayMaxVisibleDefault: 8,
     threeIframeOverlayMaxDistanceDefault: 620,
-    threeIframeOverlayBaseWidthRatioDefault: 0.2,
-    threeIframeOverlayBaseWidthMinPxDefault: 210,
-    threeIframeOverlayBaseWidthMaxPxDefault: 360,
-    threeIframeOverlaySizeScaleFactor: 260,
-  })
-  const upperZ = Number.parseFloat(String((upper.style as unknown as Record<string, string>).zIndex || '0'))
-  const lowerZ = Number.parseFloat(String((lower.style as unknown as Record<string, string>).zIndex || '0'))
-  if (!(lowerZ > upperZ)) {
-    throw new Error(`expected lower overlapping 3D Rich Media panel to stack above upper panel, got ${upperZ} ${lowerZ}`)
   }
-
-  updateThreeMediaOverlayLayout({
-    camera,
-    gl: { domElement: { clientWidth: 960, clientHeight: 640 } } as unknown as WebGLRenderer,
-    overlayNodesPool: [{ id: 'upper-media' }, { id: 'lower-media' }],
-    positions: { 'upper-media': [0, 12, 0], 'lower-media': [0, -12, 0] },
-    dragOverrides: {},
-    overlayEls: new Map([['upper-media', upper], ['lower-media', lower]]),
-    missFrames: new Map(),
-    prevVisibleIds: new Set(['upper-media', 'lower-media']),
-    effectiveSchema: defaultSchema,
-    scratch: createThreeMediaOverlayLayoutScratch(),
-    getPanelSizeForId: () => ({ w: 320, h: 220 }),
-    selectedNodeId: 'upper-media',
-    mediaPanelDensity: 'default',
-    threeIframeOverlayMaxVisibleDefault: 8,
-    threeIframeOverlayMaxDistanceDefault: 620,
-    threeIframeOverlayBaseWidthRatioDefault: 0.2,
-    threeIframeOverlayBaseWidthMinPxDefault: 210,
-    threeIframeOverlayBaseWidthMaxPxDefault: 360,
-    threeIframeOverlaySizeScaleFactor: 260,
-  })
-  const selectedUpperZ = Number.parseFloat(String((upper.style as unknown as Record<string, string>).zIndex || '0'))
-  const selectedLowerZ = Number.parseFloat(String((lower.style as unknown as Record<string, string>).zIndex || '0'))
-  if (!(selectedUpperZ > selectedLowerZ)) {
-    throw new Error(`expected selected overlapping 3D Rich Media panel to stack above screen-position ordering, got ${selectedUpperZ} ${selectedLowerZ}`)
-  }
+  const update = () => { args.prevVisibleIds = updateThreeMediaOverlayLayout(args) }
+  update()
+  assert.ok(Number(large.style.zIndex) < Number(small.style.zIndex), 'selection and drag must not cover smaller peers')
+  assert.equal(large.style.display, 'flex', 'shared frame content must retain available height')
+  assert.equal(large.style.width, '400px')
+  assert.equal(large.querySelector('img')?.getAttribute('loading'), 'eager')
+  const observer = new dom.window.MutationObserver(() => {})
+  observer.observe(dom.window.document.querySelector('main')!, { subtree: true, attributes: true })
+  update()
+  assert.equal(observer.takeRecords().length, 0, 'settled layout must not rewrite DOM styles')
+  largeSize = { w: 120, h: 80 }
+  update()
+  assert.ok(Number(large.style.zIndex) > Number(small.style.zIndex), 'resize must rerank peers')
+  largeSize = { w: 180, h: 110 }
+  update()
+  const equalSizeOrder = [large.style.zIndex, small.style.zIndex]
+  args.overlayNodesPool = [...args.overlayNodesPool].reverse()
+  update()
+  assert.deepEqual([large.style.zIndex, small.style.zIndex], equalSizeOrder, 'equal areas use stable identities')
+  args.getPanelZIndexForId = id => id === 'large' ? 1 : 0
+  largeSize = { w: 400, h: 240 }
+  update()
+  assert.ok(Number(large.style.zIndex) > Number(small.style.zIndex), 'explicit authored layers remain authoritative')
+  args.dragOverrides = {}
+  args.positions.large = [0, 0, 500]
+  args.selectedNodeId = null
+  update()
+  assert.equal(large.style.display, 'none', 'culled panels must not leave stale visible hit targets')
+  args.threeIframeOverlayMaxVisibleDefault = 0
+  update()
+  assert.equal(small.style.display, 'none')
+  observer.disconnect()
+  dom.window.close()
 }
 
 export function testThreeRichMediaLayoutKeepsUnanchoredPanelsVisible() {
@@ -328,7 +329,6 @@ export function testThreeRichMediaLayoutKeepsUnanchoredPanelsVisible() {
     positions: {},
     dragOverrides: {},
     overlayEls: new Map([['rich-media-panel', el]]),
-    missFrames: new Map(),
     prevVisibleIds: new Set(),
     effectiveSchema: defaultSchema,
     scratch: createThreeMediaOverlayLayoutScratch(),
@@ -345,7 +345,7 @@ export function testThreeRichMediaLayoutKeepsUnanchoredPanelsVisible() {
     throw new Error('expected 3D Rich Media layout to keep enabled unanchored panels visible')
   }
   const style = el.style as unknown as Record<string, string>
-  if (style.display !== 'block') throw new Error(`expected visible panel display block, got ${String(style.display)}`)
+  if (style.display !== 'flex') throw new Error(`expected visible shared panel display flex, got ${String(style.display)}`)
   const hasViewportAnchorTransform =
     String(style.transform || '').includes('translate3d(')
     || String(style.transform || '').includes('matrix(')
