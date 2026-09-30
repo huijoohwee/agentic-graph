@@ -98,6 +98,9 @@ function resolveDirectHtmlProxyScriptPolicy(args: {
   return storePolicy === 'strip' ? 'strip' : 'allow'
 }
 
+type PreviewState = { srcDoc: string | null; src: string | null; error: string | null }
+const EMPTY_PREVIEW: PreviewState = { srcDoc: null, src: null, error: null }
+
 export function useWebpageIframeSrcdoc(args: {
   enabled: boolean
   url: string
@@ -110,11 +113,20 @@ export function useWebpageIframeSrcdoc(args: {
   onStatusProgress?: (label: string, current?: number | null, total?: number | null, bytesCurrent?: number | null, bytesTotal?: number | null) => void
   onStatusWithAutoClear?: (label: string, ttlMs?: number) => void
 }): { srcDoc: string | null; src: string | null; error: string | null } {
-  const [state, setState] = React.useState<{ srcDoc: string | null; src: string | null; error: string | null }>({
-    srcDoc: null,
-    src: null,
-    error: null,
-  })
+  const importId = args.websiteImportMeta?.importId
+  const nodeId = args.websiteImportMeta?.nodeId
+  const outputDirRel = args.websiteImportMeta?.outputDirRel
+  const identity = React.useMemo(() => [args.enabled, args.url, args.view, args.htmlOverride,
+    args.scriptPolicy, args.siteRootRel, args.includeImages, importId, nodeId, outputDirRel],
+  [args.enabled, args.url, args.view, args.htmlOverride, args.scriptPolicy, args.siteRootRel,
+    args.includeImages, importId, nodeId, outputDirRel])
+  const [state, setSnapshot] = React.useState<PreviewState & { identity: object | null }>({ ...EMPTY_PREVIEW, identity: null })
+  const setState = React.useCallback((update: (previous: PreviewState) => PreviewState) => {
+    setSnapshot(previous => {
+      const next = update(previous)
+      return next === previous && previous.identity === identity ? previous : { ...next, identity }
+    })
+  }, [identity])
 
   const onStatusProgressRef = React.useRef(args.onStatusProgress)
   const onStatusWithAutoClearRef = React.useRef(args.onStatusWithAutoClear)
@@ -123,13 +135,13 @@ export function useWebpageIframeSrcdoc(args: {
     onStatusWithAutoClearRef.current = args.onStatusWithAutoClear
   }, [args.onStatusProgress, args.onStatusWithAutoClear])
 
-  const importId = args.websiteImportMeta?.importId
-  const nodeId = args.websiteImportMeta?.nodeId
-  const outputDirRel = args.websiteImportMeta?.outputDirRel
   const debouncedUrl = useDebouncedValue(args.url, 120, args.enabled)
   const debouncedHtmlOverride = useDebouncedValue(args.htmlOverride ?? null, 250, args.enabled)
 
   React.useEffect(() => {
+    // Clear the old frame immediately, including the debounce window. Do not
+    // fetch a new import with the previous document's URL or HTML override.
+    if (debouncedUrl !== args.url || debouncedHtmlOverride !== (args.htmlOverride ?? null)) return
     const websiteImportMeta = importId && nodeId ? { importId, nodeId, outputDirRel } : null
     if (!args.enabled) {
       setState(prev => (prev.srcDoc === null && prev.src === null && prev.error === null ? prev : { srcDoc: null, src: null, error: null }))
@@ -326,6 +338,9 @@ export function useWebpageIframeSrcdoc(args: {
       }
     }
   }, [
+    args.url,
+    args.htmlOverride,
+    setState,
     args.enabled,
     debouncedHtmlOverride,
     debouncedUrl,
@@ -338,5 +353,5 @@ export function useWebpageIframeSrcdoc(args: {
     outputDirRel,
   ])
 
-  return state
+  return state.identity === identity ? state : EMPTY_PREVIEW
 }

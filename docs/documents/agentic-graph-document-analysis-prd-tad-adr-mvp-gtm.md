@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.4"
+version: "1.0.5"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.4"
-tad_revision: "1.0.4"
-adr_revision: "1.0.4"
-mvp_revision: "1.0.4"
-gtm_revision: "1.0.4"
+prd_revision: "1.0.5"
+tad_revision: "1.0.5"
+adr_revision: "1.0.5"
+mvp_revision: "1.0.5"
+gtm_revision: "1.0.5"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.4. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.5. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -46,6 +46,8 @@ note containing rendered page text does not prove that website import completed.
 
 Captured pages must remain reopenable even when raw HTML contains large application-state attributes.
 The HTML preview reports its limit and offers Markdown as the reading path; full capture/export stays intact.
+Opening a saved preview must not automatically start captured embedded sites or autoplay media.
+Switching documents must release the previous preview while its replacement is loading.
 
 Reveal in Finder must select the named workspace document. Browser-only files save a named copy,
 including unsaved active editor content. Explicit disk provenance still reveals the original file;
@@ -92,6 +94,12 @@ requests can resolve an existing generation in the earlier sandbox; new writes u
 Explicit reuse of a generation in the earlier root is rejected, and incomplete current generations
 never borrow old artifacts. No existing capture is moved or rewritten.
 The shared JSON request limit is 500,000 UTF-8 bytes; larger documents use the existing export flow.
+
+The shared strip-policy sandbox wraps captured iframe/object/embed content in inert templates.
+A native disclosure activates one embedded panel at a time; closing or replacing it removes its
+browsing context. Audio and video use controls with preload disabled and autoplay removed. Explicit
+script-enabled pages retain authored behavior. Preview state is bound to semantic request identity,
+so an old document is cleared during debounce as well as network work; stale completions stay ignored.
 
 ## ADR
 
@@ -172,6 +180,21 @@ Reveal rollback: revert the client and local host protocol together. Preserve sa
 workspace records; removing a copy is a separate explicit file operation. Before reverting the crawler
 default, retain the configured docs_ store override so newly created captures remain addressable.
 
+Preview lifecycle follow-up: three production modules, fewer than 8 KB added source, no dependency.
+Eight focused regressions pass. Full affected checks, including TypeScript and browser smoke, pass.
+Generic regression tests cover inert initial frames, explicit activation, replacement/close disposal,
+paused media, explicit allow-policy behavior and release of loaded previews during pending requests.
+The browser log recorded an unresponsive page before the reported crash. After manual reload, opening
+the captured library stalled an automation read; its Markdown contained 606 image references. The
+article preview also mounted a captured autoplay iframe despite strip policy. These observations
+identify resource-loading gaps; they do not prove that one gap explains every renderer failure.
+The live article uses the new embed gate and 37 Source Files remain. Repeated library opening still
+timed out through browser automation before recovering. The user confirmed both imported documents
+open without crashing after the patch, but switching remains slow. This is a bounded recovery observation;
+rendering-performance improvement and elimination of all possible renderer failures are not established.
+Rollback the template gating and identity binding together if needed, retaining captures, named copies,
+workspace records, the earlier HTML byte budget and configured docs_ output defaults.
+
 ## GTM
 
 Initial user: a reader checking repeated themes and evidence in a local document. The near-built path
@@ -184,3 +207,5 @@ imported documents in the reviewed workspace, separately from successful text an
 A bounded HTML notice keeps the workspace responsive while readers continue in Markdown; measure successful reopening without losing captured sources.
 
 Named local copies let readers locate and use the document shown in Source Files without navigating capture-cache internals. Measure successful first reveal; no paid service or account is required.
+
+Saved embeds load on request, reducing work when readers switch documents. Measure successful document switches and responsive preview controls.

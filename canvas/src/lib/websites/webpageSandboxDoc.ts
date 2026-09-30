@@ -2,6 +2,7 @@ import { exceedsWebpageHtmlPreviewBudget, WEBPAGE_HTML_PREVIEW_LIMIT_MESSAGE } f
 import { UI_FONT_MONO } from 'grph-shared/ui/typography'
 import { buildWebpageAssetPathProxyUrl, shouldUseWebpageAssetPathProxyUrl } from '../url'
 import { pickFirstSrcsetUrl } from 'grph-shared/markdown/mediaHtml'
+import { deferWebpagePreviewEmbeddedContent } from './webpagePreviewEmbeddedContent'
 
 export type WebpageSandboxScriptPolicy = 'strip' | 'allow'
 
@@ -376,7 +377,7 @@ const yieldToMain = () => new Promise(resolve => setTimeout(resolve, 0))
 const SRCDOC_CACHE = new Map<string, string>()
 const SRCDOC_INFLIGHT = new Map<string, Promise<string>>()
 
-const SRCDOC_CACHE_VERSION = 4
+const SRCDOC_CACHE_VERSION = 5
 
 const SRCDOC_CACHE_MAX = 24
 const MAX_CACHE_VALUE_CHARS = 650_000
@@ -470,6 +471,7 @@ async function buildSandboxHtmlAsync(args: {
 
       await stepYield('Stripping Handlers')
       current = stripWebpageInlineEventHandlers(current)
+      current = deferWebpagePreviewEmbeddedContent(current)
     }
 
     const runtimeOrigin = readRuntimeOrigin()
@@ -542,6 +544,7 @@ export function buildWebpageHtmlSrcdoc(args: { html: string; baseHref: string; s
     )
   }
 
+  if (scriptPolicy === 'strip') current = deferWebpagePreviewEmbeddedContent(current)
   const runtimeOrigin = readRuntimeOrigin()
   if (runtimeOrigin) {
     current = absolutizeLocalProxyPaths(current, runtimeOrigin)
