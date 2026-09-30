@@ -11,7 +11,7 @@ type MarkdownFileTreeRowButtonProps = {
   ariaExpanded?: boolean
   textClassName: string
   onClick: () => void
-  onContextMenu: (event: React.MouseEvent<HTMLButtonElement>) => void
+  onContextMenu: (event: React.MouseEvent<HTMLButtonElement> | React.KeyboardEvent<HTMLButtonElement>) => void
   children: React.ReactNode
 }
 
@@ -30,6 +30,9 @@ export function MarkdownFileTreeRowButton(props: MarkdownFileTreeRowButtonProps)
       style={{ paddingLeft: 6 + indent }}
       onClick={onClick}
       onContextMenu={onContextMenu}
+      onKeyDown={event => {
+        if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) onContextMenu(event)
+      }}
       aria-label={ariaLabel}
       aria-expanded={ariaExpanded}
       aria-current={isActive ? 'page' : undefined}

@@ -10,7 +10,8 @@ import { Z_INDEX_ANCHOR_OVERLAY } from '@/lib/ui/zIndex'
 type Align = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'bottom-center' | 'top-center'
 
 interface AnchorOverlayProps {
-  anchorRef: React.RefObject<HTMLElement>
+  anchorRef?: React.RefObject<HTMLElement | null>
+  anchorPoint?: { left: number; top: number }
   open: boolean
   onClose?: () => void
   align?: Align
@@ -22,6 +23,7 @@ interface AnchorOverlayProps {
 
 export function AnchorOverlay({
   anchorRef,
+  anchorPoint,
   open,
   onClose,
   align = 'bottom-right',
@@ -36,10 +38,10 @@ export function AnchorOverlay({
   const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
 
   const updatePosition = React.useCallback(() => {
-    const el = anchorRef.current
-    if (!el) return
-    const r = el.getBoundingClientRect()
-    const margin = 4
+    const el = anchorRef?.current
+    if (!el && !anchorPoint) return
+    const r = anchorPoint ? { left: anchorPoint.left, right: anchorPoint.left, top: anchorPoint.top, bottom: anchorPoint.top, width: 0, height: 0 } : el!.getBoundingClientRect()
+    const margin = anchorPoint ? 0 : 4
     const overlaySize = readOverlayElementSize(containerRef.current)
     const overlayWidth = overlaySize.width
     const overlayHeight = overlaySize.height
@@ -64,7 +66,7 @@ export function AnchorOverlay({
       snapPx: 1,
     })
     setPos(prev => (prev.top === next.top && prev.left === next.left ? prev : next))
-  }, [align, anchorRef])
+  }, [align, anchorPoint, anchorRef])
 
   useLayoutEffect(() => {
     if (!open) return
@@ -94,7 +96,7 @@ export function AnchorOverlay({
     const handlePointerDown = (e: MouseEvent | PointerEvent) => {
       const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
       if (now - openedAt < 120) return
-      const anchorEl = anchorRef.current
+      const anchorEl = anchorRef?.current
       const containerEl = containerRef.current
       const t = e.target as Node | null
       if (!t) return

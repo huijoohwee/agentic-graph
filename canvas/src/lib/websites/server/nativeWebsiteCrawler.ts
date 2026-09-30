@@ -32,6 +32,7 @@ export type NativeWebsiteCapture = {
   title: string
   html: string
   links: string[]
+  linksLimited?: boolean
   downloads: WebsiteImportDownloadArtifact[]
 }
 
@@ -345,13 +346,32 @@ export class NativeWebsiteCrawler {
       if (!await this.isUrlAllowed(finalUrl)) throw new Error('Crawler redirect target is not allowed')
       const contentType = String(response.headers()['content-type'] || '').toLowerCase()
       const title = String(await page.title().catch(() => '')).trim()
-      const links = await page.locator('a[href]').evaluateAll(elements => [...new Set(elements
-        .map(element => (element as HTMLAnchorElement).href)
-        .filter(Boolean))]
-        .slice(0, 500)).catch(() => [] as string[])
+      // Read explicit navigation targets, including scripted cards exposing a URL.
+      // Do not serialize large application state or infer routes from titles/slugs.
+      const discovered = await page.evaluate(() => {
+        const links = new Set<string>()
+        let scanned = 0, limited = false
+        for (const element of document.querySelectorAll('a[href],area[href],[data-href],[data-url],[to],[url],[title]')) {
+          if (++scanned > 20_000) { limited = true; break }
+          for (const attribute of ['href', 'data-href', 'data-url', 'to', 'url', 'title']) {
+            const raw = element.getAttribute(attribute)?.trim()
+            if (!raw || raw.length > 4096 || raw.startsWith('#') || (attribute === 'title' && !/^https?:\/\//i.test(raw))) continue
+            try {
+              const url = new URL(raw, document.baseURI)
+              if (!['http:', 'https:'].includes(url.protocol)) continue
+              url.hash = ''
+              links.add(url.href)
+              if (links.size > 2_000) { limited = true; break }
+            } catch { /* Ignore labels that are not URLs. */ }
+          }
+          if (limited) break
+        }
+        return { links: [...links].slice(0, 2_000), limited }
+      })
+      const links = discovered.links
       const downloads: WebsiteImportDownloadArtifact[] = []
 
-      if (args.discoveryOnly) return { finalUrl, title, html: '', links, downloads: [] }
+      if (args.discoveryOnly) return { finalUrl, title, html: '', links, linksLimited: discovered.limited, downloads: [] }
 
       if (!contentType.includes('text/html') && !contentType.includes('application/xhtml')) {
         const artifact = await this.persistDownload({ context, url: finalUrl, nodeDirAbs: args.nodeDirAbs })
