@@ -2,6 +2,10 @@ import React from 'react'
 import { useDocumentInsights, jumpToDocumentInsight } from '@/features/markdown-workspace/documentInsightsRuntime'
 import type { DocumentSignalKind } from '@/lib/websites/signalTokens'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { sourceLineContexts } from '@/lib/semantic-mode/keywordEvidence'
+
+const DocumentKeywordInsights = React.lazy(() => import('./DocumentKeywordInsights'))
+const explanations = { nav: 'Navigation label rule', cta: 'Action label rule', price: 'Currency or recurring amount pattern', time: 'Clock or duration pattern' }
 
 const kinds = ['nav', 'cta', 'price', 'time'] as const
 export function DocumentInsights() {
@@ -19,11 +23,12 @@ export function DocumentInsights() {
   React.useEffect(() => setStatus(''), [source?.key, source?.text])
   const signals = source?.signals
   const matches = signals?.[kind] || []
+  const contexts = React.useMemo(() => open && source ? sourceLineContexts(source.text) : [], [open, source?.text])
   return (
     <details ref={detailsRef} open={open} onToggle={event => setOpen(event.currentTarget.open)} className={`shrink-0 rounded border p-2 ${UI_THEME_TOKENS.panel.border}`}>
       <summary className="cursor-pointer font-medium">Document insights</summary>
       <section aria-label="Document insights" className="grid min-w-0 gap-2 pt-2 text-xs">
-        <p className="break-all">{source?.key || 'Open a Markdown document to inspect its source.'}</p>
+        <p className="break-all">{source?.key || 'Open a text document to inspect its source.'}</p>
         <p>Heuristic matches: NAV and CTA classify link labels; PRICE finds currency mentions; TIME finds clock or duration text.</p>
         <nav className="flex flex-wrap gap-1" aria-label="Document insight categories">
           {kinds.map(value => <button key={value} type="button" aria-pressed={kind === value} className={`rounded border px-2 py-1 ${UI_THEME_TOKENS.panel.border} ${kind === value ? UI_THEME_TOKENS.button.activeBg : UI_THEME_TOKENS.button.hoverBg}`} onClick={() => setKind(value)}>{value.toUpperCase()} {signals?.[value].length ?? 0}</button>)}
@@ -34,6 +39,8 @@ export function DocumentInsights() {
         <ol className="max-h-56 space-y-2 overflow-auto" aria-label={`${kind.toUpperCase()} source matches`}>
           {matches.map(match => <li key={match.label} className={`rounded border p-2 ${UI_THEME_TOKENS.panel.border}`}>
             <p className="break-words font-medium">{match.label} · {match.count} {match.count === 1 ? 'occurrence' : 'occurrences'}</p>
+            <p>{explanations[kind]} · heuristic match</p>
+            <p className="break-words">{contexts[(match.lines[0] ?? 1) - 1]}</p>
             <nav className="flex flex-wrap gap-2 pt-1" aria-label={`${match.label} source locations`}>
               {match.lines.map(line => <button key={line} type="button" className="underline" onClick={() => {
                 if (!source || !jumpToDocumentInsight(source, line)) setStatus('Source changed. Choose a current match.')
@@ -43,6 +50,7 @@ export function DocumentInsights() {
           </li>)}
         </ol>
         <output role="status">{status}</output>
+        {open && source ? <React.Suspense fallback={<p role="status">Loading keyword context…</p>}><DocumentKeywordInsights source={source} /></React.Suspense> : null}
       </section>
     </details>
   )

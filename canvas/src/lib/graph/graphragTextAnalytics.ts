@@ -1,7 +1,7 @@
 import type { GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
 import type { TextEntity, TextTriple } from '@/lib/graph/textAnalysis'
 import { tokenizeForStats } from '@/lib/graph/statsUtils'
-import { NLTK_STOPWORDS_EN_SET } from '@/features/semantic-mode/keywordStopwords'
+import { KEYWORD_FUNCTION_WORDS } from '@/features/semantic-mode/keywordStopwords'
 import { computeConnectedComponents, computePageRank, computeHITS } from '@/features/semantic-mode/graphAlgorithms'
 import { computePpmi, deriveEdgeWidthFromStrength } from '@/features/semantic-mode/association'
 import { computeDbscanCommunities } from '@/features/semantic-mode/densityClustering'
@@ -267,7 +267,7 @@ export function applyGraphRagTextAnalytics(args: {
     const id = String(n.id || '')
     if (!id) continue
     const vec = new Map<string, number>()
-    const labelTokens = tokenizeForStats(String(n.label || ''), 3, NLTK_STOPWORDS_EN_SET)
+    const labelTokens = tokenizeForStats(String(n.label || ''), 3, KEYWORD_FUNCTION_WORDS)
     for (let t = 0; t < labelTokens.length; t += 1) {
       const tok = labelTokens[t]!
       vec.set(tok, (vec.get(tok) || 0) + 1)
@@ -279,7 +279,7 @@ export function applyGraphRagTextAnalytics(args: {
     const s = String(e.source || '')
     const t = String(e.target || '')
     if (!s || !t) continue
-    const edgeTokens = tokenizeForStats(String(e.label || ''), 3, NLTK_STOPWORDS_EN_SET)
+    const edgeTokens = tokenizeForStats(String(e.label || ''), 3, KEYWORD_FUNCTION_WORDS)
     for (let k = 0; k < edgeTokens.length; k += 1) {
       const tok = edgeTokens[k]!
       const sVec = vectorByNodeId.get(s) || new Map<string, number>()
@@ -328,7 +328,7 @@ export function applyGraphRagTextAnalytics(args: {
   args.nodes.forEach((n) => {
     const cid = communityByNodeId.get(String(n.id))
     if (cid == null) return
-    const toks = tokenizeForStats(String(n.label || ''), 3, NLTK_STOPWORDS_EN_SET)
+    const toks = tokenizeForStats(String(n.label || ''), 3, KEYWORD_FUNCTION_WORDS)
     const m = clusterTokenCounts.get(cid) || new Map<string, number>()
     toks.forEach(tok => m.set(tok, (m.get(tok) || 0) + 1))
     clusterTokenCounts.set(cid, m)
