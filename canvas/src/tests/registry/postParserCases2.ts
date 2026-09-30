@@ -1,6 +1,9 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_2: TestCaseTuple[] = [
+  ["canvas.semanticLayers.targets", "@/__tests__/canvasSemanticLayers2d.test", "testCanvasSemanticTargetsReuseActions"],
+  ["canvas.semanticLayers.nodeOrder", "@/__tests__/canvasSemanticLayers2d.test", "testCanvasNodesPaintLargerUnderneath"],
+  ["canvas.semanticLayers.mediaOrder", "@/__tests__/canvasSemanticLayers2d.test", "testCanvasMediaLayersRerankOnResize"],
   ["flow.widget.richMediaPanel.textMode.readEditSurfaceParity","@/__tests__/richMediaPanelTextModeRegression.test.tsx","testRichMediaPanelReadAndEditableTextReuseOneCardSurface"],
   ["graph.selectionZoom.edgeSelectionSubset","@/__tests__/selectionZoom.test","testSelectionZoomEdgeSelectionUsesEndpointsAndNeighbors"],
   ["graph.selectionZoom.noSelectionSubset","@/__tests__/selectionZoom.test","testSelectionZoomNoSelectionReturnsEmptySubset"],

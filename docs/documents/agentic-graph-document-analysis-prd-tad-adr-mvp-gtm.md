@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.20"
+version: "1.0.21"
 date: "2026-10-01"
 lang: "en-US"
-prd_revision: "1.0.20"
-tad_revision: "1.0.20"
-adr_revision: "1.0.20"
-mvp_revision: "1.0.20"
-gtm_revision: "1.0.20"
+prd_revision: "1.0.21"
+tad_revision: "1.0.21"
+adr_revision: "1.0.21"
+mvp_revision: "1.0.21"
+gtm_revision: "1.0.21"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,10 +20,12 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.20. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.21. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
+
+Canvas nodes, edge hit paths and cluster controls must expose individual names and keyboard activation to selection tooling. Shared media panels remain the media owner; covered SVG bodies must not duplicate their hit targets. Within an authored layer, larger nodes and media panels render beneath smaller peers.
 
 A reader needs to check why a term or relationship appears without sending a document to a service.
 Document insights exposes observed source matches, contexts and navigation. Keyword Mode preserves
@@ -107,6 +109,8 @@ dragging. Apply graph and panel geometry before the same paint, retaining readab
 existing selection, pin and resize controls. A settled canvas must do no continuous projection work.
 
 ## TAD
+
+Reuse existing SVG hit surfaces and dispatch keyboard activation through their established click handlers. Expose the scene as a named group; bind semantics at creation and presentation rebuilds. Reuse one size comparator for node ordering and the shared media layout loop, with stable identity ties and no polling or additional network work.
 
 Shared text utilities own normalization and segmentation. Use native `Intl.Segmenter` where available,
 with an original Unicode fallback that reports its policy. Browser/runtime language data may differ;
@@ -241,6 +245,8 @@ work through the shared flush contract. Retain the existing sizing bounds with o
 
 ## ADR
 
+Keep semantic SVG buttons and the existing RichMediaPanel rather than adding a second HTML graph renderer. Preserve authored node layer/group priority; use painted area before identity ties. Size-based media ranks update through the existing layout flush, preserving the previous motion repair.
+
 - Finder reveals a stable named copy tree; content hashes identify private revision backups only.
   Preserve old hash directories, share one save owner for files and folders, and reject local-edit
   conflicts before updating managed copies. No automatic migration or deletion of historical exports.
@@ -303,6 +309,8 @@ and a trailing animation frame can detach a panel from its node. Preserve the sh
 readability limits; do not add another renderer or a permanent animation loop.
 
 ## MVP
+
+D3 semantic-layer increment: six production modules, up to 12 KB production changes, no dependencies. Initial implementation budget 20 minutes plus validation. Verify named hit targets, keyboard/modifier routing, no duplicate covered media targets, descending area, resize reranking, and live browser hit tests. Thirteen focused checks passed, including the earlier media-motion checks. Live reload exposed individual node/edge buttons and all ten shared media panels; keyboard activation reached an individual node. Resize reranking and settled no-op writes are verified by behavioral tests. Full device/assistive-technology parity remains unproven.
 
 D3-media-motion increment: up to four production modules, under 8 KB source changes, no dependencies.
 Verify fractional pan, zoom, node and cluster movement, no-op frames and cleanup with synthetic inputs.
@@ -501,6 +509,8 @@ owner changes together; retain saved documents and discovery drafts. No producti
 claim is implied.
 
 ## GTM
+
+Selection tooling and keyboard users can identify individual canvas items while small overlapping media remain reachable. Validate on the current document before review delivery; no new service cost or demonstrated revenue claim.
 
 Initial user: a reader checking repeated themes and evidence in a local document. The near-built path
 reuses existing preview, graph and Dashboard controls. First value is a counted phrase with a source
