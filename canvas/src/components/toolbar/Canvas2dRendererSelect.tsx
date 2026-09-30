@@ -144,8 +144,8 @@ export function Canvas2dRendererSelect({
   const options = buildCanvasViewOptions(effectiveModel, rendererOptions)
   const triggerState = getCanvasViewTriggerState(effectiveModel, rendererOptions)
   const applyCanvasViewOption = React.useCallback((id: CanvasViewOptionId, baselineGuard = ensureBaselineUnlocked) => {
-    if (id === 'renderer:dashboard' || id.startsWith('agent-run:')) {
-      activateAgentRunWorkspace(id === 'renderer:dashboard' ? inspection?.view ?? 'tree' : id.slice('agent-run:'.length) as Extract<keyof typeof AGENT_RUN_CANVAS_VIEWS, string>); return
+    if (id.startsWith('agent-run:')) {
+      activateAgentRunWorkspace(id.slice('agent-run:'.length) as Extract<keyof typeof AGENT_RUN_CANVAS_VIEWS, string>); return
     }
     if (!baselineGuard()) return
     // Presentation controls configure the current Mission; only navigation leaves it.
@@ -223,7 +223,7 @@ export function Canvas2dRendererSelect({
     state,
   ])
   React.useEffect(() => registerCanvasViewControlHandler(optionId => {
-    if (optionId.startsWith('agent-run:') || optionId === 'renderer:dashboard') { applyCanvasViewOption(optionId); return }
+    if (optionId.startsWith('agent-run:')) { applyCanvasViewOption(optionId); return }
     const option = options.flatMap(parent => parent.children?.length ? parent.children : [parent])
       .find(candidate => candidate.id === optionId)
     if (!option || option.disabled || option.children?.length) {
