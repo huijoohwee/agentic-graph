@@ -16,6 +16,7 @@ import { excludeLegacyWorkspaceSourceEntries } from '@/features/workspace-fs/wor
 import { isAgenticGraphWorkspaceSeedsRootPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import {
   UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME,
+  UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME,
   UI_RESPONSIVE_DATA_VIEW_NARROW_MENU_PANEL_CLASSNAME,
   UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_LIST_CLASSNAME,
   UI_RESPONSIVE_MENU_ROW_CLASSNAME,
@@ -67,6 +68,9 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
   onCanvasEmbedStart?: (entry: WorkspaceEntry) => void
   onCanvasEmbedReady?: (entry: WorkspaceEntry, url: string) => void
   onShareCodeReady?: (detail: { sourceName: string; title: string; language: string; code: string }) => void
+  renderEntryLeading?: (entry: WorkspaceEntry) => React.ReactNode
+  alignActionColumns?: boolean
+  canOpenContextMenu?: (entry: WorkspaceEntry) => boolean
   renderFileRight?: (args: { entry: WorkspaceEntry; isActive: boolean }) => React.ReactNode
 }) {
   const {
@@ -88,6 +92,8 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     onCanvasEmbedReady,
     onShareCodeReady,
     renderFileRight,
+    renderEntryLeading,
+    alignActionColumns,
   } = props
   const panelTypography = usePanelTypography()
   const tree = React.useMemo(() => buildTree(entries), [entries])
@@ -200,11 +206,15 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const isActive = activePath === entry.path
     const source = sourcesByPath ? sourcesByPath[entry.path] : null
     const sourceUrl = source?.kind === 'url' ? normalizeImportUrlInput(source.url) : ''
+    const entryLeading = renderEntryLeading?.(entry)
+    const selectionFolder = isFolder && Boolean(entryLeading)
+    const fileRight = renderFileRight?.({ entry, isActive })
     const isWorkspaceSeedsAuthorityRoot = isAgenticGraphWorkspaceSeedsRootPath(entry.path)
     const selectEntry = () => isFolder ? onSelectFolder(entry.path) : onSelectFile(entry.path)
     const openContextMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
       event.preventDefault()
       event.stopPropagation()
+      if (props.canOpenContextMenu?.(entry) === false) return
       const pos = clampOverlayTopLeftFullyInViewport({
         pos: { left: event.clientX, top: event.clientY }, size: { width: 220, height: 260 },
         viewport: { width: window.innerWidth || document.documentElement.clientWidth || 1,
@@ -216,16 +226,17 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     return (
       <DirectoryTreeBranch key={entry.path}>
         <DirectoryTreeRow depth={depth} label={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}>
-          {isFolder
+          {entryLeading ? <span className="ml-1 inline-flex shrink-0">{entryLeading}</span> : isFolder
             ? <DirectoryTreeDisclosure name={entry.name} path={entry.path} expanded={isExpanded} onToggle={() => toggleExpanded(entry.path)} />
             : <DirectoryTreeFileButton name={entry.name} path={entry.path} selected={isActive} onSelect={selectEntry} onContextMenu={openContextMenu} />}
           <MarkdownFileTreeRowButton
-            ariaLabel={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}
+            ariaLabel={selectionFolder ? `${isExpanded ? 'Collapse' : 'Expand'} folder ${entry.name}` : isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}
             title={entry.path}
             indent={0}
             isActive={isActive}
+            ariaExpanded={selectionFolder ? isExpanded : undefined}
             textClassName={panelTypography.panelTextClass}
-            onClick={selectEntry}
+            onClick={selectionFolder ? () => toggleExpanded(entry.path) : selectEntry}
             onContextMenu={openContextMenu}
           >
             <span className="truncate">{entry.name || (isFolder ? 'folder' : 'file')}</span>
@@ -234,16 +245,22 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
                 className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-80`} />
             ) : null}
           </MarkdownFileTreeRowButton>
-          {sourceUrl ? (
-            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open source URL for ${entry.name}`}
-              title={sourceUrl}
-              className={`shrink-0 inline-flex h-5 w-5 items-center justify-center rounded ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing}`}>
-              <LinkIcon role="img" aria-label="Imported from URL" className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-70`} />
-            </a>
-          ) : null}
-          {renderFileRight ? (
-            <span className="shrink-0" onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
-              {renderFileRight({ entry, isActive })}
+          {sourceUrl || fileRight ? (
+            <span role="group" aria-label={`Actions for ${entry.name}`} data-source-file-actions
+              className="inline-flex shrink-0 items-center gap-0.5"
+              style={alignActionColumns ? { minWidth: 'calc(var(--kg-data-view-icon-action-sm-size, 1.75rem) * 4 + 0.375rem)' } : undefined}>
+              {sourceUrl ? (
+                <a href={sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open source URL for ${entry.name}`}
+                  title={sourceUrl}
+                  className={`shrink-0 inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing}`}>
+                  <LinkIcon role="img" aria-label="Imported from URL" className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-70`} />
+                </a>
+              ) : null}
+              {fileRight ? (
+                <span className="shrink-0" onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
+                  {fileRight}
+                </span>
+              ) : null}
             </span>
           ) : null}
         </DirectoryTreeRow>

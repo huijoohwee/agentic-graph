@@ -674,7 +674,7 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
           markdownViewerWidthMode={markdownViewerWidthMode}
         />
       ) : null}
-      <article
+      <article aria-label="Document content"
         className={
           contentClassName ||
           getMarkdownViewerWidthWrapperClassName(markdownViewerWidthMode || 'standard')

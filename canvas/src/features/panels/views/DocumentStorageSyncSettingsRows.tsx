@@ -3,7 +3,6 @@ import { readActiveAgenticGraphStorageWorkspaceId } from '@/features/source-file
 import { beginAgenticGraphStorageBrowserSignIn, readAgenticGraphStorageBrowserSession, type AgenticGraphStorageBrowserSessionState } from '@/lib/storage/agentic-graph-storage-browser-session'
 import { Cloud, CloudOff, FolderOpen, HardDrive, RefreshCw } from 'lucide-react'
 import { KeyTypeValueStaticRow } from 'grph-shared/react/keyTypeValueRow'
-import { DOCUMENT_REPOSITORY_DISPLAY_ROOTS } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
 import { requestMarkdownExplorerSourceFilesOpen } from '@/features/markdown/ui/useMarkdownExplorerSectionCollapseState'
 import { openMarkdownWorkspaceEditorPane } from '@/features/workspace-table/workspaceTableSsot'
@@ -32,17 +31,15 @@ import { buildSettingsRowAnchorId } from './settingsRowAnchor'
 
 const SEARCH_INDEX = [
   'document storage sync cloud online collaboration offline fallback',
-  'github agentic-graph docs huijoohwee docs workspace seeds',
   'pocketbase yjs cloudflare d1 indexeddb local mirror sync now',
   'source file management configure connection sign in upload download file folder directory',
 ].join(' ')
 
-export const DOCUMENT_STORAGE_SYNC_SETTINGS_ROW_COUNT = 6
+export const DOCUMENT_STORAGE_SYNC_SETTINGS_ROW_COUNT = 5
 
 const ROW_ANCHORS = {
   mode: buildSettingsRowAnchorId('document-storage-sync-row', 'mode'),
   status: buildSettingsRowAnchorId('document-storage-sync-row', 'status'),
-  roots: buildSettingsRowAnchorId('document-storage-sync-row', 'roots'),
   fallback: buildSettingsRowAnchorId('document-storage-sync-row', 'fallback'),
   actions: buildSettingsRowAnchorId('document-storage-sync-row', 'actions'),
 } as const
@@ -267,22 +264,6 @@ export function DocumentStorageSyncSettingsRows() {
               <ValuePill>Storage: {storageAvailable ? 'configured' : 'choose Online to configure'}</ValuePill>
               <ValuePill>Yjs room: {collaborationReady ? 'configured' : 'unavailable'}</ValuePill>
               <ValuePill>{lastStatus}</ValuePill>
-            </section>
-          )}
-          align="start"
-        />
-      </li>
-      <li>
-        <KeyTypeValueRow
-          id={ROW_ANCHORS.roots}
-          dataKgAnchor={ROW_ANCHORS.roots}
-          keyNode="GitHub document roots"
-          typeNode={<Cloud className="h-4 w-4" aria-hidden="true" />}
-          valueNode={(
-            <section className={VALUE_CLASS_NAME}>
-              <ValuePill>Product: {DOCUMENT_REPOSITORY_DISPLAY_ROOTS.agenticGraphDocs}</ValuePill>
-              <ValuePill>Workspace: {DOCUMENT_REPOSITORY_DISPLAY_ROOTS.workspaceDocs}</ValuePill>
-              <ValuePill>Seeds: {DOCUMENT_REPOSITORY_DISPLAY_ROOTS.workspaceSeeds}</ValuePill>
             </section>
           )}
           align="start"
