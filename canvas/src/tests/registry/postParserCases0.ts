@@ -10,7 +10,7 @@ import type { TestCaseTuple } from '../runner/testRunnerTypes'; export const TES
   ["webpage.htmlToArtifact.menuDiv.ogImage.noNoisyScripts","@/__tests__/webpageHtmlToMarkdownArtifact.test","testWebpageHtmlToMarkdownArtifactSupportsMenuDivAndOgImageWithoutNoisyScripts"],
   ["webpage.htmlToArtifact.syntheticContent.noDuplicateHeading.cardGrid.table","@/__tests__/webpageHtmlToMarkdownArtifact.test","testWebpageHtmlToMarkdownArtifactAvoidsSyntheticContentDuplicateAndRendersCardGridAsTable"],
   ["webpage.htmlToArtifact.linksListAndListItemLinks","@/__tests__/webpageHtmlToMarkdownArtifact.test","testWebpageHtmlToMarkdownArtifactRendersLinkListsAndListItemLinks"],
-  ["webpage.iframeSrcdoc.shrinksLargeHtml","@/__tests__/webpageIframeSrcdocLargeHtml.test","testWebpageHtmlSrcdocShrinksLargeHtmlInsteadOfFailing"],
+  ["webpage.iframeSrcdoc.boundsLargeHtml","@/__tests__/webpageIframeSrcdocLargeHtml.test","testWebpageHtmlSrcdocBoundsLargeHtmlBeforeSanitizing"],
   ["richMedia.panel.staticPreview.rendersImageVideoAndIframe","@/__tests__/staticRichMediaPanelPreview.test","testStaticRichMediaPanelPreviewRendersImageVideoAndIframe"],
   ["richMedia.panel.nonDirectIframeRendersSnapshot","@/__tests__/richMediaPanelSnapshotFallback.test","testRichMediaPanelRendersSnapshotForNonDirectIframe"],
   ["richMedia.panel.bodyClickOpensUrl","@/__tests__/richMediaPanelSnapshotFallback.test","testRichMediaPanelClickToOpenUsesBodyNotHeader"],

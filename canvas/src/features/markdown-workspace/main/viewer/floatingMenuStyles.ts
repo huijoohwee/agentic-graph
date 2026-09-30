@@ -20,3 +20,5 @@ export const FLOATING_OVERLAY_TOOLBAR_CLASSNAME = [FLOATING_MENU_RIGHT_CLASSNAME
 export const FLOATING_POPOVER_ACTION_BUTTON_CLASSNAME = ['kg-toolbar-btn rounded cursor-pointer', UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME, 'justify-center', UI_THEME_TOKENS.button.square, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg].join(' ')
 export const FLOATING_POPOVER_PANEL_CLASSNAME = ['kg-data-view-floating-menu absolute rounded border shadow-sm z-20 m-0 p-2', UI_RESPONSIVE_DATA_VIEW_MENU_PANEL_CLASSNAME, UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')
 export const FLOATING_POPOVER_INPUT_CLASSNAME = ['w-full rounded border px-2 py-1.5 text-xs outline-none', UI_THEME_TOKENS.input.bg, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.text.primary].join(' ')
+
+export const FLOATING_ICON_TOOLBAR_PANEL_CLASSNAME = ['rounded border shadow-sm m-0 p-1 text-xs', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')
