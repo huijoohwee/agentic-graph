@@ -178,6 +178,7 @@ export const crawlInternalUrls = async (args: {
 
 export const collectSitemapUrls = async (rootUrl: string, sitemapUrl: string, opts: {
   timeoutMs: number; maxBytes: number; maxSitemaps: number; discover?: boolean; maxUrls?: number; signal?: AbortSignal
+  readText?: typeof fetchTextWithLimit
 }): Promise<{ ok: true; urls: string[]; limited: boolean } | { ok: false; error: string }> => {
   const origin = new URL(rootUrl).origin
   const maxUrls = Math.max(1, Math.min(2_000, opts.maxUrls ?? 2_000))
@@ -203,7 +204,7 @@ export const collectSitemapUrls = async (rootUrl: string, sitemapUrl: string, op
   }
   const read = async (url: string, maxBytes = opts.maxBytes) => {
     requests += 1
-    const result = await fetchTextWithLimit(url, { timeoutMs: opts.timeoutMs, maxBytes: Math.min(maxBytes, bytesLeft),
+    const result = await (opts.readText || fetchTextWithLimit)(url, { timeoutMs: opts.timeoutMs, maxBytes: Math.min(maxBytes, bytesLeft),
       signal, allowedOrigin: origin, onBytes: bytes => { bytesLeft -= bytes }, accept: 'application/xml,text/xml,text/plain;q=0.9,*/*;q=0.5' })
     opts.signal?.throwIfAborted()
     return result

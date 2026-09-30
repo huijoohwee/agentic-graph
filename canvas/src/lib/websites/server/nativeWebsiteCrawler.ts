@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { resolveCrawlerTarget } from './crawlerNetworkPolicy'
+import { resolveCrawlerTarget, type CrawlerResponseMetadata } from './crawlerNetworkPolicy'
 export { isPrivateCrawlerAddress } from './crawlerNetworkPolicy'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -33,6 +33,7 @@ export type NativeWebsiteCapture = {
   html: string
   links: string[]
   linksLimited?: boolean
+  discoveryResponse?: CrawlerResponseMetadata
   downloads: WebsiteImportDownloadArtifact[]
 }
 
@@ -187,6 +188,7 @@ export class NativeWebsiteCrawler {
   private readonly navigationTimeoutMs: number
   private readonly maxHtmlChars: number
   private readonly allowPrivateNetworks: boolean
+  private closed = false
 
   constructor(private readonly options: NativeWebsiteCrawlerOptions) {
     const supplied = options.proxyUrls || readServerProxyUrls()
@@ -208,17 +210,18 @@ export class NativeWebsiteCrawler {
     }
   }
 
-  private async isUrlAllowed(raw: string): Promise<boolean> {
-    try { await resolveCrawlerTarget(raw, this.allowPrivateNetworks); return true }
+  private async isUrlAllowed(raw: string, signal?: AbortSignal): Promise<boolean> {
+    try { await resolveCrawlerTarget(raw, this.allowPrivateNetworks, signal); return true }
     catch { return false }
   }
 
   private async launchBrowser(poolIndex: number): Promise<Browser> {
     const proxy = this.proxyEndpoints[poolIndex]
-    const launchOptions = { headless: true as const, ...(proxy ? { proxy } : {}) }
+    const launchOptions = { headless: true as const, timeout: this.navigationTimeoutMs, ...(proxy ? { proxy } : {}) }
     try {
       return await chromium.launch(launchOptions)
     } catch (firstError) {
+      if (this.closed) throw firstError
       try {
         return await chromium.launch({ ...launchOptions, channel: 'chrome' })
       } catch {
@@ -228,6 +231,7 @@ export class NativeWebsiteCrawler {
   }
 
   private async browserFor(sequence: number): Promise<Browser> {
+    if (this.closed) throw new Error('Crawler is closed')
     const poolSize = Math.max(1, this.proxyEndpoints.length)
     const index = Math.abs(sequence) % poolSize
     let browser = this.browsers.get(index)
@@ -235,13 +239,20 @@ export class NativeWebsiteCrawler {
       browser = this.launchBrowser(index)
       this.browsers.set(index, browser)
     }
-    return await browser
+    const result = await browser
+    if (this.closed) { await result.close(); throw new Error('Crawler is closed') }
+    return result
   }
 
-  private async configureContext(context: BrowserContext): Promise<void> {
+  private async configureContext(context: BrowserContext, discovery?: { limited: boolean; requests: number }, signal?: AbortSignal): Promise<void> {
     await context.route('**/*', async route => {
       const url = route.request().url()
-      if (/^(?:data|blob|about):/i.test(url) || await this.isUrlAllowed(url)) await route.continue()
+      if (signal?.aborted) { await route.abort('aborted'); return }
+      if (discovery) {
+        if (['image', 'media', 'font'].includes(route.request().resourceType())) { await route.abort('blockedbyclient'); return }
+        if (++discovery.requests > 128) { discovery.limited = true; await route.abort('blockedbyclient'); return }
+      }
+      if (/^(?:data|blob|about):/i.test(url) || await this.isUrlAllowed(url, signal)) await route.continue()
       else await route.abort('blockedbyclient')
     })
   }
@@ -305,15 +316,47 @@ export class NativeWebsiteCrawler {
     }
   }
 
-  async capture(args: { url: string; nodeDirAbs: string; sequence: number; discoveryOnly?: boolean }): Promise<NativeWebsiteCapture> {
-    if (!await this.isUrlAllowed(args.url)) throw new Error('Crawler target is not a public HTTP(S) URL')
+  async capture(args: { url: string; nodeDirAbs: string; sequence: number; discoveryOnly?: boolean; signal?: AbortSignal; onTransferBytes?: (bytes: number) => void }): Promise<NativeWebsiteCapture> {
+    args.signal?.throwIfAborted()
+    if (!await this.isUrlAllowed(args.url, args.signal)) throw new Error('Crawler target is not a public HTTP(S) URL')
     const browser = await this.browserFor(args.sequence)
+    args.signal?.throwIfAborted()
     const context = await browser.newContext({ acceptDownloads: true, serviceWorkers: 'block' })
-    await this.configureContext(context)
-    const page = await context.newPage()
-    page.setDefaultNavigationTimeout(this.navigationTimeoutMs)
+    const cancel = () => { void context.close().catch(() => void 0) }
+    args.signal?.addEventListener('abort', cancel, { once: true })
+    const discovery = args.discoveryOnly ? { limited: false, requests: 0 } : undefined
+    let resourceError: Error | undefined
     try {
-      const head = await this.requestWithSafeRedirects({ context, url: args.url, method: 'head' }).catch(() => null)
+      args.signal?.throwIfAborted()
+      await this.configureContext(context, discovery, args.signal)
+      const page = await context.newPage()
+      page.setDefaultNavigationTimeout(this.navigationTimeoutMs)
+      if (args.discoveryOnly) {
+        const session = await context.newCDPSession(page)
+        let totalBytes = 0, decodedBytes = 0
+        const exhaust = () => { resourceError = new Error('Website discovery exceeded its 32 MiB browser response budget'); cancel() }
+        const transferred = new Map<string, number>()
+        const record = (requestId: string, bytes: number, complete = false) => {
+          const previous = transferred.get(requestId) || 0
+          const delta = Math.max(0, complete ? bytes - previous : bytes)
+          if (complete) transferred.delete(requestId); else transferred.set(requestId, previous + delta)
+          totalBytes += delta; args.onTransferBytes?.(delta)
+          if (totalBytes > 32 * 1024 * 1024) exhaust()
+        }
+        session.on('Network.responseReceived', event => {
+          const length = Object.entries(event.response.headers).find(([name]) => name.toLowerCase() === 'content-length')?.[1]
+          if (Number(length) > 32 * 1024 * 1024) exhaust()
+        })
+        session.on('Network.dataReceived', event => {
+          decodedBytes += event.dataLength
+          record(event.requestId, event.encodedDataLength)
+          if (decodedBytes > 32 * 1024 * 1024) exhaust()
+        })
+        session.on('Network.loadingFinished', event => record(event.requestId, event.encodedDataLength, true))
+        session.on('Network.loadingFailed', event => transferred.delete(event.requestId))
+        await session.send('Network.enable')
+      }
+      const head = args.discoveryOnly ? null : await this.requestWithSafeRedirects({ context, url: args.url, method: 'head' }).catch(() => null)
       const headType = String(head?.response.headers()['content-type'] || '').toLowerCase()
       const headDisposition = String(head?.response.headers()['content-disposition'] || '').toLowerCase()
       const isDirectDownload = Boolean(head?.response.ok() && ((headType && !headType.includes('text/html') && !headType.includes('application/xhtml')) || headDisposition.includes('attachment')))
@@ -343,7 +386,7 @@ export class NativeWebsiteCrawler {
         await page.waitForTimeout(80)
       }
       const finalUrl = page.url() || args.url
-      if (!await this.isUrlAllowed(finalUrl)) throw new Error('Crawler redirect target is not allowed')
+      if (!await this.isUrlAllowed(finalUrl, args.signal)) throw new Error('Crawler redirect target is not allowed')
       const contentType = String(response.headers()['content-type'] || '').toLowerCase()
       const title = String(await page.title().catch(() => '')).trim()
       // Read explicit navigation targets, including scripted cards exposing a URL.
@@ -371,7 +414,15 @@ export class NativeWebsiteCrawler {
       const links = discovered.links
       const downloads: WebsiteImportDownloadArtifact[] = []
 
-      if (args.discoveryOnly) return { finalUrl, title, html: '', links, linksLimited: discovered.limited, downloads: [] }
+      if (args.discoveryOnly) {
+        args.signal?.throwIfAborted()
+        const headers = await response.allHeaders()
+        return { finalUrl, title, html: '', links, linksLimited: discovered.limited || discovery?.limited, downloads: [],
+          discoveryResponse: { status: response.status(), cacheControl: headers['cache-control'], vary: headers.vary,
+            expires: headers.expires, date: headers.date,
+            age: headers.age, hasCookies: Boolean(headers['set-cookie']) || (await context.cookies()).length > 0,
+            redirected: finalUrl !== args.url } }
+      }
 
       if (!contentType.includes('text/html') && !contentType.includes('application/xhtml')) {
         const artifact = await this.persistDownload({ context, url: finalUrl, nodeDirAbs: args.nodeDirAbs })
@@ -400,12 +451,17 @@ export class NativeWebsiteCrawler {
         }
       }
       return { finalUrl, title, html, links, downloads }
+    } catch (error) {
+      args.signal?.throwIfAborted()
+      throw resourceError || error
     } finally {
+      args.signal?.removeEventListener('abort', cancel)
       await context.close().catch(() => void 0)
     }
   }
 
   async close(): Promise<void> {
+    this.closed = true
     const browsers = await Promise.allSettled(this.browsers.values())
     await Promise.all(browsers.map(result => result.status === 'fulfilled' ? result.value.close().catch(() => void 0) : Promise.resolve()))
     this.browsers.clear()

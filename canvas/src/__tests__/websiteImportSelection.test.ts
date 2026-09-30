@@ -5,19 +5,228 @@ import path from 'node:path'
 import { tmpdir } from 'node:os'
 import { createServer, type Server } from 'node:http'
 import { gzipSync } from 'node:zlib'
-import { validateSelectedWebsiteUrls } from '@/lib/websites/server/websiteImportDiscovery'
+import { handleWebsiteDiscovery, validateSelectedWebsiteUrls } from '@/lib/websites/server/websiteImportDiscovery'
 import { buildWebsiteSelectionTree, websiteFolderUrls } from '@/lib/websites/websiteImportSelection'
 import { NativeWebsiteCrawler } from '@/lib/websites/server/nativeWebsiteCrawler'
 import { createWebsiteImportHandler } from '@/lib/websites/server/websiteImportServer'
 import type { WebsiteImportManifestV1 } from '@/lib/websites/server/websiteImportTypes'
 import { collectSitemapUrls } from '@/lib/websites/server/websiteImportServerHelpers'
 import { extractXmlLocs, fetchTextWithLimit } from '@/lib/websites/server/websiteImportCore'
+import { WebsiteDiscoveryCache, newDiscoveryMetrics } from '@/lib/websites/server/websiteDiscoveryCache'
 
 const listen = async (server: Server) => {
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
   return `http://127.0.0.1:${(server.address() as { port: number }).port}`
 }
 const close = (server: Server) => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+
+test('discovery cache revalidates changed metadata, respects response policy, and bounds retention', async () => {
+  const previous = process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
+  process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = '1'
+  let now = 0, version = 1, requests = 0
+  let policy = 'max-age=1', fail = false, cookie = false, vary = '', modified = false
+  const date = 'Tue, 01 Sep 2026 00:00:00 GMT'
+  const server = createServer((req, res) => {
+    requests++
+    if (fail) { res.writeHead(503); res.end(); return }
+    res.setHeader('Cache-Control', policy)
+    if (cookie) res.setHeader('Set-Cookie', 'session=example')
+    if (vary) res.setHeader('Vary', vary)
+    if (modified) res.setHeader('Last-Modified', date); else res.setHeader('ETag', `"${version}"`)
+    if (req.headers['if-none-match'] === `"${version}"` || (modified && req.headers['if-modified-since'] === date)) { res.writeHead(304); res.end(); return }
+    res.end(`<urlset><url><loc>/catalog/page-${version}</loc></url></urlset>`)
+  })
+  const base = await listen(server)
+  const cache = new WebsiteDiscoveryCache(() => now, 2048, 2)
+  const options = { timeoutMs: 1000, maxBytes: 1024, allowedOrigin: base }
+  const metrics = newDiscoveryMetrics()
+  try {
+    const first = await cache.read(base, options, metrics)
+    assert.ok(first.ok)
+    assert.deepEqual(await cache.read(base, options, metrics), first)
+    assert.equal(requests, 1); assert.equal(metrics.cacheHits, 1)
+    const bytes = metrics.metadataTransferBytes
+    now = 1001
+    assert.deepEqual(await cache.read(base, options, metrics), first)
+    assert.equal(metrics.revalidated, 1); assert.equal(metrics.metadataTransferBytes, bytes)
+    version++; now += 1001
+    const changed = await cache.read(base, options, metrics)
+    assert.ok(changed.ok); assert.match(changed.text, /page-2/)
+    now += 1001; fail = true
+    assert.deepEqual(await cache.read(base, options, metrics), { ok: false, error: 'HTTP 503' }, 'expired cache must not disguise an upstream failure')
+    fail = false
+    assert.equal((await cache.read(base, { ...options, maxBytes: 8 }, metrics)).ok, false, 'cached bodies obey the caller byte ceiling')
+    modified = true; policy = 'no-cache'
+    await cache.read(base + '/modified', options, metrics)
+    const before = metrics.revalidated
+    await cache.read(base + '/modified', options, metrics)
+    assert.equal(metrics.revalidated, before + 1, 'Last-Modified works without ETag')
+    for (const excluded of ['no-store', 'private', 'cookie', 'vary']) {
+      policy = ['no-store', 'private'].includes(excluded) ? excluded : 'max-age=60'
+      cookie = excluded === 'cookie'; vary = excluded === 'vary' ? 'Cookie' : ''
+      const count = requests
+      await cache.read(base + '/' + excluded, options, metrics)
+      await cache.read(base + '/' + excluded, options, metrics)
+      assert.equal(requests - count, 2, excluded)
+    }
+    cookie = false; vary = ''; modified = false; policy = 'max-age=60'
+    for (let index = 0; index < 4; index++) await cache.read(base + '/entry-' + index, options, metrics)
+    assert.ok(cache.usage.bytes <= 2048); assert.equal(cache.usage.entries, 2)
+    const retained = requests
+    await cache.read(base + '/entry-0', options, metrics)
+    assert.equal(requests, retained + 1, 'old entries are evicted')
+    now += 24 * 60 * 60_000 + 1
+    const revalidations = metrics.revalidated
+    await cache.read(base + '/entry-0', options, metrics)
+    assert.equal(metrics.revalidated, revalidations, 'expired validators are discarded')
+    const controller = new AbortController(); controller.abort()
+    const usage = cache.usage
+    await assert.rejects(cache.read(base, { ...options, signal: controller.signal }, metrics), /abort/i)
+    assert.deepEqual(cache.usage, usage)
+    delete process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
+    assert.equal((await cache.read(base + '/entry-0', options, metrics)).ok, false, 'public policy cannot reuse private-development cache entries')
+  } finally {
+    await close(server)
+    if (previous === undefined) delete process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
+    else process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = previous
+  }
+})
+
+test('rendered discovery cache expires without sliding freshness and cannot retain oversized or partial captures', () => {
+  let now = 0
+  const cache = new WebsiteDiscoveryCache(() => now, 2048, 2)
+  const capture = { finalUrl: 'https://example.test/', title: 'Catalog', html: 'not retained', links: ['https://example.test/a'], downloads: [],
+    discoveryResponse: { status: 200, hasCookies: false, redirected: false } }
+  cache.setRendered(capture.finalUrl, capture)
+  now = 59_999
+  const warm = cache.getRendered(capture.finalUrl)!
+  assert.equal(warm.ageMs, 59_999); assert.equal(warm.capture.html, '')
+  warm.capture.links.push('https://example.test/mutation')
+  assert.equal(cache.getRendered(capture.finalUrl)!.capture.links.length, 1)
+  now = 60_000
+  assert.equal(cache.getRendered(capture.finalUrl), undefined)
+  cache.setRendered(capture.finalUrl, { ...capture, linksLimited: true })
+  assert.equal(cache.getRendered(capture.finalUrl), undefined)
+  cache.setRendered(capture.finalUrl, { ...capture, links: ['x'.repeat(3000)] })
+  assert.equal(cache.usage.bytes, 0)
+  cache.setRendered(capture.finalUrl, { ...capture, discoveryResponse: { ...capture.discoveryResponse, cacheControl: 'no-cache' } })
+  assert.equal(cache.getRendered(capture.finalUrl), undefined)
+  cache.setRendered(capture.finalUrl, { ...capture, discoveryResponse: { ...capture.discoveryResponse, expires: 'Tue, 01 Sep 2026 00:00:00 GMT', date: 'Tue, 01 Sep 2026 00:01:00 GMT' } })
+  assert.equal(cache.getRendered(capture.finalUrl), undefined, 'expired HTTP freshness cannot receive a default TTL')
+})
+
+test('cold and warm endpoint discovery preserves inventory while avoiding browser and media work', async t => {
+  const previous = process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
+  process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = '1'
+  const requested: string[] = []
+  const source = createServer((req, res) => {
+    requested.push(req.url || '')
+    if (req.url === '/catalog/') {
+      res.setHeader('Content-Type', 'text/html')
+      res.end('<style>@font-face{font-family:test;src:url(/font.woff2)}body{font-family:test}</style><img src="/picture.png"><video autoplay src="/movie.mp4"></video><script>document.write(\'<a href="/catalog/scripted">Scripted</a>\')</script>'); return
+    }
+    if (req.url === '/robots.txt') { res.end('Sitemap: /catalog/sitemap.xml'); return }
+    if (req.url === '/catalog/sitemap.xml') { res.end('<urlset>' + Array.from({ length: 100 }, (_, i) => `<url><loc>/catalog/page-${i}</loc></url>`).join('') + '</urlset>'); return }
+    res.writeHead(404); res.end()
+  })
+  const sourceBase = await listen(source)
+  const handler = createWebsiteImportHandler({ repoRoot: tmpdir() })
+  const api = createServer((req, res) => { void handler(req, res, () => { res.statusCode = 404; res.end() }) })
+  const base = await listen(api)
+  const refresh = async () => {
+    const result = await fetch(base + '/__website_import/discover', { method: 'POST', body: JSON.stringify({ rootUrl: sourceBase + '/catalog/', url: sourceBase + '/catalog/' }) })
+    assert.equal(result.status, 200)
+    return result.json()
+  }
+  try {
+    const cold = await refresh(), warm = await refresh()
+    assert.deepEqual(warm.pages, cold.pages); assert.equal(cold.pages.length, 102)
+    assert.equal(cold.metrics.browserLaunches, 1); assert.equal(warm.metrics.browserLaunches, 0)
+    assert.ok(warm.metrics.cacheHits >= 3)
+    assert.equal(warm.metrics.browserTransferBytes + warm.metrics.metadataTransferBytes, 0)
+    assert.ok(cold.metrics.browserTransferBytes + cold.metrics.metadataTransferBytes > 0)
+    assert.ok(warm.metrics.elapsedMs < cold.metrics.elapsedMs)
+    assert.ok(!requested.some(url => /\.(png|woff2|mp4)$/.test(url)), 'discovery blocks media while retaining script navigation')
+    t.diagnostic(JSON.stringify({ cold: cold.metrics, warm: warm.metrics, nodePeakRssKiB: process.resourceUsage().maxRSS, memoryScope: 'Node test process; browser processes excluded' }))
+  } finally {
+    await close(api); await close(source)
+    if (previous === undefined) delete process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
+    else process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = previous
+  }
+})
+
+test('overlapping discovery is rejected and client cancellation releases its admission', async () => {
+  const previous = process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
+  process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = '1'
+  let started!: () => void
+  const navigating = new Promise<void>(resolve => { started = resolve })
+  const source = createServer((_req, _res) => started())
+  const sourceBase = await listen(source)
+  const handler = createWebsiteImportHandler({ repoRoot: tmpdir() })
+  const api = createServer((req, res) => { void handler(req, res, () => { res.statusCode = 404; res.end() }) })
+  const base = await listen(api)
+  const controller = new AbortController()
+  const refresh = (signal?: AbortSignal) => fetch(base + '/__website_import/discover', { method: 'POST', signal,
+    body: JSON.stringify({ rootUrl: sourceBase, url: sourceBase }) })
+  try {
+    const first = refresh(controller.signal)
+    const rejected = assert.rejects(first, /abort/i)
+    await navigating
+    assert.equal((await refresh()).status, 429)
+    controller.abort(); await rejected
+    // Wait for the closed browser to release its sole admission, then prove a new request enters.
+    source.removeAllListeners('request'); source.on('request', (_req, res) => { res.writeHead(503); res.end() })
+    let status = 429
+    for (let attempt = 0; attempt < 50 && status === 429; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 20))
+      status = (await refresh()).status
+    }
+    assert.equal(status, 400, 'a later request reaches the upstream rather than remaining permanently busy')
+  } finally {
+    controller.abort(); source.closeAllConnections(); await close(api); await close(source)
+    if (previous === undefined) delete process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
+    else process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = previous
+  }
+})
+
+test('the shared discovery deadline terminates upstream work and returns a bounded failure', async () => {
+  const previous = process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
+  process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = '1'
+  const source = createServer(() => {})
+  const sourceBase = await listen(source)
+  const api = createServer((req, res) => { void handleWebsiteDiscovery(req, res, 100) })
+  const base = await listen(api)
+  try {
+    const began = performance.now()
+    const response = await fetch(base, { method: 'POST', body: JSON.stringify({ rootUrl: sourceBase, url: sourceBase }) })
+    assert.equal(response.status, 504)
+    assert.match((await response.json()).error, /100ms deadline/)
+    assert.ok(performance.now() - began < 5000, 'deadline includes browser startup with bounded shutdown allowance')
+  } finally {
+    source.closeAllConnections(); await close(api); await close(source)
+    if (previous === undefined) delete process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
+    else process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = previous
+  }
+})
+
+test('discovery rejects oversized browser responses before retaining them and marks request-limited navigation partial', async () => {
+  const source = createServer((req, res) => {
+    res.setHeader('Content-Type', 'text/html')
+    if (req.url === '/large') { res.setHeader('Content-Length', 33 * 1024 * 1024); res.write('<html>'); return }
+    if (req.url === '/many') {
+      res.end('<script>Promise.all(Array.from({length:140},(_,i)=>fetch("/request-"+i).catch(()=>{}))).then(()=>document.body.dataset.done="1")</script><a href="/kept">Kept</a>'); return
+    }
+    res.end('ok')
+  })
+  const base = await listen(source)
+  const crawler = new NativeWebsiteCrawler({ concurrency: 1, proxyRotation: false, downloadAssets: false, maxDownloads: 0, maxDownloadBytes: 0, allowPrivateNetworks: true })
+  try {
+    await assert.rejects(crawler.capture({ url: base + '/large', nodeDirAbs: '', sequence: 0, discoveryOnly: true }), /32 MiB browser response budget/)
+    const result = await crawler.capture({ url: base + '/many', nodeDirAbs: '', sequence: 0, discoveryOnly: true })
+    assert.equal(result.linksLimited, true)
+    assert.ok(result.links.includes(base + '/kept'))
+  } finally { await crawler.close(); source.closeAllConnections(); await close(source) }
+})
 
 test('page selection is explicit, bounded and constrained to the source scope', () => {
   const root = 'https://example.test/library/'

@@ -58,15 +58,25 @@ export async function resolveCrawlerTarget(raw: string, allowPrivateNetworks = f
   return { url, address: addresses[0].address, family: addresses[0].family }
 }
 
-export async function fetchCrawlerTextWithLimit(raw: string, options: { timeoutMs: number; maxBytes: number; accept?: string; signal?: AbortSignal; allowedOrigin?: string; onBytes?: (bytes: number) => void }): Promise<
-  { ok: true; text: string } | { ok: false; error: string }
-> {
+export type CrawlerResponseMetadata = {
+  status: number; etag?: string; lastModified?: string; cacheControl?: string; vary?: string; age?: string
+  expires?: string; date?: string
+  hasCookies: boolean; redirected: boolean
+}
+export type CrawlerTextOptions = {
+  timeoutMs: number; maxBytes: number; accept?: string; signal?: AbortSignal; allowedOrigin?: string
+  onBytes?: (bytes: number) => void; onTransferBytes?: (bytes: number) => void
+  cache?: { etag?: string; lastModified?: string }
+}
+export type CrawlerTextResult = { ok: true; text: string; response?: CrawlerResponseMetadata } | { ok: false; error: string }
+
+export async function fetchCrawlerTextWithLimit(raw: string, options: CrawlerTextOptions): Promise<CrawlerTextResult> {
   const controller = new AbortController()
   const cancel = () => controller.abort(options.signal?.reason)
   options.signal?.addEventListener('abort', cancel, { once: true })
   if (options.signal?.aborted) cancel()
   const timer = setTimeout(() => controller.abort(), options.timeoutMs)
-  let bytes = 0
+  let bytes = 0, transferBytes = 0
   try {
     let current = raw
     for (let hop = 0; hop <= 5; hop += 1) {
@@ -74,15 +84,26 @@ export async function fetchCrawlerTextWithLimit(raw: string, options: { timeoutM
       if (options.allowedOrigin && new URL(current).origin !== options.allowedOrigin) throw new Error('Crawler redirect left the source origin')
       const target = await resolveCrawlerTarget(current, process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS === '1', controller.signal)
       controller.signal.throwIfAborted()
-      const result = await new Promise<{ text: string; location?: string }>((resolve, reject) => {
+      const result = await new Promise<{ text: string; location?: string; response?: CrawlerResponseMetadata }>((resolve, reject) => {
         // Pin the validated address at connection time; retain the original Host/SNI.
         const request = (target.url.protocol === 'https:' ? https : http).get(target.url, {
           signal: controller.signal,
           family: target.family,
           lookup: (_host, _options, callback) => callback(null, target.address, target.family),
-          headers: { 'User-Agent': 'Mozilla/5.0', Accept: options.accept || '*/*' },
+          headers: { 'User-Agent': 'Mozilla/5.0', Accept: options.accept || '*/*',
+            ...(hop === 0 && options.cache?.etag ? { 'If-None-Match': options.cache.etag } : {}),
+            ...(hop === 0 && !options.cache?.etag && options.cache?.lastModified ? { 'If-Modified-Since': options.cache.lastModified } : {}),
+          },
         }, response => {
           const status = response.statusCode || 0
+          const metadata: CrawlerResponseMetadata = { status, etag: response.headers.etag,
+            lastModified: response.headers['last-modified'], cacheControl: response.headers['cache-control'],
+            vary: response.headers.vary, age: response.headers.age,
+            expires: response.headers.expires, date: response.headers.date,
+            hasCookies: Boolean(response.headers['set-cookie']), redirected: hop > 0 }
+          if (status === 304 && options.cache && hop === 0 && (options.cache.etag || options.cache.lastModified)) {
+            resolve({ text: '', response: metadata }); response.destroy(); return
+          }
           if (status >= 300 && status < 400 && response.headers.location) {
             try { resolve({ text: '', location: new URL(response.headers.location, target.url).toString() }) }
             catch (error) { reject(error) }
@@ -99,6 +120,7 @@ export async function fetchCrawlerTextWithLimit(raw: string, options: { timeoutM
           response.on('data', (chunk: Buffer) => {
             total += chunk.length
             bytes += chunk.length
+            transferBytes += chunk.length
             if (total > options.maxBytes) {
               reject(new Error('Upstream response too large'))
               response.destroy()
@@ -111,7 +133,7 @@ export async function fetchCrawlerTextWithLimit(raw: string, options: { timeoutM
                 body = gunzipSync(body, { maxOutputLength: options.maxBytes })
                 bytes += Math.max(0, body.length - total)
               }
-              resolve({ text: body.toString('utf8') })
+              resolve({ text: body.toString('utf8'), ...(options.cache ? { response: metadata } : {}) })
             } catch (error) { bytes = Math.max(bytes, options.maxBytes); reject(error) }
           })
           response.on('error', reject)
@@ -119,11 +141,14 @@ export async function fetchCrawlerTextWithLimit(raw: string, options: { timeoutM
         })
         request.on('error', reject)
       })
-      if (!result.location) return { ok: true, text: result.text }
+      if (!result.location) return { ok: true, text: result.text, ...(result.response ? { response: result.response } : {}) }
       current = result.location
     }
     return { ok: false, error: 'Crawler redirect limit exceeded' }
   } catch (error) {
     return { ok: false, error: controller.signal.aborted ? (options.signal?.aborted ? 'Request cancelled' : 'Request timed out') : String((error as Error).message || error) }
-  } finally { clearTimeout(timer); options.signal?.removeEventListener('abort', cancel); options.onBytes?.(bytes) }
+  } finally {
+    clearTimeout(timer); options.signal?.removeEventListener('abort', cancel)
+    options.onBytes?.(bytes); options.onTransferBytes?.(transferBytes)
+  }
 }
