@@ -101,6 +101,10 @@ async function openDashboard(expectRuntime = true) {
   returnView = await page.evaluate(async () => { const s = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [s.workspaceViewMode, s.workspaceCanvasPaneOpen] })
   await page.getByRole('button', { name: /^Canvas View Mode:/ }).click()
   await page.getByRole('button', { name: '2D Renderer: Dashboard', exact: true }).click()
+  await page.locator('[data-kg-dashboard-source="authored"]').waitFor({ state: 'visible', timeout: 60000 })
+  await page.evaluate(async () => {
+    (await import('/src/lib/canvas/canvasViewControlRuntime.ts')).executeCanvasViewControl({ optionId: 'agent-run:tree' })
+  })
   if (expectRuntime) await waitText(mission, '2 retained matches')
   assert.equal(await page.locator('[data-renderer="dashboard"]').count(), 1)
   if (expectRuntime) assert.ok(await mission.locator('[aria-label="Agent runs"] table').count() === 1)
