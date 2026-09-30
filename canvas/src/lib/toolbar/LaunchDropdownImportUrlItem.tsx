@@ -18,7 +18,6 @@ import { resolveVideoDownloadEndpoint } from '@/lib/video-download/videoDownload
 import { activateDesignEditorSurface } from '@/features/design/designEditorLaunchState'
 import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
 import { VideoAgentValidationImportControls } from '@/features/video-agent/VideoAgentValidationImportControls'
-import { buildAutoWebsiteImportOptions } from './importUrlWebsiteMode'
 import {
   DESIGN_IMPORT_URL_RENDERER_SELECTION,
   ImportUrlRendererSelect,
@@ -252,13 +251,8 @@ export function LaunchDropdownImportUrlItem(props: {
       if (!nextUrl) return
       onClose()
       try {
-        const { chooseWebsiteImportPages } = await import('@/features/panels/websiteImportSelectionSession')
-        const selectedUrls = await chooseWebsiteImportPages(nextUrl)
-        if (!selectedUrls?.length) return
-        await targetSkillsCommandsCommand(NATIVE_CRAWLER_COMMAND)
-        const importWebsite = getMarkdownWorkspaceActionBridge().importWebsite
-          ?? (await import('@/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction')).importWebsiteViaWorkspaceRuntime
-        await importWebsite(nextUrl, { ...buildAutoWebsiteImportOptions(), selectedUrls })
+        const { importWebsiteFromSourceFiles } = await import('@/features/source-files/websiteImportSelectionSession')
+        await importWebsiteFromSourceFiles(nextUrl, undefined, () => targetSkillsCommandsCommand(NATIVE_CRAWLER_COMMAND))
       } catch (error) {
         reportSkillsCommandsResolutionFailure(error)
       }

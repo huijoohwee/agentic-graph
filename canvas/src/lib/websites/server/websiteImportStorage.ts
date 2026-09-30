@@ -1,4 +1,30 @@
 import path from 'node:path'
+import fs from 'node:fs/promises'
+
+/** Atomically reserve an existing-format run ID before any artifact write. */
+export async function reserveWebsiteImportRun(workspaceAbs: string, token: unknown, request: unknown): Promise<{ importId: string; existing: boolean }> {
+  await fs.mkdir(workspaceAbs, { recursive: true })
+  const explicit = isWebsiteImportGenerationToken(token) ? String(token).trim() : ''
+  const binding = JSON.stringify(request)
+  const now = Date.now()
+  for (let offset = 0; offset < 256; offset += 1) {
+    // Preserve the portable UTC-slot grammar; startedAtMs records actual wall time.
+    const importId = explicit || formatWebsiteImportGenerationToken(now + offset * 1000)
+    const directory = path.join(workspaceAbs, importId)
+    try { await fs.mkdir(directory) } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+      if (!explicit) continue
+      let prior: string
+      try { prior = await fs.readFile(path.join(directory, 'request.json'), 'utf8') }
+      catch { throw new Error('Import run is unbound or still being reserved; start a fresh run') }
+      if (prior !== binding) throw new Error('Import run belongs to a different URL, selection or options; start a fresh run')
+      return { importId, existing: true }
+    }
+    await fs.writeFile(path.join(directory, 'request.json'), binding, { encoding: 'utf8', flag: 'wx' })
+    return { importId, existing: false }
+  }
+  throw new Error('Import run capacity reached; retry with a fresh run later')
+}
 
 export const WEBSITE_IMPORT_OUTPUT_DIR_REL_DEFAULT = 'agentic-graph-workspace/website-imports'
 const WEBSITE_IMPORT_OUTPUT_ROOT_LEGACY = '.agentic-graph-workspace'

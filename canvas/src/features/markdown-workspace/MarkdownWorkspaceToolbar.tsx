@@ -1,3 +1,4 @@
+import { openDocumentInsights } from './documentInsightsRuntime'
 import React from 'react'
 import {
   FileDiff,
@@ -322,13 +323,13 @@ export function MarkdownWorkspaceToolbar({
       <span
         className={`${uiToolbarRowScrollInlineClassName} gap-1`}
         aria-label="Webpage signals"
-        title="Derived from the current markdown: link labels (NAV/CTA) plus detected price/time tokens."
+        title="Distinct detected labels (up to 24 per category). Open Document insights for source matches and scan limits."
       >
         {items.map(it => (
-          <span key={it.label} className={`${pillClass} ${toneClass(it.tone)}`}>
+          <button type="button" key={it.label} className={`${pillClass} ${toneClass(it.tone)}`} aria-label={`Inspect ${it.label} matches (${it.value} labels)`} onClick={() => openDocumentInsights(it.tone)}>
             <span className="font-semibold">[{it.label}]</span>
             <span>{it.value}</span>
-          </span>
+          </button>
         ))}
       </span>
     )
@@ -344,7 +345,7 @@ export function MarkdownWorkspaceToolbar({
   return (
       <WorkspaceHeaderRow className="kg-markdown-workspace-panel-toolbar-row kg-markdown-workspace-toolbar-row !py-0" ariaLabel="Markdown toolbar row">
         {webpageSignalsNode ? (
-          <span className="kg-markdown-workspace-toolbar-leading flex min-w-0 max-w-full items-center overflow-hidden">
+          <span className="flex shrink-0 items-center">
             <span className="sr-only">Workspace editor</span>
             {webpageSignalsNode}
           </span>
