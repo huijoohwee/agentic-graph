@@ -32,7 +32,7 @@ export default function PreviewMediaCatalog({ items, models = false }: { items: 
       {visible.length ? <ul className={cn('m-0 grid list-none gap-2 p-0', layout === 'grid' && 'grid-cols-2')} aria-label="Preview media items">
         {visible.slice(0, 100).map(item => {
           const Icon = resolveMediaKindOverlayIcon(item.kind)
-          const thumbnail = item.thumbnailUrl || (item.kind === 'image' ? item.src : '')
+          const thumbnail = item.kind === 'image' ? item.src : item.thumbnailUrl
           return <li key={item.key} className="min-w-0">
             <button type="button" aria-label={`Preview ${item.label}`} aria-pressed={activeKey === item.key} onClick={() => select(item)}
               className={cn('w-full', layout === 'list' ? floatingPanelCatalogCompactRowClassName() : layout === 'card' ? floatingPanelCatalogThreeRowClassName() : `grid gap-1 rounded border p-2 text-left ${UI_THEME_TOKENS.panel.border}`, activeKey === item.key && UI_THEME_TOKENS.button.activeBg)}>
