@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.36"
+version: "0.2.37"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,22 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.35"
-prd_revision: "0.2.36"
-tad_revision: "0.2.36"
-adr_revision: "0.2.36"
-mvp_revision: "0.2.36"
-gtm_revision: "0.2.36"
+previous_document_version: "0.2.36"
+prd_revision: "0.2.37"
+tad_revision: "0.2.37"
+adr_revision: "0.2.37"
+mvp_revision: "0.2.37"
+gtm_revision: "0.2.37"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 idle Source Files page selection entry
+
+- PRD: `/fix #source-files-selection-entry @codex` keeps the first page-selection checkbox visible after restart and whenever no import session is active. Checking it discovers and selects pages linked from the currently selected website file. Until then, folder chevrons and file icons remain visible. Saved copies of the same page URL, including `library.md`, expose that page's checkbox; unrelated local rows are disabled. Unchecking all restores normal icons.
+- TAD / ADR: Source Files owns the single global native checkbox; the lazy URL form owns only URL input and errors. The current selected file's existing URL metadata supplies the discovery target, and discovery auto-selects its returned pages only for that initial checkbox action. The tree projection maps a discovered URL to all matching saved file rows while retaining the clicked file as the sole import-confirmation owner. The existing URL selection session and bounded draft remain authoritative. If no website file is selected, the checkbox is visible but disabled. An empty or failed discovery reports an error and leaves that same checkbox available to retry; there is no automatic import or new dependency.
+- MVP: six files and under 30 KB textual diff, with a 20-minute implementation and live-check target. Verify idle checkbox availability, one discovery request, retry after empty discovery, selected-page icon swap on matching saved copies, disabled unrelated rows, uncheck and reselect, cancellation retaining the idle checkbox, sole source-row confirmation, browser reload, and exact committed-candidate affected validation. Runtime target and browser proof remain outside source.
+- GTM / rollback: make the existing page-import entry visible in the tree users are already using. No buyer or revenue result is claimed. Revert this successor to restore the session-only checkbox; protected integration and production remain separately authorized.
 
 ## 2026-09-30 storage settings and compact page chooser
 
@@ -129,7 +136,7 @@ gtm_revision: "0.2.36"
 
 **TAD / ADR.** Run the candidate's native dev command on a separate loopback origin with a task-owned external artifact store. Use visible controls for Launch, URL entry, page selection and import; browser-local runtime identity proves the source revision. Preserve browser-policy failures as failures. Do not substitute the earlier headless conversion receipt for UI completion. Existing helper modules and published source remain unchanged.
 
-**MVP / observed results.** The predecessor's protected Integration Gate passed. The actual desktop UI completed Launch → Import URL → Crawl website headlessly → page selection → import. Discovery returned three pages; one selected page completed in 20,354 ms without manifest errors. Artifacts contain 16,903,437 raw HTML bytes, 151,985 Markdown bytes and 24 downloaded images totaling 652,985 bytes. Source Files displayed the page, sitemap and Canvas document. Opening the page visibly rendered its title and content; two DOM readbacks timed out while the large page loaded. Reload recovered responsiveness and retained the selected local Markdown file, source content and title in the table of contents. The browser console reported no warnings/errors after reload. Evidence belongs to the task's external `website-markdown-ui-e2e.json` and before/after screenshots; source receipt remains the exact candidate above.
+**MVP / observed results.** The predecessor's protected Integration Gate passed. The actual desktop UI completed Launch → Import URL → Crawl website headlessly → page selection → import. Discovery returned three pages; one selected page completed in 20,354 ms without manifest errors. Artifacts contain 16,903,437 raw HTML bytes, 151,985 Markdown bytes and 24 downloaded images totaling 652,985 bytes. Source Files displayed the page, sitemap and Canvas document. Opening the page visibly rendered its title and content; two DOM readbacks timed out while the large page loaded. Reload recovered responsiveness and retained the selected local Markdown file, source content and title in the table of contents. The browser console reported no warnings/errors after reload. Evidence belongs to the task's external UI record and before/after screenshots; source receipt remains the exact candidate above.
 
 **Partial-pass boundaries.** The ordinary Import URL path did not complete in the in-app browser: hidden document requests were rejected with `ERR_BLOCKED_BY_CLIENT`, reason `inspector`. Browser automation required the screenshot coordinate offset; pinned panels covered controls until closed. Source inspection also identified an existing five-million-character slice in `workspaceImport/urlContent.ts` before ordinary conversion, requiring a separate implementation follow-up. This verification update changes no runtime behavior. One-page local import and persistence pass; ordinary import, full-site discovery completeness, responsive mobile behavior, offline use and production delivery remain unverified.
 

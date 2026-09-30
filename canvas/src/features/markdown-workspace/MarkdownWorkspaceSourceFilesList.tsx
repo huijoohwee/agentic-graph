@@ -1,8 +1,9 @@
 import React from 'react'
 import { CloudOff } from 'lucide-react'
 import { projectWebsiteImportTree } from '@/features/source-files/websiteImportTreeProjection'
-import { SourceFileWebsiteActions, WebsiteSelectionCheckbox } from '@/features/source-files/SourceFileWebsiteActions'
-import { useWebsiteImportSelectionSession, toggleWebsiteSelection, restoreWebsiteImportSelectionDraft, finishWebsiteImportSelection } from '@/features/source-files/websiteImportSelectionSession'
+import { SourceFileWebsiteActions, WebsiteSelectionCheckbox, reportSourceImportFailure } from '@/features/source-files/SourceFileWebsiteActions'
+import { useWebsiteImportSelectionSession, toggleWebsiteSelection, restoreWebsiteImportSelectionDraft, finishWebsiteImportSelection, importWebsiteFromSourceFiles, discoverWebsiteSelection } from '@/features/source-files/websiteImportSelectionSession'
+import { sourceFileWebsiteUrl } from '@/features/source-files/websiteImportTreeProjection'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { MarkdownFileTree } from './MarkdownFileTree'
@@ -85,6 +86,9 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
   const demoRepresented = entries.some(entry => entry.path === demoEntry?.path)
   const cloudEntries = React.useMemo(() => demoEntry && !demoRepresented ? [...entries, demoEntry] : entries,
     [demoEntry, demoRepresented, entries])
+  const selectedSource = cloudEntries.find(entry => entry.path === activePath)
+  const selectedSourceUrl = selectedSource && sourceFileWebsiteUrl(selectedSource, sourcesByPath?.[selectedSource.path])
+  const visiblePageUrls = importSession?.pages.filter(page => `${page.url} ${page.title || ''}`.toLowerCase().includes(importSession.query.toLowerCase())).map(page => page.url) || []
   const cloudSync = useSourceFileCloudSync(cloudEntries)
   const projection = React.useMemo(() => projectWebsiteImportTree(cloudEntries, sourcesByPath, importSession), [cloudEntries, sourcesByPath, importSession])
   const [collapsedImports, setCollapsedImports] = React.useState({ id: 0, paths: new Set<string>() })
@@ -174,6 +178,15 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
           if (importSession) { finishWebsiteImportSelection(null); setImportOpen(false) }
           else setImportOpen(value => !value)
         }} className={`rounded px-1 py-0.5 ${textSizeClass} ${UI_THEME_TOKENS.button.hoverBg}`}>{importSession ? 'Cancel import selection' : 'Import URL'}</button>
+        <section aria-label="Choose folder(s)/page(s) to import" aria-busy={!!importSession?.busy} className={`border-b py-1 ${UI_THEME_TOKENS.panel.border}`}>
+          <WebsiteSelectionCheckbox label="Select all visible pages" urls={importSession ? visiblePageUrls : selectedSourceUrl ? [selectedSourceUrl] : []}
+            selected={importSession?.selected || new Set<string>()} disabled={!!importSession?.busy || !!importSession?.importing || (!importSession && !selectedSourceUrl)}
+            toggle={(urls, checked) => {
+              if (importSession && checked && !urls.length) void discoverWebsiteSelection(importSession.url, true)
+              else if (importSession) toggleWebsiteSelection(urls, checked)
+              else if (checked && selectedSourceUrl && selectedSource) void importWebsiteFromSourceFiles(selectedSourceUrl, selectedSource.path, undefined, { selectAllOnDiscover: true }).catch(reportSourceImportFailure)
+            }} />
+        </section>
         {(importOpen || importSession) && <React.Suspense fallback={<p role="status">Loading import controls…</p>}><WebsiteImportSelectionView /></React.Suspense>}
       </section>
       <AgentMissionSourceFile search={props.search} activePath={selectedPath} renderEntryLeading={renderSelectionControl} />

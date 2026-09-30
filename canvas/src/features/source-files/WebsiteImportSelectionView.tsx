@@ -1,8 +1,8 @@
 import React from 'react'
-import { SourceImportAction, WebsiteSelectionCheckbox, reportSourceImportFailure } from './SourceFileWebsiteActions'
+import { SourceImportAction, reportSourceImportFailure } from './SourceFileWebsiteActions'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
-import { useWebsiteImportSelectionSession, toggleWebsiteSelection, importWebsiteFromSourceFiles } from './websiteImportSelectionSession'
+import { useWebsiteImportSelectionSession, importWebsiteFromSourceFiles } from './websiteImportSelectionSession'
 
 /** Controls for the existing Source Files tree; this surface owns no second tree. */
 export default function WebsiteImportSelectionView() {
@@ -10,11 +10,7 @@ export default function WebsiteImportSelectionView() {
   const recoveryError = useWebsiteImportSelectionSession(state => state.recoveryError)
   const typography = usePanelTypography()
   const [url, setUrl] = React.useState('')
-  const visible = session?.pages.filter(page => `${page.url} ${page.title || ''}`.toLowerCase().includes(session.query.toLowerCase())) || []
   if (session) return <>
-    <section aria-label="Choose folder(s)/page(s) to import" className={`border-b py-1 ${UI_THEME_TOKENS.panel.border} ${typography.panelTextClass}`}>
-      <WebsiteSelectionCheckbox label="Select all visible pages" urls={visible.map(page => page.url)} selected={session.selected} toggle={toggleWebsiteSelection} disabled={!!session.importing} />
-    </section>
     {session.error && <p role="alert" className="text-xs">{session.error}</p>}
     {recoveryError && <p role="alert" className="text-xs">{recoveryError}</p>}
   </>

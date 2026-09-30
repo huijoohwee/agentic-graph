@@ -32,6 +32,12 @@ export function projectWebsiteImportTree(entries: WorkspaceEntry[], sources: Wor
   }
   const query = session.query.trim().toLowerCase()
   const pathsByUrl = new Map<string, string>()
+  const addSelectionPath = (path: string, url: string) => {
+    for (let current: string | null = path; current && current !== '/'; current = projected.get(current)?.parentPath || null) {
+      const urls = selectionUrls.get(current) || []
+      if (!urls.includes(url)) selectionUrls.set(current, [...urls, url])
+    }
+  }
   const pages = session.pages.some(page => page.url === session.url) ? session.pages : [{ url: session.url, path: new URL(session.url).pathname }, ...session.pages]
   for (const page of pages) {
     const existing = existingByUrl.get(page.url)
@@ -49,9 +55,14 @@ export function projectWebsiteImportTree(entries: WorkspaceEntry[], sources: Wor
     }
     pathsByUrl.set(page.url, path); pageUrls.set(path, page.url)
     if (!session.pages.some(item => item.url === page.url) || !`${page.title || ''} ${page.url}`.toLowerCase().includes(query)) continue
-    for (let current: string | null = path; current && current !== '/'; current = projected.get(current)?.parentPath || null) {
-      selectionUrls.set(current, [...(selectionUrls.get(current) || []), page.url])
-    }
+    addSelectionPath(path, page.url)
+  }
+  const visibleUrls = new Set(session.pages.filter(page => `${page.title || ''} ${page.url}`.toLowerCase().includes(query)).map(page => page.url))
+  for (const entry of entries) {
+    const url = sourceFileWebsiteUrl(entry, sources?.[entry.path])
+    if (!url || !visibleUrls.has(url) || pageUrls.has(entry.path)) continue
+    pageUrls.set(entry.path, url)
+    addSelectionPath(entry.path, url)
   }
   const filtered = [...projected.values()].filter(entry => !pendingPaths.has(entry.path) || entry.kind === 'folder'
     || entry.path === pathsByUrl.get(session.url) || `${entry.name} ${pageUrls.get(entry.path) || ''}`.toLowerCase().includes(query))

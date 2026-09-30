@@ -18,6 +18,7 @@ export type WebsiteSelectionSession = {
   restorable?: boolean
   restored?: boolean
   importing?: boolean
+  selectAllOnDiscover?: boolean
 }
 
 type SelectionState = { session: WebsiteSelectionSession | null; recoveryError: string }
@@ -106,23 +107,28 @@ export function finishWebsiteImportSelection(urls: string[] | null) {
   resolve?.(urls)
 }
 
-export async function discoverWebsiteSelection(url: string) {
+export async function discoverWebsiteSelection(url: string, selectAllOnDiscover = false) {
   const session = useWebsiteImportSelectionSession.getState().session
   if (!session) return
   controller?.abort()
   const active = new AbortController()
   controller = active
-  updateSession(session.id, current => ({ ...current, busy: true, error: '' }))
+  updateSession(session.id, current => ({ ...current, busy: true, error: '', selectAllOnDiscover: current.selectAllOnDiscover || selectAllOnDiscover }))
   try {
     const result = await discoverWebsitePages(session.url, url, active.signal)
     if (active.signal.aborted) return
     updateSession(session.id, current => {
       const merged = new Map(current.pages.map(page => [page.url, page]))
       result.pages.forEach(page => merged.set(page.url, page))
-      return { ...current, pages: [...merged.values()].slice(0, 500), visited: new Set([...current.visited, url]), limited: current.limited || result.limited || merged.size > 500 }
+      const pages = [...merged.values()].slice(0, 500)
+      return { ...current, pages,
+        selected: current.selectAllOnDiscover ? new Set([...current.selected, ...pages.map(page => page.url)]) : current.selected,
+        selectAllOnDiscover: false,
+        error: current.selectAllOnDiscover && !result.pages.length ? 'No linked pages were found. Try the source link or a different website file.' : '',
+        visited: new Set([...current.visited, url]), limited: current.limited || result.limited || merged.size > 500 }
     })
   } catch (failure) {
-    if (!active.signal.aborted) updateSession(session.id, current => ({ ...current, error: String((failure as Error).message || failure) }))
+    if (!active.signal.aborted) updateSession(session.id, current => ({ ...current, selectAllOnDiscover: false, error: String((failure as Error).message || failure) }))
   } finally {
     if (!active.signal.aborted) updateSession(session.id, current => ({ ...current, busy: false }))
   }
@@ -143,13 +149,13 @@ export function setWebsiteSelectionQuery(query: string) {
   if (session) updateSession(session.id, current => ({ ...current, query }))
 }
 
-export function chooseWebsiteImportPages(url: string, sourcePath?: string, restorable = false): Promise<string[] | null> {
+export function chooseWebsiteImportPages(url: string, sourcePath?: string, restorable = false, selectAllOnDiscover = false): Promise<string[] | null> {
   const source = new URL(url)
   if (!['http:', 'https:'].includes(source.protocol)) throw new Error('Enter an HTTP or HTTPS website URL.')
   url = source.href
   finishWebsiteImportSelection(null)
   const result = new Promise<string[] | null>(resolve => { resolveSelection = resolve })
-  const session: WebsiteSelectionSession = { id: ++sequence, url, sourcePath, pages: [], selected: new Set(), visited: new Set(), busy: true, error: '', limited: false, query: '', restorable }
+  const session: WebsiteSelectionSession = { id: ++sequence, url, sourcePath, pages: [], selected: new Set(), visited: new Set(), busy: true, error: '', limited: false, query: '', restorable, selectAllOnDiscover }
   useWebsiteImportSelectionSession.setState({ session, recoveryError: writeDraft(session) })
   openMarkdownWorkspaceEditorPane(useGraphStore.getState())
   requestMarkdownExplorerSourceFilesOpen(sourcePath)
@@ -157,8 +163,8 @@ export function chooseWebsiteImportPages(url: string, sourcePath?: string, resto
   return result
 }
 
-export async function importWebsiteFromSourceFiles(url: string, sourcePath?: string, beforeImport?: () => Promise<unknown>) {
-  const selectedUrls = await chooseWebsiteImportPages(url, sourcePath, !beforeImport)
+export async function importWebsiteFromSourceFiles(url: string, sourcePath?: string, beforeImport?: () => Promise<unknown>, options?: { selectAllOnDiscover?: boolean }) {
+  const selectedUrls = await chooseWebsiteImportPages(url, sourcePath, !beforeImport, options?.selectAllOnDiscover)
   if (!selectedUrls?.length) return
   return importSelectedWebsitePages(url, selectedUrls, beforeImport)
 }

@@ -30,6 +30,51 @@ test('idle URL import still has its explicit form', async () => {
   } finally { await act(async () => root.unmount()); restore() }
 })
 
+test('idle Source Files checkbox discovers selected website pages before swapping tree icons', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const host = document.createElement('section'), root = createRoot(host)
+  const requests: string[] = []
+  globalThis.fetch = (async target => {
+    requests.push(String(target))
+    return new Response(JSON.stringify({ ok: true, pages: [{ url: sourceUrl, path: '/library/' }, { url: sourceUrl + 'one', path: '/library/one' }], limited: false }))
+  }) as typeof fetch
+  try {
+    await act(async () => root.render(<SourceFilesHarness />))
+    const first = host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!
+    assert.ok(first && !first.disabled, 'selected website file exposes a usable first checkbox while idle')
+    assert.ok(host.querySelector('section[aria-label="File imported.md"] button[aria-label="Select file imported.md"]'), 'idle file icon remains until the checkbox is checked')
+    await act(async () => first.click())
+    assert.deepEqual(requests, ['/__website_import/discover'])
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 2)
+    assert.equal(host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')?.checked, true)
+    assert.ok(host.querySelector('section[aria-label="File imported.md"] input[type=checkbox]'), 'checking the first box replaces the source file icon')
+    assert.equal(host.querySelector<HTMLInputElement>('input[aria-label="Folder .workspace is outside this website import"]')?.disabled, true, 'unrelated local rows cannot join page import')
+    await act(async () => host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!.click())
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 0)
+    assert.ok(host.querySelector('section[aria-label="File imported.md"] button[aria-label="Select file imported.md"]'), 'unchecking restores the file icon')
+    assert.ok(host.querySelector('input[aria-label="Select all visible pages"]'), 'the first checkbox remains available for reselection')
+  } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); globalThis.fetch = previousFetch; restore() }
+})
+
+test('first checkbox retries an empty discovery without losing the selected website source', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const host = document.createElement('section'), root = createRoot(host)
+  let requests = 0
+  globalThis.fetch = (async () => new Response(JSON.stringify({ ok: true, pages: ++requests === 1 ? [] : [{ url: sourceUrl, path: '/library/' }], limited: false }))) as typeof fetch
+  try {
+    await act(async () => root.render(<SourceFilesHarness />))
+    await act(async () => host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!.click())
+    assert.equal(requests, 1)
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 0)
+    assert.match(host.textContent || '', /No linked pages were found/)
+    assert.equal(host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')?.disabled, false, 'empty discovery remains retryable after restart or failure')
+    await act(async () => host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!.click())
+    assert.equal(requests, 2)
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.has(sourceUrl), true)
+    assert.ok(host.querySelector('section[aria-label="File imported.md"] input[type=checkbox]'))
+  } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); globalThis.fetch = previousFetch; restore() }
+})
+
 test('one Source Files tree supports folder selection, collapse and read-only discovery', async () => {
   const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
   const host = document.createElement('section'); document.body.append(host)
@@ -132,17 +177,23 @@ test('one Source Files tree supports folder selection, collapse and read-only di
 test('cancel aborts pending discovery and never resolves an import selection', async () => {
   const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
   let signal: AbortSignal | undefined, resolution: string[] | null | undefined
-  globalThis.fetch = ((_url, init) => { signal = init?.signal as AbortSignal; return new Promise<Response>(() => {}) }) as typeof fetch
+  globalThis.fetch = ((_url, init) => {
+    signal = init?.signal as AbortSignal
+    return new Promise<Response>((_resolve, reject) => {
+      signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true })
+    })
+  }) as typeof fetch
   const host = document.createElement('section'), root = createRoot(host)
   try {
-    await act(async () => { void chooseWebsiteImportPages('https://example.test/library/').then(urls => { resolution = urls }); root.render(<SourceFilesHarness />) })
+    const pending = chooseWebsiteImportPages('https://example.test/library/').then(urls => { resolution = urls })
+    await act(async () => root.render(<SourceFilesHarness />))
     await act(async () => Array.from(host.querySelectorAll('button')).find(button => button.textContent === 'Cancel import selection')!.click())
+    await pending
     assert.equal(resolution, null)
     assert.equal(signal?.aborted, true)
-    assert.equal(host.querySelector('section[aria-label="Choose folder(s)/page(s) to import"]'), null)
+    assert.ok(host.querySelector('section[aria-label="Choose folder(s)/page(s) to import"] input[aria-label="Select all visible pages"]'), 'idle checkbox remains after cancellation')
     assert.ok(Array.from(host.querySelectorAll('button')).some(button => button.textContent === 'Import URL'))
-    await act(async () => root.unmount())
-  } finally { finishWebsiteImportSelection(null); globalThis.fetch = previousFetch; restore() }
+  } finally { await act(async () => root.unmount()); finishWebsiteImportSelection(null); globalThis.fetch = previousFetch; restore() }
 })
 
 
@@ -248,13 +299,14 @@ test('Source Files restores page checkboxes after restart without importing unti
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); host.remove(); globalThis.fetch = previousFetch; restore() }
 })
 
-test('discovery keeps the clicked source when generated siblings share its URL', () => {
+test('discovery keeps the clicked import owner while saved copies share its page checkbox', () => {
   const sibling = { ...sourceEntry, path: '/sitemap.md', name: 'sitemap.md' }
   const session = { id: 1, url: sourceUrl, sourcePath: sourceEntry.path, pages: [{ url: sourceUrl, path: '/library/' }, { url: sourceUrl + 'new', path: '/library/new' }], selected: new Set<string>(), visited: new Set<string>(), busy: false, error: '', limited: false, query: '' }
   const projection = projectWebsiteImportTree([sourceEntry, sibling], null, session)
   assert.equal(projection.ownerPath, sourceEntry.path)
   assert.equal(projection.pageUrls.get(sourceEntry.path), sourceUrl)
-  assert.equal(projection.pageUrls.has(sibling.path), false)
+  assert.equal(projection.pageUrls.get(sibling.path), sourceUrl)
+  assert.deepEqual(projection.selectionUrls.get(sibling.path), [sourceUrl])
   assert.equal(projection.entries.filter(entry => entry.path === sourceEntry.path).length, 1)
   assert.equal(projection.pendingPaths.has(sourceEntry.path), false)
 })
