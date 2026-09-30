@@ -10,8 +10,7 @@ import { VerticalResizeSeparatorHr } from '@/components/ui/VerticalResizeSeparat
 import { MarkdownWorkspaceExplorer } from '@/features/markdown-workspace/MarkdownWorkspaceExplorer'
 import { MarkdownWorkspaceMain } from '@/features/markdown-workspace/main/MarkdownWorkspaceMain'
 import { isMarkdownPath, SIDEBAR_MAX_PX, SIDEBAR_MIN_PX } from '@/features/markdown-workspace/markdownWorkspaceUtils'
-import { useWorkspaceFileActions } from '@/features/markdown-workspace/useWorkspaceFileActions'
-import { useWorkspaceStatusHelpers } from '@/features/markdown-workspace/useWorkspaceFileActions'
+import { useWorkspaceFileActions, useWorkspaceStatusHelpers } from '@/features/markdown-workspace/useWorkspaceFileActions'
 import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
 import { EMPTY_GRAPH_EDGES, EMPTY_GRAPH_NODES, EMPTY_WIDGET_REGISTRY } from './markdownWorkspaceRuntime.shared'
 import { useMarkdownWorkspaceDerivedViews } from './useMarkdownWorkspaceDerivedViews'
@@ -136,8 +135,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     setMarkdownWordWrap,
     markdownTextHighlight,
     setMarkdownTextHighlight,
-    folderModeContract,
-    setFolderModeContract,
+    folderModeContract, setFolderModeContract,
     layoutMode,
     setLayoutMode,
     expandedPaths,
@@ -148,8 +146,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     setResizeHandleEl,
     workspaceRootRef,
     presentationApiRef,
-    highlightedLineRange,
-    setHighlightedLineRange,
+    highlightedLineRange, setHighlightedLineRange,
     activeText,
     setActiveText,
     activeTextRef,
@@ -175,9 +172,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     layoutModeRef,
   } = bootstrapState
   const status = useWorkspaceStatusHelpers()
-  const setStatusInfo = status.setStatusInfo
-  const setStatusError = status.setStatusError
-  const setStatusProgress = status.setStatusProgress
+  const { setStatusInfo, setStatusError, setStatusProgress } = status
   const setStatusWithAutoClear = React.useCallback(
     (label: string, ttlMs: number = UI_TOAST_TTL_MS.statusAutoClose) => status.setStatusInfo(label, { ttlMs }),
     [status],
@@ -318,8 +313,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     activePath,
     activeDocumentKey: selectionState.activeDocumentKey,
     activeEntryKind: selectionState.activeEntryKind,
-    activeText,
-    activeTextRef,
+    activeText, activeTextRef,
     setActiveText,
     markdownDocumentName,
     markdownDocumentText,
@@ -375,8 +369,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
       viewerInlineEditActive,
       activePath,
       activeEntryKind: selectionState.activeEntryKind,
-      activeText,
-      activeTextRef,
+      activeText, activeTextRef,
       debouncedText,
       activeDocumentKey: selectionState.activeDocumentKey,
       activeDocumentSourceUrl: selectionState.activeDocumentSourceUrl,
@@ -413,8 +406,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     graphNodesRef: widgetState.graphNodesRef,
     graphEdgesRef: widgetState.graphEdgesRef,
     docLocationRevision,
-    selectedNodeId,
-    selectedEdgeId,
+    selectedNodeId, selectedEdgeId,
     selectionSource,
     setSelectionSource,
     selectNode,
@@ -446,8 +438,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
       activeDocumentKey: selectionState.activeDocumentKey,
       activeDocumentSourceUrl: selectionState.activeDocumentSourceUrl,
       setActiveText: setActiveTextProgrammatic,
-      setEntries,
-      lastLoadedRef,
+      setEntries, lastLoadedRef,
       setExpandedPaths,
       setActivePathSafe: selectionState.setActivePathSafe,
       setSelectionPathSafe: selectionState.setSelectionPathSafe,
@@ -458,8 +449,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
   const shellState = useMarkdownWorkspaceShell({
     active: props.active !== false,
     refreshWorkspace: explorerState.refresh,
-    highlightedLineRange,
-    setHighlightedLineRange,
+    highlightedLineRange, setHighlightedLineRange,
     workspaceRootRef,
     fileActions,
     createParentPath: selectionState.createParentPath,
@@ -476,10 +466,9 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     revealLineInEditor: interactionState.revealLineInEditor,
   })
   const viewShell = useMarkdownWorkspaceViewShell({
-    entries,
-    sourcesByPath,
-    folderModeContract,
-    setFolderModeContract,
+    activeText: effectiveContent.effectiveActiveText,
+    entries, sourcesByPath,
+    folderModeContract, setFolderModeContract,
     activePath,
     selectionPath: selectionState.selectionPath,
     selectionEntryKind: selectionState.selectionEntry?.kind ?? null,
@@ -493,8 +482,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     setStatusWithAutoClear, setStatusError,
     streamingWorkspacePath: chatWorkspaceStreamingPath,
   })
-  const saveEnabled = effectiveContent.saveEnabled
-  const saveActiveFileNow = saveState.saveActiveFileNow
+  const { saveEnabled } = effectiveContent; const { saveActiveFileNow } = saveState
   return (
     <section
       ref={workspaceRootRef}

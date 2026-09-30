@@ -222,15 +222,11 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
           onRefresh={handleRefresh}
           search={search}
           setSearch={setSearch}
+          activePath={activePath}
+          onRevealActiveFile={revealActiveFile}
         />
       </WorkspaceHeaderRow>
 
-      {activePath ? <section aria-label="Active source file" className={`shrink-0 min-w-0 border-b px-2 py-1 ${UI_THEME_TOKENS.panel.border} ${panelTypography.microLabelClass}`}>
-        <span className={UI_THEME_TOKENS.text.secondary}>Active file</span>
-        <button type="button" aria-label="Reveal active file in Source Files" title={activePath}
-          className={`block max-h-24 w-full min-w-0 overflow-y-auto break-all whitespace-normal rounded text-left underline ${UI_THEME_TOKENS.focus.primaryRing}`}
-          onClick={revealActiveFile}>{activePath}</button>
-      </section> : null}
 
       <section className={UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_CONTENT_CLASSNAME} aria-label="Explorer content">
         <MarkdownExplorerSection
