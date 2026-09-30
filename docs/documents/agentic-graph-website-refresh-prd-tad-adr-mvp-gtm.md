@@ -28,7 +28,7 @@ agent_id: "codex"
 All five roles below join `GRAPH-WEBSITE-REFRESH-001@1.0.0`. This artifact owns refresh economy only.
 The existing [document analysis and import contract](agentic-graph-document-analysis-prd-tad-adr-mvp-gtm.md)
 retains ownership of discovery coverage, saved artifacts, selection, and shared overlays.
-The requested [authoring guideline](/Users/huijoohwee/Documents/GitHub/huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md)
+The requested [authoring guideline](https://github.com/huijoohwee/huijoohwee.github.io/blob/e3eba8ad2a8153747dd4c17f053f09d71e2c3f51/guidelines/prd-tad-adr-mvp-gtm-guidelines.md)
 is version 3.3.0, inspected at source revision `e3eba8ad2a8153747dd4c17f053f09d71e2c3f51`.
 Its content governs this artifact; the locator does not determine requirements.
 User authorization is the current request to generate this artifact and implement the recommendations.

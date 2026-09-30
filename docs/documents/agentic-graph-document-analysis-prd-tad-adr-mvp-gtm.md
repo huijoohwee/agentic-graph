@@ -2,28 +2,33 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.23"
+version: "1.0.24"
 date: "2026-10-01"
 lang: "en-US"
-prd_revision: "1.0.23"
-tad_revision: "1.0.23"
-adr_revision: "1.0.23"
-mvp_revision: "1.0.23"
-gtm_revision: "1.0.23"
+prd_revision: "1.0.24"
+tad_revision: "1.0.24"
+adr_revision: "1.0.24"
+mvp_revision: "1.0.24"
+gtm_revision: "1.0.24"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
 delivered_rung: "undocumented"
 lane: "authoring"
 load_policy: "on-demand"
+universal_scope: true
+worktree_id: "device-0232231d4a19--dashboard-graph-scope"
+agent_id: "codex"
 ---
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.23. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.24. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
+
+Pinned 3D media follows its projected graph anchor during pan, drag and zoom, including crossing viewport edges. It must not snap to a viewport border or reappear as a screen-fixed fallback when its world anchor is offscreen. Free panels retain explicit screen anchors. Shared media controls and larger-under-smaller ordering remain authoritative.
 
 Imported source URLs must resolve to their saved documents when selecting canvas media. Non-interactive media bodies and headers share panel dragging; native embedded controls retain their gestures. A media panel covers every graph alias for the same media, without an additional opaque mesh.
 
@@ -113,6 +118,8 @@ dragging. Apply graph and panel geometry before the same paint, retaining readab
 existing selection, pin and resize controls. A settled canvas must do no continuous projection work.
 
 ## TAD
+
+Reuse the 2D media path’s continuous `applyPanelBox` transform, unbounded `computePanelRect`, shared frame metrics and pointer/wheel owners. The 3D adapter supplies camera projection and camera-space depth only. Scale the whole logical panel instead of quantizing its width or refitting it to the viewport; convert resize deltas through the painted scale. Missing world positions may use an initial screen slot; culled world positions may not.
 
 Reuse workspace import source-URL identity for navigation, preferring the matching active capture and rejecting ambiguous alternatives. The shared media pool carries covered source node IDs through deduplication. Shared panel pointer routing owns body/header drag; 2D and 3D recovery run after the pointer owner commits and never poll or cancel a live drag on a timer. The shared SVG semantic binder owns background and root naming.
 
@@ -253,6 +260,8 @@ work through the shared flush contract. Retain the existing sizing bounds with o
 
 ## ADR
 
+Remove the 3D-only viewport clamp, 16 px size steps and fallback for culled world anchors. Keep one logical media frame and project it through the existing shared matrix-placement owner. This preserves subpixel motion and makes resized panels track zoom. Native 3D controls keep camera ownership; no parallel renderer or dependency.
+
 Extend existing navigation, media-pool and pointer owners. Do not map an arbitrary URL to the active file, strip distinguishing query parameters, add a renderer-specific media variant, or let recovery erase an uncommitted release. Panel drags start at the visible panel center, including clamped panels; pinned drags retain world depth. Recovery runs after native event dispatch, beyond capture-phase microtask checkpoints. Keep explicit layer priority and larger-under-smaller peer ordering.
 
 Remove the 3D-only overlap stacking passes and duplicate eager-media loader. Apply the common area comparator within authored layer peers; retain native WebGL gesture ownership and the shared HTML media controls. No parallel renderer, domain rule or new dependency.
@@ -321,6 +330,8 @@ and a trailing animation frame can detach a panel from its node. Preserve the sh
 readability limits; do not add another renderer or a permanent animation loop.
 
 ## MVP
+
+Canvas-motion increment: at most five production modules and 15 KB changed source; initial 25-minute implementation budget, extended ten minutes for live verification and the release gate. Verify subpixel pan, near-edge/behind-camera behavior, zoom of resized panels, drag release, unpinned placement, size ordering and settled no-op DOM writes with focused checks plus native live gestures. Run the affected release gate before review publication. Roll back these owner changes together. Seven focused geometry and gesture checks and TypeScript compilation pass. Predecessor PR 1441 failed the provider machine-path check because a planning document linked to a local home directory; replace that reference with its portable source URL. Provider success remains unproven until the successor checks finish.
 
 Navigation/drag repair: at most eight production modules and 18 KB production changes. Initial 25-minute implementation budget exceeded after live reproduction exposed 2D callback churn and native 3D release ordering; final validation/review budget is 15 minutes. Cover URL identity/ambiguity, body/header drag with control exclusions, native release recovery, stable rerenders and deduplicated media coverage. Twenty focused checks and typecheck pass. Live 2D body drag commits 70/-45 px without changing the canvas transform; source selection reveals saved Markdown without a missing-file alert. Live 3D unpinned drag commits 80/50 px; a clamped pinned panel moves its center 100/60 px. Named shared panels retain larger-under-smaller order. Require hygiene and an exact-source native affected receipt before review publication. Roll back owner changes together without altering saved documents.
 
@@ -525,6 +536,8 @@ owner changes together; retain saved documents and discovery drafts. No producti
 claim is implied.
 
 ## GTM
+
+The local interaction repair serves readers arranging imported media alongside a graph. Value is predictable manipulation with existing controls, without service costs or additional background work. Device-wide frame-rate parity and production delivery remain unproven; the next bounded action is native browser verification and review delivery by the implementation owner.
 
 Deliver a local, free/FOSS interaction repair to existing document and graph readers. No new service, plan, addon or background crawl. Review evidence must distinguish local checks, live gestures and provider CI; no production-performance or deployment claim follows from local success.
 

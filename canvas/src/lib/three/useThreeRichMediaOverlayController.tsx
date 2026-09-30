@@ -67,6 +67,7 @@ type RichMediaResizeState3d = {
   frameMetrics: Pick<MediaPanelCssMetrics, 'headerH' | 'padding' | 'borderW'>
   lastW: number
   lastH: number
+  scale: number
 }
 
 type RichMediaHeaderDragState3d = {
@@ -372,19 +373,16 @@ export function useThreeRichMediaOverlayController(args: {
   const beginResize = React.useCallback((id: string, pointerId: number) => {
     const el = overlayElsRef.current.get(id) || null
     const rect = el?.getBoundingClientRect()
-    const measuredW = rect && Number.isFinite(rect.width) ? Math.max(24, Math.round(rect.width)) : 0
-    const measuredH = rect && Number.isFinite(rect.height) ? Math.max(24, Math.round(rect.height)) : 0
+    const measuredW = Number.parseFloat(el?.style.width || '') || rect?.width || 24
+    const measuredH = Number.parseFloat(el?.style.height || '') || rect?.height || 24
+    const scale = rect?.width && measuredW > 0 ? rect.width / measuredW : 1
     const stableSize = getPanelSizeForId(id)
     const frameMetrics = readRichMediaPanelFrameMetrics(el)
     const startW = stableSize ? stableSize.w : Math.max(24, measuredW)
     const startH = stableSize
       ? stableSize.h
       : (measuredH || Math.max(24, Math.round(computePanelFrameSizeFromWidth16x9({ panelW: startW, metrics: frameMetrics }).panelH)))
-    resizeRef.current = { id, pointerId, startW, startH, frameMetrics, lastW: startW, lastH: startH }
-    if (el) {
-      el.style.width = `${startW}px`
-      el.style.height = `${startH}px`
-    }
+    resizeRef.current = { id, pointerId, startW, startH, frameMetrics, lastW: startW, lastH: startH, scale }
   }, [getPanelSizeForId])
 
   const moveResize = React.useCallback((id: string, payload: { pointerId: number; dx: number; dy: number }) => {
@@ -395,7 +393,7 @@ export function useThreeRichMediaOverlayController(args: {
       startH: drag.startH,
       dxClientPx: payload.dx,
       dyClientPx: payload.dy,
-      scale: 1,
+      scale: drag.scale,
       metrics: drag.frameMetrics,
       minPanelW: 24,
       minPanelH: 24,
@@ -405,11 +403,6 @@ export function useThreeRichMediaOverlayController(args: {
     drag.lastW = nextW
     drag.lastH = nextH
     localPanelSizesRef.current[id] = { w: nextW, h: nextH }
-    const el = overlayElsRef.current.get(id) || null
-    if (el) {
-      el.style.width = `${nextW}px`
-      el.style.height = `${nextH}px`
-    }
     requestSchedule()
   }, [requestSchedule])
 
@@ -526,14 +519,16 @@ export function useThreeRichMediaOverlayController(args: {
             const pose = useGraphStore.getState().captureThreeCameraPose()
             if (pose) overlayPanRef.current = { pointerId, pose }
           }}
-          onOverlayPan={({ pointerId, dx, dy, shiftKey }) => {
+          onOverlayPan={({ pointerId, dx, dy }) => {
             const st = overlayPanRef.current
             if (!st || st.pointerId !== pointerId) return
             const nextPose = computeThreeCameraPoseAfterOverlayPan({
               pose: st.pose,
               dxClientPx: dx,
               dyClientPx: dy,
-              shiftKey: shiftKey === true,
+              shiftKey: true,
+              verticalProjectionScale: args.threeCameraRef.current?.projectionMatrix.elements[5] || 1,
+              viewportH: args.threeGlRef.current?.domElement.clientHeight || 1,
             })
             useGraphStore.getState().restoreThreeCameraPose(nextPose)
             commitCameraFramingCanvasPose({
@@ -545,7 +540,7 @@ export function useThreeRichMediaOverlayController(args: {
             const st = overlayPanRef.current
             if (st && st.pointerId === pointerId) overlayPanRef.current = null
           }}
-          onHeaderDragStart={({ clientX, clientY, pointerId }) => {
+          onHeaderDragStart={({ pointerId }) => {
             const camera = args.threeCameraRef.current
             const gl = args.threeGlRef.current
             const p = dragOverridesRef.current[n.id] || args.positions[n.id]
@@ -580,8 +575,6 @@ export function useThreeRichMediaOverlayController(args: {
               h: start.h,
             }
             args.setDraggedNodeId(n.id)
-            void clientX
-            void clientY
           }}
           onHeaderDrag={({ dx, dy, pointerId }) => {
             const st = headerDragRef.current

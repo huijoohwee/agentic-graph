@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import { JSDOM } from 'jsdom'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { PerspectiveCamera, type WebGLRenderer } from 'three'
+import { PerspectiveCamera, Vector3, type WebGLRenderer } from 'three'
+import { computeThreeCameraPoseAfterOverlayPan } from '@/lib/canvas/overlayInteractions3d'
 
 import { ensureDefaultWidgetRegistryEntries } from '@/hooks/store/storyboardWidgetManagerSlice'
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config'
@@ -223,9 +224,6 @@ export function testRichMediaSurfaceRuntimePathsReuseSharedOverlayOwners() {
   if (!threeLayout.includes('getPanelPinnedForId?:') || !threeLayout.includes('getPanelScreenAnchorForId?:') || !threeLayout.includes('getPanelZIndexForId?:')) {
     throw new Error('expected 3D Rich Media layout to reuse shared pin, screen-position, and z-index state')
   }
-  if (!threeLayout.includes('opacity: 1,')) {
-    throw new Error('expected 3D Rich Media layout to keep media panels opaque instead of depth-fading them under 3D nodes')
-  }
   if (!threeGraph.includes('sceneGraphForRender') || !threeGraph.includes('edges: []')) {
     throw new Error('expected ThreeGraph to keep node-only media graphs renderable for 3D Rich Media overlays')
   }
@@ -283,6 +281,7 @@ export function testThreeRichMediaLayoutStacksLargerPeersUnderneath() {
   update()
   assert.ok(Number(large.style.zIndex) < Number(small.style.zIndex), 'selection and drag must not cover smaller peers')
   assert.equal(large.style.display, 'flex', 'shared frame content must retain available height')
+  assert.equal(large.style.opacity, '1', 'shared media remains opaque')
   assert.equal(large.style.width, '400px')
   assert.equal(large.querySelector('img')?.getAttribute('loading'), 'eager')
   const observer = new dom.window.MutationObserver(() => {})
@@ -365,4 +364,78 @@ export function testThreeRichMediaLayoutKeepsUnanchoredPanelsVisible() {
   if (Number.parseFloat(String(style.width || '0')) !== 320 || Number.parseFloat(String(style.height || '0')) !== 220) {
     throw new Error(`expected 3D Rich Media panel to receive viewport size, got ${String(style.width)} x ${String(style.height)}`)
   }
+}
+
+export function testThreeRichMediaFollowsCanvasWithoutViewportSnap() {
+  const camera = new PerspectiveCamera(90, 800 / 600, 0.1, 2000)
+  camera.position.set(0, 0, 260)
+  camera.lookAt(0, 0, 0)
+  camera.updateMatrixWorld(true)
+  const el = makeRichMediaPanelElement()
+  let size = { w: 200, h: 120 }
+  let pinned = true
+  const args: Parameters<typeof updateThreeMediaOverlayLayout>[0] = {
+    camera, gl: { domElement: { clientWidth: 800, clientHeight: 600 } } as unknown as WebGLRenderer,
+    overlayNodesPool: [{ id: 'figure' }], positions: { figure: [500, 0, 0] }, dragOverrides: {},
+    overlayEls: new Map([['figure', el]]), prevVisibleIds: new Set(), effectiveSchema: defaultSchema,
+    scratch: createThreeMediaOverlayLayoutScratch(), getPanelSizeForId: () => size,
+    getPanelPinnedForId: () => pinned, getPanelScreenAnchorForId: () => ({ sx: -20, sy: 300 }),
+    threeIframeOverlayMaxVisibleDefault: 8, threeIframeOverlayMaxDistanceDefault: 2000,
+  }
+  const update = () => {
+    camera.updateProjectionMatrix()
+    camera.updateMatrixWorld(true)
+    args.prevVisibleIds = updateThreeMediaOverlayLayout(args)
+    const matrix = String(el.style.transform).slice(7, -1).split(',').map(Number)
+    const scale = matrix[0]!
+    const w = Number.parseFloat(el.style.width) * scale
+    const h = Number.parseFloat(el.style.height) * scale
+    return { scale, w, h, x: matrix[4]! + w / 2, y: matrix[5]! + h / 2, left: matrix[4]! }
+  }
+  const close = (a: number, b: number, message: string) => assert.ok(Math.abs(a - b) < 1e-6, `${message}: ${a} versus ${b}`)
+  const first = update()
+  const projected = new Vector3(...args.positions.figure!).project(camera)
+  close(first.x, (projected.x + 1) * 400, 'offscreen panel retains graph anchor')
+  assert.ok(first.left > 800, 'offscreen panel must not stick to the right border')
+  camera.position.x += 0.1
+  const pan = update()
+  assert.ok(Math.abs(pan.x - first.x) > 0 && Math.abs(pan.x - first.x) < 1, 'subpixel pan must remain continuous')
+  close(pan.w, first.w, 'lateral pan must not resize media')
+  camera.zoom = 1.001
+  const zoom = update()
+  close(zoom.w / pan.w, 1.001, 'zoom scales the complete logical frame without steps')
+  size = { w: 1200, h: 720 }
+  const resized = update()
+  assert.ok(resized.w > 800 && resized.h > 600, 'authored panel must not be shrunk to viewport')
+  camera.position.z = 130
+  close(update().w / resized.w, 2, 'resized panels still follow camera dolly')
+  args.positions.figure = [500, 0, 500]
+  args.selectedNodeId = 'figure'
+  update()
+  assert.equal(args.prevVisibleIds.size, 0, 'selected world panel behind camera must not become a viewport fallback')
+  assert.equal(el.style.display, 'none')
+  pinned = false
+  const free = update()
+  close(free.x, -20, 'free panel retains an explicit offscreen screen anchor')
+  close(free.scale, 1, 'free panel keeps screen-space scale')
+  camera.zoom = 3
+  close(update().w, free.w, 'free panel must not inherit camera zoom')
+
+  camera.position.set(0, 0, 260)
+  camera.zoom = 1
+  camera.lookAt(0, 0, 0)
+  camera.updateProjectionMatrix()
+  camera.updateMatrixWorld(true)
+  const pose = computeThreeCameraPoseAfterOverlayPan({
+    pose: { position: { x: 0, y: 0, z: 260 }, target: { x: 0, y: 0, z: 0 },
+      quaternion: { x: camera.quaternion.x, y: camera.quaternion.y, z: camera.quaternion.z, w: camera.quaternion.w } },
+    dxClientPx: 80, dyClientPx: 35, shiftKey: true,
+    verticalProjectionScale: camera.projectionMatrix.elements[5]!, viewportH: 600,
+  })
+  camera.position.set(pose.position.x, pose.position.y, pose.position.z)
+  camera.lookAt(pose.target.x, pose.target.y, pose.target.z)
+  camera.updateMatrixWorld(true)
+  const moved = new Vector3(0, 0, 0).project(camera)
+  close((moved.x + 1) * 400, 480, 'panel pan moves the graph by the requested horizontal pixels')
+  close((1 - moved.y) * 300, 335, 'panel pan moves the graph by the requested vertical pixels')
 }

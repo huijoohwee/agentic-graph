@@ -1,6 +1,7 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
+  ["richMedia.panel.surfaceMode.3dCanvasMotion","@/__tests__/richMediaSurfaceCoverage.test","testThreeRichMediaFollowsCanvasWithoutViewportSnap"],
   ["richMedia.panel.fastD3Release","@/__tests__/overlayInteractions2dCleanupRegression.test","testOverlayInteractions2dCommitsFastReleaseAcrossRevision"],
   ["workspace.selection.canvas.importedSourceIdentity","@/__tests__/canvasSelectionAutoOpenGatedByActiveRegression.test.tsx","testCanvasSelectionResolvesImportedSourceIdentity"],
   ["mediaOverlayPool.coveredAliases","@/__tests__/mediaOverlayPoolPrioritization.test","testMediaOverlayPoolCarriesCoveredAliases"],

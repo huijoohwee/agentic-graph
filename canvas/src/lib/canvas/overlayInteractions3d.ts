@@ -6,6 +6,8 @@ export function computeThreeCameraPoseAfterOverlayPan(args: {
   dxClientPx: number
   dyClientPx: number
   shiftKey: boolean
+  verticalProjectionScale: number
+  viewportH: number
 }): ThreeCameraPose {
   const pose = args.pose
   const dx = Number(args.dxClientPx) || 0
@@ -20,7 +22,7 @@ export function computeThreeCameraPoseAfterOverlayPan(args: {
 
   if (isPan) {
     const dist = Math.max(1e-3, offset.length())
-    const scale = dist * 0.0012
+    const scale = 2 * dist / (Math.max(0.001, Math.abs(args.verticalProjectionScale)) * Math.max(1, args.viewportH))
     const right = new Vector3(1, 0, 0).applyQuaternion(startQuat).normalize()
     const up = new Vector3(0, 1, 0).applyQuaternion(startQuat).normalize()
     const delta = right.multiplyScalar(-dx * scale).add(up.multiplyScalar(dy * scale))
@@ -88,4 +90,3 @@ export function computeOverlayDraggedWorldPos3d(args: {
   const nextWorld = new Vector3(ndcX, ndcY, ndcZ).unproject(args.camera)
   return { x: nextWorld.x, y: nextWorld.y, z: nextWorld.z }
 }
-
