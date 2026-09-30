@@ -247,7 +247,6 @@ export function useCanvasToolbarContext({ onZoomSelection }: CanvasToolbarCallba
           : {}),
       }
       openMainPanel(tab, options)
-      if (tab === 'websiteImport') setMainPanelCollapsed(false)
     }
     ;(window as MainPanelOpenReadyWindow).__AG_MAIN_PANEL_OPEN_READY__ = true
     window.addEventListener(MAIN_PANEL_OPEN_EVENT, handler as EventListener)

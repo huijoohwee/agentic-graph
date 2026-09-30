@@ -9,7 +9,6 @@ export type MainPanelTabKey =
   | 'research'
   | 'design'
   | 'workflowManager'
-  | 'websiteImport'
   | 'help'
   | 'dashboard'
   | 'settings'
@@ -72,12 +71,6 @@ const MAIN_PANEL_TAB_METADATA: MainPanelTabMeta[] = [
     searchable: true,
     searchPlaceholder: UI_COPY.searchStoryboardWidgetManagerRegistryPlaceholder,
     footerLabel: UI_LABELS.workflowManager,
-  },
-  {
-    key: 'websiteImport',
-    label: 'Import URL',
-    searchable: false,
-    footerLabel: 'Import URL',
   },
   {
     key: 'dashboard',

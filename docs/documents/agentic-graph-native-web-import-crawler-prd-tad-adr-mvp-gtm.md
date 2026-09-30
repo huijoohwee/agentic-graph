@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.29"
+version: "0.2.30"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,24 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.28"
-prd_revision: "0.2.29"
-tad_revision: "0.2.29"
-adr_revision: "0.2.29"
-mvp_revision: "0.2.29"
-gtm_revision: "0.2.29"
+previous_document_version: "0.2.29"
+prd_revision: "0.2.30"
+tad_revision: "0.2.30"
+adr_revision: "0.2.30"
+mvp_revision: "0.2.30"
+gtm_revision: "0.2.30"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 Source Files import consolidation
+
+- PRD: `/refactor #source-files-import @codex` places Import URL and “Choose folder(s)/page(s) to import” within Source Files. Find links and Import selected precede cloud sync on the relevant imported file row. Remove the MainPanel tab, renderer, icon metadata and source-owned session path.
+- TAD: move the existing bounded selection session to the Source Files owner; retain tree selection, cancellation and stale-discovery guards. Project discovered folders/pages into the same Source Files tree with selection checkboxes. Lazy-load the import controls above that tree; never create a nested chooser tree. Launch invokes the same Source Files session and workspace import dispatch.
+- ADR: discovery never imports or synchronizes cloud storage. Only explicit confirmation submits selected URLs. The source row owns selection confirmation immediately before its independent cloud action. Pending entries expose discovery/selection only and cannot reach saved-file actions or cloud upload. Source metadata supplies URLs without site-specific cases. Existing cloud synchronization remains independently triggered.
+- MVP: 30 active minutes plus 15 minutes for the requested same-tree correction and validation, at most 16 files / 70 KB; new owners below 600 lines, with chooser code loaded on demand. Validate folder/partial selection, cancellation, session replacement, Source Files routing, exact selected-page dispatch, MainPanel retirement and live action ordering. Validation inputs and captures stay outside repository source.
+- GTM / rollback: keep source discovery, selection and import next to the files users manage. No dependency, paid feature or production claim. Revert this successor to restore the prior import surface; imported documents remain intact. Publish only with exact clean native validation and retain the running review checkout.
+- Validation: eight discovery/selection regressions pass against the actual Source Files component, including folder partial selection, cancellation, superseding a pending session, exact selected-page import, pending cloud disablement and action order. TypeScript and three runtime smoke contracts pass. Final live browser evidence and exact-candidate native validation remain external receipts.
 
 ## 2026-09-30 contextual Preview modes
 

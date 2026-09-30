@@ -61,7 +61,6 @@ export const MAIN_PANEL_TYPE_ICON_KEYS = [
   'mainPanel.research',
   'mainPanel.design',
   'mainPanel.workflowManager',
-  'mainPanel.websiteImport',
   'mainPanel.dashboard',
   'mainPanel.preview',
   'mainPanel.settings',
@@ -279,7 +278,6 @@ export const MAIN_PANEL_TYPE_ICON_META_BY_KEY = {
     Icon: Palette,
   },
   'mainPanel.workflowManager': { category: 'MainPanel surface', label: 'Workflow Manager', Icon: Table },
-  'mainPanel.websiteImport': { category: 'MainPanel surface', label: 'Import URL', Icon: Globe2 },
   'mainPanel.dashboard': {
     category: 'MainPanel surface',
     label: 'Dashboard',
@@ -414,7 +412,6 @@ export const MAIN_PANEL_TAB_TYPE_ICON_KEY_BY_TAB = {
   research: 'mainPanel.research',
   design: 'mainPanel.design',
   workflowManager: 'mainPanel.workflowManager',
-  websiteImport: 'mainPanel.websiteImport',
   dashboard: 'mainPanel.dashboard',
   settings: 'mainPanel.settings',
   history: 'mainPanel.history',

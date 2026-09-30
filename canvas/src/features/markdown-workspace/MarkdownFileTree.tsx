@@ -67,6 +67,8 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
   onCanvasEmbedStart?: (entry: WorkspaceEntry) => void
   onCanvasEmbedReady?: (entry: WorkspaceEntry, url: string) => void
   onShareCodeReady?: (detail: { sourceName: string; title: string; language: string; code: string }) => void
+  renderEntryLeading?: (entry: WorkspaceEntry) => React.ReactNode
+  canOpenContextMenu?: (entry: WorkspaceEntry) => boolean
   renderFileRight?: (args: { entry: WorkspaceEntry; isActive: boolean }) => React.ReactNode
 }) {
   const {
@@ -88,6 +90,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     onCanvasEmbedReady,
     onShareCodeReady,
     renderFileRight,
+    renderEntryLeading,
   } = props
   const panelTypography = usePanelTypography()
   const tree = React.useMemo(() => buildTree(entries), [entries])
@@ -205,6 +208,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const openContextMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
       event.preventDefault()
       event.stopPropagation()
+      if (props.canOpenContextMenu?.(entry) === false) return
       const pos = clampOverlayTopLeftFullyInViewport({
         pos: { left: event.clientX, top: event.clientY }, size: { width: 220, height: 260 },
         viewport: { width: window.innerWidth || document.documentElement.clientWidth || 1,
@@ -219,6 +223,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
           {isFolder
             ? <DirectoryTreeDisclosure name={entry.name} path={entry.path} expanded={isExpanded} onToggle={() => toggleExpanded(entry.path)} />
             : <DirectoryTreeFileButton name={entry.name} path={entry.path} selected={isActive} onSelect={selectEntry} onContextMenu={openContextMenu} />}
+          {renderEntryLeading?.(entry)}
           <MarkdownFileTreeRowButton
             ariaLabel={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}
             title={entry.path}
