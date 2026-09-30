@@ -16,6 +16,7 @@ import { excludeLegacyWorkspaceSourceEntries } from '@/features/workspace-fs/wor
 import { isAgenticGraphWorkspaceSeedsRootPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import {
   UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME,
+  UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME,
   UI_RESPONSIVE_DATA_VIEW_NARROW_MENU_PANEL_CLASSNAME,
   UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_LIST_CLASSNAME,
   UI_RESPONSIVE_MENU_ROW_CLASSNAME,
@@ -67,6 +68,8 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
   onCanvasEmbedStart?: (entry: WorkspaceEntry) => void
   onCanvasEmbedReady?: (entry: WorkspaceEntry, url: string) => void
   onShareCodeReady?: (detail: { sourceName: string; title: string; language: string; code: string }) => void
+  renderEntryLeading?: (entry: WorkspaceEntry) => React.ReactNode
+  canOpenContextMenu?: (entry: WorkspaceEntry) => boolean
   renderFileRight?: (args: { entry: WorkspaceEntry; isActive: boolean }) => React.ReactNode
 }) {
   const {
@@ -88,6 +91,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     onCanvasEmbedReady,
     onShareCodeReady,
     renderFileRight,
+    renderEntryLeading,
   } = props
   const panelTypography = usePanelTypography()
   const tree = React.useMemo(() => buildTree(entries), [entries])
@@ -205,6 +209,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const openContextMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
       event.preventDefault()
       event.stopPropagation()
+      if (props.canOpenContextMenu?.(entry) === false) return
       const pos = clampOverlayTopLeftFullyInViewport({
         pos: { left: event.clientX, top: event.clientY }, size: { width: 220, height: 260 },
         viewport: { width: window.innerWidth || document.documentElement.clientWidth || 1,
@@ -234,10 +239,11 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
                 className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-80`} />
             ) : null}
           </MarkdownFileTreeRowButton>
+          {renderEntryLeading?.(entry)}
           {sourceUrl ? (
             <a href={sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open source URL for ${entry.name}`}
               title={sourceUrl}
-              className={`shrink-0 inline-flex h-5 w-5 items-center justify-center rounded ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing}`}>
+              className={`shrink-0 inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing}`}>
               <LinkIcon role="img" aria-label="Imported from URL" className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-70`} />
             </a>
           ) : null}
