@@ -205,13 +205,13 @@ export async function importWebsiteFromSourceFiles(url: string, sourcePath?: str
   }
 }
 
-export async function importSelectedWebsitePages(url: string, selectedUrls: string[], beforeImport?: () => Promise<unknown>) {
+export async function importSelectedWebsitePages(url: string, selectedUrls: string[], beforeImport?: () => Promise<unknown>, destinationPath?: string) {
   await beforeImport?.()
   const { getMarkdownWorkspaceActionBridge } = await import('@/features/markdown-explorer/workspaceActionBridge')
   const importWebsite = getMarkdownWorkspaceActionBridge().importWebsite
     ?? (await import('@/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction')).importWebsiteViaWorkspaceRuntime
   const { buildAutoWebsiteImportOptions } = await import('@/lib/toolbar/importUrlWebsiteMode')
-  const result = await importWebsite(url, { ...buildAutoWebsiteImportOptions(), selectedUrls,
+  const result = await importWebsite(url, { ...buildAutoWebsiteImportOptions(), selectedUrls, ...(destinationPath ? { destinationPath } : {}),
     minPages: selectedUrls.length, maxPages: selectedUrls.length, source: 'invocation' })
   if (result && result.error) throw new Error(result.error)
   return result
@@ -222,17 +222,17 @@ export async function confirmRestoredWebsiteSelection(id: number, urls: string[]
 }
 
 /** Explicit page action leaves the batch chooser and other selections intact. */
-export async function importDiscoveredWebsitePage(id: number, url: string) {
-  return importSessionPages(id, [url], false)
+export async function importDiscoveredWebsitePage(id: number, url: string, destinationPath?: string) {
+  return importSessionPages(id, [url], false, destinationPath)
 }
 
-async function importSessionPages(id: number, urls: string[], consumeSelection: boolean) {
+async function importSessionPages(id: number, urls: string[], consumeSelection: boolean, destinationPath?: string) {
   const session = useWebsiteImportSelectionSession.getState().session
   if (session?.id !== id || session.busy || session.importing || !urls.length || urls.length > 500
     || (consumeSelection && !session.restored) || urls.some(url => !session.pages.some(page => page.url === url))) return
   updateSession(id, current => ({ ...current, importing: true, importingUrl: urls.length === 1 ? urls[0] : undefined, error: '' }))
   try {
-    await importSelectedWebsitePages(session.url, urls)
+    await importSelectedWebsitePages(session.url, urls, undefined, destinationPath)
     updateSession(id, current => ({ ...current, importing: false, importingUrl: undefined,
       selected: consumeSelection ? new Set() : current.selected, error: '' }))
   } catch (failure) {

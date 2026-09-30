@@ -108,6 +108,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
     const cloudUnavailable = pending ? 'Not saved — import this item before cloud sync' : unsupported
     return <>
       <SourceFileWebsiteActions entry={entry} source={sourcesByPath?.[entry.path]} urlOverride={projection.pageUrls.get(entry.path)} confirmationOwner={projection.ownerPath === entry.path}
+        destinationPath={pending && entry.kind === 'file' ? entry.path : undefined}
         detailsOpen={details.open} onShowDetails={details.show} onToggleDetails={details.toggle} statusAvailable={!!recoveryError}
         discoveryContext={projection.ownerPath === entry.path || projection.pageUrls.has(entry.path) || projection.expandedPaths.has(entry.path)} />
       {cloudUnavailable ? <button type="button" disabled aria-label={`Cloud sync unavailable for ${entry.name}`} title={cloudUnavailable} className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded ${UI_THEME_TOKENS.text.secondary} opacity-40 cursor-not-allowed`}><CloudOff className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} aria-hidden="true" /></button> : <SourceFileCloudSyncIndicator

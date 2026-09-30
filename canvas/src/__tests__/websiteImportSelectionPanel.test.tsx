@@ -519,18 +519,19 @@ test('discovered page import is explicit, locked while running and preserves the
   } })
   const importButton = () => Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(button => button.getAttribute('aria-label') === 'Import page Topic page')!
   try {
-    await act(async () => { void chooseWebsiteImportPages(sourceUrl, sourceEntry.path).then(urls => resolutions.push(urls)); root.render(<><SourceFileWebsiteActions entry={{ ...sourceEntry, name: 'Topic page', path: '/topic.md', text: undefined }} urlOverride={page} confirmationOwner={false} discoveryContext /><WebsiteImportSelectionView /></>) })
+    await act(async () => { void chooseWebsiteImportPages(sourceUrl, sourceEntry.path).then(urls => resolutions.push(urls)); root.render(<><SourceFileWebsiteActions entry={{ ...sourceEntry, name: 'Topic page', path: '/topic.md', text: undefined }} urlOverride={page} destinationPath="/topic.md" confirmationOwner={false} discoveryContext /><WebsiteImportSelectionView /></>) })
     assert.equal(useWebsiteImportSelectionSession.getState().session!.selected.size, 0)
     await act(async () => toggleWebsiteSelection([other], true))
     assert.equal(importButton().disabled, false)
     await act(async () => { importButton().click(); await importStarted })
     const id = useWebsiteImportSelectionSession.getState().session!.id
     assert.equal(calls.length, 1)
-    const options = calls[0].options as { selectedUrls: string[]; maxPages: number; minPages: number; source: string }
+    const options = calls[0].options as { selectedUrls: string[]; maxPages: number; minPages: number; source: string; destinationPath: string }
     assert.equal(calls[0].url, sourceUrl)
     assert.deepEqual(options.selectedUrls, [page], 'imports the addressed page, not the selected sibling')
     assert.equal(options.maxPages, 1); assert.equal(options.minPages, 1)
     assert.equal(options.source, 'invocation', 'runtime failures must propagate')
+    assert.equal(options.destinationPath, '/topic.md', 'the clicked row owns workspace placement')
     assert.ok(importButton().disabled)
     assert.match(document.querySelector('section[aria-label="Website discovery status"]')!.textContent || '', /Importing https:/)
     await act(async () => { importButton().click(); await importDiscoveredWebsitePage(id, page) })

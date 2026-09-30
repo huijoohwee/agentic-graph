@@ -15,6 +15,7 @@ export { importWebsiteViaWorkspaceRuntime, useWorkspaceWebsiteImportAction } fro
 
 type WebsiteImportSettings = {
   selectedUrls?: string[]
+  destinationPath?: string
   outputDirRel: string
   discoverSitemap: boolean
   maxPages: number
@@ -52,6 +53,7 @@ function resolveWebsiteImportSettings(opts?: WorkspaceImportWebsiteOpts): Websit
   const requestedMaxPages = Number.isFinite(opts?.maxPages) ? Number(opts?.maxPages) : configuredMaxPages
   return {
     selectedUrls: opts?.selectedUrls,
+    destinationPath: opts?.destinationPath,
     outputDirRel: String(store.websiteImportOutputDirRel || '').trim(),
     discoverSitemap: store.websiteImportDiscoverSitemap !== false,
     maxPages: clampWebsiteImportMaxPages(requestedMaxPages, opts?.minPages),
@@ -226,6 +228,7 @@ export async function runWorkspaceWebsiteImport(args: {
   focusAfterImport?: (createdPath: WorkspacePath, opts?: { sourceUrl?: string | null; applyToGraph?: boolean; jobId?: number }) => Promise<void>
 }): Promise<{ createdPaths: WorkspacePath[]; host: string; websiteImportManifest: WebsiteImportManifestV1; websiteImportSummary: WorkspaceWebsiteImportSummary }> {
   const settings = resolveWebsiteImportSettings(args.opts)
+  if (settings.destinationPath !== undefined && settings.selectedUrls?.length !== 1) throw new Error('An in-place import requires exactly one selected page.')
   if (settings.applyToCanvas) {
     const { applyCanvasFrontmatterPreset } = await import('@/features/parsers/canvasFrontmatterPreset')
     if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')

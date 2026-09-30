@@ -25,9 +25,7 @@ import {
   snapshotShadowEntries,
   upsertShadowEntry,
 } from './workspaceFsShadow'
-
 import { notifyWorkspaceFsDegraded } from './workspaceFsDegraded'
-
 let fsSingleton: WorkspaceFs | null = null
 let warnedDegraded = false
 let fsGeneration = 0
@@ -135,8 +133,8 @@ export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGe
       // A conditional save must never degrade into a shadow-memory write.
       return options && Object.hasOwn(options, 'expectedText') ? write(inner) : run('writeFileText', write)
     },
-    createFile: args =>
-      run('createFile', async fs => {
+    createFile: args => {
+      const create = async (fs: WorkspaceFs) => {
         const path = await fs.createFile(args)
         const p = normalizeWorkspacePath(path)
         upsertShadowEntry({
@@ -148,7 +146,10 @@ export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGe
           updatedAtMs: Date.now(),
         })
         return path
-      }),
+      }
+      // Exact creation preserves durable collision results without a shadow copy.
+      return args.requireExactPath ? create(inner) : run('createFile', create)
+    },
     createFolder: args =>
       run('createFolder', async fs => {
         const path = await fs.createFolder(args)

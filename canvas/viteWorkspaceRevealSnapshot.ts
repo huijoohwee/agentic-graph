@@ -64,12 +64,109 @@ export function parseWorkspaceRevealFolderSnapshot(value: unknown): WorkspaceRev
 
 export async function saveWorkspaceRevealSnapshot(outputRoot: string, snapshot: WorkspaceRevealSnapshot): Promise<string> {
   const value = parseWorkspaceRevealSnapshot(snapshot)
-  return saveNamedSnapshot(outputRoot, value.workspacePath, JSON.stringify(value), [{ ...value, kind: 'file' }], false)
+  const entries: FolderEntry[] = [{ ...value, kind: 'file' }]
+  await saveNamedSnapshot(outputRoot, value.workspacePath, JSON.stringify(value), entries, false)
+  return saveCurrentCopies(outputRoot, value.workspacePath, entries)
 }
 
 export async function saveWorkspaceRevealFolderSnapshot(outputRoot: string, snapshot: WorkspaceRevealFolderSnapshot): Promise<string> {
   const value = parseWorkspaceRevealFolderSnapshot(snapshot)
-  return saveNamedSnapshot(outputRoot, value.workspacePath, JSON.stringify(value), value.entries, true)
+  await saveNamedSnapshot(outputRoot, value.workspacePath, JSON.stringify(value), value.entries, true)
+  return saveCurrentCopies(outputRoot, value.workspacePath, [{ workspacePath: value.workspacePath, kind: 'folder' }, ...value.entries])
+}
+
+const copyQueues = new Map<string, Promise<unknown>>()
+const contentHash = (text: string) => createHash('sha256').update(text).digest('hex')
+
+/** One named tree for files and folders; immutable snapshots above retain prior revisions. */
+async function saveCurrentCopies(outputRoot: string, selectedPath: string, entries: FolderEntry[]): Promise<string> {
+  const root = path.join(path.resolve(outputRoot), 'revealed')
+  const previous = copyQueues.get(root) || Promise.resolve()
+  const pending = previous.catch(() => undefined).then(() => publishCurrentCopies(root, selectedPath, entries))
+  copyQueues.set(root, pending)
+  try { return await pending } finally { if (copyQueues.get(root) === pending) copyQueues.delete(root) }
+}
+
+async function publishCurrentCopies(root: string, selectedPath: string, entries: FolderEntry[]): Promise<string> {
+  const replaced = () => new WorkspaceRevealSnapshotError(409, 'The existing local copy was replaced; it was preserved')
+  const edited = () => new WorkspaceRevealSnapshotError(409, 'The existing local copy was edited; it was preserved')
+  const moved = () => new WorkspaceRevealSnapshotError(409, 'The existing local copy was moved; its directory was preserved')
+  if (await fs.realpath(root) !== root) throw replaced()
+  const lockPath = path.join(root, '.current-lock')
+  const lock = await fs.open(lockPath, 'wx', 0o600).catch(error => {
+    if (error.code === 'EEXIST') throw new WorkspaceRevealSnapshotError(409, 'Another local copy is being saved; retry when it finishes')
+    throw error
+  })
+  let staging = ''
+  try {
+    const current = path.join(root, 'current'), index = path.join(root, '.current-index')
+    const ensureDirectory = async (directory: string) => {
+      let parent = root
+      for (const name of path.relative(root, directory).split(path.sep).filter(Boolean)) {
+        parent = path.join(parent, name)
+        await fs.mkdir(parent).catch(error => { if (error.code !== 'EEXIST') throw error })
+        if (await fs.realpath(parent) !== parent || !(await fs.lstat(parent)).isDirectory()) throw replaced()
+      }
+    }
+    await ensureDirectory(current); await ensureDirectory(index)
+    const plans = await Promise.all(entries.map(async entry => {
+      const target = path.join(current, entry.workspacePath)
+      const receipt = path.join(index, contentHash(entry.workspacePath) + '.json')
+      const next = { workspacePath: entry.workspacePath, kind: entry.kind, digest: entry.kind === 'file' ? contentHash(entry.text!) : null }
+      let last: typeof next | null = null
+      try {
+        if (await fs.realpath(receipt) !== receipt || (await fs.stat(receipt)).size > 8192) throw replaced()
+        last = JSON.parse(await fs.readFile(receipt, 'utf8'))
+        if (last?.workspacePath !== entry.workspacePath || last?.kind !== entry.kind) throw replaced()
+      } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
+      let present = false
+      const verify = async () => {
+        try {
+          if (await fs.realpath(target) !== target) throw replaced()
+          const stat = await fs.lstat(target)
+          present = true
+          if (entry.kind === 'folder') { if (!stat.isDirectory()) throw replaced(); return true }
+          if (!stat.isFile() || stat.size > WORKSPACE_REVEAL_MAX_BYTES) throw edited()
+          const digest = contentHash(await fs.readFile(target, 'utf8'))
+          if (digest !== next.digest && digest !== last?.digest) throw edited()
+          return digest === next.digest
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+          present = false
+          if (last) throw moved()
+          return false
+        }
+      }
+      const unchanged = await verify() && last?.digest === next.digest
+      return { entry, target, receipt, next, verify, unchanged, present }
+    }))
+    staging = await fs.mkdtemp(path.join(root, '.current-pending-'))
+    for (const [i, plan] of plans.entries()) {
+      if (plan.unchanged) continue
+      if (plan.entry.kind === 'file') await fs.writeFile(path.join(staging, String(i)), plan.entry.text!, { flag: 'wx', mode: 0o600 })
+      await fs.writeFile(path.join(staging, `${i}.json`), JSON.stringify(plan.next), { flag: 'wx', mode: 0o600 })
+    }
+    // Preflight every requested entry before changing any managed file.
+    for (const plan of plans) await plan.verify()
+    for (const [i, plan] of plans.entries()) {
+      if (plan.unchanged) continue
+      await ensureDirectory(plan.entry.kind === 'folder' ? plan.target : path.dirname(plan.target))
+      await plan.verify()
+      if (plan.entry.kind === 'file') {
+        const stagedFile = path.join(staging, String(i))
+        if (plan.present) await fs.rename(stagedFile, plan.target)
+        else await fs.link(stagedFile, plan.target).catch(error => {
+          if (error.code === 'EEXIST') throw edited()
+          throw error
+        })
+      }
+      await fs.rename(path.join(staging, `${i}.json`), plan.receipt)
+    }
+    return path.join(current, selectedPath)
+  } finally {
+    if (staging) await fs.rm(staging, { recursive: true, force: true })
+    await lock.close(); await fs.unlink(lockPath)
+  }
 }
 
 /** Publish one complete revision atomically; never overwrite edited copies. */

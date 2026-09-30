@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.14"
+version: "1.0.16"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.14"
-tad_revision: "1.0.14"
-adr_revision: "1.0.14"
-mvp_revision: "1.0.14"
-gtm_revision: "1.0.14"
+prd_revision: "1.0.16"
+tad_revision: "1.0.16"
+adr_revision: "1.0.16"
+mvp_revision: "1.0.16"
+gtm_revision: "1.0.16"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.14. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.16. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -70,6 +70,12 @@ batch selection. A successful single-page import opens that page in the editor a
 import reports its error without substituting another document. Existing documents remain open until
 the requested content has been saved.
 
+Importing a discovered row saves its page at that row's workspace path and changes its status to saved.
+It must not create another timestamp folder, canvas or sitemap in Source Files for that single action.
+Revealing sibling documents must also place them together under one stable local workspace root.
+Existing saved documents and earlier capture history remain intact. An occupied import destination fails
+visibly instead of overwriting content or silently choosing another filename.
+
 Source Files exposes file and folder actions in one icon context toolbar. Remove the row action
 strip and text-menu variant; retain the existing compact icon size, accessible labels, tooltips and
 disabled states. Pointer context-menu and keyboard invocation must address the same selected entry.
@@ -113,11 +119,14 @@ a live-site fallback. Captures default to stripping source scripts; an explicit 
 Equivalent import identifiers keep the same load; a source change aborts the previous request.
 
 Reveal captures the selected path, source and text before lazy loading. The local host compares a
-derived mirror with the requested revision; a missing or different mirror creates a content-addressed
-copy under the configured document output root's `docs_/revealed` directory. The output root comes from the existing local docs configuration, so it follows the device path. Copies
-retain the workspace path and filename. Identical requests reuse a copy; revisions create separate
-copies. Edited or moved copies fail visibly and remain intact. Browser-only folders use the same
-copy owner: load unopened file text through existing workspace storage, validate every descendant, stage the complete subtree, then publish it atomically.
+derived mirror with the requested revision. Named copies share the stable `docs_/revealed/current`
+root and retain their workspace paths, so independently revealed siblings appear in the same disk
+folder. The existing content-addressed snapshots remain revision backups, not Finder destinations.
+A bounded sidecar records each managed file's last content digest. Unchanged copies can update to the
+requested editor revision; edited, moved or replaced copies fail visibly and remain intact.
+Browser-only folders use this same copy owner: load unopened text, validate every requested file
+before writing, then stage complete files and atomically replace each leaf. Preserve unrequested
+local additions. Folder promotion is serialized and fail-loud; it is not a filesystem-wide transaction.
 Explicit local folders still reveal their existing directory. No file contents may be silently omitted.
 Folder copies reject duplicate, case/Unicode-colliding and file-as-parent paths. Bound each copy to
 1,000 entries including inferred folders and 500,000 UTF-8 bytes including the request envelope;
@@ -180,7 +189,22 @@ Use the exact selected URL and a matching page limit, with no extra discovery. S
 resolves only from page-writer provenance, never the crawl summary or sitemap with the same source URL.
 Missing requested output fails visibly. Import progress belongs in the existing opt-in summary overlay.
 
+The discovered-row action passes an optional exact workspace destination through the existing import
+contract. It is valid only for one explicitly selected URL and is never sent to the crawl server.
+The existing writer matches that URL, creates the page at the destination atomically, and skips
+collection summary creation. The native capture keeps its independent import identifier and artifact
+metadata. Workspace storage owns an opt-in exact-create collision policy; ordinary file creation
+retains its existing naming policy. Failed or stale captures never materialize a saved page.
+
 ## ADR
+
+- Finder reveals a stable named copy tree; content hashes identify private revision backups only.
+  Preserve old hash directories, share one save owner for files and folders, and reject local-edit
+  conflicts before updating managed copies. No automatic migration or deletion of historical exports.
+
+- Separate workspace placement from capture generation identity. Reuse the projected row path and
+  existing file writer; do not move historical imports or invent a second tree alias or write owner.
+  Use atomic exact creation to preserve another tab's file if the destination is occupied.
 
 - Reuse AnchorOverlay for the discovery toolbar and a separate summary panel beneath it; remove
   the inline controls and reveal the summary only on applicable icon clicks. Keep one session owner, existing compact glyphs, and accessible disabled action slots.
@@ -216,6 +240,20 @@ are introduced. The existing raw-artifact retrieval limit is unchanged for captu
   Bind single-page editor/canvas activation to the saved page output and propagate runtime failures.
 
 ## MVP
+
+In-place import and reveal follow-up: eleven production modules, less than 20 KB added source, no dependencies.
+Verify exact placement, query variants, capture provenance, absence of new workspace summaries,
+failed capture behavior, and concurrent destination collision in memory and persisted storage.
+Rollback reverts the optional destination and exact-create contracts together; saved files and raw
+captures remain readable using their existing metadata. Twenty-eight focused import/session regressions and the persisted cross-tab exact-create check pass.
+The retained preview imported one runtime-supplied page at its existing discovered path: Source Files
+increased from 43 to 44, the saved page opened with its expected heading, and the original three
+import folders remained without another timestamp, canvas or sitemap. Earlier saved copies remain
+untouched. Ten reveal regressions pass, including sibling placement, file/folder destination reuse, unchanged
+copy reuse, revision backups, local edits, moved files, symlinks and folder-wide conflict preflight.
+The retained preview revealed both reported sibling documents into the same `revealed/current`
+folder. Their bytes match the previous separate copies, and both previous hash directories remain.
+The repository affected gate must pass before review publication.
 
 Discovery follow-up: five production modules, under 20 KB added source, plus regression tests and this
 contract. Tests cover rendered/sitemap merging, nested and cyclic indexes, nonstandard urlset children,
@@ -386,3 +424,6 @@ selected pages. Measure successful discovery actions without lost selection or r
 
 A reader can import a discovered page where they find it and immediately verify its saved content.
 Measure successful page opening rather than menu availability; no paid service or account is added.
+
+Saving at the discovered row removes the extra navigation after a page import. Measure successful
+in-place opening and duplicate-folder count; capture history remains independently addressable.

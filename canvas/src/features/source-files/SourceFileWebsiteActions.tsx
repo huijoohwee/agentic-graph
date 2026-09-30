@@ -39,8 +39,8 @@ export function reportSourceImportFailure(error: unknown) {
   useGraphStore.getState().pushUiToast({ id: 'source-files:website-import', kind: 'error', message: error instanceof Error ? error.message : String(error), dismissible: true })
 }
 
-export function SourceFileWebsiteActions({ entry, source, urlOverride, confirmationOwner, discoveryContext = false, detailsOpen, onShowDetails, onToggleDetails, statusAvailable = false }: {
-  entry: WorkspaceEntry; source?: WorkspaceEntrySource; urlOverride?: string; confirmationOwner?: boolean; discoveryContext?: boolean
+export function SourceFileWebsiteActions({ entry, source, urlOverride, destinationPath, confirmationOwner, discoveryContext = false, detailsOpen, onShowDetails, onToggleDetails, statusAvailable = false }: {
+  entry: WorkspaceEntry; source?: WorkspaceEntrySource; urlOverride?: string; destinationPath?: string; confirmationOwner?: boolean; discoveryContext?: boolean
   detailsOpen?: boolean; onShowDetails?: () => void; onToggleDetails?: () => void; statusAvailable?: boolean
 }) {
   const session = useWebsiteImportSelectionSession(state => state.session)
@@ -61,7 +61,7 @@ export function SourceFileWebsiteActions({ entry, source, urlOverride, confirmat
     <SourceImportAction action="import"
       label={confirmSelection ? `Import selected (${session.selected.size}) for ${entry.name}` : importPage ? `Import page ${entry.name}` : ownsSession && !fileRequired ? `Import selected (${session.selected.size}) for ${entry.name}` : `Import unavailable for ${entry.name}`}
       disabled={(!confirmSelection && !importPage) || !!session?.busy || !!session?.importing}
-      onClick={() => { onShowDetails?.(); if (confirmSelection) confirmWebsiteSelection(); else if (importPage) void importDiscoveredWebsitePage(session.id, url).catch(reportSourceImportFailure) }} />
+      onClick={() => { onShowDetails?.(); if (confirmSelection) confirmWebsiteSelection(); else if (importPage) void importDiscoveredWebsitePage(session.id, url, destinationPath).catch(reportSourceImportFailure) }} />
     <SourceImportAction action="more" label={`Show more pages (${remaining} remaining)`} disabled={moreDisabled}
       title={!hasDiscovery ? 'Show more pages — this item is outside the current discovery' : session?.importing ? 'Show more pages — import in progress' : remaining <= 0 ? 'Show more pages — all matching pages are shown' : undefined}
       onClick={() => { onShowDetails?.(); showMoreWebsiteSelectionPages() }} />

@@ -15,8 +15,14 @@ test('named copies preserve Unicode paths, empty documents, revisions and concur
   assert.equal(new Set(copies).size, 1)
   assert.ok(copies[0]!.endsWith(snapshot.workspacePath))
   assert.equal(await fs.readFile(copies[0]!, 'utf8'), snapshot.text)
+  const sameInode = (await fs.stat(copies[0]!)).ino
+  await saveWorkspaceRevealSnapshot(repo, snapshot)
+  assert.equal((await fs.stat(copies[0]!)).ino, sameInode, 'unchanged copies avoid replacement writes')
   const edited = await saveWorkspaceRevealSnapshot(repo, { ...snapshot, text: 'New revision' })
-  assert.notEqual(edited, copies[0]); assert.equal(await fs.readFile(copies[0]!, 'utf8'), snapshot.text)
+  assert.equal(edited, copies[0]); assert.equal(await fs.readFile(edited, 'utf8'), 'New revision')
+  const revisions = (await fs.readdir(path.join(repo, 'revealed'))).filter(name => /^[a-f0-9]{64}$/.test(name))
+  assert.equal(revisions.length, 2, 'previous content-addressed revisions stay intact')
+  assert.ok((await Promise.all(revisions.map(name => fs.readFile(path.join(repo, 'revealed', name, snapshot.workspacePath), 'utf8')))).includes(snapshot.text))
   const other = await saveWorkspaceRevealSnapshot(repo, { ...snapshot, workspacePath: '/another/研究.md' })
   assert.notEqual(other, copies[0])
   const empty = await saveWorkspaceRevealSnapshot(repo, { workspacePath: '/notes/empty.txt', text: '' })
@@ -66,7 +72,7 @@ test('folder copies retain nested files, Unicode and empty folders as one atomic
   const empty = await saveWorkspaceRevealFolderSnapshot(repo, { workspacePath: '/blank', entries: [] })
   assert.deepEqual(await fs.readdir(empty), [])
   await fs.writeFile(path.join(copies[0], 'new-local.md'), 'Local addition')
-  await assert.rejects(saveWorkspaceRevealFolderSnapshot(repo, snapshot), /edited.*preserved/)
+  assert.equal(await saveWorkspaceRevealFolderSnapshot(repo, snapshot), copies[0], 'unrequested local additions stay in the shared folder')
   assert.equal(await fs.readFile(path.join(copies[0], 'new-local.md'), 'utf8'), 'Local addition')
 }))
 
@@ -87,4 +93,25 @@ test('replaced folder descendants cannot redirect a repeated reveal', async () =
   await fs.rename(child, outside); await fs.symlink(outside, child)
   await assert.rejects(saveWorkspaceRevealFolderSnapshot(repo, snapshot), /replaced.*preserved/)
   assert.equal(await fs.readFile(path.join(outside, 'a.md'), 'utf8'), 'Saved')
+}))
+
+
+test('independently revealed files and their folder share one stable local tree across revisions', async () => fixture(async repo => {
+  const parent = '/websites/example.invalid/collection/library'
+  const first = { workspacePath: parent + '/first.md', text: 'First article' }
+  const second = { workspacePath: parent + '/second.md', text: 'Second article' }
+  const a = await saveWorkspaceRevealSnapshot(repo, first)
+  const b = await saveWorkspaceRevealSnapshot(repo, second)
+  assert.equal(path.dirname(a), path.dirname(b))
+  assert.equal(a, path.join(repo, 'revealed/current', first.workspacePath))
+  assert.deepEqual((await fs.readdir(path.dirname(a))).sort(), ['first.md', 'second.md'])
+  const folder = await saveWorkspaceRevealFolderSnapshot(repo, { workspacePath: parent,
+    entries: [{ ...first, text: 'New first article', kind: 'file' }, { ...second, kind: 'file' }] })
+  assert.equal(folder, path.dirname(a))
+  assert.equal(await fs.readFile(a, 'utf8'), 'New first article')
+  await fs.writeFile(b, 'User edit')
+  await assert.rejects(saveWorkspaceRevealFolderSnapshot(repo, { workspacePath: parent,
+    entries: [{ ...first, text: 'Unpublished revision', kind: 'file' }, { ...second, kind: 'file' }] }), /edited.*preserved/)
+  assert.equal(await fs.readFile(a, 'utf8'), 'New first article', 'preflight checks all files before publishing changes')
+  assert.equal(await fs.readFile(b, 'utf8'), 'User edit')
 }))

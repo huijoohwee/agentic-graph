@@ -14,6 +14,8 @@ import { buildWebpageWorkspaceEntryTextFromUpstreamMarkdown } from '../workspace
 import { D3_URL_IMPORT_CANVAS_PRESET } from '../workspaceImport/canvasPresets'
 
 export type WebsiteImportSettings = {
+  selectedUrls?: string[]
+  destinationPath?: string
   outputDirRel: string
   concurrency: number
   defaultView: unknown
@@ -85,6 +87,12 @@ export async function createWebsiteImportWorkspaceWriter(args: {
   const localSiteRootRel = resolveWebsiteImportLocalSiteRootRel(url)
   const view = coerceWebsiteImportWebpageView(settings.defaultView)
   const generateArtifactDocs = settings.generateArtifactDocs
+  const destination = settings.destinationPath
+  if (destination !== undefined && (settings.selectedUrls?.length !== 1 || !destination.startsWith('/')
+    || destination === '/' || normalizeWorkspacePath(destination) !== destination
+    || destination.split('/').some(part => part === '.' || part === '..'))) {
+    throw new Error('An in-place import requires one selected page and an exact workspace file path.')
+  }
 
   const stubForNode = (nodeUrl: string, nodeId: string, unavailable = false) => {
     const text = buildWebpageWorkspaceEntryTextFromUpstreamMarkdown({
@@ -97,7 +105,9 @@ export async function createWebsiteImportWorkspaceWriter(args: {
       : text
   }
 
-  const rootFolder = normalizeWorkspacePath(`/websites/${safeWebsitePathSegment(host)}/${safeWebsitePathSegment(importId)}`)
+  const rootFolder = destination
+    ? destination.slice(0, destination.lastIndexOf('/')) || '/'
+    : normalizeWorkspacePath(`/websites/${safeWebsitePathSegment(host)}/${safeWebsitePathSegment(importId)}`)
   args.onRootPath?.(rootFolder)
   const ensureFolder = await createWorkspaceFolderTreeEnsurer(fs)
   await ensureFolder(rootFolder)
@@ -132,7 +142,7 @@ export async function createWebsiteImportWorkspaceWriter(args: {
         const nodeId = typeof node.nodeId === 'string' ? node.nodeId : hashStringToHex(nodeUrl).slice(0, 16)
         const nodeTreePath = typeof node.path === 'string' ? node.path : ''
         const nodeStatus = typeof node.status === 'string' ? node.status : 'ok'
-        if (!nodeUrl || nodeStatus !== 'ok') return null
+        if (!nodeUrl || nodeStatus !== 'ok' || (destination && nodeUrl !== settings.selectedUrls![0])) return null
         const artifacts = node.artifacts && typeof node.artifacts === 'object' ? (node.artifacts as Record<string, unknown>) : {}
         const artifactText = (key: string): string | undefined => {
           const text = typeof artifacts[key] === 'string' ? String(artifacts[key]).trim() : ''
@@ -167,7 +177,7 @@ export async function createWebsiteImportWorkspaceWriter(args: {
       writeConcurrency,
       async row => {
         if (!isWebsiteImportJobCurrent(importJobRef, jobId)) throw new Error('cancelled')
-        const relativeDocumentPath = resolveWebsiteImportNodeRelativeDocumentPath({
+        const relativeDocumentPath = destination?.slice(destination.lastIndexOf('/') + 1) || resolveWebsiteImportNodeRelativeDocumentPath({
           nodeUrl: row.nodeUrl,
           nodePath: row.nodeTreePath,
         })
@@ -227,7 +237,10 @@ export async function createWebsiteImportWorkspaceWriter(args: {
         })()
 
         const tryCreate = async (name: string) => {
-          const createdPath = await upsertWorkspaceTextDocument({ fs, parentPath: folderPath, name, text })
+          if (!isWebsiteImportJobCurrent(importJobRef, jobId)) throw new Error('cancelled')
+          const createdPath = destination
+            ? await fs.createFile({ parentPath: folderPath, name, text, requireExactPath: true })
+            : await upsertWorkspaceTextDocument({ fs, parentPath: folderPath, name, text })
           createdPaths.push(createdPath)
           const source = { path: createdPath, source: { kind: 'url' as const, url: row.nodeUrl, path: `workspace:${createdPath}` } }
           sources.push(source)
@@ -247,7 +260,8 @@ export async function createWebsiteImportWorkspaceWriter(args: {
         let source: WebsiteImportCreated['sources'][number] | null = null
         try {
           source = await tryCreate(primaryName)
-        } catch {
+        } catch (error) {
+          if (destination || !isWebsiteImportJobCurrent(importJobRef, jobId)) throw error
           const alt = `${nameBase}-${hashStringToHex(row.nodeUrl).slice(0, 6)}.md`
           try {
             source = await tryCreate(alt)
@@ -269,6 +283,11 @@ export async function createWebsiteImportWorkspaceWriter(args: {
     rootUrl = manifest.rootUrl
     const nodes = manifest.nodes
     await writeNodes(nodes)
+    if (destination) {
+      if (!createdPaths.includes(destination)) throw new Error(`The requested page was not saved: ${settings.selectedUrls![0]}`)
+      status.setStatusProgress('Writing', 1, 1)
+      return { created: { createdPaths, sources }, host, canvasPath: null }
+    }
     try {
       const sitemapText = buildWebsiteSitemapMarkdown({
         rootUrl,
