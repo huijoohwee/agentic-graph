@@ -7,7 +7,7 @@ export type SanitizeMarkdownResult = { text: string; changed: boolean }
 
 export type SanitizeImportedMarkdownOptions = { sourceUrl?: string }
 
-const SVG_OMITTED_PLACEHOLDER_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="24"/>'
+const SVG_OMITTED_PLACEHOLDER_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="32" role="img" aria-label="Image exceeds inline limit"><rect width="200" height="32" fill="#eee"/><text x="8" y="21" fill="#222" font-size="12">Image exceeds inline limit</text></svg>'
 
 const encodeUtf8ToBase64 = (text: string): string => {
   const raw = String(text ?? '')
@@ -48,7 +48,7 @@ export function stripEmbeddedBase64ImageSrc(raw: string): SanitizeMarkdownResult
   const s = String(raw || '')
   const needle = 'data:image/'
   const base64Needle = ';base64,'
-  const maxSvgBase64Chars = 100
+  const maxSvgBase64Chars = 32_000
   let i = 0
   let changed = false
   let out = ''
@@ -336,7 +336,7 @@ export function convertOrDropInlineSvgHtmlBlocks(raw: string): SanitizeMarkdownR
   let fence = ''
   let changed = false
   const out: string[] = []
-  const maxSvgBase64Chars = 100
+  const maxSvgBase64Chars = 32_000
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i] ?? ''
     const trimmed = line.trim()

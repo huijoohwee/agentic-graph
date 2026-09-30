@@ -82,7 +82,7 @@ export const createUiInitialState = (
     setFloatingPanelView: (view: GraphState['floatingPanelView']) => {
       const next =
         view === 'skillsCommands' || view === 'blockLibrary' || view === 'promptPresets'
-        || view === 'media'
+        || view === 'media' || view === 'preview'
         || view === 'animation'
         || view === 'motionControl'
         || view === 'gameMode'

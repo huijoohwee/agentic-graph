@@ -1,3 +1,4 @@
+import { emitFloatingPanelOpen } from '@/features/canvas/utils'
 import React, { useCallback, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -212,13 +213,17 @@ export function useCanvasToolbarContext({ onZoomSelection }: CanvasToolbarCallba
     if (typeof window === 'undefined') return
     const handler = (ev: Event) => {
       const e = ev as CustomEvent<{
-        tab?: MainPanelTabKey
+        tab?: MainPanelTabKey | 'preview'
         searchQuery?: string
         anchorId?: string
         workflowManagerTab?: WorkflowManagerTabKey
         workflowManagerEntryLabel?: string
       } | undefined>
       const detailTab = e.detail && e.detail.tab
+      if (detailTab === 'preview') {
+        emitFloatingPanelOpen({ tab: 'preview', open: true })
+        return
+      }
       if (detailTab === 'design') {
         activateDesignEditorSurface()
         return
@@ -242,7 +247,6 @@ export function useCanvasToolbarContext({ onZoomSelection }: CanvasToolbarCallba
           : {}),
       }
       openMainPanel(tab, options)
-      if (tab === 'websiteImport') setMainPanelCollapsed(false)
     }
     ;(window as MainPanelOpenReadyWindow).__AG_MAIN_PANEL_OPEN_READY__ = true
     window.addEventListener(MAIN_PANEL_OPEN_EVENT, handler as EventListener)

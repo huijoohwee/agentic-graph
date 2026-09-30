@@ -60,6 +60,7 @@ import {
   CROSS_DEVICE_IDENTITY_SETTINGS_ROW_COUNT,
   matchesCrossDeviceIdentityQuery,
 } from './crossDeviceIdentitySettingsContract'
+import { WorkspaceStorageOwnershipRow } from './WorkspaceStorageOwnershipRow'
 
 const WORKSPACE_IMPORT_ACCEPT = [...SOURCE_FILES_FORMATS.import, '.mdx'].join(',')
 const SETTINGS_MAIN_HEADER_STICKY_OFFSET_CLASS = 'top-9'
@@ -344,12 +345,14 @@ export default function SettingsView({
   }, [mode, normalizedQuery])
   const getSettingsAreaIntroItemCount = React.useCallback((area: string) => {
     if (area === 'Themes') return 1
+    if (area === 'Workspace Storage Sync') return 1
     if (area === CROSS_DEVICE_IDENTITY_SETTINGS_AREA) return CROSS_DEVICE_IDENTITY_SETTINGS_ROW_COUNT
     if (area === DOCUMENT_STORAGE_SYNC_SETTINGS_AREA) return DOCUMENT_STORAGE_SYNC_SETTINGS_ROW_COUNT
     if (area === CANVAS_EMBED_SETTINGS_AREA) return CANVAS_EMBED_SETTINGS_ROW_COUNT
     return shouldRenderSourceFileManagementRows(area) ? SOURCE_FILE_MANAGEMENT_SETTINGS_ROW_COUNT : 0
   }, [shouldRenderSourceFileManagementRows])
   const renderSettingsAreaIntro = React.useCallback((area: string) => {
+    if (area === 'Workspace Storage Sync') return <WorkspaceStorageOwnershipRow />
     if (area === 'Themes') return (
       <button
         type="button"
