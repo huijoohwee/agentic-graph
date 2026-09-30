@@ -25,7 +25,7 @@ export type WorkspaceFs = {
   listEntries: () => Promise<WorkspaceEntry[]>
   readFileText: (path: WorkspacePath) => Promise<string | null>
   writeFileText: (path: WorkspacePath, text: string, options?: WorkspaceFsWriteOptions) => Promise<void>
-  createFile: (args: { parentPath: WorkspacePath; name: string; text: string } & WorkspaceFsMutationOptions) => Promise<WorkspacePath>
+  createFile: (args: { parentPath: WorkspacePath; name: string; text: string; requireExactPath?: boolean } & WorkspaceFsMutationOptions) => Promise<WorkspacePath>
   createFolder: (args: { parentPath: WorkspacePath; name: string } & WorkspaceFsMutationOptions) => Promise<WorkspacePath>
   deleteEntry: (path: WorkspacePath, options?: WorkspaceFsMutationOptions) => Promise<void>
 }
