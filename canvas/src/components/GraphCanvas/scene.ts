@@ -1,3 +1,4 @@
+import { bindGraphSemanticTargets2d } from '@/components/GraphCanvas/semanticTargets2d'
 import * as d3 from 'd3'
 import type { MutableRefObject, RefObject } from 'react'
 import type { GraphNode, GraphEdge, GraphData } from '@/lib/graph/types'
@@ -199,16 +200,15 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
     .attr('width', '100%')
     .attr('height', '100%')
     .attr('fill', 'transparent')
-    .attr('role', 'presentation')
-    .attr('aria-hidden', 'true')
-    .attr('focusable', 'false')
+    .attr('role', 'button')
+    .attr('aria-label', 'Clear graph selection')
+    .attr('tabindex', '0')
     .style('pointer-events', 'all')
 
   const g = svg.append('g')
     .attr('data-kg-layer', 'scene-root')
-    .attr('role', 'presentation')
-    .attr('aria-hidden', 'true')
-    .attr('focusable', 'false')
+    .attr('role', 'group')
+    .attr('aria-label', 'Graph elements')
     .style('pointer-events', 'none')
   gRef.current = g
 
@@ -932,6 +932,7 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
     },
   })
 
+  bindGraphSemanticTargets2d(g.node(), graphDataForDisplay)
   applyGraphCanvasZOrder(g, args.schema)
 
   simulation.on('end.layoutCache', storeLayoutPositions)
@@ -1140,6 +1141,7 @@ export const updateGraphSceneNodesPresentation = (args: {
     setSelectionSource: args.setSelectionSource,
   })
 
+  bindGraphSemanticTargets2d(g.node(), graphData)
   applyGraphCanvasZOrder(g, args.schema)
 }
 
@@ -1197,5 +1199,6 @@ export const updateGraphSceneGroupsPresentation = (args: {
   })
   args.beforeRenderFrameRef.current = groupsLayer?.update ? () => groupsLayer.update() : null
   
+  bindGraphSemanticTargets2d(g.node(), args.graphData)
   applyGraphCanvasZOrder(g, args.schema)
 }

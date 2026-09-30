@@ -78,6 +78,15 @@ export async function testWorkspaceIndexedDbConcurrentMigrationAndStaleRows() {
       })))
       assert.equal(new Set(paths).size, 2, 'simultaneous creates must retain both files')
       assert.deepEqual(await Promise.all(paths.map(path => firstFs.readFileText(path))), ['tab-0', 'tab-1'])
+      const exact = await Promise.allSettled([firstFs, secondFs].map((fs, index) => createResilientWorkspaceFs(fs).createFile({
+        parentPath: '/notes', name: 'exact.md', text: `winner-${index}`, mirrorToHost: false, requireExactPath: true,
+      })))
+      assert.equal(exact.filter(result => result.status === 'fulfilled').length, 1, 'one exact-path writer wins across tabs')
+      const loser = exact.find(result => result.status === 'rejected') as PromiseRejectedResult
+      assert.match(loser.reason.message, /destination already exists/)
+      assert.equal((await firstFs.listEntries()).filter(entry => entry.name.startsWith('exact')).length, 1, 'no fallback file or shadow copy')
+      const winner = exact.findIndex(result => result.status === 'fulfilled')
+      assert.equal(await secondFs.readFileText('/notes/exact.md'), `winner-${winner}`)
       const folders = await Promise.all([firstFs, secondFs].map(fs => fs.createFolder({
         parentPath: '/notes', name: 'same-folder', mirrorToHost: false,
       })))

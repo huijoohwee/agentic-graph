@@ -478,7 +478,7 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
     notifyWorkspaceFsChanged({ op: 'writeFileText', path: p })
   }
 
-  const createEntry = async (entry: WorkspaceEntry): Promise<WorkspaceEntry> => {
+  const createEntry = async (entry: WorkspaceEntry, requireExactPath = false): Promise<WorkspaceEntry> => {
     const db = await resolveDb()
     const extIndex = entry.kind === 'file' ? entry.name.lastIndexOf('.') : -1
     const stem = extIndex > 0 ? entry.name.slice(0, extIndex) : entry.name
@@ -489,6 +489,7 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
       const record = { ...entry, name, path }
       if (await db.compareAndWrite([{ kind: 'upsert', collectionName: 'entries', record }],
         [{ collectionName: 'entries', selector: { path }, records: [] }])) return record
+      if (requireExactPath) throw new Error(`Workspace destination already exists: ${path}`)
     }
     throw new Error('No available workspace name after 999 attempts; existing files were retained.')
   }
@@ -508,13 +509,13 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
     return path
   }
 
-  const createFile = async (args: { parentPath: WorkspacePath; name: string; text: string; mirrorToHost?: boolean }) => {
+  const createFile = async (args: { parentPath: WorkspacePath; name: string; text: string; mirrorToHost?: boolean; requireExactPath?: boolean }) => {
     await ensureRoot()
     const parent = normalizeWorkspacePath(args.parentPath)
     const { path } = await createEntry({
       path: '', parentPath: parent, kind: 'file', name: String(args.name ?? '').trim() || 'file.md',
       text: String(args.text ?? ''), updatedAtMs: Date.now(),
-    })
+    }, args.requireExactPath)
     if (args.mirrorToHost !== false && isWorkspaceDocsBackedMirrorPath(parent)) {
       scheduleWorkspaceDocsMirrorFolderEnsure(parent)
     } else if (args.mirrorToHost !== false && isWorkspaceChatMirrorPath(parent)) {

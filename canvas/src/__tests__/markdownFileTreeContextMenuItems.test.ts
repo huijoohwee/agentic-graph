@@ -108,8 +108,12 @@ export async function testMarkdownFileTreeContextMenuItemsHideMutationsForInitia
   })
 
   const labels = items.map(item => item.label).join(',')
-  if (labels !== 'Share URL,Share canvas embed,Reveal in Finder,Copy Path,Copy Relative Path,New file,Clear') {
-    throw new Error(`expected initialization-file menu to hide rename and delete, got ${labels}`)
+  if (labels !== 'Share URL,Share canvas embed,Reveal in Finder,Copy Path,Copy Relative Path,New file,Clear,Rename,Delete') {
+    throw new Error(`expected initialization-file menu to retain the shared action order, got ${labels}`)
+  }
+  for (const item of items.filter(item => item.key === 'rename' || item.key === 'delete')) {
+    if (!item.disabled || item.disabledReason !== 'Protected workspace entry') throw new Error('Protected mutations must remain visible and disabled')
+    await item.onSelect()
   }
 }
 
