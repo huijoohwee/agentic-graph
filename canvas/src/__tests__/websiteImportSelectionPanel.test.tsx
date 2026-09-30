@@ -158,12 +158,13 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     await openFileActions(host, 'a')
     const pendingMenu = document.querySelector('[data-source-file-actions]')!
     const pendingActions = Array.from(pendingMenu.querySelectorAll<HTMLButtonElement | HTMLAnchorElement>('a, button'))
-    assert.equal(pendingActions.length, 4, 'discovered page has only source, discovery, import and cloud controls')
+    assert.equal(pendingActions.length, 13, 'discovered pages retain every shared icon slot')
     assert.equal((pendingActions[0] as HTMLAnchorElement).href, source + 'a')
     assert.match(pendingActions[1].getAttribute('aria-label') || '', /^Find pages linked from /)
     assert.equal((pendingActions[2] as HTMLButtonElement).disabled, true, 'only the import owner can confirm selection')
-    assert.equal(pendingActions[3].getAttribute('title'), 'Not imported')
-    assert.equal(pendingMenu.querySelector('[aria-label="Reveal in Finder"]'), null, 'discovered pages cannot masquerade as saved files')
+    assert.match(pendingActions[3].getAttribute('title') || '', /Not saved/)
+    assert.ok(pendingMenu.querySelector<HTMLButtonElement>('[aria-label="Reveal in Finder"]')!.disabled, 'discovered pages cannot masquerade as saved files')
+    assert.ok(pendingActions.slice(4).every(action => (action as HTMLButtonElement).disabled), 'unsaved entries retain disabled file operations')
     await openFileActions(host)
     const savedMenu = document.querySelector('[data-source-file-actions]')!
     assert.equal(savedMenu.querySelector<HTMLAnchorElement>('a')!.href, source)

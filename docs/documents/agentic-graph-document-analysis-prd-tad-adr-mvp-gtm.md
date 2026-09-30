@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.8"
+version: "1.0.9"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.8"
-tad_revision: "1.0.8"
-adr_revision: "1.0.8"
-mvp_revision: "1.0.8"
-gtm_revision: "1.0.8"
+prd_revision: "1.0.9"
+tad_revision: "1.0.9"
+adr_revision: "1.0.9"
+mvp_revision: "1.0.9"
+gtm_revision: "1.0.9"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.8. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.9. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -63,6 +63,8 @@ not import them; the reader selects pages or folders before starting a headless 
 Source Files exposes file and folder actions in one icon context toolbar. Remove the row action
 strip and text-menu variant; retain the existing compact icon size, accessible labels, tooltips and
 disabled states. Pointer context-menu and keyboard invocation must address the same selected entry.
+Files, folders, protected entries and discovered-only entries retain the same 13 icon slots and
+order. Unavailable actions stay visible, greyed out and inert, with a reason in their tooltip.
 
 ## TAD
 
@@ -129,7 +131,9 @@ The file tree and inline selection toolbar share AnchorOverlay positioning, port
 panel styling. AnchorOverlay accepts either an element or a pointer point; one viewport clamp and
 focus-restoration owner handles both. Existing source, discovery, import, cloud and file action
 handlers remain authoritative. Discovered-only entries expose source/discovery actions without
-pretending to have saved-file operations. Saved/discovered status icons stay in the tree.
+enabling saved-file operations. Missing callbacks, folder-only limitations, protected entries and
+read-only state become availability reasons in the existing action builder. Disabled callbacks are
+guarded as well as disabled in the DOM; no per-kind menu or alternate overlay is created. Saved/discovered status icons stay in the tree.
 
 ## ADR
 
@@ -255,6 +259,12 @@ The retained preview shows one portaled icon toolbar and no inline file action s
 the invoking row without opening a document. Native affected checks gate review publication.
 Rollback these presentation changes together, preserving documents, saved copies and discovery drafts.
 
+Action-availability increment: four production modules, fewer than 15 KB source changes.
+Regression coverage compares complete file/folder action order, invokes disabled controls and
+callbacks to verify they are inert, retains disabled discovery slots and checks exact folder reveal.
+Local review uses the retained browser origin; affected validation gates review publication.
+Rollback the availability rules with the stable-slot rendering; retain all document and import state.
+
 ## GTM
 
 Initial user: a reader checking repeated themes and evidence in a local document. The near-built path
@@ -276,3 +286,6 @@ Folder copies extend first reveal to grouped browser documents, using the same c
 
 A single icon action surface frees filename width and makes file operations consistent. Measure
 successful action completion through pointer and keyboard access; no account or paid tier is required.
+
+A stable action order lets readers recognize the same controls across files and folders; explicit
+disabled states explain capability limits without moving icons.

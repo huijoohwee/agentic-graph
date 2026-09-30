@@ -112,7 +112,7 @@ export async function testMarkdownFileTreeReadOnlyContextMenuCopiesPaths() {
     const row = container.querySelector('button[aria-label="File agent-mission.manifest.json"]')!
     for (const label of ['Copy Path', 'Copy Relative Path']) {
       await act(async () => { row.dispatchEvent(new dom.window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 100, clientY: 100 })) })
-      const items = Array.from(document.querySelectorAll('.kg-data-view-floating-menu button')) as HTMLButtonElement[]
+      const items = Array.from(document.querySelectorAll('.kg-data-view-floating-menu button')).filter(item => !item.getAttribute('aria-label')?.startsWith('Source URL unavailable')) as HTMLButtonElement[]
       if (items.map(item => item.getAttribute('aria-label')).join(',') !== 'Share URL,Share canvas embed,Reveal in Finder,Copy Path,Copy Relative Path,New file,Clear,Rename,Delete') throw Error('Read-only menu must retain the shared file menu and order')
       if (items.filter(item => !item.disabled).map(item => item.getAttribute('aria-label')).join(',') !== 'Copy Path,Copy Relative Path') throw Error('Only applicable path actions may be enabled')
       await act(async () => { items.filter(item => item.disabled).forEach(item => item.click()) })

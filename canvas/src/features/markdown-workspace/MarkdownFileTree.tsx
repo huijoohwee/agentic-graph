@@ -71,7 +71,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
   renderEntryLeading?: (entry: WorkspaceEntry) => React.ReactNode
   resolveSourceUrl?: (entry: WorkspaceEntry) => string | null
   renderContextActions?: (entry: WorkspaceEntry) => React.ReactNode
-  canOpenContextMenu?: (entry: WorkspaceEntry) => boolean
+  isEntrySaved?: (entry: WorkspaceEntry) => boolean
   renderFileRight?: (args: { entry: WorkspaceEntry; isActive: boolean }) => React.ReactNode
 }) {
   const {
@@ -94,7 +94,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     onShareCodeReady,
     renderFileRight,
     renderEntryLeading,
-    canOpenContextMenu,
+    isEntrySaved,
   } = props
   const panelTypography = usePanelTypography()
   const tree = React.useMemo(() => buildTree(entries), [entries])
@@ -142,10 +142,11 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
 
   const contextMenuItems = React.useMemo(
     () =>
-      contextMenu && canOpenContextMenu?.(contextMenu.entry) !== false
+      contextMenu
         ? buildMarkdownFileTreeContextMenuItems({
             entry: contextMenu.entry,
             readOnly: props.readOnly,
+            unavailableReason: isEntrySaved?.(contextMenu.entry) === false ? 'Not saved — import this item first' : undefined,
             copyToClipboard,
             buildShareUrl: defaultBuildShareUrl,
             buildCanvasEmbedUrl,
@@ -161,7 +162,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
             closeContextMenu,
           })
         : [],
-    [props.readOnly, canOpenContextMenu, buildCanvasEmbedUrl, closeContextMenu, contextMenu, copyToClipboard, defaultBuildShareUrl, onCanvasEmbedReady, onCanvasEmbedStart, onClearFile, onCreateNewFile, onDeleteEntry, onRenameEntry, onRevealInFinder, onShareCodeReady, confirmDelete],
+    [props.readOnly, isEntrySaved, buildCanvasEmbedUrl, closeContextMenu, contextMenu, copyToClipboard, defaultBuildShareUrl, onCanvasEmbedReady, onCanvasEmbedStart, onClearFile, onCreateNewFile, onDeleteEntry, onRenameEntry, onRevealInFinder, onShareCodeReady, confirmDelete],
   )
 
   const renderNode = (node: Node, depth: number) => {
@@ -200,7 +201,6 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const openContextMenu = (event: React.MouseEvent<HTMLButtonElement> | React.KeyboardEvent<HTMLButtonElement>) => {
       event.preventDefault()
       event.stopPropagation()
-      if (canOpenContextMenu?.(entry) === false && !props.renderContextActions) return
       event.currentTarget.focus({ preventScroll: true })
       const rect = event.currentTarget.getBoundingClientRect()
       setContextMenu({ x: 'clientX' in event ? event.clientX : rect.left, y: 'clientY' in event ? event.clientY : rect.bottom, entry })
@@ -265,13 +265,16 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
               return url ? <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`Open source URL for ${contextMenu.entry.name}`}
                 title={`Open source URL: ${url}`} className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing}`}>
                 <LinkIcon className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} aria-hidden="true" />
-              </a> : null
+              </a> : <button type="button" disabled aria-label={`Source URL unavailable for ${contextMenu.entry.name}`}
+                title="Open source URL — no source URL" className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded ${UI_THEME_TOKENS.text.secondary} opacity-40 cursor-not-allowed`}>
+                <LinkIcon className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} aria-hidden="true" />
+              </button>
             })()}
             {props.renderContextActions?.(contextMenu.entry)}
             {contextMenuItems.map(item => {
               const Icon = contextIcons[item.key]
               return <button key={item.key} type="button" disabled={item.disabled} aria-label={item.label}
-                title={item.disabled ? `${item.label} — unavailable for read-only observation files` : item.label}
+                title={item.disabledReason ? `${item.label} — ${item.disabledReason}` : item.label}
                 className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded ${UI_THEME_TOKENS.focus.primaryRing} ${
                   item.disabled ? `${UI_THEME_TOKENS.text.secondary} opacity-40 cursor-not-allowed`
                     : item.tone === 'danger' ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.button.text
