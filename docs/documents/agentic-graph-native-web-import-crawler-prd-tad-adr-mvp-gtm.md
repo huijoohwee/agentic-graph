@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.39"
+version: "0.2.40"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,22 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.38"
-prd_revision: "0.2.39"
-tad_revision: "0.2.39"
-adr_revision: "0.2.39"
-mvp_revision: "0.2.39"
-gtm_revision: "0.2.39"
+previous_document_version: "0.2.39"
+prd_revision: "0.2.40"
+tad_revision: "0.2.40"
+adr_revision: "0.2.40"
+mvp_revision: "0.2.40"
+gtm_revision: "0.2.40"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 Source Files fixed action slots
+
+- PRD: `/fix #source-files-fixed-action-slots @codex` keeps source URL, Find links, Import, and Cloud icons in the same respective columns on every file row, including discovered pages and rows without an active import. Unavailable actions remain visible as greyed-out, disabled icons with descriptive labels.
+- TAD / ADR: retain the existing four-slot Source Files action strip. The shared tree renders a disabled source-link placeholder only in its aligned Source Files mode; the website action owner always renders discovery and import slots, enabling each only when its URL or selection permits. Pending cloud status is visibly disabled. No additional import pathway, cloud effect, storage change, or dependency is introduced.
+- MVP: three existing UI owners, one focused test, and this document; under 3 KB of authored code, 15 active minutes excluding external validation, and no new module. Assert four semantic controls in test, compare live icon coordinates across pending, saved, and import-owner rows at narrow width, then run exact-candidate affected validation.
+- GTM / rollback: restore scanable actions in the current Source Files tree; no buyer or revenue result claimed. Revert this scoped successor to restore compacted icon positions. Protected integration and production need separate authority and receipts.
 
 ## 2026-09-30 Source Files action column alignment
 

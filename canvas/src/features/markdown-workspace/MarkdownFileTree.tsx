@@ -258,6 +258,12 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
                   className={`shrink-0 inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing}`}>
                   <LinkIcon role="img" aria-label="Imported from URL" className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-70`} />
                 </a>
+              ) : alignActionColumns && entry.kind === 'file' ? (
+                <button type="button" disabled aria-label={`Source URL unavailable for ${entry.name}`}
+                  title="Source URL unavailable"
+                  className={`shrink-0 inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded opacity-40`}>
+                  <LinkIcon className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} aria-hidden="true" />
+                </button>
               ) : null}
               {fileRight ? (
                 <span className="shrink-0" onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>

@@ -110,7 +110,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
       <span className="inline-flex items-center gap-0.5">
         {existing}
         <SourceFileWebsiteActions entry={args.entry} source={sourcesByPath?.[args.entry.path]} urlOverride={projection.pageUrls.get(args.entry.path)} confirmationOwner={projection.ownerPath === args.entry.path} />
-        {pending ? <button type="button" disabled aria-label={`Import ${args.entry.name} before cloud sync`} title="Not imported" className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded`}><CloudOff className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} role="img" aria-label="Not imported" /></button> : <SourceFileCloudSyncIndicator
+        {pending ? <button type="button" disabled aria-label={`Import ${args.entry.name} before cloud sync`} title="Not imported" className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded opacity-40`}><CloudOff className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} role="img" aria-label="Not imported" /></button> : <SourceFileCloudSyncIndicator
           entry={args.entry}
           status={cloudSync.readStatus(args.entry)}
           error={cloudSync.readError(args.entry)}

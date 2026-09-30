@@ -41,12 +41,14 @@ export function reportSourceImportFailure(error: unknown) {
 export function SourceFileWebsiteActions({ entry, source, urlOverride, confirmationOwner }: { entry: WorkspaceEntry; source?: WorkspaceEntrySource; urlOverride?: string; confirmationOwner?: boolean }) {
   const session = useWebsiteImportSelectionSession(state => state.session)
   const url = React.useMemo(() => urlOverride || sourceFileWebsiteUrl(entry, source), [entry, source, urlOverride])
-  if (!url) return null
   const ownsSession = !!session && (confirmationOwner ?? session.sourcePath === entry.path)
   return <>
-    <SourceImportAction action="discover" label={`Find pages linked from ${url}`} disabled={!!session?.busy || !!session?.importing}
+    <SourceImportAction action="discover" label={url ? `Find pages linked from ${url}` : `Find links unavailable for ${entry.name}`}
+      disabled={!url || !!session?.busy || !!session?.importing}
       onClick={() => { if (session && (ownsSession || (urlOverride && session.pages.some(page => page.url === url)))) void discoverWebsiteSelection(url); else void importWebsiteFromSourceFiles(url, entry.path).catch(reportSourceImportFailure) }} />
-    {ownsSession && <SourceImportAction action="import" label={`Import selected (${session.selected.size}) for ${entry.name}`}
-      disabled={session.busy || !!session.importing || !session.selected.size} onClick={confirmWebsiteSelection} />}
+    <SourceImportAction action="import"
+      label={ownsSession ? `Import selected (${session.selected.size}) for ${entry.name}` : `Import unavailable for ${entry.name}`}
+      disabled={!ownsSession || session.busy || !!session.importing || !session.selected.size}
+      onClick={confirmWebsiteSelection} />
   </>
 }
