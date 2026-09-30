@@ -22,9 +22,9 @@ import {
   Underline,
 } from 'lucide-react'
 import { AnchorOverlay } from '@/lib/ui/overlay'
+import { FLOATING_ICON_TOOLBAR_PANEL_CLASSNAME, FLOATING_POPOVER_ACTION_BUTTON_CLASSNAME } from '@/features/markdown-workspace/main/viewer/floatingMenuStyles'
 import {
   UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME,
-  UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
@@ -43,19 +43,8 @@ import type { MarkdownInlineSelectionActions } from './markdownInlineSelectionAc
 
 const markdownInlineSelectionToolbarIconClassName = UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME
 const markdownInlineSelectionToolbarMenuIconClassName = `${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} mr-1`
-const markdownInlineSelectionToolbarClassName = [
-  'absolute rounded border shadow-sm z-20 m-0 p-1 text-xs',
-  UI_THEME_TOKENS.panel.bg,
-  UI_THEME_TOKENS.panel.border,
-].join(' ')
-const markdownInlineSelectionToolbarButtonClassName = [
-  'kg-toolbar-btn rounded cursor-pointer',
-  UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME,
-  'justify-center',
-  UI_THEME_TOKENS.button.square,
-  UI_THEME_TOKENS.button.text,
-  UI_THEME_TOKENS.button.hoverBg,
-].join(' ')
+const markdownInlineSelectionToolbarClassName = FLOATING_ICON_TOOLBAR_PANEL_CLASSNAME
+const markdownInlineSelectionToolbarButtonClassName = FLOATING_POPOVER_ACTION_BUTTON_CLASSNAME
 
 export const MarkdownInlineSelectionToolbar = (props: {
   show: boolean

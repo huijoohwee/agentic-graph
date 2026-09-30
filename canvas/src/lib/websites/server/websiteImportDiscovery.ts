@@ -3,6 +3,7 @@ import { NativeWebsiteCrawler } from './nativeWebsiteCrawler'
 import { isCrawlableInternalUrl, normalizeUrl, urlToTreePath } from './websiteImportCore'
 
 export const WEBSITE_SELECTION_LIMIT = 500
+const WEBSITE_DISCOVERY_LIMIT = 2_000
 
 export function validateSelectedWebsiteUrls(rootUrl: string, value: unknown): string[] | undefined {
   if (value === undefined) return undefined
@@ -57,10 +58,10 @@ export async function handleWebsiteDiscovery(req: IncomingMessage, res: ServerRe
       const normalized = normalizeUrl(link)
       if (normalized && normalized.length <= 4096 && isCrawlableInternalUrl(normalized, rootUrl) && new URL(normalized).origin === new URL(rootUrl).origin && !new URL(normalized).username && !new URL(normalized).password) urls.add(normalized)
     }
-    const pages = [...urls].slice(0, WEBSITE_SELECTION_LIMIT).map(pageUrl => ({ url: pageUrl, path: urlToTreePath(pageUrl), ...(pageUrl === url ? { title: capture.title } : {}) }))
+    const pages = [...urls].slice(0, WEBSITE_DISCOVERY_LIMIT).map(pageUrl => ({ url: pageUrl, path: urlToTreePath(pageUrl), ...(pageUrl === url ? { title: capture.title } : {}) }))
     res.setHeader('Content-Type', 'application/json')
     res.setHeader('Cache-Control', 'no-store')
-    res.end(JSON.stringify({ ok: true, rootUrl, pages, limited: capture.links.length >= WEBSITE_SELECTION_LIMIT || urls.size > WEBSITE_SELECTION_LIMIT, limit: WEBSITE_SELECTION_LIMIT }))
+    res.end(JSON.stringify({ ok: true, rootUrl, pages, limited: capture.linksLimited === true || urls.size > WEBSITE_DISCOVERY_LIMIT, limit: WEBSITE_DISCOVERY_LIMIT }))
   } catch (error) {
     if (!res.destroyed) {
       res.statusCode = 400
