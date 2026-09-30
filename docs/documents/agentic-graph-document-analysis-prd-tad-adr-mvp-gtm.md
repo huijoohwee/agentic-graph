@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.21"
+version: "1.0.22"
 date: "2026-10-01"
 lang: "en-US"
-prd_revision: "1.0.21"
-tad_revision: "1.0.21"
-adr_revision: "1.0.21"
-mvp_revision: "1.0.21"
-gtm_revision: "1.0.21"
+prd_revision: "1.0.22"
+tad_revision: "1.0.22"
+adr_revision: "1.0.22"
+mvp_revision: "1.0.22"
+gtm_revision: "1.0.22"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,10 +20,12 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.21. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.22. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
+
+The active 3D canvas must be a named selectable media surface. Each shared media panel must keep its visible content, open/pin/resize controls and individual hit target. Larger peer panels stay beneath smaller ones during selection, movement and resizing.
 
 Canvas nodes, edge hit paths and cluster controls must expose individual names and keyboard activation to selection tooling. Shared media panels remain the media owner; covered SVG bodies must not duplicate their hit targets. Within an authored layer, larger nodes and media panels render beneath smaller peers.
 
@@ -109,6 +111,8 @@ dragging. Apply graph and panel geometry before the same paint, retaining readab
 existing selection, pin and resize controls. A settled canvas must do no continuous projection work.
 
 ## TAD
+
+The existing semantic figure and native canvas binding also own ordinary 3D modes. Keep RichMediaPanel absolutely positioned with its shared flex frame. Reuse shared eager loading and painted-area ordering; retain explicit authored layers and stable identity ties without selection/depth/screen-position boosts.
 
 Reuse existing SVG hit surfaces and dispatch keyboard activation through their established click handlers. Expose the scene as a named group; bind semantics at creation and presentation rebuilds. Reuse one size comparator for node ordering and the shared media layout loop, with stable identity ties and no polling or additional network work.
 
@@ -245,6 +249,8 @@ work through the shared flush contract. Retain the existing sizing bounds with o
 
 ## ADR
 
+Remove the 3D-only overlap stacking passes and duplicate eager-media loader. Apply the common area comparator within authored layer peers; retain native WebGL gesture ownership and the shared HTML media controls. No parallel renderer, domain rule or new dependency.
+
 Keep semantic SVG buttons and the existing RichMediaPanel rather than adding a second HTML graph renderer. Preserve authored node layer/group priority; use painted area before identity ties. Size-based media ranks update through the existing layout flush, preserving the previous motion repair.
 
 - Finder reveals a stable named copy tree; content hashes identify private revision backups only.
@@ -309,6 +315,8 @@ and a trailing animation frame can detach a panel from its node. Preserve the sh
 readability limits; do not add another renderer or a permanent animation loop.
 
 ## MVP
+
+3D semantic-media increment: three production modules, under 12 KB production changes, initial 20-minute implementation budget plus validation. Check size order during selection/drag/resize, visible flex content, one named canvas owner in each active mode, and live hit targets after reload. Seven focused checks and typecheck pass. Live 3D inspection confirms native canvas naming, visible 72–252 px media heights, larger-under-smaller ranks, individual panel hits and keyboard pin/unpin through the shared controls. The native affected gate is required before review publication. Roll back these owner changes together; preserve documents and panel state.
 
 D3 semantic-layer increment: six production modules, up to 12 KB production changes, no dependencies. Initial implementation budget 20 minutes plus validation. Verify named hit targets, keyboard/modifier routing, no duplicate covered media targets, descending area, resize reranking, and live browser hit tests. Thirteen focused checks passed, including the earlier media-motion checks. Live reload exposed individual node/edge buttons and all ten shared media panels; keyboard activation reached an individual node. Resize reranking and settled no-op writes are verified by behavioral tests. Full device/assistive-technology parity remains unproven.
 
@@ -509,6 +517,8 @@ owner changes together; retain saved documents and discovery drafts. No producti
 claim is implied.
 
 ## GTM
+
+Visible and individually targetable 3D media lets readers inspect imported content without leaving the graph. Measure successful thumbnail viewing and shared-control activation locally; no account, paid service or demonstrated revenue claim.
 
 Selection tooling and keyboard users can identify individual canvas items while small overlapping media remain reachable. Validate on the current document before review delivery; no new service cost or demonstrated revenue claim.
 

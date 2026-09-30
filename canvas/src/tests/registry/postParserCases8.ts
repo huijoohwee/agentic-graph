@@ -168,6 +168,7 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["city.sim.ui.operationStatus","@/__tests__/citySimUiAccessibility.test","testCitySimOperationStatusIsPoliteWithoutTickFlooding"],
   ["city.sim.ui.mediaScroll","@/__tests__/citySimUiAccessibility.test","testCitySimMediaProjectionRetainsVerticalScrollOwnership"],
   ["city.sim.ui.semanticMediaSurface","@/__tests__/citySimSemanticMediaSurface.test","testCitySimSemanticMediaSurfaceResolvesMapLibreHitTarget"],
+  ["three.ui.semanticMediaSurface","@/__tests__/xrPhysicsSemanticMediaSurface.test","testThreeGraphModesReuseSemanticCanvasOwner"],
   ["xr.physics.ui.semanticMediaSurface","@/__tests__/xrPhysicsSemanticMediaSurface.test","testXrPhysicsSemanticMediaSurfaceOwnsTheDirectThreeCanvas"],
   ["xr.physics.source.semanticCanvasOwner","@/__tests__/xrPhysicsSemanticMediaSurface.test","testXrPhysicsSemanticOwnerIsBoundAfterThreeCreatesItsCanvas"],
   ["city.sim.geo.liveParcelProjection","@/__tests__/citySimGeospatialProjection.test","testCitySimGeospatialProjectionTracksLiveParcelsAndSelection"],
