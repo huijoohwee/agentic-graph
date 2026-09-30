@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.5"
+version: "1.0.6"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.5"
-tad_revision: "1.0.5"
-adr_revision: "1.0.5"
-mvp_revision: "1.0.5"
-gtm_revision: "1.0.5"
+prd_revision: "1.0.6"
+tad_revision: "1.0.6"
+adr_revision: "1.0.6"
+mvp_revision: "1.0.6"
+gtm_revision: "1.0.6"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.5. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.6. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -53,6 +53,10 @@ Reveal in Finder must select the named workspace document. Browser-only files sa
 including unsaved active editor content. Explicit disk provenance still reveals the original file;
 imports must never substitute a crawler cache page for the selected document. Named copies and new
 crawler artifacts default to the configured local `docs_` output folder.
+
+Source Files must show discovered pages together with prior saved crawl files. Distinct file icons
+identify saved website documents and discovered pages that have not been saved. Finding pages does
+not import them; the reader selects pages or folders before starting a headless crawl.
 
 ## TAD
 
@@ -100,6 +104,15 @@ A native disclosure activates one embedded panel at a time; closing or replacing
 browsing context. Audio and video use controls with preload disabled and autoplay removed. Explicit
 script-enabled pages retain authored behavior. Preview state is bound to semantic request identity,
 so an old document is cleared during debounce as well as network work; stale completions stay ignored.
+
+Discovery reads explicit HTTP(S) navigation attributes on rendered anchors, areas and scripted
+cards, including absolute URL tooltips. It does not infer paths from labels or serialize embedded
+application state. The existing origin/path and network guards remain authoritative. Bound discovery
+to 20,000 candidate elements and 2,000 unique URLs; report incomplete inventory when a bound is hit.
+The tree initially projects 100 matching discovered pages, extends by 100 on request, and searches
+the complete inventory. Previously saved copies stay visible even when discovery is filtered. Keep
+500 as the selected-crawl limit. Discovery and selection reuse the existing local draft; successful
+imports clear selection while retaining discovery. Stale completions cannot replace a newer session.
 
 ## ADR
 
@@ -195,6 +208,15 @@ rendering-performance improvement and elimination of all possible renderer failu
 Rollback the template gating and identity binding together if needed, retaining captures, named copies,
 workspace records, the earlier HTML byte budget and configured docs_ output defaults.
 
+Website discovery increment: six production modules and fewer than 15 KB source changes, no new
+dependency or website-specific rule. Seventeen focused crawler/tree/session regressions pass, including
+explicit card URLs, pagination beyond 500 discovered pages, filtered access to later entries, the
+500-page import limit, saved-history retention, folder reveal/collapse, and retained discovery after
+confirmation. Live discovery at the reviewed origin found 477 pages instead of three; expanding the
+list showed 200 entries while retaining four saved website-file icons. No import job or saved-file mutation occurred during
+this discovery check. A finite discovery list is not proof of complete website coverage.
+Rollback the discovery/UI increment together; retain saved files, browser records and crawler artifacts.
+
 ## GTM
 
 Initial user: a reader checking repeated themes and evidence in a local document. The near-built path
@@ -209,3 +231,5 @@ A bounded HTML notice keeps the workspace responsive while readers continue in M
 Named local copies let readers locate and use the document shown in Source Files without navigating capture-cache internals. Measure successful first reveal; no paid service or account is required.
 
 Saved embeds load on request, reducing work when readers switch documents. Measure successful document switches and responsive preview controls.
+
+Browse discovered pages and saved crawl files in one tree. Status icons and retained discovery reduce repeated import setup; completion and time savings remain measured per source.
