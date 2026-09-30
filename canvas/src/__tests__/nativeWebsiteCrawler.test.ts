@@ -40,14 +40,15 @@ export const testNativeCrawlerParsesCredentialSafeProxyPool = () => {
 export const testNativeCrawlerStoresArtifactsInSiblingSandbox = () => {
   const resolved = resolveWebsiteImportWorkspaceRoot({
     repoRoot: '/workspace/agentic-graph',
+    storeRoot: '/workspace/sandbox',
     outputDirRel: 'agentic-graph-workspace/website-imports',
   })
   if (resolved.ok !== true) throw new Error(resolved.error)
   if (resolved.abs !== path.resolve('/workspace/sandbox/agentic-graph-workspace/website-imports')) {
-    throw new Error(`expected sibling sandbox website store, received ${resolved.abs}`)
+    throw new Error(`expected explicitly configured sandbox website store, received ${resolved.abs}`)
   }
   if (resolved.rel !== 'agentic-graph-workspace/website-imports') throw new Error('expected logical artifact paths to remain portable')
-  const legacy = resolveWebsiteImportWorkspaceRoot({ repoRoot: '/workspace/agentic-graph', outputDirRel: '.agentic-graph-workspace/website-imports' })
+  const legacy = resolveWebsiteImportWorkspaceRoot({ repoRoot: '/workspace/agentic-graph', storeRoot: '/workspace/sandbox', outputDirRel: '.agentic-graph-workspace/website-imports' })
   if (legacy.ok !== true || legacy.abs !== resolved.abs || legacy.rel !== '.agentic-graph-workspace/website-imports') {
     throw new Error('expected existing dot-prefixed artifact references to resolve into the renamed physical store')
   }

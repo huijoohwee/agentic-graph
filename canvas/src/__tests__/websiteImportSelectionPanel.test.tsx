@@ -4,7 +4,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import WebsiteImportSelectionView from '@/features/source-files/WebsiteImportSelectionView'
-import { chooseWebsiteImportPages, finishWebsiteImportSelection, useWebsiteImportSelectionSession } from '@/features/source-files/websiteImportSelectionSession'
+import { chooseWebsiteImportPages, finishWebsiteImportSelection, useWebsiteImportSelectionSession, visibleWebsiteSelectionPages, showMoreWebsiteSelectionPages, setWebsiteSelectionQuery, toggleWebsiteSelection, importWebsiteFromSourceFiles, confirmRestoredWebsiteSelection } from '@/features/source-files/websiteImportSelectionSession'
 import { sourceFileWebsiteUrl, projectWebsiteImportTree } from '@/features/source-files/websiteImportTreeProjection'
 import { MarkdownWorkspaceSourceFilesList } from '@/features/markdown-workspace/MarkdownWorkspaceSourceFilesList'
 import { ExplorerSearchControl } from '@/features/markdown-workspace/ExplorerSearchControl'
@@ -265,7 +265,8 @@ test('file row imports only its selected pages through the existing workspace br
     await act(async () => { control('Import selected').click(); await importedReady })
     assert.deepEqual(imported, [{ root: url, selectedUrls: [url + 'one'] }])
     assert.deepEqual(requests, ['/__website_import/discover'])
-    assert.equal(host.querySelector('button[aria-label^="Import selected"]'), null, 'confirmation leaves with the session')
+    assert.ok(host.querySelector<HTMLButtonElement>('button[aria-label^="Import selected"]')?.disabled, 'completed import clears selection while retaining discovery')
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.pages.length, 1)
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); globalThis.fetch = previousFetch; restore() }
 })
 
@@ -309,7 +310,7 @@ test('Source Files restores page checkboxes after restart without importing unti
     assert.equal(page().checked, true)
     await act(async () => { control('Import selected').click(); await importedReady })
     assert.deepEqual(imported, [[sourceUrl + 'one']])
-    assert.equal(window.localStorage.getItem(draftKey), null, 'successful confirmation removes the draft')
+    assert.deepEqual(JSON.parse(window.localStorage.getItem(draftKey)!).selected, [], 'successful confirmation retains discovery but clears imported selection')
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); host.remove(); globalThis.fetch = previousFetch; restore() }
 })
 
@@ -323,4 +324,82 @@ test('discovery keeps the clicked import owner while saved copies share its page
   assert.deepEqual(projection.selectionUrls.get(sibling.path), [sourceUrl])
   assert.equal(projection.entries.filter(entry => entry.path === sourceEntry.path).length, 1)
   assert.equal(projection.pendingPaths.has(sourceEntry.path), false)
+})
+
+
+test('discovery opens existing ancestor folders and distinguishes saved files from pending pages', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const host = document.createElement('section'), root = createRoot(host)
+  const saved = { ...sourceEntry, path: '/websites/sample/run/library.md', parentPath: '/websites/sample/run' }
+  const folders = ['/websites', '/websites/sample', '/websites/sample/run'].map(path => ({ kind: 'folder' as const, path, parentPath: path.slice(0, path.lastIndexOf('/')) || '/', name: path.split('/').pop()!, updatedAtMs: 0 }))
+  globalThis.fetch = (async () => new Response(JSON.stringify({ ok: true, pages: [sourceUrl, sourceUrl + 'guides/new'].map(url => ({ url, path: new URL(url).pathname })), limited: true }))) as typeof fetch
+  const props = { loading: false, loadError: '', textSizeClass: 'text-xs', entries: [...folders, saved], expandedPaths: new Set<string>(), activePath: saved.path,
+    toggleExpanded() {}, onSelectFile() {}, onSelectFolder() {}, sourcesByPath: null, onCreateNewFile() {}, onRevealInFinder() {}, onClearFile() {}, onRenameEntry() {}, onDeleteEntry() {} }
+  try {
+    await act(async () => { void chooseWebsiteImportPages(sourceUrl, saved.path); root.render(<MarkdownWorkspaceSourceFilesList {...props} />) })
+    assert.equal(host.querySelectorAll('svg[aria-label="Saved website file"]').length, 1)
+    assert.equal(host.querySelectorAll('svg[aria-label="Discovered page — not saved"]').length, 1)
+    assert.match(host.textContent || '', /2 discovered pages/)
+    assert.match(host.textContent || '', /partial list/)
+    assert.ok(host.querySelector('section[aria-label="File new"]'))
+    const collapse = host.querySelector<HTMLButtonElement>('button[aria-label="Collapse folder websites"]')!
+    await act(async () => collapse.click())
+    assert.equal(host.querySelector('section[aria-label="File new"]'), null)
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Expand folder websites"]')!.click())
+    assert.ok(host.querySelector('section[aria-label="File new"]'))
+    assert.equal(props.entries.length, 4, 'discovery never materializes workspace files')
+  } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); globalThis.fetch = previousFetch; restore() }
+})
+
+
+test('large discovery inventories page and search without losing saved history or exceeding selection limits', () => {
+  const { restore } = initJsdomHarness()
+  try {
+    const pages = Array.from({ length: 650 }, (_, index) => ({ url: sourceUrl + `item-${index}`, path: `/library/item-${index}` }))
+    const session = { id: 990, url: sourceUrl, pages, selected: new Set<string>(), visited: new Set<string>(), busy: false, error: '', limited: false, query: '' }
+    useWebsiteImportSelectionSession.setState({ session, recoveryError: '' })
+    assert.equal(visibleWebsiteSelectionPages(session).length, 100)
+    showMoreWebsiteSelectionPages()
+    assert.equal(visibleWebsiteSelectionPages(useWebsiteImportSelectionSession.getState().session!).length, 200)
+    toggleWebsiteSelection(pages.map(page => page.url), true)
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 500)
+    setWebsiteSelectionQuery('item-649')
+    const current = useWebsiteImportSelectionSession.getState().session!
+    assert.deepEqual(visibleWebsiteSelectionPages(current), [pages[649]])
+    const history = [sourceEntry, { ...sourceEntry, path: '/previous-run.md', name: 'previous-run.md' }]
+    const projected = projectWebsiteImportTree(history, null, current)
+    assert.ok(history.every(entry => projected.entries.includes(entry)), 'past saved copies remain alongside filtered discovery')
+    assert.equal(projected.savedPaths.size, 2)
+  } finally { finishWebsiteImportSelection(null); restore() }
+})
+
+
+test('retained discovery preserves retry selection after failure and rejects stale import completion', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  globalThis.fetch = (async () => new Response(JSON.stringify({ ok: true, pages: [{ url: sourceUrl, path: '/library/' }], limited: false }))) as typeof fetch
+  let fail = true, release!: () => void
+  const gate = new Promise<void>(resolve => { release = resolve })
+  const unregister = registerMarkdownWorkspaceActionBridge('test-discovery-retry', { importWebsite: async () => {
+    if (fail) throw new Error('Capture unavailable')
+    await gate
+    return { handled: true }
+  } })
+  try {
+    const importing = importWebsiteFromSourceFiles(sourceUrl, sourceEntry.path)
+    const rejected = assert.rejects(importing, /Capture unavailable/)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    finishWebsiteImportSelection([sourceUrl])
+    await rejected
+    const retained = useWebsiteImportSelectionSession.getState().session!
+    assert.equal(retained.importing, false)
+    assert.ok(retained.selected.has(sourceUrl))
+    assert.match(retained.error, /Capture unavailable/)
+    fail = false
+    const retry = confirmRestoredWebsiteSelection(retained.id, [sourceUrl])
+    const replacement = chooseWebsiteImportPages('https://example.test/next/')
+    const replacementId = useWebsiteImportSelectionSession.getState().session!.id
+    release(); await retry
+    assert.equal(useWebsiteImportSelectionSession.getState().session!.id, replacementId)
+    finishWebsiteImportSelection(null); await replacement
+  } finally { release(); finishWebsiteImportSelection(null); unregister(); globalThis.fetch = previousFetch; restore() }
 })
