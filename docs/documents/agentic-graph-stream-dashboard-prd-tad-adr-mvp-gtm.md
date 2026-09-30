@@ -178,8 +178,9 @@ typechecking. Source rollback reverts the entry changes; no stored-document migr
 GTM: restore the general graph overview for document and website users. Buyer demand, savings and
 revenue remain unmeasured. Development: four Dashboard regressions, four Mission projection/durable-run tests, eight archive/stage
 checks, Canvas typechecking and three browser-runner tests pass. The local Settings entry opens the
-authored Dashboard. The exact-candidate Mission browser smoke was blocked before execution: another active worktree owns
-port 4191. Recheck when that owner releases the port or in isolated CI; no running writer was stopped. Protected integration,
+authored Dashboard. The complete Mission browser smoke passes on source
+`0888acb524f27e7a0b387bf54d79caef39737dba`, including Settings pointer entry, mobile and desktop
+inspection, offline expiry, local imports and private-model disposal. Protected integration,
 Production Release and deployed Runtime proof have not been established for this revision.
 
 The follow-up requires universal, neutral, file-agnostic behavior: Document insights consumes active
@@ -189,6 +190,7 @@ No filename, website domain or agent-manifest path selects these generic analysi
 Final review: Settings keeps its panel open and reports a refused Canvas View action locally,
 including the existing baseline lock, rather than propagating an effect error to the application.
 The focused entry regression checks that refusal as well as the ordinary and explicit Mission paths.
-After port release, full browser verification reached widget CRUD and exposed a stale absolute metric
-count. The test now verifies exactly one metric added and removed relative to the existing inventory;
-it remains valid as general graph metrics expand. The complete browser result remains pending.
+Browser regressions verify metric CRUD relative to the current inventory and distinguish Mission
+exit from the retained authored Dashboard. They require explicit Mission entry and clear private
+evidence on exit, while preserving authored graph data. The added source is approximately 14 KB
+across nine files, with no new modules; the largest changed script remains below 600 lines.
