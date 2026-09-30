@@ -6,7 +6,7 @@ import { sourceFileWebsiteUrl } from './websiteImportTreeProjection'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { useWebsiteImportSelectionSession, importWebsiteFromSourceFiles, discoverWebsiteSelection, finishWebsiteImportSelection } from './websiteImportSelectionSession'
+import { useWebsiteImportSelectionSession, importWebsiteFromSourceFiles, discoverWebsiteSelection, finishWebsiteImportSelection, confirmRestoredWebsiteSelection } from './websiteImportSelectionSession'
 
 const icons = { discover: Link, import: Download, cancel: X, clear: Eraser } satisfies Record<string, LucideIcon>
 export function SourceImportAction({ action, label, type = 'button', ...props }: Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & { action: keyof typeof icons; label: string }) {
@@ -17,19 +17,21 @@ export function SourceImportAction({ action, label, type = 'button', ...props }:
   </button>
 }
 
-export function WebsiteSelectionCheckbox({ label, urls, selected, toggle }: { label: string; urls: string[]; selected: Set<string>; toggle: (urls: string[], checked: boolean) => void }) {
+export function WebsiteSelectionCheckbox({ label, urls, selected, toggle, disabled = false }: { label: string; urls: string[]; selected: Set<string>; toggle: (urls: string[], checked: boolean) => void; disabled?: boolean }) {
   const ref = React.useRef<HTMLInputElement>(null)
   const count = urls.filter(url => selected.has(url)).length
   React.useEffect(() => { if (ref.current) ref.current.indeterminate = count > 0 && count < urls.length }, [count, urls.length])
   return <label className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} shrink-0 items-center justify-center rounded ${UI_THEME_TOKENS.focus.primaryRing}`}>
-    <input ref={ref} className="size-3 shrink-0" type="checkbox" aria-label={label} checked={urls.length > 0 && count === urls.length} onChange={event => toggle(urls, event.target.checked)} />
+    <input ref={ref} className="size-3 shrink-0" type="checkbox" aria-label={label} checked={urls.length > 0 && count === urls.length} disabled={disabled} onChange={event => toggle(urls, event.target.checked)} />
   </label>
 }
 
 export function confirmWebsiteSelection() {
   const session = useWebsiteImportSelectionSession.getState().session
-  if (!session || session.busy || !session.selected.size) return
-  finishWebsiteImportSelection(session.pages.filter(page => session.selected.has(page.url)).map(page => page.url))
+  if (!session || session.busy || session.importing || !session.selected.size) return
+  const urls = session.pages.filter(page => session.selected.has(page.url)).map(page => page.url)
+  if (session.restored) void confirmRestoredWebsiteSelection(session.id, urls).catch(reportSourceImportFailure)
+  else finishWebsiteImportSelection(urls)
 }
 
 export function reportSourceImportFailure(error: unknown) {
@@ -42,9 +44,9 @@ export function SourceFileWebsiteActions({ entry, source, urlOverride, confirmat
   if (!url) return null
   const ownsSession = !!session && (confirmationOwner ?? session.sourcePath === entry.path)
   return <>
-    <SourceImportAction action="discover" label={`Find pages linked from ${url}`} disabled={!!session?.busy}
+    <SourceImportAction action="discover" label={`Find pages linked from ${url}`} disabled={!!session?.busy || !!session?.importing}
       onClick={() => { if (session && (ownsSession || (urlOverride && session.pages.some(page => page.url === url)))) void discoverWebsiteSelection(url); else void importWebsiteFromSourceFiles(url, entry.path).catch(reportSourceImportFailure) }} />
     {ownsSession && <SourceImportAction action="import" label={`Import selected (${session.selected.size}) for ${entry.name}`}
-      disabled={session.busy || !session.selected.size} onClick={confirmWebsiteSelection} />}
+      disabled={session.busy || !!session.importing || !session.selected.size} onClick={confirmWebsiteSelection} />}
   </>
 }

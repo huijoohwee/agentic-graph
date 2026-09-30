@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.32"
+version: "0.2.33"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,22 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.31"
-prd_revision: "0.2.32"
-tad_revision: "0.2.32"
-adr_revision: "0.2.32"
-mvp_revision: "0.2.32"
-gtm_revision: "0.2.32"
+previous_document_version: "0.2.32"
+prd_revision: "0.2.33"
+tad_revision: "0.2.33"
+adr_revision: "0.2.33"
+mvp_revision: "0.2.33"
+gtm_revision: "0.2.33"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 restartable Source Files page selection
+
+- PRD: `/fix #source-files-restart-selection @codex` restores discovered page checkboxes, checked URLs and Explorer filtering after a browser restart. No page is imported until the user explicitly confirms; unchecking and rechecking still work after restoration.
+- TAD / ADR: Source Files discovery alone writes a bounded 256 KiB local browser draft of up to 500 pages. Startup validates and restores the draft without network access. The existing import bridge handles an explicitly confirmed restored selection; a failed restored import keeps that draft for retry. Launch sessions with an unserializable setup callback do not persist. Invalid or unavailable browser storage is reported in the import surface. Cancellation or successful import removes the draft. No new dependency, remote storage or automatic import is introduced.
+- MVP: six existing files, 30 KB incremental source diff and a 20-minute repair target. Verify a fresh mount restores checkbox state, unselect/reselect updates the draft, reload causes no import or discovery, explicit confirmation imports only selected URLs, and live browser reload behaves the same. Runtime validation URLs and captures stay outside source.
+- GTM / rollback: users can resume a pending import after reopening their local browser; no buyer or revenue outcome is claimed. Revert the scoped successor to restore transient selection and clear a leftover local draft through Cancel or browser site data. Protected integration and production require their own authority.
 
 ## 2026-09-30 Source Files action-column consistency
 

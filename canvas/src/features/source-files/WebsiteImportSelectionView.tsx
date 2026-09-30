@@ -7,6 +7,7 @@ import { useWebsiteImportSelectionSession, discoverWebsiteSelection, toggleWebsi
 /** Controls for the existing Source Files tree; this surface owns no second tree. */
 export default function WebsiteImportSelectionView() {
   const session = useWebsiteImportSelectionSession(state => state.session)
+  const recoveryError = useWebsiteImportSelectionSession(state => state.recoveryError)
   const typography = usePanelTypography()
   const [url, setUrl] = React.useState('')
   const visible = session?.pages.filter(page => `${page.url} ${page.title || ''}`.toLowerCase().includes(session.query.toLowerCase())) || []
@@ -16,14 +17,16 @@ export default function WebsiteImportSelectionView() {
       <p className="break-all text-xs">{session.url}</p>
       <p className="text-xs">Select folders or pages below. Use Explorer search above to filter discoveries, then Import selected beside cloud sync. Discovered pages stay local until imported.</p>
       <nav className="flex flex-wrap items-center gap-1" aria-label="Import selection controls">
-        <span className="inline-flex items-center gap-1"><WebsiteSelectionCheckbox label="Select all visible pages" urls={visible.map(page => page.url)} selected={session.selected} toggle={toggleWebsiteSelection} />Select visible</span>
-        <SourceImportAction action="clear" label="Clear selection" disabled={!session.selected.size} onClick={() => toggleWebsiteSelection(session.pages.map(page => page.url), false)} />
-        <SourceImportAction action="cancel" label="Cancel import selection" onClick={() => finishWebsiteImportSelection(null)} />
+        <span className="inline-flex items-center gap-1"><WebsiteSelectionCheckbox label="Select all visible pages" urls={visible.map(page => page.url)} selected={session.selected} toggle={toggleWebsiteSelection} disabled={!!session.importing} />Select visible</span>
+        <SourceImportAction action="clear" label="Clear selection" disabled={!session.selected.size || !!session.importing} onClick={() => toggleWebsiteSelection(session.pages.map(page => page.url), false)} />
+        <SourceImportAction action="cancel" label="Cancel import selection" disabled={!!session.importing} onClick={() => finishWebsiteImportSelection(null)} />
       </nav>
-      <p role="status" className="text-xs">{session.selected.size} selected · {session.pages.length} discovered{session.busy ? ' · Finding links…' : ''}</p>
+      <p role="status" className="text-xs">{session.selected.size} selected · {session.pages.length} discovered{session.busy ? ' · Finding links…' : session.importing ? ' · Importing…' : ''}</p>
       {session.error && <section role="alert"><p>{session.error}</p><SourceImportAction action="discover" label="Retry discovery" disabled={session.busy} onClick={() => void discoverWebsiteSelection(session.url)} /></section>}
+      {recoveryError && <p role="alert" className="text-xs">{recoveryError}</p>}
       {(session.limited || session.pages.length >= 500) && <p className="text-xs">Showing up to 500 discovered pages. This is a bounded list.</p>}
     </> : <form className="flex min-w-0 flex-wrap items-end gap-1" onSubmit={event => { event.preventDefault(); void importWebsiteFromSourceFiles(url.trim()).catch(reportSourceImportFailure) }}>
+      {recoveryError && <p role="alert" className="w-full text-xs">{recoveryError}</p>}
       <label className="grid min-w-0 flex-1 gap-1">Import URL<input type="url" required value={url} onChange={event => setUrl(event.target.value)} placeholder="https://" className="w-full min-w-0 rounded border bg-transparent p-1" /></label>
       <SourceImportAction action="discover" label="Find pages to import" type="submit" disabled={!url.trim()} />
     </form>}

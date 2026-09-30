@@ -2,7 +2,7 @@ import React from 'react'
 import { CloudOff } from 'lucide-react'
 import { projectWebsiteImportTree } from '@/features/source-files/websiteImportTreeProjection'
 import { SourceFileWebsiteActions, WebsiteSelectionCheckbox } from '@/features/source-files/SourceFileWebsiteActions'
-import { useWebsiteImportSelectionSession, toggleWebsiteSelection } from '@/features/source-files/websiteImportSelectionSession'
+import { useWebsiteImportSelectionSession, toggleWebsiteSelection, restoreWebsiteImportSelectionDraft } from '@/features/source-files/websiteImportSelectionSession'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { MarkdownFileTree } from './MarkdownFileTree'
@@ -73,6 +73,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
   } = props
   const importSession = useWebsiteImportSelectionSession(state => state.session)
   const [importOpen, setImportOpen] = React.useState(false)
+  React.useEffect(() => { restoreWebsiteImportSelectionDraft() }, [])
   const selectedMissionFolder = useAgentRunFolderSelection()
   const selectedPath = selectedMissionFolder ?? activePath
   const [demoEntry, setDemoEntry] = React.useState<WorkspaceEntry | null>(null)
@@ -208,7 +209,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
         alignActionColumns={!!importSession}
         renderEntryLeading={entry => {
           const urls = projection.selectionUrls.get(entry.path)
-          return importSession && urls?.length ? <WebsiteSelectionCheckbox label={entry.kind === 'folder' ? `Select discovered pages in ${entry.path}` : `Select page ${projection.pageUrls.get(entry.path)}`} urls={urls} selected={importSession.selected} toggle={toggleWebsiteSelection} /> : null
+          return importSession && urls?.length ? <WebsiteSelectionCheckbox label={entry.kind === 'folder' ? `Select discovered pages in ${entry.path}` : `Select page ${projection.pageUrls.get(entry.path)}`} urls={urls} selected={importSession.selected} toggle={toggleWebsiteSelection} disabled={!!importSession.importing} /> : null
         }}
         renderFileRight={renderFileStatusRight}
       />}

@@ -158,6 +158,50 @@ test('file row imports only its selected pages through the existing workspace br
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); globalThis.fetch = previousFetch; restore() }
 })
 
+test('Source Files restores page checkboxes after restart without importing until confirmation', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const requests: string[] = [], imported: string[][] = []
+  let importedResolve!: () => void
+  const importedReady = new Promise<void>(resolve => { importedResolve = resolve })
+  globalThis.fetch = (async target => {
+    requests.push(String(target))
+    return new Response(JSON.stringify({ ok: true, pages: [{ url: sourceUrl + 'one', path: '/library/one' }], limited: false }))
+  }) as typeof fetch
+  const unregister = registerMarkdownWorkspaceActionBridge('test-restart-selection', { importWebsite: async (_root, opts) => {
+    imported.push(opts?.selectedUrls || []); importedResolve(); return { handled: true }
+  } })
+  const host = document.createElement('section'); document.body.append(host)
+  let root = createRoot(host)
+  const control = (prefix: string) => Array.from(host.querySelectorAll<HTMLButtonElement>('button')).find(button => button.getAttribute('aria-label')?.startsWith(prefix))!
+  const page = () => host.querySelector<HTMLInputElement>(`input[aria-label="Select page ${sourceUrl}one"]`)!
+  try {
+    await act(async () => root.render(<SourceFilesHarness />))
+    await act(async () => control('Find pages linked from').click())
+    await act(async () => page().click())
+    assert.equal(page().checked, true)
+    const draftKey = Object.keys(window.localStorage).find(key => {
+      try { const value = JSON.parse(window.localStorage.getItem(key) || 'null'); return value?.url === sourceUrl && Array.isArray(value.pages) }
+      catch { return false }
+    })!
+    assert.ok(draftKey, 'explicit discovery saves its local draft')
+    const selectedDraft = window.localStorage.getItem(draftKey)
+    await act(async () => { root.unmount(); useWebsiteImportSelectionSession.setState({ session: null, recoveryError: '' }) })
+    root = createRoot(host)
+    await act(async () => root.render(<SourceFilesHarness />))
+    assert.equal(page().checked, true, 'the new Source Files mount restores the selected page')
+    assert.deepEqual(imported, [], 'restoration cannot import by itself')
+    assert.deepEqual(requests, ['/__website_import/discover'], 'restoration does not rediscover without user action')
+    await act(async () => page().click())
+    assert.equal(page().checked, false)
+    assert.notEqual(window.localStorage.getItem(draftKey), selectedDraft, 'unselection updates the restart draft')
+    await act(async () => page().click())
+    assert.equal(page().checked, true)
+    await act(async () => { control('Import selected').click(); await importedReady })
+    assert.deepEqual(imported, [[sourceUrl + 'one']])
+    assert.equal(window.localStorage.getItem(draftKey), null, 'successful confirmation removes the draft')
+  } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); host.remove(); globalThis.fetch = previousFetch; restore() }
+})
+
 test('discovery keeps the clicked source when generated siblings share its URL', () => {
   const sibling = { ...sourceEntry, path: '/sitemap.md', name: 'sitemap.md' }
   const session = { id: 1, url: sourceUrl, sourcePath: sourceEntry.path, pages: [{ url: sourceUrl, path: '/library/' }, { url: sourceUrl + 'new', path: '/library/new' }], selected: new Set<string>(), visited: new Set<string>(), busy: false, error: '', limited: false, query: '' }
