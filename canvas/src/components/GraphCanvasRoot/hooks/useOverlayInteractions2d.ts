@@ -31,6 +31,10 @@ export function useOverlayInteractions2d(args: {
 }) {
   const { activeRef, svgRef, zoomRef, simulationRef, sceneGraphDataRef, graphDataRevision, schemaRef, requestOverlaySchedule } = args
 
+  const scheduleRef = useRef(requestOverlaySchedule)
+  scheduleRef.current = requestOverlaySchedule
+  const requestSchedule = useCallback(() => scheduleRef.current?.(), [])
+
   const stopEvent = useCallback((event: React.SyntheticEvent) => {
     try {
       event.stopPropagation()
@@ -62,15 +66,17 @@ export function useOverlayInteractions2d(args: {
     map: new Map(),
   })
 
+  const graphRevisionRef = useRef(graphDataRevision)
+  graphRevisionRef.current = graphDataRevision
   const readOverlayInteractionNodeById = useCallback(() => {
     return readMergedGraphNodeLookup({
       cacheRef: overlayNodeLookupRef,
       cacheScope: 'graph-canvas-root-overlay-interactions-node-lookup',
       graphData: sceneGraphDataRef.current,
-      graphRevision: graphDataRevision,
+      graphRevision: graphRevisionRef.current,
       simulation: simulationRef.current,
     })
-  }, [graphDataRevision, sceneGraphDataRef, simulationRef])
+  }, [sceneGraphDataRef, simulationRef])
 
   const headerDragMoveSchedulerRef = useRef(
     createRafValueScheduler((args0: { dx: number; dy: number; clientX: number; clientY: number }) => {
@@ -111,7 +117,7 @@ export function useOverlayInteractions2d(args: {
         void 0
       }
       try {
-        requestOverlaySchedule?.()
+        requestSchedule?.()
       } catch {
         void 0
       }
@@ -140,7 +146,7 @@ export function useOverlayInteractions2d(args: {
         next,
       )
       try {
-        requestOverlaySchedule?.()
+        requestSchedule?.()
       } catch {
         void 0
       }
@@ -277,8 +283,8 @@ export function useOverlayInteractions2d(args: {
     }
     const tickHandler = sim?.on('tick')
     if (typeof tickHandler === 'function') (tickHandler as () => void)()
-    requestOverlaySchedule?.()
-  }, [readOverlayInteractionNodeById, requestOverlaySchedule, schemaRef, simulationRef, svgRef])
+    requestSchedule?.()
+  }, [readOverlayInteractionNodeById, requestSchedule, schemaRef, simulationRef, svgRef])
 
   const startOverlayPan = useCallback(
     (args0: { pointerId: number; clientX: number; clientY: number }) => {
@@ -352,33 +358,16 @@ export function useOverlayInteractions2d(args: {
   }, [endHeaderDrag, endOverlayPan])
 
   React.useEffect(() => {
-    const onUp = (e: PointerEvent) => {
-      const h = headerDragRef.current
-      if (h) {
-        try {
-          endHeaderDrag()
-        } catch {
-          try {
-            headerDragRef.current = null
-            unlockGlobalUserSelect()
-          } catch {
-            void 0
-          }
-        }
-      }
-      const p = overlayPanRef.current
-      if (p) {
-        try {
-          endOverlayPan({ pointerId: p.pointerId })
-        } catch {
-          try {
-            overlayPanRef.current = null
-          } catch {
-            void 0
-          }
-        }
-      }
-      void e
+    let disposed = false
+    const onUp = (event: PointerEvent) => {
+      const header = headerDragRef.current
+      const pan = overlayPanRef.current
+      // Defer beyond native capture microtasks so the pointer owner can flush and commit.
+      setTimeout(() => {
+        if (disposed) return
+        if (header && headerDragRef.current === header) endHeaderDrag()
+        if (pan && overlayPanRef.current === pan && pan.pointerId === event.pointerId) endOverlayPan({ pointerId: pan.pointerId })
+      })
     }
     const onBlur = () => {
       const h = headerDragRef.current
@@ -423,11 +412,8 @@ export function useOverlayInteractions2d(args: {
       cancelAllInteractions()
     }
     window.addEventListener('pointerdown', onAnyPointerDown, { capture: true })
-    const watchdog = window.setTimeout(() => {
-      if (!headerDragRef.current && !overlayPanRef.current) return
-      cancelAllInteractions()
-    }, 12000) as unknown as number
     return () => {
+      disposed = true
       try {
         cancelAllInteractions()
       } catch {
@@ -438,11 +424,6 @@ export function useOverlayInteractions2d(args: {
       window.removeEventListener('blur', onBlur)
       window.removeEventListener('pointerdown', onAnyPointerDown, { capture: true } as AddEventListenerOptions)
       if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibility)
-      try {
-        window.clearTimeout(watchdog)
-      } catch {
-        void 0
-      }
     }
   }, [cancelAllInteractions, endHeaderDrag, endOverlayPan])
 

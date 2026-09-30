@@ -3,8 +3,15 @@ import type { GraphData } from '@/lib/graph/types'
 /** Name existing hit surfaces; keyboard activation reuses their pointer action. */
 export function bindGraphSemanticTargets2d(root: SVGGElement | null, graph: GraphData): void {
   if (!root) return
+  root.setAttribute('role', 'group')
+  root.setAttribute('aria-label', 'Graph elements')
   const background = root.parentElement?.querySelector<SVGElement>('[data-kg-layer="interaction-background"]')
-  if (background) bindKeyboardActivation(background)
+  if (background) {
+    background.setAttribute('role', 'button')
+    background.setAttribute('aria-label', 'Clear graph selection')
+    background.setAttribute('tabindex', '0')
+    bindKeyboardActivation(background)
+  }
   const nodes = new Map(graph.nodes.map(node => [String(node.id), String(node.label || node.id)]))
   const edges = new Map(graph.edges.map(edge => [String(edge.id), edge]))
   const covered = new Set(Array.from(root.querySelectorAll('[data-kg-covered-by-media="1"]'))

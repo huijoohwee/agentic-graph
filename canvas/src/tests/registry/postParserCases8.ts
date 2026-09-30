@@ -1,6 +1,11 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
+  ["richMedia.panel.fastD3Release","@/__tests__/overlayInteractions2dCleanupRegression.test","testOverlayInteractions2dCommitsFastReleaseAcrossRevision"],
+  ["workspace.selection.canvas.importedSourceIdentity","@/__tests__/canvasSelectionAutoOpenGatedByActiveRegression.test.tsx","testCanvasSelectionResolvesImportedSourceIdentity"],
+  ["mediaOverlayPool.coveredAliases","@/__tests__/mediaOverlayPoolPrioritization.test","testMediaOverlayPoolCarriesCoveredAliases"],
+  ["richMedia.panel.bodyDrag","@/__tests__/richMediaPanelDirectSurfaceDragRegression.test.tsx","testRichMediaPanelBodyUsesPanelDragAndPreservesControls"],
+  ["three.ui.dragReleaseRecovery","@/__tests__/threeOverlayDragUnstickRegression.test","testThreeGraphHasOverlayDragGlobalFailsafe"],
   ["agentReady.missionControl.projection.dashboardMarkdown", "@/__tests__/dashboardMarkdownDocument.test", "testDashboardMarkdownPipeline"],
   ["agentReady.missionControl.projection.dashboardMarkdownPersistence", "@/__tests__/dashboardMarkdownDocument.test", "testDashboardMarkdownWorkspacePersistence"],
   ["workspace.xrSeed.consolidationPreservesBytes", "@/__tests__/xrSeedConsolidation.test", "testXrSeedConsolidationPreservesAuthoredBytes"],

@@ -200,15 +200,10 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
     .attr('width', '100%')
     .attr('height', '100%')
     .attr('fill', 'transparent')
-    .attr('role', 'button')
-    .attr('aria-label', 'Clear graph selection')
-    .attr('tabindex', '0')
     .style('pointer-events', 'all')
 
   const g = svg.append('g')
     .attr('data-kg-layer', 'scene-root')
-    .attr('role', 'group')
-    .attr('aria-label', 'Graph elements')
     .style('pointer-events', 'none')
   gRef.current = g
 

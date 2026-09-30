@@ -81,3 +81,44 @@ export async function testRichMediaPanelDirectImageSurfaceStartsOverlayDrag() {
     restoreDom()
   }
 }
+
+export async function testRichMediaPanelBodyUsesPanelDragAndPreservesControls() {
+  const { dom, restore } = initJsdomHarness()
+  try {
+    resetRichMediaPanelDragState()
+    const container = dom.window.document.createElement('section')
+    dom.window.document.body.appendChild(container)
+    const root = createRoot(container)
+    const events: string[] = []
+    await mountReactRoot(root, React.createElement(RichMediaPanel, {
+      title: 'Draggable figure', url: 'https://assets.example.test/figure.png', kind: 'image',
+      panelChrome: 'storyboardWidget', interactive: false,
+      onHeaderDragStart: () => events.push('start'),
+      onHeaderDrag: ({ dx, dy }) => events.push(`move:${dx}:${dy}`),
+      onHeaderDragEnd: () => events.push('end'),
+      onOverlayPanStart: () => events.push('pan'),
+      onOverlayPan: () => {}, onOverlayPanEnd: () => {},
+    }), { window: dom.window, frames: 12 })
+    const body = container.querySelector(`section[${MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR}="1"]`)
+    if (!body) throw new Error('expected semantic image body')
+    await act(async () => {
+      dispatchPointerEvent(body, dom.window, 'pointerdown', { pointerId: 72, clientX: 10, clientY: 20 })
+      dispatchPointerEvent(dom.window, dom.window, 'pointermove', { pointerId: 72, clientX: 50, clientY: 55 })
+      dispatchPointerEvent(dom.window, dom.window, 'pointerup', { pointerId: 72, clientX: 50, clientY: 55 })
+      await waitForNextFrame(dom.window)
+    })
+    if (events.join('|') !== 'start|move:40:35|end') throw new Error(`body must drag panel once: ${events}`)
+    events.length = 0
+    const link = dom.window.document.createElement('a')
+    link.href = '#download'
+    body.appendChild(link)
+    dispatchPointerEvent(link, dom.window, 'pointerdown', { pointerId: 73 })
+    if (events.length) throw new Error('native links must retain their own gestures')
+    await act(async () => {
+      dispatchPointerEvent(body, dom.window, 'pointerdown', { pointerId: 74, button: 1, buttons: 4 })
+      dispatchPointerEvent(dom.window, dom.window, 'pointerup', { pointerId: 74, button: 1 })
+    })
+    if (events.join('|') !== 'pan') throw new Error('middle-button body gesture must retain canvas pan')
+    await unmountReactRoot(root, { window: dom.window })
+  } finally { restore() }
+}

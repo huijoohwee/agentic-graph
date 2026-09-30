@@ -1,3 +1,4 @@
+import { useThreeOverlayDragRecovery } from './useThreeOverlayDragRecovery'
 import React from 'react'
 import type { Camera, WebGLRenderer } from 'three'
 import { useShallow } from 'zustand/react/shallow'
@@ -343,13 +344,13 @@ export function useThreeRichMediaOverlayController(args: {
 
   const overlayHiddenNodeIdSet = React.useMemo(() => {
     const nodes = args.sceneGraph && Array.isArray(args.sceneGraph.nodes) ? (args.sceneGraph.nodes as GraphNode[]) : []
-    const ids = new Set<string>(overlayNodesPool.map(n => n.id))
+    const ids = new Set<string>(overlayNodesPool.flatMap(n => n.coveredNodeIds || [n.id]))
     for (const id of buildPanelOnlyNodeIdSetFromGraphNodes(nodes)) ids.add(id)
     return ids
   }, [args.sceneGraph, overlayNodesPool])
 
   useOverlayPointerOverride({ active: args.active, glCanvasRef: args.glCanvasRef, overlayElsRef, pointerOverrideActiveRef, pointerOverrideResetTimerRef })
-  useOverlayDragWatchdog({
+  useThreeOverlayDragRecovery({
     draggedNodeIdRef: args.draggedNodeIdRef,
     dragOverridesRef,
     screenDragOverridesRef,
@@ -551,23 +552,23 @@ export function useThreeRichMediaOverlayController(args: {
             if (!camera || !gl) return
             const viewportW = gl.domElement.clientWidth || 1
             const viewportH = gl.domElement.clientHeight || 1
-            const start = p
+            const projected = p
               ? computeOverlayDragStartScreenSpace3d({
                   camera,
                   world: { x: p[0], y: p[1], z: p[2] },
                   viewportW,
                   viewportH,
                 })
-              : (() => {
-                  const rect = overlayElsRef.current.get(n.id)?.getBoundingClientRect()
-                  return {
-                    sx: rect && Number.isFinite(rect.left) && Number.isFinite(rect.width) ? rect.left + rect.width / 2 : viewportW / 2,
-                    sy: rect && Number.isFinite(rect.top) && Number.isFinite(rect.height) ? rect.top + rect.height / 2 : viewportH / 2,
-                    ndcZ: 0,
-                    w: viewportW,
-                    h: viewportH,
-                  }
-                })()
+              : null
+            const rect = overlayElsRef.current.get(n.id)?.getBoundingClientRect()
+            // Layout may clamp an offscreen world projection; grab the visible panel.
+            const start = {
+              sx: rect?.width ? rect.left + rect.width / 2 : projected?.sx ?? viewportW / 2,
+              sy: rect?.height ? rect.top + rect.height / 2 : projected?.sy ?? viewportH / 2,
+              ndcZ: projected?.ndcZ ?? 0,
+              w: viewportW,
+              h: viewportH,
+            }
             headerDragRef.current = {
               id: n.id,
               pointerId,
@@ -693,49 +694,4 @@ function useOverlayPointerOverride(args: {
       setOverride(false)
     }
   }, [active, glCanvasRef, overlayElsRef, pointerOverrideActiveRef, pointerOverrideResetTimerRef])
-}
-
-function useOverlayDragWatchdog(args: {
-  draggedNodeIdRef: React.MutableRefObject<string | null>
-  dragOverridesRef: React.MutableRefObject<Record<string, [number, number, number]>>
-  screenDragOverridesRef: React.MutableRefObject<Record<string, { sx: number; sy: number }>>
-  headerDragRef: React.MutableRefObject<null | RichMediaHeaderDragState3d>
-  overlayPanRef: React.MutableRefObject<null | { pointerId: number; pose: ThreeCameraPose }>
-  setDraggedNodeId: React.Dispatch<React.SetStateAction<string | null>>
-}) {
-  const { draggedNodeIdRef, dragOverridesRef, screenDragOverridesRef, headerDragRef, overlayPanRef, setDraggedNodeId } = args
-  React.useEffect(() => {
-    const clearStaleOverlayDragState = () => {
-      const header = headerDragRef.current
-      if (header) {
-        delete dragOverridesRef.current[header.id]
-        delete screenDragOverridesRef.current[header.id]
-        headerDragRef.current = null
-      }
-      if (overlayPanRef.current) overlayPanRef.current = null
-      if (draggedNodeIdRef.current != null) setDraggedNodeId(null)
-    }
-    const onAnyEnd = () => {
-      if (!headerDragRef.current && !overlayPanRef.current && draggedNodeIdRef.current == null) return
-      clearStaleOverlayDragState()
-    }
-    const onVisibility = () => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') onAnyEnd()
-    }
-    window.addEventListener('pointerup', onAnyEnd, { capture: true })
-    window.addEventListener('pointercancel', onAnyEnd, { capture: true })
-    window.addEventListener('pointerdown', onAnyEnd, { capture: true })
-    window.addEventListener('blur', onAnyEnd)
-    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibility)
-    const watchdog = window.setInterval(onAnyEnd, 12000) as unknown as number
-    return () => {
-      window.removeEventListener('pointerup', onAnyEnd, { capture: true } as AddEventListenerOptions)
-      window.removeEventListener('pointercancel', onAnyEnd, { capture: true } as AddEventListenerOptions)
-      window.removeEventListener('pointerdown', onAnyEnd, { capture: true } as AddEventListenerOptions)
-      window.removeEventListener('blur', onAnyEnd)
-      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibility)
-      window.clearInterval(watchdog)
-      clearStaleOverlayDragState()
-    }
-  }, [draggedNodeIdRef, dragOverridesRef, headerDragRef, overlayPanRef, screenDragOverridesRef, setDraggedNodeId])
 }
