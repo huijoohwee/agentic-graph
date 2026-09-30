@@ -211,7 +211,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
         onCanvasEmbedReady={handleCanvasEmbedReady}
         onShareCodeReady={handleShareCodeReady}
         canOpenContextMenu={entry => !projection.pendingPaths.has(entry.path)}
-        alignActionColumns={!!importSession}
+        alignActionColumns
         renderEntryLeading={renderSelectionControl}
         renderFileRight={renderFileStatusRight}
       />}

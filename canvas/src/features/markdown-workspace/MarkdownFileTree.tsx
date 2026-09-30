@@ -247,8 +247,11 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
           </MarkdownFileTreeRowButton>
           {sourceUrl || fileRight ? (
             <span role="group" aria-label={`Actions for ${entry.name}`} data-source-file-actions
-              className="inline-flex shrink-0 items-center gap-0.5"
-              style={alignActionColumns ? { minWidth: 'calc(var(--kg-data-view-icon-action-sm-size, 1.75rem) * 4 + 0.375rem)' } : undefined}>
+              className={`inline-flex shrink-0 items-center ${alignActionColumns ? 'gap-0' : 'gap-0.5'}`}
+              style={alignActionColumns ? {
+                '--kg-data-view-icon-action-sm-size': '1.5rem',
+                minWidth: 'calc(var(--kg-data-view-icon-action-sm-size) * 4 + 0.25rem)',
+              } as React.CSSProperties : undefined}>
               {sourceUrl ? (
                 <a href={sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open source URL for ${entry.name}`}
                   title={sourceUrl}

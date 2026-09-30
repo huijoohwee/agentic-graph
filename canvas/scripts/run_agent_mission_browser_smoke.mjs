@@ -95,7 +95,9 @@ async function run() {
       AGENTIC_OS_SOURCE_REVISION: head })
     for (const key of ['VITE_AGENTIC_OS_OBSERVATION_PATH', 'VITE_AGENTIC_OS_SESSION_PATH', 'VITE_AGENTIC_OS_CSRF_HEADER']) delete process.env[key]
     process.chdir(canvasRoot)
-    await runLocalViteBrowserSmoke({ logLabel: 'agent-mission-browser-smoke', devServerPort: '4191', devServerPath: '/',
+    const smokePort = process.env.AG_MISSION_SMOKE_PORT || '4191'
+    if (!/^[1-9]\d{1,4}$/.test(smokePort) || Number(smokePort) > 65535) throw new Error('Invalid agent mission smoke port')
+    await runLocalViteBrowserSmoke({ logLabel: 'agent-mission-browser-smoke', devServerPort: smokePort, devServerPath: '/',
       baseUrlEnvName: 'AG_MISSION_SMOKE_BASE_URL', verifierCommand: process.execPath,
       verifierArgs: ['scripts/verify_agent_mission_browser_smoke.mjs'], verifierFailureLabel: 'Agent mission browser smoke',
       prepareBeforeStart: false, devServerStartMode: 'vite-runner', existingServerPolicy: 'forbid' })

@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.38"
+version: "0.2.39"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,22 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.37"
-prd_revision: "0.2.38"
-tad_revision: "0.2.38"
-adr_revision: "0.2.38"
-mvp_revision: "0.2.38"
-gtm_revision: "0.2.38"
+previous_document_version: "0.2.38"
+prd_revision: "0.2.39"
+tad_revision: "0.2.39"
+adr_revision: "0.2.39"
+mvp_revision: "0.2.39"
+gtm_revision: "0.2.39"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 Source Files action column alignment
+
+- PRD: `/fix #source-files-action-columns @codex` aligns corresponding source URL, discovery, import, and cloud actions across different file depths in the narrow Source Files pane. Missing actions remain compacted into the next available position.
+- TAD / ADR: Source Files requests the shared file tree's aligned action strip in idle and import states. Its action controls use a 24-pixel width with a four-slot minimum strip and no outer gap, leaving room for the leading control and a truncatable name at the deepest observed website page row. The existing compact inner spacing and action handlers remain unchanged. The mission browser smoke runner accepts a bounded local port override so parallel checkouts do not contend for its fixed default port. No product storage, network, or dependency change.
+- MVP: four existing files, under 3 KB of authored text, and 15 active minutes excluding external port contention. Measure group and icon positions on imported files at adjacent depths in the live narrow pane, ensure no right-edge overflow, check idle and page-selection modes, and validate the exact clean candidate using an unused test port.
+- GTM / rollback: restore scanable action columns in the existing tree; no buyer or revenue result claimed. Revert this successor to restore former action widths. Protected integration and production require separate authority and receipts.
 
 ## 2026-09-30 Source Files folder alignment
 
