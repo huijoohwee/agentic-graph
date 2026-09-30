@@ -10,24 +10,30 @@ import { Z_INDEX_ANCHOR_OVERLAY } from '@/lib/ui/zIndex'
 type Align = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'bottom-center' | 'top-center'
 
 interface AnchorOverlayProps {
-  anchorRef: React.RefObject<HTMLElement>
+  anchorRef?: React.RefObject<HTMLElement | null>
+  anchorPoint?: { left: number; top: number }
   open: boolean
   onClose?: () => void
   align?: Align
   className?: string
   autoFocus?: boolean
   allowOverflowVisible?: boolean
+  dismissalGroup?: string
+  panelRef?: React.MutableRefObject<HTMLElement | null>
   children: React.ReactNode
 }
 
 export function AnchorOverlay({
   anchorRef,
+  anchorPoint,
   open,
   onClose,
   align = 'bottom-right',
   className = '',
   autoFocus = true,
   allowOverflowVisible = false,
+  dismissalGroup,
+  panelRef,
   children,
 }: AnchorOverlayProps) {
   const containerRef = useRef<HTMLElement | null>(null)
@@ -36,10 +42,10 @@ export function AnchorOverlay({
   const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
 
   const updatePosition = React.useCallback(() => {
-    const el = anchorRef.current
-    if (!el) return
-    const r = el.getBoundingClientRect()
-    const margin = 4
+    const el = anchorRef?.current
+    if (!el && !anchorPoint) return
+    const r = anchorPoint ? { left: anchorPoint.left, right: anchorPoint.left, top: anchorPoint.top, bottom: anchorPoint.top, width: 0, height: 0 } : el!.getBoundingClientRect()
+    const margin = anchorPoint ? 0 : 4
     const overlaySize = readOverlayElementSize(containerRef.current)
     const overlayWidth = overlaySize.width
     const overlayHeight = overlaySize.height
@@ -64,7 +70,7 @@ export function AnchorOverlay({
       snapPx: 1,
     })
     setPos(prev => (prev.top === next.top && prev.left === next.left ? prev : next))
-  }, [align, anchorRef])
+  }, [align, anchorPoint, anchorRef])
 
   useLayoutEffect(() => {
     if (!open) return
@@ -94,12 +100,14 @@ export function AnchorOverlay({
     const handlePointerDown = (e: MouseEvent | PointerEvent) => {
       const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
       if (now - openedAt < 120) return
-      const anchorEl = anchorRef.current
+      const anchorEl = anchorRef?.current
       const containerEl = containerRef.current
       const t = e.target as Node | null
       if (!t) return
       if (anchorEl && anchorEl.contains(t)) return
       if (containerEl && containerEl.contains(t)) return
+      const targetElement = t instanceof Element ? t : t.parentElement
+      if (dismissalGroup && targetElement?.closest('[data-kg-overlay-group]')?.getAttribute('data-kg-overlay-group') === dismissalGroup) return
       onClose()
     }
 
@@ -117,7 +125,7 @@ export function AnchorOverlay({
       window.removeEventListener('scroll', handleReposition, true)
       window.removeEventListener('resize', handleReposition)
     }
-  }, [open, onClose, anchorRef, updatePosition])
+  }, [open, onClose, anchorRef, updatePosition, dismissalGroup])
 
   useOverlayRepositionObservers({ open, rootRef: containerRef, updatePosition })
 
@@ -154,8 +162,9 @@ export function AnchorOverlay({
 
   const attachContainer = React.useCallback((element: HTMLElement | null) => {
     containerRef.current = element
+    if (panelRef) panelRef.current = element
     if (element) refreshOverlayPositionAfterMount(updatePosition)
-  }, [updatePosition])
+  }, [updatePosition, panelRef])
 
   const style = useMemo<React.CSSProperties>(
     () => ({
@@ -178,6 +187,7 @@ export function AnchorOverlay({
         style={withInteractivePortalContentStyle(style)}
         className={['kg-anchor-overlay', className].filter(Boolean).join(' ')}
         data-kg-anchor-overlay="true"
+        data-kg-overlay-group={dismissalGroup}
         tabIndex={-1}
       >
         {children}
