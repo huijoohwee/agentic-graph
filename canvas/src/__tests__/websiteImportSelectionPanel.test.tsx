@@ -21,6 +21,15 @@ function SourceFilesHarness() {
     onCreateNewFile={() => {}} onRevealInFinder={() => {}} onClearFile={() => {}} onRenameEntry={() => {}} onDeleteEntry={() => {}} /></>
 }
 
+test('idle URL import still has its explicit form', async () => {
+  const { restore } = initJsdomHarness()
+  const host = document.createElement('section'), root = createRoot(host)
+  try {
+    await act(async () => root.render(<WebsiteImportSelectionView />))
+    assert.ok(host.querySelector('section[aria-label="Import website URL"] input[type=url]'))
+  } finally { await act(async () => root.unmount()); restore() }
+})
+
 test('one Source Files tree supports folder selection, collapse and read-only discovery', async () => {
   const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
   const host = document.createElement('section'); document.body.append(host)
@@ -44,6 +53,10 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     assert.ok(host.querySelector('section[aria-label="File a"] button[aria-label="Select file a"]'), 'discovered page starts with its file icon')
     assert.ok(host.querySelector('section[aria-label="Folder .workspace"] button[aria-label="Collapse folder .workspace"]'), 'mission folder remains independently collapsible')
     await act(async () => checkbox('Select all visible pages').click())
+    const chooser = host.querySelector('section[aria-label="Choose folder(s)/page(s) to import"]')!
+    assert.equal(chooser.querySelectorAll('input').length, 1, 'active chooser retains only the Select visible checkbox')
+    assert.equal(chooser.querySelectorAll('button, h3, p, nav').length, 0, 'legacy chooser controls and explanation are removed')
+    assert.equal(chooser.textContent?.trim(), '', 'checkbox accessible name replaces the redundant visible copy')
     assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 3)
     assert.equal(checkbox('Folder .workspace is outside this website import').disabled, true)
     assert.equal(checkbox('File agent-mission.inspection.json is outside this website import').disabled, true)
@@ -122,11 +135,12 @@ test('cancel aborts pending discovery and never resolves an import selection', a
   globalThis.fetch = ((_url, init) => { signal = init?.signal as AbortSignal; return new Promise<Response>(() => {}) }) as typeof fetch
   const host = document.createElement('section'), root = createRoot(host)
   try {
-    await act(async () => { void chooseWebsiteImportPages('https://example.test/library/').then(urls => { resolution = urls }); root.render(<WebsiteImportSelectionView />) })
-    await act(async () => Array.from(host.querySelectorAll('button')).find(button => button.getAttribute('aria-label') === 'Cancel import selection')!.click())
+    await act(async () => { void chooseWebsiteImportPages('https://example.test/library/').then(urls => { resolution = urls }); root.render(<SourceFilesHarness />) })
+    await act(async () => Array.from(host.querySelectorAll('button')).find(button => button.textContent === 'Cancel import selection')!.click())
     assert.equal(resolution, null)
     assert.equal(signal?.aborted, true)
-    assert.ok(host.querySelector('input[type=url]'))
+    assert.equal(host.querySelector('section[aria-label="Choose folder(s)/page(s) to import"]'), null)
+    assert.ok(Array.from(host.querySelectorAll('button')).some(button => button.textContent === 'Import URL'))
     await act(async () => root.unmount())
   } finally { finishWebsiteImportSelection(null); globalThis.fetch = previousFetch; restore() }
 })

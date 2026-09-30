@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.35"
+version: "0.2.36"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,22 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.34"
-prd_revision: "0.2.35"
-tad_revision: "0.2.35"
-adr_revision: "0.2.35"
-mvp_revision: "0.2.35"
-gtm_revision: "0.2.35"
+previous_document_version: "0.2.35"
+prd_revision: "0.2.36"
+tad_revision: "0.2.36"
+adr_revision: "0.2.36"
+mvp_revision: "0.2.36"
+gtm_revision: "0.2.36"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 storage settings and compact page chooser
+
+- PRD: `/fix #source-files-storage-settings @codex` places canonical Product, Workspace, Seeds, Templates, and Offline roots inside MainPanel Settings → Workspace Storage Sync. Source Files no longer repeats those roots. During page selection, the chooser displays only its accessible Select visible checkbox; existing tree rows hold per-page controls, and Import URL changes to Cancel import selection.
+- TAD / ADR: one Settings Key/Type/Value row reads the existing authority constants and retains the template open action. The Source Files ownership component and duplicate Document Storage & Sync roots row are retired. The active chooser keeps its native checkbox, with failures in an adjacent alert; the idle Import URL form remains available. Selection and import still use the existing session and source-row confirmation owner. No added service, dependency, persistence layer, or automatic import.
+- MVP: ten paths, 35 KB incremental diff, and 30 active minutes. Verify roots and template action location, absence of the former Source Files block and duplicate Settings row, active chooser containing one checkbox and no legacy controls, cancellation, page selection, restart restoration, and the exact clean affected validation receipt. Browser captures and runtime validation inputs remain outside source.
+- GTM / rollback: reduce Source Files clutter and place storage authority beside its controls; no buyer or revenue result is claimed. Revert this successor to restore the prior layout. Protected integration and production remain separate decisions requiring their own receipts.
 
 ## 2026-09-30 checkbox replaces folder chevron
 

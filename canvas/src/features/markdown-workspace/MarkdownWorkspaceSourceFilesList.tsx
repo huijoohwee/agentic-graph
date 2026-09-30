@@ -2,7 +2,7 @@ import React from 'react'
 import { CloudOff } from 'lucide-react'
 import { projectWebsiteImportTree } from '@/features/source-files/websiteImportTreeProjection'
 import { SourceFileWebsiteActions, WebsiteSelectionCheckbox } from '@/features/source-files/SourceFileWebsiteActions'
-import { useWebsiteImportSelectionSession, toggleWebsiteSelection, restoreWebsiteImportSelectionDraft } from '@/features/source-files/websiteImportSelectionSession'
+import { useWebsiteImportSelectionSession, toggleWebsiteSelection, restoreWebsiteImportSelectionDraft, finishWebsiteImportSelection } from '@/features/source-files/websiteImportSelectionSession'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { MarkdownFileTree } from './MarkdownFileTree'
@@ -23,12 +23,10 @@ import {
   SourceFileCloudSyncIndicator,
   useSourceFileCloudSync,
 } from './SourceFileCloudSyncIndicator'
-import { SourceFilesOwnershipSummary } from './SourceFilesOwnershipSummary'
 import { AgentMissionSourceFile } from '@/features/agent-ready/agentMissionSourceFiles'
 import { selectAgentRunSource, useAgentRunFolderSelection } from '@/features/agent-ready/agentRunInspectionStore'
-import { DASHBOARD_TEMPLATE_PATH, DASHBOARD_TEMPLATE_ROOT, readDashboardTemplate } from '@/components/DashboardCanvas/dashboardTemplateSource'
+import { DASHBOARD_TEMPLATE_PATH } from '@/components/DashboardCanvas/dashboardTemplateSource'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
-import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
 
 const WebsiteImportSelectionView = React.lazy(() => import('@/features/source-files/WebsiteImportSelectionView'))
 
@@ -98,20 +96,6 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
       if (paths.has(path)) paths.delete(path); else paths.add(path)
       return { id: importSession?.id || 0, paths }
     })
-  }
-
-  const [templateBusy, setTemplateBusy] = React.useState(false)
-  const [templateError, setTemplateError] = React.useState('')
-  const openTemplate = async () => {
-    setTemplateBusy(true); setTemplateError('')
-    try {
-      const fs = await getWorkspaceFs()
-      await readDashboardTemplate(fs, DASHBOARD_TEMPLATE_PATH)
-      await applyWorkspaceImportToCanvas({ fs, createdPaths: [DASHBOARD_TEMPLATE_PATH], opts: { applyToGraph: false, skipComposedGraphApply: true } })
-      for (const path of ['/huijoohwee.github.io', DASHBOARD_TEMPLATE_ROOT]) if (!expandedPaths.has(path)) toggleExpanded(path)
-      onSelectFile(DASHBOARD_TEMPLATE_PATH)
-    } catch (error) { setTemplateError((error as Error).message) }
-    finally { setTemplateBusy(false) }
   }
 
   const renderFileStatusRight = React.useCallback((args: { entry: WorkspaceEntry; isActive: boolean }) => {
@@ -186,11 +170,12 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
   return (
     <>
       <section aria-label="Source Files import" className="px-1 py-1">
-        <button type="button" aria-expanded={importOpen || !!importSession} onClick={() => setImportOpen(value => !value)} className={`rounded px-1 py-0.5 ${textSizeClass} ${UI_THEME_TOKENS.button.hoverBg}`}>Import URL</button>
+        <button type="button" aria-expanded={importOpen || !!importSession} disabled={!!importSession?.importing} onClick={() => {
+          if (importSession) { finishWebsiteImportSelection(null); setImportOpen(false) }
+          else setImportOpen(value => !value)
+        }} className={`rounded px-1 py-0.5 ${textSizeClass} ${UI_THEME_TOKENS.button.hoverBg}`}>{importSession ? 'Cancel import selection' : 'Import URL'}</button>
         {(importOpen || importSession) && <React.Suspense fallback={<p role="status">Loading import controls…</p>}><WebsiteImportSelectionView /></React.Suspense>}
       </section>
-      <SourceFilesOwnershipSummary onOpenTemplate={() => void openTemplate()} templateBusy={templateBusy} />
-      {templateError && <p role="status" className={`px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>{templateError}</p>}
       <AgentMissionSourceFile search={props.search} activePath={selectedPath} renderEntryLeading={renderSelectionControl} />
       {loading ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.text.secondary}`}>Loading…</p>
         : loadError ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>Failed: {loadError}</p>
