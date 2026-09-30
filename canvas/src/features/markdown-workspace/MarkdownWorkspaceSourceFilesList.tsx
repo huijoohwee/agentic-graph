@@ -1,8 +1,8 @@
 import React from 'react'
-import { CloudOff } from 'lucide-react'
+import { CloudOff, FileSearch, FileCheck2 } from 'lucide-react'
 import { projectWebsiteImportTree } from '@/features/source-files/websiteImportTreeProjection'
 import { SourceFileWebsiteActions, WebsiteSelectionCheckbox, reportSourceImportFailure } from '@/features/source-files/SourceFileWebsiteActions'
-import { useWebsiteImportSelectionSession, toggleWebsiteSelection, restoreWebsiteImportSelectionDraft, finishWebsiteImportSelection, importWebsiteFromSourceFiles, discoverWebsiteSelection } from '@/features/source-files/websiteImportSelectionSession'
+import { useWebsiteImportSelectionSession, toggleWebsiteSelection, restoreWebsiteImportSelectionDraft, finishWebsiteImportSelection, importWebsiteFromSourceFiles, discoverWebsiteSelection, visibleWebsiteSelectionPages } from '@/features/source-files/websiteImportSelectionSession'
 import { sourceFileWebsiteUrl } from '@/features/source-files/websiteImportTreeProjection'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
@@ -88,11 +88,11 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
     [demoEntry, demoRepresented, entries])
   const selectedSource = cloudEntries.find(entry => entry.path === activePath)
   const selectedSourceUrl = selectedSource && sourceFileWebsiteUrl(selectedSource, sourcesByPath?.[selectedSource.path])
-  const visiblePageUrls = importSession?.pages.filter(page => `${page.url} ${page.title || ''}`.toLowerCase().includes(importSession.query.toLowerCase())).map(page => page.url) || []
+  const visiblePageUrls = importSession ? visibleWebsiteSelectionPages(importSession).map(page => page.url) : []
   const cloudSync = useSourceFileCloudSync(cloudEntries)
   const projection = React.useMemo(() => projectWebsiteImportTree(cloudEntries, sourcesByPath, importSession), [cloudEntries, sourcesByPath, importSession])
   const [collapsedImports, setCollapsedImports] = React.useState({ id: 0, paths: new Set<string>() })
-  const treeExpandedPaths = new Set([...expandedPaths, ...[...projection.expandedPaths].filter(path => collapsedImports.id !== importSession?.id || !collapsedImports.paths.has(path))])
+  const treeExpandedPaths = new Set([...expandedPaths, ...projection.expandedPaths].filter(path => collapsedImports.id !== importSession?.id || !collapsedImports.paths.has(path)))
   const toggleTreeFolder = (path: string) => {
     if (!projection.expandedPaths.has(path)) return toggleExpanded(path)
     setCollapsedImports(previous => {
@@ -165,7 +165,17 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
   }, [])
 
   const renderSelectionControl = (entry: WorkspaceEntry) => {
-    if (!importSession?.selected.size) return null
+    if (!importSession?.selected.size) {
+      const pending = projection.pendingPaths.has(entry.path), saved = projection.savedPaths.has(entry.path)
+      if (entry.kind !== 'file' || (!pending && !saved)) return null
+      const Icon = pending ? FileSearch : FileCheck2
+      const status = pending ? 'Discovered page — not saved' : 'Saved website file'
+      return <button type="button" aria-label={`Select file ${entry.name}`} title={status}
+        className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded ${UI_THEME_TOKENS.focus.primaryRing}`}
+        onClick={() => { const url = projection.pageUrls.get(entry.path); if (pending && url) toggleWebsiteSelection([url], true); else onSelectFile(entry.path) }}>
+        <Icon className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} role="img" aria-label={status} />
+      </button>
+    }
     const urls = projection.selectionUrls.get(entry.path)
     const label = urls?.length ? entry.kind === 'folder' ? `Select discovered pages in ${entry.path}` : `Select page ${projection.pageUrls.get(entry.path)}` : `${entry.kind === 'folder' ? 'Folder' : 'File'} ${entry.name} is outside this website import`
     return <WebsiteSelectionCheckbox label={label} urls={urls || []} selected={importSession.selected} toggle={toggleWebsiteSelection} disabled={!urls?.length || !!importSession.importing} />

@@ -53,6 +53,27 @@ test('discovery returns unique links from oversized HTML without serializing or 
   } finally { await crawler.close(); await close(server); await fs.rm(root, { recursive: true, force: true }) }
 })
 
+test('headless discovery includes explicit card URLs without collecting state or non-URLs', async () => {
+  const source = createServer((_req, res) => {
+    res.setHeader('Content-Type', 'text/html')
+    res.end(`<a href="/catalog/anchor#part">Link</a><area href="/catalog/area">
+      <button data-href="/catalog/button">Open</button><article data-url="/catalog/card"></article>
+      <section to="/catalog/route"></section><section url="/catalog/direct"></section>
+      <div title="http://127.0.0.1:${(source.address() as { port: number }).port}/catalog/title">Card</div>
+      <div title="Ordinary title"></div><div data-href="javascript:alert(1)"></div>
+      <div data-state='{"url":"/catalog/hidden-state"}'></div>`)
+  })
+  const base = await listen(source)
+  const crawler = new NativeWebsiteCrawler({ concurrency: 1, proxyRotation: false, downloadAssets: false, maxDownloads: 0, maxDownloadBytes: 0, allowPrivateNetworks: true })
+  try {
+    const capture = await crawler.capture({ url: base + '/catalog/', nodeDirAbs: '', sequence: 0, discoveryOnly: true })
+    assert.deepEqual(capture.links, ['anchor', 'area', 'button', 'card', 'route', 'direct', 'title'].map(leaf => `${base}/catalog/${leaf}`))
+    assert.equal(capture.linksLimited, false)
+    assert.equal(capture.html, '')
+    assert.deepEqual(capture.downloads, [])
+  } finally { await crawler.close(); await close(source) }
+})
+
 test('selected-page job creates only chosen artifacts, publishes progress, and rejects selection replay drift', async () => {
   const root = await fs.mkdtemp(path.join(tmpdir(), 'website-selection-job-'))
   const previousPrivate = process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
