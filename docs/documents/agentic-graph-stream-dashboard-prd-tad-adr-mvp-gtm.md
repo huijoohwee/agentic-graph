@@ -178,7 +178,8 @@ typechecking. Source rollback reverts the entry changes; no stored-document migr
 GTM: restore the general graph overview for document and website users. Buyer demand, savings and
 revenue remain unmeasured. Development: four Dashboard regressions, four Mission projection/durable-run tests, eight archive/stage
 checks, Canvas typechecking and three browser-runner tests pass. The local Settings entry opens the
-authored Dashboard. The exact-candidate Mission browser smoke remains pending. Protected integration,
+authored Dashboard. The exact-candidate Mission browser smoke was blocked before execution: another active worktree owns
+port 4191. Recheck when that owner releases the port or in isolated CI; no running writer was stopped. Protected integration,
 Production Release and deployed Runtime proof have not been established for this revision.
 
 The follow-up requires universal, neutral, file-agnostic behavior: Document insights consumes active
