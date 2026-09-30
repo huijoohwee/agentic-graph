@@ -1,6 +1,8 @@
 import { Vector3, type Camera, type Matrix4, type WebGLRenderer } from 'three'
 import type { GraphSchema } from '@/lib/graph/schema'
 import { applyMediaPanelCssVars, applyPanelBox, computeMediaPanelCssVars3d, computePanelRect, computePanelSizeFromContent16x9 } from '@/lib/render/mediaPanelLayout'
+import { compareCanvasSurfaceArea } from '@/lib/canvas/layerOrder2d'
+import { applyMediaEagerLoadingOnce } from '@/lib/render/mediaEagerLoading'
 import { normalizeRichMediaPanelDensity } from '@/lib/render/richMediaSsot'
 
 type OverlayNodeLike = { id: string }
@@ -21,7 +23,7 @@ type OverlayPanelLayout = {
   rect: { left: number; top: number; w: number; h: number }
   cssVars: ReturnType<typeof computeMediaPanelCssVars3d>['vars']
   opacity: number
-  stackScore: number
+  layer: number
 }
 
 export type ThreeMediaOverlayLayoutScratch = {
@@ -51,79 +53,10 @@ const finiteNumberOrNull = (value: unknown): number | null => {
   return Number.isFinite(next) ? next : null
 }
 
-const rectsOverlap = (
-  a: { left: number; top: number; w: number; h: number },
-  b: { left: number; top: number; w: number; h: number },
-): boolean => (
-  a.left < b.left + b.w
-  && a.left + a.w > b.left
-  && a.top < b.top + b.h
-  && a.top + a.h > b.top
-)
-
-const computeOverlayStackScore = (args: {
-  candidate: LayoutCandidate
-  rect: { left: number; top: number; w: number; h: number }
-  selectedIds: Set<string>
-  dragOverrides: Record<string, [number, number, number]>
-  screenDragOverrides?: Record<string, { sx: number; sy: number }>
-  explicitZIndex?: number
-  viewportW: number
-  viewportH: number
-}): number => {
-  const viewportW = Math.max(1, args.viewportW)
-  const viewportH = Math.max(1, args.viewportH)
-  const cx = args.rect.left + args.rect.w / 2
-  const cy = args.rect.top + args.rect.h / 2
-  const screenX = Math.max(0, Math.min(1, cx / viewportW))
-  const screenY = Math.max(0, Math.min(1, cy / viewportH))
-  const selectedBoost = args.selectedIds.has(args.candidate.id) ? 1_000_000 : 0
-  const draggedBoost =
-    Object.prototype.hasOwnProperty.call(args.dragOverrides, args.candidate.id)
-    || Object.prototype.hasOwnProperty.call(args.screenDragOverrides || {}, args.candidate.id)
-      ? 2_000_000
-      : 0
-  const depthScore = Math.max(0, 10_000 - Math.min(10_000, args.candidate.dist))
-  const explicitZ = Number.isFinite(args.explicitZIndex)
-    ? Math.max(-10_000, Math.min(10_000, Number(args.explicitZIndex)))
-    : 0
-  return draggedBoost
-    + selectedBoost
-    + explicitZ * 10_000
-    + screenY * 1_000
-    + screenX
-    + depthScore / 1_000
-    + Math.max(0, 1_000 - args.candidate.order) / 1_000_000
-}
-
 const assignOverlayZIndexes = (layouts: OverlayPanelLayout[]): Map<string, number> => {
-  const ordered = [...layouts].sort((a, b) => {
-    if (a.stackScore !== b.stackScore) return a.stackScore - b.stackScore
-    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
-  })
-  const zById = new Map<string, number>()
-  const baseZ = 2000
-  for (let i = 0; i < ordered.length; i += 1) zById.set(ordered[i]!.id, baseZ + i)
-  for (let pass = 0; pass < ordered.length; pass += 1) {
-    let changed = false
-    for (let a = 0; a < layouts.length; a += 1) {
-      for (let b = a + 1; b < layouts.length; b += 1) {
-        const one = layouts[a]!
-        const two = layouts[b]!
-        if (!rectsOverlap(one.rect, two.rect)) continue
-        const front = one.stackScore >= two.stackScore ? one : two
-        const back = front === one ? two : one
-        const frontZ = zById.get(front.id) || baseZ
-        const backZ = zById.get(back.id) || baseZ
-        if (frontZ <= backZ) {
-          zById.set(front.id, backZ + 1)
-          changed = true
-        }
-      }
-    }
-    if (!changed) break
-  }
-  return zById
+  const ordered = [...layouts].sort((a, b) => a.layer - b.layer
+    || compareCanvasSurfaceArea({ id: a.id, ...a.rect }, { id: b.id, ...b.rect }))
+  return new Map(ordered.map((layout, index) => [layout.id, 2000 + index]))
 }
 
 const resolveViewportAnchorSlot = (args: {
@@ -156,7 +89,6 @@ export function updateThreeMediaOverlayLayout(args: {
   dragOverrides: Record<string, [number, number, number]>
   screenDragOverrides?: Record<string, { sx: number; sy: number }>
   overlayEls: Map<string, HTMLElement>
-  missFrames: Map<string, number>
   prevVisibleIds: Set<string>
   effectiveSchema: GraphSchema
   scratch: ThreeMediaOverlayLayoutScratch
@@ -195,9 +127,8 @@ export function updateThreeMediaOverlayLayout(args: {
   if (maxCount === 0 || maxDistance <= 0) {
     for (const id of args.prevVisibleIds) {
       const el = args.overlayEls.get(id)
-      if (el) applyPanelBox(el, { left: -99999, top: -99999, w: 1, h: 1, display: 'block', zIndex: 1 })
+      if (el) applyPanelBox(el, { left: -99999, top: -99999, w: 1, h: 1, display: 'none', zIndex: 1 })
     }
-    args.missFrames.clear()
     return new Set<string>()
   }
 
@@ -369,22 +300,15 @@ export function updateThreeMediaOverlayLayout(args: {
     if (nextVisibleIds.has(id)) continue
     const el = args.overlayEls.get(id)
     if (!el) continue
-    const missCount = (args.missFrames.get(id) || 0) + 1
-    if (missCount <= 10) {
-      args.missFrames.set(id, missCount)
-      continue
-    }
-    args.missFrames.delete(id)
-    applyPanelBox(el, { left: -99999, top: -99999, w: 1, h: 1, display: 'block', zIndex: 1 })
+    applyPanelBox(el, { left: -99999, top: -99999, w: 1, h: 1, display: 'none', zIndex: 1 })
   }
   const panelLayouts: OverlayPanelLayout[] = []
   for (let i = 0; i < candidates.length; i += 1) {
     const c = candidates[i]!
     if (!nextVisibleIds.has(c.id)) continue
-    args.missFrames.delete(c.id)
     const el = args.overlayEls.get(c.id)
     if (!el) continue
-    applyEagerMediaLoading(el)
+    applyMediaEagerLoadingOnce(el)
     const overrideSize = typeof args.getPanelSizeForId === 'function' ? args.getPanelSizeForId(c.id) : null
     const MAX_PANEL_PX = 2048
     const STEP_PX = 16
@@ -418,16 +342,7 @@ export function updateThreeMediaOverlayLayout(args: {
       rect,
       cssVars: computed.vars,
       opacity: 1,
-      stackScore: computeOverlayStackScore({
-        candidate: c,
-        rect,
-        selectedIds,
-        dragOverrides: args.dragOverrides,
-        screenDragOverrides: args.screenDragOverrides,
-        explicitZIndex: typeof args.getPanelZIndexForId === 'function' ? args.getPanelZIndexForId(c.id) : 0,
-        viewportW: w,
-        viewportH: h,
-      }),
+      layer: finiteNumberOrNull(args.getPanelZIndexForId?.(c.id)) ?? 0,
     })
   }
   const zById = assignOverlayZIndexes(panelLayouts)
@@ -440,37 +355,15 @@ export function updateThreeMediaOverlayLayout(args: {
       w: layout.rect.w,
       h: layout.rect.h,
       zIndex: zById.get(layout.id) || 2000,
-      display: 'block',
+      display: 'flex',
       positionMode: 'matrix',
     })
     try {
-      layout.el.style.opacity = String(layout.opacity)
+      const opacity = String(layout.opacity)
+      if (layout.el.style.opacity !== opacity) layout.el.style.opacity = opacity
     } catch {
       void 0
     }
   }
   return nextVisibleIds
-}
-
-function applyEagerMediaLoading(el: HTMLElement) {
-  try {
-    const applied = (el as unknown as { dataset?: Record<string, string> }).dataset?.kgMediaEagerApplied
-    if (applied) return
-    for (const node of [el.querySelector('iframe'), el.querySelector('img')]) {
-      if (!node) continue
-      try {
-        ;(node as unknown as { loading?: string }).loading = 'eager'
-      } catch {
-        void 0
-      }
-      try {
-        node.setAttribute('loading', 'eager')
-      } catch {
-        void 0
-      }
-    }
-    ;(el as unknown as { dataset?: Record<string, string> }).dataset!.kgMediaEagerApplied = '1'
-  } catch {
-    void 0
-  }
 }

@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { extractXmlLocs, extractInternalUrlCandidatesFromHtml, fetchTextWithLimit, isCrawlableInternalUrl, looksLikeSitemapIndex, normalizeUrl, safeJsonParse, urlToTreePath } from './websiteImportCore'
+import { deriveCrawlPathScope, extractXmlLocs, extractInternalUrlCandidatesFromHtml, fetchTextWithLimit, isCrawlableInternalUrl, looksLikeSitemapIndex, normalizeUrl, safeJsonParse, urlToTreePath } from './websiteImportCore'
 
 export const extractTitleFromHtml = (html: string): string => {
   const raw = String(html || '')
@@ -101,6 +101,13 @@ export const writeJsonFileAtomic = async (filePath: string, value: unknown): Pro
   await fs.rename(tmp, filePath)
 }
 
+const sitemapCandidates = (rootUrl: string): string[] => {
+  const origin = new URL(rootUrl).origin
+  return [...new Set([`${origin}${deriveCrawlPathScope(rootUrl)}sitemap.xml`, ...[
+    '/sitemap.xml', '/sitemap_index.xml', '/sitemap.xml.gz', '/wp-sitemap.xml', '/sitemap',
+  ].map(pathname => origin + pathname)])]
+}
+
 export const discoverSitemapUrl = async (rootUrl: string): Promise<string | null> => {
   const origin = (() => {
     try {
@@ -111,19 +118,11 @@ export const discoverSitemapUrl = async (rootUrl: string): Promise<string | null
   })()
   if (!origin) return null
 
-  const candidates = [
-    `${origin}/sitemap.xml`,
-    `${origin}/sitemap_index.xml`,
-    `${origin}/sitemap.xml.gz`,
-    `${origin}/wp-sitemap.xml`,
-    `${origin}/sitemap`,
-  ]
-
-  for (const u of candidates) {
+  for (const u of sitemapCandidates(rootUrl)) {
     const res = await fetchTextWithLimit(u, { timeoutMs: 18_000, maxBytes: 2 * 1024 * 1024, accept: 'application/xml,text/xml;q=0.9,*/*;q=0.8' })
     if (!res.ok) continue
     const t = String(res.text || '')
-    if (/<urlset\b/i.test(t) || /<sitemapindex\b/i.test(t)) return u
+    if (/<(?:[\w.-]+:)?urlset\b/i.test(t) || looksLikeSitemapIndex(t)) return u
   }
 
   return `${origin}/sitemap.xml`
@@ -177,34 +176,76 @@ export const crawlInternalUrls = async (args: {
   return out
 }
 
-export const collectSitemapUrls = async (rootUrl: string, sitemapUrl: string, opts: { timeoutMs: number; maxBytes: number; maxSitemaps: number }): Promise<{ ok: true; urls: string[] } | { ok: false; error: string }> => {
-  const first = await fetchTextWithLimit(sitemapUrl, { timeoutMs: opts.timeoutMs, maxBytes: opts.maxBytes, accept: 'application/xml,text/xml;q=0.9,*/*;q=0.8' })
-  if (first.ok !== true) return { ok: false, error: first.error }
-
-  const visited = new Set<string>()
-  const urls: string[] = []
-  const enqueue = (candidate: string) => {
-    const normalized = normalizeUrl(candidate)
-    if (!normalized) return
-    if (!isCrawlableInternalUrl(normalized, rootUrl)) return
-    if (visited.has(normalized)) return
-    visited.add(normalized)
-    urls.push(normalized)
+export const collectSitemapUrls = async (rootUrl: string, sitemapUrl: string, opts: {
+  timeoutMs: number; maxBytes: number; maxSitemaps: number; discover?: boolean; maxUrls?: number; signal?: AbortSignal
+  readText?: typeof fetchTextWithLimit
+}): Promise<{ ok: true; urls: string[]; limited: boolean } | { ok: false; error: string }> => {
+  const origin = new URL(rootUrl).origin
+  const maxUrls = Math.max(1, Math.min(2_000, opts.maxUrls ?? 2_000))
+  const maxRequests = Math.max(1, Math.min(24, opts.maxSitemaps))
+  const deadline = AbortSignal.timeout(opts.discover ? 12_000 : Math.min(120_000, opts.timeoutMs * maxRequests))
+  const signal = opts.signal ? AbortSignal.any([opts.signal, deadline]) : deadline
+  const queue: Array<{ url: string; required: boolean }> = []
+  const visited = new Set<string>(), pages = new Set<string>()
+  let limited = false, requests = 0, bytesLeft = 8 * 1024 * 1024
+  const withinOrigin = (raw: string, base = rootUrl): string | null => {
+    try {
+      const url = new URL(raw, base)
+      return url.origin === origin && !url.username && !url.password ? normalizeUrl(url.toString()) : null
+    } catch { return null }
   }
-
-  const childSitemaps = looksLikeSitemapIndex(first.text) ? extractXmlLocs(first.text) : []
-  if (childSitemaps.length > 0) {
-    const queue = childSitemaps.slice(0, opts.maxSitemaps)
-    for (const child of queue) {
-      const res = await fetchTextWithLimit(child, { timeoutMs: opts.timeoutMs, maxBytes: opts.maxBytes, accept: 'application/xml,text/xml;q=0.9,*/*;q=0.8' })
-      if (!res.ok) continue
-      for (const loc of extractXmlLocs(res.text)) enqueue(loc)
+  const enqueue = (raw: string, required: boolean, base = rootUrl) => {
+    const url = withinOrigin(raw, base)
+    if (!url || url.length > 4096 || visited.has(url)) return
+    if (visited.size >= maxRequests) { limited = true; return }
+    visited.add(url)
+    // Published references take precedence over conventional fallback locations.
+    if (required) queue.unshift({ url, required }); else queue.push({ url, required })
+  }
+  const read = async (url: string, maxBytes = opts.maxBytes) => {
+    requests += 1
+    const result = await (opts.readText || fetchTextWithLimit)(url, { timeoutMs: opts.timeoutMs, maxBytes: Math.min(maxBytes, bytesLeft),
+      signal, allowedOrigin: origin, onBytes: bytes => { bytesLeft -= bytes }, accept: 'application/xml,text/xml,text/plain;q=0.9,*/*;q=0.5' })
+    opts.signal?.throwIfAborted()
+    return result
+  }
+  if (opts.discover) {
+    const robots = await read(`${origin}/robots.txt`, 256 * 1024)
+    if (robots.ok === true) {
+      for (const line of robots.text.split(/\r?\n/)) {
+        const match = /^\s*Sitemap:\s*(\S+)/i.exec(line)
+        if (match) enqueue(match[1], true)
+      }
+    } else if (!/^HTTP (404|410)$/.test(robots.error)) limited = true
+    enqueue(sitemapUrl, false)
+    sitemapCandidates(rootUrl).forEach(url => enqueue(url, false))
+  } else enqueue(sitemapUrl, true)
+  while (queue.length && requests < maxRequests && bytesLeft > 0 && !signal.aborted) {
+    const current = queue.shift()!
+    const result = await read(current.url)
+    if (result.ok !== true) {
+      if (!opts.discover && requests === 1) return result
+      if (current.required || !/^HTTP (404|410)$/.test(result.error)) limited = true
+      continue
     }
-  } else {
-    for (const loc of extractXmlLocs(first.text)) enqueue(loc)
+    const index = looksLikeSitemapIndex(result.text)
+    if (!index && !/<(?:[\w.-]+:)?urlset\b/i.test(result.text)) {
+      if (current.required) limited = true
+      continue
+    }
+    for (const raw of extractXmlLocs(result.text)) {
+      const url = withinOrigin(raw, current.url)
+      if (!url || url.length > 4096) continue
+      // Some publishers list child XML sitemaps inside a urlset, not an index.
+      if (index || /\.xml(?:\.gz)?$/i.test(new URL(url).pathname)) { enqueue(url, true); continue }
+      if (!isCrawlableInternalUrl(url, rootUrl) || pages.has(url)) continue
+      if (pages.size === maxUrls) { limited = true; break }
+      pages.add(url)
+    }
+    if (pages.size === maxUrls) { limited ||= queue.length > 0; break }
   }
-
-  return { ok: true, urls }
+  opts.signal?.throwIfAborted()
+  return { ok: true, urls: [...pages], limited: limited || queue.length > 0 || signal.aborted }
 }
 
 export const sanitizeImportId = (raw: string): string | null => {
@@ -214,4 +255,3 @@ export const sanitizeImportId = (raw: string): string | null => {
   if (s.length > 96) return null
   return s
 }
-

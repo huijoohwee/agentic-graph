@@ -12,6 +12,8 @@ export type WorkspaceImportUrlOpts = {
 export type WorkspaceImportWebsiteOpts = {
   /** Exact page selection. When present, link following is disabled. */
   selectedUrls?: string[]
+  /** Save one explicitly selected discovered page at its existing row; fail if occupied. */
+  destinationPath?: string
   generateArtifactDocs?: boolean
   browserEnhance?: boolean
   headless?: boolean
