@@ -1,0 +1,112 @@
+import dns from 'node:dns/promises'
+import { isIP } from 'node:net'
+import http from 'node:http'
+import https from 'node:https'
+
+const privateIpv4 = (address: string): boolean => {
+  const [a, b, c] = address.split('.').map(Number)
+  return a === 0 || a === 10 || a === 127 || a >= 224
+    || (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254)
+    || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168)
+    || (a === 192 && b === 0 && (c === 0 || c === 2))
+    || (a === 198 && (b === 18 || b === 19 || (b === 51 && c === 100)))
+    || (a === 203 && b === 0 && c === 113)
+}
+
+export function isPrivateCrawlerAddress(value: unknown): boolean {
+  const address = String(value || '').trim().toLowerCase().replace(/^\[|\]$/g, '')
+  if (!address) return true
+  if (isIP(address) === 4) return privateIpv4(address)
+  if (isIP(address) !== 6) return false
+  // URL canonicalization normalizes dotted and expanded IPv4-mapped IPv6 alike.
+  const canonical = new URL(`http://[${address}]/`).hostname.slice(1, -1)
+  const mapped = /^::ffff:([a-f\d]+):([a-f\d]+)$/.exec(canonical)
+  if (mapped) {
+    const high = parseInt(mapped[1], 16), low = parseInt(mapped[2], 16)
+    return privateIpv4(`${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`)
+  }
+  // Only global unicast is eligible; exclude documentation/transition ranges.
+  const first = parseInt(canonical.split(':')[0] || '0', 16)
+  return first < 0x2000 || first > 0x3fff || canonical.startsWith('2001:db8:')
+    || canonical.startsWith('2002:') || /^2001:(?:[0-9a-f]{1,2}|1[0-9a-f]{2}):/.test(canonical)
+}
+
+export async function resolveCrawlerTarget(raw: string, allowPrivateNetworks = false, signal?: AbortSignal) {
+  const url = new URL(raw)
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
+    throw new Error('Crawler target is not a public HTTP(S) URL')
+  }
+  const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, '')
+  if (!allowPrivateNetworks && (hostname === 'localhost' || hostname.endsWith('.localhost') || isPrivateCrawlerAddress(hostname))) {
+    throw new Error('Crawler target is not a public HTTP(S) URL')
+  }
+  const family = isIP(hostname)
+  signal?.throwIfAborted()
+  let onAbort: (() => void) | undefined
+  const resolved = family ? Promise.resolve([{ address: hostname, family }]) : dns.lookup(hostname, { all: true })
+  const aborted = new Promise<never>((_resolve, reject) => {
+    onAbort = () => reject(signal?.reason || new Error('Request aborted'))
+    signal?.addEventListener('abort', onAbort, { once: true })
+  })
+  const addresses = await Promise.race([resolved, aborted]).finally(() => {
+    if (onAbort) signal?.removeEventListener('abort', onAbort)
+  })
+  if (!addresses.length || (!allowPrivateNetworks && addresses.some(row => isPrivateCrawlerAddress(row.address)))) {
+    throw new Error('Crawler target resolves to a non-public address')
+  }
+  return { url, address: addresses[0].address, family: addresses[0].family }
+}
+
+export async function fetchCrawlerTextWithLimit(raw: string, options: { timeoutMs: number; maxBytes: number; accept?: string }): Promise<
+  { ok: true; text: string } | { ok: false; error: string }
+> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs)
+  try {
+    let current = raw
+    for (let hop = 0; hop <= 5; hop += 1) {
+      const target = await resolveCrawlerTarget(current, process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS === '1', controller.signal)
+      controller.signal.throwIfAborted()
+      const result = await new Promise<{ text: string; location?: string }>((resolve, reject) => {
+        // Pin the validated address at connection time; retain the original Host/SNI.
+        const request = (target.url.protocol === 'https:' ? https : http).get(target.url, {
+          signal: controller.signal,
+          family: target.family,
+          lookup: (_host, _options, callback) => callback(null, target.address, target.family),
+          headers: { 'User-Agent': 'Mozilla/5.0', Accept: options.accept || '*/*' },
+        }, response => {
+          const status = response.statusCode || 0
+          if (status >= 300 && status < 400 && response.headers.location) {
+            try { resolve({ text: '', location: new URL(response.headers.location, target.url).toString() }) }
+            catch (error) { reject(error) }
+            response.destroy()
+            return
+          }
+          if (status < 200 || status >= 300) {
+            reject(new Error(`HTTP ${status}`))
+            response.destroy()
+            return
+          }
+          const chunks: Buffer[] = []
+          let total = 0
+          response.on('data', (chunk: Buffer) => {
+            total += chunk.length
+            if (total > options.maxBytes) {
+              reject(new Error('Upstream response too large'))
+              response.destroy()
+            } else chunks.push(chunk)
+          })
+          response.on('end', () => resolve({ text: Buffer.concat(chunks).toString('utf8') }))
+          response.on('error', reject)
+          response.on('aborted', () => reject(new Error('Upstream response aborted')))
+        })
+        request.on('error', reject)
+      })
+      if (!result.location) return { ok: true, text: result.text }
+      current = result.location
+    }
+    return { ok: false, error: 'Crawler redirect limit exceeded' }
+  } catch (error) {
+    return { ok: false, error: controller.signal.aborted ? 'Request timed out' : String((error as Error).message || error) }
+  } finally { clearTimeout(timer) }
+}

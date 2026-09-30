@@ -30,11 +30,11 @@ export const subscribeVoiceStudioLaunchRequest = (listener: Listener): (() => vo
 export function requestVoiceStudioLaunch(invocation: VoiceStudioInvocation): VoiceStudioLaunchRequest {
   launchRevision += 1
   launchSnapshot = { revision: launchRevision, operation: invocation.operation, prompt: invocation.prompt, invocation }
-  setMediaCatalogMode('voice-studio')
   const state = useGraphStore.getState()
   state.setFloatingPanelView('media')
   state.setFloatingPanelOpen(true)
   emitFloatingPanelOpen({ tab: 'media', open: true })
+  setMediaCatalogMode('voice-studio')
   for (const listener of listeners) listener()
   return launchSnapshot
 }
@@ -68,4 +68,3 @@ export async function tryActivateVoiceStudioInvocation(args: {
   }).catch(() => void 0)
   return true
 }
-

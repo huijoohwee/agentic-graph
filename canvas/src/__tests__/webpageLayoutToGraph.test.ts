@@ -2638,9 +2638,9 @@ export function testWebpageLayoutToGraphAssignsGridChildIndices() {
 }
 
 export function testWebpageLayoutToGraphKeepsImportantHeadingUnderMaxNodesBudget() {
-  const url = 'https://www.ycombinator.com/library/8d-how-to-build-a-great-series-a-pitch-and-deck'
+  const url = 'https://docs.fixture.invalid/articles/sample-article'
   const snap: WebpageLayoutSnapshot = {
-    meta: { kind: 'layout', title: 'YC', href: url, viewport: { w: 1200, h: 800 }, scroll: { x: 0, y: 0, height: 5200 }, ts: 1 },
+    meta: { kind: 'layout', title: 'Example', href: url, viewport: { w: 1200, h: 800 }, scroll: { x: 0, y: 0, height: 5200 }, ts: 1 },
     elements: (() => {
       const styleBase = {
         display: 'block',
@@ -2708,7 +2708,7 @@ export function testWebpageLayoutToGraphKeepsImportantHeadingUnderMaxNodesBudget
 }
 
 export function testWebpageLayoutToGraphPreservesSemanticWrapperSingleChildNearEq() {
-  const url = 'https://www.ycombinator.com/library/8d-how-to-build-a-great-series-a-pitch-and-deck'
+  const url = 'https://docs.fixture.invalid/articles/sample-article'
   const baseStyle = {
     display: 'block',
     position: 'static',
@@ -2736,7 +2736,7 @@ export function testWebpageLayoutToGraphPreservesSemanticWrapperSingleChildNearE
     opacity: '1',
   } as const
   const snap: WebpageLayoutSnapshot = {
-    meta: { kind: 'layout', title: 'YC', href: url, viewport: { w: 1200, h: 800 }, scroll: { x: 0, y: 0, height: 2400 }, ts: 1 },
+    meta: { kind: 'layout', title: 'Example', href: url, viewport: { w: 1200, h: 800 }, scroll: { x: 0, y: 0, height: 2400 }, ts: 1 },
     elements: [
       { id: 'main', pid: '', tag: 'MAIN', rect: { x: 0, y: 0, w: 1200, h: 800 }, text: '', attrs: { id: '', class: '', role: 'main', ariaLabel: '', placeholder: '', href: '', src: '', alt: '' }, style: baseStyle },
       { id: 'article', pid: 'main', tag: 'ARTICLE', rect: { x: 0, y: 0, w: 1200, h: 800 }, text: '', attrs: { id: '', class: 'prose', role: '', ariaLabel: '', placeholder: '', href: '', src: '', alt: '' }, style: baseStyle },
