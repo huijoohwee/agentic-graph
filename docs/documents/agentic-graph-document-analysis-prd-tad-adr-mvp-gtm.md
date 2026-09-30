@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.13"
+version: "1.0.14"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.13"
-tad_revision: "1.0.13"
-adr_revision: "1.0.13"
-mvp_revision: "1.0.13"
-gtm_revision: "1.0.13"
+prd_revision: "1.0.14"
+tad_revision: "1.0.14"
+adr_revision: "1.0.14"
+mvp_revision: "1.0.14"
+gtm_revision: "1.0.14"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.13. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.14. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -64,7 +64,11 @@ the whole website. Keep exact query variants, origin/path scope and explicit cra
 Clicking a saved filename opens its document without changing crawl selection. Clicking a discovered
 filename opens its file actions without selecting the page. When a discovered inventory is active,
 the leading icons of saved and discovered website pages select them for crawl. Ordinary file icons
-retain their document-selection action.
+retain their document-selection action. Unsaved filenames are dimmed and describe their unavailable
+content. Their Import icon can explicitly crawl that page without selecting it or consuming a pending
+batch selection. A successful single-page import opens that page in the editor and canvas; a failed
+import reports its error without substituting another document. Existing documents remain open until
+the requested content has been saved.
 
 Source Files exposes file and folder actions in one icon context toolbar. Remove the row action
 strip and text-menu variant; retain the existing compact icon size, accessible labels, tooltips and
@@ -170,6 +174,12 @@ shared file toolbar; saved names keep the document-open callback. Leading websit
 toggle the existing page selection when an inventory is active. No additional selection state or
 overlay owner is introduced.
 
+A discovered row imports through the existing session and workspace runtime. Validate session identity,
+membership and idle state before admitting work; lock repeated clicks and retain unrelated selection.
+Use the exact selected URL and a matching page limit, with no extra discovery. Single-page activation
+resolves only from page-writer provenance, never the crawl summary or sitemap with the same source URL.
+Missing requested output fails visibly. Import progress belongs in the existing opt-in summary overlay.
+
 ## ADR
 
 - Reuse AnchorOverlay for the discovery toolbar and a separate summary panel beneath it; remove
@@ -200,6 +210,10 @@ are introduced. The existing raw-artifact retrieval limit is unchanged for captu
 
 - Consolidate action presentation in the existing file tree and overlay owners. Remove the
   bespoke menu positioning/dismissal and inline action strip; add no replacement menu framework.
+
+- Reuse the session import dispatcher for explicit per-page imports. Keep the batch chooser pending
+  and preserve its selection; unavailable content is presented as unavailable, not a new workspace file.
+  Bind single-page editor/canvas activation to the saved page output and propagate runtime failures.
 
 ## MVP
 
@@ -330,6 +344,18 @@ saved filename opening, unchanged crawl selection, discovered filename actions a
 for saved and unsaved website pages. Native affected validation gates publication. Rollback this event-routing change while
 retaining discovery drafts and saved files.
 
+Discovered-page import increment: five production modules, under 10 KB added source, no dependency.
+Thirty-one focused regressions pass, covering direct import, retained selection, duplicate-click
+exclusion, failures/retry, URL-specific content activation and unsaved filename dimming. Live preview
+imported the reported discovered page: Source Files increased from 37 to 40, including its page,
+canvas and sitemap documents; the saved page and its heading opened in the viewer and outline.
+The test used runtime input only, with no domain rule or repository fixture for the reported website.
+The affected gate exposed a pre-existing fixed-tick assertion against a lazy-loaded Rich Media Viewer;
+its test now waits for the required heading with a five-second ceiling and retains the original
+content/editing assertions. Native affected validation gates review publication. Rollback these
+owner changes together; retain saved documents and discovery drafts. No production or complete-site
+claim is implied.
+
 ## GTM
 
 Initial user: a reader checking repeated themes and evidence in a local document. The near-built path
@@ -357,3 +383,6 @@ disabled states explain capability limits without moving icons.
 
 Discovery controls and status share the existing context menu, freeing tree space while preserving
 selected pages. Measure successful discovery actions without lost selection or repeated setup.
+
+A reader can import a discovered page where they find it and immediately verify its saved content.
+Measure successful page opening rather than menu availability; no paid service or account is added.

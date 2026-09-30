@@ -18,6 +18,7 @@ export type WebsiteSelectionSession = {
   visibleCount?: number
   restored?: boolean
   importing?: boolean
+  importingUrl?: string
   selectAllOnDiscover?: boolean
 }
 
@@ -210,20 +211,32 @@ export async function importSelectedWebsitePages(url: string, selectedUrls: stri
   const importWebsite = getMarkdownWorkspaceActionBridge().importWebsite
     ?? (await import('@/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction')).importWebsiteViaWorkspaceRuntime
   const { buildAutoWebsiteImportOptions } = await import('@/lib/toolbar/importUrlWebsiteMode')
-  const result = await importWebsite(url, { ...buildAutoWebsiteImportOptions(), selectedUrls })
+  const result = await importWebsite(url, { ...buildAutoWebsiteImportOptions(), selectedUrls,
+    minPages: selectedUrls.length, maxPages: selectedUrls.length, source: 'invocation' })
   if (result && result.error) throw new Error(result.error)
   return result
 }
 
 export async function confirmRestoredWebsiteSelection(id: number, urls: string[]) {
+  return importSessionPages(id, urls, true)
+}
+
+/** Explicit page action leaves the batch chooser and other selections intact. */
+export async function importDiscoveredWebsitePage(id: number, url: string) {
+  return importSessionPages(id, [url], false)
+}
+
+async function importSessionPages(id: number, urls: string[], consumeSelection: boolean) {
   const session = useWebsiteImportSelectionSession.getState().session
-  if (session?.id !== id || !session.restored || session.importing || !urls.length) return
-  updateSession(id, current => ({ ...current, importing: true, error: '' }))
+  if (session?.id !== id || session.busy || session.importing || !urls.length || urls.length > 500
+    || (consumeSelection && !session.restored) || urls.some(url => !session.pages.some(page => page.url === url))) return
+  updateSession(id, current => ({ ...current, importing: true, importingUrl: urls.length === 1 ? urls[0] : undefined, error: '' }))
   try {
     await importSelectedWebsitePages(session.url, urls)
-    updateSession(id, current => ({ ...current, importing: false, selected: new Set(), error: '' }))
+    updateSession(id, current => ({ ...current, importing: false, importingUrl: undefined,
+      selected: consumeSelection ? new Set() : current.selected, error: '' }))
   } catch (failure) {
-    updateSession(id, current => ({ ...current, importing: false, error: String((failure as Error).message || failure) }))
+    updateSession(id, current => ({ ...current, importing: false, importingUrl: undefined, error: String((failure as Error).message || failure) }))
     throw failure
   }
 }

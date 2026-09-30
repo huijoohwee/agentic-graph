@@ -3,8 +3,9 @@ import assert from 'node:assert/strict'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { SourceFileWebsiteActions } from '@/features/source-files/SourceFileWebsiteActions'
 import WebsiteImportSelectionView from '@/features/source-files/WebsiteImportSelectionView'
-import { chooseWebsiteImportPages, finishWebsiteImportSelection, useWebsiteImportSelectionSession, visibleWebsiteSelectionPages, showMoreWebsiteSelectionPages, setWebsiteSelectionQuery, toggleWebsiteSelection, importWebsiteFromSourceFiles, confirmRestoredWebsiteSelection } from '@/features/source-files/websiteImportSelectionSession'
+import { chooseWebsiteImportPages, finishWebsiteImportSelection, useWebsiteImportSelectionSession, visibleWebsiteSelectionPages, showMoreWebsiteSelectionPages, setWebsiteSelectionQuery, toggleWebsiteSelection, importWebsiteFromSourceFiles, confirmRestoredWebsiteSelection, importDiscoveredWebsitePage } from '@/features/source-files/websiteImportSelectionSession'
 import { sourceFileWebsiteUrl, projectWebsiteImportTree } from '@/features/source-files/websiteImportTreeProjection'
 import { MarkdownWorkspaceSourceFilesList } from '@/features/markdown-workspace/MarkdownWorkspaceSourceFilesList'
 import { ExplorerSearchControl } from '@/features/markdown-workspace/ExplorerSearchControl'
@@ -100,7 +101,7 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     assert.equal(host.querySelector('[aria-label="Website page tree"]'), null, 'no separate discovery tree')
     assert.equal(host.querySelector('dialog'), null)
     await openFileActions(host)
-    assert.equal(control('Import selected').disabled, true)
+    assert.equal(control('Import page imported.md').disabled, false, 'source page can import directly without a batch selection')
     assert.equal(host.querySelectorAll('[aria-label="File imported.md"]').length, 2, 'row and button share one existing saved-file name')
     assert.equal(checkbox('Folder .workspace is outside this website import'), undefined)
     assert.equal(checkbox('File agent-mission.inspection.json is outside this website import'), undefined)
@@ -118,6 +119,9 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="File a"]')!.click())
     assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 0, 'discovered filename does not select its page')
     assert.ok(document.querySelector('[role="toolbar"][aria-label="Actions for a"]'), 'discovered filename opens its actions')
+    assert.match(host.querySelector('button[aria-label="File a"] span')!.className, /opacity-50/)
+    assert.match(host.querySelector<HTMLButtonElement>('button[aria-label="File a"]')!.title, /Content not saved/)
+    assert.ok(!host.querySelector('button[aria-label="File imported.md"] span')!.className.includes('opacity-50'))
     await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Select file a"]')!.click())
     assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.has(source + 'a'), true, 'discovered page icon alone selects the page')
     await act(async () => checkbox(`Select page ${source}a`).click())
@@ -181,7 +185,8 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     assert.equal(pendingActions.length, 16, 'discovered pages retain every shared icon slot')
     assert.equal((pendingActions[0] as HTMLAnchorElement).href, source + 'a')
     assert.match(pendingActions[1].getAttribute('aria-label') || '', /^Find pages linked from /)
-    assert.equal((pendingActions[2] as HTMLButtonElement).disabled, true, 'only the import owner can confirm selection')
+    assert.equal((pendingActions[2] as HTMLButtonElement).disabled, false, 'a discovered page can explicitly import itself')
+    assert.equal(pendingActions[2].getAttribute('aria-label'), 'Import page a')
     assert.match(pendingActions[6].getAttribute('title') || '', /Not saved/)
     assert.ok(pendingMenu.querySelector<HTMLButtonElement>('[aria-label="Reveal in Finder"]')!.disabled, 'discovered pages cannot masquerade as saved files')
     assert.ok(pendingActions.slice(7).every(action => (action as HTMLButtonElement).disabled), 'unsaved entries retain disabled file operations')
@@ -200,6 +205,9 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     assert.deepEqual(requests.filter(url => url === '/__website_import/discover'), ['/__website_import/discover'])
     assert.ok(host.querySelector('section[aria-label="File a"]'), 'confirmation retains discovered entries')
     assert.equal(host.querySelector<HTMLInputElement>('input[aria-label^="Select page"]')?.disabled, true, 'selection is locked while the caller imports')
+    await openFileActions(host, 'a')
+    await act(async () => finishWebsiteImportSelection(null))
+    assert.equal(document.querySelector('[role="toolbar"][aria-label="Actions for a"]'), null, 'a removed discovery placeholder cannot retain stale file actions')
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); host.remove(); globalThis.fetch = previousFetch; restore() }
 })
 
@@ -492,4 +500,55 @@ test('Launch callback does not discard discovery on import completion or restart
     assert.equal(imports, 1, 'restart never imports automatically')
     assert.equal(beforeImportCalls, 1, 'restart does not replay Launch side effects')
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); globalThis.fetch = previousFetch; restore() }
+})
+
+
+test('discovered page import is explicit, locked while running and preserves the live batch chooser', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const host = document.createElement('section'), root = createRoot(host)
+  document.body.append(host)
+  const page = sourceUrl + 'topic?category=Examples%20Only', other = sourceUrl + 'other'
+  globalThis.fetch = (async () => new Response(JSON.stringify({ ok: true, pages: [page, other].map(url => ({ url, path: new URL(url).pathname, title: url === page ? 'Topic page' : 'Other page' })), limited: false }))) as typeof fetch
+  const calls: Array<{ url: string; options: unknown }> = [], resolutions: unknown[] = []
+  let complete!: () => void, reject!: (error: Error) => void, started!: () => void
+  let importStarted = new Promise<void>(resolve => { started = resolve })
+  const unregister = registerMarkdownWorkspaceActionBridge('test-direct-page', { importWebsite: async (url, options) => {
+    calls.push({ url, options }); started()
+    await new Promise<void>((resolve, fail) => { complete = resolve; reject = fail })
+    return { handled: true }
+  } })
+  const importButton = () => Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(button => button.getAttribute('aria-label') === 'Import page Topic page')!
+  try {
+    await act(async () => { void chooseWebsiteImportPages(sourceUrl, sourceEntry.path).then(urls => resolutions.push(urls)); root.render(<><SourceFileWebsiteActions entry={{ ...sourceEntry, name: 'Topic page', path: '/topic.md', text: undefined }} urlOverride={page} confirmationOwner={false} discoveryContext /><WebsiteImportSelectionView /></>) })
+    assert.equal(useWebsiteImportSelectionSession.getState().session!.selected.size, 0)
+    await act(async () => toggleWebsiteSelection([other], true))
+    assert.equal(importButton().disabled, false)
+    await act(async () => { importButton().click(); await importStarted })
+    const id = useWebsiteImportSelectionSession.getState().session!.id
+    assert.equal(calls.length, 1)
+    const options = calls[0].options as { selectedUrls: string[]; maxPages: number; minPages: number; source: string }
+    assert.equal(calls[0].url, sourceUrl)
+    assert.deepEqual(options.selectedUrls, [page], 'imports the addressed page, not the selected sibling')
+    assert.equal(options.maxPages, 1); assert.equal(options.minPages, 1)
+    assert.equal(options.source, 'invocation', 'runtime failures must propagate')
+    assert.ok(importButton().disabled)
+    assert.match(document.querySelector('section[aria-label="Website discovery status"]')!.textContent || '', /Importing https:/)
+    await act(async () => { importButton().click(); await importDiscoveredWebsitePage(id, page) })
+    assert.equal(calls.length, 1, 'duplicate clicks and callbacks are locked')
+    await act(async () => reject(new Error('Page capture failed')))
+    assert.equal(importButton().disabled, false)
+    assert.match(document.querySelector('[role="alert"]')!.textContent || '', /Page capture failed/)
+    assert.deepEqual([...useWebsiteImportSelectionSession.getState().session!.selected], [other])
+    await act(async () => { await importDiscoveredWebsitePage(id + 1, page); await importDiscoveredWebsitePage(id, 'https://outside.invalid/') })
+    assert.equal(calls.length, 1, 'stale sessions and non-members do not import')
+    importStarted = new Promise<void>(resolve => { started = resolve })
+    await act(async () => { importButton().click(); await importStarted })
+    assert.equal(calls.length, 2, 'retry uses the same direct action')
+    await act(async () => complete())
+    assert.equal(useWebsiteImportSelectionSession.getState().session!.error, '')
+    assert.deepEqual([...useWebsiteImportSelectionSession.getState().session!.selected], [other])
+    assert.deepEqual(resolutions, [], 'direct import leaves the pending batch chooser intact')
+    await act(async () => finishWebsiteImportSelection([other]))
+    assert.deepEqual(resolutions, [[other]])
+  } finally { await act(async () => { complete?.(); root.unmount(); finishWebsiteImportSelection(null) }); unregister(); host.remove(); globalThis.fetch = previousFetch; restore() }
 })

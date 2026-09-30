@@ -8,6 +8,7 @@ export default function WebsiteImportSelectionView() {
   const recoveryError = useWebsiteImportSelectionSession(state => state.recoveryError)
   const visible = session ? visibleWebsiteSelectionPages(session).length : 0
   if (session) return <section aria-label="Website discovery status" className="max-w-sm px-1 py-0.5">
+    {session.importing && <p role="status" className="break-words text-xs">{session.importingUrl ? `Importing ${session.importingUrl}…` : 'Importing selected pages…'}</p>}
     <p role="status" className="text-xs">{session.busy ? 'Finding crawlable pages…' : `${session.pages.length} discovered pages · ${visible} shown · ${session.selected.size} selected`}</p>
     <p className="text-xs">Select up to 500 pages to crawl.</p>
     <p className="flex flex-wrap items-center gap-1 text-xs"><FileCheck2 className="size-3" aria-hidden="true" /> Saved file <FileSearch className="size-3" aria-hidden="true" /> Discovered, not saved</p>

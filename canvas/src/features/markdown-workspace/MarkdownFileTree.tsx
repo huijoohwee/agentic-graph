@@ -117,6 +117,9 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
   const closeContextMenu = React.useCallback(() => {
     setContextMenu(null)
   }, [])
+  React.useEffect(() => {
+    if (contextMenu && !entries.some(entry => entry.path === contextMenu.entry.path)) closeContextMenu()
+  }, [entries, contextMenu, closeContextMenu])
 
   const copyToClipboard = React.useCallback(async (text: string) => {
     const value = String(text || '')
@@ -194,6 +197,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     }
 
     const isFolder = entry.kind === 'folder'
+    const contentUnavailable = !isFolder && isEntrySaved?.(entry) === false
     const isExpanded = expandedPaths.has(entry.path)
     const isActive = activePath === entry.path
     const entryLeading = renderEntryLeading?.(entry)
@@ -218,15 +222,15 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
             : <DirectoryTreeFileButton name={entry.name} path={entry.path} selected={isActive} onSelect={selectEntry} onContextMenu={openContextMenu} />}
           <MarkdownFileTreeRowButton
             ariaLabel={selectionFolder ? `${isExpanded ? 'Collapse' : 'Expand'} folder ${entry.name}` : isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}
-            title={entry.path}
+            title={contentUnavailable ? `${entry.path} — Content not saved. Use Import page to open it.` : entry.path}
             indent={0}
             isActive={isActive}
             ariaExpanded={selectionFolder ? isExpanded : undefined}
             textClassName={panelTypography.panelTextClass}
-            onClick={selectionFolder ? () => toggleExpanded(entry.path) : !isFolder && isEntrySaved?.(entry) === false ? openContextMenu : selectEntry}
+            onClick={selectionFolder ? () => toggleExpanded(entry.path) : contentUnavailable ? openContextMenu : selectEntry}
             onContextMenu={openContextMenu}
           >
-            <span className="truncate">{entry.name || (isFolder ? 'folder' : 'file')}</span>
+            <span className={`truncate${contentUnavailable ? ' opacity-50' : ''}`}>{entry.name || (isFolder ? 'folder' : 'file')}</span>
             {isWorkspaceSeedsAuthorityRoot ? (
               <ShieldCheck role="img" aria-label="agentic-graph workspace-seed authority"
                 className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-80`} />

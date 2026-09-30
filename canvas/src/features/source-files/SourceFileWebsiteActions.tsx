@@ -6,7 +6,7 @@ import { sourceFileWebsiteUrl } from './websiteImportTreeProjection'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { useWebsiteImportSelectionSession, importWebsiteFromSourceFiles, discoverWebsiteSelection, finishWebsiteImportSelection, confirmRestoredWebsiteSelection, cancelWebsiteImportSelection, visibleWebsiteSelectionPages, showMoreWebsiteSelectionPages } from './websiteImportSelectionSession'
+import { useWebsiteImportSelectionSession, importWebsiteFromSourceFiles, importDiscoveredWebsitePage, discoverWebsiteSelection, finishWebsiteImportSelection, confirmRestoredWebsiteSelection, cancelWebsiteImportSelection, visibleWebsiteSelectionPages, showMoreWebsiteSelectionPages } from './websiteImportSelectionSession'
 
 const icons = { discover: Link, refresh: RefreshCcw, more: ListPlus, status: Info, import: Download, cancel: X, clear: Eraser } satisfies Record<string, LucideIcon>
 export function SourceImportAction({ action, label, type = 'button', ...props }: Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & { action: keyof typeof icons; label: string }) {
@@ -48,6 +48,8 @@ export function SourceFileWebsiteActions({ entry, source, urlOverride, confirmat
   const ownsSession = !!session && (confirmationOwner ?? session.sourcePath === entry.path)
   const fileRequired = entry.kind !== 'file'
   const hasDiscovery = !!session && (ownsSession || discoveryContext)
+  const confirmSelection = ownsSession && !fileRequired && !!session.selected.size
+  const importPage = !fileRequired && hasDiscovery && !!url && session.pages.some(page => page.url === url)
   const refreshInventory = hasDiscovery && (ownsSession || fileRequired)
   const remaining = session ? session.pages.filter(page => `${page.url} ${page.title || ''}`.toLowerCase().includes(session.query.trim().toLowerCase())).length - visibleWebsiteSelectionPages(session).length : 0
   const moreDisabled = !hasDiscovery || !!session?.importing || remaining <= 0
@@ -57,9 +59,9 @@ export function SourceFileWebsiteActions({ entry, source, urlOverride, confirmat
       disabled={(!refreshInventory && (fileRequired || !url)) || !!session?.busy || !!session?.importing}
       onClick={() => { onShowDetails?.(); if (refreshInventory) void discoverWebsiteSelection(session.url); else if (session && urlOverride && session.pages.some(page => page.url === url)) void discoverWebsiteSelection(url); else void importWebsiteFromSourceFiles(url, entry.path).catch(reportSourceImportFailure) }} />
     <SourceImportAction action="import"
-      label={fileRequired ? `Import unavailable for ${entry.name} — use the selection's source file` : ownsSession ? `Import selected (${session.selected.size}) for ${entry.name}` : `Import unavailable for ${entry.name}`}
-      disabled={fileRequired || !ownsSession || session.busy || !!session.importing || !session.selected.size}
-      onClick={() => { onShowDetails?.(); confirmWebsiteSelection() }} />
+      label={confirmSelection ? `Import selected (${session.selected.size}) for ${entry.name}` : importPage ? `Import page ${entry.name}` : ownsSession && !fileRequired ? `Import selected (${session.selected.size}) for ${entry.name}` : `Import unavailable for ${entry.name}`}
+      disabled={(!confirmSelection && !importPage) || !!session?.busy || !!session?.importing}
+      onClick={() => { onShowDetails?.(); if (confirmSelection) confirmWebsiteSelection(); else if (importPage) void importDiscoveredWebsitePage(session.id, url).catch(reportSourceImportFailure) }} />
     <SourceImportAction action="more" label={`Show more pages (${remaining} remaining)`} disabled={moreDisabled}
       title={!hasDiscovery ? 'Show more pages — this item is outside the current discovery' : session?.importing ? 'Show more pages — import in progress' : remaining <= 0 ? 'Show more pages — all matching pages are shown' : undefined}
       onClick={() => { onShowDetails?.(); showMoreWebsiteSelectionPages() }} />
