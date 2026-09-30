@@ -72,7 +72,21 @@ export function restoreMissingOpeningYamlFrontmatterFence(rawText: string): stri
     return `${text.slice(0, headingIndex).trimEnd()}\n---${text.slice(headingIndex)}`
   }
   const end = text.indexOf('\n---')
-  if (end < 0) return text
+  const firstHeading = text.search(/\n#{1,6}\s+/)
+  if (end < 0 || (firstHeading >= 0 && end > firstHeading)) {
+    // Older import indexing stripped both fences. Recover only a complete,
+    // app-owned webpage header before a heading, never arbitrary YAML prose.
+    const headingIndex = text.search(/\n#{1,6}\s+/)
+    if (headingIndex < 0) return text
+    const header = text.slice(0, headingIndex).trimEnd()
+    const lines = header.split('\n')
+    if (!lines.every(line => /^kg[A-Z][A-Za-z0-9]*:\s*"[^\r\n]*"\s*$/.test(line))) return text
+    const parsed = parseMarkdownFrontmatter(splitMarkdownLines(`---\n${header}\n---`))
+    if (typeof parsed.meta.kgWebpageUrl !== 'string' || !/^https?:\/\//i.test(parsed.meta.kgWebpageUrl)
+      || !['markdown', 'html', 'json'].includes(String(parsed.meta.kgWebpageView))
+      || !parsed.meta.kgWebsiteImportId || !parsed.meta.kgWebsiteNodeId) return text
+    return `---\n${header}\n---\n${text.slice(headingIndex)}`
+  }
   const yamlText = text.slice(0, end).trimEnd()
   if (!/^[A-Za-z0-9_-]+:\s*/.test(yamlText)) return text
   const parsed = parseMarkdownFrontmatter(splitMarkdownLines(`---\n${yamlText}\n---`))

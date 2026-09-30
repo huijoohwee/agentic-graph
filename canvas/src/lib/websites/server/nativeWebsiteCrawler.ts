@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
-import { lookup } from 'node:dns/promises'
+import { resolveCrawlerTarget } from './crawlerNetworkPolicy'
+export { isPrivateCrawlerAddress } from './crawlerNetworkPolicy'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { chromium, type APIResponse, type Browser, type BrowserContext } from 'playwright'
@@ -32,40 +33,6 @@ export type NativeWebsiteCapture = {
   html: string
   links: string[]
   downloads: WebsiteImportDownloadArtifact[]
-}
-
-const PRIVATE_IPV4_PATTERNS = [
-  /^0\./,
-  /^10\./,
-  /^127\./,
-  /^169\.254\./,
-  /^192\.168\./,
-]
-
-const isPrivateIpv4 = (value: string): boolean => {
-  if (PRIVATE_IPV4_PATTERNS.some(pattern => pattern.test(value))) return true
-  const octets = value.split('.').map(Number)
-  if (octets.length !== 4 || octets.some(octet => !Number.isInteger(octet) || octet < 0 || octet > 255)) return false
-  const [a = 0, b = 0, c = 0] = octets
-  return (
-    (a === 100 && b >= 64 && b <= 127)
-    || (a === 172 && b >= 16 && b <= 31)
-    || (a === 192 && b === 0 && (c === 0 || c === 2))
-    || (a === 198 && (b === 18 || b === 19))
-    || (a === 198 && b === 51 && c === 100)
-    || (a === 203 && b === 0 && c === 113)
-    || a >= 224
-  )
-}
-
-export const isPrivateCrawlerAddress = (value: unknown): boolean => {
-  const address = String(value || '').trim().toLowerCase().replace(/^\[|\]$/g, '')
-  if (!address) return true
-  const firstIpv6Group = Number.parseInt(address.split(':')[0] || '0', 16)
-  if (address === '::1' || address === '::' || (firstIpv6Group & 0xfe00) === 0xfc00 || (firstIpv6Group & 0xffc0) === 0xfe80 || address.startsWith('2001:db8:')) return true
-  const mapped = address.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/)?.[1]
-  if (mapped) return isPrivateIpv4(mapped)
-  return isPrivateIpv4(address)
 }
 
 const parseProxyEndpoint = (raw: unknown): ProxyEndpoint | null => {
@@ -214,7 +181,6 @@ export class NativeWebsiteCrawler {
   readonly runtime: WebsiteImportRuntime
   private readonly proxyEndpoints: ProxyEndpoint[]
   private readonly browsers = new Map<number, Promise<Browser>>()
-  private readonly hostSafety = new Map<string, Promise<boolean>>()
   private readonly budget: NativeDownloadBudget
   private readonly maxDownloadFileBytes: number
   private readonly navigationTimeoutMs: number
@@ -227,7 +193,7 @@ export class NativeWebsiteCrawler {
     this.proxyEndpoints = parsed.slice(0, Math.max(1, Math.min(8, options.concurrency)))
     this.maxDownloadFileBytes = Math.max(64 * 1024, Math.min(100 * 1024 * 1024, options.maxDownloadFileBytes || 25 * 1024 * 1024))
     this.navigationTimeoutMs = Math.max(3_000, Math.min(120_000, options.navigationTimeoutMs || 30_000))
-    this.maxHtmlChars = Math.max(100_000, Math.min(32_000_000, options.maxHtmlChars || 12_000_000))
+    this.maxHtmlChars = Math.max(100_000, Math.min(32_000_000, options.maxHtmlChars || 32_000_000))
     this.allowPrivateNetworks = options.allowPrivateNetworks === true || process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS === '1'
     this.budget = new NativeDownloadBudget(options.maxDownloads, options.maxDownloadBytes)
     this.runtime = {
@@ -242,24 +208,8 @@ export class NativeWebsiteCrawler {
   }
 
   private async isUrlAllowed(raw: string): Promise<boolean> {
-    let url: URL
-    try {
-      url = new URL(raw)
-    } catch {
-      return false
-    }
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') return false
-    if (url.username || url.password) return false
-    if (this.allowPrivateNetworks) return true
-    const host = url.hostname.toLowerCase()
-    if (host === 'localhost' || host.endsWith('.localhost') || isPrivateCrawlerAddress(host)) return false
-    let verdict = this.hostSafety.get(host)
-    if (!verdict) {
-      verdict = lookup(host, { all: true }).then(rows => rows.length > 0 && rows.every(row => !isPrivateCrawlerAddress(row.address))).catch(() => false)
-      this.hostSafety.set(host, verdict)
-      if (this.hostSafety.size > 256) this.hostSafety.delete(this.hostSafety.keys().next().value || '')
-    }
-    return await verdict
+    try { await resolveCrawlerTarget(raw, this.allowPrivateNetworks); return true }
+    catch { return false }
   }
 
   private async launchBrowser(poolIndex: number): Promise<Browser> {
