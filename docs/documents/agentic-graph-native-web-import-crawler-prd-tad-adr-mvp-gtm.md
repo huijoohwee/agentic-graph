@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.41"
+version: "0.2.42"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,22 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.39"
-prd_revision: "0.2.40"
-tad_revision: "0.2.40"
-adr_revision: "0.2.40"
-mvp_revision: "0.2.40"
-gtm_revision: "0.2.40"
+previous_document_version: "0.2.41"
+prd_revision: "0.2.42"
+tad_revision: "0.2.42"
+adr_revision: "0.2.42"
+mvp_revision: "0.2.42"
+gtm_revision: "0.2.42"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 Production release handover and host-write finding
+
+- PRD / MVP: Source Files page selection, contextual Preview, and website import are in protected Graph source `78740f780912e6e04aef73e12bf80ea190c6f611` (PR #1415). The candidate passed its protected Integration Gate and the exact browser/build checks recorded with the release. [Production run 36675515249](https://github.com/huijoohwee/agentic-graph/actions/runs/36675515249) completed with human-authorized lifecycle candidate `38d8b1f21cfea013e25f4ca60d66f279a4f4b7e6edf7aeaeb7cf93eb44c308cd`, Pages deployment `04549d39-0263-4e6c-8625-9f958503906c`, direct D1 parity and published mirror `235418c4de5d071c2bebf7579021c70755f7b704`. Runtime proof is bounded to those live routes and browser checks; mobile/device parity and buyer demand remain unknown.
+- TAD / ADR: The protected release workflow also preflighted and activated its exact travel-mesh plan. Its sealed core receipt records `agentic-storage` version `9b27abdd-5627-4b17-a61f-0d2c8ae9b9eb`; the [runbook](../agentic-graph-acos-deploy-runbook.md) now states that owner and rollback boundary. No separately operated Worker or DNS publication follows from this receipt. This documentation successor changes no deployed artifact, runtime module or migration.
+- Host-write finding: at 2026-09-30 05:54 UTC, local canonical seed `docs/workspace-seeds/agentic-graph-storyboard-widget-computing-flow-template.md` contained YC Library page text. The exact 38,901-byte residue was preserved locally under the task evidence directory, and the seed was restored to the committed bytes before release. The browser action that supplied the text is unproven. Source inspection shows editable `/docs` entries can schedule host mirror writes, while the current duplicate-content guard does not identify unrelated incoming plain text. Do not claim a reproduced defect or assign a code cause. A future source-bound reproduction must capture the active document path, source URL and write request before changing that owner.
+- GTM / next bounded action: keep the verified release closed. Reopen a scoped host-write repair only if the trigger is reproduced; use the existing Source Files mirror and autosave checks, compare canonical Git bytes before/after, and preserve other local edits. Commercial demand and first-dollar evidence are still unmeasured. This handover adds no spend, module or always-loaded bytes; it updates two existing Markdown owners under a 9 KB diff cap.
 
 ## 2026-09-30 Source Files fixed action slots
 
