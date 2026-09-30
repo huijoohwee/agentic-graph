@@ -9,6 +9,8 @@ export type WorkspaceEntry = {
   name: string
   text?: string
   updatedAtMs: number
+  /** Durable provenance for restoring references after a collection migration. */
+  previousPaths?: WorkspacePath[]
 }
 
 export type WorkspaceFsMutationOptions = {

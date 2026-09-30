@@ -1,4 +1,5 @@
 import test from 'node:test'
+import './websiteCollections.test'
 import assert from 'node:assert/strict'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { createWebsiteImportWorkspaceWriter } from '@/features/markdown-workspace/useWorkspaceFileActions/websiteImportNodeWriter'
@@ -442,4 +443,32 @@ test('in-place writes preserve concurrent files and reject failed or stale captu
       if (mode === 'collision') assert.equal(await fs.readFileText('/collection/article.md'), 'Concurrent user edit')
     } finally { globalThis.fetch = originalFetch }
   }
+})
+
+test('later captures reuse the first website collection and retain occupied pages and summaries', async () => {
+  const fs = createMemoryWorkspaceFs()
+  const capture = async (importId: string, nodeUrl: string) => {
+    const writer = await createWebsiteImportWorkspaceWriter({
+      fs, url: 'https://example.invalid/library', importId,
+      settings: { outputDirRel: '', concurrency: 1, defaultView: 'markdown', generateArtifactDocs: false, browserEnhance: false },
+      importJobRef: { current: 1 }, jobId: 1, status: { setStatusProgress() {} },
+    })
+    return writer.finalize({ version: 1, importId, rootUrl: 'https://example.invalid/library', status: 'done', startedAtMs: 1,
+      nodes: [node(importId, nodeUrl)], errors: [] })
+  }
+  const firstCapture = await capture('20260101T010101Z', 'https://example.invalid/library/one')
+  const oldFiles = new Map(await Promise.all(firstCapture.created.createdPaths.map(async path => [path, await fs.readFileText(path)] as const)))
+  const laterCapture = await capture('20260202T020202Z', 'https://example.invalid/library/two')
+  for (const path of laterCapture.created.createdPaths) assert(path.startsWith('/websites/example.invalid/20260101T010101Z/'))
+  assert.equal((await fs.listEntries()).filter(entry => entry.kind === 'folder' && entry.parentPath === '/websites/example.invalid').length, 1)
+  for (const [path, text] of oldFiles) assert.equal(await fs.readFileText(path), text, 'earlier content and summaries survive')
+  const sameCapture = await capture('20260202T020202Z', 'https://example.invalid/library/two')
+  assert.deepEqual(sameCapture.created.createdPaths, laterCapture.created.createdPaths, 'same capture is idempotent')
+  const beforeProgress = (await fs.listEntries()).filter(entry => entry.kind === 'file').length
+  const progressed = await capture('20260202T020202Z', 'https://example.invalid/library/three')
+  assert.equal(progressed.canvasPath, laterCapture.canvasPath, 'progress updates the same capture summary')
+  assert.equal((await fs.listEntries()).filter(entry => entry.kind === 'file').length, beforeProgress + 1)
+  const repeat = await capture('20260303T030303Z', 'https://example.invalid/library/one')
+  assert(repeat.created.createdPaths.some(path => path.includes('one--20260303T030303Z.md')))
+  for (const [path, text] of oldFiles) assert.equal(await fs.readFileText(path), text)
 })

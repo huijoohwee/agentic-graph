@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.16"
+version: "1.0.17"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.16"
-tad_revision: "1.0.16"
-adr_revision: "1.0.16"
-mvp_revision: "1.0.16"
-gtm_revision: "1.0.16"
+prd_revision: "1.0.17"
+tad_revision: "1.0.17"
+adr_revision: "1.0.17"
+mvp_revision: "1.0.17"
+gtm_revision: "1.0.17"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.16. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.17. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -87,6 +87,11 @@ legend belong in a separate summary overlay below the toolbar overlay, with no d
 above the tree. Both panels reuse the shared AnchorOverlay component and panel styling.
 The summary is hidden when a menu opens. Only an applicable discovery action or the explicit status
 icon reveals it; the status icon also hides it without changing selection or starting discovery.
+
+Website imports share the earliest existing collection folder for a host. Consolidate prior timestamp
+folders on durable workspace initialization, retaining every file, distinct query variants and capture
+identities. Colliding names receive the originating capture suffix; no document is discarded. Reload
+must show one collection, and Reveal must use the corresponding stable workspace location.
 
 ## TAD
 
@@ -196,6 +201,15 @@ collection summary creation. The native capture keeps its independent import ide
 metadata. Workspace storage owns an opt-in exact-create collision policy; ordinary file creation
 retains its existing naming policy. Failed or stale captures never materialize a saved page.
 
+Collection migration uses one conditional database transaction over the observed records. Competing
+writes invalidate the plan; bounded retries reread before planning, and failure retains the original
+records without a shadow-memory success. Durable previous-path metadata repairs source provenance,
+selection restoration and shadow caches on restart. Only generated sitemap local links are remapped;
+captured document bodies and immutable server artifacts remain intact. Subsequent imports resolve the
+same collection root from existing captured documents and retain colliding capture summaries. Replaying
+the same capture reuses its output paths and conditionally updates its summaries; different captures
+retain earlier document bytes.
+
 ## ADR
 
 - Finder reveals a stable named copy tree; content hashes identify private revision backups only.
@@ -239,7 +253,25 @@ are introduced. The existing raw-artifact retrieval limit is unchanged for captu
   and preserve its selection; unavailable content is presented as unavailable, not a new workspace file.
   Bind single-page editor/canvas activation to the saved page output and propagate runtime failures.
 
+Use a durable collection migration instead of hiding older capture folders in the tree. The first
+collection retains its identity; capture timestamps remain metadata and filename suffixes where
+needed. This keeps one physical workspace owner while preserving every prior capture. Do not merge
+hosts or collapse query variants based on matching titles.
+
 ## MVP
+
+Collection consolidation increment: nine production modules, under 20 KB added source, no dependencies.
+Acceptance requires concurrent migration and reload coverage, intact file bytes, collision-safe names,
+working source links and selection restoration, plus live one-folder/import/Reveal verification.
+Rollback the migration consumer and collection-aware writer together; retain the migrated records,
+previous-path provenance, legacy storage backup and immutable capture artifacts.
+Nineteen collection/import checks, five icon-menu checks and five IndexedDB checks pass. Live UI
+migration retained all 44 saved files in one timestamp folder. One further explicit import added
+exactly one page, and reload retained 45 files in the same collection. Both older imported pages
+opened their own content. The shared summary appeared on icon activation; filename opening retained
+selection while the leading icon changed it. Folder Reveal produced one stable collection subtree;
+existing stable copies retained their bytes, inode and modification time. Native affected validation
+gates review publication; protected integration and production remain separate effects.
 
 In-place import and reveal follow-up: eleven production modules, less than 20 KB added source, no dependencies.
 Verify exact placement, query variants, capture provenance, absence of new workspace summaries,
@@ -427,3 +459,6 @@ Measure successful page opening rather than menu availability; no paid service o
 
 Saving at the discovered row removes the extra navigation after a page import. Measure successful
 in-place opening and duplicate-folder count; capture history remains independently addressable.
+
+One collection per website reduces repeat navigation. Measure duplicate timestamp folders after
+reload and successful opening of migrated pages; no account, service charge or revenue claim is added.

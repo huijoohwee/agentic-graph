@@ -46,14 +46,13 @@ const waitConflictRetryTick = async (attemptIndex: number): Promise<void> => {
     setTimeout(resolve, delayMs)
   })
 }
-
 const MAX_RX_CONFLICT_RETRIES = 3
-
 export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGeneration): WorkspaceFs => {
   const run = async <T>(op: keyof WorkspaceFs, fn: (fs: WorkspaceFs) => Promise<T>): Promise<T> => {
     try {
       return await fn(inner)
     } catch (e: unknown) {
+      if (e instanceof Error && e.name === 'WebsiteCollectionMigrationError') throw e
       if (isRxConflictError(e)) {
         let conflictError: unknown = e
         for (let attempt = 0; attempt < MAX_RX_CONFLICT_RETRIES; attempt += 1) {
@@ -182,6 +181,7 @@ export function getWorkspaceFs(): Promise<WorkspaceFs> {
       initialized = createResilientWorkspaceFs(createWorkspacePersistedFs(), generation)
       await initialized.ensureSeed()
     } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'WebsiteCollectionMigrationError') throw error
       const { createMemoryWorkspaceFs } = await import('./workspaceFsMemory.ts')
       const memory = createMemoryWorkspaceFs({ initialEntries: snapshotShadowEntries() })
       initialized = createResilientWorkspaceFs(memory, generation)

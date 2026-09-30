@@ -1,7 +1,9 @@
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { createWorkspaceFolderTreeEnsurer } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
-import { upsertWorkspaceTextDocument } from '@/features/workspace-fs/upsertWorkspaceTextDocument'
+import { resolveInitializedWorkspaceFs } from '@/features/workspace-fs/workspaceFsInitialization'
+import { resolveWebsiteCollectionRoot } from '@/features/workspace-fs/websiteCollections'
+import { extractYamlFrontmatterHeaderBlock, readYamlFrontmatterValue } from '@/lib/markdown/frontmatter'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import { mapLimit } from '@/lib/async/mapLimit'
 import { resolveWebsiteImportNodeRelativeDocumentPath, safeWebsitePathSegment } from '@/lib/websites/websitePathUtils'
@@ -105,11 +107,14 @@ export async function createWebsiteImportWorkspaceWriter(args: {
       : text
   }
 
+  // Fence parent creation and initialization before resolving the retained collection.
+  args.onRootPath?.(destination ? destination.slice(0, destination.lastIndexOf('/')) || '/' : `/websites/${safeWebsitePathSegment(host)}`)
+  await resolveInitializedWorkspaceFs(fs)
+  const inventory = await fs.listEntries()
   const rootFolder = destination
     ? destination.slice(0, destination.lastIndexOf('/')) || '/'
-    : normalizeWorkspacePath(`/websites/${safeWebsitePathSegment(host)}/${safeWebsitePathSegment(importId)}`)
-  args.onRootPath?.(rootFolder)
-  const ensureFolder = await createWorkspaceFolderTreeEnsurer(fs)
+    : resolveWebsiteCollectionRoot(inventory, host, importId)
+  const ensureFolder = await createWorkspaceFolderTreeEnsurer(fs, inventory)
   await ensureFolder(rootFolder)
   const createdPaths: WorkspacePath[] = []
   const sources: WebsiteImportCreated['sources'] = []
@@ -128,6 +133,26 @@ export async function createWebsiteImportWorkspaceWriter(args: {
     })
     folderCache.set(normalized, pending)
     return await pending
+  }
+  const createCaptureFile = async (parentPath: string, name: string, text: string) => {
+    const reuseCapture = async (path: string, existing: string | null) => {
+      if (existing === text) return true
+      const header = existing && extractYamlFrontmatterHeaderBlock(existing)
+      if (!header || readYamlFrontmatterValue(header.rawBlock, 'kgWebsiteImportId') !== importId) return false
+      await fs.writeFileText(path, text, { expectedText: existing })
+      return true
+    }
+    let path = `${parentPath}/${name}`
+    const existing = await fs.readFileText(path)
+    if (await reuseCapture(path, existing)) return path
+    if (existing !== null) {
+      const dot = name.lastIndexOf('.')
+      name = dot > 0 ? `${name.slice(0, dot)}--${safeWebsitePathSegment(importId)}${name.slice(dot)}`
+        : `${name}--${safeWebsitePathSegment(importId)}`
+      path = `${parentPath}/${name}`
+      if (await reuseCapture(path, await fs.readFileText(path))) return path
+    }
+    return fs.createFile({ parentPath, name, text })
   }
   const writeNodes = async (nodes: WebsiteImportNode[]) => {
     const freshNodes = nodes.filter(node => {
@@ -240,7 +265,7 @@ export async function createWebsiteImportWorkspaceWriter(args: {
           if (!isWebsiteImportJobCurrent(importJobRef, jobId)) throw new Error('cancelled')
           const createdPath = destination
             ? await fs.createFile({ parentPath: folderPath, name, text, requireExactPath: true })
-            : await upsertWorkspaceTextDocument({ fs, parentPath: folderPath, name, text })
+            : await createCaptureFile(folderPath, name, text)
           createdPaths.push(createdPath)
           const source = { path: createdPath, source: { kind: 'url' as const, url: row.nodeUrl, path: `workspace:${createdPath}` } }
           sources.push(source)
@@ -304,7 +329,7 @@ export async function createWebsiteImportWorkspaceWriter(args: {
           })
           .filter(n => n.url),
       })
-      const sitemapPath = await upsertWorkspaceTextDocument({ fs, parentPath: rootFolder, name: 'website.sitemap.md', text: sitemapText })
+      const sitemapPath = await createCaptureFile(rootFolder, 'website.sitemap.md', sitemapText)
       createdPaths.unshift(sitemapPath)
       sources.unshift({ path: sitemapPath, source: { kind: 'url', url: rootUrl, path: `workspace:${sitemapPath}` } })
     } catch {
@@ -320,7 +345,7 @@ export async function createWebsiteImportWorkspaceWriter(args: {
         runtime: manifest.runtime,
         nodes,
       })
-      canvasPath = await upsertWorkspaceTextDocument({ fs, parentPath: rootFolder, name: 'website.crawl.canvas.md', text: canvasText })
+      canvasPath = await createCaptureFile(rootFolder, 'website.crawl.canvas.md', canvasText)
       createdPaths.unshift(canvasPath)
       sources.unshift({ path: canvasPath, source: { kind: 'url', url: rootUrl, path: `workspace:${canvasPath}` } })
     } catch {
