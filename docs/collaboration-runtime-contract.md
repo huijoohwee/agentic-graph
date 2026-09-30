@@ -115,10 +115,10 @@ ci_scopes:
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/workspaceAutosaveScheduling.test.ts"]
       - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "markdownWorkspace.autosave", "markdown.workspace.sourceRevision.autosave", "settings.documentStorage"]
   webpage_request_resources:
-    roots: ["canvas/src/lib/websites/webpageTextRequestCache.ts", "canvas/src/lib/websites/webpageIframeSrcdoc.ts", "canvas/src/features/markdown-workspace/main/useWebpageIframeSrcdoc.ts", "canvas/src/lib/websites/server/nativeWebsiteCrawler.ts", "canvas/src/__tests__/webpageArtifactResources.test.ts"]
+    roots: ["canvas/src/lib/websites/webpageTextRequestCache.ts", "canvas/src/lib/websites/webpageSandboxDoc.ts", "canvas/src/lib/websites/webpageHtmlPreviewBudget.ts", "canvas/src/__tests__/webpageHtmlPreviewBudget.test.ts", "canvas/src/__tests__/webpageIframeLoadStability.test.tsx", "canvas/src/__tests__/webpageIframeSrcdocLargeHtml.test.ts", "canvas/src/lib/websites/webpageIframeSrcdoc.ts", "canvas/src/features/markdown-workspace/main/useWebpageIframeSrcdoc.ts", "canvas/src/lib/websites/server/nativeWebsiteCrawler.ts", "canvas/src/__tests__/webpageArtifactResources.test.ts"]
     commands:
-      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/webpageArtifactResources.test.ts", "canvas/src/__tests__/webpageArtifactCancellation.test.ts"]
-      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "webpage.iframeSrcdoc.shrinksLargeHtml"]
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/webpageArtifactResources.test.ts", "canvas/src/__tests__/webpageArtifactCancellation.test.ts", "canvas/src/__tests__/webpageHtmlPreviewBudget.test.ts", "canvas/src/__tests__/webpageIframeLoadStability.test.tsx"]
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "webpage.iframeSrcdoc.boundsLargeHtml"]
   markdown_scroll_resources:
     roots: ["canvas/src/lib/markdown-core/ui/markdownPreviewViewerMode.ts", "canvas/src/features/parsers/markdownLargeDocumentGraph.ts", "canvas/src/features/parsers/default.ts", "canvas/src/__tests__/markdownScrollResourceBudget.test.ts"]
     commands:
