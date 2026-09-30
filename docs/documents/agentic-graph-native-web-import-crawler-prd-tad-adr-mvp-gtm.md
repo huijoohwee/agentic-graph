@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.37"
+version: "0.2.38"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,22 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.36"
-prd_revision: "0.2.37"
-tad_revision: "0.2.37"
-adr_revision: "0.2.37"
-mvp_revision: "0.2.37"
-gtm_revision: "0.2.37"
+previous_document_version: "0.2.37"
+prd_revision: "0.2.38"
+tad_revision: "0.2.38"
+adr_revision: "0.2.38"
+mvp_revision: "0.2.38"
+gtm_revision: "0.2.38"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 Source Files folder alignment
+
+- PRD: `/fix #source-files-folder-alignment @codex` aligns the first character of each folder name directly above the next level's leading chevron or file glyph. The relationship holds for nested imported website folders and ordinary local folders.
+- TAD / ADR: the shared directory tree uses one depth indent for rows and hierarchy guides. Increase that indent by the measured seven-pixel difference between a parent label start and its child's glyph start. Keep selection, disclosure, names, and import ownership unchanged; no new dependency, storage, or network effect.
+- MVP: two existing files, under 2 KB of authored text, and 10 active minutes. Compare live parent text and child glyph geometry for two adjacent nesting levels, check selected and idle Source Files states, then run the exact clean affected validation.
+- GTM / rollback: improve scanability of the existing tree with no buyer or revenue result claimed. Revert this scoped successor to restore prior spacing; protected integration and production require separate authority and receipts.
 
 ## 2026-09-30 idle Source Files page selection entry
 

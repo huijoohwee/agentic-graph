@@ -4,7 +4,8 @@ import { UI_THEME_TOKENS } from './theme-tokens'
 import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME } from './responsiveElementClasses'
 
 const iconActionClass = `${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} ml-1 p-0 shrink-0 inline-flex items-center justify-center rounded ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing}`
-const indentAt = (depth: number) => depth * 20
+// Align each child's leading glyph with the first character of its parent label.
+const indentAt = (depth: number) => depth * 27
 
 const fileGlyph = (name: string) => {
   const extension = name.split('.').pop()?.toLowerCase()
