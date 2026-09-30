@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.6"
+version: "1.0.7"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.6"
-tad_revision: "1.0.6"
-adr_revision: "1.0.6"
-mvp_revision: "1.0.6"
-gtm_revision: "1.0.6"
+prd_revision: "1.0.7"
+tad_revision: "1.0.7"
+adr_revision: "1.0.7"
+mvp_revision: "1.0.7"
+gtm_revision: "1.0.7"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.6. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.7. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -52,7 +52,9 @@ Switching documents must release the previous preview while its replacement is l
 Reveal in Finder must select the named workspace document. Browser-only files save a named copy,
 including unsaved active editor content. Explicit disk provenance still reveals the original file;
 imports must never substitute a crawler cache page for the selected document. Named copies and new
-crawler artifacts default to the configured local `docs_` output folder.
+crawler artifacts default to the configured local `docs_` output folder. Browser-only folders must
+save and reveal their named subtree, including empty folders and current editor text. Only saved
+workspace entries belong in the copy; discovered pages are not downloaded by Reveal.
 
 Source Files must show discovered pages together with prior saved crawl files. Distinct file icons
 identify saved website documents and discovered pages that have not been saved. Finding pages does
@@ -92,7 +94,12 @@ Reveal captures the selected path, source and text before lazy loading. The loca
 derived mirror with the requested revision; a missing or different mirror creates a content-addressed
 copy under the configured document output root's `docs_/revealed` directory. The output root comes from the existing local docs configuration, so it follows the device path. Copies
 retain the workspace path and filename. Identical requests reuse a copy; revisions create separate
-copies. Edited or moved copies fail visibly and remain intact. Folder reveal requires a real directory.
+copies. Edited or moved copies fail visibly and remain intact. Browser-only folders use the same
+copy owner: load unopened file text through existing workspace storage, validate every descendant, stage the complete subtree, then publish it atomically.
+Explicit local folders still reveal their existing directory. No file contents may be silently omitted.
+Folder copies reject duplicate, case/Unicode-colliding and file-as-parent paths. Bound each copy to
+1,000 entries including inferred folders and 500,000 UTF-8 bytes including the request envelope;
+larger copies fail visibly and require a smaller folder or the existing export flow.
 The crawler shares the default output-root resolver while retaining explicit store overrides. GET
 requests can resolve an existing generation in the earlier sandbox; new writes use the current root.
 Explicit reuse of a generation in the earlier root is rejected, and incomplete current generations
@@ -128,7 +135,7 @@ imports clear selection while retaining discovery. Stale completions cannot repl
 - Distinguish absent workspace records from filtered or clipped rows before changing Explorer.
   Inspect the original workspace without modifying it; importing into another workspace creates
   independent documents and preserves the original records. No implicit cross-origin storage bridge.
-- Named snapshots implement the user-selected save-and-reveal policy for all browser-only files.
+- Named snapshots implement the user-selected save-and-reveal policy for all browser-only files and folders.
   Existing provenance and canonical repository sources remain authoritative; capture metadata never
   redirects reveal. Copies are local exports and do not become a second editable workspace authority.
 - Runtime validation inputs stay outside the repository; regression fixtures are independent examples.
@@ -217,6 +224,16 @@ list showed 200 entries while retaining four saved website-file icons. No import
 this discovery check. A finite discovery list is not proof of complete website coverage.
 Rollback the discovery/UI increment together; retain saved files, browser records and crawler artifacts.
 
+Folder reveal increment: four production modules, fewer than 10 KB source changes, no dependency.
+Twelve focused regressions pass, covering nested and empty folders, current unsaved text, exclusion
+of unrelated paths, repeat identity, atomic concurrent copies, traversal, collisions, byte/entry bounds,
+symlink rejection and preservation of edited or moved copies. The menu, local endpoint and disk-copy
+owners share the same validation path. Live folder Reveal created a named subtree containing all
+four saved imported documents (233,504 bytes) under the configured local output; unopened files were
+read from workspace storage. Discovered pages were not copied. The desktop window selection was
+not independently inspected in this check. Rollback client and host folder support together; retain all
+existing copies, workspace documents and crawler artifacts.
+
 ## GTM
 
 Initial user: a reader checking repeated themes and evidence in a local document. The near-built path
@@ -233,3 +250,5 @@ Named local copies let readers locate and use the document shown in Source Files
 Saved embeds load on request, reducing work when readers switch documents. Measure successful document switches and responsive preview controls.
 
 Browse discovered pages and saved crawl files in one tree. Status icons and retained discovery reduce repeated import setup; completion and time savings remain measured per source.
+
+Folder copies extend first reveal to grouped browser documents, using the same configured local output and no account or service.

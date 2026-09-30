@@ -5,7 +5,7 @@ import path from 'node:path'
 import type { Connect } from 'vite'
 import type { KgFsPathPolicy } from './viteWorkspaceArtifactBridge'
 import { WORKSPACE_REVEAL_MAX_BYTES } from './src/features/workspace-fs/workspaceRevealContract'
-import { parseWorkspaceRevealSnapshot, saveWorkspaceRevealSnapshot, WorkspaceRevealSnapshotError } from './viteWorkspaceRevealSnapshot'
+import { parseWorkspaceRevealSnapshot, saveWorkspaceRevealSnapshot, parseWorkspaceRevealFolderSnapshot, saveWorkspaceRevealFolderSnapshot, WorkspaceRevealSnapshotError } from './viteWorkspaceRevealSnapshot'
 import { resolveWorkspaceDocumentOutputRoot } from './src/lib/websites/server/websiteImportStorage'
 
 export const WORKSPACE_REVEAL_PATH = '/__agentic_os_fs_reveal'
@@ -84,7 +84,12 @@ export function createWorkspaceRevealHandler(repoRoot: string, policy: KgFsPathP
       if (!body || typeof body !== 'object' || Array.isArray(body)) throw new RevealError(400, 'Invalid reveal request')
       const request = body as Record<string, unknown>
       let target = '', copied = false
-      if ('snapshot' in request) {
+      if ('folderSnapshot' in request) {
+        if ('snapshot' in request || 'website' in request || 'workspacePath' in request || 'path' in request || request.kind !== 'folder') throw new RevealError(400, 'A folder copy requires a single workspace folder')
+        const outputRoot = request.outputRoot ?? resolveWorkspaceDocumentOutputRoot(repoRoot)
+        if (typeof outputRoot !== 'string' || !path.isAbsolute(outputRoot) || !policy.isAllowed(outputRoot)) throw new RevealError(403, 'Output folder is outside the local workspace')
+        target = await saveWorkspaceRevealFolderSnapshot(outputRoot, parseWorkspaceRevealFolderSnapshot(request.folderSnapshot)); copied = true
+      } else if ('snapshot' in request) {
         if ('website' in request || 'workspacePath' in request || (request.kind !== undefined && request.kind !== 'file')) {
           throw new RevealError(400, 'A document copy requires a single workspace file')
         }

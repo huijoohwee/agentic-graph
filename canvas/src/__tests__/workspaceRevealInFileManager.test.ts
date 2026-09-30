@@ -74,7 +74,21 @@ test('HTTP reveal awaits host completion and rejects foreign origins, invalid bo
     await fs.writeFile(mirror, snapshot.text)
     const exact = await request(JSON.stringify({ kind: 'file', path: mirror, snapshot }))
     assert.equal((await exact.json()).path, mirror)
+    const folderSnapshot = { workspacePath: '/websites', entries: [
+      { workspacePath: '/websites/example.test/run/page.md', kind: 'file', text: 'Saved page' },
+      { workspacePath: '/websites/empty', kind: 'folder' },
+    ] }
+    const folderResult = await request(JSON.stringify({ kind: 'folder', folderSnapshot }))
+    assert.equal(folderResult.status, 200)
+    const folder = await folderResult.json()
+    assert.ok(folder.path.startsWith(path.join(root, 'docs_/revealed/')))
+    assert.ok(folder.path.endsWith('/websites'))
+    assert.equal(await fs.readFile(path.join(folder.path, 'example.test/run/page.md'), 'utf8'), 'Saved page')
+    assert.deepEqual(calls.at(-1)?.slice(1), workspaceRevealCommand(folder.path, process.platform, true).args)
     const before = calls.length
+    assert.equal((await request(JSON.stringify({ kind: 'folder', folderSnapshot, snapshot }))).status, 400)
+    assert.equal((await request(JSON.stringify({ kind: 'folder', folderSnapshot, path: repo }))).status, 400)
+    assert.equal((await request(JSON.stringify({ kind: 'folder', folderSnapshot, outputRoot: path.join(os.tmpdir(), 'outside-folder-copy') }))).status, 403)
     assert.equal((await request(JSON.stringify({ kind: 'folder', snapshot }))).status, 400)
     assert.equal((await request(JSON.stringify({ path: path.join(os.tmpdir(), 'outside-reveal.md'), snapshot }))).status, 403)
     assert.equal((await request(JSON.stringify({ snapshot, outputRoot: path.join(os.tmpdir(), 'outside-output') }))).status, 403)
