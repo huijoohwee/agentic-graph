@@ -7,11 +7,12 @@ import { useMarkdownWorkspaceViewShell } from '@/lib/markdown-workspace-runtime/
 import { buildMarkdownFileTreeContextMenuItems } from '@/features/markdown-workspace/markdownFileTreeContextMenuItems'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 
-test('Explorer reveal uses the captured artifact and reports failure without opening a URL or changing selection', async () => {
+test('Explorer reveal saves the current selected document and reports failure without opening a URL or changing selection', async () => {
   const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
   const entry = { kind: 'file', path: '/websites/example/article.md', name: 'article.md', parentPath: '/websites/example',
     text: '---\nkgWebsiteImportId: "20260928T034028Z"\nkgWebsiteNodeId: "a123"\n---\nBody' } as WorkspaceEntry
   const statuses: string[] = [], requests: Record<string, unknown>[] = []
+  let activePath = entry.path, activeText = 'Current unsaved text'
   let reveal: () => void | Promise<void> = () => {}, pending: Promise<void> | undefined, fail = false
   const forbidden = () => { throw new Error('Reveal must not open the source URL or change selection') }
   window.open = forbidden
@@ -23,7 +24,7 @@ test('Explorer reveal uses the captured artifact and reports failure without ope
   const root = createRoot(document.createElement('section'))
   function Harness() {
     const shell = useMarkdownWorkspaceViewShell({ entries: [entry], sourcesByPath: { [entry.path]: { kind: 'url', url: 'https://example.invalid/article' } },
-      folderModeContract: 'sitemap', setFolderModeContract: () => {}, activePath: entry.path, selectionPath: entry.path,
+      folderModeContract: 'sitemap', setFolderModeContract: () => {}, activePath, activeText, selectionPath: entry.path,
       selectionEntryKind: 'file', setActivePathSafe: forbidden, setSelectionPathSafe: forbidden, setSelectionSource: forbidden,
       setExpandedPaths: () => {}, resolveFolderContractDocPath: () => entry.path, pickFolderContractTargetPath: () => null,
       revealLineInEditor: () => {}, setStatusWithAutoClear: s => statuses.push(s), setStatusError: s => statuses.push(s) })
@@ -35,10 +36,41 @@ test('Explorer reveal uses the captured artifact and reports failure without ope
     await act(async () => { root.render(<Harness />) })
     await act(async () => { reveal(); const first = pending; reveal(); await first })
     assert.equal(requests.length, 1, 'Repeated clicks coalesce while reveal is pending')
-    assert.deepEqual(requests[0], { website: { importId: '20260928T034028Z', nodeId: 'a123' } })
+    assert.deepEqual(requests[0], { kind: 'file', snapshot: { workspacePath: entry.path, text: 'Current unsaved text' } })
     assert.deepEqual(statuses, ['Revealed in Finder'])
+    activePath = '/notes/another.md'; activeText = 'Other editor content'
+    await act(async () => { root.render(<Harness />) })
+    await act(async () => { reveal(); await pending })
+    assert.deepEqual(requests[1], { kind: 'file', snapshot: { workspacePath: entry.path, text: entry.kind === 'file' ? entry.text : '' } })
     fail = true
     await act(async () => { reveal(); await pending })
-    assert.match(statuses[1]!, /^Reveal failed: Reveal requires the local workspace host/)
+    assert.match(statuses[2]!, /^Reveal failed: Reveal requires the local workspace host/)
   } finally { await act(async () => root.unmount()); globalThis.fetch = previousFetch; restore() }
+})
+
+test('client keeps explicit local provenance, generic names and payload budgets independent of website metadata', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const requests: Record<string, unknown>[] = []
+  globalThis.fetch = (async (_url, init) => {
+    requests.push(JSON.parse(String(init?.body)))
+    return new Response(JSON.stringify({ ok: true }), { headers: { 'content-type': 'application/json' } })
+  }) as typeof fetch
+  try {
+    const { revealWorkspaceFileInManager } = await import('@/features/workspace-fs/workspaceRevealInFileManager')
+    await revealWorkspaceFileInManager({ path: '/notes/renamed.md', kind: 'file', text: '---\nkgWebsiteImportId: stale\n---',
+      source: { kind: 'local', originalName: '/local/exact.md' } })
+    assert.deepEqual(requests.pop(), { path: '/local/exact.md', kind: 'file' })
+    await revealWorkspaceFileInManager({ path: '/notes/empty.txt', text: '' })
+    assert.deepEqual(requests.pop(), { kind: 'file', snapshot: { workspacePath: '/notes/empty.txt', text: '' } })
+    for (const text of ['界'.repeat(166667), '\n'.repeat(250000)]) {
+      await assert.rejects(revealWorkspaceFileInManager({ path: '/notes/large.txt', text }), /500 KB/)
+    }
+    await assert.rejects(revealWorkspaceFileInManager({ path: '/notes', kind: 'folder' }), /no saved local/)
+    assert.equal(requests.length, 0)
+    const { writeWorkspaceDocsMirrorRootPathSetting } = await import('@/lib/workspace/workspaceStoreSyncSettings')
+    writeWorkspaceDocsMirrorRootPathSetting('/local-workspace/docs')
+    await revealWorkspaceFileInManager({ path: '/notes/portable.txt', text: 'Portable' })
+    assert.deepEqual(requests.pop(), { path: '/local-workspace/notes/portable.txt', outputRoot: '/local-workspace/docs_',
+      kind: 'file', snapshot: { workspacePath: '/notes/portable.txt', text: 'Portable' } })
+  } finally { globalThis.fetch = previousFetch; restore() }
 })
