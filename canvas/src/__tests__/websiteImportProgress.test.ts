@@ -1,4 +1,5 @@
 import test from 'node:test'
+import './websiteCollections.test'
 import assert from 'node:assert/strict'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { createWebsiteImportWorkspaceWriter } from '@/features/markdown-workspace/useWorkspaceFileActions/websiteImportNodeWriter'
@@ -326,4 +327,148 @@ test('failed writer initialization releases its refresh guard and reconciles onc
   } finally {
     globalThis.fetch = originalFetch
   }
+})
+
+
+test('single selected page opens its own content, not the crawl canvas, including the root URL', async () => {
+  const originalFetch = globalThis.fetch
+  try {
+    for (const requested of ['https://example.invalid/', 'https://example.invalid/topic?category=One%20Two']) {
+      for (const fails of [false, true]) {
+        const fs = createMemoryWorkspaceFs(), opened: string[] = []
+        const selected = node('selected', requested)
+        if (fails) selected.status = 'error'
+        const manifest: WebsiteImportManifestV1 = { version: 1, importId: 'selected-content', rootUrl: 'https://example.invalid/',
+          status: 'done', startedAtMs: 1, nodes: [node('other', 'https://example.invalid/other'), selected], errors: [] }
+        globalThis.fetch = async input => {
+          const url = String(input)
+          const json = (value: unknown) => new Response(JSON.stringify(value))
+          if (url.includes('/start?')) return json({ ok: true, importId: manifest.importId })
+          if (url.includes('/status?')) return json({ ok: true, status: 'done' })
+          if (url.includes('/manifest?')) return json({ ok: true, manifest })
+          if (url.includes('/artifact?')) return new Response(new URL(url, requested).searchParams.get('nodeId') === 'selected' ? '# Exact requested page content' : '# Other page content')
+          throw new Error('Unexpected request: ' + url)
+        }
+        const job = runWorkspaceWebsiteImport({ url: manifest.rootUrl, opts: { selectedUrls: [requested], generateArtifactDocs: true },
+          importJobRef: { current: 1 }, jobId: 1, status: { setStatusProgress() {} }, getFs: async () => fs,
+          focusAfterImport: async path => { opened.push(path) } })
+        if (fails) {
+          await assert.rejects(job, /The requested page was not saved/)
+          assert.deepEqual(opened, [], 'failed capture cannot open another page or summary')
+        } else {
+          await job
+          assert.equal(opened.length, 1)
+          const text = String(await fs.readFileText(opened[0]!))
+          assert.match(text, /# Exact requested page content/)
+          assert.ok(text.includes(requested))
+          assert.doesNotMatch(text, /# Other page content|# Website crawl Canvas/)
+        }
+      }
+    }
+  } finally { globalThis.fetch = originalFetch }
+})
+
+test('a discovered page materializes at its projected row without a new crawl folder or summaries', async () => {
+  const { projectWebsiteImportTree } = await import('@/features/source-files/websiteImportTreeProjection')
+  const fs = createMemoryWorkspaceFs({ initialEntries: [
+    { path: '/', parentPath: null, name: '', kind: 'folder', updatedAtMs: 1 },
+    { path: '/collection', parentPath: '/', name: 'collection', kind: 'folder', updatedAtMs: 1 },
+    { path: '/collection/index.md', parentPath: '/collection', name: 'index.md', kind: 'file', text: '# Original index', updatedAtMs: 1 },
+  ] })
+  const rootUrl = 'https://example.invalid/library'
+  const urls = ['https://example.invalid/library/article?category=One', 'https://example.invalid/library/article?category=Two']
+  const sources = { '/collection/index.md': { kind: 'url' as const, url: rootUrl, path: 'workspace:/collection/index.md' } }
+  const session = { id: 1, url: rootUrl, sourcePath: '/collection/index.md', pages: urls.map(url => ({ url, path: new URL(url).pathname })),
+    selected: new Set<string>(), visited: new Set<string>(), busy: false, error: '', limited: false, query: '' }
+  await fs.ensureSeed()
+  const initialFileCount = (await fs.listEntries()).filter(entry => entry.kind === 'file').length
+  const projection = projectWebsiteImportTree(await fs.listEntries(), sources, session)
+  const originalFetch = globalThis.fetch
+  try {
+    for (const [index, url] of urls.entries()) {
+      const destinationPath = [...projection.pageUrls].find(([, value]) => value === url)![0]
+      const opened: string[] = [], importId = `capture-${index}`
+      const manifest: WebsiteImportManifestV1 = { version: 1, importId, rootUrl, status: 'done', startedAtMs: 1,
+        nodes: [node('selected', url), node('unrequested', 'https://example.invalid/unrequested')], errors: [] }
+      globalThis.fetch = async (input, init) => {
+        const request = String(input), json = (value: unknown) => new Response(JSON.stringify(value))
+        if (request.includes('/start?')) {
+          assert.equal('destinationPath' in JSON.parse(String(init?.body)).options, false, 'workspace placement stays client-local')
+          return json({ ok: true, importId })
+        }
+        if (request.includes('/status?')) return json({ ok: true, status: 'done' })
+        if (request.includes('/manifest?')) return json({ ok: true, manifest })
+        if (request.includes('/artifact?')) return new Response(`# Article ${index}`)
+        throw new Error('Unexpected request: ' + request)
+      }
+      const result = await runWorkspaceWebsiteImport({ url: rootUrl, opts: { selectedUrls: [url], destinationPath, generateArtifactDocs: true },
+        importJobRef: { current: 1 }, jobId: 1, status: { setStatusProgress() {} }, getFs: async () => fs,
+        focusAfterImport: async path => { opened.push(path) } })
+      assert.deepEqual(result.createdPaths, [destinationPath]); assert.deepEqual(opened, [destinationPath])
+      const text = String(await fs.readFileText(destinationPath))
+      assert.match(text, new RegExp(`# Article ${index}`)); assert.ok(text.includes(importId), 'independent capture provenance retained')
+      const saved = projectWebsiteImportTree(await fs.listEntries(), sources, session)
+      assert.equal(saved.pendingPaths.has(destinationPath), false)
+      assert.equal(saved.savedPaths.has(destinationPath), true)
+      assert.deepEqual([...saved.pageUrls].filter(([, value]) => value === url).map(([path]) => path), [destinationPath])
+    }
+    const entries = await fs.listEntries()
+    assert.equal(entries.filter(entry => entry.kind === 'file').length, initialFileCount + 2, 'only the two addressed pages are added')
+    assert.equal(entries.some(entry => /capture-|website\.(sitemap|crawl)/.test(entry.path)), false)
+    assert.equal(await fs.readFileText('/collection/index.md'), '# Original index')
+  } finally { globalThis.fetch = originalFetch }
+})
+
+test('in-place writes preserve concurrent files and reject failed or stale captures without a replacement', async () => {
+  for (const mode of ['collision', 'failed', 'stale'] as const) {
+    const fs = createMemoryWorkspaceFs({ initialEntries: [{ path: '/', parentPath: null, name: '', kind: 'folder', updatedAtMs: 1 }] })
+    const ref = { current: 1 }, url = 'https://example.invalid/article'
+    const originalFetch = globalThis.fetch
+    try {
+      globalThis.fetch = async () => {
+        if (mode === 'collision') await fs.createFile({ parentPath: '/collection', name: 'article.md', text: 'Concurrent user edit' })
+        if (mode === 'stale') ref.current = 2
+        return new Response('# Captured content')
+      }
+      const writer = await createWebsiteImportWorkspaceWriter({ fs, url, importId: `independent-capture-${mode}`,
+        settings: { selectedUrls: [url], destinationPath: '/collection/article.md', outputDirRel: '', concurrency: 1,
+          defaultView: 'markdown', generateArtifactDocs: true, browserEnhance: false },
+        importJobRef: ref, jobId: 1, status: { setStatusProgress() {} } })
+      const selected = node('selected', url)
+      if (mode === 'failed') selected.status = 'error'
+      await assert.rejects(writer.finalize({ version: 1, importId: `independent-capture-${mode}`, rootUrl: url,
+        status: 'done', startedAtMs: 1, nodes: [selected], errors: [] }), /destination already exists|not saved|cancelled/)
+      const files = (await fs.listEntries()).filter(entry => entry.kind === 'file' && !entry.path.startsWith('/docs/workspace-seeds/'))
+      assert.equal(files.length, mode === 'collision' ? 1 : 0)
+      if (mode === 'collision') assert.equal(await fs.readFileText('/collection/article.md'), 'Concurrent user edit')
+    } finally { globalThis.fetch = originalFetch }
+  }
+})
+
+test('later captures reuse the first website collection and retain occupied pages and summaries', async () => {
+  const fs = createMemoryWorkspaceFs()
+  const capture = async (importId: string, nodeUrl: string) => {
+    const writer = await createWebsiteImportWorkspaceWriter({
+      fs, url: 'https://example.invalid/library', importId,
+      settings: { outputDirRel: '', concurrency: 1, defaultView: 'markdown', generateArtifactDocs: false, browserEnhance: false },
+      importJobRef: { current: 1 }, jobId: 1, status: { setStatusProgress() {} },
+    })
+    return writer.finalize({ version: 1, importId, rootUrl: 'https://example.invalid/library', status: 'done', startedAtMs: 1,
+      nodes: [node(importId, nodeUrl)], errors: [] })
+  }
+  const firstCapture = await capture('20260101T010101Z', 'https://example.invalid/library/one')
+  const oldFiles = new Map(await Promise.all(firstCapture.created.createdPaths.map(async path => [path, await fs.readFileText(path)] as const)))
+  const laterCapture = await capture('20260202T020202Z', 'https://example.invalid/library/two')
+  for (const path of laterCapture.created.createdPaths) assert(path.startsWith('/websites/example.invalid/20260101T010101Z/'))
+  assert.equal((await fs.listEntries()).filter(entry => entry.kind === 'folder' && entry.parentPath === '/websites/example.invalid').length, 1)
+  for (const [path, text] of oldFiles) assert.equal(await fs.readFileText(path), text, 'earlier content and summaries survive')
+  const sameCapture = await capture('20260202T020202Z', 'https://example.invalid/library/two')
+  assert.deepEqual(sameCapture.created.createdPaths, laterCapture.created.createdPaths, 'same capture is idempotent')
+  const beforeProgress = (await fs.listEntries()).filter(entry => entry.kind === 'file').length
+  const progressed = await capture('20260202T020202Z', 'https://example.invalid/library/three')
+  assert.equal(progressed.canvasPath, laterCapture.canvasPath, 'progress updates the same capture summary')
+  assert.equal((await fs.listEntries()).filter(entry => entry.kind === 'file').length, beforeProgress + 1)
+  const repeat = await capture('20260303T030303Z', 'https://example.invalid/library/one')
+  assert(repeat.created.createdPaths.some(path => path.includes('one--20260303T030303Z.md')))
+  for (const [path, text] of oldFiles) assert.equal(await fs.readFileText(path), text)
 })

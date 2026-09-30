@@ -79,6 +79,21 @@ export async function testMarkdownPreviewRendersWebpageSnapshotForStandaloneLink
 
     const standalone = snapshots.find(el => String(el.getAttribute('data-src') || '').includes('example.com/abc'))
     if (!standalone) throw new Error('expected snapshot for standalone markdown link')
+    const thumbnail = standalone.querySelector('[role="button"][data-kg-media-thumbnail="1"]')
+    if (thumbnail?.getAttribute('aria-label') !== 'Example' || !thumbnail.textContent?.includes('Example')) {
+      throw new Error('expected the visible and accessible preview name to preserve the authored link label')
+    }
+    if (standalone.querySelector('iframe')) throw new Error('a labeled link must retain snapshot rendering without loading a live frame')
+    const opened: string[] = [], previousOpen = dom.window.open
+    dom.window.open = url => { opened.push(String(url)); return null }
+    try {
+      for (const key of ['Enter', ' ']) await act(async () => {
+        thumbnail.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+      })
+    } finally { dom.window.open = previousOpen }
+    if (opened.length !== 2 || opened.some(url => url !== 'https://example.com/abc')) {
+      throw new Error('Enter and Space must use the existing thumbnail open action and exact source URL')
+    }
     const scriptEmbed = snapshots.find(el => String(el.getAttribute('data-src') || '').includes('example.com/embed'))
     if (!scriptEmbed) throw new Error('expected snapshot for HTML script embed')
 

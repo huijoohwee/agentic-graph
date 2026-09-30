@@ -4,7 +4,7 @@ import { clampInt, hashHex, normalizeUrl } from './websiteImportCore'
 import { NativeWebsiteCrawler } from './nativeWebsiteCrawler'
 import { handleWebsiteImportArtifact } from './websiteImportArtifactServer'
 import type { WebsiteImportManifestV1, WebsiteImportNode, WebsiteImportOptions, WebsiteImportProgress, WebsiteImportRuntime } from './websiteImportTypes'
-import { reserveWebsiteImportRun, resolveWebsiteImportWorkspaceRoot } from './websiteImportStorage'
+import { reserveWebsiteImportRun, resolveExistingWebsiteImportWorkspaceRoot, resolveWebsiteImportWorkspaceRoot } from './websiteImportStorage'
 import { extractTitleFromHtml, posixPathFromFsAbs, readJsonFile, readLocalTextWithLimit, resolveLocalInputPath, sanitizeImportId, toTreePath, writeJsonFileAtomic, WEBSITE_IMPORT_PAGE_MAX_BYTES } from './websiteImportServerHelpers'
 import { fetchTextWithLimit } from './websiteImportCore'
 import { handleWebsiteDiscovery, readWebsiteImportRequest, validateSelectedWebsiteUrls } from './websiteImportDiscovery'
@@ -29,7 +29,16 @@ export function createWebsiteImportHandler(args: { repoRoot: string }): import('
       await handleWebsiteDiscovery(req, res)
       return
     }
-    const workspaceResolved = resolveWebsiteImportWorkspaceRoot({ repoRoot: args.repoRoot, outputDirRel: parsed.searchParams.get('outputDirRel') })
+    const workspaceArgs = { repoRoot: args.repoRoot, outputDirRel: parsed.searchParams.get('outputDirRel') }
+    let workspaceResolved: ReturnType<typeof resolveWebsiteImportWorkspaceRoot>
+    try {
+      workspaceResolved = req.method === 'GET'
+        ? await resolveExistingWebsiteImportWorkspaceRoot({ ...workspaceArgs, importId: parsed.searchParams.get('importId') })
+        : resolveWebsiteImportWorkspaceRoot(workspaceArgs)
+    } catch {
+      res.statusCode = 500; res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ ok: false, error: 'Could not resolve the local import directory' })); return
+    }
     if (workspaceResolved.ok !== true) {
       res.statusCode = 400
       res.setHeader('Content-Type', 'application/json')
@@ -38,7 +47,11 @@ export function createWebsiteImportHandler(args: { repoRoot: string }): import('
     }
     const workspaceAbs = workspaceResolved.abs
     const claimRun = async (token: unknown, request: unknown) => {
-      try { return await reserveWebsiteImportRun(workspaceAbs, token, request) }
+      try {
+        const existing = await resolveExistingWebsiteImportWorkspaceRoot({ ...workspaceArgs, importId: token })
+        if (existing.ok === true && existing.abs !== workspaceAbs) throw new Error('Import run belongs to an earlier output folder; start a fresh run')
+        return await reserveWebsiteImportRun(workspaceAbs, token, request)
+      }
       catch (error) {
         res.statusCode = 409
         res.setHeader('Content-Type', 'application/json')
