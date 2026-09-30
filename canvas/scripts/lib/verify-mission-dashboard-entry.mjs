@@ -116,3 +116,24 @@ export async function verifyMissionDashboardEntry(page, { baseUrl, authoredSnaps
     console.log('Mission Dashboard pointer entry:', JSON.stringify(await finishEntryObservation(page, status)))
   }
 }
+
+/** Generic toolbar selection must stay authored; Mission activation is a separate action. */
+export async function verifyCanvasDashboardEntry(page, waitForMission) {
+  await page.getByRole('button', { name: /^Canvas View Mode:/ }).click()
+  await page.getByRole('button', { name: '2D Renderer: Dashboard', exact: true }).click()
+  await page.locator('[data-kg-dashboard-source="authored"]').waitFor({ state: 'visible', timeout: 60000 })
+  assert.equal(await page.evaluate(async () => (await import('/src/features/agent-ready/agentRunInspectionStore.ts')).readAgentRunWorkspace()), null,
+    'Generic toolbar Dashboard must not activate Mission inspection')
+  const returnView = await page.evaluate(async () => {
+    const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState()
+    return [state.workspaceViewMode, state.workspaceCanvasPaneOpen]
+  })
+  await page.evaluate(async () => {
+    (await import('/src/lib/canvas/canvasViewControlRuntime.ts')).executeCanvasViewControl({ optionId: 'agent-run:tree' })
+  })
+  if (waitForMission) await waitForMission()
+  assert.equal(await page.locator('[data-renderer="dashboard"]').count(), 1)
+  if (waitForMission) assert.equal(await page.locator('[aria-label="Agent runs"] table').count(), 1)
+  assert.ok(await page.getByRole('region', { name: 'Dashboard metrics', exact: true }).locator('[data-kg-dashboard-metric]').count() > 0)
+  return returnView
+}
