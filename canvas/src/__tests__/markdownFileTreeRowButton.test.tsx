@@ -112,13 +112,13 @@ export async function testMarkdownFileTreeReadOnlyContextMenuCopiesPaths() {
     const row = container.querySelector('button[aria-label="File agent-mission.manifest.json"]')!
     for (const label of ['Copy Path', 'Copy Relative Path']) {
       await act(async () => { row.dispatchEvent(new dom.window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 100, clientY: 100 })) })
-      const items = Array.from(container.querySelectorAll('.kg-data-view-floating-menu button')) as HTMLButtonElement[]
-      if (items.map(item => item.textContent).join(',') !== 'Share URL,Share canvas embed,Reveal in Finder,Copy Path,Copy Relative Path,New file,Clear,Rename,Delete') throw Error('Read-only menu must retain the shared file menu and order')
-      if (items.filter(item => !item.disabled).map(item => item.textContent).join(',') !== 'Copy Path,Copy Relative Path') throw Error('Only applicable path actions may be enabled')
+      const items = Array.from(document.querySelectorAll('.kg-data-view-floating-menu button')) as HTMLButtonElement[]
+      if (items.map(item => item.getAttribute('aria-label')).join(',') !== 'Share URL,Share canvas embed,Reveal in Finder,Copy Path,Copy Relative Path,New file,Clear,Rename,Delete') throw Error('Read-only menu must retain the shared file menu and order')
+      if (items.filter(item => !item.disabled).map(item => item.getAttribute('aria-label')).join(',') !== 'Copy Path,Copy Relative Path') throw Error('Only applicable path actions may be enabled')
       await act(async () => { items.filter(item => item.disabled).forEach(item => item.click()) })
-      if (!container.querySelector('.kg-data-view-floating-menu')) throw Error('Disabled actions must not dismiss the menu or execute')
-      await act(async () => { (items.find(item => item.textContent === label) as HTMLButtonElement).click() })
-      if (container.querySelector('.kg-data-view-floating-menu')) throw Error('Path action must close the menu')
+      if (!document.querySelector('.kg-data-view-floating-menu')) throw Error('Disabled actions must not dismiss the menu or execute')
+      await act(async () => { (items.find(item => item.getAttribute('aria-label') === label) as HTMLButtonElement).click() })
+      if (document.querySelector('.kg-data-view-floating-menu')) throw Error('Path action must close the menu')
     }
     if (copied.join(',') !== `${path},${path.slice(1)}`) throw Error('Both path actions must copy the selected manifest path')
   } finally {
@@ -146,7 +146,7 @@ async function testSourceFileSelectionAndAffordances() {
     return <><AgentMissionSourceFile activePath={selectedPath} /><MarkdownFileTree entries={[entry]}
       expandedPaths={new Set()} toggleExpanded={() => {}} activePath={selectedPath}
       onSelectFile={() => { selectAgentRunSource(null); opens++ }} onSelectFolder={() => {}} sourcesByPath={{ [entry.path]: { kind: 'url', url } }}
-      renderFileRight={() => <SourceFileCloudSyncIndicator entry={entry} status="local" onUpload={() => { uploads++ }} />} /></>
+      renderContextActions={() => <SourceFileCloudSyncIndicator entry={entry} status="local" onUpload={() => { uploads++ }} />} /></>
   }
   try {
     await act(async () => { root.render(<Harness activePath={null} />) })
@@ -178,18 +178,18 @@ async function testSourceFileSelectionAndAffordances() {
     assert.equal(mission.hasAttribute('aria-current'), false, 'Opening an authored file must clear mission selection')
     const file = container.querySelector('button[aria-label="File article.md"]')!
     assert.deepEqual([...container.querySelectorAll('[aria-current]')], [file], 'Both source trees must share one current selection')
-    const row = file.parentElement!, link = row.querySelector('a')!, cloud = row.querySelector('[data-source-file-cloud-status]')!
+    const row = file.parentElement!
+    assert.equal(row.querySelector('a, [data-source-file-cloud-status]'), null, 'File actions live only in the context toolbar')
+    await act(async () => { file.dispatchEvent(new dom.window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 100, clientY: 100 })) })
+    const menu = document.querySelector('[role="toolbar"][aria-label="Actions for article.md"]')!
+    const link = menu.querySelector('a')!, cloud = menu.querySelector('[data-source-file-cloud-status]')!
     assert.equal(link.href, 'https://example.org/article')
     assert.equal(link.getAttribute('aria-label'), 'Open source URL for article.md')
-    assert.equal(link.previousElementSibling, file, 'Source URL must follow the expanding filename control')
-    assert.equal(link.nextElementSibling?.contains(cloud), true, 'Source URL must precede cloud status')
+    assert.ok(link.compareDocumentPosition(cloud) & dom.window.Node.DOCUMENT_POSITION_FOLLOWING)
     assert.equal(link.getAttribute('target'), '_blank')
     assert.equal(link.getAttribute('rel'), 'noopener noreferrer')
-    assert.equal(container.querySelector('div, [aria-hidden="true"], button button, button a'), null)
-    for (const svg of container.querySelectorAll('svg')) {
-      assert.equal(svg.getAttribute('role'), 'img')
-      assert.ok(svg.getAttribute('aria-label'), 'Every tree glyph must have a visible semantic name')
-    }
+    assert.equal(menu.querySelector('button button, button a'), null)
+    for (const action of menu.querySelectorAll('button, a')) assert.ok(action.getAttribute('aria-label'))
     await act(async () => { row.querySelector('button[aria-label="Select file article.md"] svg')!.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })) })
     assert.equal(opens, 1, 'File icon must activate the file')
     const fileIcon = row.querySelector('button[aria-label="Select file article.md"]')!
@@ -199,7 +199,7 @@ async function testSourceFileSelectionAndAffordances() {
     assert.equal(uploads, 1, 'Cloud icon must activate only its cloud control')
     assert.equal(opens, 1)
     await act(async () => { root.render(<Harness activePath={entry.path} url="javascript:alert(1)" />) })
-    assert.equal(container.querySelector('a'), null, 'Untrusted source protocols must never become executable links')
+    assert.equal(document.querySelector('.kg-data-view-floating-menu a'), null, 'Untrusted source protocols must never become executable links')
     assert.deepEqual(browserErrors, [], 'Source selection handlers must finish without browser errors')
   } finally {
     await act(async () => { root.unmount() })

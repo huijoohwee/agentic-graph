@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.1"
+version: "1.0.8"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.1"
-tad_revision: "1.0.1"
-adr_revision: "1.0.1"
-mvp_revision: "1.0.1"
-gtm_revision: "1.0.1"
+prd_revision: "1.0.8"
+tad_revision: "1.0.8"
+adr_revision: "1.0.8"
+mvp_revision: "1.0.8"
+gtm_revision: "1.0.8"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.1. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.8. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -40,7 +40,29 @@ work locally; selected keyword candidates select their contexts; stale source na
 ordinary graphs retain a useful Dashboard without text metadata. The active source remains identifiable
 by its complete path when the tree is filtered or collapsed; reveal restores its row without reopening
 the document. Headless URL crawl starts in D3, and generated page, canvas and sitemap documents
-retain that default when reopened after another renderer.
+retain that default when reopened after another renderer. Import acceptance requires persisted page,
+canvas and sitemap entries in the workspace being reviewed, including after reopening it; an analysis
+note containing rendered page text does not prove that website import completed.
+
+Captured pages must remain reopenable even when raw HTML contains large application-state attributes.
+The HTML preview reports its limit and offers Markdown as the reading path; full capture/export stays intact.
+Opening a saved preview must not automatically start captured embedded sites or autoplay media.
+Switching documents must release the previous preview while its replacement is loading.
+
+Reveal in Finder must select the named workspace document. Browser-only files save a named copy,
+including unsaved active editor content. Explicit disk provenance still reveals the original file;
+imports must never substitute a crawler cache page for the selected document. Named copies and new
+crawler artifacts default to the configured local `docs_` output folder. Browser-only folders must
+save and reveal their named subtree, including empty folders and current editor text. Only saved
+workspace entries belong in the copy; discovered pages are not downloaded by Reveal.
+
+Source Files must show discovered pages together with prior saved crawl files. Distinct file icons
+identify saved website documents and discovered pages that have not been saved. Finding pages does
+not import them; the reader selects pages or folders before starting a headless crawl.
+
+Source Files exposes file and folder actions in one icon context toolbar. Remove the row action
+strip and text-menu variant; retain the existing compact icon size, accessible labels, tooltips and
+disabled states. Pointer context-menu and keyboard invocation must address the same selected entry.
 
 ## TAD
 
@@ -61,7 +83,53 @@ inspection controls, not document edits or a second settings store. Graph select
 navigation uses the existing source-revision guard. Optional Dashboard cards consume evidence only.
 Explorer reveals the active opaque workspace path through existing search, expansion and scroll controls,
 without loading the document again. Crawl startup reuses the shared D3 document preset; sitemap
-frontmatter now declares the same renderer as the generated page and crawl canvas.
+frontmatter now declares the same renderer as the generated page and crawl canvas. Browser workspace
+records use IndexedDB under the current origin. Changing the preview host or port selects another
+local workspace; it does not migrate existing imports. Keep validation on the same preview origin,
+and use the native import flow when website documents are needed in a different workspace.
+
+The shared HTML preview budget is 500,000 UTF-8 bytes, checked before hashing, rewriting or sanitizing
+and again after iframe markup injection. Preview fetches reject excessive Content-Length and streamed
+bytes, cancel the body, and use separate cache keys from full-source reads. Limit failures do not trigger
+a live-site fallback. Captures default to stripping source scripts; an explicit policy still takes precedence.
+Equivalent import identifiers keep the same load; a source change aborts the previous request.
+
+Reveal captures the selected path, source and text before lazy loading. The local host compares a
+derived mirror with the requested revision; a missing or different mirror creates a content-addressed
+copy under the configured document output root's `docs_/revealed` directory. The output root comes from the existing local docs configuration, so it follows the device path. Copies
+retain the workspace path and filename. Identical requests reuse a copy; revisions create separate
+copies. Edited or moved copies fail visibly and remain intact. Browser-only folders use the same
+copy owner: load unopened file text through existing workspace storage, validate every descendant, stage the complete subtree, then publish it atomically.
+Explicit local folders still reveal their existing directory. No file contents may be silently omitted.
+Folder copies reject duplicate, case/Unicode-colliding and file-as-parent paths. Bound each copy to
+1,000 entries including inferred folders and 500,000 UTF-8 bytes including the request envelope;
+larger copies fail visibly and require a smaller folder or the existing export flow.
+The crawler shares the default output-root resolver while retaining explicit store overrides. GET
+requests can resolve an existing generation in the earlier sandbox; new writes use the current root.
+Explicit reuse of a generation in the earlier root is rejected, and incomplete current generations
+never borrow old artifacts. No existing capture is moved or rewritten.
+The shared JSON request limit is 500,000 UTF-8 bytes; larger documents use the existing export flow.
+
+The shared strip-policy sandbox wraps captured iframe/object/embed content in inert templates.
+A native disclosure activates one embedded panel at a time; closing or replacing it removes its
+browsing context. Audio and video use controls with preload disabled and autoplay removed. Explicit
+script-enabled pages retain authored behavior. Preview state is bound to semantic request identity,
+so an old document is cleared during debounce as well as network work; stale completions stay ignored.
+
+Discovery reads explicit HTTP(S) navigation attributes on rendered anchors, areas and scripted
+cards, including absolute URL tooltips. It does not infer paths from labels or serialize embedded
+application state. The existing origin/path and network guards remain authoritative. Bound discovery
+to 20,000 candidate elements and 2,000 unique URLs; report incomplete inventory when a bound is hit.
+The tree initially projects 100 matching discovered pages, extends by 100 on request, and searches
+the complete inventory. Previously saved copies stay visible even when discovery is filtered. Keep
+500 as the selected-crawl limit. Discovery and selection reuse the existing local draft; successful
+imports clear selection while retaining discovery. Stale completions cannot replace a newer session.
+
+The file tree and inline selection toolbar share AnchorOverlay positioning, portal, dismissal and
+panel styling. AnchorOverlay accepts either an element or a pointer point; one viewport clamp and
+focus-restoration owner handles both. Existing source, discovery, import, cloud and file action
+handlers remain authoritative. Discovered-only entries expose source/discovery actions without
+pretending to have saved-file operations. Saved/discovered status icons stay in the tree.
 
 ## ADR
 
@@ -74,7 +142,20 @@ frontmatter now declares the same renderer as the generated page and crawl canva
 - Retain graph-wide Dashboard scope; Mission evidence is optional and never the required source.
 - The active source control applies to every workspace file; source names and domains never select
   visibility behavior. Renderer defaults belong to the crawl workflow and generated artifact contract.
+- Distinguish absent workspace records from filtered or clipped rows before changing Explorer.
+  Inspect the original workspace without modifying it; importing into another workspace creates
+  independent documents and preserves the original records. No implicit cross-origin storage bridge.
+- Named snapshots implement the user-selected save-and-reveal policy for all browser-only files and folders.
+  Existing provenance and canonical repository sources remain authoritative; capture metadata never
+  redirects reveal. Copies are local exports and do not become a second editable workspace authority.
 - Runtime validation inputs stay outside the repository; regression fixtures are independent examples.
+
+The preview limit replaces heuristic multi-megabyte shrinking, which left large attributes untouched.
+It applies uniformly to every source. No dependencies, domain exceptions, copied code or model assets
+are introduced. The existing raw-artifact retrieval limit is unchanged for capture/export consumers.
+
+- Consolidate action presentation in the existing file tree and overlay owners. Remove the
+  bespoke menu positioning/dismissal and inline action strip; add no replacement menu framework.
 
 ## MVP
 
@@ -95,12 +176,84 @@ input; an independent occurrence counter and blocked fetch verify the analysis w
 `activeWorkspaceSourceVisibility.test.tsx` exercises repeated reveal through filters and collapsed folders,
 duplicate basenames, Unicode paths and editor preservation. `websiteImportRendererDefaults.test.ts`
 checks all generated artifact defaults and crawl startup after conflicting document modes.
+Runtime recovery validation used the native headless import with two explicitly selected pages. Both
+page documents plus the crawl canvas and sitemap appeared in Source Files and survived reopening
+the same preview. D3 remained selected, and the library page opened through the tree. The original workspace still contained its
+older imports. This establishes local workspace persistence, not cloud sync or Production delivery.
+Recovery follow-up: zero production modules or dependency changes; evidence and requirements only.
+Crash follow-up: four production modules, fewer than 15 KB added source, plus tests/docs. Regression
+checks cover header/stream cancellation, UTF-8 limits, cache isolation, sync/async builders, normal
+HTML, explicit script policy, metadata stability and late completion after switching sources.
+The external validation capture was 16,903,271 bytes; both preview builders returned a 2,759-byte
+notice, and a before/after SHA-256 check confirmed that the stored capture was unchanged.
+The same browser origin reopened with 37 Source Files and the affected page displayed the limit
+notice while its Markdown remained available. This is local preview evidence only.
+
+Reveal and output-location follow-up budget: eight production modules, fewer than 14 KB added source, plus tests/docs.
+Regression owners cover exact paths, current and inactive document text, repeated clicks, Unicode,
+empty content, concurrent copies, changed revisions, edited copies, symlinks, size bounds, host failures,
+origin restrictions and native file/folder commands. `websiteImportStorageDefaults.test.ts` verifies
+new artifact placement, explicit overrides, legacy reads and generation ownership across the root change. No packages or source-specific rules are added.
+Live validation on the retained preview selected the imported article by its workspace filename in
+Finder under the configured `docs_/revealed` folder. The original captured Markdown retained its SHA-256 digest.
+The browser driver has a pointer offset in this session; native Finder selection, rather than the
+automation locator alone, supplies the target evidence.
 
 Rollback: revert this source change, retaining user documents and existing generic Dashboard behavior.
 Invalidate keyword caches again if their semantics change; never reinterpret old cached frequencies.
 For the visibility/default follow-up, revert the Explorer control, crawl startup and sitemap additions;
 existing imported documents retain their stored frontmatter. Keep the task lane while its local preview
-or review delivery needs it.
+or review delivery needs it. Native re-import creates a separate timestamped folder; recovery rollback
+can remove that new folder through workspace controls while retaining the original workspace.
+
+Crash rollback: revert the preview budget and hook changes without deleting captures or workspace
+records. Reopening unbounded captures can reproduce the renderer failure, so prefer Markdown first.
+
+Reveal rollback: revert the client and local host protocol together. Preserve saved copies and browser
+workspace records; removing a copy is a separate explicit file operation. Before reverting the crawler
+default, retain the configured docs_ store override so newly created captures remain addressable.
+
+Preview lifecycle follow-up: three production modules, fewer than 8 KB added source, no dependency.
+Eight focused regressions pass. Full affected checks, including TypeScript and browser smoke, pass.
+Generic regression tests cover inert initial frames, explicit activation, replacement/close disposal,
+paused media, explicit allow-policy behavior and release of loaded previews during pending requests.
+The browser log recorded an unresponsive page before the reported crash. After manual reload, opening
+the captured library stalled an automation read; its Markdown contained 606 image references. The
+article preview also mounted a captured autoplay iframe despite strip policy. These observations
+identify resource-loading gaps; they do not prove that one gap explains every renderer failure.
+The live article uses the new embed gate and 37 Source Files remain. Repeated library opening still
+timed out through browser automation before recovering. The user confirmed both imported documents
+open without crashing after the patch, but switching remains slow. This is a bounded recovery observation;
+rendering-performance improvement and elimination of all possible renderer failures are not established.
+Rollback the template gating and identity binding together if needed, retaining captures, named copies,
+workspace records, the earlier HTML byte budget and configured docs_ output defaults.
+
+Website discovery increment: six production modules and fewer than 15 KB source changes, no new
+dependency or website-specific rule. Seventeen focused crawler/tree/session regressions pass, including
+explicit card URLs, pagination beyond 500 discovered pages, filtered access to later entries, the
+500-page import limit, saved-history retention, folder reveal/collapse, and retained discovery after
+confirmation. Live discovery at the reviewed origin found 477 pages instead of three; expanding the
+list showed 200 entries while retaining four saved website-file icons. No import job or saved-file mutation occurred during
+this discovery check. A finite discovery list is not proof of complete website coverage.
+Rollback the discovery/UI increment together; retain saved files, browser records and crawler artifacts.
+
+Folder reveal increment: four production modules, fewer than 10 KB source changes, no dependency.
+Twelve focused regressions pass, covering nested and empty folders, current unsaved text, exclusion
+of unrelated paths, repeat identity, atomic concurrent copies, traversal, collisions, byte/entry bounds,
+symlink rejection and preservation of edited or moved copies. The menu, local endpoint and disk-copy
+owners share the same validation path. Live folder Reveal created a named subtree containing all
+four saved imported documents (233,504 bytes) under the configured local output; unopened files were
+read from workspace storage. Discovered pages were not copied. The desktop window selection was
+not independently inspected in this check. Rollback client and host folder support together; retain all
+existing copies, workspace documents and crawler artifacts.
+
+Icon-menu increment: six production modules, fewer than 15 KB source changes, no dependencies.
+Fourteen focused regressions pass for icon labels, preserved sizes, exact reveal/copy targets,
+read-only actions, pointer/keyboard access, viewport placement, focus restoration and import selection.
+The existing responsive-menu and inline-edit toolbar contracts cover shared-owner behavior.
+The retained preview shows one portaled icon toolbar and no inline file action strip; Escape restores
+the invoking row without opening a document. Native affected checks gate review publication.
+Rollback these presentation changes together, preserving documents, saved copies and discovery drafts.
 
 ## GTM
 
@@ -108,4 +261,18 @@ Initial user: a reader checking repeated themes and evidence in a local document
 reuses existing preview, graph and Dashboard controls. First value is a counted phrase with a source
 jump, requiring no account, paid plan or model download. Measure successful source jumps and time
 to verify a term before expanding linguistic features. A visible source path and consistent crawl
-renderer reduce the time spent finding the document behind a graph. Willingness to pay and revenue are unvalidated.
+renderer reduce the time spent finding the document behind a graph. Measure successful reopening of
+imported documents in the reviewed workspace, separately from successful text analysis. Willingness to pay and revenue are unvalidated.
+
+A bounded HTML notice keeps the workspace responsive while readers continue in Markdown; measure successful reopening without losing captured sources.
+
+Named local copies let readers locate and use the document shown in Source Files without navigating capture-cache internals. Measure successful first reveal; no paid service or account is required.
+
+Saved embeds load on request, reducing work when readers switch documents. Measure successful document switches and responsive preview controls.
+
+Browse discovered pages and saved crawl files in one tree. Status icons and retained discovery reduce repeated import setup; completion and time savings remain measured per source.
+
+Folder copies extend first reveal to grouped browser documents, using the same configured local output and no account or service.
+
+A single icon action surface frees filename width and makes file operations consistent. Measure
+successful action completion through pointer and keyboard access; no account or paid tier is required.
