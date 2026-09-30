@@ -26,7 +26,7 @@ const MermaidDiagramLazy = React.lazy(() =>
   import('@/lib/panels/views/preview-panel/ui/MermaidDiagram.impl').then(mod => ({ default: mod.MermaidDiagram })),
 )
 
-export default function PreviewPanelView() {
+export default function PreviewPanelView({ items, clearOnUnmount = true }: { items?: readonly CommandMenuRichMediaItem[]; clearOnUnmount?: boolean } = {}) {
   const markdownText = useGraphStore(s => s.markdownDocumentText || '')
   const mermaidFocusCode = useGraphStore(s => s.markdownPreviewMermaidFocusCode || '')
   const mermaidFocusConfig = useGraphStore(s => s.markdownPreviewMermaidFocusConfig || null)
@@ -38,11 +38,12 @@ export default function PreviewPanelView() {
   const frontmatterModeEnabled = useGraphStore(s => s.frontmatterModeEnabled || false)
   const rootThemeMode = useRootThemeMode()
   const {
-    items: mediaItems,
+    items: inventoryItems,
     mermaidFrontmatterConfig,
     frontmatterMermaidCode,
     frontmatterMermaidDiagrams,
   } = useCommandMenuRichMediaInventory()
+  const mediaItems = items ?? inventoryItems
 
   const hasMarkdown = !!(markdownText && markdownText.trim())
   const [overlayPortalTarget, setOverlayPortalTarget] = React.useState<HTMLElement | null>(null)
@@ -53,17 +54,18 @@ export default function PreviewPanelView() {
 
   React.useEffect(() => {
     return () => {
+      if (!clearOnUnmount) return
       setMermaidFocus(null)
       setActiveMediaKey(null)
     }
-  }, [setActiveMediaKey, setMermaidFocus])
+  }, [clearOnUnmount, setActiveMediaKey, setMermaidFocus])
 
   React.useEffect(() => {
     setLoadedEmbedKey(prev => (activeMediaKey ? (prev === activeMediaKey ? prev : '') : ''))
   }, [activeMediaKey])
 
   React.useEffect(() => {
-    if (!frontmatterModeEnabled) return
+    if (items || !frontmatterModeEnabled) return
     if (!frontmatterMermaidCode) return
     const current = String(mermaidFocusCode || '').trim()
     const next = String(frontmatterMermaidDiagrams[0] || '').trim()
@@ -75,6 +77,7 @@ export default function PreviewPanelView() {
       frontmatterConfig: mermaidFrontmatterConfig,
     })
   }, [
+    items,
     frontmatterModeEnabled,
     frontmatterMermaidCode,
     frontmatterMermaidDiagrams,
@@ -84,14 +87,15 @@ export default function PreviewPanelView() {
     setMermaidFocus,
   ])
 
-  const hasMermaidFocus = !!mermaidFocusCode
-
   const activeMediaFromKey = React.useMemo(
     () => (activeMediaKey ? mediaItems.find(m => m.key === activeMediaKey) || null : null),
     [activeMediaKey, mediaItems],
   )
 
-  const activeMedia = hasMermaidFocus || frontmatterModeEnabled ? null : activeMediaFromKey || mediaItems[0] || null
+  const selectedMedia = activeMediaFromKey || mediaItems[0] || null
+  const focusedCode = items ? (selectedMedia?.kind === 'mermaid' ? selectedMedia.code || '' : '') : mermaidFocusCode
+  const hasMermaidFocus = !!focusedCode
+  const activeMedia = hasMermaidFocus || (!items && frontmatterModeEnabled) ? null : selectedMedia
   const previewPanelState = React.useMemo<CommandMenuRichMediaItem['panel'] | null>(() => {
     if (!activeMedia || activeMedia.kind === 'mermaid') return null
     if (activeMedia.panel) return activeMedia.panel
@@ -191,13 +195,13 @@ export default function PreviewPanelView() {
                 <section className="w-full h-full flex items-center justify-center">
                   <section className={PREVIEW_PANEL_MEDIA_FRAME_CLASS_NAME}>
                     <section className="w-full h-full overflow-auto">
-                      {splitMermaidIntoDiagrams(mermaidFocusCode).map((code, i) => (
+                      {splitMermaidIntoDiagrams(focusedCode).map((code, i) => (
                         <React.Suspense key={i} fallback={null}>
                           <MermaidDiagramLazy
                             code={code}
                             highlightClass=""
                             frontmatterConfig={
-                              (mermaidFocusConfig as MermaidInitConfig | null) || mermaidFrontmatterConfig
+                              (items ? selectedMedia?.mermaidConfig : mermaidFocusConfig as MermaidInitConfig | null) || mermaidFrontmatterConfig
                             }
                             rootThemeMode={rootThemeMode}
                             overlayScope="container"

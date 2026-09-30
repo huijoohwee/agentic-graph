@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.28"
+version: "0.2.29"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,24 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.27"
-prd_revision: "0.2.28"
-tad_revision: "0.2.28"
-adr_revision: "0.2.28"
-mvp_revision: "0.2.28"
-gtm_revision: "0.2.28"
+previous_document_version: "0.2.28"
+prd_revision: "0.2.29"
+tad_revision: "0.2.29"
+adr_revision: "0.2.29"
+mvp_revision: "0.2.29"
+gtm_revision: "0.2.29"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 contextual Preview modes
+
+- PRD: `/fix #preview-context @codex` adapts Media, 3D for XR and AI Voice Studio to the active document and selection. A Preview tab must not inherit the full Media workspace's authoring state or unrelated catalog content.
+- TAD: share one controlled mode selector and existing catalog layout/search primitives. Preview owns its mode locally. Filter the shared inventory to current Markdown plus the selected graph node; the existing media renderer receives that scoped collection. Lazy-load the gallery and voice audition only when used.
+- ADR: Media previews current content; 3D for XR filters model content and provides an explicit full-library action. Voice auditions an editable, bounded document excerpt or selected-item caption using installed local voices through the existing speech runtime. Metadata, code, images and destination URLs are omitted. Full voice authoring opens through the existing Create invocation with the prepared text. Preview never uploads, places scene assets, clones a voice or starts microphone capture.
+- MVP: 30-minute target, at most 12 files / 50 KB changed bytes; new owners below 600 lines. Gallery shows up to 100 search matches. Narration scans at most 64,000 source characters and exposes a 2,000-character editable limit. Test scope isolation, mode independence, local-voice filtering, cancellation on source change/unmount, stale callbacks, type checking and live UI behavior in all modes. Runtime input URLs and captures stay outside source.
+- GTM / rollback: prioritize reading and inspecting existing content before creation. Preserve full Media/XR/Voice authoring through explicit handoffs. No new dependency, paid capability or production claim. Revert this scoped successor to restore the prior Preview; saved documents and uploaded assets remain intact. Publish only after fresh native validation, retaining the immutable predecessor and running preview.
+- Validation: eight focused context, insights and existing XR surface checks pass. Two stale XR select assertions now follow the existing value-callback API; the legacy test file has no line growth. TypeScript and three runtime smoke contracts pass. The live imported page exposes scoped Media, an accurate empty model view and bounded narration with installed local voices. Exact committed-candidate affected validation, final interaction readback and publication receipts remain separate external evidence.
 
 ## 2026-09-30 FloatingPanel Preview migration
 

@@ -1,6 +1,9 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_5: TestCaseTuple[] = [
+  ["previewContext.ScopeAndNarration","@/__tests__/previewContext.test","testPreviewContextScopeAndNarration"],
+  ["previewContext.ModeIsolation","@/__tests__/previewContext.test","testPreviewContextModeIsolation"],
+  ["previewContext.VoiceLocalLifecycle","@/__tests__/previewContext.test","testPreviewVoiceLocalLifecycle"],
   ["documentInsights.SourceLocations","@/__tests__/documentInsights.test","testDocumentInsightsSourceLocations"],
   ["documentInsights.Bounds","@/__tests__/documentInsights.test","testDocumentInsightsBounds"],
   ["documentInsights.RejectStaleSource","@/__tests__/documentInsights.test","testDocumentInsightsRejectStaleSource"],
