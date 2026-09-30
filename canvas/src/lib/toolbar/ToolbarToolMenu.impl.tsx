@@ -89,7 +89,9 @@ const TimelineFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgra
 const ArchitectureFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/ArchitectureFloatingPanelView').then(mod => ({ default: mod.ArchitectureFloatingPanelView })))
 const EventModelingFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/EventModelingFloatingPanelView').then(mod => ({ default: mod.EventModelingFloatingPanelView })))
 
-const FLOATING_PANEL_FULL_HEIGHT_VIEWS = new Set<FloatingPanelView>(['skillsCommands', 'blockLibrary', 'promptPresets', 'view', 'animation', 'motionControl', 'gameMode', 'flightSim', 'cityBuilder', 'camera', 'chat', 'console', 'geo', 'storyboardWidget', 'flowchart', 'gitGraph', 'gantt', 'timeline', 'architecture', 'eventModeling'])
+const FloatingPreviewPanelLazy = React.lazy(() => import('@/features/panels/views/FloatingPreviewPanel'))
+
+const FLOATING_PANEL_FULL_HEIGHT_VIEWS = new Set<FloatingPanelView>(['preview', 'skillsCommands', 'blockLibrary', 'promptPresets', 'view', 'animation', 'motionControl', 'gameMode', 'flightSim', 'cityBuilder', 'camera', 'chat', 'console', 'geo', 'storyboardWidget', 'flowchart', 'gitGraph', 'gantt', 'timeline', 'architecture', 'eventModeling'])
 
 const FLOATING_PANEL_PRIMARY_VIEW_BUTTON_SPECS: FloatingPanelViewButtonSpec[] = [
   { view: 'propsPanel', title: UI_LABELS.propsPanel, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.propsPanel },
@@ -97,6 +99,7 @@ const FLOATING_PANEL_PRIMARY_VIEW_BUTTON_SPECS: FloatingPanelViewButtonSpec[] = 
   { view: 'blockLibrary', title: UI_LABELS.blockLibrary, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.blockLibrary },
   { view: 'promptPresets', title: UI_LABELS.promptPresets, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.promptPresets },
   { view: 'view', title: UI_LABELS.view, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.view },
+  { view: 'preview', title: UI_LABELS.previewPanel, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.preview },
   { view: 'media', title: 'Media', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.media },
   { view: 'animation', title: 'Animation', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.animation },
   { view: 'motionControl', title: UI_LABELS.motionControl, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.motionControl },
@@ -237,9 +240,9 @@ export function ToolbarToolMenu({
     }
   }, [geospatialModeEnabled])
 
-  const handleSelectView = React.useCallback((view: RequestedFloatingPanelView) => {
+  const handleSelectView = React.useCallback((view: RequestedFloatingPanelView, preserveMediaMode = false) => {
     if (routeToolbarXrScenePanel({ view, canvasRenderMode, canvas3dMode })) return
-    if (view === 'media') setMediaCatalogMode(canvasRenderMode === '3d' && canvas3dMode === 'xr' ? 'xr-3d' : 'media')
+    if (view === 'media' && !preserveMediaMode) setMediaCatalogMode(canvasRenderMode === '3d' && canvas3dMode === 'xr' ? 'xr-3d' : 'media')
     if (floatingPanelView === 'skillsCommands' && view !== 'skillsCommands') clearSkillsCommandsMcpTarget()
     setFloatingPanelView(view)
     if (view === 'geo') void ensureGeospatialEnabled()
@@ -379,7 +382,7 @@ export function ToolbarToolMenu({
     // A remounted panel must not replay a request superseded by a newer surface action.
     if (useGraphStore.getState().floatingPanelView !== requestedFloatingPanelView) return
     setFloatingPanelMinimized(false)
-    handleSelectView(requestedFloatingPanelView)
+    handleSelectView(requestedFloatingPanelView, true)
   }, [handleSelectView, requestedFloatingPanelView, requestedFloatingPanelViewSeq])
 
   React.useEffect(() => {
@@ -481,6 +484,7 @@ export function ToolbarToolMenu({
             {floatingPanelView === 'skillsCommands' && <FloatingPanelSkillsCommandsView />}
             {floatingPanelView === 'blockLibrary' && <React.Suspense fallback={<p role="status">Loading Block library…</p>}><FloatingPanelBlockLibraryLazy /></React.Suspense>}
             {floatingPanelView === 'promptPresets' && <FloatingPanelPromptPresetsView />}
+            {floatingPanelView === 'preview' && <React.Suspense fallback={null}><FloatingPreviewPanelLazy /></React.Suspense>}
             {floatingPanelView === 'view' && <WorkspaceDataViewFloatingPanelView />}
             <FloatingPanelXrSceneView view={floatingPanelView} />
             {floatingPanelView === 'design' && <DesignFloatingPanelView active={designPanelsAvailable} />}
