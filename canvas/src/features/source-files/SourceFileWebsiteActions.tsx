@@ -12,7 +12,7 @@ const icons = { discover: Link, import: Download, cancel: X, clear: Eraser } sat
 export function SourceImportAction({ action, label, type = 'button', ...props }: Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & { action: keyof typeof icons; label: string }) {
   const Icon = icons[action]
   return <button {...props} type={type} aria-label={props['aria-label'] || label} title={label}
-    className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} shrink-0 items-center justify-center rounded disabled:opacity-40 ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing} ${props.className || ''}`}>
+    className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} shrink-0 items-center justify-center rounded disabled:opacity-40 ${props.disabled ? `${UI_THEME_TOKENS.text.secondary} cursor-not-allowed` : UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing} ${props.className || ''}`}>
     <Icon className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} role="img" aria-label={label} />
   </button>
 }
@@ -42,13 +42,14 @@ export function SourceFileWebsiteActions({ entry, source, urlOverride, confirmat
   const session = useWebsiteImportSelectionSession(state => state.session)
   const url = React.useMemo(() => urlOverride || sourceFileWebsiteUrl(entry, source), [entry, source, urlOverride])
   const ownsSession = !!session && (confirmationOwner ?? session.sourcePath === entry.path)
+  const fileRequired = entry.kind !== 'file'
   return <>
-    <SourceImportAction action="discover" label={url ? `Find pages linked from ${url}` : `Find links unavailable for ${entry.name}`}
-      disabled={!url || !!session?.busy || !!session?.importing}
+    <SourceImportAction action="discover" label={fileRequired ? `Find links unavailable for ${entry.name} — requires a source file` : url ? `Find pages linked from ${url}` : `Find links unavailable for ${entry.name}`}
+      disabled={fileRequired || !url || !!session?.busy || !!session?.importing}
       onClick={() => { if (session && (ownsSession || (urlOverride && session.pages.some(page => page.url === url)))) void discoverWebsiteSelection(url); else void importWebsiteFromSourceFiles(url, entry.path).catch(reportSourceImportFailure) }} />
     <SourceImportAction action="import"
-      label={ownsSession ? `Import selected (${session.selected.size}) for ${entry.name}` : `Import unavailable for ${entry.name}`}
-      disabled={!ownsSession || session.busy || !!session.importing || !session.selected.size}
+      label={fileRequired ? `Import unavailable for ${entry.name} — use the selection's source file` : ownsSession ? `Import selected (${session.selected.size}) for ${entry.name}` : `Import unavailable for ${entry.name}`}
+      disabled={fileRequired || !ownsSession || session.busy || !!session.importing || !session.selected.size}
       onClick={confirmWebsiteSelection} />
   </>
 }

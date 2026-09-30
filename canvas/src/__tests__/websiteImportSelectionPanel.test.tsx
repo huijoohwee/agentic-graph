@@ -4,7 +4,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import WebsiteImportSelectionView from '@/features/source-files/WebsiteImportSelectionView'
-import { chooseWebsiteImportPages, finishWebsiteImportSelection, useWebsiteImportSelectionSession } from '@/features/source-files/websiteImportSelectionSession'
+import { chooseWebsiteImportPages, finishWebsiteImportSelection, useWebsiteImportSelectionSession, visibleWebsiteSelectionPages, showMoreWebsiteSelectionPages, setWebsiteSelectionQuery, toggleWebsiteSelection, importWebsiteFromSourceFiles, confirmRestoredWebsiteSelection } from '@/features/source-files/websiteImportSelectionSession'
 import { sourceFileWebsiteUrl, projectWebsiteImportTree } from '@/features/source-files/websiteImportTreeProjection'
 import { MarkdownWorkspaceSourceFilesList } from '@/features/markdown-workspace/MarkdownWorkspaceSourceFilesList'
 import { ExplorerSearchControl } from '@/features/markdown-workspace/ExplorerSearchControl'
@@ -14,19 +14,25 @@ import { MAIN_PANEL_TABS } from '@/features/panels/mainPanelTabs'
 
 const sourceUrl = 'https://example.test/library/'
 const sourceEntry = { path: '/imported.md', parentPath: '/', name: 'imported.md', kind: 'file' as const, updatedAtMs: 0, text: `---\nkgWebpageUrl: "${sourceUrl}"\n---\n# Imported` }
-function SourceFilesHarness() {
+function SourceFilesHarness({ activePath = sourceEntry.path }: { activePath?: string | null }) {
   const [search, setSearch] = React.useState('saved search')
-  return <><ExplorerSearchControl search={search} setSearch={setSearch} panelTextClass="text-xs" /><MarkdownWorkspaceSourceFilesList loading={false} loadError="" textSizeClass="text-xs" entries={[sourceEntry]} expandedPaths={new Set()} activePath={sourceEntry.path}
+  return <><ExplorerSearchControl search={search} setSearch={setSearch} panelTextClass="text-xs" /><MarkdownWorkspaceSourceFilesList loading={false} loadError="" textSizeClass="text-xs" entries={[sourceEntry]} expandedPaths={new Set()} activePath={activePath}
     toggleExpanded={() => {}} onSelectFile={() => {}} onSelectFolder={() => {}} sourcesByPath={{ [sourceEntry.path]: { kind: 'url', url: sourceUrl } }}
     onCreateNewFile={() => {}} onRevealInFinder={() => {}} onClearFile={() => {}} onRenameEntry={() => {}} onDeleteEntry={() => {}} /></>
 }
 
-test('idle URL import still has its explicit form', async () => {
+async function openFileActions(host: HTMLElement, name = 'imported.md') {
+  await act(async () => host.querySelector<HTMLButtonElement>(`button[aria-label="File ${name}"]`)!.dispatchEvent(
+    new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 100, clientY: 100 })))
+}
+
+test('Source Files has no duplicate URL import form or entry point', async () => {
   const { restore } = initJsdomHarness()
   const host = document.createElement('section'), root = createRoot(host)
   try {
-    await act(async () => root.render(<WebsiteImportSelectionView />))
-    assert.ok(host.querySelector('section[aria-label="Import website URL"] input[type=url]'))
+    await act(async () => root.render(<><WebsiteImportSelectionView /><SourceFilesHarness /></>))
+    assert.equal(host.querySelector('input[type=url], form, [aria-label="Import website URL"]'), null)
+    assert.ok(!host.textContent?.includes('Import URL'))
   } finally { await act(async () => root.unmount()); restore() }
 })
 
@@ -85,11 +91,12 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     return new Response(JSON.stringify({ ok: true, pages: [source, source + 'a', source + 'b'].map(url => ({ url, path: new URL(url).pathname })), limited: false }))
   }) as typeof fetch
   const checkbox = (label: string) => Array.from(host.querySelectorAll<HTMLInputElement>('input[type=checkbox]')).find(input => input.getAttribute('aria-label') === label)!
-  const control = (prefix: string) => Array.from(host.querySelectorAll<HTMLButtonElement>('button')).find(button => button.getAttribute('aria-label')?.startsWith(prefix))!
+  const control = (prefix: string) => Array.from(new Set([...host.querySelectorAll<HTMLButtonElement>('button'), ...document.querySelectorAll<HTMLButtonElement>('.kg-data-view-floating-menu button')])).find(button => button.getAttribute('aria-label')?.startsWith(prefix))!
   try {
     await act(async () => { void chooseWebsiteImportPages(source, sourceEntry.path).then(urls => resolutions.push(urls)); root.render(<SourceFilesHarness />) })
     assert.equal(host.querySelector('[aria-label="Website page tree"]'), null, 'no separate discovery tree')
     assert.equal(host.querySelector('dialog'), null)
+    await openFileActions(host)
     assert.equal(control('Import selected').disabled, true)
     assert.equal(host.querySelectorAll('[aria-label="File imported.md"]').length, 2, 'row and button share one existing saved-file name')
     assert.equal(checkbox('Folder .workspace is outside this website import'), undefined)
@@ -144,47 +151,36 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     assert.equal(sourceEntry.text.endsWith('# Imported'), true, 'discovery does not rewrite saved files')
     const row = host.querySelector('section[aria-label="File imported.md"]')!
     const rowCheckbox = row.querySelector('input[type=checkbox]')!
-    const sourceLink = row.querySelector('a[aria-label="Open source URL for imported.md"]')!
-    const following = row.ownerDocument.defaultView!.Node.DOCUMENT_POSITION_FOLLOWING
-    assert.ok(Boolean(rowCheckbox.compareDocumentPosition(sourceLink) & following), 'selection precedes the source link')
     const folderRow = host.querySelector('section[aria-label="Folder library"]')!
-    assert.ok(Boolean(folderRow.querySelector('input[type=checkbox]')!.compareDocumentPosition(folderRow.querySelector('button[aria-label="Collapse folder library"]')!) & following), 'folder checkbox precedes the expandable name')
+    const pendingRow = host.querySelector('section[aria-label="File a"]')!
+    assert.ok([folderRow, pendingRow, row].every(item => !item.querySelector('[data-source-file-actions]')), 'no duplicate inline action strips remain')
     assert.equal(folderRow.querySelector('svg.lucide-chevron-down'), null, 'website folder has no duplicate chevron in selection mode')
     assert.equal(folderRow.querySelector('button[aria-label="Collapse folder library"]')?.getAttribute('aria-expanded'), 'true')
-    const pendingRow = host.querySelector('section[aria-label="File a"]')!
-    const actionGroups = [pendingRow, row].map(item => item.querySelector<HTMLElement>('[data-source-file-actions]')!)
-    assert.ok(actionGroups.every(group => group.style.minWidth === actionGroups[0].style.minWidth), 'remaining source actions share one column start')
-    const [pendingActions, savedActions] = actionGroups.map(group => Array.from(group.querySelectorAll<HTMLButtonElement | HTMLAnchorElement>('a, button')))
-    assert.equal(pendingActions.length, 4, 'pending page reserves URL, discovery, import and cloud slots')
-    assert.equal(savedActions.length, 4, 'saved file keeps the same four action slots')
-    assert.equal(savedActions[0], sourceLink, 'saved file keeps source URL in the first slot')
+    await openFileActions(host, 'a')
+    const pendingMenu = document.querySelector('[data-source-file-actions]')!
+    const pendingActions = Array.from(pendingMenu.querySelectorAll<HTMLButtonElement | HTMLAnchorElement>('a, button'))
+    assert.equal(pendingActions.length, 13, 'discovered pages retain every shared icon slot')
+    assert.equal((pendingActions[0] as HTMLAnchorElement).href, source + 'a')
     assert.match(pendingActions[1].getAttribute('aria-label') || '', /^Find pages linked from /)
-    assert.match(savedActions[1].getAttribute('aria-label') || '', /^Find pages linked from /)
-    assert.match(pendingActions[2].getAttribute('aria-label') || '', /^Import unavailable for /)
-    assert.match(savedActions[2].getAttribute('aria-label') || '', /^Import selected /)
-    assert.equal(pendingActions[3].getAttribute('title'), 'Not imported')
-    assert.ok(savedActions[3].hasAttribute('data-source-file-cloud-status'))
-    assert.equal((pendingActions[0] as HTMLButtonElement).disabled, true, 'pending page has no source-link action')
-    assert.equal((pendingActions[2] as HTMLButtonElement).disabled, true, 'non-owner import action is unavailable')
-    assert.ok(pendingActions[0].classList.contains('opacity-40'), 'unavailable source link is greyed out')
-    assert.ok(pendingActions[2].classList.contains('disabled:opacity-40'), 'unavailable import is greyed out')
-    assert.ok([folderRow, pendingRow, row].every(item => item.firstElementChild?.querySelector('input[type=checkbox]')), 'selection occupies the leading icon slot')
-    assert.ok([folderRow, pendingRow, row].every(item => !item.querySelector('[data-source-file-actions] input[type=checkbox]')), 'no legacy right-side checkboxes remain')
-    assert.equal(folderRow.querySelector('[data-source-file-actions]'), null, 'folder has no empty right action placeholder')
-    for (const action of [sourceLink, control('Find pages linked from'), control('Import selected'), row.querySelector('button[data-source-file-cloud-status]')!]) {
-      assert.ok(action.classList.contains('kg-data-view-icon-action--sm'), 'row actions match the existing file control size')
-      assert.ok(action.querySelector('svg')?.classList.contains('kg-compact-glyph'), 'row glyphs match the file glyph')
+    assert.equal((pendingActions[2] as HTMLButtonElement).disabled, true, 'only the import owner can confirm selection')
+    assert.match(pendingActions[3].getAttribute('title') || '', /Not saved/)
+    assert.ok(pendingMenu.querySelector<HTMLButtonElement>('[aria-label="Reveal in Finder"]')!.disabled, 'discovered pages cannot masquerade as saved files')
+    assert.ok(pendingActions.slice(4).every(action => (action as HTMLButtonElement).disabled), 'unsaved entries retain disabled file operations')
+    await openFileActions(host)
+    const savedMenu = document.querySelector('[data-source-file-actions]')!
+    assert.equal(savedMenu.querySelector<HTMLAnchorElement>('a')!.href, source)
+    assert.ok(savedMenu.querySelector('button[data-source-file-cloud-status]'))
+    assert.ok(savedMenu.querySelector('[aria-label="Reveal in Finder"]'))
+    for (const action of savedMenu.querySelectorAll('a, button')) {
+      assert.ok(action.classList.contains('kg-data-view-icon-action--sm'), 'menu actions retain the existing file control size')
+      assert.ok(action.querySelector('svg')?.classList.contains('kg-compact-glyph'), 'menu glyphs retain the file glyph size')
     }
     assert.ok(rowCheckbox.closest('label')?.classList.contains('kg-data-view-icon-action--sm'))
-    const actions = Array.from(row.querySelectorAll('button'))
-    assert.ok(actions.indexOf(control('Find pages linked from')) < actions.findIndex(button => button.hasAttribute('data-source-file-cloud-status')))
-    assert.ok(actions.indexOf(control('Import selected')) < actions.findIndex(button => button.hasAttribute('data-source-file-cloud-status')))
-    assert.ok(host.querySelector('button[aria-label="Import a before cloud sync"]')?.hasAttribute('disabled'))
     await act(async () => control('Import selected').click())
     assert.deepEqual(resolutions, [[source + 'a']])
     assert.deepEqual(requests.filter(url => url === '/__website_import/discover'), ['/__website_import/discover'])
-    assert.equal(host.querySelector('input[aria-label^="Select page"]'), null, 'transient selection leaves with the session')
-    assert.equal(host.querySelector<HTMLInputElement>('input[placeholder="Search"]')?.value, 'saved search', 'file search returns after selection')
+    assert.ok(host.querySelector('section[aria-label="File a"]'), 'confirmation retains discovered entries')
+    assert.equal(host.querySelector<HTMLInputElement>('input[aria-label^="Select page"]')?.disabled, true, 'selection is locked while the caller imports')
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); host.remove(); globalThis.fetch = previousFetch; restore() }
 })
 
@@ -201,12 +197,13 @@ test('cancel aborts pending discovery and never resolves an import selection', a
   try {
     const pending = chooseWebsiteImportPages('https://example.test/library/').then(urls => { resolution = urls })
     await act(async () => root.render(<SourceFilesHarness />))
-    await act(async () => Array.from(host.querySelectorAll('button')).find(button => button.textContent === 'Cancel import selection')!.click())
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Cancel import selection"]')!.click())
     await pending
     assert.equal(resolution, null)
     assert.equal(signal?.aborted, true)
     assert.ok(host.querySelector('section[aria-label="Choose folder(s)/page(s) to import"] input[aria-label="Select all visible pages"]'), 'idle checkbox remains after cancellation')
-    assert.ok(Array.from(host.querySelectorAll('button')).some(button => button.textContent === 'Import URL'))
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.busy, false)
+    assert.ok(!host.textContent?.includes('Import URL'))
   } finally { await act(async () => root.unmount()); finishWebsiteImportSelection(null); globalThis.fetch = previousFetch; restore() }
 })
 
@@ -250,22 +247,25 @@ test('file row imports only its selected pages through the existing workspace br
   }) as typeof fetch
   const unregister = registerMarkdownWorkspaceActionBridge('test-source-files-import', { importWebsite: async (root, opts) => { imported.push({ root, selectedUrls: opts?.selectedUrls }); importedResolve(); return { handled: true } } })
   const host = document.createElement('section'), root = createRoot(host)
-  const control = (prefix: string) => Array.from(host.querySelectorAll<HTMLButtonElement>('button')).find(button => button.getAttribute('aria-label')?.startsWith(prefix))!
+  const control = (prefix: string) => Array.from(new Set([...host.querySelectorAll<HTMLButtonElement>('button'), ...document.querySelectorAll<HTMLButtonElement>('.kg-data-view-floating-menu button')])).find(button => button.getAttribute('aria-label')?.startsWith(prefix))!
   try {
     assert.equal(sourceFileWebsiteUrl(entry), url)
     assert.equal(sourceFileWebsiteUrl({ ...entry, text: '---\nkgWebpageUrl: "javascript:alert(1)"\n---' }), null)
     await act(async () => root.render(<SourceFilesHarness />))
     assert.equal(host.querySelector('button[aria-label^="Import selected"]'), null, 'idle source rows do not show an inapplicable confirmation icon')
+    await openFileActions(host)
     await act(async () => control('Find pages linked from').click())
     assert.deepEqual(imported, [])
-    assert.equal(host.querySelectorAll('button[aria-label^="Import selected"]').length, 1, 'the shared tree has only the source-row confirmation')
+    assert.equal(document.querySelectorAll('.kg-data-view-floating-menu button[aria-label^="Import selected"]').length, 1, 'the shared tree has only the source-row confirmation')
     await act(async () => (host.querySelector('input[aria-label="Select all visible pages"]') as HTMLInputElement).click())
     assert.equal((host.querySelector('input[aria-label="Select page https://example.test/library/one"]') as HTMLInputElement).checked, true)
     assert.equal(control('Import selected').disabled, false)
+    await openFileActions(host)
     await act(async () => { control('Import selected').click(); await importedReady })
     assert.deepEqual(imported, [{ root: url, selectedUrls: [url + 'one'] }])
     assert.deepEqual(requests, ['/__website_import/discover'])
-    assert.equal(host.querySelector('button[aria-label^="Import selected"]'), null, 'confirmation leaves with the session')
+    assert.ok(document.querySelector<HTMLButtonElement>('.kg-data-view-floating-menu button[aria-label^="Import selected"]')?.disabled, 'completed import clears selection while retaining discovery')
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.pages.length, 1)
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); globalThis.fetch = previousFetch; restore() }
 })
 
@@ -283,10 +283,11 @@ test('Source Files restores page checkboxes after restart without importing unti
   } })
   const host = document.createElement('section'); document.body.append(host)
   let root = createRoot(host)
-  const control = (prefix: string) => Array.from(host.querySelectorAll<HTMLButtonElement>('button')).find(button => button.getAttribute('aria-label')?.startsWith(prefix))!
+  const control = (prefix: string) => Array.from(new Set([...host.querySelectorAll<HTMLButtonElement>('button'), ...document.querySelectorAll<HTMLButtonElement>('.kg-data-view-floating-menu button')])).find(button => button.getAttribute('aria-label')?.startsWith(prefix))!
   const page = () => host.querySelector<HTMLInputElement>(`input[aria-label="Select page ${sourceUrl}one"]`)!
   try {
     await act(async () => root.render(<SourceFilesHarness />))
+    await openFileActions(host)
     await act(async () => control('Find pages linked from').click())
     await act(async () => (host.querySelector('input[aria-label="Select all visible pages"]') as HTMLInputElement).click())
     assert.equal(page().checked, true)
@@ -307,9 +308,10 @@ test('Source Files restores page checkboxes after restart without importing unti
     assert.notEqual(window.localStorage.getItem(draftKey), selectedDraft, 'unselection updates the restart draft')
     await act(async () => (host.querySelector('input[aria-label="Select all visible pages"]') as HTMLInputElement).click())
     assert.equal(page().checked, true)
+    await openFileActions(host)
     await act(async () => { control('Import selected').click(); await importedReady })
     assert.deepEqual(imported, [[sourceUrl + 'one']])
-    assert.equal(window.localStorage.getItem(draftKey), null, 'successful confirmation removes the draft')
+    assert.deepEqual(JSON.parse(window.localStorage.getItem(draftKey)!).selected, [], 'successful confirmation retains discovery but clears imported selection')
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); host.remove(); globalThis.fetch = previousFetch; restore() }
 })
 
@@ -323,4 +325,146 @@ test('discovery keeps the clicked import owner while saved copies share its page
   assert.deepEqual(projection.selectionUrls.get(sibling.path), [sourceUrl])
   assert.equal(projection.entries.filter(entry => entry.path === sourceEntry.path).length, 1)
   assert.equal(projection.pendingPaths.has(sourceEntry.path), false)
+})
+
+
+test('discovery opens existing ancestor folders and distinguishes saved files from pending pages', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const host = document.createElement('section'), root = createRoot(host)
+  const saved = { ...sourceEntry, path: '/websites/sample/run/library.md', parentPath: '/websites/sample/run' }
+  const folders = ['/websites', '/websites/sample', '/websites/sample/run'].map(path => ({ kind: 'folder' as const, path, parentPath: path.slice(0, path.lastIndexOf('/')) || '/', name: path.split('/').pop()!, updatedAtMs: 0 }))
+  globalThis.fetch = (async () => new Response(JSON.stringify({ ok: true, pages: [sourceUrl, sourceUrl + 'guides/new'].map(url => ({ url, path: new URL(url).pathname })), limited: true }))) as typeof fetch
+  const props = { loading: false, loadError: '', textSizeClass: 'text-xs', entries: [...folders, saved], expandedPaths: new Set<string>(), activePath: saved.path,
+    toggleExpanded() {}, onSelectFile() {}, onSelectFolder() {}, sourcesByPath: null, onCreateNewFile() {}, onRevealInFinder() {}, onClearFile() {}, onRenameEntry() {}, onDeleteEntry() {} }
+  try {
+    await act(async () => { void chooseWebsiteImportPages(sourceUrl, saved.path); root.render(<MarkdownWorkspaceSourceFilesList {...props} />) })
+    assert.equal(host.querySelectorAll('svg[aria-label="Saved website file"]').length, 1)
+    assert.equal(host.querySelectorAll('svg[aria-label="Discovered page — not saved"]').length, 1)
+    assert.match(host.textContent || '', /2 discovered pages/)
+    assert.match(host.textContent || '', /partial list/)
+    assert.ok(host.querySelector('section[aria-label="File new"]'))
+    const collapse = host.querySelector<HTMLButtonElement>('button[aria-label="Collapse folder websites"]')!
+    await act(async () => collapse.click())
+    assert.equal(host.querySelector('section[aria-label="File new"]'), null)
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Expand folder websites"]')!.click())
+    assert.ok(host.querySelector('section[aria-label="File new"]'))
+    assert.equal(props.entries.length, 4, 'discovery never materializes workspace files')
+  } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); globalThis.fetch = previousFetch; restore() }
+})
+
+
+test('large discovery inventories page and search without losing saved history or exceeding selection limits', () => {
+  const { restore } = initJsdomHarness()
+  try {
+    const pages = Array.from({ length: 650 }, (_, index) => ({ url: sourceUrl + `item-${index}`, path: `/library/item-${index}` }))
+    const session = { id: 990, url: sourceUrl, pages, selected: new Set<string>(), visited: new Set<string>(), busy: false, error: '', limited: false, query: '' }
+    useWebsiteImportSelectionSession.setState({ session, recoveryError: '' })
+    assert.equal(visibleWebsiteSelectionPages(session).length, 100)
+    showMoreWebsiteSelectionPages()
+    assert.equal(visibleWebsiteSelectionPages(useWebsiteImportSelectionSession.getState().session!).length, 200)
+    toggleWebsiteSelection(pages.map(page => page.url), true)
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 500)
+    setWebsiteSelectionQuery('item-649')
+    const current = useWebsiteImportSelectionSession.getState().session!
+    assert.deepEqual(visibleWebsiteSelectionPages(current), [pages[649]])
+    const history = [sourceEntry, { ...sourceEntry, path: '/previous-run.md', name: 'previous-run.md' }]
+    const projected = projectWebsiteImportTree(history, null, current)
+    assert.ok(history.every(entry => projected.entries.includes(entry)), 'past saved copies remain alongside filtered discovery')
+    assert.equal(projected.savedPaths.size, 2)
+  } finally { finishWebsiteImportSelection(null); restore() }
+})
+
+
+test('retained discovery preserves retry selection after failure and rejects stale import completion', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  globalThis.fetch = (async () => new Response(JSON.stringify({ ok: true, pages: [{ url: sourceUrl, path: '/library/' }], limited: false }))) as typeof fetch
+  let fail = true, release!: () => void
+  const gate = new Promise<void>(resolve => { release = resolve })
+  const unregister = registerMarkdownWorkspaceActionBridge('test-discovery-retry', { importWebsite: async () => {
+    if (fail) throw new Error('Capture unavailable')
+    await gate
+    return { handled: true }
+  } })
+  try {
+    const importing = importWebsiteFromSourceFiles(sourceUrl, sourceEntry.path)
+    const rejected = assert.rejects(importing, /Capture unavailable/)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    finishWebsiteImportSelection([sourceUrl])
+    await rejected
+    const retained = useWebsiteImportSelectionSession.getState().session!
+    assert.equal(retained.importing, false)
+    assert.ok(retained.selected.has(sourceUrl))
+    assert.match(retained.error, /Capture unavailable/)
+    fail = false
+    const retry = confirmRestoredWebsiteSelection(retained.id, [sourceUrl])
+    const replacement = chooseWebsiteImportPages('https://example.test/next/')
+    const replacementId = useWebsiteImportSelectionSession.getState().session!.id
+    release(); await retry
+    assert.equal(useWebsiteImportSelectionSession.getState().session!.id, replacementId)
+    finishWebsiteImportSelection(null); await replacement
+  } finally { release(); finishWebsiteImportSelection(null); unregister(); globalThis.fetch = previousFetch; restore() }
+})
+
+test('cancel retains saved and discovered rows through document switches and restart, ignoring late discovery', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  let requests = 0, signal: AbortSignal | undefined, completeRefresh!: (response: Response) => void
+  globalThis.fetch = (async (_target, init) => {
+    if (++requests === 1) return new Response(JSON.stringify({ ok: true, pages: [sourceUrl, sourceUrl + 'new'].map(url => ({ url, path: new URL(url).pathname })), limited: false }))
+    signal = init?.signal as AbortSignal
+    return new Promise<Response>(resolve => { completeRefresh = resolve })
+  }) as typeof fetch
+  const host = document.createElement('section')
+  let root = createRoot(host), pending!: Promise<unknown>, imported = 0
+  const unregister = registerMarkdownWorkspaceActionBridge('test-cancel-inventory', { importWebsite: async () => { imported++; return { handled: true } } })
+  const assertInventory = () => {
+    assert.equal(host.querySelectorAll('svg[aria-label="Saved website file"]').length, 1)
+    assert.equal(host.querySelectorAll('svg[aria-label="Discovered page — not saved"]').length, 1)
+    assert.match(host.textContent || '', /2 discovered pages · 2 shown · 0 selected/)
+  }
+  try {
+    await act(async () => { pending = importWebsiteFromSourceFiles(sourceUrl, sourceEntry.path); root.render(<SourceFilesHarness />) })
+    await act(async () => {
+      host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!.click()
+      host.querySelector<HTMLButtonElement>('button[aria-label="Refresh discovered pages"]')!.click()
+    })
+    await act(async () => { host.querySelector<HTMLButtonElement>('button[aria-label="Cancel import selection"]')!.click(); await pending })
+    assert.equal(signal?.aborted, true)
+    assertInventory()
+    await act(async () => { completeRefresh(new Response(JSON.stringify({ ok: true, pages: [{ url: sourceUrl + 'late', path: '/library/late' }], limited: false }))) })
+    assertInventory()
+    await act(async () => root.render(<SourceFilesHarness activePath={null} />))
+    assertInventory()
+    await act(async () => { root.unmount(); useWebsiteImportSelectionSession.setState({ session: null, recoveryError: '' }) })
+    root = createRoot(host)
+    await act(async () => root.render(<SourceFilesHarness />))
+    assertInventory()
+    assert.equal(requests, 2, 'document switches and restart do not rediscover')
+    assert.equal(imported, 0, 'cancel and restoration never trigger a crawl')
+  } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); globalThis.fetch = previousFetch; restore() }
+})
+
+test('Launch callback does not discard discovery on import completion or restart', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  let requests = 0, beforeImportCalls = 0, imports = 0, pending!: Promise<unknown>
+  globalThis.fetch = (async () => { requests++; return new Response(JSON.stringify({ ok: true, pages: [{ url: sourceUrl + 'new', path: '/library/new' }], limited: false })) }) as typeof fetch
+  const unregister = registerMarkdownWorkspaceActionBridge('test-launch-retention', { importWebsite: async (_url, options) => {
+    assert.deepEqual(options?.selectedUrls, [sourceUrl + 'new']); imports++; return { handled: true }
+  } })
+  const host = document.createElement('section')
+  let root = createRoot(host)
+  try {
+    await act(async () => { pending = importWebsiteFromSourceFiles(sourceUrl, undefined, async () => { beforeImportCalls++ }); root.render(<SourceFilesHarness />) })
+    assert.equal(beforeImportCalls, 0)
+    await act(async () => { finishWebsiteImportSelection([sourceUrl + 'new']); await pending })
+    assert.equal(beforeImportCalls, 1)
+    assert.equal(imports, 1)
+    assert.match(host.textContent || '', /1 discovered pages · 1 shown · 0 selected/)
+    await act(async () => { root.unmount(); useWebsiteImportSelectionSession.setState({ session: null, recoveryError: '' }) })
+    root = createRoot(host)
+    await act(async () => root.render(<SourceFilesHarness />))
+    assert.ok(host.querySelector('svg[aria-label="Discovered page — not saved"]'))
+    assert.equal(requests, 1)
+    assert.equal(imports, 1, 'restart never imports automatically')
+    assert.equal(beforeImportCalls, 1, 'restart does not replay Launch side effects')
+  } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); globalThis.fetch = previousFetch; restore() }
 })
