@@ -69,6 +69,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
   onCanvasEmbedReady?: (entry: WorkspaceEntry, url: string) => void
   onShareCodeReady?: (detail: { sourceName: string; title: string; language: string; code: string }) => void
   renderEntryLeading?: (entry: WorkspaceEntry) => React.ReactNode
+  alignActionColumns?: boolean
   canOpenContextMenu?: (entry: WorkspaceEntry) => boolean
   renderFileRight?: (args: { entry: WorkspaceEntry; isActive: boolean }) => React.ReactNode
 }) {
@@ -92,6 +93,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     onShareCodeReady,
     renderFileRight,
     renderEntryLeading,
+    alignActionColumns,
   } = props
   const panelTypography = usePanelTypography()
   const tree = React.useMemo(() => buildTree(entries), [entries])
@@ -204,6 +206,8 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const isActive = activePath === entry.path
     const source = sourcesByPath ? sourcesByPath[entry.path] : null
     const sourceUrl = source?.kind === 'url' ? normalizeImportUrlInput(source.url) : ''
+    const entryLeading = renderEntryLeading?.(entry)
+    const fileRight = renderFileRight?.({ entry, isActive })
     const isWorkspaceSeedsAuthorityRoot = isAgenticGraphWorkspaceSeedsRootPath(entry.path)
     const selectEntry = () => isFolder ? onSelectFolder(entry.path) : onSelectFile(entry.path)
     const openContextMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -239,17 +243,23 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
                 className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-80`} />
             ) : null}
           </MarkdownFileTreeRowButton>
-          {renderEntryLeading?.(entry)}
-          {sourceUrl ? (
-            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open source URL for ${entry.name}`}
-              title={sourceUrl}
-              className={`shrink-0 inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing}`}>
-              <LinkIcon role="img" aria-label="Imported from URL" className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-70`} />
-            </a>
-          ) : null}
-          {renderFileRight ? (
-            <span className="shrink-0" onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
-              {renderFileRight({ entry, isActive })}
+          {entryLeading || sourceUrl || fileRight ? (
+            <span role="group" aria-label={`Actions for ${entry.name}`} data-source-file-actions
+              className="inline-flex shrink-0 items-center gap-0.5"
+              style={alignActionColumns ? { minWidth: 'calc(var(--kg-data-view-icon-action-sm-size, 1.75rem) * 5 + 0.5rem)' } : undefined}>
+              {entryLeading}
+              {sourceUrl ? (
+                <a href={sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open source URL for ${entry.name}`}
+                  title={sourceUrl}
+                  className={`shrink-0 inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing}`}>
+                  <LinkIcon role="img" aria-label="Imported from URL" className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-70`} />
+                </a>
+              ) : null}
+              {fileRight ? (
+                <span className="shrink-0" onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
+                  {fileRight}
+                </span>
+              ) : null}
             </span>
           ) : null}
         </DirectoryTreeRow>

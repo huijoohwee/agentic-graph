@@ -205,6 +205,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
         onCanvasEmbedReady={handleCanvasEmbedReady}
         onShareCodeReady={handleShareCodeReady}
         canOpenContextMenu={entry => !projection.pendingPaths.has(entry.path)}
+        alignActionColumns={!!importSession}
         renderEntryLeading={entry => {
           const urls = projection.selectionUrls.get(entry.path)
           return importSession && urls?.length ? <WebsiteSelectionCheckbox label={entry.kind === 'folder' ? `Select discovered pages in ${entry.path}` : `Select page ${projection.pageUrls.get(entry.path)}`} urls={urls} selected={importSession.selected} toggle={toggleWebsiteSelection} /> : null

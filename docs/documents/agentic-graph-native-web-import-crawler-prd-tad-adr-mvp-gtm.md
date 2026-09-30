@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.31"
+version: "0.2.32"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,22 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.30"
-prd_revision: "0.2.31"
-tad_revision: "0.2.31"
-adr_revision: "0.2.31"
-mvp_revision: "0.2.31"
-gtm_revision: "0.2.31"
+previous_document_version: "0.2.31"
+prd_revision: "0.2.32"
+tad_revision: "0.2.32"
+adr_revision: "0.2.32"
+mvp_revision: "0.2.32"
+gtm_revision: "0.2.32"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 Source Files action-column consistency
+
+- PRD: `/fix #source-files-action-alignment @codex` makes selection and available row actions scan in the same columns across folders, pending pages, and saved files during discovery. An icon with no applicable action is omitted; the next action occupies that position. Idle rows omit the unavailable import confirmation.
+- TAD / ADR: the existing semantic action group reserves the maximum five compact action slots only during an import session. Selection, source link, discovery, confirmation, and cloud status remain independent native controls packed in DOM order. Normal browsing retains flexible labels and no reserved strip. No new dependency, storage state, network effect, or site-specific branch.
+- MVP: five files, 14 KB incremental diff and roughly 15 active minutes. Check native action order and accessible labels, measure the live row column starts and hit targets, then run exact committed-candidate validation. Runtime targets and captures remain outside source.
+- GTM / rollback: faster scanning of the existing import tree is the observed user pain; no revenue outcome is asserted. Revert the scoped successor to restore the previous layout without changing imported documents. Source publication requires green proof; protected integration and production remain separate.
 
 ## 2026-09-30 Source Files control alignment
 

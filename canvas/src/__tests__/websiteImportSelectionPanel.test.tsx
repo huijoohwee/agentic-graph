@@ -63,6 +63,11 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     assert.ok(Boolean(rowCheckbox.compareDocumentPosition(sourceLink) & following), 'selection sits immediately left of source link')
     const folderRow = host.querySelector('section[aria-label="Folder library"]')!
     assert.ok(Boolean(folderRow.querySelector('button[aria-label="Folder library"]')!.compareDocumentPosition(folderRow.querySelector('input[type=checkbox]')!) & following))
+    const pendingRow = host.querySelector('section[aria-label="File a"]')!
+    const actionGroups = [folderRow, pendingRow, row].map(item => item.querySelector<HTMLElement>('[data-source-file-actions]')!)
+    assert.ok(actionGroups.every(group => group.style.minWidth === actionGroups[0].style.minWidth), 'folder, pending page and saved file share one action-column start')
+    assert.ok(actionGroups.every(group => group.firstElementChild?.querySelector('input[type=checkbox]')), 'selection is the first applicable action without spacer icons')
+    assert.equal(folderRow.querySelectorAll('[data-source-file-actions] button').length, 0, 'folder selection needs no disabled action placeholders')
     for (const action of [sourceLink, control('Find pages linked from'), control('Import selected'), row.querySelector('button[data-source-file-cloud-status]')!]) {
       assert.ok(action.classList.contains('kg-data-view-icon-action--sm'), 'row actions match the existing file control size')
       assert.ok(action.querySelector('svg')?.classList.contains('kg-compact-glyph'), 'row glyphs match the file glyph')
@@ -140,7 +145,7 @@ test('file row imports only its selected pages through the existing workspace br
     assert.equal(sourceFileWebsiteUrl(entry), url)
     assert.equal(sourceFileWebsiteUrl({ ...entry, text: '---\nkgWebpageUrl: "javascript:alert(1)"\n---' }), null)
     await act(async () => root.render(<SourceFilesHarness />))
-    assert.equal(control('Import selected').disabled, true)
+    assert.equal(host.querySelector('button[aria-label^="Import selected"]'), null, 'idle source rows do not show an inapplicable confirmation icon')
     await act(async () => control('Find pages linked from').click())
     assert.deepEqual(imported, [])
     assert.equal(host.querySelectorAll('button[aria-label^="Import selected"]').length, 1, 'the shared tree has only the source-row confirmation')
@@ -149,7 +154,7 @@ test('file row imports only its selected pages through the existing workspace br
     await act(async () => { control('Import selected').click(); await importedReady })
     assert.deepEqual(imported, [{ root: url, selectedUrls: [url + 'one'] }])
     assert.deepEqual(requests, ['/__website_import/discover'])
-    assert.equal(control('Import selected').disabled, true)
+    assert.equal(host.querySelector('button[aria-label^="Import selected"]'), null, 'confirmation leaves with the session')
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); globalThis.fetch = previousFetch; restore() }
 })
 
