@@ -55,15 +55,18 @@ The protected production workflow currently:
 4. builds and verifies an immutable Pages/mirror candidate;
 5. waits at the protected environment for the candidate-digest-bound interactive terminal
    command to submit its approval evidence;
-6. owns the complete ordered Production mutation: Pages Direct Upload, direct D1 reconciliation,
-   immutable/stable/custom transport probes, and mirror publication;
+6. owns the complete ordered Production mutation: Pages Direct Upload, exact-candidate travel-mesh
+   Worker version activation, direct D1 reconciliation, immutable/stable/custom transport probes,
+   and mirror publication;
 7. emits Deployment v1, State Reconciliation v1, Live Verification v2, and Publication v2
    receipts in that order; and
 8. closes `agentic-collaborative-release-lifecycle/v2` as the only authoritative terminal carrier.
 
-It deploys no Worker and publishes no DNS. Storage, payment, MCP, research, fetch-proxy,
-and DNS operations are separate operator capabilities with separate evidence and rollback
-requirements.
+The release-scoped travel-mesh plan selects the Worker versions to activate; the protected
+workflow validates the bootstrap and preflights those units before mutation. The same consumed
+candidate-bound authorization covers their activation and receipt. It publishes no DNS. Worker
+operations outside that exact travel-mesh plan, and DNS publication, require their own authority,
+evidence and rollback path.
 
 ## Lane model
 
@@ -115,7 +118,8 @@ Before dispatch:
   pin is an ancestor of fetched `origin/main`, with protected checks verified;
   authorization refreshes observations but does not switch or repair either checkout;
 - an operator has reviewed scope, cost, data migration, and rollback impact;
-- any separately deployed Worker change has its own operator-approved runbook/evidence.
+- any Worker or DNS change outside the exact travel-mesh release plan has its own
+  operator-approved runbook/evidence.
 - a repository-owned pre-dispatch evidence producer has content-addressed every preserved lane in
   the exact frontier and captured the exact last-known-good Pages deployment identity, publication
   mirror revision, and D1 state contract; the protected workflow must receive and revalidate those
@@ -397,11 +401,15 @@ must agree substantively. For the protected PR 54 transition from
 
 ## Rollback
 
-The pre-dispatch evidence binds the exact last-known-good Pages deployment, mirror revision, and D1
+The pre-dispatch evidence binds the exact last-known-good Pages deployment, travel-mesh Worker
+versions, mirror revision, and D1
 state contract before any Production mutation. Rollback is eligible only after this controller proves
 the exact Pages mutation, including a deploy process that exits nonzero after the provider commits it.
-If a later stage fails, stop forward mutation; restore only the bound last-known-good Pages target,
-make the D1 state disposition explicit, rerun the required restoration probes, and emit
+If a later stage fails, stop forward mutation. The protected controller can reactivate only the
+receipt-bound previous travel-mesh versions when its sealed receipt and rollback gates prove that
+safe; ambiguous mutation requires preservation and reconciliation rather than an inferred restore.
+Restore only the bound last-known-good Pages target, make the D1 state disposition explicit, rerun
+the required restoration probes, and emit
 `agentic-rollback-receipt/v1`. A terminal D1 restore requires the same substantive direct-readback
 identity and zero graph snapshots; its monotonic document revision counter is intentionally excluded
 because an exact content replay advances it. A Pages rollback does not imply that D1 reverted.
@@ -419,9 +427,11 @@ An operator must verify:
 - restored document count/revision;
 - post-rollback live smoke result;
 - persistent-mirror revision and any required manual reconciliation;
-- whether any separately operated Worker or external provider action needs its own rollback.
+- travel-mesh rollback receipt or explicit preservation disposition, and whether any separately
+  operated Worker or external provider action needs its own rollback.
 
-Never describe a Pages rollback as rolling back storage, payment, MCP Workers, external
+Never describe a Pages rollback alone as rolling back travel-mesh or separate storage, payment,
+MCP Workers, external
 models, or financial/provider state.
 
 ## Release receipt
@@ -459,10 +469,17 @@ Do not run `wrangler pages deploy`, `pages:deploy-cloudflare`,
 `pages:build-sync-cloudflare`, `workers:deploy`, `storage:deploy`, direct D1 mutation, or a mirror
 push from a developer or canonical checkout as a substitute for this workflow. Local commands may
 build or validate within their documented non-mutating mode, but only the protected
-`.github/workflows/release.yml` controller owns Pages, release-scoped D1 reconciliation, production
+`.github/workflows/release.yml` controller owns Pages, release-scoped travel-mesh activation,
+D1 reconciliation, production
 probes, mirror publication, rollback, and terminal-carrier persistence.
 
-### 2026-08-02 Latest Recorded Receipt
+### 2026-09-30 Latest Recorded Receipt
+
+- [Protected run `36675515249`](https://github.com/huijoohwee/agentic-graph/actions/runs/36675515249) completed for source `78740f780912e6e04aef73e12bf80ea190c6f611` and lifecycle candidate `38d8b1f21cfea013e25f4ca60d66f279a4f4b7e6edf7aeaeb7cf93eb44c308cd`.
+- Its `agentic-graph-core-runtime-release-receipt/v1` reports `status: deployed`, receipt digest `eef339474bf12ad7ef0176caf8972b0c8d32ef644e11ceb7c280f1e168e742ac`, and activated `agentic-storage` version `9b27abdd-5627-4b17-a61f-0d2c8ae9b9eb`.
+- Pages deployment `04549d39-0263-4e6c-8625-9f958503906c`, direct D1 reconciliation, live verification and mirror revision `235418c4de5d071c2bebf7579021c70755f7b704` joined the `production-complete` terminal carrier. No rollback was invoked.
+
+### 2026-08-02 Prior Recorded Receipt
 
 - Earlier recovery dispatch: run `30771075357` for source revision `32d2cfca34f7d5bf484b4a8f449083954a476bd8` failed closed because the dispatch passed the full runtime-readiness envelope instead of the exact nested `agentic-local-review-candidate/v1` JSON required by the protected verify job.
 - Earlier recovery dispatch: run `30771147307` for source revision `32d2cfca34f7d5bf484b4a8f449083954a476bd8` failed closed at source-to-mirror parity because `huijoohwee.github.io/schema/AgenticRAG/agentic-graph-documents-map.graph.jsonld` was missing the relocated XR document node.
@@ -548,4 +565,6 @@ separately supplies:
 - live verification and cost impact;
 - rollback command and post-rollback check.
 
-Do not infer any Worker deployment or DNS publication from the static production release.
+The protected production workflow does activate the exact release-plan travel-mesh Worker
+versions after Pages and before D1; a successful terminal receipt proves that effect for its
+candidate. Do not infer deployment of any other Worker or DNS publication from it.
