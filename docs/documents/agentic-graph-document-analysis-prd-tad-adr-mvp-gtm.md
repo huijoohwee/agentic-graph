@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.19"
+version: "1.0.20"
 date: "2026-10-01"
 lang: "en-US"
-prd_revision: "1.0.19"
-tad_revision: "1.0.19"
-adr_revision: "1.0.19"
-mvp_revision: "1.0.19"
-gtm_revision: "1.0.19"
+prd_revision: "1.0.20"
+tad_revision: "1.0.20"
+adr_revision: "1.0.20"
+mvp_revision: "1.0.20"
+gtm_revision: "1.0.20"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.19. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.20. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -101,6 +101,10 @@ must remain recoverable. Selection, saved documents and discovery completeness s
 Webpage link previews must fill their allocated media frame and retain the source link label. A loaded
 thumbnail must remain visible even when a layout snapshot is unavailable. Keyboard and screen-reader
 users must receive the same meaningful preview name. Keep existing explicit open and preview actions.
+
+D3 media panels must stay centered on their graph nodes during pan, zoom and individual or cluster
+dragging. Apply graph and panel geometry before the same paint, retaining readable media sizing and
+existing selection, pin and resize controls. A settled canvas must do no continuous projection work.
 
 ## TAD
 
@@ -230,6 +234,11 @@ consumers. Caller classes and styles remain supported. Interactive thumbnails us
 their accessible name; paragraph rendering passes its existing extracted label, falling back to the
 hostname. Existing image, layout, fallback and network lifecycle owners remain unchanged.
 
+The existing shared media layout loop owns node anchoring. D3 opts out of independent panel collision
+placement, previous-screen-center retention and pixel rounding; it uses the existing matrix box writer.
+Coalesce projection requests in one microtask after graph geometry updates, consuming pending RAF
+work through the shared flush contract. Retain the existing sizing bounds with one-pixel size steps.
+
 ## ADR
 
 - Finder reveals a stable named copy tree; content hashes identify private revision backups only.
@@ -289,7 +298,21 @@ appear blank. When no page image or layout is available, place the fallback icon
 so overlay text cannot cover it in narrow frames. Preserve the authored link identity instead of
 substituting a generic media-type label.
 
+Use the live graph transform and node center as the placement authority. Separate collision relaxation
+and a trailing animation frame can detach a panel from its node. Preserve the shared layout owner and
+readability limits; do not add another renderer or a permanent animation loop.
+
 ## MVP
+
+D3-media-motion increment: up to four production modules, under 8 KB source changes, no dependencies.
+Verify fractional pan, zoom, node and cluster movement, no-op frames and cleanup with synthetic inputs.
+Measure panel-to-node alignment in the reported live document and after reload. Rollback the shared
+layout policy and D3 scheduling together; retain document bytes and media interaction controls.
+Ten focused checks pass, including pan/zoom, node/cluster anchor tracking, no-op writes, cancellation
+and pointer-up before the last RAF. Live DOM checks found 34–341 px of pre-fix anchor drift across ten
+panels; corrected panels remain within 0.001 px of their nodes after canvas pan, zoom controls and
+direct header dragging. Pin controls remain available. Browser reload and native affected validation
+are required before review delivery; this is bounded local evidence, not a frame-rate or device-parity claim.
 
 Webpage-preview increment: two production modules, under 5 KB added source, no dependencies. Verify
 meaningful accessible names for standalone links and embedded previews, and use the live browser to
@@ -520,3 +543,6 @@ unvalidated, and no account or paid service is introduced.
 
 Readable webpage thumbnails and source labels reduce failed navigation from imported documents.
 Measure visible media and successful existing open actions; no paid service or new fetch is introduced.
+
+Anchored media helps readers retain graph context while navigating imported documents. Measure
+panel-to-node alignment and completed gestures; no service, account or paid dependency is added.
