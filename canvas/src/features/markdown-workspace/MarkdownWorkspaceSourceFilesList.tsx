@@ -102,23 +102,15 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
     })
   }
 
-  const renderFileStatusRight = React.useCallback((args: { entry: WorkspaceEntry; isActive: boolean }) => {
-    const pending = projection.pendingPaths.has(args.entry.path)
-    const existing = pending ? null : renderFileRight?.(args)
-    if (args.entry.kind !== 'file' || args.entry.path === DASHBOARD_TEMPLATE_PATH) return existing
-    return (
-      <span className="inline-flex items-center gap-0.5">
-        {existing}
-        <SourceFileWebsiteActions entry={args.entry} source={sourcesByPath?.[args.entry.path]} urlOverride={projection.pageUrls.get(args.entry.path)} confirmationOwner={projection.ownerPath === args.entry.path} />
-        {pending ? <button type="button" disabled aria-label={`Import ${args.entry.name} before cloud sync`} title="Not imported" className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded opacity-40`}><CloudOff className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} role="img" aria-label="Not imported" /></button> : <SourceFileCloudSyncIndicator
-          entry={args.entry}
-          status={cloudSync.readStatus(args.entry)}
-          error={cloudSync.readError(args.entry)}
-          onUpload={cloudSync.upload}
-        />}
-      </span>
-    )
-  }, [cloudSync, renderFileRight, sourcesByPath, projection])
+  const renderContextActions = (entry: WorkspaceEntry) => {
+    if (entry.kind !== 'file' || entry.path === DASHBOARD_TEMPLATE_PATH) return null
+    const pending = projection.pendingPaths.has(entry.path)
+    return <>
+      <SourceFileWebsiteActions entry={entry} source={sourcesByPath?.[entry.path]} urlOverride={projection.pageUrls.get(entry.path)} confirmationOwner={projection.ownerPath === entry.path} />
+      {pending ? <button type="button" disabled aria-label={`Import ${entry.name} before cloud sync`} title="Not imported" className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded opacity-40`}><CloudOff className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} role="img" aria-label="Not imported" /></button> : <SourceFileCloudSyncIndicator
+        entry={entry} status={cloudSync.readStatus(entry)} error={cloudSync.readError(entry)} onUpload={cloudSync.upload} />}
+    </>
+  }
 
   const buildShareUrl = React.useCallback((entry: WorkspaceEntry): string | null | Promise<string | null> => {
     if (entry.kind !== 'file') return null
@@ -221,9 +213,10 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
         onCanvasEmbedReady={handleCanvasEmbedReady}
         onShareCodeReady={handleShareCodeReady}
         canOpenContextMenu={entry => !projection.pendingPaths.has(entry.path)}
-        alignActionColumns
+        resolveSourceUrl={entry => projection.pageUrls.get(entry.path) || sourceFileWebsiteUrl(entry, sourcesByPath?.[entry.path])}
+        renderContextActions={renderContextActions}
         renderEntryLeading={renderSelectionControl}
-        renderFileRight={renderFileStatusRight}
+        renderFileRight={args => projection.pendingPaths.has(args.entry.path) ? null : renderFileRight?.(args)}
       />}
     </>
   )

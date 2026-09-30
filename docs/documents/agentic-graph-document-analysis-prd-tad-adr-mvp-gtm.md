@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.7"
+version: "1.0.8"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.7"
-tad_revision: "1.0.7"
-adr_revision: "1.0.7"
-mvp_revision: "1.0.7"
-gtm_revision: "1.0.7"
+prd_revision: "1.0.8"
+tad_revision: "1.0.8"
+adr_revision: "1.0.8"
+mvp_revision: "1.0.8"
+gtm_revision: "1.0.8"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.7. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.8. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -59,6 +59,10 @@ workspace entries belong in the copy; discovered pages are not downloaded by Rev
 Source Files must show discovered pages together with prior saved crawl files. Distinct file icons
 identify saved website documents and discovered pages that have not been saved. Finding pages does
 not import them; the reader selects pages or folders before starting a headless crawl.
+
+Source Files exposes file and folder actions in one icon context toolbar. Remove the row action
+strip and text-menu variant; retain the existing compact icon size, accessible labels, tooltips and
+disabled states. Pointer context-menu and keyboard invocation must address the same selected entry.
 
 ## TAD
 
@@ -121,6 +125,12 @@ the complete inventory. Previously saved copies stay visible even when discovery
 500 as the selected-crawl limit. Discovery and selection reuse the existing local draft; successful
 imports clear selection while retaining discovery. Stale completions cannot replace a newer session.
 
+The file tree and inline selection toolbar share AnchorOverlay positioning, portal, dismissal and
+panel styling. AnchorOverlay accepts either an element or a pointer point; one viewport clamp and
+focus-restoration owner handles both. Existing source, discovery, import, cloud and file action
+handlers remain authoritative. Discovered-only entries expose source/discovery actions without
+pretending to have saved-file operations. Saved/discovered status icons stay in the tree.
+
 ## ADR
 
 - Native, original implementation: no Stanza, spaCy, NLTK, model, corpus, copied rules or new dependency.
@@ -143,6 +153,9 @@ imports clear selection while retaining discovery. Stale completions cannot repl
 The preview limit replaces heuristic multi-megabyte shrinking, which left large attributes untouched.
 It applies uniformly to every source. No dependencies, domain exceptions, copied code or model assets
 are introduced. The existing raw-artifact retrieval limit is unchanged for capture/export consumers.
+
+- Consolidate action presentation in the existing file tree and overlay owners. Remove the
+  bespoke menu positioning/dismissal and inline action strip; add no replacement menu framework.
 
 ## MVP
 
@@ -234,6 +247,14 @@ read from workspace storage. Discovered pages were not copied. The desktop windo
 not independently inspected in this check. Rollback client and host folder support together; retain all
 existing copies, workspace documents and crawler artifacts.
 
+Icon-menu increment: six production modules, fewer than 15 KB source changes, no dependencies.
+Fourteen focused regressions pass for icon labels, preserved sizes, exact reveal/copy targets,
+read-only actions, pointer/keyboard access, viewport placement, focus restoration and import selection.
+The existing responsive-menu and inline-edit toolbar contracts cover shared-owner behavior.
+The retained preview shows one portaled icon toolbar and no inline file action strip; Escape restores
+the invoking row without opening a document. Native affected checks gate review publication.
+Rollback these presentation changes together, preserving documents, saved copies and discovery drafts.
+
 ## GTM
 
 Initial user: a reader checking repeated themes and evidence in a local document. The near-built path
@@ -252,3 +273,6 @@ Saved embeds load on request, reducing work when readers switch documents. Measu
 Browse discovered pages and saved crawl files in one tree. Status icons and retained discovery reduce repeated import setup; completion and time savings remain measured per source.
 
 Folder copies extend first reveal to grouped browser documents, using the same configured local output and no account or service.
+
+A single icon action surface frees filename width and makes file operations consistent. Measure
+successful action completion through pointer and keyboard access; no account or paid tier is required.
