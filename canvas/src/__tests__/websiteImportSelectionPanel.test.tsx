@@ -24,6 +24,8 @@ function SourceFilesHarness({ activePath = sourceEntry.path }: { activePath?: st
 async function openFileActions(host: HTMLElement, name = 'imported.md') {
   await act(async () => host.querySelector<HTMLButtonElement>(`button[aria-label="File ${name}"]`)!.dispatchEvent(
     new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 100, clientY: 100 })))
+  const status = document.querySelector<HTMLButtonElement>('button[aria-label="Website discovery status"]')
+  if (status && !status.disabled) await act(async () => status.click())
 }
 
 test('Source Files has no duplicate URL import form or entry point', async () => {
@@ -72,7 +74,8 @@ test('first checkbox retries an empty discovery without losing the selected webs
     await act(async () => host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!.click())
     assert.equal(requests, 1)
     assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 0)
-    assert.match(host.textContent || '', /No linked pages were found/)
+    await openFileActions(host)
+    assert.match(document.querySelector('section[aria-label="Website discovery status"]')?.textContent || '', /No linked pages were found/)
     assert.equal(host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')?.disabled, false, 'empty discovery remains retryable after restart or failure')
     await act(async () => host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!.click())
     assert.equal(requests, 2)
@@ -159,13 +162,13 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     await openFileActions(host, 'a')
     const pendingMenu = document.querySelector('[data-source-file-actions]')!
     const pendingActions = Array.from(pendingMenu.querySelectorAll<HTMLButtonElement | HTMLAnchorElement>('a, button'))
-    assert.equal(pendingActions.length, 13, 'discovered pages retain every shared icon slot')
+    assert.equal(pendingActions.length, 16, 'discovered pages retain every shared icon slot')
     assert.equal((pendingActions[0] as HTMLAnchorElement).href, source + 'a')
     assert.match(pendingActions[1].getAttribute('aria-label') || '', /^Find pages linked from /)
     assert.equal((pendingActions[2] as HTMLButtonElement).disabled, true, 'only the import owner can confirm selection')
-    assert.match(pendingActions[3].getAttribute('title') || '', /Not saved/)
+    assert.match(pendingActions[6].getAttribute('title') || '', /Not saved/)
     assert.ok(pendingMenu.querySelector<HTMLButtonElement>('[aria-label="Reveal in Finder"]')!.disabled, 'discovered pages cannot masquerade as saved files')
-    assert.ok(pendingActions.slice(4).every(action => (action as HTMLButtonElement).disabled), 'unsaved entries retain disabled file operations')
+    assert.ok(pendingActions.slice(7).every(action => (action as HTMLButtonElement).disabled), 'unsaved entries retain disabled file operations')
     await openFileActions(host)
     const savedMenu = document.querySelector('[data-source-file-actions]')!
     assert.equal(savedMenu.querySelector<HTMLAnchorElement>('a')!.href, source)
@@ -197,7 +200,8 @@ test('cancel aborts pending discovery and never resolves an import selection', a
   try {
     const pending = chooseWebsiteImportPages('https://example.test/library/').then(urls => { resolution = urls })
     await act(async () => root.render(<SourceFilesHarness />))
-    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Cancel import selection"]')!.click())
+    await openFileActions(host)
+    await act(async () => document.querySelector<HTMLButtonElement>('button[aria-label="Cancel import selection"]')!.click())
     await pending
     assert.equal(resolution, null)
     assert.equal(signal?.aborted, true)
@@ -340,8 +344,9 @@ test('discovery opens existing ancestor folders and distinguishes saved files fr
     await act(async () => { void chooseWebsiteImportPages(sourceUrl, saved.path); root.render(<MarkdownWorkspaceSourceFilesList {...props} />) })
     assert.equal(host.querySelectorAll('svg[aria-label="Saved website file"]').length, 1)
     assert.equal(host.querySelectorAll('svg[aria-label="Discovered page — not saved"]').length, 1)
-    assert.match(host.textContent || '', /2 discovered pages/)
-    assert.match(host.textContent || '', /partial list/)
+    await openFileActions(host)
+    assert.match(document.querySelector('section[aria-label="Website discovery status"]')?.textContent || '', /2 discovered pages/)
+    assert.match(document.querySelector('section[aria-label="Website discovery status"]')?.textContent || '', /partial list/)
     assert.ok(host.querySelector('section[aria-label="File new"]'))
     const collapse = host.querySelector<HTMLButtonElement>('button[aria-label="Collapse folder websites"]')!
     await act(async () => collapse.click())
@@ -416,28 +421,31 @@ test('cancel retains saved and discovered rows through document switches and res
   const host = document.createElement('section')
   let root = createRoot(host), pending!: Promise<unknown>, imported = 0
   const unregister = registerMarkdownWorkspaceActionBridge('test-cancel-inventory', { importWebsite: async () => { imported++; return { handled: true } } })
-  const assertInventory = () => {
+  const assertInventory = async () => {
+    await openFileActions(host)
     assert.equal(host.querySelectorAll('svg[aria-label="Saved website file"]').length, 1)
     assert.equal(host.querySelectorAll('svg[aria-label="Discovered page — not saved"]').length, 1)
-    assert.match(host.textContent || '', /2 discovered pages · 2 shown · 0 selected/)
+    assert.equal(host.querySelector('section[aria-label="Website discovery status"]'), null, 'details are outside the tree')
+    assert.match(document.querySelector('section[aria-label="Website discovery status"]')?.textContent || '', /2 discovered pages · 2 shown · 0 selected/)
   }
   try {
     await act(async () => { pending = importWebsiteFromSourceFiles(sourceUrl, sourceEntry.path); root.render(<SourceFilesHarness />) })
+    await openFileActions(host)
     await act(async () => {
       host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!.click()
-      host.querySelector<HTMLButtonElement>('button[aria-label="Refresh discovered pages"]')!.click()
+      document.querySelector<HTMLButtonElement>('button[aria-label="Refresh discovered pages"]')!.click()
     })
-    await act(async () => { host.querySelector<HTMLButtonElement>('button[aria-label="Cancel import selection"]')!.click(); await pending })
+    await act(async () => { document.querySelector<HTMLButtonElement>('button[aria-label="Cancel import selection"]')!.click(); await pending })
     assert.equal(signal?.aborted, true)
-    assertInventory()
+    await assertInventory()
     await act(async () => { completeRefresh(new Response(JSON.stringify({ ok: true, pages: [{ url: sourceUrl + 'late', path: '/library/late' }], limited: false }))) })
-    assertInventory()
+    await assertInventory()
     await act(async () => root.render(<SourceFilesHarness activePath={null} />))
-    assertInventory()
+    await assertInventory()
     await act(async () => { root.unmount(); useWebsiteImportSelectionSession.setState({ session: null, recoveryError: '' }) })
     root = createRoot(host)
     await act(async () => root.render(<SourceFilesHarness />))
-    assertInventory()
+    await assertInventory()
     assert.equal(requests, 2, 'document switches and restart do not rediscover')
     assert.equal(imported, 0, 'cancel and restoration never trigger a crawl')
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); globalThis.fetch = previousFetch; restore() }
@@ -458,7 +466,8 @@ test('Launch callback does not discard discovery on import completion or restart
     await act(async () => { finishWebsiteImportSelection([sourceUrl + 'new']); await pending })
     assert.equal(beforeImportCalls, 1)
     assert.equal(imports, 1)
-    assert.match(host.textContent || '', /1 discovered pages · 1 shown · 0 selected/)
+    await openFileActions(host)
+    assert.match(document.querySelector('section[aria-label="Website discovery status"]')?.textContent || '', /1 discovered pages · 1 shown · 0 selected/)
     await act(async () => { root.unmount(); useWebsiteImportSelectionSession.setState({ session: null, recoveryError: '' }) })
     root = createRoot(host)
     await act(async () => root.render(<SourceFilesHarness />))

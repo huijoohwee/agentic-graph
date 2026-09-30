@@ -70,7 +70,8 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
   onShareCodeReady?: (detail: { sourceName: string; title: string; language: string; code: string }) => void
   renderEntryLeading?: (entry: WorkspaceEntry) => React.ReactNode
   resolveSourceUrl?: (entry: WorkspaceEntry) => string | null
-  renderContextActions?: (entry: WorkspaceEntry) => React.ReactNode
+  renderContextActions?: (entry: WorkspaceEntry, details: { open: boolean; show: () => void; toggle: () => void }) => React.ReactNode
+  renderContextDetails?: (entry: WorkspaceEntry) => React.ReactNode
   isEntrySaved?: (entry: WorkspaceEntry) => boolean
   renderFileRight?: (args: { entry: WorkspaceEntry; isActive: boolean }) => React.ReactNode
 }) {
@@ -98,7 +99,9 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
   } = props
   const panelTypography = usePanelTypography()
   const tree = React.useMemo(() => buildTree(entries), [entries])
-  const [contextMenu, setContextMenu] = React.useState<{ x: number; y: number; entry: WorkspaceEntry } | null>(null)
+  const [contextMenu, setContextMenu] = React.useState<{ x: number; y: number; entry: WorkspaceEntry; detailsOpen?: boolean } | null>(null)
+  const contextPanelRef = React.useRef<HTMLElement | null>(null)
+  const contextOverlayGroup = React.useId()
   const [deleteTarget, setDeleteTarget] = React.useState<string | null>(null)
   const deleteDialog = React.useRef<HTMLDialogElement | null>(null)
   const deleteAnswer = React.useRef<((confirmed: boolean) => void) | null>(null)
@@ -254,8 +257,9 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
             onClick={() => answerDelete(true)}>Delete from workspace</button>
         </footer>
       </dialog>}
-      {contextMenu ? (
+      {contextMenu ? <>
         <AnchorOverlay open anchorPoint={{ left: contextMenu.x, top: contextMenu.y }} align="bottom-left"
+          dismissalGroup={contextOverlayGroup} panelRef={contextPanelRef}
           onClose={closeContextMenu} className={`kg-data-view-floating-menu ${FLOATING_ICON_TOOLBAR_PANEL_CLASSNAME}`}>
           <section role="toolbar" aria-label={`Actions for ${contextMenu.entry.name}`} data-source-file-actions
             className="flex flex-wrap items-center gap-0.5 max-w-full" style={{ width: 'max-content' }}>
@@ -270,7 +274,11 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
                 <LinkIcon className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} aria-hidden="true" />
               </button>
             })()}
-            {props.renderContextActions?.(contextMenu.entry)}
+            {props.renderContextActions?.(contextMenu.entry, {
+              open: !!contextMenu.detailsOpen,
+              show: () => setContextMenu(current => current ? { ...current, detailsOpen: true } : null),
+              toggle: () => setContextMenu(current => current ? { ...current, detailsOpen: !current.detailsOpen } : null),
+            })}
             {contextMenuItems.map(item => {
               const Icon = contextIcons[item.key]
               return <button key={item.key} type="button" disabled={item.disabled} aria-label={item.label}
@@ -283,7 +291,12 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
             })}
           </section>
         </AnchorOverlay>
-      ) : null}
+        {contextMenu.detailsOpen && props.renderContextDetails && <AnchorOverlay open anchorRef={contextPanelRef} align="bottom-left"
+          dismissalGroup={contextOverlayGroup} onClose={closeContextMenu} autoFocus={false}
+          className={`kg-data-view-floating-menu ${FLOATING_ICON_TOOLBAR_PANEL_CLASSNAME}`}>
+          {props.renderContextDetails(contextMenu.entry)}
+        </AnchorOverlay>}
+      </> : null}
     </nav>
   )
 })

@@ -18,6 +18,8 @@ interface AnchorOverlayProps {
   className?: string
   autoFocus?: boolean
   allowOverflowVisible?: boolean
+  dismissalGroup?: string
+  panelRef?: React.MutableRefObject<HTMLElement | null>
   children: React.ReactNode
 }
 
@@ -30,6 +32,8 @@ export function AnchorOverlay({
   className = '',
   autoFocus = true,
   allowOverflowVisible = false,
+  dismissalGroup,
+  panelRef,
   children,
 }: AnchorOverlayProps) {
   const containerRef = useRef<HTMLElement | null>(null)
@@ -102,6 +106,8 @@ export function AnchorOverlay({
       if (!t) return
       if (anchorEl && anchorEl.contains(t)) return
       if (containerEl && containerEl.contains(t)) return
+      const targetElement = t instanceof Element ? t : t.parentElement
+      if (dismissalGroup && targetElement?.closest('[data-kg-overlay-group]')?.getAttribute('data-kg-overlay-group') === dismissalGroup) return
       onClose()
     }
 
@@ -119,7 +125,7 @@ export function AnchorOverlay({
       window.removeEventListener('scroll', handleReposition, true)
       window.removeEventListener('resize', handleReposition)
     }
-  }, [open, onClose, anchorRef, updatePosition])
+  }, [open, onClose, anchorRef, updatePosition, dismissalGroup])
 
   useOverlayRepositionObservers({ open, rootRef: containerRef, updatePosition })
 
@@ -156,8 +162,9 @@ export function AnchorOverlay({
 
   const attachContainer = React.useCallback((element: HTMLElement | null) => {
     containerRef.current = element
+    if (panelRef) panelRef.current = element
     if (element) refreshOverlayPositionAfterMount(updatePosition)
-  }, [updatePosition])
+  }, [updatePosition, panelRef])
 
   const style = useMemo<React.CSSProperties>(
     () => ({
@@ -180,6 +187,7 @@ export function AnchorOverlay({
         style={withInteractivePortalContentStyle(style)}
         className={['kg-anchor-overlay', className].filter(Boolean).join(' ')}
         data-kg-anchor-overlay="true"
+        data-kg-overlay-group={dismissalGroup}
         tabIndex={-1}
       >
         {children}

@@ -69,9 +69,9 @@ test('files and folders use the same icon slots with unavailable actions disable
       const menus = document.querySelectorAll('[data-source-file-actions]')
       assert.equal(menus.length, 1)
       const buttons = Array.from(menus[0].querySelectorAll<HTMLButtonElement>('button'))
-      assert.equal(buttons.length, 13)
+      assert.equal(buttons.length, 16)
       assert.ok(buttons[0].disabled, 'missing source URL keeps its disabled slot')
-      const labels = buttons.slice(4).map(button => button.getAttribute('aria-label'))
+      const labels = buttons.slice(7).map(button => button.getAttribute('aria-label'))
       if (entry.kind === 'file') fileLabels = labels
       else {
         assert.deepEqual(labels, fileLabels, 'file and folder action order cannot diverge')
@@ -100,4 +100,93 @@ test('unavailable capabilities remain inert even when their action callback is i
   assert.equal(items.length, 9)
   for (const item of items) { assert.equal(item.disabledReason, 'Not saved'); await item.onSelect() }
   assert.equal(calls, 0)
+})
+
+test('discovery summary opens in a separate shared overlay only after an applicable icon action', async () => {
+  const { MarkdownWorkspaceSourceFilesList } = await import('@/features/markdown-workspace/MarkdownWorkspaceSourceFilesList')
+  const { useWebsiteImportSelectionSession, finishWebsiteImportSelection } = await import('@/features/source-files/websiteImportSelectionSession')
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const host = document.createElement('section'); document.body.append(host)
+  const root = createRoot(host), url = 'https://sample.test/catalog/'
+  const pages = Array.from({ length: 205 }, (_, index) => ({ url: `${url}page-${index}`, path: `/catalog/page-${index}` }))
+  let networkCalls = 0
+  globalThis.fetch = (async () => { networkCalls++; throw new Error('Unexpected request') }) as typeof fetch
+  const entries = [
+    { path: '/capture.md', parentPath: '/', kind: 'file' as const, name: 'capture.md', text: `---\nkgWebpageUrl: "${url}"\n---\nCapture`, updatedAtMs: 1 },
+    { path: '/notes.py', parentPath: '/', kind: 'file' as const, name: 'notes.py', text: 'print(1)', updatedAtMs: 1 },
+  ]
+  const open = async (name: string) => act(async () => host.querySelector<HTMLButtonElement>(`button[aria-label="File ${name}"]`)!.dispatchEvent(
+    new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 30, clientY: 40 })))
+  const toolbar = () => document.querySelector<HTMLElement>('[data-source-file-actions]')!
+  const more = () => toolbar().querySelector<HTMLButtonElement>('button[aria-label^="Show more pages"]')!
+  try {
+    useWebsiteImportSelectionSession.setState({ session: { id: 1000, url, sourcePath: '/capture.md', pages,
+      selected: new Set([pages[0].url, pages[1].url]), visited: new Set(), busy: false, limited: false, error: '', query: '' }, recoveryError: '' })
+    await act(async () => root.render(<MarkdownWorkspaceSourceFilesList loading={false} loadError="" textSizeClass="text-xs"
+      entries={entries} expandedPaths={new Set()} activePath={null} sourcesByPath={null}
+      toggleExpanded={() => {}} onSelectFile={() => {}} onSelectFolder={() => {}}
+      onRevealInFinder={() => {}} onCreateNewFile={() => {}} onClearFile={() => {}} onRenameEntry={() => {}} onDeleteEntry={() => {}} />))
+    assert.equal(host.querySelector('[role="status"], button[aria-label^="Show more pages"], button[aria-label="Refresh discovered pages"]'), null)
+    await open('capture.md')
+    assert.equal(document.querySelector('section[aria-label="Website discovery status"]'), null, 'opening a menu does not reveal its summary')
+    const statusButton = () => toolbar().querySelector<HTMLButtonElement>('button[aria-label="Website discovery status"]')!
+    assert.equal(statusButton().getAttribute('aria-expanded'), 'false')
+    await act(async () => statusButton().click())
+    for (let attempt = 0; attempt < 50 && !document.querySelector('section[aria-label="Website discovery status"]'); attempt++) {
+      await act(async () => new Promise(resolve => setTimeout(resolve, 10)))
+    }
+    let details = document.querySelector<HTMLElement>('section[aria-label="Website discovery status"]')!
+    assert.ok(details)
+    const summaryOverlay = details.closest<HTMLElement>('[data-kg-anchor-overlay]')!
+    const menuOverlay = toolbar().closest<HTMLElement>('[data-kg-anchor-overlay]')!
+    assert.ok(summaryOverlay && menuOverlay && summaryOverlay !== menuOverlay, 'toolbar and summary are separate shared overlays')
+    assert.equal(summaryOverlay.dataset.kgOverlayGroup, menuOverlay.dataset.kgOverlayGroup, 'both panels share dismissal ownership')
+    assert.ok(summaryOverlay.classList.contains('kg-data-view-floating-menu'))
+    assert.equal(document.querySelectorAll('[data-kg-anchor-overlay]').length, 2)
+    await act(async () => new Promise(resolve => setTimeout(resolve, 130)))
+    await act(async () => details.dispatchEvent(new window.MouseEvent('mousedown', { bubbles: true })))
+    assert.equal(document.querySelectorAll('[data-kg-anchor-overlay]').length, 2, 'interacting with the summary keeps both panels open')
+    assert.equal(host.contains(details), false, 'readout escapes the clipped Source Files tree')
+    assert.equal(toolbar().textContent, '', 'all actions remain icons')
+    assert.equal(toolbar().querySelectorAll('a, button').length, 16)
+    assert.match(details.textContent || '', /205 discovered pages · 100 shown · 2 selected/)
+    assert.match(details.textContent || '', /Select up to 500 pages to crawl/)
+    assert.match(details.textContent || '', /Saved file\s+Discovered, not saved/)
+    assert.equal(more().getAttribute('aria-label'), 'Show more pages (105 remaining)')
+    await act(async () => statusButton().click())
+    assert.equal(document.querySelector('section[aria-label="Website discovery status"]'), null)
+    await act(async () => more().click())
+    details = document.querySelector<HTMLElement>('section[aria-label="Website discovery status"]')!
+    assert.equal(statusButton().getAttribute('aria-expanded'), 'true', 'an applicable discovery action reveals the summary')
+    assert.match(details.textContent || '', /200 shown · 2 selected/)
+    await act(async () => more().click())
+    assert.match(details.textContent || '', /205 shown · 2 selected/)
+    assert.ok(more().disabled)
+    assert.match(more().className, /opacity-40/)
+    await act(async () => more().click())
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.visibleCount, 300)
+    const folder = host.querySelector<HTMLButtonElement>('section[aria-label="Folder catalog"] button[aria-expanded]')!
+    await act(async () => folder.dispatchEvent(new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 30, clientY: 40 })))
+    assert.equal(toolbar().querySelector<HTMLButtonElement>('[aria-label="Refresh discovered pages"]')?.disabled, false, 'related folders reuse discovery refresh')
+    await open('notes.py')
+    const unavailable = Array.from(toolbar().querySelectorAll<HTMLButtonElement>('button')).filter(button =>
+      /^(Find links unavailable|Show more pages|Cancel import selection|Website discovery status)/.test(button.getAttribute('aria-label') || ''))
+    assert.equal(unavailable.length, 4)
+    for (const button of unavailable) { assert.ok(button.disabled); assert.match(button.className, /opacity-40/); await act(async () => button.click()) }
+    assert.deepEqual([...useWebsiteImportSelectionSession.getState().session!.selected], [pages[0].url, pages[1].url])
+    assert.equal(document.querySelector('section[aria-label="Website discovery status"]'), null, 'unrelated icons cannot open the summary')
+    assert.equal(networkCalls, 0, 'paging and unavailable actions do not crawl or fetch')
+    assert.equal(document.querySelectorAll('[data-kg-anchor-overlay]').length, 1)
+    await open('capture.md')
+    assert.equal(document.querySelector('section[aria-label="Website discovery status"]'), null, 'changing targets resets the summary')
+    await act(async () => statusButton().click())
+    assert.equal(document.querySelectorAll('[data-kg-anchor-overlay]').length, 2)
+    await act(async () => new Promise(resolve => setTimeout(resolve, 130)))
+    await act(async () => document.body.dispatchEvent(new window.MouseEvent('mousedown', { bubbles: true })))
+    assert.equal(document.querySelectorAll('[data-kg-anchor-overlay]').length, 0, 'outside clicks dismiss both panels')
+    await open('capture.md')
+    await act(async () => statusButton().click())
+    await act(async () => window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' })))
+    assert.equal(document.querySelectorAll('[data-kg-anchor-overlay]').length, 0, 'Escape dismisses both panels')
+  } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); host.remove(); globalThis.fetch = previousFetch; restore() }
 })

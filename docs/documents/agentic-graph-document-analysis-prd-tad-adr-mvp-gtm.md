@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.10"
+version: "1.0.11"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.10"
-tad_revision: "1.0.10"
-adr_revision: "1.0.10"
-mvp_revision: "1.0.10"
-gtm_revision: "1.0.10"
+prd_revision: "1.0.11"
+tad_revision: "1.0.11"
+adr_revision: "1.0.11"
+mvp_revision: "1.0.11"
+gtm_revision: "1.0.11"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.10. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.11. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -63,8 +63,14 @@ not import them; the reader selects pages or folders before starting a headless 
 Source Files exposes file and folder actions in one icon context toolbar. Remove the row action
 strip and text-menu variant; retain the existing compact icon size, accessible labels, tooltips and
 disabled states. Pointer context-menu and keyboard invocation must address the same selected entry.
-Files, folders, protected entries and discovered-only entries retain the same 13 icon slots and
+Files, folders, protected entries and discovered-only entries retain the same 16 icon slots and
 order. Unavailable actions stay visible, greyed out and inert, with a reason in their tooltip.
+Show-more and cancel actions belong in that icon row; the existing discovery action refreshes the
+current inventory on its source or related folders. Counts, the crawl limit and saved/discovered
+legend belong in a separate summary overlay below the toolbar overlay, with no duplicate controls
+above the tree. Both panels reuse the shared AnchorOverlay component and panel styling.
+The summary is hidden when a menu opens. Only an applicable discovery action or the explicit status
+icon reveals it; the status icon also hides it without changing selection or starting discovery.
 
 ## TAD
 
@@ -138,8 +144,18 @@ handlers remain authoritative. Discovered-only entries expose source/discovery a
 enabling saved-file operations. Missing callbacks, folder-only limitations, protected entries and
 read-only state become availability reasons in the existing action builder. Disabled callbacks are
 guarded as well as disabled in the DOM; no per-kind menu or alternate overlay is created. Saved/discovered status icons stay in the tree.
+The file tree exposes a neutral context-details slot in a second AnchorOverlay anchored below its toolbar. Source Files supplies the
+existing discovery summary lazily in this slot after an applicable icon is clicked. Menu-local
+disclosure state resets on each context target; it never changes the persistent discovery session.
+A shared dismissal group keeps both panels open during interaction within either; Escape and
+outside clicks dismiss both. The summary does not steal focus from the invoking toolbar icon. The existing website-action owner handles paging,
+refresh and cancel, with applicability derived from the current tree projection rather than names.
+Unrelated rows retain grey discovery slots. Paging changes visibility without changing selection.
 
 ## ADR
+
+- Reuse AnchorOverlay for the discovery toolbar and a separate summary panel beneath it; remove
+  the inline controls and reveal the summary only on applicable icon clicks. Keep one session owner, existing compact glyphs, and accessible disabled action slots.
 
 - Native, original implementation: no Stanza, spaCy, NLTK, model, corpus, copied rules or new dependency.
   General concepts of segmentation, phrase ranking and concordance inspire behavior only.
@@ -276,6 +292,13 @@ the duplicate URL form and active-path strip, and repeated reveal through filter
 Native affected validation gates review publication. Rollback these session and presentation changes
 together; preserve saved files, discovery drafts, named copies and crawler artifacts.
 
+Discovery-overlay increment: five production modules, fewer than 15 KB source changes, no dependencies.
+Regression coverage verifies separate shared overlays with an explicitly opened summary beneath the icons, matching-page
+pagination, unchanged selection, related-folder refresh, disabled unrelated-file actions, and
+retained cancellation/restart behavior. Live preview preserves 477 pages, 200 shown and 100 selected
+while moving the controls. Native affected validation gates publication. Rollback this presentation
+increment together; retain the discovery session, browser documents and saved crawl artifacts.
+
 ## GTM
 
 Initial user: a reader checking repeated themes and evidence in a local document. The near-built path
@@ -300,3 +323,6 @@ successful action completion through pointer and keyboard access; no account or 
 
 A stable action order lets readers recognize the same controls across files and folders; explicit
 disabled states explain capability limits without moving icons.
+
+Discovery controls and status share the existing context menu, freeing tree space while preserving
+selected pages. Measure successful discovery actions without lost selection or repeated setup.
