@@ -10,7 +10,7 @@ import { chromium } from 'playwright'
 import { verifyAgentMissionSourceFiles, verifyDashboardWidgets, verifyFullCanvas } from './lib/verify-dashboard-widgets.mjs'
 import { verifyCanvasContainerSizing } from './lib/verify-canvas-container-sizing.mjs'
 import { createMissionPhaseObservation } from './lib/mission-phase-observation.mjs'
-import { verifyMissionDashboardEntry } from './lib/verify-mission-dashboard-entry.mjs'
+import { verifyMissionDashboardEntry, verifyCanvasDashboardEntry } from './lib/verify-mission-dashboard-entry.mjs'
 const phaseObservation = createMissionPhaseObservation(), output = resolve(process.env.AG_MISSION_ARTIFACT_DIR || '../data/outputs/agent-mission-browser-smoke')
 const browser = await chromium.launch({ headless: true })
 let context = await browser.newContext({ viewport: { width: 360, height: 800 }, reducedMotion: 'reduce' })
@@ -33,6 +33,11 @@ selected = page.getByRole('region', { name: 'Selected run evidence' })
 }
 await openPage()
 const waitForAsync = predicate => waitForMissionAsync(page, predicate)
+const waitForMissionExit = async () => {
+  await page.locator('[data-agent-mission-mode="workspace"]').waitFor({ state: 'detached' })
+  assert.equal(await page.evaluate(async () => (await import('/src/features/agent-ready/agentRunInspectionStore.ts')).readAgentRunWorkspace()), null)
+  assert.equal(await selected.count(), 0, 'Leaving Mission must clear selected private evidence')
+}
 async function waitForAuthoredWorkspaceSource() {
   await waitForAsync(async () => {
     const { readSourceFilesBootstrapReady } = await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')
@@ -98,13 +103,7 @@ function assertAuthored(actual, expected, message) {
   throw Error(message + ': ' + JSON.stringify(changes))
 }
 async function openDashboard(expectRuntime = true) {
-  returnView = await page.evaluate(async () => { const s = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [s.workspaceViewMode, s.workspaceCanvasPaneOpen] })
-  await page.getByRole('button', { name: /^Canvas View Mode:/ }).click()
-  await page.getByRole('button', { name: '2D Renderer: Dashboard', exact: true }).click()
-  if (expectRuntime) await waitText(mission, '2 retained matches')
-  assert.equal(await page.locator('[data-renderer="dashboard"]').count(), 1)
-  if (expectRuntime) assert.ok(await mission.locator('[aria-label="Agent runs"] table').count() === 1)
-  assert.ok(await page.getByRole('region', { name: 'Dashboard metrics', exact: true }).locator('[data-kg-dashboard-metric]').count() > 0)
+  returnView = await verifyCanvasDashboardEntry(page, expectRuntime ? () => waitText(mission, '2 retained matches') : null)
 }
 async function openDesktopDashboard() {
   await context.close()
@@ -218,7 +217,7 @@ async function verifyWorkspace(label, revoke = false) {
   assert.equal(stored, false, 'Run snapshot must not persist in browser storage')
   if (revoke) await page.evaluate(() => window.dispatchEvent(new Event('agentic-os:authority-change')))
   else { await editor.getByRole('button', { name: 'Close', exact: true }).click(); await page.getByRole('button', { name: 'Close run inspection', exact: true }).click() }
-  await editor.getByRole('region', { name: 'JSON Editor', exact: true }).getByText('agent-run-inspection/v1', { exact: false }).waitFor({ state: 'detached' }); await canvas.waitFor({ state: 'detached' })
+  await editor.getByRole('region', { name: 'JSON Editor', exact: true }).getByText('agent-run-inspection/v1', { exact: false }).waitFor({ state: 'detached' }); await waitForMissionExit()
   assertAuthored(await authoredSnapshot(), beforeWorkspace, 'Closing or revoking inspection must restore authored work')
   assert.deepEqual(await page.evaluate(async () => { const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState(); return [state.workspaceViewMode, state.workspaceCanvasPaneOpen] }), previousView)
   await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
@@ -467,7 +466,7 @@ try {
   await page.mouse.move(point.x, point.y); await page.mouse.down()
   await page.mouse.move(point.x + 20, point.y + 20); await page.mouse.up()
   await page.clock.fastForward(61000)
-  await mission.waitFor({ state: 'detached' }); await page.clock.setSystemTime(new Date()); await openDashboard()
+  await waitForMissionExit(); await page.clock.setSystemTime(new Date()); await openDashboard()
   await choose('baseline-run')
   await selectMenuOption(selected.getByRole('button', { name: 'Inspect run details', exact: true }), 'topology'); await waitTopology(selected)
   await selected.getByRole('list', { name: 'Topology nodes' }).getByRole('button', { name: /attempt 2/ }).click()
@@ -521,15 +520,15 @@ try {
   await context.setOffline(false)
   await openRunSource(); await mission.getByRole('checkbox', { name: /Live/ }).uncheck()
   await switchPrincipal('other'); await mission.getByRole('button', { name: 'Refresh runs' }).click()
-  await mission.waitFor({ state: 'detached' }); await page.getByRole('button', { name: /^Canvas View Mode:/ }).click(); await page.getByRole('button', { name: '2D Renderer: Dashboard', exact: true }).click(); await waitText(mission, '1 retained matches'); assert.equal(await selected.count(), 0)
+  await waitForMissionExit(); await openDashboard(false); await waitText(mission, '1 retained matches'); assert.equal(await selected.count(), 0)
   assert.equal(await mission.getByText('baseline-run', { exact: true }).count(), 0)
   await choose('private-run')
   await switchPrincipal('denied'); await openRunSource(); await mission.getByRole('button', { name: 'Refresh runs' }).click()
-  await mission.waitFor({ state: 'detached' }); assert.equal(await selected.count(), 0)
+  await waitForMissionExit(); assert.equal(await selected.count(), 0)
   await switchPrincipal('owner'); await openDashboard()
   await waitText(mission, '2 retained matches'); await choose('baseline-run')
   await page.clock.fastForward(61000)
-  await mission.waitFor({ state: 'detached' }); await page.clock.setSystemTime(new Date()); await openDashboard(); assert.equal(await selected.count(), 0)
+  await waitForMissionExit(); await page.clock.setSystemTime(new Date()); await openDashboard(); assert.equal(await selected.count(), 0)
   assert.equal(await page.getByRole('region', { name: 'Selected run evidence' }).count(), 0)
   assert.equal(peak, 1, 'Only one observation request may be in flight')
   assert.deepEqual(errors, [])
@@ -544,7 +543,7 @@ try {
   await page.getByRole('region', { name: 'Markdown Workspace', exact: true }).waitFor({ state: 'visible' })
   await context.setOffline(true); await page.clock.fastForward(61000)
   await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
-  await page.getByRole('region', { name: 'Dashboard', exact: true }).waitFor({ state: 'detached' })
+  await waitForMissionExit()
   await waitForAsync(async () => !(await import('/src/features/monaco/monacoModelRegistry.ts')).readRegisteredTextModelSnapshots().some(model => model.uri.startsWith('inmemory://agent-run/')))
   await context.setOffline(false)
   phaseObservation.checkpoint('Mission browser: mobile offline workspace expiry passed')

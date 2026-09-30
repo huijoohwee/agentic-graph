@@ -17,22 +17,41 @@ export const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, 
 export const normalizeNounPhrase = (s: string): string => {
   const raw = normalizeWhitespace(s)
   if (!raw) return ''
-  const cleaned = raw.replace(/^[^A-Za-z0-9]+/, '').replace(/[^A-Za-z0-9]+$/, '').trim()
+  const cleaned = raw.replace(/^[^\p{L}\p{N}]+/u, '').replace(/[^\p{L}\p{M}\p{N}]+$/u, '').trim()
   return cleaned
 }
 
-export const splitSentences = (text: string): string[] => {
-  const raw = normalizeWhitespace(text)
-  if (!raw) return []
-  const parts = raw.split(/(?<=[.!?])\s+(?=[A-Z0-9])/)
-  return parts.map(x => x.trim()).filter(Boolean)
+export const splitSentences = (text: string): string[] =>
+  splitSentencesWithOffsets(text).map(range => text.slice(range.start, range.end).trim())
+
+type NativeSegment = { segment: string; index: number; isWordLike?: boolean }
+type Segmenter = { segment: (text: string) => Iterable<NativeSegment>; resolvedOptions: () => { locale: string } }
+const createSegmenter = (granularity: 'word' | 'sentence', locale = 'und'): Segmenter | null => {
+  const Constructor = (Intl as unknown as { Segmenter?: new (locale: string, options: { granularity: string }) => Segmenter }).Segmenter
+  return Constructor ? new Constructor(locale, { granularity }) : null
+}
+export const textSegmentationPolicy = (locale = 'und'): string => {
+  const segmenter = createSegmenter('word', locale)
+  return segmenter ? `native-v1:${segmenter.resolvedOptions().locale}` : 'unicode-fallback-v1'
+}
+export const segmentWordsWithOffsets = (text: string, locale = 'und'): Array<{ raw: string; start: number; end: number }> => {
+  const segmenter = createSegmenter('word', locale)
+  const segments = segmenter ? segmenter.segment(text) : Array.from(text.matchAll(/[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:['_’-][\p{L}\p{M}\p{N}]+)*/gu), match => ({ segment: match[0], index: match.index!, isWordLike: true }))
+  const words: Array<{ raw: string; start: number; end: number }> = []
+  for (const part of segments) {
+    if (part.isWordLike) words.push({ raw: part.segment, start: part.index, end: part.index + part.segment.length })
+    if (words.length >= 12_000) break
+  }
+  return words
 }
 
-export const splitSentencesWithOffsets = (text: string): Array<{ start: number; end: number }> => {
+export const splitSentencesWithOffsets = (text: string, locale = 'und'): Array<{ start: number; end: number }> => {
   const raw = String(text || '')
   if (!raw.trim()) return []
   const ranges: Array<{ start: number; end: number }> = []
-  const re = /[^.!?\n]+(?:[.!?]+|\n+|$)/g
+  const segmenter = createSegmenter('sentence', locale)
+  if (segmenter) return Array.from(segmenter.segment(raw), part => ({ start: part.index, end: part.index + part.segment.length })).filter(range => raw.slice(range.start, range.end).trim())
+  const re = /[^.!?。！？\r\n]+(?:[.!?。！？]+|[\r\n]+|$)/gu
   for (const m of raw.matchAll(re)) {
     const s = m.index ?? -1
     if (s < 0) continue
@@ -60,8 +79,9 @@ export const normalizeEntityKey = (raw: string): string => {
   const t = normalizeWhitespace(raw)
   if (!t) return ''
   return t
+    .normalize('NFC')
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ')
     .trim()
 }
 
@@ -82,4 +102,3 @@ export const splitCommaAndAndList = (value: string): string[] => {
   }
   return out
 }
-

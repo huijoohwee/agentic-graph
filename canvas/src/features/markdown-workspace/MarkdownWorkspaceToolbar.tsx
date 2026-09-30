@@ -344,6 +344,9 @@ export function MarkdownWorkspaceToolbar({
 
   return (
       <WorkspaceHeaderRow className="kg-markdown-workspace-panel-toolbar-row kg-markdown-workspace-toolbar-row !py-0" ariaLabel="Markdown toolbar row">
+        <button type="button" className={`shrink-0 rounded border px-2 py-1 ${panelTypography.microLabelClass}`} onClick={() => openDocumentInsights('price')}>
+          Document insights
+        </button>
         {webpageSignalsNode ? (
           <span className="flex shrink-0 items-center">
             <span className="sr-only">Workspace editor</span>

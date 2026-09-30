@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { RunTrace } from './missionControlProjection'
 import { AGENT_RUN_CANVAS_VIEWS, parseCanvasViewInvocation } from '@/lib/canvas/canvasViewInvocationContract.mjs'
+import { executeCanvasViewControl } from '@/lib/canvas/canvasViewControlRuntime'
 
 export type AgentRunView = Extract<keyof typeof AGENT_RUN_CANVAS_VIEWS, string>
 export type AgentRunInspection = { trace: RunTrace; scope: string; expiresAt: number; spanId: string | null; search: string; view: AgentRunView }
@@ -123,7 +124,7 @@ export function filterAgentRunInspection(search: string): void {
 /** Shared explicit preset/Chat entry; malformed or unrelated options never execute. */
 export function activateAgentRunPrompt(prompt: string): void {
   const { optionId } = parseCanvasViewInvocation(prompt)
-  if (optionId === 'renderer:dashboard') { activateAgentRunWorkspace('tree'); return }
+  if (optionId === 'renderer:dashboard') { executeCanvasViewControl({ optionId }); return }
   if (!optionId.startsWith('agent-run:')) throw Error('Choose an agent observability view.')
   activateAgentRunWorkspace(optionId.slice('agent-run:'.length) as AgentRunView)
 }
