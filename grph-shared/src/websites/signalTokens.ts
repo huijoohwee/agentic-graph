@@ -138,45 +138,9 @@ export function summarizeCategorizedSignalsFromMarkdown(markdown: string, opts?:
   price: Array<{ label: string; count: number }>
   time: Array<{ label: string; count: number }>
 } {
-  const maxLines = opts?.maxLines ?? 2000
-  const maxPerKind = opts?.maxPerKind ?? 6
-  const lines = String(markdown || '').split(/\r\n|\n|\r/).slice(0, maxLines)
-
-  const countMap = (labels: string[]) => {
-    const map = new Map<string, number>()
-    for (const l of labels) map.set(l, (map.get(l) || 0) + 1)
-    return map
-  }
-
-  const links: string[] = []
-  const prices: string[] = []
-  const times: string[] = []
-  for (const line of lines) {
-    links.push(...extractLinkSignalLabelsFromLine(line))
-    prices.push(...extractPriceSignalLabelsFromLine(line))
-    times.push(...extractTimeSignalLabelsFromLine(line))
-  }
-
-  const linkCounts = countMap(links)
-  const priceCounts = countMap(prices)
-  const timeCounts = countMap(times)
-
-  const pick = (m: Map<string, number>, prefix: string) => {
-    const items: Array<{ label: string; count: number }> = []
-    for (const [label, count] of m.entries()) {
-      if (!label.startsWith(prefix)) continue
-      items.push({ label, count })
-    }
-    items.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
-    return items.slice(0, maxPerKind)
-  }
-
-  return {
-    nav: pick(linkCounts, '[NAV]'),
-    cta: pick(linkCounts, '[CTA]'),
-    price: pick(priceCounts, '[PRICE]'),
-    time: pick(timeCounts, '[TIME]'),
-  }
+  const index = indexDocumentSignals(markdown, { maxLines: opts?.maxLines, maxGroups: opts?.maxPerKind ?? 6 })
+  const counts = (matches: DocumentSignalMatch[]) => matches.map(({ label, count }) => ({ label, count }))
+  return { nav: counts(index.nav), cta: counts(index.cta), price: counts(index.price), time: counts(index.time) }
 }
 
 export type DocumentSignalKind = 'nav' | 'cta' | 'price' | 'time'
@@ -184,8 +148,10 @@ export type DocumentSignalMatch = { label: string; count: number; lines: number[
 export type DocumentSignalIndex = Record<DocumentSignalKind, DocumentSignalMatch[]> & { truncated: boolean; scannedLines: number }
 
 /** Bounded, source-addressable heuristics. Line numbers always refer to the original text. */
-export function indexDocumentSignals(markdown: string): DocumentSignalIndex {
-  const maxChars = 2_000_000, maxLines = 8000, maxGroups = 24, maxLocations = 10
+export function indexDocumentSignals(markdown: string, opts?: { maxLines?: number; maxGroups?: number }): DocumentSignalIndex {
+  const boundedLimit = (value: number | undefined, cap: number) => typeof value === 'number' && Number.isFinite(value)
+    ? Math.max(0, Math.min(cap, Math.floor(value))) : cap
+  const maxChars = 2_000_000, maxLines = boundedLimit(opts?.maxLines, 8000), maxGroups = boundedLimit(opts?.maxGroups, 24), maxLocations = 10
   const bounded = markdown.slice(0, maxChars)
   const sourceLines = bounded.split(/\r\n|\n|\r/, maxLines + 1)
   const maps = { nav: new Map<string, DocumentSignalMatch>(), cta: new Map<string, DocumentSignalMatch>(), price: new Map<string, DocumentSignalMatch>(), time: new Map<string, DocumentSignalMatch>() }

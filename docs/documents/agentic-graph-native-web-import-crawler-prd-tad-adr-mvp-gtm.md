@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.40"
+version: "0.2.41"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -548,3 +548,19 @@ Use the stated persona and pain hypothesis to test one priced pilot in the exist
 
 Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. Confirmed: these referenced artifacts exist at that revision: [`canvas/src/lib/websites/server/websiteImportServer.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/lib/websites/server/websiteImportServer.ts), [`canvas/src/lib/websites/server/nativeWebsiteCrawler.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/lib/websites/server/nativeWebsiteCrawler.ts), [`canvas/src/lib/websites/server/websiteImportArtifactServer.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/lib/websites/server/websiteImportArtifactServer.ts). Their existence does not confirm every behavior asserted by the specification.
 Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.
+
+
+## Shared document-signal policy (0.2.41)
+
+PRD: the same visible Markdown produces the same NAV/CTA/PRICE/TIME occurrence counts in
+Document insights and website-artifact summaries. TAD/ADR: summaries project the existing
+`indexDocumentSignals` owner, replacing their duplicate raw-line scan. Caller limits may narrow
+results; both use the 8,000-line / 2-million-character / 24-label / 10-location hard bounds.
+Frontmatter, code, image labels and link destinations share the same exclusion policy. No new
+runtime dependency or filename/domain-specific path is introduced. MVP: three files / 10 KB /
+10 active minutes, two new parity/bounds regressions plus existing insights and artifact checks.
+The user authorized coordination; the prior writer completed its published candidate before
+`/refactor #document-signal-policy @codex` resumed this lane. Both new regressions, all 13
+existing insights/artifact tests, Canvas typechecking and its three runner checks pass. Rollback
+reverts this source change; no data migration is needed. GTM: fewer contradictory document
+counts; buyer value remains unmeasured. Protected integration and deployment are unverified.
