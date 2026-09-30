@@ -4,6 +4,7 @@ import type { GraphSchema } from '@/lib/graph/schema'
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
 import { isPlainObject } from '@/lib/graph/value'
 import { readCanvasGridConfigFromSchema } from '@/lib/canvas/canvasGridConfig'
+import { buildDashboardKeywordEvidence } from './dashboardKeywordEvidence'
 
 export type DashboardTone = 'blue' | 'green' | 'amber' | 'rose' | 'slate'
 
@@ -326,6 +327,7 @@ export function buildDashboardCanvasModel(
       { id: 'grid', label: 'Grid', value: grid.enabled ? 'On' : 'Off', detail: `${grid.variant} · major ${grid.majorEvery}`, tone: grid.enabled ? 'blue' : 'slate' },
     ],
     sections: [
+      ...buildDashboardKeywordEvidence(graphData),
       {
         id: 'structure',
         title: 'Structure',
