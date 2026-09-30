@@ -240,9 +240,9 @@ export function ToolbarToolMenu({
     }
   }, [geospatialModeEnabled])
 
-  const handleSelectView = React.useCallback((view: RequestedFloatingPanelView) => {
+  const handleSelectView = React.useCallback((view: RequestedFloatingPanelView, preserveMediaMode = false) => {
     if (routeToolbarXrScenePanel({ view, canvasRenderMode, canvas3dMode })) return
-    if (view === 'media') setMediaCatalogMode(canvasRenderMode === '3d' && canvas3dMode === 'xr' ? 'xr-3d' : 'media')
+    if (view === 'media' && !preserveMediaMode) setMediaCatalogMode(canvasRenderMode === '3d' && canvas3dMode === 'xr' ? 'xr-3d' : 'media')
     if (floatingPanelView === 'skillsCommands' && view !== 'skillsCommands') clearSkillsCommandsMcpTarget()
     setFloatingPanelView(view)
     if (view === 'geo') void ensureGeospatialEnabled()
@@ -382,7 +382,7 @@ export function ToolbarToolMenu({
     // A remounted panel must not replay a request superseded by a newer surface action.
     if (useGraphStore.getState().floatingPanelView !== requestedFloatingPanelView) return
     setFloatingPanelMinimized(false)
-    handleSelectView(requestedFloatingPanelView)
+    handleSelectView(requestedFloatingPanelView, true)
   }, [handleSelectView, requestedFloatingPanelView, requestedFloatingPanelViewSeq])
 
   React.useEffect(() => {
