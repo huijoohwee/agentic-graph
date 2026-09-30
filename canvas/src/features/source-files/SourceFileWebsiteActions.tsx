@@ -40,7 +40,7 @@ export function SourceFileWebsiteActions({ entry, source, urlOverride, confirmat
   const ownsSession = !!session && (confirmationOwner ?? session.sourcePath === entry.path)
   return <>
     <SourceImportAction action="discover" label={`Find pages linked from ${url}`} disabled={!!session?.busy}
-      onClick={() => { if (session && (ownsSession || session.pages.some(page => page.url === url))) void discoverWebsiteSelection(url); else void importWebsiteFromSourceFiles(url, entry.path).catch(reportSourceImportFailure) }} />
+      onClick={() => { if (session && (ownsSession || (urlOverride && session.pages.some(page => page.url === url)))) void discoverWebsiteSelection(url); else void importWebsiteFromSourceFiles(url, entry.path).catch(reportSourceImportFailure) }} />
     {(!session || ownsSession) && <SourceImportAction action="import" label={`Import selected (${ownsSession ? session.selected.size : 0}) for ${entry.name}`}
       disabled={!ownsSession || session.busy || !session.selected.size} onClick={confirmWebsiteSelection} />}
   </>

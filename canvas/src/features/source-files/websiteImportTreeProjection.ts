@@ -18,6 +18,7 @@ export function projectWebsiteImportTree(entries: WorkspaceEntry[], sources: Wor
   const existingByUrl = new Map<string, WorkspaceEntry>()
   for (const entry of entries) { const url = sourceFileWebsiteUrl(entry, sources?.[entry.path]); if (url) existingByUrl.set(url, entry) }
   const source = entries.find(entry => entry.path === session.sourcePath) || existingByUrl.get(session.url)
+  if (source) existingByUrl.set(session.url, source)
   const base = (source?.parentPath || `/websites/${encodeURIComponent(new URL(session.url).hostname)}`).replace(/\/$/, '')
   const ensureFolder = (path: string) => {
     let current = ''

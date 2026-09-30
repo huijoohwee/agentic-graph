@@ -134,3 +134,14 @@ test('file row imports only its selected pages through the existing workspace br
     assert.equal(control('Import selected').disabled, true)
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); globalThis.fetch = previousFetch; restore() }
 })
+
+test('discovery keeps the clicked source when generated siblings share its URL', () => {
+  const sibling = { ...sourceEntry, path: '/sitemap.md', name: 'sitemap.md' }
+  const session = { id: 1, url: sourceUrl, sourcePath: sourceEntry.path, pages: [{ url: sourceUrl, path: '/library/' }, { url: sourceUrl + 'new', path: '/library/new' }], selected: new Set<string>(), visited: new Set<string>(), busy: false, error: '', limited: false, query: '' }
+  const projection = projectWebsiteImportTree([sourceEntry, sibling], null, session)
+  assert.equal(projection.ownerPath, sourceEntry.path)
+  assert.equal(projection.pageUrls.get(sourceEntry.path), sourceUrl)
+  assert.equal(projection.pageUrls.has(sibling.path), false)
+  assert.equal(projection.entries.filter(entry => entry.path === sourceEntry.path).length, 1)
+  assert.equal(projection.pendingPaths.has(sourceEntry.path), false)
+})
