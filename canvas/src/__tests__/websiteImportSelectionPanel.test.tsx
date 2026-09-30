@@ -14,9 +14,9 @@ import { MAIN_PANEL_TABS } from '@/features/panels/mainPanelTabs'
 
 const sourceUrl = 'https://example.test/library/'
 const sourceEntry = { path: '/imported.md', parentPath: '/', name: 'imported.md', kind: 'file' as const, updatedAtMs: 0, text: `---\nkgWebpageUrl: "${sourceUrl}"\n---\n# Imported` }
-function SourceFilesHarness() {
+function SourceFilesHarness({ activePath = sourceEntry.path }: { activePath?: string | null }) {
   const [search, setSearch] = React.useState('saved search')
-  return <><ExplorerSearchControl search={search} setSearch={setSearch} panelTextClass="text-xs" /><MarkdownWorkspaceSourceFilesList loading={false} loadError="" textSizeClass="text-xs" entries={[sourceEntry]} expandedPaths={new Set()} activePath={sourceEntry.path}
+  return <><ExplorerSearchControl search={search} setSearch={setSearch} panelTextClass="text-xs" /><MarkdownWorkspaceSourceFilesList loading={false} loadError="" textSizeClass="text-xs" entries={[sourceEntry]} expandedPaths={new Set()} activePath={activePath}
     toggleExpanded={() => {}} onSelectFile={() => {}} onSelectFolder={() => {}} sourcesByPath={{ [sourceEntry.path]: { kind: 'url', url: sourceUrl } }}
     onCreateNewFile={() => {}} onRevealInFinder={() => {}} onClearFile={() => {}} onRenameEntry={() => {}} onDeleteEntry={() => {}} /></>
 }
@@ -26,12 +26,13 @@ async function openFileActions(host: HTMLElement, name = 'imported.md') {
     new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 100, clientY: 100 })))
 }
 
-test('idle URL import still has its explicit form', async () => {
+test('Source Files has no duplicate URL import form or entry point', async () => {
   const { restore } = initJsdomHarness()
   const host = document.createElement('section'), root = createRoot(host)
   try {
-    await act(async () => root.render(<WebsiteImportSelectionView />))
-    assert.ok(host.querySelector('section[aria-label="Import website URL"] input[type=url]'))
+    await act(async () => root.render(<><WebsiteImportSelectionView /><SourceFilesHarness /></>))
+    assert.equal(host.querySelector('input[type=url], form, [aria-label="Import website URL"]'), null)
+    assert.ok(!host.textContent?.includes('Import URL'))
   } finally { await act(async () => root.unmount()); restore() }
 })
 
@@ -178,8 +179,8 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     await act(async () => control('Import selected').click())
     assert.deepEqual(resolutions, [[source + 'a']])
     assert.deepEqual(requests.filter(url => url === '/__website_import/discover'), ['/__website_import/discover'])
-    assert.equal(host.querySelector('input[aria-label^="Select page"]'), null, 'transient selection leaves with the session')
-    assert.equal(host.querySelector<HTMLInputElement>('input[placeholder="Search"]')?.value, 'saved search', 'file search returns after selection')
+    assert.ok(host.querySelector('section[aria-label="File a"]'), 'confirmation retains discovered entries')
+    assert.equal(host.querySelector<HTMLInputElement>('input[aria-label^="Select page"]')?.disabled, true, 'selection is locked while the caller imports')
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); host.remove(); globalThis.fetch = previousFetch; restore() }
 })
 
@@ -196,12 +197,13 @@ test('cancel aborts pending discovery and never resolves an import selection', a
   try {
     const pending = chooseWebsiteImportPages('https://example.test/library/').then(urls => { resolution = urls })
     await act(async () => root.render(<SourceFilesHarness />))
-    await act(async () => Array.from(host.querySelectorAll('button')).find(button => button.textContent === 'Cancel import selection')!.click())
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Cancel import selection"]')!.click())
     await pending
     assert.equal(resolution, null)
     assert.equal(signal?.aborted, true)
     assert.ok(host.querySelector('section[aria-label="Choose folder(s)/page(s) to import"] input[aria-label="Select all visible pages"]'), 'idle checkbox remains after cancellation')
-    assert.ok(Array.from(host.querySelectorAll('button')).some(button => button.textContent === 'Import URL'))
+    assert.equal(useWebsiteImportSelectionSession.getState().session?.busy, false)
+    assert.ok(!host.textContent?.includes('Import URL'))
   } finally { await act(async () => root.unmount()); finishWebsiteImportSelection(null); globalThis.fetch = previousFetch; restore() }
 })
 
@@ -401,4 +403,68 @@ test('retained discovery preserves retry selection after failure and rejects sta
     assert.equal(useWebsiteImportSelectionSession.getState().session!.id, replacementId)
     finishWebsiteImportSelection(null); await replacement
   } finally { release(); finishWebsiteImportSelection(null); unregister(); globalThis.fetch = previousFetch; restore() }
+})
+
+test('cancel retains saved and discovered rows through document switches and restart, ignoring late discovery', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  let requests = 0, signal: AbortSignal | undefined, completeRefresh!: (response: Response) => void
+  globalThis.fetch = (async (_target, init) => {
+    if (++requests === 1) return new Response(JSON.stringify({ ok: true, pages: [sourceUrl, sourceUrl + 'new'].map(url => ({ url, path: new URL(url).pathname })), limited: false }))
+    signal = init?.signal as AbortSignal
+    return new Promise<Response>(resolve => { completeRefresh = resolve })
+  }) as typeof fetch
+  const host = document.createElement('section')
+  let root = createRoot(host), pending!: Promise<unknown>, imported = 0
+  const unregister = registerMarkdownWorkspaceActionBridge('test-cancel-inventory', { importWebsite: async () => { imported++; return { handled: true } } })
+  const assertInventory = () => {
+    assert.equal(host.querySelectorAll('svg[aria-label="Saved website file"]').length, 1)
+    assert.equal(host.querySelectorAll('svg[aria-label="Discovered page — not saved"]').length, 1)
+    assert.match(host.textContent || '', /2 discovered pages · 2 shown · 0 selected/)
+  }
+  try {
+    await act(async () => { pending = importWebsiteFromSourceFiles(sourceUrl, sourceEntry.path); root.render(<SourceFilesHarness />) })
+    await act(async () => {
+      host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!.click()
+      host.querySelector<HTMLButtonElement>('button[aria-label="Refresh discovered pages"]')!.click()
+    })
+    await act(async () => { host.querySelector<HTMLButtonElement>('button[aria-label="Cancel import selection"]')!.click(); await pending })
+    assert.equal(signal?.aborted, true)
+    assertInventory()
+    await act(async () => { completeRefresh(new Response(JSON.stringify({ ok: true, pages: [{ url: sourceUrl + 'late', path: '/library/late' }], limited: false }))) })
+    assertInventory()
+    await act(async () => root.render(<SourceFilesHarness activePath={null} />))
+    assertInventory()
+    await act(async () => { root.unmount(); useWebsiteImportSelectionSession.setState({ session: null, recoveryError: '' }) })
+    root = createRoot(host)
+    await act(async () => root.render(<SourceFilesHarness />))
+    assertInventory()
+    assert.equal(requests, 2, 'document switches and restart do not rediscover')
+    assert.equal(imported, 0, 'cancel and restoration never trigger a crawl')
+  } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); globalThis.fetch = previousFetch; restore() }
+})
+
+test('Launch callback does not discard discovery on import completion or restart', async () => {
+  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  let requests = 0, beforeImportCalls = 0, imports = 0, pending!: Promise<unknown>
+  globalThis.fetch = (async () => { requests++; return new Response(JSON.stringify({ ok: true, pages: [{ url: sourceUrl + 'new', path: '/library/new' }], limited: false })) }) as typeof fetch
+  const unregister = registerMarkdownWorkspaceActionBridge('test-launch-retention', { importWebsite: async (_url, options) => {
+    assert.deepEqual(options?.selectedUrls, [sourceUrl + 'new']); imports++; return { handled: true }
+  } })
+  const host = document.createElement('section')
+  let root = createRoot(host)
+  try {
+    await act(async () => { pending = importWebsiteFromSourceFiles(sourceUrl, undefined, async () => { beforeImportCalls++ }); root.render(<SourceFilesHarness />) })
+    assert.equal(beforeImportCalls, 0)
+    await act(async () => { finishWebsiteImportSelection([sourceUrl + 'new']); await pending })
+    assert.equal(beforeImportCalls, 1)
+    assert.equal(imports, 1)
+    assert.match(host.textContent || '', /1 discovered pages · 1 shown · 0 selected/)
+    await act(async () => { root.unmount(); useWebsiteImportSelectionSession.setState({ session: null, recoveryError: '' }) })
+    root = createRoot(host)
+    await act(async () => root.render(<SourceFilesHarness />))
+    assert.ok(host.querySelector('svg[aria-label="Discovered page — not saved"]'))
+    assert.equal(requests, 1)
+    assert.equal(imports, 1, 'restart never imports automatically')
+    assert.equal(beforeImportCalls, 1, 'restart does not replay Launch side effects')
+  } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); globalThis.fetch = previousFetch; restore() }
 })

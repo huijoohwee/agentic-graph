@@ -2,7 +2,7 @@ import React from 'react'
 import { CloudOff, FileSearch, FileCheck2 } from 'lucide-react'
 import { projectWebsiteImportTree } from '@/features/source-files/websiteImportTreeProjection'
 import { SourceFileWebsiteActions, WebsiteSelectionCheckbox, reportSourceImportFailure } from '@/features/source-files/SourceFileWebsiteActions'
-import { useWebsiteImportSelectionSession, toggleWebsiteSelection, restoreWebsiteImportSelectionDraft, finishWebsiteImportSelection, importWebsiteFromSourceFiles, discoverWebsiteSelection, visibleWebsiteSelectionPages } from '@/features/source-files/websiteImportSelectionSession'
+import { useWebsiteImportSelectionSession, toggleWebsiteSelection, restoreWebsiteImportSelectionDraft, importWebsiteFromSourceFiles, discoverWebsiteSelection, visibleWebsiteSelectionPages } from '@/features/source-files/websiteImportSelectionSession'
 import { sourceFileWebsiteUrl } from '@/features/source-files/websiteImportTreeProjection'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
@@ -71,7 +71,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
     renderFileRight,
   } = props
   const importSession = useWebsiteImportSelectionSession(state => state.session)
-  const [importOpen, setImportOpen] = React.useState(false)
+  const recoveryError = useWebsiteImportSelectionSession(state => state.recoveryError)
   React.useEffect(() => { restoreWebsiteImportSelectionDraft() }, [])
   const selectedMissionFolder = useAgentRunFolderSelection()
   const selectedPath = selectedMissionFolder ?? activePath
@@ -177,10 +177,6 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
   return (
     <>
       <section aria-label="Source Files import" className="px-1 py-1">
-        <button type="button" aria-expanded={importOpen || !!importSession} disabled={!!importSession?.importing} onClick={() => {
-          if (importSession) { finishWebsiteImportSelection(null); setImportOpen(false) }
-          else setImportOpen(value => !value)
-        }} className={`rounded px-1 py-0.5 ${textSizeClass} ${UI_THEME_TOKENS.button.hoverBg}`}>{importSession ? 'Cancel import selection' : 'Import URL'}</button>
         <section aria-label="Choose folder(s)/page(s) to import" aria-busy={!!importSession?.busy} className={`border-b py-1 ${UI_THEME_TOKENS.panel.border}`}>
           <WebsiteSelectionCheckbox label="Select all visible pages" urls={importSession ? visiblePageUrls : selectedSourceUrl ? [selectedSourceUrl] : []}
             selected={importSession?.selected || new Set<string>()} disabled={!!importSession?.busy || !!importSession?.importing || (!importSession && !selectedSourceUrl)}
@@ -190,7 +186,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
               else if (checked && selectedSourceUrl && selectedSource) void importWebsiteFromSourceFiles(selectedSourceUrl, selectedSource.path, undefined, { selectAllOnDiscover: true }).catch(reportSourceImportFailure)
             }} />
         </section>
-        {(importOpen || importSession) && <React.Suspense fallback={<p role="status">Loading import controls…</p>}><WebsiteImportSelectionView /></React.Suspense>}
+        {(importSession || recoveryError) && <React.Suspense fallback={<p role="status">Loading import controls…</p>}><WebsiteImportSelectionView /></React.Suspense>}
       </section>
       <AgentMissionSourceFile search={props.search} activePath={selectedPath} renderEntryLeading={renderSelectionControl} />
       {loading ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.text.secondary}`}>Loading…</p>

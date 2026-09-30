@@ -77,7 +77,7 @@ deployment:
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
   website_import_visibility:
-    roots: ["canvas/src/features/markdown-workspace/MarkdownWorkspaceExplorer.tsx", "canvas/src/lib/websites/websiteSitemapMarkdown.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction.ts", "canvas/src/__tests__/activeWorkspaceSourceVisibility.test.tsx", "canvas/src/__tests__/websiteImportRendererDefaults.test.ts"]
+    roots: ["canvas/src/features/markdown-workspace/MarkdownWorkspaceExplorer.tsx", "canvas/src/features/markdown-workspace/MarkdownWorkspaceExplorerHeaderActions.tsx", "canvas/src/lib/websites/websiteSitemapMarkdown.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction.ts", "canvas/src/__tests__/activeWorkspaceSourceVisibility.test.tsx", "canvas/src/__tests__/websiteImportRendererDefaults.test.ts"]
     commands:
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/activeWorkspaceSourceVisibility.test.tsx", "canvas/src/__tests__/websiteImportRendererDefaults.test.ts"]
   native_document_analysis:

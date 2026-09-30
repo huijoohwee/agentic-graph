@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.9"
+version: "1.0.10"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.9"
-tad_revision: "1.0.9"
-adr_revision: "1.0.9"
-mvp_revision: "1.0.9"
-gtm_revision: "1.0.9"
+prd_revision: "1.0.10"
+tad_revision: "1.0.10"
+adr_revision: "1.0.10"
+mvp_revision: "1.0.10"
+gtm_revision: "1.0.10"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.9. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.10. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -37,9 +37,9 @@ navigation. An ordinary document toolbar can open insights without website metad
 Acceptance: Unicode normalization preserves original offsets; repeated phrase counts are exact within
 declared bounds; phrases do not cross sentence/newline boundaries; user phrases and language tags
 work locally; selected keyword candidates select their contexts; stale source navigation is rejected;
-ordinary graphs retain a useful Dashboard without text metadata. The active source remains identifiable
-by its complete path when the tree is filtered or collapsed; reveal restores its row without reopening
-the document. Headless URL crawl starts in D3, and generated page, canvas and sitemap documents
+ordinary graphs retain a useful Dashboard without text metadata. The active source has a compact Explorer reveal icon with its complete path in the tooltip;
+reveal restores its row through filters or collapsed folders without reopening the document.
+Remove the duplicate active-file strip and Source Files URL form; Launch owns Import URL. Headless URL crawl starts in D3, and generated page, canvas and sitemap documents
 retain that default when reopened after another renderer. Import acceptance requires persisted page,
 canvas and sitemap entries in the workspace being reviewed, including after reopening it; an analysis
 note containing rendered page text does not prove that website import completed.
@@ -125,7 +125,11 @@ to 20,000 candidate elements and 2,000 unique URLs; report incomplete inventory 
 The tree initially projects 100 matching discovered pages, extends by 100 on request, and searches
 the complete inventory. Previously saved copies stay visible even when discovery is filtered. Keep
 500 as the selected-crawl limit. Discovery and selection reuse the existing local draft; successful
-imports clear selection while retaining discovery. Stale completions cannot replace a newer session.
+imports clear selection while retaining discovery, including imports started from Launch. Cancel
+settles the pending selection and aborts discovery but preserves its inventory and saved-file rows.
+Both flows persist through document switches and restart without automatically crawling. Remove
+the transient-session variant; Launch callbacks execute only on explicit live confirmation. Replacing
+the source begins a new bounded inventory. Stale completions cannot replace a newer session.
 
 The file tree and inline selection toolbar share AnchorOverlay positioning, portal, dismissal and
 panel styling. AnchorOverlay accepts either an element or a pointer point; one viewport clamp and
@@ -265,12 +269,19 @@ callbacks to verify they are inert, retains disabled discovery slots and checks 
 Local review uses the retained browser origin; affected validation gates review publication.
 Rollback the availability rules with the stable-slot rendering; retain all document and import state.
 
+Discovery-retention increment: five production modules, fewer than 15 KB source changes, no dependencies.
+Nineteen focused regressions pass, including Launch completion, cancellation during refresh, late
+response rejection, document switches, offline restart, distinct saved/discovered icons, removal of
+the duplicate URL form and active-path strip, and repeated reveal through filtered/collapsed folders.
+Native affected validation gates review publication. Rollback these session and presentation changes
+together; preserve saved files, discovery drafts, named copies and crawler artifacts.
+
 ## GTM
 
 Initial user: a reader checking repeated themes and evidence in a local document. The near-built path
 reuses existing preview, graph and Dashboard controls. First value is a counted phrase with a source
 jump, requiring no account, paid plan or model download. Measure successful source jumps and time
-to verify a term before expanding linguistic features. A visible source path and consistent crawl
+to verify a term before expanding linguistic features. A source-path tooltip and consistent crawl
 renderer reduce the time spent finding the document behind a graph. Measure successful reopening of
 imported documents in the reviewed workspace, separately from successful text analysis. Willingness to pay and revenue are unvalidated.
 
