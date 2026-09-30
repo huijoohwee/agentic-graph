@@ -24,7 +24,7 @@ export default function FloatingPreviewPanel() {
   const [mode, setMode] = React.useState<MediaCatalogMode>('media')
   const visibleItems = React.useMemo(() => scopedItems.filter(item => mode === 'xr-3d' ? item.kind === 'model' : item.kind !== 'model'), [mode, scopedItems])
   const selectedItem = scopedItems.find(item => item.key === activeKey)
-  const openLibrary = () => { setMediaCatalogMode(mode); emitFloatingPanelOpen({ tab: 'media', open: true }) }
+  const openLibrary = () => { emitFloatingPanelOpen({ tab: 'media', open: true }); setMediaCatalogMode(mode) }
   return (
     <section aria-label="Preview Panel" className={floatingPanelCatalogSurfaceClassName(typography.panelTextClass)}>
       <FloatingPanelCatalogHeader title="Preview Panel" subtitle={documentName || 'Current selection'} actionsLabel="Preview controls" />

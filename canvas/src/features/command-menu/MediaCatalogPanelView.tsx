@@ -146,11 +146,11 @@ export function MediaCatalogPanelView({
     readMediaCatalogMode,
     readMediaCatalogMode,
   )
+  const previousXrState = React.useRef({ active: xrSurfaceActive, revision: xrSimulationWorkbenchOpenRevision })
   React.useEffect(() => {
-    if (xrSurfaceActive) setMediaCatalogMode('xr-3d')
-  }, [xrSurfaceActive])
-  React.useEffect(() => {
-    if (xrSurfaceActive && xrSimulationWorkbenchOpenRevision > 0) setMediaCatalogMode('xr-3d')
+    const previous = previousXrState.current
+    previousXrState.current = { active: xrSurfaceActive, revision: xrSimulationWorkbenchOpenRevision }
+    if (xrSurfaceActive && (!previous.active || xrSimulationWorkbenchOpenRevision > previous.revision)) setMediaCatalogMode('xr-3d')
   }, [xrSimulationWorkbenchOpenRevision, xrSurfaceActive])
   const mediaItemCount = uploadedMediaItems.length + mediaItems.length + mediaActions.length + (sourceMetadataItem ? 1 : 0)
   const normalizedSearchQuery = search.normalizedSearchQuery

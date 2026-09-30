@@ -8,6 +8,31 @@ import { buildPreviewNarration, localPreviewVoices, PREVIEW_NARRATION_LIMIT, sco
 import { MediaCatalogModeControls } from '@/features/command-menu/MediaCatalogModeControls'
 import { readMediaCatalogMode, setMediaCatalogMode, type MediaCatalogMode } from '@/features/command-menu/mediaCatalogModeRuntime'
 import PreviewVoicePanel from '@/features/panels/views/preview-context/PreviewVoicePanel'
+import { requestVoiceStudioLaunch, readVoiceStudioLaunchRequest } from '@/features/voice-studio/voiceStudioInvocation'
+import { VOICE_STUDIO_COMMAND, VOICE_STUDIO_ROUTES } from '@/features/voice-studio/voiceStudioContract'
+import { installFloatingPanelBridge } from '@/features/toolbar/floatingPanelBridge'
+import { useGraphStore } from '@/hooks/useGraphStore'
+
+export function testPreviewExplicitHandoff() {
+  const { restore } = initJsdomHarness()
+  const prior = useGraphStore.getState(), mode = readMediaCatalogMode()
+  const previousLaunch = readVoiceStudioLaunchRequest()
+  let opened = 0
+  const dispose = installFloatingPanelBridge({ openPropsPanel: () => {}, openRendererPanel: () => {}, openFloatingPanel: () => { opened += 1; setMediaCatalogMode('media') } })
+  try {
+    requestVoiceStudioLaunch({ command: VOICE_STUDIO_COMMAND, ...VOICE_STUDIO_ROUTES.create, prompt: 'Selected caption' })
+    assert.equal(opened, 1)
+    assert.equal(readMediaCatalogMode(), 'voice-studio')
+    assert.equal(readVoiceStudioLaunchRequest()?.prompt, 'Selected caption')
+    assert.equal(readVoiceStudioLaunchRequest()?.operation, 'create')
+  } finally {
+    if (previousLaunch) requestVoiceStudioLaunch(previousLaunch.invocation)
+    dispose()
+    useGraphStore.setState({ floatingPanelView: prior.floatingPanelView, floatingPanelOpen: prior.floatingPanelOpen })
+    setMediaCatalogMode(mode)
+    restore()
+  }
+}
 
 export function testPreviewContextScopeAndNarration() {
   const item = (key: string, source: 'markdown' | 'graph', nodeId?: string): CommandMenuRichMediaItem => ({ key, source, nodeId, kind: 'image', startLine: 0, label: key })
