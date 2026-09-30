@@ -367,12 +367,13 @@ export function createMemoryWorkspaceFs(args?: { initialEntries?: WorkspaceEntry
     return path
   }
 
-  const createFile = async (args: { parentPath: WorkspacePath; name: string; text: string }) => {
+  const createFile = async (args: { parentPath: WorkspacePath; name: string; text: string; requireExactPath?: boolean }) => {
     ensureRoot()
     const parent = normalizeWorkspacePath(args.parentPath)
     const desired = String(args.name ?? '').trim() || 'file.md'
     let name = desired
     let path = joinWorkspacePath(parent, name)
+    if (args.requireExactPath && entriesByPath.has(path)) throw new Error(`Workspace destination already exists: ${path}`)
     for (let i = 2; i <= 999 && entriesByPath.has(path); i += 1) {
       const extIndex = desired.lastIndexOf('.')
       const stem = extIndex > 0 ? desired.slice(0, extIndex) : desired

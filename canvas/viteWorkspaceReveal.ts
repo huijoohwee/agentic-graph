@@ -4,35 +4,27 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import type { Connect } from 'vite'
 import type { KgFsPathPolicy } from './viteWorkspaceArtifactBridge'
-import { resolveWebsiteImportWorkspaceRoot, isWebsiteImportGenerationToken } from './src/lib/websites/server/websiteImportStorage'
+import { WORKSPACE_REVEAL_MAX_BYTES } from './src/features/workspace-fs/workspaceRevealContract'
+import { parseWorkspaceRevealSnapshot, saveWorkspaceRevealSnapshot, parseWorkspaceRevealFolderSnapshot, saveWorkspaceRevealFolderSnapshot, WorkspaceRevealSnapshotError } from './viteWorkspaceRevealSnapshot'
+import { resolveWorkspaceDocumentOutputRoot } from './src/lib/websites/server/websiteImportStorage'
 
 export const WORKSPACE_REVEAL_PATH = '/__agentic_os_fs_reveal'
 const execute = promisify(execFile)
 const loopback = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
-const inside = (root: string, target: string) => target === root || target.startsWith(root + path.sep)
 
 class RevealError extends Error {
   constructor(readonly status: number, message: string) { super(message) }
 }
 
-export async function resolveWorkspaceRevealTarget(repoRoot: string, policy: KgFsPathPolicy, input: unknown): Promise<string> {
+export async function resolveWorkspaceRevealTarget(_repoRoot: string, policy: KgFsPathPolicy, input: unknown): Promise<string> {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new RevealError(400, 'Invalid reveal request')
   const request = input as Record<string, unknown>
   let target: string
-  let allowed: (candidate: string) => boolean = policy.isAllowed
-  if (request.website) {
-    const meta = request.website as Record<string, unknown>
-    if (!isWebsiteImportGenerationToken(meta.importId) || typeof meta.nodeId !== 'string'
-      || !/^[a-zA-Z0-9_-]{1,160}$/.test(meta.nodeId)
-      || (meta.outputDirRel !== undefined && typeof meta.outputDirRel !== 'string')) {
-      throw new RevealError(400, 'Invalid import artifact identity')
-    }
-    const root = resolveWebsiteImportWorkspaceRoot({ repoRoot, outputDirRel: meta.outputDirRel as string | undefined })
-    if (root.ok !== true) throw new RevealError(400, root.error)
-    target = path.join(root.abs, meta.importId as string, 'nodes', meta.nodeId, 'page.md')
-    const realRoot = await fs.realpath(root.abs)
-    allowed = candidate => inside(realRoot, candidate)
-  } else {
+  if ('website' in request || (request.path !== undefined && request.workspacePath !== undefined)) {
+    throw new RevealError(400, 'Reveal requires one exact document or folder path, not a capture identity')
+  }
+  if (request.kind !== undefined && request.kind !== 'file' && request.kind !== 'folder') throw new RevealError(400, 'Invalid item kind')
+  {
     const canonical = typeof request.workspacePath === 'string' ? policy.resolveCanonicalWorkspacePath(request.workspacePath) : null
     const raw = request.path
     if (canonical) target = canonical
@@ -42,14 +34,18 @@ export async function resolveWorkspaceRevealTarget(repoRoot: string, policy: KgF
   }
   let real: string
   try { real = await fs.realpath(target) } catch { throw new RevealError(404, 'This item has no saved local file or folder to reveal') }
-  if (!allowed(real)) throw new RevealError(403, 'Path is outside the local workspace')
+  if (!policy.isAllowed(real)) throw new RevealError(403, 'Path is outside the local workspace')
+  const stat = await fs.stat(real)
+  if (!(request.kind === 'folder' ? stat.isDirectory() : request.kind === 'file' ? stat.isFile() : stat.isFile() || stat.isDirectory())) {
+    throw new RevealError(409, 'The saved item does not match the selected file or folder')
+  }
   return real
 }
 
-export function workspaceRevealCommand(target: string, platform = process.platform): { command: string; args: string[]; message: string } {
+export function workspaceRevealCommand(target: string, platform = process.platform, isDirectory = false): { command: string; args: string[]; message: string } {
   if (platform === 'darwin') return { command: 'open', args: ['-R', target], message: 'Revealed in Finder' }
   if (platform === 'win32') return { command: 'explorer.exe', args: ['/select,', target], message: 'Revealed in File Explorer' }
-  if (platform === 'linux') return { command: 'xdg-open', args: [path.dirname(target)], message: 'Opened containing folder' }
+  if (platform === 'linux') return { command: 'xdg-open', args: [isDirectory ? target : path.dirname(target)], message: isDirectory ? 'Opened folder' : 'Opened containing folder' }
   throw new RevealError(501, 'The local host does not support a file manager')
 }
 
@@ -80,18 +76,46 @@ export function createWorkspaceRevealHandler(repoRoot: string, policy: KgFsPathP
       for await (const chunk of req) {
         const bytes = Buffer.from(chunk)
         size += bytes.length
-        if (size > 8192) throw new RevealError(413, 'Reveal request is too large')
+        if (size > WORKSPACE_REVEAL_MAX_BYTES) throw new RevealError(413, 'Document copy exceeds 500 KB; export the document instead')
         chunks.push(bytes)
       }
       let body: unknown
       try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { throw new RevealError(400, 'Invalid reveal request') }
-      const target = await resolveWorkspaceRevealTarget(repoRoot, policy, body)
-      const action = workspaceRevealCommand(target)
+      if (!body || typeof body !== 'object' || Array.isArray(body)) throw new RevealError(400, 'Invalid reveal request')
+      const request = body as Record<string, unknown>
+      let target = '', copied = false
+      if ('folderSnapshot' in request) {
+        if ('snapshot' in request || 'website' in request || 'workspacePath' in request || 'path' in request || request.kind !== 'folder') throw new RevealError(400, 'A folder copy requires a single workspace folder')
+        const outputRoot = request.outputRoot ?? resolveWorkspaceDocumentOutputRoot(repoRoot)
+        if (typeof outputRoot !== 'string' || !path.isAbsolute(outputRoot) || !policy.isAllowed(outputRoot)) throw new RevealError(403, 'Output folder is outside the local workspace')
+        target = await saveWorkspaceRevealFolderSnapshot(outputRoot, parseWorkspaceRevealFolderSnapshot(request.folderSnapshot)); copied = true
+      } else if ('snapshot' in request) {
+        if ('website' in request || 'workspacePath' in request || (request.kind !== undefined && request.kind !== 'file')) {
+          throw new RevealError(400, 'A document copy requires a single workspace file')
+        }
+        const snapshot = parseWorkspaceRevealSnapshot(request.snapshot)
+        // A derived mirror is useful only when it contains this exact document revision.
+        if (request.path !== undefined) {
+          try {
+            const candidate = await resolveWorkspaceRevealTarget(repoRoot, policy, { path: request.path, kind: 'file' })
+            if ((await fs.stat(candidate)).size === Buffer.byteLength(snapshot.text) && await fs.readFile(candidate, 'utf8') === snapshot.text) target = candidate
+          } catch (error) { if (!(error instanceof RevealError && error.status === 404)) throw error }
+        }
+        if (!target) {
+          const outputRoot = request.outputRoot ?? resolveWorkspaceDocumentOutputRoot(repoRoot)
+          if (typeof outputRoot !== 'string' || !path.isAbsolute(outputRoot) || !policy.isAllowed(outputRoot)) {
+            throw new RevealError(403, 'Output folder is outside the local workspace')
+          }
+          target = await saveWorkspaceRevealSnapshot(outputRoot, snapshot); copied = true
+        }
+      } else target = await resolveWorkspaceRevealTarget(repoRoot, policy, request)
+      const action = workspaceRevealCommand(target, process.platform, (await fs.stat(target)).isDirectory())
       await run(action.command, action.args)
-      reply(200, { ok: true, path: target, message: action.message })
+      reply(200, { ok: true, path: target, message: copied ? `Saved local copy. ${action.message}` : action.message })
     } catch (error) {
-      reply(error instanceof RevealError ? error.status : 500, { ok: false,
-        error: error instanceof RevealError ? error.message : 'The local host could not open its file manager' })
+      const known = error instanceof RevealError || error instanceof WorkspaceRevealSnapshotError
+      reply(known ? error.status : 500, { ok: false,
+        error: known ? error.message : 'The local host could not save or reveal this item' })
     } finally { busy = false }
   }
 }
