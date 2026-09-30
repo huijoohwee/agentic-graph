@@ -8,6 +8,7 @@ type MarkdownFileTreeRowButtonProps = {
   title?: string
   indent: number
   isActive: boolean
+  ariaExpanded?: boolean
   textClassName: string
   onClick: () => void
   onContextMenu: (event: React.MouseEvent<HTMLButtonElement>) => void
@@ -15,7 +16,7 @@ type MarkdownFileTreeRowButtonProps = {
 }
 
 export function MarkdownFileTreeRowButton(props: MarkdownFileTreeRowButtonProps) {
-  const { ariaLabel, title, indent, isActive, textClassName, onClick, onContextMenu, children } = props
+  const { ariaLabel, title, indent, isActive, ariaExpanded, textClassName, onClick, onContextMenu, children } = props
   const rowRef = React.useRef<HTMLButtonElement>(null)
   React.useEffect(() => {
     if (isActive) rowRef.current?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
@@ -30,6 +31,7 @@ export function MarkdownFileTreeRowButton(props: MarkdownFileTreeRowButtonProps)
       onClick={onClick}
       onContextMenu={onContextMenu}
       aria-label={ariaLabel}
+      aria-expanded={ariaExpanded}
       aria-current={isActive ? 'page' : undefined}
       title={title || ariaLabel}
     >
