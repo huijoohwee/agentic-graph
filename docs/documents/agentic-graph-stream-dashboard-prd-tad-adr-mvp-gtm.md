@@ -2,14 +2,14 @@
 title: "Stream to Markdown Dashboard — reference implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-STREAM-DASHBOARD-001"
-version: "2.1.1"
+version: "2.1.2"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "2.1.1"
-tad_revision: "2.1.1"
-adr_revision: "2.1.1"
-mvp_revision: "2.1.1"
-gtm_revision: "2.1.1"
+prd_revision: "2.1.2"
+tad_revision: "2.1.2"
+adr_revision: "2.1.2"
+mvp_revision: "2.1.2"
+gtm_revision: "2.1.2"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -21,7 +21,7 @@ reviewed_source_revision: "1ee1282ad7346762d3a172094233839aadcd0498"
 
 # Stream to Markdown Dashboard — reference implementation
 
-All five roles consume GRAPH-STREAM-DASHBOARD-001@2.1.1. The user's explicit instruction
+All five roles consume GRAPH-STREAM-DASHBOARD-001@2.1.2. The user's explicit instruction
 “UPDATE agentic-os, prd-tad-adr-mvp-gtm md, then IMPLEMENT” authorizes this implementation.
 The [Agentic OS contract](https://github.com/huijoohwee/agentic-os/blob/main/guides/STREAM-DASHBOARDS.md)
 owns the observation/presentation boundary. This document owns product behavior, not a new lifecycle.
@@ -194,3 +194,33 @@ Browser regressions verify metric CRUD relative to the current inventory and dis
 exit from the retained authored Dashboard. They require explicit Mission entry and clear private
 evidence on exit, while preserving authored graph data. The added source is approximately 14 KB
 across nine files, with no new modules; the largest changed script remains below 600 lines.
+
+
+## Document analysis ownership cleanup (2.1.2)
+
+PRD SD-10: Keyword Mode reuses the canonical English stopword set, and the MainPanel
+Dashboard keeps only its live Canvas entry. The user's 2026-09-30 instruction to implement
+the dependency-audit recommendations authorizes `/refactor #document-analysis-cleanup @codex`.
+
+TAD/ADR SD-ADR-07: replace the equivalent local stopword-set construction with
+`NLTK_STOPWORDS_EN_SET`; remove the unused Dashboard header and the source-text assertions
+that kept it alive. Retain the existing Help header checks. No runtime package, module,
+service, configuration migration or new always-load guidance is introduced. Rollback restores
+these source changes; authored data is untouched.
+
+MVP: up to eight files / 15 KB / 25 active minutes / zero added spend. All eight Keyword Mode
+regressions pass. The MainPanel source-contract test has an independently reproduced baseline
+failure in its Field Settings import assertion, before reaching the changed header checks.
+Canvas typechecking and its three browser-runner checks pass; this is the command selected
+by the native affected-check planner for these source changes.
+
+The shared signal scanner is reserved by the active Source Files lane. A two-file proposed
+patch makes the website summary project the same bounded, visible-text index used by Document
+insights, preserving caller result limits and source locations. Both prepared regressions pass:
+frontmatter/code/image/URL exclusion parity and bounded summary/index limits. Its application
+was explicitly delegated to that owner with user authorization; completion and its exact
+source receipt are pending. No competing repository edit has been made.
+
+GTM: reduce maintenance drift and inconsistent document counts. Buyer demand, savings and
+revenue remain unmeasured. Development proof does not imply protected integration, Production
+Release or deployed Runtime proof; those transitions retain their existing authority gates.

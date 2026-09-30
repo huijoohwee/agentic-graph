@@ -3,7 +3,7 @@ import { hashText } from '@/features/parsers/hash'
 import { MVP_COLOR_PALETTE } from '@/lib/graph/schema'
 import { computePageRank } from '@/features/semantic-mode/graphAlgorithms'
 import { computePpmi, deriveEdgeWidthFromStrength } from '@/features/semantic-mode/association'
-import { NLTK_STOPWORDS_EN } from '@/features/semantic-mode/keywordStopwords'
+import { NLTK_STOPWORDS_EN_SET } from '@/features/semantic-mode/keywordStopwords'
 import {
   extractMentionsRobust,
   extractTriplesHeuristic,
@@ -77,13 +77,11 @@ const prettyLabel = (key: string): string => {
     .join(' ')
 }
 
-const STOPWORD_SET = new Set<string>(NLTK_STOPWORDS_EN.map(s => String(s || '').trim().toLowerCase()).filter(Boolean))
-
 const isUsefulEntityKey = (rawKey: string): boolean => {
   const key = String(rawKey || '').trim()
   if (!key) return false
   const lower = key.toLowerCase()
-  if (STOPWORD_SET.has(lower)) return false
+  if (NLTK_STOPWORDS_EN_SET.has(lower)) return false
   if (key.length <= 1) return /\d/.test(key)
   if (/^\d+$/.test(key)) return false
   if (/^[_-]+$/.test(key)) return false
