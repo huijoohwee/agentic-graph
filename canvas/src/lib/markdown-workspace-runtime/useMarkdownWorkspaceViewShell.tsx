@@ -19,6 +19,7 @@ export function useMarkdownWorkspaceViewShell(args: {
   folderModeContract: FolderModeContract
   setFolderModeContract: React.Dispatch<React.SetStateAction<FolderModeContract>>
   activePath: WorkspacePath | null
+  activeText?: string
   selectionPath: WorkspacePath | null
   selectionEntryKind: WorkspaceEntry['kind'] | null
   setActivePathSafe: (path: WorkspacePath) => void
@@ -175,15 +176,19 @@ export function useMarkdownWorkspaceViewShell(args: {
       try {
         const normalized = normalizeWorkspacePath(path)
         const entry = entriesIndex.byPath.get(normalized)
+        if (!entry) throw new Error('The selected workspace item no longer exists')
+        const text = entry.kind === 'file' ? (normalized === activePath ? args.activeText ?? entry.text : entry.text) : undefined
+        const source = sourcesByPath[normalized]
         const { revealWorkspaceFileInManager } = await import('@/features/workspace-fs/workspaceRevealInFileManager')
         const message = await revealWorkspaceFileInManager({ path: normalized,
-          text: entry?.kind === 'file' ? entry.text : undefined, source: sourcesByPath[normalized] })
+          kind: entry.kind, text, source, entries: entry.kind === 'folder' ? entries.map(item =>
+            item.path === activePath && typeof args.activeText === 'string' ? { ...item, text: args.activeText } : item) : undefined })
         applyShellStatus(message, UI_TOAST_TTL_MS.statusAutoCloseMedium)
       } catch (error) {
         applyMarkdownWorkspaceErrorStatus({ setStatusError, prefix: 'Reveal failed', error })
       } finally { revealPendingRef.current = false }
     },
-    [applyShellStatus, entriesIndex, setStatusError, sourcesByPath],
+    [activePath, args.activeText, applyShellStatus, entries, entriesIndex, setStatusError, sourcesByPath],
   )
 
   const openBacklink = React.useCallback(

@@ -1,8 +1,10 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { NativeWebsiteCrawler } from './nativeWebsiteCrawler'
 import { isCrawlableInternalUrl, normalizeUrl, urlToTreePath } from './websiteImportCore'
+import { collectSitemapUrls } from './websiteImportServerHelpers'
 
 export const WEBSITE_SELECTION_LIMIT = 500
+const WEBSITE_DISCOVERY_LIMIT = 2_000
 
 export function validateSelectedWebsiteUrls(rootUrl: string, value: unknown): string[] | undefined {
   if (value === undefined) return undefined
@@ -39,6 +41,7 @@ export async function readWebsiteImportRequest(req: IncomingMessage): Promise<{ 
 export async function handleWebsiteDiscovery(req: IncomingMessage, res: ServerResponse): Promise<void> {
   let crawler: NativeWebsiteCrawler | undefined
   let abort: (() => void) | undefined
+  const controller = new AbortController()
   try {
     const body = await readWebsiteImportRequest(req)
     const rootUrl = typeof body.rootUrl === 'string' ? normalizeUrl(body.rootUrl) : null
@@ -47,20 +50,26 @@ export async function handleWebsiteDiscovery(req: IncomingMessage, res: ServerRe
     validateSelectedWebsiteUrls(rootUrl, [url])
     crawler = new NativeWebsiteCrawler({ concurrency: 1, proxyRotation: false, downloadAssets: false, maxDownloads: 0, maxDownloadBytes: 0 })
     const activeCrawler = crawler
-    abort = () => { if (!res.writableEnded) void activeCrawler.close() }
+    abort = () => { if (!res.writableEnded) { controller.abort(); void activeCrawler.close() } }
     res.once('close', abort)
     // Discovery never serializes the HTML, converts text, downloads assets, or writes files.
     const capture = await crawler.capture({ url, nodeDirAbs: '', sequence: 0, discoveryOnly: true })
+    await crawler.close()
+    controller.signal.throwIfAborted()
     validateSelectedWebsiteUrls(rootUrl, [capture.finalUrl])
+    const sitemap = await collectSitemapUrls(rootUrl, new URL('/sitemap.xml', rootUrl).toString(), {
+      discover: true, timeoutMs: 4_000, maxBytes: 4 * 1024 * 1024, maxSitemaps: 24,
+      maxUrls: WEBSITE_DISCOVERY_LIMIT, signal: controller.signal,
+    })
     const urls = new Set<string>([url])
-    for (const link of capture.links) {
+    for (const link of [...capture.links, ...(sitemap.ok ? sitemap.urls : [])]) {
       const normalized = normalizeUrl(link)
       if (normalized && normalized.length <= 4096 && isCrawlableInternalUrl(normalized, rootUrl) && new URL(normalized).origin === new URL(rootUrl).origin && !new URL(normalized).username && !new URL(normalized).password) urls.add(normalized)
     }
-    const pages = [...urls].slice(0, WEBSITE_SELECTION_LIMIT).map(pageUrl => ({ url: pageUrl, path: urlToTreePath(pageUrl), ...(pageUrl === url ? { title: capture.title } : {}) }))
+    const pages = [...urls].slice(0, WEBSITE_DISCOVERY_LIMIT).map(pageUrl => ({ url: pageUrl, path: urlToTreePath(pageUrl), ...(pageUrl === url ? { title: capture.title } : {}) }))
     res.setHeader('Content-Type', 'application/json')
     res.setHeader('Cache-Control', 'no-store')
-    res.end(JSON.stringify({ ok: true, rootUrl, pages, limited: capture.links.length >= WEBSITE_SELECTION_LIMIT || urls.size > WEBSITE_SELECTION_LIMIT, limit: WEBSITE_SELECTION_LIMIT }))
+    res.end(JSON.stringify({ ok: true, rootUrl, pages, limited: capture.linksLimited === true || !sitemap.ok || sitemap.limited || urls.size > WEBSITE_DISCOVERY_LIMIT, limit: WEBSITE_DISCOVERY_LIMIT }))
   } catch (error) {
     if (!res.destroyed) {
       res.statusCode = 400
@@ -68,6 +77,7 @@ export async function handleWebsiteDiscovery(req: IncomingMessage, res: ServerRe
       res.end(JSON.stringify({ ok: false, error: String((error as Error).message || error) }))
     }
   } finally {
+    controller.abort()
     if (abort) res.off('close', abort)
     await crawler?.close()
   }

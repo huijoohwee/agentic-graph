@@ -2,6 +2,7 @@ import dns from 'node:dns/promises'
 import { isIP } from 'node:net'
 import http from 'node:http'
 import https from 'node:https'
+import { gunzipSync } from 'node:zlib'
 
 const privateIpv4 = (address: string): boolean => {
   const [a, b, c] = address.split('.').map(Number)
@@ -57,14 +58,20 @@ export async function resolveCrawlerTarget(raw: string, allowPrivateNetworks = f
   return { url, address: addresses[0].address, family: addresses[0].family }
 }
 
-export async function fetchCrawlerTextWithLimit(raw: string, options: { timeoutMs: number; maxBytes: number; accept?: string }): Promise<
+export async function fetchCrawlerTextWithLimit(raw: string, options: { timeoutMs: number; maxBytes: number; accept?: string; signal?: AbortSignal; allowedOrigin?: string; onBytes?: (bytes: number) => void }): Promise<
   { ok: true; text: string } | { ok: false; error: string }
 > {
   const controller = new AbortController()
+  const cancel = () => controller.abort(options.signal?.reason)
+  options.signal?.addEventListener('abort', cancel, { once: true })
+  if (options.signal?.aborted) cancel()
   const timer = setTimeout(() => controller.abort(), options.timeoutMs)
+  let bytes = 0
   try {
     let current = raw
     for (let hop = 0; hop <= 5; hop += 1) {
+      controller.signal.throwIfAborted()
+      if (options.allowedOrigin && new URL(current).origin !== options.allowedOrigin) throw new Error('Crawler redirect left the source origin')
       const target = await resolveCrawlerTarget(current, process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS === '1', controller.signal)
       controller.signal.throwIfAborted()
       const result = await new Promise<{ text: string; location?: string }>((resolve, reject) => {
@@ -91,12 +98,22 @@ export async function fetchCrawlerTextWithLimit(raw: string, options: { timeoutM
           let total = 0
           response.on('data', (chunk: Buffer) => {
             total += chunk.length
+            bytes += chunk.length
             if (total > options.maxBytes) {
               reject(new Error('Upstream response too large'))
               response.destroy()
             } else chunks.push(chunk)
           })
-          response.on('end', () => resolve({ text: Buffer.concat(chunks).toString('utf8') }))
+          response.on('end', () => {
+            try {
+              let body = Buffer.concat(chunks)
+              if (body[0] === 0x1f && body[1] === 0x8b) {
+                body = gunzipSync(body, { maxOutputLength: options.maxBytes })
+                bytes += Math.max(0, body.length - total)
+              }
+              resolve({ text: body.toString('utf8') })
+            } catch (error) { bytes = Math.max(bytes, options.maxBytes); reject(error) }
+          })
           response.on('error', reject)
           response.on('aborted', () => reject(new Error('Upstream response aborted')))
         })
@@ -107,6 +124,6 @@ export async function fetchCrawlerTextWithLimit(raw: string, options: { timeoutM
     }
     return { ok: false, error: 'Crawler redirect limit exceeded' }
   } catch (error) {
-    return { ok: false, error: controller.signal.aborted ? 'Request timed out' : String((error as Error).message || error) }
-  } finally { clearTimeout(timer) }
+    return { ok: false, error: controller.signal.aborted ? (options.signal?.aborted ? 'Request cancelled' : 'Request timed out') : String((error as Error).message || error) }
+  } finally { clearTimeout(timer); options.signal?.removeEventListener('abort', cancel); options.onBytes?.(bytes) }
 }
