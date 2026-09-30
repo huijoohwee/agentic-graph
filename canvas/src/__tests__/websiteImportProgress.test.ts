@@ -327,3 +327,42 @@ test('failed writer initialization releases its refresh guard and reconciles onc
     globalThis.fetch = originalFetch
   }
 })
+
+
+test('single selected page opens its own content, not the crawl canvas, including the root URL', async () => {
+  const originalFetch = globalThis.fetch
+  try {
+    for (const requested of ['https://example.invalid/', 'https://example.invalid/topic?category=One%20Two']) {
+      for (const fails of [false, true]) {
+        const fs = createMemoryWorkspaceFs(), opened: string[] = []
+        const selected = node('selected', requested)
+        if (fails) selected.status = 'error'
+        const manifest: WebsiteImportManifestV1 = { version: 1, importId: 'selected-content', rootUrl: 'https://example.invalid/',
+          status: 'done', startedAtMs: 1, nodes: [node('other', 'https://example.invalid/other'), selected], errors: [] }
+        globalThis.fetch = async input => {
+          const url = String(input)
+          const json = (value: unknown) => new Response(JSON.stringify(value))
+          if (url.includes('/start?')) return json({ ok: true, importId: manifest.importId })
+          if (url.includes('/status?')) return json({ ok: true, status: 'done' })
+          if (url.includes('/manifest?')) return json({ ok: true, manifest })
+          if (url.includes('/artifact?')) return new Response(new URL(url, requested).searchParams.get('nodeId') === 'selected' ? '# Exact requested page content' : '# Other page content')
+          throw new Error('Unexpected request: ' + url)
+        }
+        const job = runWorkspaceWebsiteImport({ url: manifest.rootUrl, opts: { selectedUrls: [requested], generateArtifactDocs: true },
+          importJobRef: { current: 1 }, jobId: 1, status: { setStatusProgress() {} }, getFs: async () => fs,
+          focusAfterImport: async path => { opened.push(path) } })
+        if (fails) {
+          await assert.rejects(job, /The requested page was not saved/)
+          assert.deepEqual(opened, [], 'failed capture cannot open another page or summary')
+        } else {
+          await job
+          assert.equal(opened.length, 1)
+          const text = String(await fs.readFileText(opened[0]!))
+          assert.match(text, /# Exact requested page content/)
+          assert.ok(text.includes(requested))
+          assert.doesNotMatch(text, /# Other page content|# Website crawl Canvas/)
+        }
+      }
+    }
+  } finally { globalThis.fetch = originalFetch }
+})
