@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.30"
+version: "0.2.31"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,23 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.29"
-prd_revision: "0.2.30"
-tad_revision: "0.2.30"
-adr_revision: "0.2.30"
-mvp_revision: "0.2.30"
-gtm_revision: "0.2.30"
+previous_document_version: "0.2.30"
+prd_revision: "0.2.31"
+tad_revision: "0.2.31"
+adr_revision: "0.2.31"
+mvp_revision: "0.2.31"
+gtm_revision: "0.2.31"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 Source Files control alignment
+
+- PRD: `/fix #source-files-import-controls @codex` aligns discovery, source-link, cloud and selection affordances with the existing tree file control. Filter discovered pages through the Explorer header search field. Reduce hierarchy-guide opacity by half and position selection beside row actions.
+- TAD: reuse shared 28-pixel row action and compact-glyph classes, with native checkboxes centered in the same action slot. Move the existing tree's leading selection slot after the flexible row label, immediately before source links. Route Explorer search to the active discovery query while a session is open; preserve the saved file-search value for return.
+- ADR: retain one search control and one Source Files tree. Discovery selection remains ephemeral, and only explicit confirmation invokes import. Shared hierarchy guide opacity changes apply to the common directory-tree control.
+- MVP: 20 active minutes, nine files and 35 KB patch cap; no dependency. Verify control sizes, row order, partial selection, filtered selection, cancellation, and live desktop layout. Runtime URLs and captures stay outside source.
+- GTM / rollback: improve scanning and hit targets for the existing import flow. Revert this successor to restore prior control placement; already imported documents remain intact. Publish after exact clean native validation; protected integration and production stay separate.
 
 ## 2026-09-30 Source Files import consolidation
 

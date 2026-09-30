@@ -7,6 +7,7 @@ import WebsiteImportSelectionView from '@/features/source-files/WebsiteImportSel
 import { chooseWebsiteImportPages, finishWebsiteImportSelection, useWebsiteImportSelectionSession } from '@/features/source-files/websiteImportSelectionSession'
 import { sourceFileWebsiteUrl, projectWebsiteImportTree } from '@/features/source-files/websiteImportTreeProjection'
 import { MarkdownWorkspaceSourceFilesList } from '@/features/markdown-workspace/MarkdownWorkspaceSourceFilesList'
+import { ExplorerSearchControl } from '@/features/markdown-workspace/ExplorerSearchControl'
 import { registerMarkdownWorkspaceActionBridge } from '@/features/markdown-explorer/workspaceActionBridge'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { MAIN_PANEL_TABS } from '@/features/panels/mainPanelTabs'
@@ -14,9 +15,10 @@ import { MAIN_PANEL_TABS } from '@/features/panels/mainPanelTabs'
 const sourceUrl = 'https://example.test/library/'
 const sourceEntry = { path: '/imported.md', parentPath: '/', name: 'imported.md', kind: 'file' as const, updatedAtMs: 0, text: `---\nkgWebpageUrl: "${sourceUrl}"\n---\n# Imported` }
 function SourceFilesHarness() {
-  return <MarkdownWorkspaceSourceFilesList loading={false} loadError="" textSizeClass="text-xs" entries={[sourceEntry]} expandedPaths={new Set()} activePath={sourceEntry.path}
+  const [search, setSearch] = React.useState('saved search')
+  return <><ExplorerSearchControl search={search} setSearch={setSearch} panelTextClass="text-xs" /><MarkdownWorkspaceSourceFilesList loading={false} loadError="" textSizeClass="text-xs" entries={[sourceEntry]} expandedPaths={new Set()} activePath={sourceEntry.path}
     toggleExpanded={() => {}} onSelectFile={() => {}} onSelectFolder={() => {}} sourcesByPath={{ [sourceEntry.path]: { kind: 'url', url: sourceUrl } }}
-    onCreateNewFile={() => {}} onRevealInFinder={() => {}} onClearFile={() => {}} onRenameEntry={() => {}} onDeleteEntry={() => {}} />
+    onCreateNewFile={() => {}} onRevealInFinder={() => {}} onClearFile={() => {}} onRenameEntry={() => {}} onDeleteEntry={() => {}} /></>
 }
 
 test('one Source Files tree supports folder selection, collapse and read-only discovery', async () => {
@@ -41,6 +43,10 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     assert.equal(checkbox(`Select page ${source}`).checked, false)
     await act(async () => checkbox(`Select page ${source}b`).click())
     assert.equal(checkbox('Select discovered pages in /library').indeterminate, true)
+    const filter = host.querySelector<HTMLInputElement>('input[placeholder="Filter discovered pages"]')!
+    assert.ok(filter, 'Explorer search switches to discovery filtering')
+    assert.equal(host.querySelectorAll('input[placeholder="Filter discovered pages"]').length, 1)
+    assert.equal(host.querySelector('section[aria-label="Choose folder(s)/page(s) to import"] input[type=search]'), null)
     await act(async () => control('Collapse folder library').click())
     assert.equal(checkbox(`Select page ${source}a`), undefined)
     await act(async () => control('Expand folder library').click())
@@ -51,6 +57,17 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     assert.ok(projected.pendingPaths.size)
     assert.equal(sourceEntry.text.endsWith('# Imported'), true, 'discovery does not rewrite saved files')
     const row = host.querySelector('section[aria-label="File imported.md"]')!
+    const rowCheckbox = row.querySelector('input[type=checkbox]')!
+    const sourceLink = row.querySelector('a[aria-label="Open source URL for imported.md"]')!
+    const following = row.ownerDocument.defaultView!.Node.DOCUMENT_POSITION_FOLLOWING
+    assert.ok(Boolean(rowCheckbox.compareDocumentPosition(sourceLink) & following), 'selection sits immediately left of source link')
+    const folderRow = host.querySelector('section[aria-label="Folder library"]')!
+    assert.ok(Boolean(folderRow.querySelector('button[aria-label="Folder library"]')!.compareDocumentPosition(folderRow.querySelector('input[type=checkbox]')!) & following))
+    for (const action of [sourceLink, control('Find pages linked from'), control('Import selected'), row.querySelector('button[data-source-file-cloud-status]')!]) {
+      assert.ok(action.classList.contains('kg-data-view-icon-action--sm'), 'row actions match the existing file control size')
+      assert.ok(action.querySelector('svg')?.classList.contains('kg-compact-glyph'), 'row glyphs match the file glyph')
+    }
+    assert.ok(rowCheckbox.closest('label')?.classList.contains('kg-data-view-icon-action--sm'))
     const actions = Array.from(row.querySelectorAll('button'))
     assert.ok(actions.indexOf(control('Find pages linked from')) < actions.findIndex(button => button.hasAttribute('data-source-file-cloud-status')))
     assert.ok(actions.indexOf(control('Import selected')) < actions.findIndex(button => button.hasAttribute('data-source-file-cloud-status')))
@@ -59,6 +76,7 @@ test('one Source Files tree supports folder selection, collapse and read-only di
     assert.deepEqual(resolutions, [[source + 'a']])
     assert.deepEqual(requests.filter(url => url === '/__website_import/discover'), ['/__website_import/discover'])
     assert.equal(host.querySelector('input[aria-label^="Select page"]'), null, 'transient selection leaves with the session')
+    assert.equal(host.querySelector<HTMLInputElement>('input[placeholder="Search"]')?.value, 'saved search', 'file search returns after selection')
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); host.remove(); globalThis.fetch = previousFetch; restore() }
 })
 

@@ -4,6 +4,7 @@ import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import type { WorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import { sourceFileWebsiteUrl } from './websiteImportTreeProjection'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useWebsiteImportSelectionSession, importWebsiteFromSourceFiles, discoverWebsiteSelection, finishWebsiteImportSelection } from './websiteImportSelectionSession'
 
@@ -11,8 +12,8 @@ const icons = { discover: Link, import: Download, cancel: X, clear: Eraser } sat
 export function SourceImportAction({ action, label, type = 'button', ...props }: Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & { action: keyof typeof icons; label: string }) {
   const Icon = icons[action]
   return <button {...props} type={type} aria-label={props['aria-label'] || label} title={label}
-    className={`inline-flex size-6 shrink-0 items-center justify-center rounded disabled:opacity-40 ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing} ${props.className || ''}`}>
-    <Icon className="size-3.5" role="img" aria-label={label} />
+    className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} shrink-0 items-center justify-center rounded disabled:opacity-40 ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing} ${props.className || ''}`}>
+    <Icon className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} role="img" aria-label={label} />
   </button>
 }
 
@@ -20,7 +21,9 @@ export function WebsiteSelectionCheckbox({ label, urls, selected, toggle }: { la
   const ref = React.useRef<HTMLInputElement>(null)
   const count = urls.filter(url => selected.has(url)).length
   React.useEffect(() => { if (ref.current) ref.current.indeterminate = count > 0 && count < urls.length }, [count, urls.length])
-  return <input ref={ref} className="size-4 shrink-0" type="checkbox" aria-label={label} checked={urls.length > 0 && count === urls.length} onChange={event => toggle(urls, event.target.checked)} />
+  return <label className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} shrink-0 items-center justify-center rounded ${UI_THEME_TOKENS.focus.primaryRing}`}>
+    <input ref={ref} className="size-3 shrink-0" type="checkbox" aria-label={label} checked={urls.length > 0 && count === urls.length} onChange={event => toggle(urls, event.target.checked)} />
+  </label>
 }
 
 export function confirmWebsiteSelection() {
