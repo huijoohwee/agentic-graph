@@ -9,6 +9,11 @@ import {
 
 const ThreeGraphLazy = React.lazy(() => import('@/lib/three/ThreeGraph.impl'))
 
+export function resolveThreeCanvasSemanticLabel(mode: Canvas3dModeId, physicsRunReady: boolean): string {
+  if (physicsRunReady) return XR_PHYSICS_MEDIA_STAGE_LABEL
+  return `Interactive ${mode === '3d' ? '3D' : mode === 'xr' ? 'XR' : 'Voxel'} graph`
+}
+
 export function XrPhysicsSemanticMediaSurface({
   active,
   geospatialComposite,
@@ -22,12 +27,13 @@ export function XrPhysicsSemanticMediaSurface({
   physicsRunReady: boolean
   learningScene?: { lesson: LearningLesson; scene?: LearningSceneSnapshot }
 }>) {
-  const semanticActive = active && physicsRunReady
+  const semanticActive = active
+  const label = resolveThreeCanvasSemanticLabel(mode, physicsRunReady)
   return (
     <SemanticMediaFigure
       active={semanticActive}
-      activeDataAttributes={XR_PHYSICS_MEDIA_STAGE_DATA_ATTRIBUTES}
-      label={XR_PHYSICS_MEDIA_STAGE_LABEL}
+      activeDataAttributes={physicsRunReady ? XR_PHYSICS_MEDIA_STAGE_DATA_ATTRIBUTES : undefined}
+      label={label}
       pointerEvents={active && !geospatialComposite ? 'auto' : 'none'}
       selectionTarget="descendant"
     >
@@ -45,7 +51,7 @@ export function XrPhysicsSemanticMediaSurface({
             learningScene={learningScene}
             semanticMediaOwner={semanticActive ? {
               captionId,
-              label: XR_PHYSICS_MEDIA_STAGE_LABEL,
+              label,
             } : undefined}
           />
         </section>

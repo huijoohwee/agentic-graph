@@ -1,6 +1,9 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_2: TestCaseTuple[] = [
+  ["canvas.semanticLayers.targets", "@/__tests__/canvasSemanticLayers2d.test", "testCanvasSemanticTargetsReuseActions"],
+  ["canvas.semanticLayers.nodeOrder", "@/__tests__/canvasSemanticLayers2d.test", "testCanvasNodesPaintLargerUnderneath"],
+  ["canvas.semanticLayers.mediaOrder", "@/__tests__/canvasSemanticLayers2d.test", "testCanvasMediaLayersRerankOnResize"],
   ["flow.widget.richMediaPanel.textMode.readEditSurfaceParity","@/__tests__/richMediaPanelTextModeRegression.test.tsx","testRichMediaPanelReadAndEditableTextReuseOneCardSurface"],
   ["graph.selectionZoom.edgeSelectionSubset","@/__tests__/selectionZoom.test","testSelectionZoomEdgeSelectionUsesEndpointsAndNeighbors"],
   ["graph.selectionZoom.noSelectionSubset","@/__tests__/selectionZoom.test","testSelectionZoomNoSelectionReturnsEmptySubset"],
@@ -292,6 +295,8 @@ export const TEST_CASES_POST_PARSER_2: TestCaseTuple[] = [
   ["mediaOverlayPool.richMediaPanel.keepsExplicitEmptyImageTab","@/__tests__/mediaOverlayPoolPrioritization.test","testMediaOverlayPoolKeepsExplicitEmptyImagePanelAsImageOverlay"],
   ["mediaOverlayPool.richMediaPanel.keepsExplicitEmptyVideoTab","@/__tests__/mediaOverlayPoolPrioritization.test","testMediaOverlayPoolKeepsExplicitEmptyVideoPanelAsVideoOverlay"],
   ["mediaOverlayPool.richMediaPanel.preservesUntouchedVariantsAcrossConnectedOverrides","@/__tests__/mediaOverlayPoolPrioritization.test","testMediaOverlayPoolPreservesUntouchedRichMediaVariantsAcrossConnectedChannelOverrides"],
+  ["mediaOverlayLayout2d.nodeAnchors.finalPointer","@/__tests__/mediaOverlayWorldProjectionChrome.test","testMediaOverlayHeaderDragConsumesFinalPointerSample"],
+  ["mediaOverlayLayout2d.nodeAnchors.gestureFrames","@/__tests__/mediaOverlayWorldProjectionChrome.test","testMediaOverlayFollowsLiveNodeAnchorsAcrossGestures"],
   ["mediaOverlayLayout2d.fallbackWhenPosMissing","@/__tests__/mediaOverlayLayoutLoop2dFallback.test","testMediaOverlayLayoutLoop2dFallsBackWhenNodePosMissing"],
   ["mediaOverlayLayout2d.worldProjection.cardChromeMetrics","@/__tests__/mediaOverlayWorldProjectionChrome.test","testMediaOverlayWorldProjectionKeepsUnscaledCardChromeMetrics"],
   ["mediaOverlayLayout2d.worldProjection.sharedCardPaintScale","@/__tests__/mediaOverlayWorldProjectionChrome.test","testMediaOverlayWorldProjectionUsesSharedPaintScale"],

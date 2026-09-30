@@ -24,3 +24,15 @@ export const MERMAID_RENDER_ORDER_KEY_TO_LAYER_ID_2D: Readonly<Record<string, st
   edgeLabels: 'edge-labels',
   nodeLabels: 'labels',
 }
+
+/** Painter order: larger surfaces first; equal areas keep a stable identity order. */
+export function compareCanvasSurfaceArea(
+  a: { id: string; w: number; h: number; scale?: number },
+  b: { id: string; w: number; h: number; scale?: number },
+): number {
+  const area = (item: typeof a) => {
+    const value = item.w * item.h * (item.scale ?? 1) ** 2
+    return Number.isFinite(value) && value > 0 ? value : 0
+  }
+  return area(b) - area(a) || a.id.localeCompare(b.id)
+}
