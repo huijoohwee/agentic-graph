@@ -363,7 +363,7 @@ export const testNativeCrawlerWidgetRunReusesImportUrlBridgeAndPublishesRichMedi
     throw new Error('expected restart recovery to read the terminal manifest without rematerializing every page')
   }
   const websiteImportServerSource = fs.readFileSync(path.resolve(process.cwd(), 'src/lib/websites/server/websiteImportServer.ts'), 'utf8')
-  if (!websiteImportServerSource.includes("existingManifest.status === 'done' || existingRunIsFresh")) {
+  if (!websiteImportServerSource.includes('reserveWebsiteImportRun') || !websiteImportServerSource.includes('if (claim.existing)')) {
     throw new Error('expected repeated UTC-token runs to attach to the existing crawl instead of overwriting it')
   }
   const websiteImportJobSource = fs.readFileSync(path.resolve(process.cwd(), 'src/lib/websites/server/websiteImportJob.ts'), 'utf8')

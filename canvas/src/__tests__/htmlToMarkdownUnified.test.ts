@@ -26,18 +26,18 @@ export async function testHtmlToMarkdownUnifiedConvertsBasicHtml() {
 export async function testHtmlToMarkdownUnifiedHeadOnlyRendersHeadSection() {
   const res = await convertHtmlToMarkdownUnified({
     html: [
-      '<title>How to build your seed round pitch deck</title>',
-      '<base href="https://www.ycombinator.com/" />',
-      '<meta name="description" content="YC Startup Library" />',
-      '<link rel="canonical" href="/library/2u-how-to-build-your-seed-round-pitch-deck" />',
+      '<title>Sample article</title>',
+      '<base href="https://docs.fixture.invalid/" />',
+      '<meta name="description" content="Example articles" />',
+      '<link rel="canonical" href="/articles/sample-article" />',
     ].join('\n'),
     includeHeadSection: true,
   })
   if (res.ok !== true) throw new Error(`expected ok, got error: ${(res as { error?: unknown }).error || ''}`)
   const md = res.markdown
   if (!md.includes('## HTML Head')) throw new Error('expected head section')
-  if (!md.includes('How to build your seed round pitch deck')) throw new Error('expected title in head section')
-  if (!md.includes('https://www.ycombinator.com/library/2u-how-to-build-your-seed-round-pitch-deck')) {
+  if (!md.includes('Sample article')) throw new Error('expected title in head section')
+  if (!md.includes('https://docs.fixture.invalid/articles/sample-article')) {
     throw new Error('expected canonical resolved via base')
   }
 }
