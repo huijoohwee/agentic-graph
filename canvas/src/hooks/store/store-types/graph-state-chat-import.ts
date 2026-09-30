@@ -54,6 +54,7 @@ export type FloatingPanelView =
   | 'promptPresets'
   | 'view'
   | 'media'
+  | 'preview'
   | 'animation'
   | 'motionControl'
   | 'gameMode'
