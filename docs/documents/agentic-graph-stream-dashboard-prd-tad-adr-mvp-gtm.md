@@ -185,3 +185,7 @@ Production Release and deployed Runtime proof have not been established for this
 The follow-up requires universal, neutral, file-agnostic behavior: Document insights consumes active
 document text; Keyword Mode consumes text and local tuning; Dashboard consumes graph structure.
 No filename, website domain or agent-manifest path selects these generic analysis behaviors.
+
+Final review: Settings keeps its panel open and reports a refused Canvas View action locally,
+including the existing baseline lock, rather than propagating an effect error to the application.
+The focused entry regression checks that refusal as well as the ordinary and explicit Mission paths.

@@ -410,6 +410,10 @@ async function testDashboardGraphEntry() {
     let rejected = false
     try { executeCanvasViewControl({ optionId: 'renderer:dashboard' }) } catch { rejected = true }
     if (!rejected) throw Error('Dashboard must honor the existing baseline lock')
+    await act(async () => { root.render(<>{toolbar}<DashboardView key="locked" onOpenWorkspace={() => { closed++ }} /></>); await waitFrame() })
+    if (closed !== 1 || !container.querySelector('[role="alert"]')?.textContent?.includes('baseline')) {
+      throw Error('Locked Dashboard entry must keep the panel open and report its refusal')
+    }
   } finally {
     await act(async () => { closeAgentRunInspection(); root.unmount() })
     useGraphStore.setState(previous); restore()
