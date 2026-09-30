@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.12"
+version: "1.0.13"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.12"
-tad_revision: "1.0.12"
-adr_revision: "1.0.12"
-mvp_revision: "1.0.12"
-gtm_revision: "1.0.12"
+prd_revision: "1.0.13"
+tad_revision: "1.0.13"
+adr_revision: "1.0.13"
+mvp_revision: "1.0.13"
+gtm_revision: "1.0.13"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.12. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.13. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -58,7 +58,9 @@ workspace entries belong in the copy; discovered pages are not downloaded by Rev
 
 Source Files must show discovered pages together with prior saved crawl files. Distinct file icons
 identify saved website documents and discovered pages that have not been saved. Finding pages does
-not import them; the reader selects pages or folders before starting a headless crawl.
+not import them; the reader selects pages or folders before starting a headless crawl. Discovery must
+combine rendered navigation with published sitemap URLs, rather than equating one page’s links with
+the whole website. Keep exact query variants, origin/path scope and explicit crawl selection.
 Clicking a saved filename opens its document without changing crawl selection. Clicking a discovered
 filename opens its file actions without selecting the page. When a discovered inventory is active,
 the leading icons of saved and discovered website pages select them for crawl. Ordinary file icons
@@ -130,8 +132,16 @@ so an old document is cleared during debounce as well as network work; stale com
 
 Discovery reads explicit HTTP(S) navigation attributes on rendered anchors, areas and scripted
 cards, including absolute URL tooltips. It does not infer paths from labels or serialize embedded
-application state. The existing origin/path and network guards remain authoritative. Bound discovery
-to 20,000 candidate elements and 2,000 unique URLs; report incomplete inventory when a bound is hit.
+application state. The existing sitemap collector also reads robots declarations, scope/root sitemap
+locations, recursive indexes and XML sitemap references inside urlsets. XML entities, namespaces, CDATA
+and gzip are supported through native code. Cross-origin references/redirects and credentialed URLs are
+rejected; metadata is deduplicated and cycles terminate. No sitemap document becomes a page entry.
+The existing origin/path and network guards remain authoritative. Bound discovery
+to 20,000 candidate elements and 2,000 unique URLs. Sitemap expansion adds at most 24 metadata
+requests, four seconds per request, 12 seconds total, four MiB per response after decompression and
+eight MiB total (robots: 256 KiB). Cancellation closes browser work and aborts metadata requests.
+Report partial discovery for bounds or unreadable published metadata; absent optional sitemap
+locations are normal. Site coverage remains bounded, not a guarantee of every page.
 The tree initially projects 100 matching discovered pages, extends by 100 on request, and searches
 the complete inventory. Previously saved copies stay visible even when discovery is filtered. Keep
 500 as the selected-crawl limit. Discovery and selection reuse the existing local draft; successful
@@ -181,6 +191,8 @@ overlay owner is introduced.
   Existing provenance and canonical repository sources remain authoritative; capture metadata never
   redirects reveal. Copies are local exports and do not become a second editable workspace authority.
 - Runtime validation inputs stay outside the repository; regression fixtures are independent examples.
+- Extend the existing sitemap/network owners, with no provider API, package, site rule, embedded state
+  extraction or automatic page import. Preserve the shared toolbar/summary and selection owners.
 
 The preview limit replaces heuristic multi-megabyte shrinking, which left large attributes untouched.
 It applies uniformly to every source. No dependencies, domain exceptions, copied code or model assets
@@ -190,6 +202,12 @@ are introduced. The existing raw-artifact retrieval limit is unchanged for captu
   bespoke menu positioning/dismissal and inline action strip; add no replacement menu framework.
 
 ## MVP
+
+Discovery follow-up: five production modules, under 20 KB added source, plus regression tests and this
+contract. Tests cover rendered/sitemap merging, nested and cyclic indexes, nonstandard urlset children,
+XML escaping, gzip expansion, origin/path/credential boundaries, URL/request limits, cancellation and
+zero artifact writes. Runtime-only external validation checks increased inventory without selecting or
+importing pages. Rollback reverts discovery/metadata changes together; preserve saved artifacts and drafts.
 
 Bounds: 60,000 characters, 12,000 tokens, 800 evidence labels, 12 tokens per phrase, three contexts
 per phrase; inspection shows up to 24 phrases. Partial final words are discarded, and truncation is
