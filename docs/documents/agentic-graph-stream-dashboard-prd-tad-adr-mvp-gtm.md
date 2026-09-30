@@ -169,7 +169,7 @@ ADR SD-ADR-06: remove the Dashboard-to-Mission alias at its three entry points. 
 shared read-only observation source and ordinary graph owner. Reuse the existing metric cards;
 cluster counting is linear in the already-scanned nodes. Baseline locks continue to apply.
 
-MVP: eight files / 20 KB changed source / 35 active minutes after investigation, zero dependencies,
+MVP: nine files / 20 KB changed source / 35 active minutes plus 10 for browser verification, zero dependencies,
 zero paid resources, no always-load guidance delta. Check ordinary entry, explicit Mission entry,
 return to graph, source/selection preservation, baseline refusal and cluster zero/string identity.
 The repository planner additionally selects Mission projection/archive/browser coverage and Canvas
@@ -189,3 +189,6 @@ No filename, website domain or agent-manifest path selects these generic analysi
 Final review: Settings keeps its panel open and reports a refused Canvas View action locally,
 including the existing baseline lock, rather than propagating an effect error to the application.
 The focused entry regression checks that refusal as well as the ordinary and explicit Mission paths.
+After port release, full browser verification reached widget CRUD and exposed a stale absolute metric
+count. The test now verifies exactly one metric added and removed relative to the existing inventory;
+it remains valid as general graph metrics expand. The complete browser result remains pending.
