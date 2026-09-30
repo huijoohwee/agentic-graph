@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.3"
+version: "1.0.4"
 date: "2026-09-30"
 lang: "en-US"
-prd_revision: "1.0.3"
-tad_revision: "1.0.3"
-adr_revision: "1.0.3"
-mvp_revision: "1.0.3"
-gtm_revision: "1.0.3"
+prd_revision: "1.0.4"
+tad_revision: "1.0.4"
+adr_revision: "1.0.4"
+mvp_revision: "1.0.4"
+gtm_revision: "1.0.4"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -20,7 +20,7 @@ load_policy: "on-demand"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.3. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.4. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
@@ -46,6 +46,11 @@ note containing rendered page text does not prove that website import completed.
 
 Captured pages must remain reopenable even when raw HTML contains large application-state attributes.
 The HTML preview reports its limit and offers Markdown as the reading path; full capture/export stays intact.
+
+Reveal in Finder must select the named workspace document. Browser-only files save a named copy,
+including unsaved active editor content. Explicit disk provenance still reveals the original file;
+imports must never substitute a crawler cache page for the selected document. Named copies and new
+crawler artifacts default to the configured local `docs_` output folder.
 
 ## TAD
 
@@ -77,6 +82,17 @@ bytes, cancel the body, and use separate cache keys from full-source reads. Limi
 a live-site fallback. Captures default to stripping source scripts; an explicit policy still takes precedence.
 Equivalent import identifiers keep the same load; a source change aborts the previous request.
 
+Reveal captures the selected path, source and text before lazy loading. The local host compares a
+derived mirror with the requested revision; a missing or different mirror creates a content-addressed
+copy under the configured document output root's `docs_/revealed` directory. The output root comes from the existing local docs configuration, so it follows the device path. Copies
+retain the workspace path and filename. Identical requests reuse a copy; revisions create separate
+copies. Edited or moved copies fail visibly and remain intact. Folder reveal requires a real directory.
+The crawler shares the default output-root resolver while retaining explicit store overrides. GET
+requests can resolve an existing generation in the earlier sandbox; new writes use the current root.
+Explicit reuse of a generation in the earlier root is rejected, and incomplete current generations
+never borrow old artifacts. No existing capture is moved or rewritten.
+The shared JSON request limit is 500,000 UTF-8 bytes; larger documents use the existing export flow.
+
 ## ADR
 
 - Native, original implementation: no Stanza, spaCy, NLTK, model, corpus, copied rules or new dependency.
@@ -91,6 +107,9 @@ Equivalent import identifiers keep the same load; a source change aborts the pre
 - Distinguish absent workspace records from filtered or clipped rows before changing Explorer.
   Inspect the original workspace without modifying it; importing into another workspace creates
   independent documents and preserves the original records. No implicit cross-origin storage bridge.
+- Named snapshots implement the user-selected save-and-reveal policy for all browser-only files.
+  Existing provenance and canonical repository sources remain authoritative; capture metadata never
+  redirects reveal. Copies are local exports and do not become a second editable workspace authority.
 - Runtime validation inputs stay outside the repository; regression fixtures are independent examples.
 
 The preview limit replaces heuristic multi-megabyte shrinking, which left large attributes untouched.
@@ -129,6 +148,16 @@ notice, and a before/after SHA-256 check confirmed that the stored capture was u
 The same browser origin reopened with 37 Source Files and the affected page displayed the limit
 notice while its Markdown remained available. This is local preview evidence only.
 
+Reveal and output-location follow-up budget: eight production modules, fewer than 14 KB added source, plus tests/docs.
+Regression owners cover exact paths, current and inactive document text, repeated clicks, Unicode,
+empty content, concurrent copies, changed revisions, edited copies, symlinks, size bounds, host failures,
+origin restrictions and native file/folder commands. `websiteImportStorageDefaults.test.ts` verifies
+new artifact placement, explicit overrides, legacy reads and generation ownership across the root change. No packages or source-specific rules are added.
+Live validation on the retained preview selected the imported article by its workspace filename in
+Finder under the configured `docs_/revealed` folder. The original captured Markdown retained its SHA-256 digest.
+The browser driver has a pointer offset in this session; native Finder selection, rather than the
+automation locator alone, supplies the target evidence.
+
 Rollback: revert this source change, retaining user documents and existing generic Dashboard behavior.
 Invalidate keyword caches again if their semantics change; never reinterpret old cached frequencies.
 For the visibility/default follow-up, revert the Explorer control, crawl startup and sitemap additions;
@@ -138,6 +167,10 @@ can remove that new folder through workspace controls while retaining the origin
 
 Crash rollback: revert the preview budget and hook changes without deleting captures or workspace
 records. Reopening unbounded captures can reproduce the renderer failure, so prefer Markdown first.
+
+Reveal rollback: revert the client and local host protocol together. Preserve saved copies and browser
+workspace records; removing a copy is a separate explicit file operation. Before reverting the crawler
+default, retain the configured docs_ store override so newly created captures remain addressable.
 
 ## GTM
 
@@ -149,3 +182,5 @@ renderer reduce the time spent finding the document behind a graph. Measure succ
 imported documents in the reviewed workspace, separately from successful text analysis. Willingness to pay and revenue are unvalidated.
 
 A bounded HTML notice keeps the workspace responsive while readers continue in Markdown; measure successful reopening without losing captured sources.
+
+Named local copies let readers locate and use the document shown in Source Files without navigating capture-cache internals. Measure successful first reveal; no paid service or account is required.
