@@ -21,7 +21,7 @@ import {
   readAgenticGraphStorageBrowserSession,
   type AgenticGraphStorageBrowserSessionState,
 } from '@/lib/storage/agentic-graph-storage-browser-session'
-import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
+import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
   subscribeWorkspaceStoreSyncSettingsChanged,
@@ -324,7 +324,7 @@ export function SourceFileCloudSyncIndicator(props: {
   return (
     <button
       type="button"
-      className={`inline-flex h-5 w-5 items-center justify-center rounded ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing} disabled:cursor-default disabled:opacity-70`}
+      className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing} disabled:cursor-default disabled:opacity-70`}
       aria-label={label}
       title={label}
       data-source-file-cloud-status={status}

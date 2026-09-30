@@ -1,5 +1,11 @@
 import React from 'react'
+import { CloudOff } from 'lucide-react'
+import { projectWebsiteImportTree } from '@/features/source-files/websiteImportTreeProjection'
+import { SourceFileWebsiteActions, WebsiteSelectionCheckbox, reportSourceImportFailure } from '@/features/source-files/SourceFileWebsiteActions'
+import { useWebsiteImportSelectionSession, toggleWebsiteSelection, restoreWebsiteImportSelectionDraft, finishWebsiteImportSelection, importWebsiteFromSourceFiles, discoverWebsiteSelection } from '@/features/source-files/websiteImportSelectionSession'
+import { sourceFileWebsiteUrl } from '@/features/source-files/websiteImportTreeProjection'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { MarkdownFileTree } from './MarkdownFileTree'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
 import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
@@ -18,12 +24,12 @@ import {
   SourceFileCloudSyncIndicator,
   useSourceFileCloudSync,
 } from './SourceFileCloudSyncIndicator'
-import { SourceFilesOwnershipSummary } from './SourceFilesOwnershipSummary'
 import { AgentMissionSourceFile } from '@/features/agent-ready/agentMissionSourceFiles'
 import { selectAgentRunSource, useAgentRunFolderSelection } from '@/features/agent-ready/agentRunInspectionStore'
-import { DASHBOARD_TEMPLATE_PATH, DASHBOARD_TEMPLATE_ROOT, readDashboardTemplate } from '@/components/DashboardCanvas/dashboardTemplateSource'
+import { DASHBOARD_TEMPLATE_PATH } from '@/components/DashboardCanvas/dashboardTemplateSource'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
-import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
+
+const WebsiteImportSelectionView = React.lazy(() => import('@/features/source-files/WebsiteImportSelectionView'))
 
 type MarkdownWorkspaceSourceFilesListProps = {
   search?: string
@@ -64,6 +70,9 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
     onDeleteEntry,
     renderFileRight,
   } = props
+  const importSession = useWebsiteImportSelectionSession(state => state.session)
+  const [importOpen, setImportOpen] = React.useState(false)
+  React.useEffect(() => { restoreWebsiteImportSelectionDraft() }, [])
   const selectedMissionFolder = useAgentRunFolderSelection()
   const selectedPath = selectedMissionFolder ?? activePath
   const [demoEntry, setDemoEntry] = React.useState<WorkspaceEntry | null>(null)
@@ -77,36 +86,39 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
   const demoRepresented = entries.some(entry => entry.path === demoEntry?.path)
   const cloudEntries = React.useMemo(() => demoEntry && !demoRepresented ? [...entries, demoEntry] : entries,
     [demoEntry, demoRepresented, entries])
+  const selectedSource = cloudEntries.find(entry => entry.path === activePath)
+  const selectedSourceUrl = selectedSource && sourceFileWebsiteUrl(selectedSource, sourcesByPath?.[selectedSource.path])
+  const visiblePageUrls = importSession?.pages.filter(page => `${page.url} ${page.title || ''}`.toLowerCase().includes(importSession.query.toLowerCase())).map(page => page.url) || []
   const cloudSync = useSourceFileCloudSync(cloudEntries)
-  const [templateBusy, setTemplateBusy] = React.useState(false)
-  const [templateError, setTemplateError] = React.useState('')
-  const openTemplate = async () => {
-    setTemplateBusy(true); setTemplateError('')
-    try {
-      const fs = await getWorkspaceFs()
-      await readDashboardTemplate(fs, DASHBOARD_TEMPLATE_PATH)
-      await applyWorkspaceImportToCanvas({ fs, createdPaths: [DASHBOARD_TEMPLATE_PATH], opts: { applyToGraph: false, skipComposedGraphApply: true } })
-      for (const path of ['/huijoohwee.github.io', DASHBOARD_TEMPLATE_ROOT]) if (!expandedPaths.has(path)) toggleExpanded(path)
-      onSelectFile(DASHBOARD_TEMPLATE_PATH)
-    } catch (error) { setTemplateError((error as Error).message) }
-    finally { setTemplateBusy(false) }
+  const projection = React.useMemo(() => projectWebsiteImportTree(cloudEntries, sourcesByPath, importSession), [cloudEntries, sourcesByPath, importSession])
+  const [collapsedImports, setCollapsedImports] = React.useState({ id: 0, paths: new Set<string>() })
+  const treeExpandedPaths = new Set([...expandedPaths, ...[...projection.expandedPaths].filter(path => collapsedImports.id !== importSession?.id || !collapsedImports.paths.has(path))])
+  const toggleTreeFolder = (path: string) => {
+    if (!projection.expandedPaths.has(path)) return toggleExpanded(path)
+    setCollapsedImports(previous => {
+      const paths = new Set(previous.id === importSession?.id ? previous.paths : [])
+      if (paths.has(path)) paths.delete(path); else paths.add(path)
+      return { id: importSession?.id || 0, paths }
+    })
   }
 
   const renderFileStatusRight = React.useCallback((args: { entry: WorkspaceEntry; isActive: boolean }) => {
-    const existing = renderFileRight?.(args)
+    const pending = projection.pendingPaths.has(args.entry.path)
+    const existing = pending ? null : renderFileRight?.(args)
     if (args.entry.kind !== 'file' || args.entry.path === DASHBOARD_TEMPLATE_PATH) return existing
     return (
       <span className="inline-flex items-center gap-0.5">
         {existing}
-        <SourceFileCloudSyncIndicator
+        <SourceFileWebsiteActions entry={args.entry} source={sourcesByPath?.[args.entry.path]} urlOverride={projection.pageUrls.get(args.entry.path)} confirmationOwner={projection.ownerPath === args.entry.path} />
+        {pending ? <button type="button" disabled aria-label={`Import ${args.entry.name} before cloud sync`} title="Not imported" className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} items-center justify-center rounded`}><CloudOff className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} role="img" aria-label="Not imported" /></button> : <SourceFileCloudSyncIndicator
           entry={args.entry}
           status={cloudSync.readStatus(args.entry)}
           error={cloudSync.readError(args.entry)}
           onUpload={cloudSync.upload}
-        />
+        />}
       </span>
     )
-  }, [cloudSync, renderFileRight])
+  }, [cloudSync, renderFileRight, sourcesByPath, projection])
 
   const buildShareUrl = React.useCallback((entry: WorkspaceEntry): string | null | Promise<string | null> => {
     if (entry.kind !== 'file') return null
@@ -152,20 +164,41 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
     openCanvasEmbedCodePanel(detail)
   }, [])
 
+  const renderSelectionControl = (entry: WorkspaceEntry) => {
+    if (!importSession?.selected.size) return null
+    const urls = projection.selectionUrls.get(entry.path)
+    const label = urls?.length ? entry.kind === 'folder' ? `Select discovered pages in ${entry.path}` : `Select page ${projection.pageUrls.get(entry.path)}` : `${entry.kind === 'folder' ? 'Folder' : 'File'} ${entry.name} is outside this website import`
+    return <WebsiteSelectionCheckbox label={label} urls={urls || []} selected={importSession.selected} toggle={toggleWebsiteSelection} disabled={!urls?.length || !!importSession.importing} />
+  }
+
   return (
     <>
-      <SourceFilesOwnershipSummary onOpenTemplate={() => void openTemplate()} templateBusy={templateBusy} />
-      {templateError && <p role="status" className={`px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>{templateError}</p>}
-      <AgentMissionSourceFile search={props.search} activePath={selectedPath} />
+      <section aria-label="Source Files import" className="px-1 py-1">
+        <button type="button" aria-expanded={importOpen || !!importSession} disabled={!!importSession?.importing} onClick={() => {
+          if (importSession) { finishWebsiteImportSelection(null); setImportOpen(false) }
+          else setImportOpen(value => !value)
+        }} className={`rounded px-1 py-0.5 ${textSizeClass} ${UI_THEME_TOKENS.button.hoverBg}`}>{importSession ? 'Cancel import selection' : 'Import URL'}</button>
+        <section aria-label="Choose folder(s)/page(s) to import" aria-busy={!!importSession?.busy} className={`border-b py-1 ${UI_THEME_TOKENS.panel.border}`}>
+          <WebsiteSelectionCheckbox label="Select all visible pages" urls={importSession ? visiblePageUrls : selectedSourceUrl ? [selectedSourceUrl] : []}
+            selected={importSession?.selected || new Set<string>()} disabled={!!importSession?.busy || !!importSession?.importing || (!importSession && !selectedSourceUrl)}
+            toggle={(urls, checked) => {
+              if (importSession && checked && !urls.length) void discoverWebsiteSelection(importSession.url, true)
+              else if (importSession) toggleWebsiteSelection(urls, checked)
+              else if (checked && selectedSourceUrl && selectedSource) void importWebsiteFromSourceFiles(selectedSourceUrl, selectedSource.path, undefined, { selectAllOnDiscover: true }).catch(reportSourceImportFailure)
+            }} />
+        </section>
+        {(importOpen || importSession) && <React.Suspense fallback={<p role="status">Loading import controls…</p>}><WebsiteImportSelectionView /></React.Suspense>}
+      </section>
+      <AgentMissionSourceFile search={props.search} activePath={selectedPath} renderEntryLeading={renderSelectionControl} />
       {loading ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.text.secondary}`}>Loading…</p>
         : loadError ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>Failed: {loadError}</p>
         : <MarkdownFileTree
-        entries={cloudEntries.filter(entry => entry !== demoEntry || !props.search || entry.name.toLowerCase().includes(props.search.toLowerCase()))}
-        expandedPaths={expandedPaths}
-        toggleExpanded={toggleExpanded}
+        entries={projection.entries.filter(entry => entry !== demoEntry || !props.search || entry.name.toLowerCase().includes(props.search.toLowerCase()))}
+        expandedPaths={treeExpandedPaths}
+        toggleExpanded={toggleTreeFolder}
         activePath={selectedPath}
-        onSelectFile={onSelectFile}
-        onSelectFolder={path => { selectAgentRunSource(null); onSelectFolder(path) }}
+        onSelectFile={path => { const url = projection.pageUrls.get(path); if (projection.pendingPaths.has(path) && url) toggleWebsiteSelection([url], !importSession?.selected.has(url)); else onSelectFile(path) }}
+        onSelectFolder={path => { if (projection.pendingPaths.has(path)) toggleTreeFolder(path); else { selectAgentRunSource(null); onSelectFolder(path) } }}
         sourcesByPath={sourcesByPath}
         onCreateNewFile={onCreateNewFile}
         onRevealInFinder={onRevealInFinder}
@@ -177,6 +210,9 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
         onCanvasEmbedStart={handleCanvasEmbedStart}
         onCanvasEmbedReady={handleCanvasEmbedReady}
         onShareCodeReady={handleShareCodeReady}
+        canOpenContextMenu={entry => !projection.pendingPaths.has(entry.path)}
+        alignActionColumns
+        renderEntryLeading={renderSelectionControl}
         renderFileRight={renderFileStatusRight}
       />}
     </>
