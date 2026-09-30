@@ -1,9 +1,10 @@
+import { boundedKeywordText, collectKeywordEvidence } from './keywordEvidence'
 import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
 import { hashText } from '@/features/parsers/hash'
 import { MVP_COLOR_PALETTE } from '@/lib/graph/schema'
 import { computePageRank } from '@/features/semantic-mode/graphAlgorithms'
 import { computePpmi, deriveEdgeWidthFromStrength } from '@/features/semantic-mode/association'
-import { NLTK_STOPWORDS_EN } from '@/features/semantic-mode/keywordStopwords'
+import { KEYWORD_FUNCTION_WORDS } from '@/features/semantic-mode/keywordStopwords'
 import {
   extractMentionsRobust,
   extractTriplesHeuristic,
@@ -29,7 +30,6 @@ import { withGraphTopologyMetadata } from '@/lib/graph/graphTopology'
 import { KEYWORD_GRAPH_ALGO_VERSION, type KeywordGraphResult } from './keywordGraphCache'
 import type { MarkdownAnnotation } from '@/lib/markdown/markdownSigil'
 import { countHighlightedKeywordNodes, readKeywordAnnotationPropertiesByKey } from './keywordGraphAnnotations'
-
 export type KeywordGraphSource = {
   documentId: string
   documentText: string
@@ -42,24 +42,20 @@ export type KeywordGraphSource = {
     maxNodes?: number
   }
 }
-
 const clampNumber = (v: number, min: number, max: number): number => {
   if (!Number.isFinite(v)) return min
   return Math.max(min, Math.min(max, v))
 }
-
 const keywordNodeSizeFromCount = (count: number): number => {
   const c = Number.isFinite(count) ? Math.max(0, count) : 0
   const radius = 8 + Math.sqrt(c) * 4
   return clampNumber(radius, 10, 40)
 }
-
 const KEYWORD_ROLE_COLORS = {
   subject: MVP_COLOR_PALETTE.nodes.idea,
   object: MVP_COLOR_PALETTE.nodes.execution,
   entity: MVP_COLOR_PALETTE.nodes.idea,
 } as const
-
 type Mention = {
   key: string
   label: string
@@ -67,7 +63,6 @@ type Mention = {
   end: number
   ner?: string
 }
-
 const prettyLabel = (key: string): string => {
   const t = String(key || '').trim()
   if (!t) return ''
@@ -76,20 +71,16 @@ const prettyLabel = (key: string): string => {
     .map(w => (w ? w[0].toUpperCase() + w.slice(1) : w))
     .join(' ')
 }
-
-const STOPWORD_SET = new Set<string>(NLTK_STOPWORDS_EN.map(s => String(s || '').trim().toLowerCase()).filter(Boolean))
-
 const isUsefulEntityKey = (rawKey: string): boolean => {
   const key = String(rawKey || '').trim()
   if (!key) return false
   const lower = key.toLowerCase()
-  if (STOPWORD_SET.has(lower)) return false
-  if (key.length <= 1) return /\d/.test(key)
+  if (KEYWORD_FUNCTION_WORDS.has(lower)) return false
+  if (key.length <= 1) return /[^a-z]/.test(key)
   if (/^\d+$/.test(key)) return false
   if (/^[_-]+$/.test(key)) return false
   return true
 }
-
 const mergeTextEntities = (...groups: Array<Array<{ text: string; label: string; start: number; end: number }>>): TextEntity[] => {
   const seen = new Set<string>()
   const out: TextEntity[] = []
@@ -110,24 +101,21 @@ const mergeTextEntities = (...groups: Array<Array<{ text: string; label: string;
   }
   return out
 }
-
 const readCandidateBoost = (candidate: DocumentKeywordCandidate | undefined): number => {
   if (!candidate) return 0
   const frequency = typeof candidate.frequency === 'number' && Number.isFinite(candidate.frequency) ? candidate.frequency : 0
   const score = typeof candidate.score === 'number' && Number.isFinite(candidate.score) ? candidate.score : 0
   return Math.max(1, Math.min(24, Math.log1p(frequency) * 2 + score * 6))
 }
-
 export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordGraphResult => {
   const docId = String(source.documentId || 'doc')
   const text = String(source.documentText || '')
-  const analysisText = text.length > 60_000 ? text.slice(0, 60_000) : text
+  const analysisText = boundedKeywordText(text)
   const rawSourceHash = typeof source.sourceTextHash === 'string' && source.sourceTextHash.trim()
     ? source.sourceTextHash.trim()
     : hashText(text)
   const sourceLayerHash = `kw:v${KEYWORD_GRAPH_ALGO_VERSION}:${rawSourceHash}`
   const annotationPropertiesByKey = readKeywordAnnotationPropertiesByKey(source.markdownAnnotations, isUsefulEntityKey)
-  
   const keywordCandidates = extractDocumentKeywordCandidates(analysisText)
   const keywordCandidateByKey = new Map<string, DocumentKeywordCandidate>()
   for (let i = 0; i < keywordCandidates.length; i += 1) keywordCandidateByKey.set(keywordCandidates[i]!.key, keywordCandidates[i]!)
@@ -148,7 +136,6 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
     if (diff !== 0) return diff
     return a.key.localeCompare(b.key)
   })
-
   const entityByKey = new Map<string, { id: string; label: string; count: number; ner?: string }>()
   for (let i = 0; i < mentions.length; i += 1) {
     const m = mentions[i]!
@@ -162,7 +149,6 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
     const id = `kw:entity:${hashText(key)}`
     entityByKey.set(key, { id, label: m.label || prettyLabel(key) || key, count: 1, ner: m.ner })
   }
-
   keywordCandidateByKey.forEach((candidate, key) => {
     if (!isUsefulEntityKey(key)) return
     const boost = readCandidateBoost(candidate)
@@ -179,28 +165,24 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
       ner: 'ENTITY',
     })
   })
-
   const pairCounts = new Map<string, number>()
+  const explicitPairs = new Set<string>()
   const entityBlockCounts = new Map<string, number>()
   const relationCountsByPair = new Map<string, Map<string, number>>()
   const predicateKeys = new Set<string>()
   const roleCountsByEntityKey = new Map<string, { subject: number; object: number }>()
   const directionCountsByPair = new Map<string, Map<string, number>>()
-
   // 1. Process explicit triples first for strong signals
   const explicitTriples = extractTriplesHeuristic(analysisText, textEntities)
   const cooccurrenceTriples = extractCooccurrencePairs(analysisText, textEntities)
-  
   // Merge all signals
-  const allTriples = [...explicitTriples.map(t => ({ ...t, weight: 3 })), ...cooccurrenceTriples.map(t => ({ ...t, weight: 1 }))]
-
+  const allTriples = [...explicitTriples.map(t => ({ ...t, weight: 3, explicit: true })), ...cooccurrenceTriples.map(t => ({ ...t, weight: 1, explicit: false }))]
   for (const t of allTriples) {
     const sKey = normalizeEntityKey(t.subject)
     const oKey = normalizeEntityKey(t.object)
     const pKey = normalizeEntityKey(t.predicate)
     if (!sKey || !oKey || !pKey) continue
     if (!isUsefulEntityKey(sKey) || !isUsefulEntityKey(oKey) || !isUsefulEntityKey(pKey)) continue
-    
     // Ensure nodes exist
     if (!entityByKey.has(sKey)) {
         const id = `kw:entity:${hashText(sKey)}`
@@ -210,23 +192,20 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
         const id = `kw:entity:${hashText(oKey)}`
         entityByKey.set(oKey, { id, label: t.object, count: 1 })
     }
-    
     // Boost counts based on signal strength
     const sNode = entityByKey.get(sKey)!
     sNode.count += t.weight
     const oNode = entityByKey.get(oKey)!
     oNode.count += t.weight
-
     // Record pair
     const pairKey = sKey.localeCompare(oKey) < 0 ? `${sKey}|${oKey}` : `${oKey}|${sKey}`
+    if (t.explicit) explicitPairs.add(pairKey)
     pairCounts.set(pairKey, (pairCounts.get(pairKey) || 0) + t.weight)
-
     // Record relation
     const relMap = relationCountsByPair.get(pairKey) || new Map<string, number>()
     relMap.set(pKey, (relMap.get(pKey) || 0) + t.weight)
     relationCountsByPair.set(pairKey, relMap)
     predicateKeys.add(pKey)
-
     // Record roles
     const sRole = roleCountsByEntityKey.get(sKey) || { subject: 0, object: 0 }
     sRole.subject += t.weight
@@ -234,14 +213,12 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
     const oRole = roleCountsByEntityKey.get(oKey) || { subject: 0, object: 0 }
     oRole.object += t.weight
     roleCountsByEntityKey.set(oKey, oRole)
-
     // Record direction
     const dirKey = `${sKey}|${oKey}`
     const dirMap = directionCountsByPair.get(pairKey) || new Map<string, number>()
     dirMap.set(dirKey, (dirMap.get(dirKey) || 0) + t.weight)
     directionCountsByPair.set(pairKey, dirMap)
   }
-
   if (pairCounts.size === 0 && entityByKey.size >= 2) {
     const keysInOrder: string[] = []
     for (let i = 0; i < mentions.length; i += 1) {
@@ -273,7 +250,6 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
       }
     }
   }
-
   // Record block counts for PPMI
   const sentenceRanges = splitSentencesWithOffsets(analysisText)
   for (const range of sentenceRanges) {
@@ -283,14 +259,12 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
       entityBlockCounts.set(k, (entityBlockCounts.get(k) || 0) + 1)
     })
   }
-
   predicateKeys.forEach((p) => {
     const key = normalizeEntityKey(p)
     if (!key) return
     if (key.includes(' ')) return
     if (entityByKey.has(key)) entityByKey.delete(key)
   })
-
   const roleByEntityKey = new Map<string, 'subject' | 'object' | 'entity'>()
   entityByKey.forEach((_, key) => {
     const counts = roleCountsByEntityKey.get(key) || { subject: 0, object: 0 }
@@ -321,7 +295,6 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
       if (!retainedEntityKeys.has(key)) entityByKey.delete(key)
     })
   }
-
   pairCounts.forEach((_, pairKey) => {
     const parts = pairKey.split('|')
     const a = parts[0] || ''
@@ -336,13 +309,14 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
       relationCountsByPair.delete(pairKey)
     }
   })
-
+  const evidence = collectKeywordEvidence(analysisText, Array.from(entityByKey.values(), entity => entity.label))
   const nodes: GraphNode[] = []
   const nodeCountsById = new Map<string, number>()
   entityByKey.forEach((v, key) => {
-    const count = v.count
+    const observed = evidence.byKey.get(key)
+    const count = observed?.frequency ?? 0
     nodeCountsById.set(v.id, count)
-    const nodeSize = keywordNodeSizeFromCount(count)
+    const nodeSize = keywordNodeSizeFromCount(v.count)
     const role = roleByEntityKey.get(key) || 'entity'
     const fill = KEYWORD_ROLE_COLORS[role]
     const candidate = keywordCandidateByKey.get(key)
@@ -356,16 +330,18 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
         'keyword:kind': 'entity',
         'keyword:role': role,
         'keyword:ner': v.ner as unknown as JSONValue,
-        'keyword:frequency': count as unknown as JSONValue,
+        'keyword:frequency': count,
+        'keyword:importance': v.count,
+        'keyword:evidence': observed as unknown as JSONValue,
+        'keyword:spread': observed?.spread ?? 0,
         ...(candidate ? {
           'keyword:score': candidate.score as unknown as JSONValue,
           'keyword:rank': candidate.rank as unknown as JSONValue,
           'keyword:phraseLength': candidate.phraseLength as unknown as JSONValue,
-          'keyword:spread': candidate.spread as unknown as JSONValue,
           'keyword:extractor': 'document-keyphrase' as unknown as JSONValue,
         } : {}),
         count: count as unknown as JSONValue,
-        'visual:importance': count as unknown as JSONValue,
+        'visual:importance': v.count as unknown as JSONValue,
         'visual:nodeSize': nodeSize as unknown as JSONValue,
         'visual:fill': fill as unknown as JSONValue,
         fill: fill as unknown as JSONValue,
@@ -380,9 +356,7 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
     })
   })
   nodes.sort((a, b) => String(a.id).localeCompare(String(b.id)))
-
   const ppmi = computePpmi({ pairCounts, entityBlockCounts, blockCount: sentenceRanges.length })
-
   const edges: GraphEdge[] = []
   pairCounts.forEach((count, pairKey) => {
     const [a, b] = pairKey.split('|')
@@ -444,6 +418,7 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
         'visual:width': width as unknown as JSONValue,
         'visual:stroke': stroke as unknown as JSONValue,
         'keyword:kind': 'predicate',
+        'keyword:evidenceKind': explicitPairs.has(pairKey) ? 'heuristic' : 'co-occurrence',
         'keyword:predicate': bestRel as unknown as JSONValue,
         'keyword:verbLike': (isVerbLike(bestRel) ? true : false) as unknown as JSONValue,
         'keyword:directed': (bestDir ? true : false) as unknown as JSONValue,
@@ -456,7 +431,6 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
     })
   })
   edges.sort((a, b) => String(a.id).localeCompare(String(b.id)))
-
   const prunedEdges = (() => {
     const nodeCount = nodes.length
     const edgesPerNodeRaw = source.tuning?.edgesPerNode
@@ -483,7 +457,6 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
     kept.sort((a, b) => String(a.id).localeCompare(String(b.id)))
     return kept
   })()
-
   const undirectedNeighbors = new Map<string, string[]>()
   const weightedNeighbors = new Map<string, WeightedNeighbor[]>()
   for (let i = 0; i < prunedEdges.length; i += 1) {
@@ -497,7 +470,6 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
     const tArr = undirectedNeighbors.get(t) || []
     tArr.push(s)
     undirectedNeighbors.set(t, tArr)
-
     const props = (e.properties || {}) as Record<string, unknown>
     const wRaw = typeof props['strength:ppmi'] === 'number' && Number.isFinite(props['strength:ppmi']) ? (props['strength:ppmi'] as number) : null
     const w = wRaw != null && wRaw > 0 ? wRaw : 0
@@ -510,7 +482,6 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
       weightedNeighbors.set(t, tW)
     }
   }
-
   const entityNodeIds = nodes.map(n => String(n.id))
   const lpa = computeLabelPropagationCommunities({
     nodeIds: entityNodeIds,
@@ -537,7 +508,6 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
       ...(cid == null ? {} : { 'visual:community': cid as unknown as JSONValue, 'visual:layer': cid as unknown as JSONValue }),
     }
   })
-
   const cloudPlacements = computeKeywordCloudPlacements(nodes.map((n, index) => {
     const props = (n.properties || {}) as Record<string, unknown>
     const importance = typeof props['visual:importance'] === 'number' && Number.isFinite(props['visual:importance'])
@@ -565,7 +535,6 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
       'visual:opacity': p.opacity as unknown as JSONValue,
     }
   })
-
   const graphBase: GraphData = {
     type: 'Graph',
     context: '',
@@ -576,6 +545,7 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
       sourceLayerHash: sourceLayerHash as unknown as JSONValue,
       sourceLabel: (source.sourceLabel || '') as unknown as JSONValue,
       keywordCandidateCount: keywordCandidates.length as unknown as JSONValue,
+      keywordAnalysis: { policy: evidence.policy, scannedCharacters: evidence.scannedCharacters, truncated: text.length > analysisText.length || evidence.truncated, source: docId },
       keywordCloudLayout: 'semantic-spiral' as unknown as JSONValue,
       rawKeywordNodeCount: rawEntityCount as unknown as JSONValue,
       keywordNodeCount: nodes.length as unknown as JSONValue,
@@ -586,12 +556,10 @@ export const deriveKeywordGraphFromText = (source: KeywordGraphSource): KeywordG
     nodes,
     edges: prunedEdges,
   }
-
   const graph = withGraphTopologyMetadata({
     graphData: graphBase,
     stage: 'keyword',
     annotate: true,
   }) || graphBase
-
   return { graph, nodeCountsById }
 }

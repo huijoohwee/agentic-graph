@@ -48,7 +48,6 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
   const mainPanelGraphFieldsHeader = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'ui', 'MainPanelGraphFieldsHeader.tsx'))
   const mainPanelStoryboardWidgetManagerHeader = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'ui', 'MainPanelStoryboardWidgetManagerHeader.tsx'))
   const schemaSummary = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'ui', 'SchemaSummary.tsx'))
-  const dashboardHeader = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'ui', 'MainPanelDashboardHeader.tsx'))
   const helpHeader = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'ui', 'MainPanelHelpHeader.tsx'))
   const helpSections = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'views', 'HelpSections.tsx'))
   const helpView = readUtf8(path.resolve(root, 'src', 'features', 'panels', 'views', 'HelpView.tsx'))
@@ -746,16 +745,16 @@ export const testMainPanelKtvRowsUseSharedEditableValueCell = () => {
     throw new Error('Expected expand/collapse-all KTV header control to use explicit icon-only expand/collapse glyphs')
   }
   if (!mainPanelSectionHeader.includes('MAIN_PANEL_SECTION_HEADER_ROOT_CLASS_NAME') || !mainPanelSectionHeader.includes('flex min-h-8 min-w-0 max-w-full items-center justify-between gap-1')) {
-    throw new Error('Expected Dashboard/Help headers to share one lean MainPanel section header shell')
+    throw new Error('Expected MainPanel section headers to share one lean shell')
   }
   if (!mainPanelSectionHeader.includes('MAIN_PANEL_SECTION_HEADER_ACTIONS_CLASS_NAME') || !mainPanelSectionHeader.includes('MAIN_PANEL_SECTION_HEADER_TITLE_CLASS_NAME')) {
     throw new Error('Expected MainPanel section header title and action slots to be centralized')
   }
-  if (!dashboardHeader.includes('MainPanelSectionHeader') || !helpHeader.includes('MainPanelSectionHeader')) {
-    throw new Error('Expected Dashboard and Help headers to reuse the shared MainPanel section header')
+  if (!helpHeader.includes('MainPanelSectionHeader')) {
+    throw new Error('Expected Help header to reuse the shared MainPanel section header')
   }
-  if (dashboardHeader.includes('border-t') || dashboardHeader.includes('mt-4') || helpHeader.includes('border-t') || helpHeader.includes('mt-4')) {
-    throw new Error('Expected Dashboard and Help headers to avoid local top divider/margin chrome')
+  if (helpHeader.includes('border-t') || helpHeader.includes('mt-4')) {
+    throw new Error('Expected Help header to avoid local top divider/margin chrome')
   }
   if (!helpHeader.includes('ExpandCollapseAllButton') || helpHeader.includes("from 'lucide-react'") || helpHeader.includes('ChevronDown')) {
     throw new Error('Expected Help header expand/collapse-all to reuse the shared icon-only button')
