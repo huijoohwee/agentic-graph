@@ -1,3 +1,4 @@
+import { stripOversizedHydrationAttributes } from '../markdown/htmlToMarkdownHast'
 import { exportWebpageDomViaHiddenIframe } from './webpageDomExport'
 import { looksLikeWebpageShellText } from './webpageShellHeuristics'
 import { plainTextToMarkdown } from '@/lib/markdown/plainTextToMarkdown'
@@ -97,10 +98,13 @@ const extractTitleFromHtml = (html: string): string => {
 export const convertWebpageUrlToMarkdownViaProxyFetch = async (url: string): Promise<WebpageClientConvertResult> => {
   try {
     const res = await fetch(`/__webpage_proxy?url=${encodeURIComponent(url)}&agentic_os_script_policy=strip`, { headers: { Accept: 'text/html,*/*;q=0.9' } })
-    const html = await res.text()
+    const source = await res.text()
+    if (source.length > 32_000_000) return { ok: false, error: 'Captured HTML exceeds the input limit' }
+    const html = stripOversizedHydrationAttributes(source)
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` }
     const title = extractTitleFromHtml(html)
-    const bounded = html.length > 8_000_000 ? html.slice(0, 8_000_000) : html
+    if (html.length > 8_000_000) return { ok: false, error: 'HTML input exceeds the 8000000-character limit; no partial Markdown was produced' }
+    const bounded = html
     const auto = (() => {
       const h = bounded
       const isSubstackLike = /substackcdn\.com/i.test(h) || /\bdata-page\s*=\s*["'][^"']+/i.test(h)
@@ -159,11 +163,13 @@ export async function convertWebpageUrlToMarkdownViaBrowser(args: {
       maxChars: 12_000_000,
       minWaitAfterLoadMs: 650,
     })
+    if (htmlRes?.clipped) return { ok: false, error: 'Captured HTML is incomplete; no partial Markdown was produced' }
     const title = String(htmlRes?.title || '').trim()
-    const html = htmlRes && !htmlRes.clipped ? String(htmlRes.text || '').trim() : ''
+    const html = htmlRes && !htmlRes.clipped ? stripOversizedHydrationAttributes(String(htmlRes.text || '').trim()) : ''
 
     if (html) {
-      const bounded = html.length > 8_000_000 ? html.slice(0, 8_000_000) : html
+      if (html.length > 8_000_000) return { ok: false, error: 'HTML input exceeds the 8000000-character limit; no partial Markdown was produced' }
+    const bounded = html
       const auto = (() => {
         const h = bounded
         const isSubstackLike = /substackcdn\.com/i.test(h) || /\bdata-page\s*=\s*["'][^"']+/i.test(h)
@@ -200,6 +206,7 @@ export async function convertWebpageUrlToMarkdownViaBrowser(args: {
       maxChars: 12_000_000,
       minWaitAfterLoadMs: 650,
     })
+    if (textRes?.clipped) return { ok: false, error: 'Captured text is incomplete; no partial Markdown was produced' }
     const textTitle = String(textRes?.title || '').trim()
     const text = String(textRes?.text || '').trim()
     const resolvedTitle = String(title || textTitle || '').trim()

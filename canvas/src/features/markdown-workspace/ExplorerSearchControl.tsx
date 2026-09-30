@@ -8,6 +8,7 @@ import {
 } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { ExplorerToolbarIconButton } from './ExplorerToolbarIconButton'
+import { setWebsiteSelectionQuery, useWebsiteImportSelectionSession } from '@/features/source-files/websiteImportSelectionSession'
 
 type ExplorerSearchControlProps = {
   search: string
@@ -19,8 +20,14 @@ const explorerSearchIconClassName = `${UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME} sh
 
 export const ExplorerSearchControl = React.memo(function ExplorerSearchControl(props: ExplorerSearchControlProps) {
   const { search, setSearch, panelTextClass } = props
+  const importSession = useWebsiteImportSelectionSession(state => state.session)
+  const importSessionId = importSession?.id
+  const activeSearch = importSession ? importSession.query : search
+  const setActiveSearch = importSession ? setWebsiteSelectionQuery : setSearch
   const [searchExpanded, setSearchExpanded] = React.useState(() => search.trim().length > 0)
   const searchInputRef = React.useRef<HTMLInputElement | null>(null)
+
+  React.useEffect(() => { if (importSessionId) setSearchExpanded(true) }, [importSessionId])
 
   React.useEffect(() => {
     if (!searchExpanded) return
@@ -37,18 +44,18 @@ export const ExplorerSearchControl = React.memo(function ExplorerSearchControl(p
   }, [searchExpanded])
 
   React.useEffect(() => {
-    if (search.trim().length === 0 || searchExpanded) return
+    if (activeSearch.trim().length === 0 || searchExpanded) return
     setSearchExpanded(true)
-  }, [search, searchExpanded])
+  }, [activeSearch, searchExpanded])
 
   return (
-    <label className={`kg-explorer-search-control ${UI_RESPONSIVE_ELEMENT_ROW_CLASSNAME} gap-1`} aria-label="Search files">
+    <label className={`kg-explorer-search-control ${UI_RESPONSIVE_ELEMENT_ROW_CLASSNAME} gap-1`} aria-label={importSession ? 'Filter discovered pages' : 'Search files'}>
       <PanelTextInput
         ref={searchInputRef}
         variant="transparent"
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        placeholder="Search"
+        value={activeSearch}
+        onChange={e => setActiveSearch(e.target.value)}
+        placeholder={importSession ? 'Filter discovered pages' : 'Search'}
         className={[
           `${UI_RESPONSIVE_TOOLBAR_FIELD_CLASSNAME} rounded border`,
           UI_THEME_TOKENS.input.border,
@@ -60,14 +67,14 @@ export const ExplorerSearchControl = React.memo(function ExplorerSearchControl(p
         ].join(' ')}
         onKeyDown={e => {
           if (e.key !== 'Escape') return
-          if (search.trim().length > 0) {
-            setSearch('')
+          if (activeSearch.trim().length > 0) {
+            setActiveSearch('')
             return
           }
           setSearchExpanded(false)
         }}
         onBlur={() => {
-          if (search.trim().length > 0) return
+          if (activeSearch.trim().length > 0) return
           setSearchExpanded(false)
         }}
       />
@@ -76,7 +83,7 @@ export const ExplorerSearchControl = React.memo(function ExplorerSearchControl(p
         title="Search"
         onClick={() => {
           setSearchExpanded(prev => {
-            if (prev && search.trim().length === 0) return false
+            if (prev && activeSearch.trim().length === 0) return false
             return true
           })
         }}
