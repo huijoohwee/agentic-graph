@@ -225,9 +225,10 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     return (
       <DirectoryTreeBranch key={entry.path}>
         <DirectoryTreeRow depth={depth} label={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}>
-          {isFolder
+          {entryLeading ? <span className="ml-1 inline-flex shrink-0">{entryLeading}</span> : isFolder
             ? <DirectoryTreeDisclosure name={entry.name} path={entry.path} expanded={isExpanded} onToggle={() => toggleExpanded(entry.path)} />
             : <DirectoryTreeFileButton name={entry.name} path={entry.path} selected={isActive} onSelect={selectEntry} onContextMenu={openContextMenu} />}
+          {entryLeading && isFolder ? <DirectoryTreeDisclosure name={entry.name} path={entry.path} expanded={isExpanded} onToggle={() => toggleExpanded(entry.path)} /> : null}
           <MarkdownFileTreeRowButton
             ariaLabel={isFolder ? `Folder ${entry.name}` : `File ${entry.name}`}
             title={entry.path}
@@ -243,11 +244,10 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
                 className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-80`} />
             ) : null}
           </MarkdownFileTreeRowButton>
-          {entryLeading || sourceUrl || fileRight ? (
+          {sourceUrl || fileRight ? (
             <span role="group" aria-label={`Actions for ${entry.name}`} data-source-file-actions
               className="inline-flex shrink-0 items-center gap-0.5"
-              style={alignActionColumns ? { minWidth: 'calc(var(--kg-data-view-icon-action-sm-size, 1.75rem) * 5 + 0.5rem)' } : undefined}>
-              {entryLeading}
+              style={alignActionColumns ? { minWidth: 'calc(var(--kg-data-view-icon-action-sm-size, 1.75rem) * 4 + 0.375rem)' } : undefined}>
               {sourceUrl ? (
                 <a href={sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open source URL for ${entry.name}`}
                   title={sourceUrl}

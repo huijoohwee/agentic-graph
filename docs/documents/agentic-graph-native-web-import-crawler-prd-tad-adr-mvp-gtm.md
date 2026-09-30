@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.33"
+version: "0.2.34"
 date: "2026-09-30"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,22 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.32"
-prd_revision: "0.2.33"
-tad_revision: "0.2.33"
-adr_revision: "0.2.33"
-mvp_revision: "0.2.33"
-gtm_revision: "0.2.33"
+previous_document_version: "0.2.33"
+prd_revision: "0.2.34"
+tad_revision: "0.2.34"
+adr_revision: "0.2.34"
+mvp_revision: "0.2.34"
+gtm_revision: "0.2.34"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-09-30 leading Source Files selection
+
+- PRD: `/fix #source-files-leading-selection @codex` keeps normal folder arrows and file icons until Select visible checks pages. Selected pages reveal discovery checkboxes in the leading tree control slot, including disabled controls on unrelated mission and ordinary source rows. Clearing the last selection restores the icons. Folder expansion remains an adjacent control while checkboxes are shown. Remove the former right-side selection slot.
+- TAD / ADR: one selection renderer feeds both existing Source Files tree instances, conditional on the session's selected URL set. The shared tree places the renderer before disclosure or label, retaining semantic native inputs and independent folder arrows. The URL set remains the sole selection and import authority; disabled unrelated rows cannot enter it. No new persistence, network call, dependency, or automatic import.
+- MVP: six existing files, 24 KB incremental diff and 20 active minutes. Verify Select visible, individual and folder toggles, real `.workspace` and inspection rows, disclosure independence, action ordering, absence of right-side duplicate checkboxes, browser reload, and exact committed-candidate validation. Runtime validation targets and captures stay outside source.
+- GTM / rollback: reduce visual jumps while choosing existing website pages; no buyer or revenue result is claimed. Revert this scoped successor to restore prior icon placement. Protected integration and deployment require separate authority and receipts.
 
 ## 2026-09-30 restartable Source Files page selection
 

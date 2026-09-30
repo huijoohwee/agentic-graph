@@ -176,6 +176,13 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
     openCanvasEmbedCodePanel(detail)
   }, [])
 
+  const renderSelectionControl = (entry: WorkspaceEntry) => {
+    if (!importSession?.selected.size) return null
+    const urls = projection.selectionUrls.get(entry.path)
+    const label = urls?.length ? entry.kind === 'folder' ? `Select discovered pages in ${entry.path}` : `Select page ${projection.pageUrls.get(entry.path)}` : `${entry.kind === 'folder' ? 'Folder' : 'File'} ${entry.name} is outside this website import`
+    return <WebsiteSelectionCheckbox label={label} urls={urls || []} selected={importSession.selected} toggle={toggleWebsiteSelection} disabled={!urls?.length || !!importSession.importing} />
+  }
+
   return (
     <>
       <section aria-label="Source Files import" className="px-1 py-1">
@@ -184,7 +191,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
       </section>
       <SourceFilesOwnershipSummary onOpenTemplate={() => void openTemplate()} templateBusy={templateBusy} />
       {templateError && <p role="status" className={`px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>{templateError}</p>}
-      <AgentMissionSourceFile search={props.search} activePath={selectedPath} />
+      <AgentMissionSourceFile search={props.search} activePath={selectedPath} renderEntryLeading={renderSelectionControl} />
       {loading ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.text.secondary}`}>Loading…</p>
         : loadError ? <p className={`${UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_EMPTY_STATE_CLASSNAME} px-2 py-1 ${textSizeClass} ${UI_THEME_TOKENS.status.error}`}>Failed: {loadError}</p>
         : <MarkdownFileTree
@@ -207,10 +214,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
         onShareCodeReady={handleShareCodeReady}
         canOpenContextMenu={entry => !projection.pendingPaths.has(entry.path)}
         alignActionColumns={!!importSession}
-        renderEntryLeading={entry => {
-          const urls = projection.selectionUrls.get(entry.path)
-          return importSession && urls?.length ? <WebsiteSelectionCheckbox label={entry.kind === 'folder' ? `Select discovered pages in ${entry.path}` : `Select page ${projection.pageUrls.get(entry.path)}`} urls={urls} selected={importSession.selected} toggle={toggleWebsiteSelection} disabled={!!importSession.importing} /> : null
-        }}
+        renderEntryLeading={renderSelectionControl}
         renderFileRight={renderFileStatusRight}
       />}
     </>
