@@ -19,17 +19,23 @@ export const clampInt = (v: unknown, fallback: number, min: number, max: number)
 export const extractXmlLocs = (xml: string): string[] => {
   const s = String(xml || '')
   const out: string[] = []
-  const re = /<loc>\s*([^<]+?)\s*<\/loc>/gi
+  const prefix = /<((?:[\w.-]+:)?)(?:urlset|sitemapindex)\b/i.exec(s)?.[1] || ''
+  const re = /<((?:[\w.-]+:)?)loc\b[^>]*>\s*(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]+?))\s*<\/(?:[\w.-]+:)?loc>/gi
   while (true) {
     const m = re.exec(s)
     if (!m) break
-    const loc = String(m[1] || '').trim()
+    if (m[1] !== prefix) continue // Image/video extension locations are not page locations.
+    const loc = (m[2] ?? String(m[3] || '').replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos);/gi, (entity, code: string) => {
+      if (code[0] !== '#') return ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" } as Record<string, string>)[code.toLowerCase()] || entity
+      const point = code[1].toLowerCase() === 'x' ? parseInt(code.slice(2), 16) : Number(code.slice(1))
+      return point > 0 && point <= 0x10ffff && !(point >= 0xd800 && point <= 0xdfff) ? String.fromCodePoint(point) : entity
+    })).trim()
     if (loc) out.push(loc)
   }
   return out
 }
 
-export const looksLikeSitemapIndex = (xml: string): boolean => /<sitemapindex\b/i.test(String(xml || ''))
+export const looksLikeSitemapIndex = (xml: string): boolean => /<(?:[\w.-]+:)?sitemapindex\b/i.test(String(xml || ''))
 
 export const normalizeUrl = (raw: string): string | null => {
   try {
