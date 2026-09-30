@@ -125,6 +125,7 @@ export function ToolbarMenuLauncher({
       const requested =
         tab === 'view'
           ? 'view'
+          : tab === 'preview' ? 'preview'
           : tab === 'media'
             ? 'media'
           : tab === 'animation'

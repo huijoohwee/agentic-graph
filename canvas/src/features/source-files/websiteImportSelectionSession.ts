@@ -1,10 +1,13 @@
 import { create } from 'zustand'
-import { emitMainPanelOpen } from '@/features/panels/utils/useMainPanelRect'
+import { requestMarkdownExplorerSourceFilesOpen } from '@/features/markdown/ui/useMarkdownExplorerSectionCollapseState'
+import { openMarkdownWorkspaceEditorPane } from '@/features/workspace-table/workspaceEditorPane'
+import { useGraphStore } from '@/hooks/useGraphStore'
 import { discoverWebsitePages, type WebsiteDiscoveredPage } from '@/lib/websites/websiteImportSelection'
 
-type WebsiteSelectionSession = {
+export type WebsiteSelectionSession = {
   id: number
   url: string
+  sourcePath?: string
   pages: WebsiteDiscoveredPage[]
   selected: Set<string>
   visited: Set<string>
@@ -69,11 +72,28 @@ export function setWebsiteSelectionQuery(query: string) {
   if (session) updateSession(session.id, current => ({ ...current, query }))
 }
 
-export function chooseWebsiteImportPages(url: string): Promise<string[] | null> {
+export function chooseWebsiteImportPages(url: string, sourcePath?: string): Promise<string[] | null> {
+  const source = new URL(url)
+  if (!['http:', 'https:'].includes(source.protocol)) throw new Error('Enter an HTTP or HTTPS website URL.')
+  url = source.href
   finishWebsiteImportSelection(null)
   const result = new Promise<string[] | null>(resolve => { resolveSelection = resolve })
-  useWebsiteImportSelectionSession.setState({ session: { id: ++sequence, url, pages: [], selected: new Set(), visited: new Set(), busy: true, error: '', limited: false, query: '' } })
-  emitMainPanelOpen({ tab: 'websiteImport' })
+  useWebsiteImportSelectionSession.setState({ session: { id: ++sequence, url, sourcePath, pages: [], selected: new Set(), visited: new Set(), busy: true, error: '', limited: false, query: '' } })
+  openMarkdownWorkspaceEditorPane(useGraphStore.getState())
+  requestMarkdownExplorerSourceFilesOpen(sourcePath)
   void discoverWebsiteSelection(url)
+  return result
+}
+
+export async function importWebsiteFromSourceFiles(url: string, sourcePath?: string, beforeImport?: () => Promise<unknown>) {
+  const selectedUrls = await chooseWebsiteImportPages(url, sourcePath)
+  if (!selectedUrls?.length) return
+  await beforeImport?.()
+  const { getMarkdownWorkspaceActionBridge } = await import('@/features/markdown-explorer/workspaceActionBridge')
+  const importWebsite = getMarkdownWorkspaceActionBridge().importWebsite
+    ?? (await import('@/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction')).importWebsiteViaWorkspaceRuntime
+  const { buildAutoWebsiteImportOptions } = await import('@/lib/toolbar/importUrlWebsiteMode')
+  const result = await importWebsite(url, { ...buildAutoWebsiteImportOptions(), selectedUrls })
+  if (result && result.error) throw new Error(result.error)
   return result
 }

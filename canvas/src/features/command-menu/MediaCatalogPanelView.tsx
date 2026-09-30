@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, Grid2X2, Image as ImageIcon, List, Mic2, Plus, Rows3 } from 'lucide-react'
+import { Grid2X2, List, Plus, Rows3 } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { CommandMenuRichMediaItem } from '@/lib/command-menu/commandMenuRichMediaInventory'
 import { readCommandMenuMediaNameDraft, type CommandMenuMediaNameDrafts } from '@/lib/command-menu/commandMenuMediaNameSync'
@@ -31,6 +31,7 @@ import {
   setMediaCatalogMode,
   subscribeMediaCatalogMode,
 } from './mediaCatalogModeRuntime'
+import { MediaCatalogModeControls } from './MediaCatalogModeControls'
 import { XrMediaLibraryPanel } from './XrMediaLibraryPanel'
 import { MotionCapturePlatformProjection } from '@/features/three/MotionCapturePlatformProjection'
 import { FlightSimTrainingSurfaceProjection } from '@/features/game-flight-sim/FlightSimTrainingSurfaceProjection'
@@ -145,11 +146,11 @@ export function MediaCatalogPanelView({
     readMediaCatalogMode,
     readMediaCatalogMode,
   )
+  const previousXrState = React.useRef({ active: xrSurfaceActive, revision: xrSimulationWorkbenchOpenRevision })
   React.useEffect(() => {
-    if (xrSurfaceActive) setMediaCatalogMode('xr-3d')
-  }, [xrSurfaceActive])
-  React.useEffect(() => {
-    if (xrSurfaceActive && xrSimulationWorkbenchOpenRevision > 0) setMediaCatalogMode('xr-3d')
+    const previous = previousXrState.current
+    previousXrState.current = { active: xrSurfaceActive, revision: xrSimulationWorkbenchOpenRevision }
+    if (xrSurfaceActive && (!previous.active || xrSimulationWorkbenchOpenRevision > previous.revision)) setMediaCatalogMode('xr-3d')
   }, [xrSimulationWorkbenchOpenRevision, xrSurfaceActive])
   const mediaItemCount = uploadedMediaItems.length + mediaItems.length + mediaActions.length + (sourceMetadataItem ? 1 : 0)
   const normalizedSearchQuery = search.normalizedSearchQuery
@@ -235,45 +236,7 @@ export function MediaCatalogPanelView({
             >
               <Plus className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden />
             </button> : null}
-            <nav
-              className={cn('ml-1 inline-flex h-6 items-center overflow-hidden rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)}
-              aria-label="Media catalog mode"
-              data-kg-media-mode-switcher="header-icons"
-            >
-              <button
-                type="button"
-                className={cn('inline-flex h-full w-6 items-center justify-center border-0 px-0', catalogMode === 'media' ? UI_THEME_TOKENS.button.activeBg : UI_THEME_TOKENS.button.hoverBg)}
-                title="Media"
-                aria-label="Show media library"
-                aria-pressed={catalogMode === 'media'}
-                data-kg-media-library-toggle="1"
-                onClick={() => setMediaCatalogMode('media')}
-              >
-                <ImageIcon className="size-3.5" strokeWidth={1.7} aria-hidden />
-              </button>
-              <button
-                type="button"
-                className={cn('inline-flex h-full w-6 items-center justify-center border-0 border-l px-0', UI_THEME_TOKENS.panel.border, catalogMode === 'xr-3d' ? UI_THEME_TOKENS.button.activeBg : UI_THEME_TOKENS.button.hoverBg)}
-                title="3D for XR"
-                aria-label="Show 3D assets for XR"
-                aria-pressed={catalogMode === 'xr-3d'}
-                data-kg-media-3d-toggle="1"
-                onClick={() => setMediaCatalogMode('xr-3d')}
-              >
-                <Box className="size-3.5" strokeWidth={1.7} aria-hidden />
-              </button>
-              <button
-                type="button"
-                className={cn('inline-flex h-full w-6 items-center justify-center border-0 border-l px-0', UI_THEME_TOKENS.panel.border, catalogMode === 'voice-studio' ? UI_THEME_TOKENS.button.activeBg : UI_THEME_TOKENS.button.hoverBg)}
-                title="AI Voice Studio"
-                aria-label="Show AI Voice Studio"
-                aria-pressed={catalogMode === 'voice-studio'}
-                data-kg-media-voice-toggle="1"
-                onClick={() => setMediaCatalogMode('voice-studio')}
-              >
-                <Mic2 className="size-3.5" strokeWidth={1.7} aria-hidden />
-              </button>
-            </nav>
+            <MediaCatalogModeControls mode={catalogMode} onChange={setMediaCatalogMode} />
             {catalogMode === 'media' ? <section className={cn('inline-flex h-6 items-center overflow-hidden rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)} role="group" aria-label="Media layout" data-kg-media-layout-selector="1">
               {([
                 { layout: 'list' as const, label: 'List layout', Icon: List },

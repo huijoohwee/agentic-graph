@@ -1,8 +1,8 @@
 import fsSync from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { clampInt } from '@/lib/websites/server/websiteImportCore'
-import { fetchRemoteTextDetailed } from '@/lib/net/fetchRemoteText'
+import { fileURLToPath } from 'node:url'
+import { clampInt, fetchTextWithLimit } from '@/lib/websites/server/websiteImportCore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { convertWebpageHtmlToMarkdownArtifactAsync } from '@/lib/websites/webpageHtmlToMarkdownArtifact'
 
@@ -13,7 +13,7 @@ type Args = {
   pythonBin: string
 }
 
-function parseArgs(argv: string[]): Args {
+export function parseArgs(argv: string[]): Args {
   const read = (key: string): string => {
     const idx = argv.findIndex(a => a === key)
     if (idx < 0) return ''
@@ -23,7 +23,7 @@ function parseArgs(argv: string[]): Args {
   const url = read('--url')
   const out = read('--out')
   const pythonBin = read('--python') || String(process.env.AG_PYTHON_BIN || 'python3')
-  const includeImages = read('--no-images') ? false : true
+  const includeImages = !argv.includes('--no-images')
 
   if (!url) throw new Error('Missing --url')
   if (!out) throw new Error('Missing --out')
@@ -65,25 +65,10 @@ async function main() {
 
   const { restore } = initJsdomHarness()
   try {
-    const fetched = await fetchRemoteTextDetailed(args.url, {
-      preflightHead: true,
-      preferProxy: true,
-      maxBytes: 8 * 1024 * 1024,
-      timeoutMs: 20_000,
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-        Accept: 'text/html,*/*;q=0.9',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
+    const fetched = await fetchTextWithLimit(args.url, {
+      maxBytes: 32 * 1024 * 1024, timeoutMs: 20_000, accept: 'text/html,*/*;q=0.9',
     })
-    if (fetched.ok !== true) {
-      const detail =
-        fetched.kind === 'http'
-          ? `HTTP ${fetched.status || ''}`.trim() + (fetched.errorText ? `: ${String(fetched.errorText || '').slice(0, 200)}` : '')
-          : fetched.kind
-      throw new Error(`Fetch failed: ${detail}`)
-    }
+    if (fetched.ok !== true) throw new Error(`Fetch failed: ${fetched.error}`)
     const md = await convertWebpageHtmlToMarkdownArtifactAsync({
       html: fetched.text,
       url: args.url,
@@ -111,7 +96,7 @@ async function main() {
   }
 }
 
-main().catch(err => {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch(err => {
   const msg = err && typeof err === 'object' && 'message' in err ? String((err as { message?: unknown }).message || err) : String(err)
   process.stderr.write(`${msg}\n`)
   process.exit(1)

@@ -15,7 +15,6 @@ Keep `Key` aligned to `MainPanelTabKey`. Keep `Type` aligned to the shared MainP
 | workflowManager | mainPanel.workflowManager | Workflow registry | Manage workflow registry, graph fields, shared `/` and `@` command inventory, mappings, and pipeline controls. |
 | websiteImport | mainPanel.websiteImport | Page selection | Discover pages and select folders or files before importing, converting and parsing. |
 | dashboard | mainPanel.dashboard | Runtime summary | Review runtime status, graph stats, and quick operational summaries. |
-| preview | mainPanel.preview | Rendered preview | Preview rendered markdown, media, diagrams, and selected canvas output. |
 | settings | mainPanel.settings | Shared settings | Configure shared UI, workspace, storage, parser, renderer, and chat settings. |
 | history | mainPanel.history | Activity review | Review panel history, activity, and recent runtime events. |
 | help | mainPanel.help | Help reference | Browse shortcuts, behavior references, workflow links, and icon semantics. |
@@ -24,3 +23,5 @@ Skills & Commands now lives in the FloatingPanel header as the button immediatel
 
 Design editing likewise lives in FloatingPanel Design. The former MainPanel Design entry is
 retired; MainPanel Settings remains the shared appearance control surface.
+
+Preview Panel lives in FloatingPanel. It reuses the Media catalog layout and selection controls, with selected media/diagram preview and collapsible Document insights. Existing `kg:mainPanelOpen` requests for `preview` redirect to FloatingPanel. Signal badges open source-linked insights there.

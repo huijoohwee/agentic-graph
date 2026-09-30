@@ -6,6 +6,7 @@ import { isMarkdownPath, languageForPath } from '@/features/markdown-workspace/m
 import { matchesMarkdownDocumentPath } from 'grph-shared/markdown/documentPath'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { shouldRejectMarkdownDocumentPayload } from '@/lib/markdown/markdownDocumentPayloadGuards'
+import { restoreMissingOpeningYamlFrontmatterFence } from '@/lib/markdown/frontmatter'
 
 type WebpageWorkspaceMeta = {
   url?: unknown
@@ -93,8 +94,8 @@ export function useMarkdownWorkspaceEffectiveContent(args: {
     return matchesMarkdownDocumentPath(docKey, markdownName)
   }, [activeDocumentKey, activePath, markdownDocumentName])
   const rawCanonicalMarkdownText = typeof markdownDocumentText === 'string' ? markdownDocumentText : ''
-  const canonicalMarkdownText = shouldRejectMarkdownDocumentPayload(rawCanonicalMarkdownText) ? '' : rawCanonicalMarkdownText
-  const visibleActiveText = shouldRejectMarkdownDocumentPayload(activeText) ? '' : activeText
+  const canonicalMarkdownText = shouldRejectMarkdownDocumentPayload(rawCanonicalMarkdownText) ? '' : restoreMissingOpeningYamlFrontmatterFence(rawCanonicalMarkdownText)
+  const visibleActiveText = shouldRejectMarkdownDocumentPayload(activeText) ? '' : restoreMissingOpeningYamlFrontmatterFence(activeText)
   const shouldSyncProgrammaticActiveText = (
     contentMode !== 'widget'
     && isMatchingMarkdownDocument

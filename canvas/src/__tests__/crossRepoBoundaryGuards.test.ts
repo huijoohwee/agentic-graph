@@ -389,6 +389,15 @@ function runtimeValidationForbiddenNeedles(runtimeInputPath: string): readonly s
     } catch {
       declaredCanonicalPath = ''
     }
+    const token = parsedUrl.pathname.split('/').filter(Boolean).at(-1) || ''
+    // A short route name is shared vocabulary, not an external input identity.
+    // Keep exact URL/authority-path protection and distinctive opaque tokens.
+    return Array.from(new Set([
+      normalizedInputPath,
+      `${parsedUrl.host}${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`,
+      /^[A-Za-z0-9_-]{20,}$/.test(token) ? token : '',
+      declaredCanonicalPath,
+    ].filter(v => v.length >= 4)))
   }
 
   return Array.from(new Set([
@@ -441,6 +450,13 @@ function assertRuntimeValidationHardcodePolicyContract() {
   const remoteNeedles = runtimeValidationForbiddenNeedles(remoteInput)
   if (!remoteNeedles.includes(remoteInput) || !remoteNeedles.includes(remoteToken)) {
     throw new Error('Expected external validation input protection to remain strict')
+  }
+  const ordinaryInput = 'https://validation.invalid/articles'
+  const ordinaryNeedles = runtimeValidationForbiddenNeedles(ordinaryInput)
+  if (!ordinaryNeedles.includes(ordinaryInput)
+    || !ordinaryNeedles.includes('validation.invalid/articles')
+    || ordinaryNeedles.includes('articles')) {
+    throw new Error('Expected full remote URL protection without banning ordinary route words')
   }
 }
 
