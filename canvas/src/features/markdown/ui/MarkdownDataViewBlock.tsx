@@ -319,11 +319,6 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
     return graphEnabled ? 'multiDimTable' : 'table'
   }, [effectiveGroupByColumnId, graphEnabled, hasViewConfig, viewLayout])
 
-  const openViewSettingsPanel = React.useCallback((panel: WorkspaceDataViewSettingsPanelKey) => {
-    setSettingsPanel(panel)
-    emitFloatingPanelOpen({ tab: 'view', open: true })
-  }, [])
-
   const floatingBinding = React.useMemo(() => {
     if (!view || !viewConfig) return null
     return {
@@ -386,7 +381,12 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
     viewConfig,
     viewerMode,
   ])
-  useWorkspaceDataViewFloatingRegistration(floatingBinding)
+  const activateViewSettings = useWorkspaceDataViewFloatingRegistration(floatingBinding)
+  const openViewSettingsPanel = React.useCallback((panel: WorkspaceDataViewSettingsPanelKey) => {
+    activateViewSettings(panel)
+    setSettingsPanel(panel)
+    emitFloatingPanelOpen({ tab: 'view', open: true })
+  }, [activateViewSettings])
 
   if (!view) return null
   if (!viewConfig) return null
