@@ -4,7 +4,7 @@ import { boundedKeywordText, collectKeywordEvidence } from '@/lib/semantic-mode/
 import { normalizeEntityKey } from '@/lib/graph/textAnalysis/utils'
 import { hashText } from '@/features/parsers/hash'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { jumpToDocumentInsight, type DocumentInsightsSource } from '@/features/markdown-workspace/documentInsightsRuntime'
+import { jumpToDocumentInsight, selectDocumentKeyword, type DocumentInsightsSource } from '@/features/markdown-workspace/documentInsightsRuntime'
 
 /** Local text inspection. Source identity and navigation belong to the caller. */
 export default function DocumentKeywordInsights({ source }: { source: DocumentInsightsSource }) {
@@ -32,7 +32,7 @@ export default function DocumentKeywordInsights({ source }: { source: DocumentIn
   React.useEffect(() => {
     const ids = new Set([selectedNodeId, ...selectedNodeIds])
     const match = analysis.labels?.find(([key]) => ids.has(`kw:entity:${hashText(key)}`))
-    if (match) setSelected(match[0])
+    if (match) { setSelected(match[0]); selectDocumentKeyword(source, null) }
   }, [selectedNodeId, selectedNodeIds, analysis])
   const chosenKey = analysis.labels?.some(([key]) => key === selected) ? selected : analysis.labels?.[0]?.[0]
   const chosen = chosenKey ? analysis.evidence?.byKey.get(chosenKey) : null
@@ -40,16 +40,16 @@ export default function DocumentKeywordInsights({ source }: { source: DocumentIn
   return <section aria-label="Keyword context" className="grid min-w-0 gap-2 border-t pt-2">
     <strong>Keywords in context</strong>
     <label className="grid gap-1">Language tag
-      <input aria-label="Analysis language tag" className="min-w-0 rounded border bg-transparent p-1" value={locale} maxLength={64} onChange={event => setLocale(event.target.value || 'und')} />
+      <input aria-label="Analysis language tag" className="min-w-0 rounded border bg-transparent p-1" value={locale} maxLength={64} onChange={event => { selectDocumentKeyword(source, null); setLocale(event.target.value || 'und') }} />
     </label>
     <label className="grid gap-1">Your phrases · one per line
-      <textarea aria-label="Phrases to inspect" className="min-w-0 rounded border bg-transparent p-1" rows={2} maxLength={2000} value={phrases} onChange={event => setPhrases(event.target.value)} placeholder="Leave empty to discover phrases" />
+      <textarea aria-label="Phrases to inspect" className="min-w-0 rounded border bg-transparent p-1" rows={2} maxLength={2000} value={phrases} onChange={event => { selectDocumentKeyword(source, null); setPhrases(event.target.value) }} placeholder="Leave empty to discover phrases" />
     </label>
     <p>{analysis.custom ? 'Your phrases use case-insensitive, complete-token matching.' : 'Suggested phrases use frequency, sentence spread and phrase ranking.'} Counts cover this source text, including any source markup; graph counts cover the graph’s analysis text.</p>
     {analysis.error ? <p role="alert">{analysis.error}</p> : <>
       <p>{analysis.evidence?.policy} · {analysis.evidence?.scannedCharacters} characters scanned. Up to 24 phrases and 3 contexts per phrase.{analysis.evidence?.truncated ? ' Partial scan: character or token limit reached.' : ''}</p>
       <nav aria-label="Keyword phrases" className="flex max-h-32 flex-wrap gap-1 overflow-auto">
-        {analysis.labels?.map(([key, label]) => <button type="button" className="rounded border px-2 py-1" key={key} aria-pressed={chosenKey === key} onClick={() => setSelected(key)}>{label} · {analysis.evidence?.byKey.get(key)?.frequency ?? 0}</button>)}
+        {analysis.labels?.map(([key, label]) => <button type="button" className="rounded border px-2 py-1" key={key} aria-pressed={chosenKey === key} onClick={() => { setSelected(key); setStatus(selectDocumentKeyword(source, { text: label, locale }) ? 'Viewer highlights visible matches when Toggle text highlight is enabled.' : 'Source changed or phrase exceeds 160 characters. Choose a current phrase.') }}>{label} · {analysis.evidence?.byKey.get(key)?.frequency ?? 0}</button>)}
       </nav>
       {chosen ? <>
         <p>{chosen.frequency} occurrences · {chosen.spread} sentences{!analysis.custom && candidate ? ` · rank score ${candidate.score.toFixed(2)}` : ''}</p>

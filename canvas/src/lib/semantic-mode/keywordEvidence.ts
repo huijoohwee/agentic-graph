@@ -10,7 +10,7 @@ export type KeywordContext = { start: number; end: number; line: number; text: s
 export type KeywordEvidence = { frequency: number; spread: number; distribution: number[]; contexts: KeywordContext[] }
 
 /** Plain-text input; offsets use UTF-16 code units of the supplied text. */
-export function collectKeywordEvidence(input: string, labels: Iterable<string>, locale = 'und') {
+export function collectKeywordEvidence(input: string, labels: Iterable<string>, locale = 'und', onMatch?: (start: number, end: number) => void) {
   const text = boundedKeywordText(input)
   const words = segmentWordsWithOffsets(text, locale)
   const sentences = splitSentencesWithOffsets(text, locale)
@@ -44,6 +44,7 @@ export function collectKeywordEvidence(input: string, labels: Iterable<string>, 
       const key = sequences.get(sequence)
       if (!key) continue
       const evidence = byKey.get(key)!
+      onMatch?.(first.start, word.end)
       evidence.frequency++
       if (lastSentence.get(key) !== sentenceIndex) { evidence.spread++; lastSentence.set(key, sentenceIndex) }
       evidence.distribution[Math.min(5, Math.floor(first.start / Math.max(1, text.length) * 6))]!++
