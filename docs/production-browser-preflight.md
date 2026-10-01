@@ -3,7 +3,7 @@ title: "Production browser preflight"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 status: "active"
 continuity_id: "GRAPH-BROWSER-PREFLIGHT-001"
-revision: 8
+revision: 9
 owner: "agentic-graph"
 frontmatter_contract: "required"
 version: "0.1.1"
@@ -194,9 +194,15 @@ GTM: use the current operator's demonstrated expired-artifact recovery pain as t
 PRD/MVP: finish the existing retention lane, then promote the exact integrated source through the
 protected release owner. PR #1398 at `240ebec7e4f9a38100cd4e0673413014e9f3bfe5` passed its
 original Integration Gate but became stale. Native successor `production-receipt-retention-integrated`
-retains that candidate and the same seven-path scope; current main merged without conflicts.
+retains that candidate and its seven-path scope; current main merged without conflicts.
 TAD/ADR: preserve the published predecessor; rebind its mission and validate the current candidate.
 No gate bypass, production-controller change, added dependency or product module is introduced.
+
+Current-main validation exposed a stale mission-browser locator: the shared source-file action
+toolbar renders through the existing body portal, outside the Markdown Workspace region.
+The eighth admitted path fixes that existing browser check to target the toolbar's exact accessible
+name; visibility and all seven disabled-action assertions remain enforced. Repair budget: one test
+owner, under 1 KiB test delta and 20 active minutes; provider waits remain separate.
 
 The current successful production baseline is run `36687839906`, source
 `e8d8e9ab02b95697ed8e8682a04f3ba2b507a8fb`. The native retain operation downloaded and validated
