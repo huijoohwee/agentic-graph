@@ -84,6 +84,31 @@ test('static fetch blocks local access by default and enforces streaming byte li
   }
 })
 
+test('conditional metadata stays opt-in and validators do not leak across redirects', async () => {
+  const previous = process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
+  process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = '1'
+  let forwarded: string | string[] | undefined
+  const server = http.createServer((req, res) => {
+    if (req.url === '/redirect') { res.writeHead(302, { Location: '/destination' }); res.end(); return }
+    if (req.url === '/destination') { forwarded = req.headers['if-none-match']; res.end('current'); return }
+    res.writeHead(304, { ETag: '"same"' }); res.end()
+  })
+  const base = await listen(server)
+  const options = { timeoutMs: 1000, maxBytes: 1024, allowedOrigin: base }
+  try {
+    assert.deepEqual(await fetchTextWithLimit(base, options), { ok: false, error: 'HTTP 304' })
+    const validated = await fetchTextWithLimit(base, { ...options, cache: { etag: '"same"' } })
+    assert.ok(validated.ok); assert.equal(validated.response?.status, 304); assert.equal(validated.text, '')
+    const redirected = await fetchTextWithLimit(base + '/redirect', { ...options, cache: { etag: '"same"' } })
+    assert.ok(redirected.ok); assert.equal(redirected.text, 'current'); assert.equal(redirected.response?.redirected, true)
+    assert.equal(forwarded, undefined)
+  } finally {
+    await close(server)
+    if (previous === undefined) delete process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS
+    else process.env.AGENTIC_OS_CRAWLER_ALLOW_PRIVATE_NETWORKS = previous
+  }
+})
+
 test('parallel reservations preserve distinct runs and reject incompatible explicit reuse', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'website-admission-'))
   try {

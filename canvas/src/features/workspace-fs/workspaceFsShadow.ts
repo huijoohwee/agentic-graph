@@ -32,6 +32,7 @@ export const upsertShadowEntry = (entry: WorkspaceEntry) => {
     parentPath: entry.parentPath ? normalizeWorkspacePath(entry.parentPath) : null,
     kind,
     name: String(entry.name ?? ''),
+    previousPaths: entry.previousPaths,
     updatedAtMs: typeof entry.updatedAtMs === 'number' ? entry.updatedAtMs : Date.now(),
     ...(kind === 'file'
       ? { text: typeof entry.text === 'string' && entry.text.length <= SHADOW_MAX_FILE_TEXT_CHARS ? entry.text : '' }
@@ -66,6 +67,7 @@ export const snapshotShadowEntries = (): WorkspaceEntry[] => {
 
 export const mergeEntriesWithShadow = (entries: WorkspaceEntry[]): WorkspaceEntry[] => {
   const merged = new Map<string, WorkspaceEntry>()
+  for (const entry of entries) for (const old of entry.previousPaths || []) deleteShadowEntry(old)
   for (const entry of entries) {
     if (!entry || typeof entry !== 'object') continue
     const path = normalizeWorkspacePath(entry.path)
