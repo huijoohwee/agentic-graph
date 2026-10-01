@@ -1,6 +1,6 @@
 import React from 'react'
 import MarkdownTokenRenderer from '@/features/markdown/ui/MarkdownTokenRenderer'
-import type { HighlightedLineRange, MarkdownGeoDatasetIntegration, MarkdownViewerMediaMode, RenderOpts } from '@/features/markdown/ui/MarkdownRendererTypes'
+import type { HighlightedLineRange, MarkdownGeoDatasetIntegration, MarkdownViewerMediaMode } from '@/features/markdown/ui/MarkdownRendererTypes'
 import type { TokenWithLines } from '@/features/markdown/ui/markdownPreviewLex'
 import { MarkdownPanelLayout } from '@/features/markdown/ui/MarkdownPanelLayout'
 import {
@@ -20,15 +20,11 @@ import type { MarkdownSourceFilesPanelIntegration } from '@/features/markdown/ui
 import { useMarkdownExplorerControls } from '@/features/markdown/ui/useMarkdownExplorerControls'
 import { encodeUtf8ToBase64 } from '@/features/markdown/markdownRoundTrip'
 import {
-  readBrowserLocationHash,
-  subscribeHashChange,
   writeBrowserLocationHash,
 } from '@/lib/browser/hashChangeEvents'
 import {
   buildMarkdownVariableSsotAnchorId,
-  collectMarkdownVariableSsotEntries,
 } from '@/features/markdown/ui/markdownVariableReferences'
-import { resetGlobalUserSelectLock } from '@/lib/canvas/interaction-user-select'
 import { useMarkdownTocTreeState } from '@/features/markdown/ui/useMarkdownTocTreeState'
 import {
   buildMarkdownFrontmatterPreviewRenderOpts,
@@ -38,14 +34,8 @@ import {
   deriveMarkdownPreviewDocumentMode,
   getMarkdownPreviewScrollStyle,
 } from './markdownPreviewViewerMode'
-import { useTextSelectionMatchHighlights } from '@/lib/ui/textSelectionMatchHighlights'
 import { useMarkdownVariablePreviewSource } from './markdownInlineVariableMediaPreview'
-import {
-  buildSemanticTextHighlightOverlayStyle,
-  getSemanticHighlightSurfaceAttributes,
-  getSemanticHighlightSurfaceClassName,
-  SEMANTIC_HIGHLIGHT_SURFACES,
-} from '@/lib/ui/semanticHighlight'
+import { MarkdownPreviewScrollSurface } from './MarkdownPreviewScrollSurface'
 const MARKDOWN_INLINE_EMBED_MAX_CHARS = 120_000
 const MARKDOWN_VARIABLE_SSOT_SCAN_MAX_CHARS = 120_000
 const MARKDOWN_MERMAID_DEFER_DOC_CHARS = 90_000
@@ -173,30 +163,10 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
     markdownCardPreviewMode = false,
     markdownViewerMediaMode = 'chip',
   } = props
-  const blockCopy = React.useCallback((event: React.ClipboardEvent<HTMLElement>) => {
-    if (!forbidCopy) return
-    event.preventDefault()
-  }, [forbidCopy])
-  const blockCopyKeyDown = React.useCallback((event: React.KeyboardEvent<HTMLElement>) => {
-    if (!forbidCopy) return
-    const key = String(event.key || '').toLowerCase()
-    const mod = event.metaKey || event.ctrlKey
-    if (!mod) return
-    if (key !== 'c' && key !== 'x') return
-    event.preventDefault()
-  }, [forbidCopy])
   const { sourceMarkdownLength, markdownLargeDocumentMode } = React.useMemo(
     () => deriveMarkdownPreviewDocumentMode({ sourceMarkdownText, tokens }),
     [sourceMarkdownText, tokens],
   )
-
-  const resetUserSelectLockIfNeeded = React.useCallback(() => {
-    try {
-      resetGlobalUserSelectLock()
-    } catch {
-      void 0
-    }
-  }, [])
 
   const embeddedMarkdownBase64 = React.useMemo(() => {
     const src = typeof sourceMarkdownText === 'string' ? sourceMarkdownText : ''
@@ -276,69 +246,7 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
     return out
   }, [variableSsotEntries])
 
-  const isRenderMode = annotateDisplayMode === 'render'
   const frontmatterModeEnabled = useGraphStore(s => s.frontmatterModeEnabled || false)
-
-  const scrollRootRef = React.useRef<HTMLElement | null>(null)
-  const handleScrollRootRef = React.useCallback(
-    (el: HTMLElement | null) => {
-      scrollRootRef.current = el
-      rootRef(el)
-    },
-    [rootRef],
-  )
-  const selectionMatchRects = useTextSelectionMatchHighlights({
-    rootRef: scrollRootRef,
-    resetKey: activeDocumentPath,
-    enabled: !markdownCardPreviewMode,
-  })
-
-  React.useEffect(() => {
-    const tryScrollToHash = () => {
-      const hash = readBrowserLocationHash()
-      if (!hash || !hash.startsWith('#')) return
-      const id = (() => {
-        const raw = hash.slice(1)
-        try {
-          return decodeURIComponent(raw)
-        } catch {
-          return raw
-        }
-      })()
-      if (!id) return
-      const el = document.getElementById(id)
-      const root = scrollRootRef.current
-      if (!el || !root) return
-      if (!root.contains(el)) return
-      try {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      } catch {
-        try {
-          el.scrollIntoView()
-        } catch {
-          void 0
-        }
-      }
-    }
-
-    tryScrollToHash()
-
-    return subscribeHashChange(() => {
-      tryScrollToHash()
-    })
-  }, [activeDocumentPath])
-
-  React.useEffect(() => {
-    const root = scrollRootRef.current
-    if (!root) return
-    const hash = readBrowserLocationHash()
-    if (hash && hash.startsWith('#')) return
-    try {
-      root.scrollTop = 0
-    } catch {
-      void 0
-    }
-  }, [activeDocumentPath])
 
   const explorerControls = useMarkdownExplorerControls({
     tokens,
@@ -454,10 +362,7 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
     onReorder: onTocReorder,
   })
 
-  const providedStickyHeadingTopPx = React.useMemo(
-    () => getDefaultStickyHeadingTopPx(stickyHeadingTopPx),
-    [stickyHeadingTopPx],
-  )
+  const providedStickyHeadingTopPx = getDefaultStickyHeadingTopPx(stickyHeadingTopPx)
 
   const effectiveStickyHeadingTopPx = markdownLargeDocumentMode ? 0 : providedStickyHeadingTopPx
 
@@ -603,18 +508,15 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
   ])
 
   const previewContent = (
-    <section
-      ref={handleScrollRootRef}
-      onPointerDownCapture={resetUserSelectLockIfNeeded}
-      onMouseDownCapture={resetUserSelectLockIfNeeded}
-      onMouseUpCapture={resetUserSelectLockIfNeeded}
-      onDoubleClickCapture={resetUserSelectLockIfNeeded}
+    <MarkdownPreviewScrollSurface
+      forbidCopy={forbidCopy}
+      rootRef={rootRef}
+      activeDocumentPath={activeDocumentPath}
+      markdownTextHighlight={markdownTextHighlight}
+      markdownCardPreviewMode={markdownCardPreviewMode}
       onScroll={onScroll}
       onClick={handleClickWithWikiLinks}
       onDoubleClick={onDoubleClick}
-      onCopy={blockCopy}
-      onCut={blockCopy}
-      onKeyDown={blockCopyKeyDown}
       style={getMarkdownPreviewScrollStyle(scrollClass, stickyHeadingScrollPaddingTopPx)}
       className={[
         'relative flex-1 min-h-0', // Removed py-2 to ensure sticky headers snap perfectly to top
@@ -627,22 +529,6 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
       data-kg-large-markdown-viewer={markdownLargeDocumentMode ? '1' : undefined}
       aria-label="Markdown Preview Content"
     >
-      <section
-        aria-hidden="true"
-        className="pointer-events-none select-none absolute left-0 top-0 z-10"
-        data-kg-selection-match-overlay="true"
-        {...getSemanticHighlightSurfaceAttributes(SEMANTIC_HIGHLIGHT_SURFACES.selectionMatch)}
-      >
-        {selectionMatchRects.map(rect => (
-          <span
-            key={rect.id}
-            className={`absolute select-none ${getSemanticHighlightSurfaceClassName(SEMANTIC_HIGHLIGHT_SURFACES.selectionMatch)}`}
-            data-kg-selection-match-highlight="true"
-            {...getSemanticHighlightSurfaceAttributes(SEMANTIC_HIGHLIGHT_SURFACES.selectionMatch)}
-            style={buildSemanticTextHighlightOverlayStyle(rect)}
-          />
-        ))}
-      </section>
       {!markdownCardPreviewMode && embeddedMarkdownBase64 ? (
         <script type="application/x-kg-markdown" data-kg-markdown-source="1" data-kg-encoding="base64">
           {embeddedMarkdownBase64}
@@ -682,7 +568,7 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
       >
          {body}
       </article>
-    </section>
+    </MarkdownPreviewScrollSurface>
   )
 
   if (markdownCardPreviewMode) return previewContent
