@@ -5,6 +5,7 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { sourceLineContexts } from '@/lib/semantic-mode/keywordEvidence'
 
 const DocumentKeywordInsights = React.lazy(() => import('./DocumentKeywordInsights'))
+const DocumentPassageInsights = React.lazy(() => import('./DocumentPassageInsights'))
 const explanations = { nav: 'Navigation label rule', cta: 'Action label rule', price: 'Currency or recurring amount pattern', time: 'Clock or duration pattern' }
 
 const kinds = ['nav', 'cta', 'price', 'time'] as const
@@ -51,6 +52,7 @@ export function DocumentInsights() {
         </ol>
         <output role="status">{status}</output>
         {open && source ? <React.Suspense fallback={<p role="status">Loading keyword context…</p>}><DocumentKeywordInsights source={source} /></React.Suspense> : null}
+        {open && source ? <React.Suspense fallback={<p role="status">Loading passage insights…</p>}><DocumentPassageInsights source={source} /></React.Suspense> : null}
       </section>
     </details>
   )
