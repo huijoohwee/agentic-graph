@@ -1,6 +1,6 @@
 import React from 'react'
 import { CloudOff, FileSearch, FileCheck2 } from 'lucide-react'
-import { projectWebsiteImportTree } from '@/features/source-files/websiteImportTreeProjection'
+import { projectWebsiteImportTree, websiteFolderSources } from '@/features/source-files/websiteImportTreeProjection'
 import { SourceFileWebsiteActions, WebsiteSelectionCheckbox, reportSourceImportFailure } from '@/features/source-files/SourceFileWebsiteActions'
 import { useWebsiteImportSelectionSession, toggleWebsiteSelection, restoreWebsiteImportSelectionDraft, importWebsiteFromSourceFiles, discoverWebsiteSelection, visibleWebsiteSelectionPages } from '@/features/source-files/websiteImportSelectionSession'
 import { sourceFileWebsiteUrl } from '@/features/source-files/websiteImportTreeProjection'
@@ -91,6 +91,11 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
   const visiblePageUrls = importSession ? visibleWebsiteSelectionPages(importSession).map(page => page.url) : []
   const cloudSync = useSourceFileCloudSync(cloudEntries)
   const projection = React.useMemo(() => projectWebsiteImportTree(cloudEntries, sourcesByPath, importSession), [cloudEntries, sourcesByPath, importSession])
+  const [sourcePicker, setSourcePicker] = React.useState<{ folder: string; path: string } | null>(null)
+  const startFolderSource = (source: { url: string; path: string }) => {
+    setSourcePicker(null)
+    void importWebsiteFromSourceFiles(source.url, source.path, undefined, { selectAllOnDiscover: true }).catch(reportSourceImportFailure)
+  }
   const [collapsedImports, setCollapsedImports] = React.useState({ id: 0, paths: new Set<string>() })
   const treeExpandedPaths = new Set([...expandedPaths, ...projection.expandedPaths].filter(path => collapsedImports.id !== importSession?.id || !collapsedImports.paths.has(path)))
   const toggleTreeFolder = (path: string) => {
@@ -104,10 +109,16 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
 
   const renderContextActions = (entry: WorkspaceEntry, details: { open: boolean; show: () => void; toggle: () => void }) => {
     const pending = projection.pendingPaths.has(entry.path)
+    const folderSources = entry.kind === 'folder' ? websiteFolderSources(cloudEntries, sourcesByPath, entry.path) : []
     const unsupported = entry.kind !== 'file' ? 'Cloud sync requires a file' : entry.path === DASHBOARD_TEMPLATE_PATH ? 'Cloud sync is unavailable for this workspace view' : undefined
     const cloudUnavailable = pending ? 'Not saved — import this item before cloud sync' : unsupported
     return <>
       <SourceFileWebsiteActions entry={entry} source={sourcesByPath?.[entry.path]} urlOverride={projection.pageUrls.get(entry.path)} confirmationOwner={projection.ownerPath === entry.path}
+        folderPageUrls={projection.folderImportUrls.get(entry.path)}
+        onChooseFolderSource={folderSources.length ? () => {
+          if (folderSources.length === 1) startFolderSource(folderSources[0])
+          else setSourcePicker({ folder: entry.path, path: folderSources[0].path })
+        } : undefined}
         destinationPath={pending && entry.kind === 'file' ? entry.path : undefined}
         detailsOpen={details.open} onShowDetails={details.show} onToggleDetails={details.toggle} statusAvailable={!!recoveryError}
         discoveryContext={projection.ownerPath === entry.path || projection.pageUrls.has(entry.path) || projection.expandedPaths.has(entry.path)} />
@@ -214,7 +225,20 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
         isEntrySaved={entry => !projection.pendingPaths.has(entry.path)}
         resolveSourceUrl={entry => projection.pageUrls.get(entry.path) || sourceFileWebsiteUrl(entry, sourcesByPath?.[entry.path])}
         renderContextActions={renderContextActions}
-        renderContextDetails={() => (importSession || recoveryError) && <React.Suspense fallback={<p role="status">Loading discovery status…</p>}><WebsiteImportSelectionView /></React.Suspense>}
+        renderContextDetails={entry => {
+          if (sourcePicker?.folder === entry.path) {
+            const sources = websiteFolderSources(cloudEntries, sourcesByPath, entry.path)
+            const chosen = sources.find(source => source.path === sourcePicker.path)
+            return <section aria-label={`Website sources in ${entry.name}`} className="grid max-w-sm gap-2 p-2 text-xs">
+              <label>Choose a website source<select aria-label={`Website source in ${entry.name}`} className="w-full min-w-0" value={sourcePicker.path}
+                onChange={event => setSourcePicker({ folder: entry.path, path: event.target.value })}>
+                {sources.map(source => <option key={source.path} value={source.path}>{source.url}</option>)}
+              </select></label>
+              <button type="button" disabled={!chosen || !!importSession?.busy || !!importSession?.importing} onClick={() => chosen && startFolderSource(chosen)}>Find pages to import</button>
+            </section>
+          }
+          return (importSession || recoveryError) && <React.Suspense fallback={<p role="status">Loading discovery status…</p>}><WebsiteImportSelectionView /></React.Suspense>
+        }}
         renderEntryLeading={renderSelectionControl}
         renderFileRight={args => projection.pendingPaths.has(args.entry.path) ? null : renderFileRight?.(args)}
       />}

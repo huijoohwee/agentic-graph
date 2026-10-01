@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.42"
-date: "2026-09-30"
+version: "0.2.43"
+date: "2026-10-01"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.native-web-import-crawler"
@@ -32,15 +32,22 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.41"
-prd_revision: "0.2.42"
-tad_revision: "0.2.42"
-adr_revision: "0.2.42"
-mvp_revision: "0.2.42"
-gtm_revision: "0.2.42"
+previous_document_version: "0.2.42"
+prd_revision: "0.2.43"
+tad_revision: "0.2.43"
+adr_revision: "0.2.43"
+mvp_revision: "0.2.43"
+gtm_revision: "0.2.43"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-10-01 Folder Import entry and scoped confirmation
+
+- PRD: `/fix #website-folder-import @codex` makes Import usable on a folder containing saved website sources. One distinct source starts the existing page chooser; several distinct sources require an explicit choice. Discovery alone saves no page. A folder can select its discovered descendants and explicitly import its selected pages.
+- TAD / ADR: derive candidates from descendant file URL metadata with path-segment boundaries and URL deduplication; never infer a network target from a folder name. Reuse the existing discovery session, projection, import bridge and persistence. The folder confirmation consumes only its selected descendant URLs across pagination and filtering; selections outside it survive, as do selected URLs on failure. Busy and stale sessions remain guarded. No package, service or persistent schema is added.
+- MVP: four existing runtime modules, one focused regression file, affected-check registration and this joined specification; 30 active minutes, under 40 KB total diff after pagination coverage. Five focused regressions cover idle folder entry, multiple-source choice, paginated inventory, exact descendant imports, retry and concurrent-action guards. Task-preview UI imported one selected page and returned to zero selected; canonical Dev and exact protected integration require their own receipts. The existing file-only gate caused the disabled icon; prior folder tests exercised selection without invoking that icon.
+- GTM / rollback: let users continue from the folder they are already inspecting, with no duplicate import form or guessed website. Buyer and revenue evidence remain unmeasured. Revert the scoped source change to restore file-only import controls. Production activation requires its own exact authorization and receipt.
 
 ## 2026-09-30 Production release handover and host-write finding
 

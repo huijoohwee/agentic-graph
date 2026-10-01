@@ -236,15 +236,22 @@ export async function importDiscoveredWebsitePage(id: number, url: string, desti
   return importSessionPages(id, [url], false, destinationPath)
 }
 
-async function importSessionPages(id: number, urls: string[], consumeSelection: boolean, destinationPath?: string) {
+/** A folder action consumes only its explicitly selected discovered descendants. */
+export async function importSelectedWebsiteFolderPages(id: number, urls: string[]) {
+  return importSessionPages(id, [...new Set(urls)], 'partial')
+}
+
+async function importSessionPages(id: number, urls: string[], consumeSelection: boolean | 'partial', destinationPath?: string) {
   const session = useWebsiteImportSelectionSession.getState().session
   if (session?.id !== id || session.busy || session.importing || !urls.length || urls.length > 500
-    || (consumeSelection && !session.restored) || urls.some(url => !session.pages.some(page => page.url === url))) return
+    || (consumeSelection === true && !session.restored)
+    || (consumeSelection === 'partial' && urls.some(url => !session.selected.has(url)))
+    || urls.some(url => !session.pages.some(page => page.url === url))) return
   updateSession(id, current => ({ ...current, importing: true, importingUrl: urls.length === 1 ? urls[0] : undefined, error: '' }))
   try {
     await importSelectedWebsitePages(session.url, urls, undefined, destinationPath)
     updateSession(id, current => ({ ...current, importing: false, importingUrl: undefined,
-      selected: consumeSelection ? new Set() : current.selected, error: '' }))
+      selected: consumeSelection === 'partial' ? new Set([...current.selected].filter(url => !urls.includes(url))) : consumeSelection ? new Set() : current.selected, error: '' }))
   } catch (failure) {
     updateSession(id, current => ({ ...current, importing: false, importingUrl: undefined, error: String((failure as Error).message || failure) }))
     throw failure
