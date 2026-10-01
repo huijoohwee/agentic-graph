@@ -394,7 +394,7 @@ export function listMediaOverlayNodes(args: {
       nodeById: panelNodeById || EMPTY_NODE_BY_ID,
       connectedValuesBySchemaPath,
     })
-    const openUrl = chooseOpenUrl(nodeForSpec, spec.url)
+    const openUrl = !spec.url && (spec.kind === 'image' || spec.kind === 'svg') ? '' : chooseOpenUrl(nodeForSpec, spec.url)
     const preferredHit = preferredSet?.has(id) === true
     const rankBase = computeMediaRank(nodeForSpec, spec)
     const panelRankBonus = resolvedPanel

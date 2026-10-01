@@ -45,8 +45,6 @@ type StoreSlice = {
   threeIframeOverlayPoolMax: unknown
   threeIframeOverlayMaxVisibleDefault: unknown
   threeIframeOverlayMaxVisibleCompact: unknown
-  threeIframeOverlayMaxDistanceDefault: unknown
-  threeIframeOverlayMaxDistanceCompact: unknown
   threeIframeOverlayBaseWidthRatioDefault: unknown
   threeIframeOverlayBaseWidthRatioCompact: unknown
   threeIframeOverlayBaseWidthMinPxDefault: unknown
@@ -102,8 +100,6 @@ export function useThreeRichMediaOverlayController(args: {
       threeIframeOverlayPoolMax: s.threeIframeOverlayPoolMax,
       threeIframeOverlayMaxVisibleDefault: s.threeIframeOverlayMaxVisibleDefault,
       threeIframeOverlayMaxVisibleCompact: s.threeIframeOverlayMaxVisibleCompact,
-      threeIframeOverlayMaxDistanceDefault: s.threeIframeOverlayMaxDistanceDefault,
-      threeIframeOverlayMaxDistanceCompact: s.threeIframeOverlayMaxDistanceCompact,
       threeIframeOverlayBaseWidthRatioDefault: s.threeIframeOverlayBaseWidthRatioDefault,
       threeIframeOverlayBaseWidthRatioCompact: s.threeIframeOverlayBaseWidthRatioCompact,
       threeIframeOverlayBaseWidthMinPxDefault: s.threeIframeOverlayBaseWidthMinPxDefault,
@@ -314,7 +310,6 @@ export function useThreeRichMediaOverlayController(args: {
         screenDragOverrides: screenDragOverridesRef.current,
         overlayEls: overlayElsRef.current,
         prevVisibleIds: visibleIdsRef.current,
-        effectiveSchema: args.effectiveSchema,
         scratch: scratchRef.current,
         getPanelSizeForId,
         getPanelPinnedForId: readPanelPinned,

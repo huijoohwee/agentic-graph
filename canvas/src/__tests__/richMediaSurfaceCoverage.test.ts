@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict'
+import { classifyMediaFromAltAndUrl } from '@/features/parsers/markdownJsonLdUtils'
+import { getNodeMediaSpec } from '@/lib/canvas/graph-elements/mediaSpec'
 import { JSDOM } from 'jsdom'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -218,9 +220,6 @@ export function testRichMediaSurfaceRuntimePathsReuseSharedOverlayOwners() {
     }
   }
   const threeLayout = readFileSync(resolve(root, 'src', 'lib', 'three', 'threeRichMediaOverlayLayout.ts'), 'utf8')
-  if (!threeLayout.includes('getPanelSizeForId?:') || !threeLayout.includes('const overrideSize = typeof args.getPanelSizeForId')) {
-    throw new Error('expected 3D Rich Media layout to reuse persisted visual panel sizing like 2D overlays')
-  }
   if (!threeLayout.includes('getPanelPinnedForId?:') || !threeLayout.includes('getPanelScreenAnchorForId?:') || !threeLayout.includes('getPanelZIndexForId?:')) {
     throw new Error('expected 3D Rich Media layout to reuse shared pin, screen-position, and z-index state')
   }
@@ -269,13 +268,11 @@ export function testThreeRichMediaLayoutStacksLargerPeersUnderneath() {
     dragOverrides: { large: [0, -12, 0] },
     overlayEls: new Map([['large', large], ['small', small]]),
     prevVisibleIds: new Set(),
-    effectiveSchema: defaultSchema,
     scratch: createThreeMediaOverlayLayoutScratch(),
     getPanelSizeForId: id => id === 'large' ? largeSize : { w: 180, h: 110 },
     selectedNodeId: 'large',
     mediaPanelDensity: 'default',
     threeIframeOverlayMaxVisibleDefault: 8,
-    threeIframeOverlayMaxDistanceDefault: 620,
   }
   const update = () => { args.prevVisibleIds = updateThreeMediaOverlayLayout(args) }
   update()
@@ -329,12 +326,10 @@ export function testThreeRichMediaLayoutKeepsUnanchoredPanelsVisible() {
     dragOverrides: {},
     overlayEls: new Map([['rich-media-panel', el]]),
     prevVisibleIds: new Set(),
-    effectiveSchema: defaultSchema,
     scratch: createThreeMediaOverlayLayoutScratch(),
     getPanelSizeForId: id => id === 'rich-media-panel' ? { w: 320, h: 220 } : null,
     mediaPanelDensity: 'default',
     threeIframeOverlayMaxVisibleDefault: 8,
-    threeIframeOverlayMaxDistanceDefault: 620,
     threeIframeOverlayBaseWidthRatioDefault: 0.2,
     threeIframeOverlayBaseWidthMinPxDefault: 210,
     threeIframeOverlayBaseWidthMaxPxDefault: 360,
@@ -376,11 +371,11 @@ export function testThreeRichMediaFollowsCanvasWithoutViewportSnap() {
   let pinned = true
   const args: Parameters<typeof updateThreeMediaOverlayLayout>[0] = {
     camera, gl: { domElement: { clientWidth: 800, clientHeight: 600 } } as unknown as WebGLRenderer,
-    overlayNodesPool: [{ id: 'figure' }], positions: { figure: [500, 0, 0] }, dragOverrides: {},
-    overlayEls: new Map([['figure', el]]), prevVisibleIds: new Set(), effectiveSchema: defaultSchema,
+    overlayNodesPool: [{ id: 'figure' }], positions: { figure: [390, 0, 0] }, dragOverrides: {},
+    overlayEls: new Map([['figure', el]]), prevVisibleIds: new Set(),
     scratch: createThreeMediaOverlayLayoutScratch(), getPanelSizeForId: () => size,
     getPanelPinnedForId: () => pinned, getPanelScreenAnchorForId: () => ({ sx: -20, sy: 300 }),
-    threeIframeOverlayMaxVisibleDefault: 8, threeIframeOverlayMaxDistanceDefault: 2000,
+    threeIframeOverlayMaxVisibleDefault: 8,
   }
   const update = () => {
     camera.updateProjectionMatrix()
@@ -396,7 +391,7 @@ export function testThreeRichMediaFollowsCanvasWithoutViewportSnap() {
   const first = update()
   const projected = new Vector3(...args.positions.figure!).project(camera)
   close(first.x, (projected.x + 1) * 400, 'offscreen panel retains graph anchor')
-  assert.ok(first.left > 800, 'offscreen panel must not stick to the right border')
+  assert.ok(first.left < 800 && first.left + first.w > 800, 'partially offscreen panel must cross the right border without clamping')
   camera.position.x += 0.1
   const pan = update()
   assert.ok(Math.abs(pan.x - first.x) > 0 && Math.abs(pan.x - first.x) < 1, 'subpixel pan must remain continuous')
@@ -438,4 +433,52 @@ export function testThreeRichMediaFollowsCanvasWithoutViewportSnap() {
   const moved = new Vector3(0, 0, 0).project(camera)
   close((moved.x + 1) * 400, 480, 'panel pan moves the graph by the requested horizontal pixels')
   close((1 - moved.y) * 300, 335, 'panel pan moves the graph by the requested vertical pixels')
+}
+
+export function testThreeRichMediaRemainsVisibleAcrossCameraDistance() {
+  const camera = new PerspectiveCamera(50, 800 / 600, 0.1, 10000)
+  const els = new Map(['near', 'rear', 'outside'].map(id => [id, makeRichMediaPanelElement()]))
+  const args: Parameters<typeof updateThreeMediaOverlayLayout>[0] = {
+    camera, gl: { domElement: { clientWidth: 800, clientHeight: 600 } } as unknown as WebGLRenderer,
+    overlayNodesPool: [{ id: 'outside' }, { id: 'near' }, { id: 'rear' }],
+    positions: { near: [0, 0, 20], rear: [30, 0, -40], outside: [10000, 0, 0] }, dragOverrides: {},
+    overlayEls: els, prevVisibleIds: new Set(['outside']), scratch: createThreeMediaOverlayLayoutScratch(),
+    selectedNodeId: 'outside', threeIframeOverlayMaxVisibleDefault: 2,
+  }
+  let previousWidth = Infinity
+  for (const distance of [600, 621, 1200, 2400]) {
+    camera.position.set(0, 0, distance)
+    camera.lookAt(0, 0, 0)
+    camera.updateMatrixWorld(true)
+    args.prevVisibleIds = updateThreeMediaOverlayLayout(args)
+    assert.deepEqual([...args.prevVisibleIds].sort(), ['near', 'rear'], 'in-view peers survive distance and rear hemisphere; offscreen selection cannot consume budget')
+    const scale = Number(String(els.get('near')!.style.transform).slice(7).split(',')[0])
+    const width = Number.parseFloat(els.get('near')!.style.width) * scale
+    assert.ok(width > 0 && width < previousWidth, 'dolly-out keeps continuous positive panel size')
+    previousWidth = width
+  }
+  args.positions.near = [0, 0, 3000]
+  args.prevVisibleIds = updateThreeMediaOverlayLayout(args)
+  assert.deepEqual([...args.prevVisibleIds], ['rear'], 'behind-camera media is still culled')
+  assert.equal(els.get('near')!.style.display, 'none')
+}
+
+export function testMissingImportedImageUsesSharedMediaSurface() {
+  for (const source of ['data:,', '', 'javascript:alert(1)']) {
+    const classified = classifyMediaFromAltAndUrl(source, 'Imported logo')
+    const node = { id: 'imported-logo', type: classified.type, label: 'Imported logo', properties: classified.props } as GraphNode
+    assert.deepEqual(getNodeMediaSpec(node), { kind: 'image', url: '', interactive: false }, 'unavailable image keeps media identity without admitting an unsafe URL')
+    for (const canvasRenderMode of ['2d', '3d'] as const) {
+      const overlays = listDisplayRichMediaOverlayNodes({ nodes: [node], poolMax: 24, renderMediaAsNodes: true, canvasRenderMode, canvas3dMode: '3d' })
+      assert.equal(overlays.length, 1)
+      assert.equal(overlays[0]!.kind, 'image')
+      assert.equal(overlays[0]!.url, '')
+      assert.equal(overlays[0]!.openUrl, '', 'an unavailable image must not offer its rejected source as an open action')
+      assert.ok(overlays[0]!.coveredNodeIds?.includes(node.id), 'shared surface covers the generic mesh identity')
+    }
+  }
+  assert.equal(getNodeMediaSpec({ id: 'widget', label: 'Text output', type: FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID,
+    properties: { media_kind: 'image', richMediaActiveTab: 'text', output: 'Saved text output' } } as GraphNode)?.kind,
+    'iframe', 'semantic panels retain their existing textual fallback owner')
+  assert.equal(getNodeMediaSpec({ id: 'plain', label: 'Plain paragraph', type: 'Paragraph', properties: { url: 'javascript:alert(1)' } } as GraphNode), null)
 }

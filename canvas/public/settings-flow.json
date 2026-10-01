@@ -7822,7 +7822,7 @@
       "zustand"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-three.part3.ts:L328"
+    "lineRange": "canvas/src/features/settings/registry-three.part3.ts:L310"
   },
   "three.media.iframeOverlay.baseWidthMaxPxDefault": {
     "area": "Three",
@@ -7838,7 +7838,7 @@
       "zustand"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-three.part3.ts:L319"
+    "lineRange": "canvas/src/features/settings/registry-three.part3.ts:L301"
   },
   "three.media.iframeOverlay.baseWidthMinPxCompact": {
     "area": "Three",
@@ -7854,7 +7854,7 @@
       "zustand"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-three.part3.ts:L310"
+    "lineRange": "canvas/src/features/settings/registry-three.part3.ts:L292"
   },
   "three.media.iframeOverlay.baseWidthMinPxDefault": {
     "area": "Three",
@@ -7870,7 +7870,7 @@
       "zustand"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-three.part3.ts:L301"
+    "lineRange": "canvas/src/features/settings/registry-three.part3.ts:L283"
   },
   "three.media.iframeOverlay.baseWidthRatioCompact": {
     "area": "Three",
@@ -7886,7 +7886,7 @@
       "zustand"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-three.part3.ts:L292"
+    "lineRange": "canvas/src/features/settings/registry-three.part3.ts:L274"
   },
   "three.media.iframeOverlay.baseWidthRatioDefault": {
     "area": "Three",
@@ -7898,38 +7898,6 @@
       "setThreeIframeOverlayBaseWidthRatioDefault"
     ],
     "responsibility": "base width ratio default",
-    "imports": [
-      "zustand"
-    ],
-    "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-three.part3.ts:L283"
-  },
-  "three.media.iframeOverlay.maxDistanceCompact": {
-    "area": "Three",
-    "modules": [
-      "canvas/src/features/settings/registry-three.part3.ts"
-    ],
-    "classes": [],
-    "functions": [
-      "setThreeIframeOverlayMaxDistanceCompact"
-    ],
-    "responsibility": "max distance compact",
-    "imports": [
-      "zustand"
-    ],
-    "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-three.part3.ts:L274"
-  },
-  "three.media.iframeOverlay.maxDistanceDefault": {
-    "area": "Three",
-    "modules": [
-      "canvas/src/features/settings/registry-three.part3.ts"
-    ],
-    "classes": [],
-    "functions": [
-      "setThreeIframeOverlayMaxDistanceDefault"
-    ],
-    "responsibility": "max distance default",
     "imports": [
       "zustand"
     ],

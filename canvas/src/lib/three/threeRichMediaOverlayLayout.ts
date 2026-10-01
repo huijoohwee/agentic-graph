@@ -1,5 +1,4 @@
 import { Vector3, type Camera, type WebGLRenderer } from 'three'
-import type { GraphSchema } from '@/lib/graph/schema'
 import { applyMediaPanelCssVars, applyPanelBox, computeMediaPanelCssVars3d, computePanelRect, computePanelSizeFromContent16x9 } from '@/lib/render/mediaPanelLayout'
 import { compareCanvasSurfaceArea } from '@/lib/canvas/layerOrder2d'
 import { applyMediaEagerLoadingOnce } from '@/lib/render/mediaEagerLoading'
@@ -14,6 +13,7 @@ type LayoutCandidate = {
   dist: number
   sizeScale: number
   order: number
+  layout?: OverlayPanelLayout
 }
 
 type OverlayPanelLayout = {
@@ -87,7 +87,6 @@ export function updateThreeMediaOverlayLayout(args: {
   screenDragOverrides?: Record<string, { sx: number; sy: number }>
   overlayEls: Map<string, HTMLElement>
   prevVisibleIds: Set<string>
-  effectiveSchema: GraphSchema
   scratch: ThreeMediaOverlayLayoutScratch
   getPanelSizeForId?: (id: string) => { w: number; h: number } | null
   getPanelPinnedForId?: (id: string) => boolean
@@ -98,8 +97,6 @@ export function updateThreeMediaOverlayLayout(args: {
   mediaPanelDensity?: unknown
   threeIframeOverlayMaxVisibleDefault?: unknown
   threeIframeOverlayMaxVisibleCompact?: unknown
-  threeIframeOverlayMaxDistanceDefault?: unknown
-  threeIframeOverlayMaxDistanceCompact?: unknown
   threeIframeOverlayBaseWidthRatioDefault?: unknown
   threeIframeOverlayBaseWidthRatioCompact?: unknown
   threeIframeOverlayBaseWidthMinPxDefault?: unknown
@@ -116,11 +113,7 @@ export function updateThreeMediaOverlayLayout(args: {
   const maxCountRaw = density === 'compact' ? args.threeIframeOverlayMaxVisibleCompact : args.threeIframeOverlayMaxVisibleDefault
   const maxCountFinite = finiteNumberOrNull(maxCountRaw)
   const maxCount = maxCountFinite == null ? 0 : Math.max(0, Math.floor(maxCountFinite))
-  const maxDistanceRaw = density === 'compact' ? args.threeIframeOverlayMaxDistanceCompact : args.threeIframeOverlayMaxDistanceDefault
-  const maxDistanceFinite = finiteNumberOrNull(maxDistanceRaw)
-  const maxDistance = maxDistanceFinite == null ? 0 : Math.max(0, maxDistanceFinite)
-  const labelBackfaceCullingEnabled = args.effectiveSchema.three?.globeLabelBackfaceCulling !== false
-  if (maxCount === 0 || maxDistance <= 0) {
+  if (maxCount === 0) {
     for (const id of args.prevVisibleIds) {
       const el = args.overlayEls.get(id)
       if (el) applyPanelBox(el, { left: -99999, top: -99999, w: 1, h: 1, display: 'none', zIndex: 1 })
@@ -167,7 +160,7 @@ export function updateThreeMediaOverlayLayout(args: {
       id: node.id,
       sx: anchor.sx,
       sy: anchor.sy,
-      dist: maxDistance + 1 + Math.max(0, slotIndex),
+      dist: Number.MAX_SAFE_INTEGER,
       sizeScale: 1,
       order: slotIndex,
     })
@@ -189,11 +182,7 @@ export function updateThreeMediaOverlayLayout(args: {
     }
     world.set(pos3[0], pos3[1], pos3[2])
     const dist = camera.position.distanceTo(world)
-    if (!Number.isFinite(dist) || dist > maxDistance) continue
-    if (labelBackfaceCullingEnabled) {
-      const cameraDot = world.dot(camera.position)
-      if (!Number.isFinite(cameraDot) || cameraDot < 0) continue
-    }
+    if (!Number.isFinite(dist)) continue
     camSpace.copy(world).applyMatrix4(camera.matrixWorldInverse)
     v3.copy(world).project(camera)
     if (![v3.x, v3.y, v3.z].every(Number.isFinite) || camSpace.z >= 0 || v3.z < -1 || v3.z > 1) continue
@@ -212,6 +201,25 @@ export function updateThreeMediaOverlayLayout(args: {
     candidates.push({ id: node.id, sx, sy, dist, sizeScale, order: i })
     projectedCandidateIds.add(node.id)
   }
+
+  // Size once before budget selection, so invisible peers cannot displace visible media.
+  const computed = computeMediaPanelCssVars3d({ density, sizeScale: 1 })
+  const fallback = computePanelSizeFromContent16x9({ contentW: baseW, metrics: computed.metrics })
+  let inViewCount = 0
+  for (const c of candidates) {
+    const el = args.overlayEls.get(c.id)
+    if (!el) continue
+    const overrideSize = args.getPanelSizeForId?.(c.id)
+    const panel = overrideSize && Number.isFinite(overrideSize.w) && Number.isFinite(overrideSize.h)
+      && overrideSize.w > 1 && overrideSize.h > 1
+      ? { panelW: overrideSize.w, panelH: overrideSize.h } : fallback
+    const rect = computePanelRect({ cx: c.sx, cy: c.sy, w: panel.panelW * c.sizeScale, h: panel.panelH * c.sizeScale })
+    if (rect.left >= w || rect.top >= h || rect.left + rect.w <= 0 || rect.top + rect.h <= 0) continue
+    c.layout = { id: c.id, el, rect, width: panel.panelW, height: panel.panelH, scale: c.sizeScale,
+      cssVars: computed.vars, layer: finiteNumberOrNull(args.getPanelZIndexForId?.(c.id)) ?? 0 }
+    candidates[inViewCount++] = c
+  }
+  candidates.length = inViewCount
 
   candidates.sort((a, b) => a.dist - b.dist || a.order - b.order || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
   const nextVisibleIds = new Set<string>()
@@ -238,27 +246,9 @@ export function updateThreeMediaOverlayLayout(args: {
   for (let i = 0; i < candidates.length; i += 1) {
     const c = candidates[i]!
     if (!nextVisibleIds.has(c.id)) continue
-    const el = args.overlayEls.get(c.id)
-    if (!el) continue
-    applyMediaEagerLoadingOnce(el)
-    const overrideSize = typeof args.getPanelSizeForId === 'function' ? args.getPanelSizeForId(c.id) : null
-    const computed = computeMediaPanelCssVars3d({ density, sizeScale: 1 })
-    const fallback = computePanelSizeFromContent16x9({ contentW: baseW, metrics: computed.metrics })
-    const panel = overrideSize && Number.isFinite(overrideSize.w) && Number.isFinite(overrideSize.h)
-      && overrideSize.w > 1 && overrideSize.h > 1
-      ? { panelW: overrideSize.w, panelH: overrideSize.h }
-      : fallback
-    const rect = computePanelRect({ cx: c.sx, cy: c.sy, w: panel.panelW * c.sizeScale, h: panel.panelH * c.sizeScale })
-    panelLayouts.push({
-      id: c.id,
-      el,
-      rect,
-      width: panel.panelW,
-      height: panel.panelH,
-      scale: c.sizeScale,
-      cssVars: computed.vars,
-      layer: finiteNumberOrNull(args.getPanelZIndexForId?.(c.id)) ?? 0,
-    })
+    if (!c.layout) continue
+    applyMediaEagerLoadingOnce(c.layout.el)
+    panelLayouts.push(c.layout)
   }
   const zById = assignOverlayZIndexes(panelLayouts)
   for (let i = 0; i < panelLayouts.length; i += 1) {
