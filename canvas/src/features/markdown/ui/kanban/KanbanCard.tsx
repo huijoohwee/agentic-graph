@@ -273,7 +273,7 @@ export const KanbanCard = React.memo(function KanbanCard(props: KanbanCardProps)
         </section>
         <menu
           data-kg-kanban-actions="1"
-          className="m-0 p-0 list-none flex items-center gap-1 opacity-0 pointer-events-none transition-opacity"
+          className="m-0 p-0 list-none flex items-center gap-1 transition-opacity"
           aria-label="Card actions"
         >
           {props.onActivateRow ? (

@@ -9,6 +9,7 @@
 @import './styles/responsive-canvas-toolbar.css';
 @import './styles/markdown-presentation-responsive.css';
 @import './styles/markdown-gallery-responsive.css';
+@import './styles/markdown-kanban-actions.css';
 @import './styles/markdown-codeblock-responsive.css';
 @import './styles/toast-responsive.css';
 @import './styles/preview-panel-responsive.css';
@@ -176,20 +177,6 @@
 }
 :root[data-theme='dark'][data-dark-variant='black'] { --app-bg: #000000; --panel-bg: #0a0a0a; --island-bg: #111111; --panel-bg-rgb: 10, 10, 10; --island-bg-rgb: 17, 17, 17; }
 @layer components {
-  [data-kg-kanban-card="1"]:hover [data-kg-kanban-actions="1"],
-  [data-kg-kanban-card="1"]:focus-within [data-kg-kanban-actions="1"] {
-    opacity: 1;
-    pointer-events: auto;
-  }
-  [data-kg-kanban-group-header="1"]:hover [data-kg-kanban-group-actions="1"],
-  [data-kg-kanban-group-header="1"]:focus-within [data-kg-kanban-group-actions="1"],
-  [data-kg-kanban-group-header="1"]:hover ~ * [data-kg-kanban-group-actions="1"],
-  [data-kg-kanban-group-list="1"]:hover [data-kg-kanban-group-actions="1"],
-  [data-kg-kanban-group-list="1"]:focus-within [data-kg-kanban-group-actions="1"],
-  [data-kg-kanban-group-header="1"]:focus-within ~ * [data-kg-kanban-group-actions="1"] {
-    opacity: 1;
-    pointer-events: auto;
-  }
   .kg-panel-icon-btn {
     background: transparent !important;
     border: 0 !important;
