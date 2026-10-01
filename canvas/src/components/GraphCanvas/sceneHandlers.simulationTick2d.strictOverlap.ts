@@ -1,7 +1,7 @@
 import type { GraphNode } from '@/lib/graph/types'
 import type { GraphSchema } from '@/lib/graph/schema'
 import type { GraphGroup } from '@/components/GraphCanvas/layout/graphGroupsTypes'
-import { createBboxCollideForce } from '@/components/GraphCanvas/layout/overlap'
+import { createBboxCollideForce, type NodeHalfExtents } from '@/components/GraphCanvas/layout/overlap'
 import { createGroupBboxCollideForceByDepth } from '@/components/GraphCanvas/layout/groupOverlapByDepth'
 import { readCollisionConfig } from '@/components/GraphCanvas/layout/collisionConfig'
 import { integrateNodePositionWithVelocity, runRelaxSteps } from '@/lib/graph/collision/relaxRunner'
@@ -16,6 +16,7 @@ export type StrictOverlapForcesCache2d =
   | null
   | {
       schema: GraphSchema
+      halfExtents: Record<string, NodeHalfExtents> | null | undefined
       forces: Array<(alpha: number) => void>
     }
 
@@ -46,6 +47,7 @@ export function applyStrictOverlapRelax2d(args: {
   idealSpacing: number
   tuning: Physics2dTuning
   groupsForBboxCollide: GraphGroup[]
+  halfExtentsByNodeId?: Record<string, NodeHalfExtents> | null
 }): void {
   const { state, nodes, tick, alpha, schema, idealSpacing, tuning, groupsForBboxCollide } = args
   const collision = readCollisionConfig(schema)
@@ -66,7 +68,7 @@ export function applyStrictOverlapRelax2d(args: {
   const wantsGroup = collision.groupBbox.enabled && groupsForBboxCollide.length > 0 && nodes.length <= 3000
   if (!wantsNode && !wantsGroup) return
 
-  if (!state.cache || state.cache.schema !== schema) {
+  if (!state.cache || state.cache.schema !== schema || state.cache.halfExtents !== args.halfExtentsByNodeId) {
     const forces: Array<(alpha: number) => void> = []
     let seed = 2166136261
     for (let i = 0; i < nodes.length; i += 1) {
@@ -80,6 +82,7 @@ export function applyStrictOverlapRelax2d(args: {
     const nodeForce = wantsNode
       ? (createBboxCollideForce({
           schema,
+          halfExtentsByNodeId: args.halfExtentsByNodeId,
           paddingX: collision.nodeBbox.paddingX,
           paddingY: collision.nodeBbox.paddingY,
           paddingZ: collision.nodeBbox.paddingZ,
@@ -115,14 +118,14 @@ export function applyStrictOverlapRelax2d(args: {
           nestedTouchEpsilonZPx: collision.groupBbox.nestedTouchEpsilonZPx,
           strength: Math.max(0, collision.groupBbox.strength) * strictTuning.groupBboxStrengthScale,
           iterations: computeGroupBboxCollideIterations2d({ baseIterations: collision.groupBbox.iterations, nodeCount: nodes.length }),
-          halfExtentsByNodeId: null,
+          halfExtentsByNodeId: args.halfExtentsByNodeId,
         }) as unknown as { initialize: (ns: GraphNode[], rand?: () => number) => void; (alpha: number): void })
       : null
     if (groupForce) {
       groupForce.initialize(nodes, rand)
       forces.push(groupForce as unknown as (alpha: number) => void)
     }
-    state.cache = { schema, forces }
+    state.cache = { schema, forces, halfExtents: args.halfExtentsByNodeId }
   }
 
   const forces = state.cache?.forces || []

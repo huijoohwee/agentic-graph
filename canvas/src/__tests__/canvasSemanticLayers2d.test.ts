@@ -1,3 +1,4 @@
+import { applyGraphCanvasZOrder } from '@/components/GraphCanvas/zOrder'
 import assert from 'node:assert/strict'
 import * as d3 from 'd3'
 import { bindGraphSemanticTargets2d } from '@/components/GraphCanvas/semanticTargets2d'
@@ -92,5 +93,23 @@ export function testCanvasMediaLayersRerankOnResize() {
       assert.equal(observer.takeRecords().length, 0, 'settled layering must not mutate the DOM')
       observer.disconnect()
     } finally { loop.stop() }
+  } finally { restore() }
+}
+
+export function testClustersStayBelowForegroundWithAuthoredOrder() {
+  const { dom, restore } = initJsdomHarness('<!doctype html><svg><g></g></svg>')
+  try {
+    const root = d3.select(dom.window.document.querySelector<SVGGElement>('g')!)
+    for (const id of ['nodes', 'groups-hit', 'links-hit', 'groups', 'links']) root.append('g').attr('data-kg-layer', id)
+    const schema = structuredClone(defaultSchema)
+    schema.layout = { ...schema.layout, mermaid: { ...schema.layout?.mermaid,
+      renderOrder: { groups: 100, 'groups-hit': 200, nodes: -40, links: -50 } } }
+    applyGraphCanvasZOrder(root, schema)
+    const order = Array.from((root.node() as SVGGElement).children).map(e => e.getAttribute('data-kg-layer'))
+    for (const cluster of ['groups', 'groups-hit']) for (const foreground of ['nodes', 'links', 'links-hit']) {
+      assert.ok(order.indexOf(cluster) < order.indexOf(foreground), `${cluster} must stay below ${foreground}`)
+    }
+    applyGraphCanvasZOrder(root, schema)
+    assert.deepEqual(Array.from((root.node() as SVGGElement).children).map(e => e.getAttribute('data-kg-layer')), order)
   } finally { restore() }
 }

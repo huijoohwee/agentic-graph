@@ -1,6 +1,12 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_2: TestCaseTuple[] = [
+  ["keywordPanel.settlingFootprints", "@/__tests__/keywordPanelInitialization.test", "testKeywordSettlingUsesPanelFootprints"],
+  ["keywordPanel.visibleAnchors", "@/__tests__/keywordPanelInitialization.test", "testKeywordVisibleMediaAnchorsParticipateInInitialization"],
+  ["keywordPanel.firstFrame", "@/__tests__/keywordPanelInitialization.test", "testKeywordPanelsSeparateBeforeFirstFrame"],
+  ["keywordPanel.savedPositions", "@/__tests__/keywordPanelInitialization.test", "testKeywordPanelSeedPreservesSavedAndFixedPositions"],
+  ["keywordPanel.collisionUpdates", "@/__tests__/keywordPanelInitialization.test", "testDisjointPanelCollisionSurvivesPresentationUpdates"],
+  ["canvas.semanticLayers.clusterForeground", "@/__tests__/canvasSemanticLayers2d.test", "testClustersStayBelowForegroundWithAuthoredOrder"],
   ["documentSurface.edgeBounds", "@/__tests__/documentSurfaceProjection.test", "testDocumentPanelEdgeBoundsUseWorldDimensions"],
   ["documentSurface.mediaOwnership", "@/__tests__/documentSurfaceProjection.test", "testImageParagraphRetainsRichMediaOwnership"],
   ["documentSurface.liveAnchor", "@/__tests__/documentSurfaceProjection.test", "testDocumentSurfaceTracksSameIdAndAliasAnchors"],

@@ -1,3 +1,4 @@
+import { seedOverlayPanelPositions2d } from './layout/panelLayout2d'
 import { bindGraphSemanticTargets2d } from '@/components/GraphCanvas/semanticTargets2d'
 import * as d3 from 'd3'
 import type { MutableRefObject, RefObject } from 'react'
@@ -470,7 +471,7 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
     return { x: (width / 2 - x) / k, y: (height / 2 - y) / k }
   })()
 
-  const isKeywordGraph = detectKeywordGraph({
+  const isKeywordGraph = args.documentSemanticMode === 'keyword' || detectKeywordGraph({
     metadata: graphDataForDisplay.metadata,
     nodes: Array.isArray(graphDataForDisplay.nodes) ? (graphDataForDisplay.nodes as GraphNode[]) : [],
     edges: edgesForDisplay,
@@ -547,11 +548,7 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
     overlaySizing: overlaySizing || null,
   })
 
-  const effectiveSkipInitialLayout = (() => {
-    if (isMermaidLayout) return true
-    if (!skipInitialLayout) return false
-    return true
-  })()
+  const effectiveSkipInitialLayout = isMermaidLayout || !!skipInitialLayout
 
   const simulation = buildSimulation(displayNodes, edgesForDisplay, Math.max(1, width), Math.max(1, Math.floor(height)), schema, {
     skipInitialLayout: !!effectiveSkipInitialLayout,
@@ -655,6 +652,9 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
     }
   }
 
+  if (isKeywordGraph && !isMermaidLayout) {
+    seedOverlayPanelPositions2d({ nodes: displayNodes, halfExtents: overlayHalfExtentsByNodeId })
+  }
   if (continuousForceLayout) {
     try {
       svg.attr('data-kg-layout-frozen', '0')
@@ -911,12 +911,9 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
         stableTicks = 0
       }
       if (stableTicks < 18) return
-
-      try {
-        simulation.alphaTarget(0)
-        simulation.stop()
-      } catch {
-        void 0
+      simulation.alphaTarget(0).stop()
+      if (isKeywordGraph && seedOverlayPanelPositions2d({ nodes: displayNodes, halfExtents: overlayHalfExtentsByNodeId }).moved) {
+        simulation.on('tick')?.call(simulation)
       }
       svg.attr('data-kg-layout-frozen', '1')
       storeLayoutPositions()

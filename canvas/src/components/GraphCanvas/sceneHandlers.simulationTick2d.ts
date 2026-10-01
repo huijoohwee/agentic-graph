@@ -683,8 +683,7 @@ export const attachSimulationTick = (args: {
     }
 
     applyStrictOverlapRelax2d({
-      state: strictOverlapState,
-      nodes,
+      state: strictOverlapState, nodes, halfExtentsByNodeId: overlayHalfExtentsById,
       tick,
       alpha: simulation.alpha(),
       schema,

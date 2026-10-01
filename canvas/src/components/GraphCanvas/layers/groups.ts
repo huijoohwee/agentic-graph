@@ -261,8 +261,10 @@ export const createGroupsLayer = (args: {
     typeof cfg.labelPadding === 'number' && Number.isFinite(cfg.labelPadding) ? Math.max(0, cfg.labelPadding) : 10
   const strokeWidth =
     typeof cfg.strokeWidth === 'number' && Number.isFinite(cfg.strokeWidth) ? Math.max(0, cfg.strokeWidth) : 1.5
-  const fillOpacity =
+  const baseFillOpacity =
     typeof cfg.fillOpacity === 'number' && Number.isFinite(cfg.fillOpacity) ? Math.max(0, Math.min(1, cfg.fillOpacity)) : 0.08
+  const keywordMode = args.documentSemanticMode === 'keyword'
+  const fillOpacity = keywordMode ? 1 - Math.pow(1 - baseFillOpacity, 1 / visibleGroups.length) : baseFillOpacity
   const isFlowchartGraph = (() => {
     const meta = graphData.metadata
     if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return false
@@ -281,7 +283,7 @@ export const createGroupsLayer = (args: {
   for (let i = 0; i < groups.length; i += 1) {
     const d = groups[i]
     const depth = typeof d.depth === 'number' && Number.isFinite(d.depth) ? Math.max(0, Math.floor(d.depth)) : 0
-    maxDepth = Math.max(maxDepth, depth)
+    maxDepth = keywordMode ? 0 : Math.max(maxDepth, depth)
   }
   const depthCfg = cfg.depthStyle || null
 
@@ -291,19 +293,9 @@ export const createGroupsLayer = (args: {
       const derived = computeGroupDepthStyle({ depth, maxDepth, baseStrokeWidthPx: strokeWidth, baseFillOpacity: fillOpacity, config: depthCfg })
       return Math.max(d.style.strokeWidth ?? derived.strokeWidthPx, flowchartStrokeFloor)
     })
-    .attr('data-kg-base-stroke-width', d => {
-      const depth = typeof d.depth === 'number' && Number.isFinite(d.depth) ? Math.max(0, Math.floor(d.depth)) : 0
-      const derived = computeGroupDepthStyle({ depth, maxDepth, baseStrokeWidthPx: strokeWidth, baseFillOpacity: fillOpacity, config: depthCfg })
-      return Math.max(d.style.strokeWidth ?? derived.strokeWidthPx, flowchartStrokeFloor)
-    })
     .attr('stroke', d => d.style.stroke ?? themeEdgeStroke)
     .attr('fill', d => d.style.fill ?? themeEdgeStroke)
     .attr('fill-opacity', d => {
-      const depth = typeof d.depth === 'number' && Number.isFinite(d.depth) ? Math.max(0, Math.floor(d.depth)) : 0
-      const derived = computeGroupDepthStyle({ depth, maxDepth, baseStrokeWidthPx: strokeWidth, baseFillOpacity: fillOpacity, config: depthCfg })
-      return Math.max(derived.fillOpacity, flowchartFillOpacityFloor)
-    })
-    .attr('data-kg-base-fill-opacity', d => {
       const depth = typeof d.depth === 'number' && Number.isFinite(d.depth) ? Math.max(0, Math.floor(d.depth)) : 0
       const derived = computeGroupDepthStyle({ depth, maxDepth, baseStrokeWidthPx: strokeWidth, baseFillOpacity: fillOpacity, config: depthCfg })
       return Math.max(derived.fillOpacity, flowchartFillOpacityFloor)
@@ -316,11 +308,6 @@ export const createGroupsLayer = (args: {
       const derived = computeGroupDepthStyle({ depth, maxDepth, baseStrokeWidthPx: strokeWidth, baseFillOpacity: fillOpacity, config: depthCfg })
       return Math.max(d.style.strokeWidth ?? derived.strokeWidthPx, flowchartStrokeFloor)
     })
-    .attr('data-kg-base-stroke-width', d => {
-      const depth = typeof d.depth === 'number' && Number.isFinite(d.depth) ? Math.max(0, Math.floor(d.depth)) : 0
-      const derived = computeGroupDepthStyle({ depth, maxDepth, baseStrokeWidthPx: strokeWidth, baseFillOpacity: fillOpacity, config: depthCfg })
-      return Math.max(d.style.strokeWidth ?? derived.strokeWidthPx, flowchartStrokeFloor)
-    })
     .attr('stroke', d => d.style.stroke ?? themeEdgeStroke)
     .attr('fill', d => d.style.fill ?? themeEdgeStroke)
     .attr('fill-opacity', d => {
@@ -328,13 +315,12 @@ export const createGroupsLayer = (args: {
       const derived = computeGroupDepthStyle({ depth, maxDepth, baseStrokeWidthPx: strokeWidth, baseFillOpacity: fillOpacity, config: depthCfg })
       return Math.max(derived.fillOpacity, flowchartFillOpacityFloor)
     })
-    .attr('data-kg-base-fill-opacity', d => {
-      const depth = typeof d.depth === 'number' && Number.isFinite(d.depth) ? Math.max(0, Math.floor(d.depth)) : 0
-      const derived = computeGroupDepthStyle({ depth, maxDepth, baseStrokeWidthPx: strokeWidth, baseFillOpacity: fillOpacity, config: depthCfg })
-      return Math.max(derived.fillOpacity, flowchartFillOpacityFloor)
-    })
     .style('transition', groupShapeTransition)
 
+  itemSel.selectAll<SVGElement, GroupDatum>('rect,path').each(function () {
+    this.setAttribute('data-kg-base-stroke-width', this.getAttribute('stroke-width') || '0')
+    this.setAttribute('data-kg-base-fill-opacity', this.getAttribute('fill-opacity') || '0')
+  })
   const getGroupLabelFontSizePx = (d: GroupDatum): number => {
     const mdLevel = headingLevelByGroupId.get(String(d.id))
     if (mdLevel) return getMarkdownHeadingFontSizePx({ depth: mdLevel, presentation: false })

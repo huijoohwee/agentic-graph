@@ -2,7 +2,7 @@ export type LayerRank = ReadonlyArray<{ id: string; rank: number }>
 
 export const DEFAULT_CANVAS_LAYER_ORDER_2D: LayerRank = [
   { id: 'groups', rank: -30 },
-  { id: 'groups-hit', rank: -4 },
+  { id: 'groups-hit', rank: -25 },
   { id: 'links', rank: -20 },
   { id: 'links-hit', rank: -5 },
   { id: 'edge-labels', rank: 5 },
