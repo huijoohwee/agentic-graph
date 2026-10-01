@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.45"
+version: "0.2.46"
 date: "2026-10-01"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -32,15 +32,25 @@ agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "0.2.44"
-prd_revision: "0.2.45"
-tad_revision: "0.2.45"
-adr_revision: "0.2.45"
-mvp_revision: "0.2.45"
-gtm_revision: "0.2.45"
+previous_document_version: "0.2.45"
+prd_revision: "0.2.46"
+tad_revision: "0.2.46"
+adr_revision: "0.2.46"
+mvp_revision: "0.2.46"
+gtm_revision: "0.2.46"
 ---
-
 # Reference implementation: agentic-graph Native Web Import Crawler
+## 2026-10-01 Incremental source imports — revision 0.2.46
+
+**PRD / acceptance.** Repeated Import URL, Import files and Import folders must reuse durable saved content, preserve each source path, and avoid repeated conversion/writes when the verified input is unchanged. Explicit Refresh from source checks HTTP text sources for changes. A changed local input updates its owned output; unrelated or locally edited output fails visibly. Discovery inventory is not proof of saved content. VCCs: generic URL reuse makes zero fetches; repeated local inputs make zero writes; one changed folder member changes only its output; HTTP 304 skips conversion/write; missing outputs can be restored; racing edits survive.
+
+**TAD / grounding.** Extend `workspace-fs/sourceIndex.ts` with bounded per-output import receipts: input identity/digest, output digest, checked time/status and optional HTTP validators. Reuse website frontmatter to recognize older captured documents, including library/index pages, preferring the stable website path over preserved legacy copies. `workspaceImport/incrementalImport.ts` owns comparison and guarded writes; file/folder owners call it before conversion and update receipts after successful writes. Split the existing oversized folder function into `localFolderImport.ts`; retain its public export and deferred hydration policy. The existing hydration owner updates the same receipt. URL selection builds one saved-source map and sends only missing selected URLs to the existing crawler. No parallel catalog, database, service or dependency is introduced.
+
+**ADR / boundaries.** Default URL import reuses saved content offline; it does not assert upstream freshness. Explicit local Dev refresh uses `websiteImportRevalidation.ts` through the existing import handler/network policy, validates HTTP ETag/Last-Modified, and compares raw input hashes when validators are unavailable. Changed HTML/text is converted once in the client and written with expected-text protection. Obsolete capture references are removed from updated documents; historical artifacts stay intact. Format-specific binary refresh and multi-output URL replay remain with their existing importers. File hashing uses 256 KiB chunks and a 64 MiB scan ceiling; larger inputs remain eligible for existing lazy import but are never claimed unchanged from names, sizes or times. Browser-local source-index persistence is the current owner; cross-device receipt synchronization and remote Production revalidation are not proven.
+
+**MVP / evidence.** Seven new generic regressions cover: differential file/folder writes, saved URL/selected-page zero-fetch reuse, deferred hydration, changed pending bytes and missing-output restoration, refresh races, and real HTTP conditional/body-hash checks. All 37 local compatibility checks pass; all 107 broader import checks pass after correcting a dated-path assertion also failing on canonical main. The first full affected pass completed all ten partitions; the final pending-byte and canonical-copy corrections require fresh candidate evidence. Live Dev repeats and reload retain one local file; URL import reopens its saved capture. Native folder chooser automation is unavailable, so folder behavior has automated owner coverage but no live-picker proof. No user validation URL, document body or machine path is embedded in product/test logic. Exact affected validation, protected integration and certified Dev need their own candidate receipts; this draft is not delivered evidence.
+
+**GTM / execution / rollback.** The user-observed pain is repeated import work and duplicate storage; saved requests, conversions and writes are measurable outcomes, with no revenue claim. `/change #incremental-imports @codex` consumes this continuity ID and all five roles at 0.2.46. Active-work target revised to 90 minutes, at most twelve runtime modules and a 95 KB diff including the existing folder-owner move (about 88 KB measured); no paid resources. CI time and dollar savings are unmeasured. Next: finish exact affected validation, then publish through the native lane and protected gate; owner is this task, prerequisite is green exact-candidate evidence. Rollback is a protected source revert; existing documents and capture artifacts remain readable.
 
 ## 2026-10-01 stable website import destinations
 

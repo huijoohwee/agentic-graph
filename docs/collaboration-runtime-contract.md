@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 80
+contract_version: 81
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -76,6 +76,11 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  incremental_imports:
+    roots: ["canvas/src/features/workspace-fs/sourceIndex.ts", "canvas/src/features/markdown-workspace/workspaceImport/incrementalImport.ts", "canvas/src/features/markdown-workspace/workspaceImport/localImport.ts", "canvas/src/features/markdown-workspace/workspaceImport/localFolderImport.ts", "canvas/src/features/markdown-workspace/workspaceImport/pendingLocalImport.ts", "canvas/src/features/markdown-workspace/workspaceImport/refreshIndexedSource.ts", "canvas/src/lib/websites/server/websiteImportRevalidation.ts", "canvas/src/__tests__/incrementalWorkspaceImports.test.ts", "canvas/src/__tests__/incrementalWebsiteImports.test.ts"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/incrementalWorkspaceImports.test.ts", "canvas/src/__tests__/incrementalWebsiteImports.test.ts"]
+      - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "workspace.import.localFiles", "workspace.import.localFolder", "workspace.importUrl", "policy.boundary.forbidHardcodedRuntimeValidationInput"]
   website_stable_paths:
     roots: ["canvas/src/features/workspace-fs/websiteCollections.ts", "canvas/src/features/markdown-workspace/workspaceImport/webpageUrlExport.ts", "canvas/src/features/workspace-fs/workspaceSeedProviderPaths.ts", "canvas/src/features/workspace-fs/workspaceFsPersistedReconciliation.ts", "canvas/src/features/workspace-fs/workspaceRevealInFileManager.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportNodeWriter.ts", "canvas/viteWorkspaceReveal.ts", "canvas/viteWorkspaceRevealSnapshot.ts", "canvas/src/lib/websites/websiteCrawlTablePanel.ts", "canvas/src/__tests__/websiteStablePaths.test.ts"]
     commands:

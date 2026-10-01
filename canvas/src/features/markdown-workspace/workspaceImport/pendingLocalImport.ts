@@ -1,3 +1,4 @@
+import { importContentDigest, loadWorkspaceSourceIndex, setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { readPdfWorkspaceOutputDirRel } from '@/lib/pdf/pdfWorkspacePreferences'
@@ -150,6 +151,7 @@ export async function hydrateWorkspaceFileFromPendingLocalImport(args: {
       const notice = stripped.changed ? `> Embedded base64 image data omitted for editor readability.\n\n` : ''
       const text = `${buildPdfWorkspaceFrontmatter({ docId: imported.docId, outputDirRel })}${notice}${stripped.text}`
       await args.fs.writeFileText(key, text)
+      await updateHydratedImportReceipt(key, text)
       pendingLocalImportsByPath.delete(key)
       return { kind: 'pdf', text }
     }
@@ -157,6 +159,7 @@ export async function hydrateWorkspaceFileFromPendingLocalImport(args: {
     if (pending.kind === 'glb' || pending.kind === 'gltf') {
       const text = await buildModelAssetMarkdownFromFile(pending.file, pending.kind)
       await args.fs.writeFileText(key, text)
+      await updateHydratedImportReceipt(key, text)
       pendingLocalImportsByPath.delete(key)
       clearPendingGlbAsset(key)
       return { kind: pending.kind, text }
@@ -166,9 +169,16 @@ export async function hydrateWorkspaceFileFromPendingLocalImport(args: {
 
     const text = await pending.file.text()
     await args.fs.writeFileText(key, text)
+    await updateHydratedImportReceipt(key, text)
     pendingLocalImportsByPath.delete(key)
     return { kind: 'text', text }
   } catch {
     return null
   }
+}
+
+async function updateHydratedImportReceipt(path: string, text: string) {
+  const source = loadWorkspaceSourceIndex()[path]
+  if (!source?.importState) return
+  setWorkspaceEntrySource(path, { ...source, importState: { ...source.importState, outputDigest: await importContentDigest(text), checkedAt: Date.now() } }, { persist: 'sync' })
 }

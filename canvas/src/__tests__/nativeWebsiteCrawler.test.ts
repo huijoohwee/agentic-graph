@@ -200,7 +200,7 @@ export const testNativeCrawlerWidgetRunReusesImportUrlBridgeAndPublishesRichMedi
     if (!result.panelMarkdown?.includes('| Page | Status | Source URL | HTML | Markdown | Downloads | Error |')) {
       throw new Error('expected crawl output to reuse the canonical Markdown pipe-table format')
     }
-    if (!result.panelMarkdown.includes('kgDoc=%2Fwebsites%2Fexample.invalid%2F20260715T041633Z%2Findex.md')) {
+    if (!result.panelMarkdown.includes('kgDoc=%2Fwebsites%2Fexample.invalid%2Findex.md')) {
       throw new Error('expected crawl Markdown cells to target their persisted Source Files path')
     }
     if (!result.panelMarkdown.includes('kgCrawlArtifact=')) {

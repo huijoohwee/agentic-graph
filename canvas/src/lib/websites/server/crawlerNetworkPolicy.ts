@@ -59,7 +59,7 @@ export async function resolveCrawlerTarget(raw: string, allowPrivateNetworks = f
 }
 
 export type CrawlerResponseMetadata = {
-  status: number; etag?: string; lastModified?: string; cacheControl?: string; vary?: string; age?: string
+  status: number; contentType?: string; etag?: string; lastModified?: string; cacheControl?: string; vary?: string; age?: string
   expires?: string; date?: string
   hasCookies: boolean; redirected: boolean
 }
@@ -96,7 +96,7 @@ export async function fetchCrawlerTextWithLimit(raw: string, options: CrawlerTex
           },
         }, response => {
           const status = response.statusCode || 0
-          const metadata: CrawlerResponseMetadata = { status, etag: response.headers.etag,
+          const metadata: CrawlerResponseMetadata = { status, contentType: response.headers['content-type'], etag: response.headers.etag,
             lastModified: response.headers['last-modified'], cacheControl: response.headers['cache-control'],
             vary: response.headers.vary, age: response.headers.age,
             expires: response.headers.expires, date: response.headers.date,

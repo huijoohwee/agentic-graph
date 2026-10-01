@@ -1,3 +1,4 @@
+import { findSavedUrlImport, recordUrlImport } from './incrementalImport'
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import { WORKSPACE_ROOT_PATH, normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { parseGitHubRepoUrl } from '../githubRepoApi'
@@ -49,6 +50,16 @@ export async function importWorkspaceUrl(args: {
   const rawUrl = String(args.urlRaw || '').trim()
   if (!rawUrl) return { createdPaths: [], sources: [], skipped: [], failed: [] }
   const parentPath = args.parentPath || WORKSPACE_ROOT_PATH
+
+  if (/^https?:\/\//i.test(rawUrl) && !args.canvas2dRenderer && !args.documentSemanticMode && !args.viewHint) {
+    const saved = await findSavedUrlImport(args.fs, rawUrl)
+    if (saved) {
+      args.onProgress?.({ phase: 'writing', current: 1, total: 1, label: 'Reused saved source; Refresh from source checks for updates' })
+      return { createdPaths: [saved.path], sources: [{ path: saved.path, source: saved.source }], skipped: [], failed: [],
+        corpusManifest: buildCorpusImportManifest({ sourceUnits: [buildCorpusSourceUnit({ workspacePath: saved.path,
+          relativePath: saved.path, originalName: saved.path, text: saved.text, status: 'cached', importMode: 'url' })], skipped: [], failed: [] }) }
+    }
+  }
 
   const repoRef = parseGitHubRepoUrl(rawUrl)
   if (repoRef) {
@@ -285,6 +296,8 @@ export async function importWorkspaceUrl(args: {
       effectiveApplyToGraph = true
     }
   }
+  // Multi-output format owners retain their own replay semantics; a single row cannot represent that set.
+  if (/^https?:\/\//i.test(sourceUrl) && createdPaths.length === 1) await recordUrlImport(args.fs, createdPaths[0], sourceUrl)
   return {
     createdPaths,
     sources,
