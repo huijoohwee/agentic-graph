@@ -118,7 +118,7 @@ export const KanbanGroup = React.memo(function KanbanGroup(props: KanbanGroupPro
           {props.canMutate ? (
             <menu
               data-kg-kanban-group-actions="1"
-              className="m-0 p-0 list-none flex shrink-0 items-center gap-1 opacity-0 pointer-events-none transition-opacity"
+              className="m-0 p-0 list-none flex shrink-0 items-center gap-1 transition-opacity"
               aria-label="Group actions"
             >
               <li className="list-none">

@@ -1,0 +1,24 @@
+/* Keep both states in one layer: utility defaults must not override reveal. */
+@layer components {
+  [data-kg-kanban-actions="1"],
+  [data-kg-kanban-group-actions="1"] {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  [data-kg-kanban-card="1"]:is(:hover, :focus-within) [data-kg-kanban-actions="1"],
+  [data-kg-kanban-group-header="1"]:is(:hover, :focus-within) [data-kg-kanban-group-actions="1"],
+  [data-kg-kanban-group-header="1"]:is(:hover, :focus-within) ~ * [data-kg-kanban-group-actions="1"],
+  [data-kg-kanban-group-list="1"]:is(:hover, :focus-within) [data-kg-kanban-group-actions="1"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    [data-kg-kanban-actions="1"],
+    [data-kg-kanban-group-actions="1"] {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+}
