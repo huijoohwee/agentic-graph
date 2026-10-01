@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { File } from 'node:buffer'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { importContentDigest, loadWorkspaceSourceIndex, setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
-import { IMPORT_INDEX_MAX_BYTES, importInventoryPath, readImportInventory, renderImportInventory } from '@/features/workspace-fs/importInventory'
+import { IMPORT_INDEX_MAX_BYTES, importInventoryPath, readImportInventory, renderImportInventory, replaceImportInventory, type ImportInventoryItem } from '@/features/workspace-fs/importInventory'
 import { persistImportInventory, readWebsiteInventory } from '@/features/workspace-fs/importInventoryPersistence'
 import { importWorkspaceLocalFiles, importWorkspaceLocalFolder } from '@/features/markdown-workspace/workspaceImport/localImport'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
@@ -133,9 +133,9 @@ test('label-only inventory tables recover links without accepting authored chang
   assert.notEqual(flattened, canonical)
   assert.deepEqual(readImportInventory(flattened), readImportInventory(canonical))
   for (const changed of [flattened.replace('| imported |', '| missing |'),
-    flattened.replace('| /reference |', '| My reference |'),
+    flattened.replace('| /reference · https://catalog.example.invalid |', '| My reference |'),
     flattened.replace('inventory-labels.md |', 'different.md |'),
-    flattened.replace('"status":"imported"', '"status":"pending"')]) {
+    flattened.replace(/checksum=[a-f0-9]{8}/, 'checksum=00000000')]) {
     assert.throws(() => readImportInventory(changed), /edited/, 'Real row and metadata edits remain protected')
   }
   const prefix = 'My [notes](<https://notes.example.invalid/>)\n', suffix = '\nKeep this footer'
@@ -144,6 +144,57 @@ test('label-only inventory tables recover links without accepting authored chang
   assert.equal(await fs.readFileText(indexPath), prefix + canonical + suffix)
   assert.ok((await fs.readFileText(path))!.endsWith('Saved capture'))
   assert.equal(await persistImportInventory(fs), false, 'Recovery writes once; settled refresh is a no-op')
+})
+
+test('one table carries complete receipts across URL and local sources, multiple outputs and escaped fields', () => {
+  const rows: ImportInventoryItem[] = [{ source: `${source}?label=a%20b&raw=%2520`, status: 'imported', detail: '  [notes] | `code` \\ & <tag>\nnext  ',
+    outputs: [{ path: '/notes/a (b)%20[中]|.md', receipt: { identity: `url:${source}?label=a%20b&raw=%2520`, inputDigest: 'a'.repeat(64),
+      outputDigest: 'b'.repeat(64), checkedAt: 1234567890, status: 'unchanged', etag: 'W/"opaque|tag\\value"', lastModified: 'Wed, 01 Oct 2025 10:00:00 GMT' } },
+    { path: '/notes/second.md', receipt: { identity: `url:${source}?label=a%20b&raw=%2520`, outputDigest: 'c'.repeat(64), checkedAt: 0, status: 'imported', etag: '', lastModified: '""' } }] },
+  { source: 'local:/folder/input.txt', status: 'pending', outputs: [{ path: '/folder/input.txt' }] },
+  { source: 'local:/unsupported.exe', status: 'not imported', detail: '' }]
+  const text = renderImportInventory(rows)
+  assert.deepEqual(readImportInventory(text), rows)
+  assert.deepEqual(readImportInventory(renderImportInventory(rows, true)), rows, 'Earlier full-URL table labels remain readable')
+  assert.deepEqual(readImportInventory(text.replace(/^\| .* \|$/gm, line => line.replace(/\[([^\]\n]*)\]\(<[^>\n]*>\)/g, '$1'))), rows)
+  assert.match(text, /\[\/reference\?label=a%20b&#38;raw=%2520 · https:\/\/catalog.example.invalid\]/)
+  assert.match(text, /\| Input digest \| Output digest \| Checked at \(ms\) \| Check result \| ETag \| Last modified \|/)
+  assert.equal((text.match(/\| Source \|/g) || []).length, 1)
+  assert.doesNotMatch(text, /```json|<details>|"items"|Import metadata/)
+  assert.match(text, /3 known sources · 1 imported/)
+  assert.throws(() => readImportInventory(text.replace('1234567890', '1234567891')), /edited/)
+  assert.throws(() => readImportInventory(text.replace('b'.repeat(64), 'e'.repeat(64))), /edited/)
+  assert.throws(() => readImportInventory(text.replace('W\/', 'changed\/')), /edited/)
+  assert.equal(replaceImportInventory(text, readImportInventory(text)), text)
+})
+
+test('legacy duplicated metadata migrates into the table once with receipts, notes and edit guards intact', async () => {
+  const fs = createMemoryWorkspaceFs()
+  const path = await document(fs, 'saved.md', `---\nkgWebpageUrl: "${source}"\n---\nOriginal page`)
+  const rows: ImportInventoryItem[] = [{ source, status: 'imported', outputs: [{ path, receipt: {
+    identity: `url:${source}`, outputDigest: 'd'.repeat(64), checkedAt: 42, status: 'imported', etag: '"saved"',
+  } }] }]
+  const legacy = ['<!-- workspace-import-index:v1 -->', '# Import index', '', '1 known sources · 1 imported · 0 not fully imported', '',
+    'All known discoveries and selected inputs are retained here. This is not a claim that every source has been discovered. Opening this index does not crawl or import anything.', '',
+    '| Source | Status | Saved documents | Detail |', '| --- | --- | --- | --- |', `| [/reference](<${source}>) | imported | [saved.md](</saved.md>) |  |`, '',
+    '<details><summary>Import metadata</summary>', '', '```json', JSON.stringify({ version: 1, items: rows }), '```', '', '</details>', '<!-- /workspace-import-index -->', ''].join('\n')
+  assert.deepEqual(readImportInventory(legacy), rows)
+  const prefix = 'Personal notes\n', suffix = '\nRetained footer'
+  const replacement = replaceImportInventory(prefix + legacy + suffix, rows)
+  assert.deepEqual(readImportInventory(replacement), rows)
+  assert.doesNotMatch(replacement, /```json|Import metadata/)
+  assert.ok(replacement.startsWith(prefix)); assert.ok(replacement.endsWith(suffix))
+  for (const variant of [legacy, legacy.replace(/\[([^\]\n]*)\]\(<[^>\n]*>\)/g, '$1')]) {
+    assert.equal(replaceImportInventory(variant, readImportInventory(variant)), renderImportInventory(rows))
+    assert.throws(() => replaceImportInventory(variant.replace('| imported |', '| pending |'), rows), /edited/)
+  }
+  await fs.createFolder({ parentPath: '/', name: 'websites' })
+  await fs.createFolder({ parentPath: '/websites', name: 'catalog.example.invalid' })
+  await fs.createFile({ parentPath: '/websites/catalog.example.invalid', name: '_import-index.md', text: prefix + legacy + suffix })
+  assert.equal(await persistImportInventory(fs), true)
+  assert.deepEqual(readImportInventory((await fs.readFileText(indexPath))!), rows)
+  assert.equal(await persistImportInventory(fs), false)
+  assert.ok((await fs.readFileText(path))!.endsWith('Original page'))
 })
 
 test('local host copies use the existing writer once per change and retry a failed copy without rewriting workspace content', async () => {
