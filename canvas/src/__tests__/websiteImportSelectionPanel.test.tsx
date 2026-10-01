@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { initJsdomHarness, settleDiscovery, waitForImportCondition } from '@/tests/lib/importInventoryHarness'
 import { SourceFileWebsiteActions } from '@/features/source-files/SourceFileWebsiteActions'
 import WebsiteImportSelectionView from '@/features/source-files/WebsiteImportSelectionView'
 import { chooseWebsiteImportPages, finishWebsiteImportSelection, useWebsiteImportSelectionSession, visibleWebsiteSelectionPages, showMoreWebsiteSelectionPages, setWebsiteSelectionQuery, toggleWebsiteSelection, importWebsiteFromSourceFiles, confirmRestoredWebsiteSelection, importDiscoveredWebsitePage } from '@/features/source-files/websiteImportSelectionSession'
@@ -30,7 +30,7 @@ async function openFileActions(host: HTMLElement, name = 'imported.md') {
 }
 
 test('Source Files has no duplicate URL import form or entry point', async () => {
-  const { restore } = initJsdomHarness()
+  const { restore } = await initJsdomHarness()
   const host = document.createElement('section'), root = createRoot(host)
   try {
     await act(async () => root.render(<><WebsiteImportSelectionView /><SourceFilesHarness /></>))
@@ -38,9 +38,8 @@ test('Source Files has no duplicate URL import form or entry point', async () =>
     assert.ok(!host.textContent?.includes('Import URL'))
   } finally { await act(async () => root.unmount()); restore() }
 })
-
 test('idle Source Files checkbox discovers selected website pages before swapping tree icons', async () => {
-  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   const host = document.createElement('section'), root = createRoot(host)
   const requests: string[] = []
   globalThis.fetch = (async target => {
@@ -53,12 +52,14 @@ test('idle Source Files checkbox discovers selected website pages before swappin
     assert.ok(first && !first.disabled, 'selected website file exposes a usable first checkbox while idle')
     assert.ok(host.querySelector('section[aria-label="File imported.md"] button[aria-label="Select file imported.md"]'), 'idle file icon remains until the checkbox is checked')
     await act(async () => first.click())
+    await settleDiscovery()
     assert.deepEqual(requests, ['/__website_import/discover'])
     assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 2)
     assert.equal(host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')?.checked, true)
     assert.ok(host.querySelector('section[aria-label="File imported.md"] input[type=checkbox]'), 'checking the first box replaces the source file icon')
     assert.equal(host.querySelector<HTMLInputElement>('input[aria-label="Folder .workspace is outside this website import"]')?.disabled, true, 'unrelated local rows cannot join page import')
     await act(async () => host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!.click())
+    await settleDiscovery()
     assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 0)
     assert.ok(host.querySelector('section[aria-label="File imported.md"] button[aria-label="Select file imported.md"]'), 'unchecking restores the file icon')
     assert.ok(host.querySelector('input[aria-label="Select all visible pages"]'), 'the first checkbox remains available for reselection')
@@ -66,19 +67,21 @@ test('idle Source Files checkbox discovers selected website pages before swappin
 })
 
 test('first checkbox retries an empty discovery without losing the selected website source', async () => {
-  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   const host = document.createElement('section'), root = createRoot(host)
   let requests = 0
   globalThis.fetch = (async () => new Response(JSON.stringify({ ok: true, pages: ++requests === 1 ? [] : [{ url: sourceUrl, path: '/library/' }], limited: false }))) as typeof fetch
   try {
     await act(async () => root.render(<SourceFilesHarness />))
     await act(async () => host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!.click())
+    await settleDiscovery()
     assert.equal(requests, 1)
     assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 0)
     await openFileActions(host)
     assert.match(document.querySelector('section[aria-label="Website discovery status"]')?.textContent || '', /No linked pages were found/)
     assert.equal(host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')?.disabled, false, 'empty discovery remains retryable after restart or failure')
     await act(async () => host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!.click())
+    await settleDiscovery()
     assert.equal(requests, 2)
     assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.has(sourceUrl), true)
     assert.ok(host.querySelector('section[aria-label="File imported.md"] input[type=checkbox]'))
@@ -86,7 +89,7 @@ test('first checkbox retries an empty discovery without losing the selected webs
 })
 
 test('one Source Files tree supports folder selection, collapse and read-only discovery', async () => {
-  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   const host = document.createElement('section'); document.body.append(host)
   const root = createRoot(host), source = sourceUrl
   const requests: string[] = [], resolutions: Array<string[] | null> = [], opened: string[] = []
@@ -98,6 +101,7 @@ test('one Source Files tree supports folder selection, collapse and read-only di
   const control = (prefix: string) => Array.from(new Set([...host.querySelectorAll<HTMLButtonElement>('button'), ...document.querySelectorAll<HTMLButtonElement>('.kg-data-view-floating-menu button')])).find(button => button.getAttribute('aria-label')?.startsWith(prefix))!
   try {
     await act(async () => { void chooseWebsiteImportPages(source, sourceEntry.path).then(urls => resolutions.push(urls)); root.render(<SourceFilesHarness onSelectFile={path => opened.push(path)} />) })
+    await settleDiscovery()
     assert.equal(host.querySelector('[aria-label="Website page tree"]'), null, 'no separate discovery tree')
     assert.equal(host.querySelector('dialog'), null)
     await openFileActions(host)
@@ -212,7 +216,7 @@ test('one Source Files tree supports folder selection, collapse and read-only di
 })
 
 test('cancel aborts pending discovery and never resolves an import selection', async () => {
-  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   let signal: AbortSignal | undefined, resolution: string[] | null | undefined
   globalThis.fetch = ((_url, init) => {
     signal = init?.signal as AbortSignal
@@ -235,9 +239,8 @@ test('cancel aborts pending discovery and never resolves an import selection', a
   } finally { await act(async () => root.unmount()); finishWebsiteImportSelection(null); globalThis.fetch = previousFetch; restore() }
 })
 
-
 test('Import URL opens Source Files and retires the MainPanel route', async () => {
-  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   assert.equal(MAIN_PANEL_TABS.some(tab => String(tab.key) === 'websiteImport'), false)
   let sourceFilesOpened = 0, mainPanelOpened = 0
   const sourceListener = () => { sourceFilesOpened += 1 }, mainListener = () => { mainPanelOpened += 1 }
@@ -263,7 +266,7 @@ test('Import URL opens Source Files and retires the MainPanel route', async () =
 })
 
 test('file row imports only its selected pages through the existing workspace bridge', async () => {
-  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   const url = 'https://example.test/library/', path = '/imported.md'
   const entry = { path, parentPath: '/', name: 'imported.md', kind: 'file' as const, updatedAtMs: 0, text: `---\nkgWebpageUrl: "${url}"\n---\n# Imported` }
   const imported: unknown[] = [], requests: string[] = []
@@ -283,6 +286,7 @@ test('file row imports only its selected pages through the existing workspace br
     assert.equal(host.querySelector('button[aria-label^="Import selected"]'), null, 'idle source rows do not show an inapplicable confirmation icon')
     await openFileActions(host)
     await act(async () => control('Find pages linked from').click())
+    await settleDiscovery()
     assert.deepEqual(imported, [])
     assert.equal(document.querySelectorAll('.kg-data-view-floating-menu button[aria-label^="Import selected"]').length, 1, 'the shared tree has only the source-row confirmation')
     await act(async () => (host.querySelector('input[aria-label="Select all visible pages"]') as HTMLInputElement).click())
@@ -298,7 +302,7 @@ test('file row imports only its selected pages through the existing workspace br
 })
 
 test('Source Files restores page checkboxes after restart without importing until confirmation', async () => {
-  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   const requests: string[] = [], imported: string[][] = []
   let importedResolve!: () => void
   const importedReady = new Promise<void>(resolve => { importedResolve = resolve })
@@ -317,6 +321,7 @@ test('Source Files restores page checkboxes after restart without importing unti
     await act(async () => root.render(<SourceFilesHarness />))
     await openFileActions(host)
     await act(async () => control('Find pages linked from').click())
+    await settleDiscovery()
     await act(async () => (host.querySelector('input[aria-label="Select all visible pages"]') as HTMLInputElement).click())
     assert.equal(page().checked, true)
     const draftKey = Object.keys(window.localStorage).find(key => {
@@ -340,6 +345,11 @@ test('Source Files restores page checkboxes after restart without importing unti
     await act(async () => { control('Import selected').click(); await importedReady })
     assert.deepEqual(imported, [[sourceUrl + 'one']])
     assert.deepEqual(JSON.parse(window.localStorage.getItem(draftKey)!).selected, [], 'successful confirmation retains discovery but clears imported selection')
+    await act(async () => finishWebsiteImportSelection(null))
+    const fresh = chooseWebsiteImportPages(sourceUrl); await settleDiscovery()
+    assert.deepEqual(useWebsiteImportSelectionSession.getState().session?.pages.map(page => page.url), [sourceUrl + 'one'])
+    assert.deepEqual(requests, ['/__website_import/discover'], 'fresh chooser reuses the durable index')
+    await act(async () => finishWebsiteImportSelection(null)); await fresh
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); host.remove(); globalThis.fetch = previousFetch; restore() }
 })
 
@@ -355,9 +365,8 @@ test('discovery keeps the clicked import owner while saved copies share its page
   assert.equal(projection.pendingPaths.has(sourceEntry.path), false)
 })
 
-
 test('discovery opens existing ancestor folders and distinguishes saved files from pending pages', async () => {
-  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   const host = document.createElement('section'), root = createRoot(host)
   const saved = { ...sourceEntry, path: '/websites/sample/run/library.md', parentPath: '/websites/sample/run' }
   const folders = ['/websites', '/websites/sample', '/websites/sample/run'].map(path => ({ kind: 'folder' as const, path, parentPath: path.slice(0, path.lastIndexOf('/')) || '/', name: path.split('/').pop()!, updatedAtMs: 0 }))
@@ -366,6 +375,7 @@ test('discovery opens existing ancestor folders and distinguishes saved files fr
     toggleExpanded() {}, onSelectFile() {}, onSelectFolder() {}, sourcesByPath: null, onCreateNewFile() {}, onRevealInFinder() {}, onClearFile() {}, onRenameEntry() {}, onDeleteEntry() {} }
   try {
     await act(async () => { void chooseWebsiteImportPages(sourceUrl, saved.path); root.render(<MarkdownWorkspaceSourceFilesList {...props} />) })
+    await settleDiscovery()
     assert.equal(host.querySelectorAll('svg[aria-label="Saved website file"]').length, 1)
     assert.equal(host.querySelectorAll('svg[aria-label="Discovered page — not saved"]').length, 1)
     await openFileActions(host)
@@ -381,9 +391,8 @@ test('discovery opens existing ancestor folders and distinguishes saved files fr
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); globalThis.fetch = previousFetch; restore() }
 })
 
-
 test('large discovery inventories recover filtered pagination without network work or lost history and selection', async () => {
-  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   const host = document.createElement('section'), root = createRoot(host)
   let requests = 0
   globalThis.fetch = (async () => { requests++; throw new Error('Pagination must stay local') }) as typeof fetch
@@ -438,9 +447,8 @@ test('large discovery inventories recover filtered pagination without network wo
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); globalThis.fetch = previousFetch; restore() }
 })
 
-
 test('retained discovery preserves retry selection after failure and rejects stale import completion', async () => {
-  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   globalThis.fetch = (async () => new Response(JSON.stringify({ ok: true, pages: [{ url: sourceUrl, path: '/library/' }], limited: false }))) as typeof fetch
   let fail = true, release!: () => void
   const gate = new Promise<void>(resolve => { release = resolve })
@@ -470,7 +478,7 @@ test('retained discovery preserves retry selection after failure and rejects sta
 })
 
 test('cancel retains saved and discovered rows through document switches and restart, ignoring late discovery', async () => {
-  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   let requests = 0, signal: AbortSignal | undefined, completeRefresh!: (response: Response) => void
   globalThis.fetch = (async (_target, init) => {
     if (++requests === 1) return new Response(JSON.stringify({ ok: true, pages: [sourceUrl, sourceUrl + 'new'].map(url => ({ url, path: new URL(url).pathname })), limited: false }))
@@ -489,11 +497,11 @@ test('cancel retains saved and discovered rows through document switches and res
   }
   try {
     await act(async () => { pending = importWebsiteFromSourceFiles(sourceUrl, sourceEntry.path); root.render(<SourceFilesHarness />) })
+    await settleDiscovery()
     await openFileActions(host)
-    await act(async () => {
-      host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!.click()
-      document.querySelector<HTMLButtonElement>('button[aria-label="Refresh discovered pages"]')!.click()
-    })
+    await act(async () => host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!.click())
+    await act(async () => document.querySelector<HTMLButtonElement>('button[aria-label="Refresh discovered pages"]')!.click())
+    await waitForImportCondition(() => !!signal)
     await act(async () => { document.querySelector<HTMLButtonElement>('button[aria-label="Cancel import selection"]')!.click(); await pending })
     assert.equal(signal?.aborted, true)
     await assertInventory()
@@ -511,7 +519,7 @@ test('cancel retains saved and discovered rows through document switches and res
 })
 
 test('Launch callback does not discard discovery on import completion or restart', async () => {
-  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   let requests = 0, beforeImportCalls = 0, imports = 0, pending!: Promise<unknown>
   globalThis.fetch = (async () => { requests++; return new Response(JSON.stringify({ ok: true, pages: [{ url: sourceUrl + 'new', path: '/library/new' }], limited: false })) }) as typeof fetch
   const unregister = registerMarkdownWorkspaceActionBridge('test-launch-retention', { importWebsite: async (_url, options) => {
@@ -521,6 +529,7 @@ test('Launch callback does not discard discovery on import completion or restart
   let root = createRoot(host)
   try {
     await act(async () => { pending = importWebsiteFromSourceFiles(sourceUrl, undefined, async () => { beforeImportCalls++ }); root.render(<SourceFilesHarness />) })
+    await settleDiscovery()
     assert.equal(beforeImportCalls, 0)
     await act(async () => { finishWebsiteImportSelection([sourceUrl + 'new']); await pending })
     assert.equal(beforeImportCalls, 1)
@@ -537,9 +546,8 @@ test('Launch callback does not discard discovery on import completion or restart
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); globalThis.fetch = previousFetch; restore() }
 })
 
-
 test('discovered page import is explicit, locked while running and preserves the live batch chooser', async () => {
-  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   const host = document.createElement('section'), root = createRoot(host)
   document.body.append(host)
   const page = sourceUrl + 'topic?category=Examples%20Only', other = sourceUrl + 'other'
@@ -555,6 +563,7 @@ test('discovered page import is explicit, locked while running and preserves the
   const importButton = () => Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(button => button.getAttribute('aria-label') === 'Import page Topic page')!
   try {
     await act(async () => { void chooseWebsiteImportPages(sourceUrl, sourceEntry.path).then(urls => resolutions.push(urls)); root.render(<><SourceFileWebsiteActions entry={{ ...sourceEntry, name: 'Topic page', path: '/topic.md', text: undefined }} urlOverride={page} destinationPath="/topic.md" confirmationOwner={false} discoveryContext /><WebsiteImportSelectionView /></>) })
+    await settleDiscovery()
     assert.equal(useWebsiteImportSelectionSession.getState().session!.selected.size, 0)
     await act(async () => toggleWebsiteSelection([other], true))
     assert.equal(importButton().disabled, false)

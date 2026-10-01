@@ -17,8 +17,8 @@ function selectedFile(name: string, text: string, relative?: string): globalThis
 function countedFs() {
   const fs = createMemoryWorkspaceFs(); let writes = 0
   return { fs: { ...fs,
-    createFile: async (args: Parameters<typeof fs.createFile>[0]) => { writes++; return fs.createFile(args) },
-    writeFileText: async (...args: Parameters<typeof fs.writeFileText>) => { writes++; return fs.writeFileText(...args) },
+    createFile: async (args: Parameters<typeof fs.createFile>[0]) => { if (args.name !== '_import-index.md') writes++; return fs.createFile(args) },
+    writeFileText: async (...args: Parameters<typeof fs.writeFileText>) => { if (!args[0].endsWith('/_import-index.md')) writes++; return fs.writeFileText(...args) },
   }, writes: () => writes }
 }
 
@@ -42,7 +42,7 @@ test('folders retain paths, reuse unchanged files, and change only the changed m
   const changed = await run('bravo'); assert.deepEqual(changed.failed, []); assert.equal(writes(), count + 1)
   assert.deepEqual(changed.createdPaths, first.createdPaths)
   assert.equal(await fs.readFileText('/incremental-folder/a.ts'), 'bravo')
-  assert.equal((await fs.listEntries()).filter(entry => entry.kind === 'file' && entry.path.startsWith('/incremental-folder/')).length, 2)
+  assert.equal((await fs.listEntries()).filter(entry => entry.kind === 'file' && entry.path.startsWith('/incremental-folder/') && entry.name !== '_import-index.md').length, 2)
 })
 
 test('saved URL and selected website pages are reused without fetch, conversion or new files', async () => {

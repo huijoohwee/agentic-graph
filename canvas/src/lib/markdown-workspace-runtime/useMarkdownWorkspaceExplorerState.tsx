@@ -171,7 +171,11 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
       const currentActivePath = runtime.activePathRef.current
       const fs = await getFs()
       if (opts?.reconcileSeed !== false) await fs.ensureSeed()
-      const list = await fs.listEntries()
+      let list = await fs.listEntries()
+      const { persistImportInventory } = await import('@/features/workspace-fs/importInventoryPersistence')
+      const { useWebsiteImportSelectionSession } = await import('@/features/source-files/websiteImportSelectionSession')
+      const discoveries = useWebsiteImportSelectionSession.getState().session?.pages || []
+      if (await persistImportInventory(fs, discoveries.map(page => ({ source: page.url, status: 'not imported' })), list)) list = await fs.listEntries()
       const hydratedList = await hydrateWorkspaceEntriesInlineText({
         fs,
         workspaceEntries: list,
@@ -235,6 +239,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
       })
     } catch (e) {
       const currentRuntime = runtimeRef.current
+      currentRuntime.setLoadError(String((e as { message?: unknown })?.message ?? e))
       if (!silent) {
         currentRuntime.setLoading(false)
         currentRuntime.setLoadError(String((e as { message?: unknown })?.message ?? e))

@@ -133,6 +133,10 @@ export async function discoverWebsiteSelection(url: string, selectAllOnDiscover 
   try {
     const result = await discoverWebsitePages(session.url, url, active.signal)
     if (active.signal.aborted) return
+    const { getWorkspaceFs } = await import('@/features/workspace-fs/workspaceFs')
+    const { persistImportInventory } = await import('@/features/workspace-fs/importInventoryPersistence')
+    await persistImportInventory(await getWorkspaceFs(), [...session.pages, ...result.pages].map(page => ({ source: page.url, status: 'not imported' })))
+    if (active.signal.aborted) return
     updateSession(session.id, current => {
       const merged = new Map(current.pages.map(page => [page.url, page]))
       result.pages.forEach(page => merged.set(page.url, page))
@@ -196,7 +200,17 @@ export function chooseWebsiteImportPages(url: string, sourcePath?: string, selec
   useWebsiteImportSelectionSession.setState({ session, recoveryError: writeDraft(session) })
   openMarkdownWorkspaceEditorPane(useGraphStore.getState())
   requestMarkdownExplorerSourceFilesOpen(sourcePath)
-  void discoverWebsiteSelection(url)
+  void (async () => {
+    try {
+      const { getWorkspaceFs } = await import('@/features/workspace-fs/workspaceFs')
+      const { readWebsiteInventory } = await import('@/features/workspace-fs/importInventoryPersistence')
+      const pages = await readWebsiteInventory(await getWorkspaceFs(), url)
+      if (useWebsiteImportSelectionSession.getState().session?.id !== session.id) return
+      if (!pages.length) { await discoverWebsiteSelection(url); return }
+      updateSession(session.id, current => ({ ...current, pages, busy: false, limited: true, selectAllOnDiscover: false,
+        selected: selectAllOnDiscover ? new Set(pages.slice(0, 500).map(page => page.url)) : new Set() }))
+    } catch (failure) { updateSession(session.id, current => ({ ...current, busy: false, error: String((failure as Error).message || failure) })) }
+  })()
   return result
 }
 

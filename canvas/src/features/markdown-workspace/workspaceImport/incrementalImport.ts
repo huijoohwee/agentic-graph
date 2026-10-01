@@ -1,3 +1,4 @@
+import { persistImportInventory } from '@/features/workspace-fs/importInventoryPersistence'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { importContentDigest, loadWorkspaceSourceIndex, setWorkspaceEntrySource, type WorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
@@ -49,6 +50,7 @@ export async function recordUrlImport(fs: WorkspaceFs, path: string, url: string
   setWorkspaceEntrySource(path, { kind: 'url', url: key.href, importState: {
     identity: `url:${key.href}`, outputDigest: await importContentDigest(text), checkedAt: Date.now(), status: 'imported',
   } }, { persist: 'sync' })
+  await persistImportInventory(fs)
 }
 
 /** One receipt on each existing source-index row; no parallel catalog or content store. */
