@@ -68,8 +68,7 @@ export function createWorkspaceRevealHandler(repoRoot: string, policy: KgFsPathP
         || req.headers['sec-fetch-site'] === 'cross-site') throw new Error()
     } catch { return reply(403, { ok: false, error: 'Reveal requires a same-origin local preview' }) }
     if (!String(req.headers['content-type'] || '').startsWith('application/json')) return reply(415, { ok: false, error: 'Use application/json' })
-    if (busy) return reply(409, { ok: false, error: 'A file manager request is already running' })
-    busy = true
+    let ownsFileManager = false
     try {
       const chunks: Buffer[] = []
       let size = 0
@@ -83,6 +82,15 @@ export function createWorkspaceRevealHandler(repoRoot: string, policy: KgFsPathP
       try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { throw new RevealError(400, 'Invalid reveal request') }
       if (!body || typeof body !== 'object' || Array.isArray(body)) throw new RevealError(400, 'Invalid reveal request')
       const request = body as Record<string, unknown>
+      const saveOnly = request.saveOnly === true
+      if (saveOnly && (!('snapshot' in request) || 'path' in request || 'folderSnapshot' in request
+        || !parseWorkspaceRevealSnapshot(request.snapshot).workspacePath.startsWith('/websites/'))) {
+        throw new RevealError(400, 'Saving an import requires a website document')
+      }
+      if (!saveOnly) {
+        if (busy) throw new RevealError(409, 'A file manager request is already running')
+        busy = true; ownsFileManager = true
+      }
       let target = '', copied = false
       if ('folderSnapshot' in request) {
         if ('snapshot' in request || 'website' in request || 'workspacePath' in request || 'path' in request || request.kind !== 'folder') throw new RevealError(400, 'A folder copy requires a single workspace folder')
@@ -109,6 +117,7 @@ export function createWorkspaceRevealHandler(repoRoot: string, policy: KgFsPathP
           target = await saveWorkspaceRevealSnapshot(outputRoot, snapshot); copied = true
         }
       } else target = await resolveWorkspaceRevealTarget(repoRoot, policy, request)
+      if (saveOnly) return reply(200, { ok: true, path: target, message: 'Saved website document' })
       const action = workspaceRevealCommand(target, process.platform, (await fs.stat(target)).isDirectory())
       await run(action.command, action.args)
       reply(200, { ok: true, path: target, message: copied ? `Saved local copy. ${action.message}` : action.message })
@@ -116,6 +125,6 @@ export function createWorkspaceRevealHandler(repoRoot: string, policy: KgFsPathP
       const known = error instanceof RevealError || error instanceof WorkspaceRevealSnapshotError
       reply(known ? error.status : 500, { ok: false,
         error: known ? error.message : 'The local host could not save or reveal this item' })
-    } finally { busy = false }
+    } finally { if (ownsFileManager) busy = false }
   }
 }

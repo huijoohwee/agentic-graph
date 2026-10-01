@@ -78,6 +78,9 @@ export const toWorkspaceDocsMirrorPath = (relPath: string): WorkspacePath => {
   if (mountedRelPath.toLowerCase().startsWith('agentic-canvas-os/docs/')) {
     return normalizeWorkspacePath(`/${mountedRelPath}`)
   }
+  if (mountedRelPath.toLowerCase().startsWith('docs_/websites/')) {
+    return normalizeWorkspacePath(`/${mountedRelPath.slice('docs_/'.length)}`)
+  }
   if (mountedRelPath.toLowerCase().startsWith('docs_/')) {
     return normalizeWorkspacePath(`/${mountedRelPath}`)
   }

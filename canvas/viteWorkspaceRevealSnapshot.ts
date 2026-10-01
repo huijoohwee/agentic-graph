@@ -65,12 +65,16 @@ export function parseWorkspaceRevealFolderSnapshot(value: unknown): WorkspaceRev
 export async function saveWorkspaceRevealSnapshot(outputRoot: string, snapshot: WorkspaceRevealSnapshot): Promise<string> {
   const value = parseWorkspaceRevealSnapshot(snapshot)
   const entries: FolderEntry[] = [{ ...value, kind: 'file' }]
+  if (value.workspacePath.startsWith('/websites/')) return saveCurrentCopies(outputRoot, value.workspacePath, entries, true)
   await saveNamedSnapshot(outputRoot, value.workspacePath, JSON.stringify(value), entries, false)
   return saveCurrentCopies(outputRoot, value.workspacePath, entries)
 }
 
 export async function saveWorkspaceRevealFolderSnapshot(outputRoot: string, snapshot: WorkspaceRevealFolderSnapshot): Promise<string> {
   const value = parseWorkspaceRevealFolderSnapshot(snapshot)
+  if (value.workspacePath === '/websites' || value.workspacePath.startsWith('/websites/')) {
+    return saveCurrentCopies(outputRoot, value.workspacePath, [{ workspacePath: value.workspacePath, kind: 'folder' }, ...value.entries], true)
+  }
   await saveNamedSnapshot(outputRoot, value.workspacePath, JSON.stringify(value), value.entries, true)
   return saveCurrentCopies(outputRoot, value.workspacePath, [{ workspacePath: value.workspacePath, kind: 'folder' }, ...value.entries])
 }
@@ -79,27 +83,40 @@ const copyQueues = new Map<string, Promise<unknown>>()
 const contentHash = (text: string) => createHash('sha256').update(text).digest('hex')
 
 /** One named tree for files and folders; immutable snapshots above retain prior revisions. */
-async function saveCurrentCopies(outputRoot: string, selectedPath: string, entries: FolderEntry[]): Promise<string> {
-  const root = path.join(path.resolve(outputRoot), 'revealed')
+async function saveCurrentCopies(outputRoot: string, selectedPath: string, entries: FolderEntry[], direct = false): Promise<string> {
+  if (!path.isAbsolute(outputRoot)) throw new WorkspaceRevealSnapshotError(400, 'A local output folder is required')
+  const base = path.resolve(outputRoot)
+  if (direct) {
+    let ancestor = base
+    while (true) {
+      try { await fs.lstat(ancestor); break } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+        ancestor = path.dirname(ancestor)
+      }
+    }
+    if (await fs.realpath(ancestor) !== ancestor) throw new WorkspaceRevealSnapshotError(403, 'Document copy directory must not be a symlink')
+    await fs.mkdir(base, { recursive: true })
+  }
+  const root = direct ? base : path.join(base, 'revealed')
   const previous = copyQueues.get(root) || Promise.resolve()
-  const pending = previous.catch(() => undefined).then(() => publishCurrentCopies(root, selectedPath, entries))
+  const pending = previous.catch(() => undefined).then(() => publishCurrentCopies(root, selectedPath, entries, direct))
   copyQueues.set(root, pending)
   try { return await pending } finally { if (copyQueues.get(root) === pending) copyQueues.delete(root) }
 }
 
-async function publishCurrentCopies(root: string, selectedPath: string, entries: FolderEntry[]): Promise<string> {
+async function publishCurrentCopies(root: string, selectedPath: string, entries: FolderEntry[], direct: boolean): Promise<string> {
   const replaced = () => new WorkspaceRevealSnapshotError(409, 'The existing local copy was replaced; it was preserved')
   const edited = () => new WorkspaceRevealSnapshotError(409, 'The existing local copy was edited; it was preserved')
   const moved = () => new WorkspaceRevealSnapshotError(409, 'The existing local copy was moved; its directory was preserved')
   if (await fs.realpath(root) !== root) throw replaced()
-  const lockPath = path.join(root, '.current-lock')
+  const lockPath = path.join(root, direct ? '.website-lock' : '.current-lock')
   const lock = await fs.open(lockPath, 'wx', 0o600).catch(error => {
     if (error.code === 'EEXIST') throw new WorkspaceRevealSnapshotError(409, 'Another local copy is being saved; retry when it finishes')
     throw error
   })
   let staging = ''
   try {
-    const current = path.join(root, 'current'), index = path.join(root, '.current-index')
+    const current = direct ? root : path.join(root, 'current'), index = path.join(root, direct ? '.website-index' : '.current-index')
     const ensureDirectory = async (directory: string) => {
       let parent = root
       for (const name of path.relative(root, directory).split(path.sep).filter(Boolean)) {

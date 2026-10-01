@@ -81,7 +81,7 @@ test('HTTP reveal awaits host completion and rejects foreign origins, invalid bo
     const folderResult = await request(JSON.stringify({ kind: 'folder', folderSnapshot }))
     assert.equal(folderResult.status, 200)
     const folder = await folderResult.json()
-    assert.ok(folder.path.startsWith(path.join(root, 'docs_/revealed/')))
+    assert.equal(folder.path, path.join(root, 'docs_/websites'))
     assert.ok(folder.path.endsWith('/websites'))
     assert.equal(await fs.readFile(path.join(folder.path, 'example.test/run/page.md'), 'utf8'), 'Saved page')
     assert.deepEqual(calls.at(-1)?.slice(1), workspaceRevealCommand(folder.path, process.platform, true).args)

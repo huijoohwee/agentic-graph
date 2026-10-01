@@ -14,7 +14,8 @@ import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { IndexedCollectionDexie } from '@/lib/storage/indexedDbCollectionSchema'
 
-const first = '/websites/example.invalid/20260101T010101Z'
+const root = '/websites/example.invalid'
+const first = root + '/20260101T010101Z'
 const second = '/websites/example.invalid/20260202T020202Z'
 const folder = (path: string): WorkspaceEntry => ({ path, parentPath: path.slice(0, path.lastIndexOf('/')) || '/', name: path.split('/').at(-1)!, kind: 'folder', updatedAtMs: 1 })
 const file = (path: string, text: string): WorkspaceEntry => ({ ...folder(path), kind: 'file', text })
@@ -36,22 +37,24 @@ test('one collection preserves every file and query variant, remaps summary link
   assert.equal(plan.entries.filter(entry => entry.kind === 'file').length, entries.filter(entry => entry.kind === 'file').length)
   assert(!plan.entries.some(entry => entry.path.startsWith(second)))
   const migrated = plan.entries.find(entry => entry.previousPaths?.includes(`${second}/library/page.md`))!
-  assert.equal(migrated.path, `${first}/library/page--20260202T020202Z.md`)
+  assert.equal(migrated.path, `${root}/library/page--20260202T020202Z.md`)
   assert.equal(migrated.text, entries.find(entry => entry.path === `${second}/library/page.md`)!.text)
   assert.equal(plan.entries.find(entry => entry.previousPaths?.includes(`${second}/notes.md`))?.text, 'User notes must survive unchanged')
   assert.equal(plan.entries.find(entry => entry.previousPaths?.includes(`${second}/website.sitemap.md`))?.text,
     '[Page](./library/page--20260202T020202Z.md)')
-  assert(plan.entries.some(entry => entry.path === `${first}/empty`))
+  assert(plan.entries.some(entry => entry.path === `${root}/empty`))
   assert.equal(planWebsiteCollectionConsolidation(plan.entries).moved.size, 0)
   assert.equal(JSON.stringify(entries), original, 'planning must not mutate original records')
-  assert.equal(resolveWebsiteCollectionRoot(plan.entries, 'example.invalid', 'later'), first)
-  assert.equal(resolveWebsiteCollectionRoot(plan.entries, 'other.invalid', 'later'), '/websites/other.invalid/later')
+  assert.equal(resolveWebsiteCollectionRoot(plan.entries, 'example.invalid', 'later'), root)
+  assert.equal(resolveWebsiteCollectionRoot(plan.entries, 'other.invalid', 'later'), '/websites/other.invalid')
 })
 
 test('folder names alone do not authorize merging another website or ordinary files', () => {
   const entries = fixture().map(entry => entry.path.startsWith(second) && entry.text?.includes('kgWebpageUrl')
     ? { ...entry, text: entry.text.replaceAll('example.invalid', 'different.invalid') } : entry)
-  assert.equal(planWebsiteCollectionConsolidation(entries).moved.size, 0)
+  const plan = planWebsiteCollectionConsolidation(entries)
+  assert(![...plan.moved.keys()].some(path => path === second || path.startsWith(second + '/')))
+  assert(plan.entries.some(entry => entry.path === `${second}/library/page.md`))
 })
 
 test('open-file restoration and shadow caches follow committed path provenance', () => {
@@ -75,7 +78,7 @@ test('conditional migration retries concurrent edits, and persistent conflicts r
   }
   await consolidateWebsiteCollections(db)
   assert.equal(attempts, 2)
-  assert.equal((await db.collections.entries.findOne(`${first}/notes.md`).exec())?.get('text'), 'Concurrent edit')
+  assert.equal((await db.collections.entries.findOne(`${root}/notes.md`).exec())?.get('text'), 'Concurrent edit')
   await db.atomicWrite(fixture().map(record => ({ kind: 'upsert', collectionName: 'entries', record })))
   const before = (await db.collections.entries.find().exec()).map(row => row.toJSON())
   db.compareAndWrite = async () => false

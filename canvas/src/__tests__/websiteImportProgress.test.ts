@@ -123,7 +123,7 @@ test('missing server Markdown never reparses a large HTML capture on the client'
     page.artifacts = { rawHtmlRelPath: 'nodes/oversized/raw.html', rawHtmlBytes: 12_017_857 }
     await writer.writeNodes([page])
     assert.deepEqual(requests, ['markdown'])
-    const text = await fs.readFileText('/websites/example.invalid/missing-markdown/oversized.md')
+    const text = await fs.readFileText('/websites/example.invalid/oversized.md')
     assert.match(String(text), /Markdown conversion is unavailable/)
     assert.match(String(text), /kgWebsiteNodeId: "oversized"/)
     assert.equal(parseCanvasWorkspaceFrontmatterPreset(String(text))?.canvas2dRenderer, 'd3')
@@ -183,7 +183,7 @@ test('completed crawl pages appear before the terminal sitemap and Canvas projec
 
 test('a running import refreshes and expands the first completed page before terminal status', async () => {
   const fs = createMemoryWorkspaceFs({ initialEntries: [{ path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 }] })
-  const root = '/websites/example.invalid/progress-live'
+  const root = '/websites/example.invalid'
   const guardedFs = {
     ...fs,
     async createFolder(args: Parameters<typeof fs.createFolder>[0]) {
@@ -223,7 +223,7 @@ test('a running import refreshes and expands the first completed page before ter
         statusReads += 1
         if (statusReads === 1) return json({ ok: true, status: 'running', running: true, progress: { stage: 'converting', total: 2, processed: 1, ok: 1, error: 0 } })
         assert.ok(visibleEntries.some(path => path.endsWith('/index.md')), 'first completed page must be visible before done')
-        assert.ok(expandedPaths.has('/websites/example.invalid/progress-live'), 'import folder must be expanded before done')
+        assert.ok(expandedPaths.has('/websites/example.invalid'), 'import folder must be expanded before done')
         return json({ ok: true, status: 'done', running: false, progress: { stage: 'converting', total: 2, processed: 2, ok: 2, error: 0 } })
       }
       if (url.includes('/__website_import/manifest')) return json({ ok: true, manifest: snapshot(statusReads < 2 ? 'running' : 'done', statusReads < 2 ? [first] : [first, second]) })
@@ -445,7 +445,7 @@ test('in-place writes preserve concurrent files and reject failed or stale captu
   }
 })
 
-test('later captures reuse the first website collection and retain occupied pages and summaries', async () => {
+test('later captures reuse stable website paths without capture folders or duplicate pages', async () => {
   const fs = createMemoryWorkspaceFs()
   const capture = async (importId: string, nodeUrl: string) => {
     const writer = await createWebsiteImportWorkspaceWriter({
@@ -456,19 +456,15 @@ test('later captures reuse the first website collection and retain occupied page
     return writer.finalize({ version: 1, importId, rootUrl: 'https://example.invalid/library', status: 'done', startedAtMs: 1,
       nodes: [node(importId, nodeUrl)], errors: [] })
   }
-  const firstCapture = await capture('20260101T010101Z', 'https://example.invalid/library/one')
-  const oldFiles = new Map(await Promise.all(firstCapture.created.createdPaths.map(async path => [path, await fs.readFileText(path)] as const)))
-  const laterCapture = await capture('20260202T020202Z', 'https://example.invalid/library/two')
-  for (const path of laterCapture.created.createdPaths) assert(path.startsWith('/websites/example.invalid/20260101T010101Z/'))
-  assert.equal((await fs.listEntries()).filter(entry => entry.kind === 'folder' && entry.parentPath === '/websites/example.invalid').length, 1)
-  for (const [path, text] of oldFiles) assert.equal(await fs.readFileText(path), text, 'earlier content and summaries survive')
-  const sameCapture = await capture('20260202T020202Z', 'https://example.invalid/library/two')
-  assert.deepEqual(sameCapture.created.createdPaths, laterCapture.created.createdPaths, 'same capture is idempotent')
-  const beforeProgress = (await fs.listEntries()).filter(entry => entry.kind === 'file').length
-  const progressed = await capture('20260202T020202Z', 'https://example.invalid/library/three')
-  assert.equal(progressed.canvasPath, laterCapture.canvasPath, 'progress updates the same capture summary')
-  assert.equal((await fs.listEntries()).filter(entry => entry.kind === 'file').length, beforeProgress + 1)
+  const first = await capture('20260101T010101Z', 'https://example.invalid/library/one')
+  const original = await fs.readFileText('/websites/example.invalid/library/one.md')
+  const later = await capture('20260202T020202Z', 'https://example.invalid/library/two')
+  assert.equal(await fs.readFileText('/websites/example.invalid/library/one.md'), original)
   const repeat = await capture('20260303T030303Z', 'https://example.invalid/library/one')
-  assert(repeat.created.createdPaths.some(path => path.includes('one--20260303T030303Z.md')))
-  for (const [path, text] of oldFiles) assert.equal(await fs.readFileText(path), text)
+  assert.deepEqual(repeat.created.createdPaths, first.created.createdPaths)
+  assert.equal(later.canvasPath, first.canvasPath)
+  assert.match(String(await fs.readFileText('/websites/example.invalid/library/one.md')), /20260303T030303Z/)
+  const entries = await fs.listEntries()
+  assert(!entries.some(entry => /\d{8}T\d{6}Z/.test(entry.path)))
+  assert.equal(entries.filter(entry => entry.kind === 'file' && entry.path.startsWith('/websites/')).length, 4)
 })

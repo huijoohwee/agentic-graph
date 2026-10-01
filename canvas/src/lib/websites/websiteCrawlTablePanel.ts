@@ -34,7 +34,7 @@ export function enhanceLegacyWebsiteCrawlTablePanelSrcDoc(srcDoc: string): strin
     let host = 'website'
     try { host = new URL(sourceUrl).host || host } catch { void 0 }
     const workspacePath = String(existingParams?.get('kgDoc') || '').trim()
-      || `/websites/${safeWebsitePathSegment(host)}/${safeWebsitePathSegment(importId)}/${resolveWebsiteImportNodeRelativeDocumentPath({ nodeUrl: sourceUrl })}`
+      || `/websites/${safeWebsitePathSegment(host)}/${resolveWebsiteImportNodeRelativeDocumentPath({ nodeUrl: sourceUrl })}`
     const deepLink = existingDeepLink
       ? originalHref
       : buildWebsiteCrawlMarkdownDeepLink({ artifactHref: originalHref, sourceUrl, workspacePath })
@@ -84,7 +84,7 @@ const markdownWorkspacePath = (manifest: WebsiteImportManifestV1, node: WebsiteI
     }
   })()
   const relativePath = resolveWebsiteImportNodeRelativeDocumentPath({ nodeUrl: node.url, nodePath: node.path })
-  return `/websites/${safeWebsitePathSegment(host)}/${safeWebsitePathSegment(manifest.importId)}/${relativePath}`
+  return `/websites/${safeWebsitePathSegment(host)}/${relativePath}`
 }
 
 const artifactMarkdownCell = (manifest: WebsiteImportManifestV1, node: WebsiteImportNode, kind: 'rawHtml' | 'markdown'): string => {
