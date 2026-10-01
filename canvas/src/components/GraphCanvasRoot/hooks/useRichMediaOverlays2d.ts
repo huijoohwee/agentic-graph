@@ -395,9 +395,8 @@ export function useRichMediaOverlays2d(args: {
       viewportW: sceneWidth,
       viewportH: sceneHeight,
       readLayoutViewport: readVisibleOverlayLayoutViewport,
-      schema: schemaRef.current,
-      collision: { enabled: false },
       anchorToNode: true,
+      projectWithWorldTransformScale: true,
       aspectRatioMode: strybldrStoryboardCardAspectMode,
       readTransform: () => {
         const svgEl = svgRef.current

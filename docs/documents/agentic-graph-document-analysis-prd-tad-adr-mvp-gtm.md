@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.25"
+version: "1.0.26"
 date: "2026-10-01"
 lang: "en-US"
-prd_revision: "1.0.25"
-tad_revision: "1.0.25"
-adr_revision: "1.0.25"
-mvp_revision: "1.0.25"
-gtm_revision: "1.0.25"
+prd_revision: "1.0.26"
+tad_revision: "1.0.26"
+adr_revision: "1.0.26"
+mvp_revision: "1.0.26"
+gtm_revision: "1.0.26"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -23,12 +23,12 @@ agent_id: "codex"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.25. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.26. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
 
-Pinned 3D media follows its projected graph anchor during pan, drag and zoom, including crossing viewport edges. It must not snap to a viewport border or reappear as a screen-fixed fallback when its world anchor is offscreen. Camera distance and globe-label backface rules must not hide in-view media; only the camera frustum and projected panel bounds determine visibility before the existing count budget. Empty imported image sources use the shared media empty state, never a generic rectangle. Free panels retain explicit screen anchors. Shared media controls and larger-under-smaller ordering remain authoritative.
+D3 2D zoom-in enlarges the entire rich media frame and zoom-out shrinks it, for default and authored sizes, matching the shared 3D and Storyboard projection contract. Content, header and controls scale once together; graph anchoring and unbounded placement persist. Pinned 3D media follows its projected graph anchor during pan, drag and zoom, including crossing viewport edges. It must not snap to a viewport border or reappear as a screen-fixed fallback when its world anchor is offscreen. Camera distance and globe-label backface rules must not hide in-view media; only the camera frustum and projected panel bounds determine visibility before the existing count budget. Empty imported image sources use the shared media empty state, never a generic rectangle. Free panels retain explicit screen anchors. Shared media controls and larger-under-smaller ordering remain authoritative.
 
 Imported source URLs must resolve to their saved documents when selecting canvas media. Non-interactive media bodies and headers share panel dragging; native embedded controls retain their gestures. A media panel covers every graph alias for the same media, without an additional opaque mesh.
 
@@ -119,7 +119,7 @@ existing selection, pin and resize controls. A settled canvas must do no continu
 
 ## TAD
 
-Reuse the 2D media path’s continuous `applyPanelBox` transform, unbounded `computePanelRect`, shared frame metrics and pointer/wheel owners. The 3D adapter supplies camera projection and camera-space depth only. Scale the whole logical panel instead of quantizing its width or refitting it to the viewport; convert resize deltas through the painted scale. Missing world positions may use an initial screen slot; culled world positions may not. Determine panel bounds once with shared sizing, intersect them with the viewport before budget selection, and retain partially visible panels without clamping. Declared image nodes retain media identity when their URL is missing or rejected; the shared empty panel owns that state.
+D3 2D enables the existing world-transform projection in the shared media layout loop. Resolve fallback dimensions at unit zoom; preserve authored dimensions, then apply the camera scale once to the whole frame. Reuse the 2D media path’s continuous `applyPanelBox` transform, unbounded `computePanelRect`, shared frame metrics and pointer/wheel owners. The 3D adapter supplies camera projection and camera-space depth only. Scale the whole logical panel instead of quantizing its width or refitting it to the viewport; convert resize deltas through the painted scale. Missing world positions may use an initial screen slot; culled world positions may not. Determine panel bounds once with shared sizing, intersect them with the viewport before budget selection, and retain partially visible panels without clamping. Declared image nodes retain media identity when their URL is missing or rejected; the shared empty panel owns that state.
 
 Reuse workspace import source-URL identity for navigation, preferring the matching active capture and rejecting ambiguous alternatives. The shared media pool carries covered source node IDs through deduplication. Shared panel pointer routing owns body/header drag; 2D and 3D recovery run after the pointer owner commits and never poll or cancel a live drag on a timer. The shared SVG semantic binder owns background and root naming.
 
@@ -260,7 +260,7 @@ work through the shared flush contract. Retain the existing sizing bounds with o
 
 ## ADR
 
-Remove the 3D-only viewport clamp, 16 px size steps and fallback for culled world anchors. Keep one logical media frame and project it through the existing shared matrix-placement owner. This preserves subpixel motion and makes resized panels track zoom. Native 3D controls keep camera ownership; no parallel renderer or dependency. Remove the fixed-distance and globe-label backface filters from media layout: neither represents media visibility. Use camera projection and shared panel bounds, keeping count limits. Retire the two distance controls from the settings registry; persisted store fields remain compatibility data only. Missing image sources resolve to an empty image spec without relaxing URL validation or exposing a rejected-source open action. The existing shared empty-media owner renders a visible semantic status and icon, replacing hidden decorative placeholder blocks.
+Enable shared world projection for D3 2D rather than scaling chrome inside a screen-fixed authored frame. Resolve fallback size at unit zoom to avoid double scaling; keep screen-layout consumers on their existing sizing contract. Remove the 3D-only viewport clamp, 16 px size steps and fallback for culled world anchors. Keep one logical media frame and project it through the existing shared matrix-placement owner. This preserves subpixel motion and makes resized panels track zoom. Native 3D controls keep camera ownership; no parallel renderer or dependency. Remove the fixed-distance and globe-label backface filters from media layout: neither represents media visibility. Use camera projection and shared panel bounds, keeping count limits. Retire the two distance controls from the settings registry; persisted store fields remain compatibility data only. Missing image sources resolve to an empty image spec without relaxing URL validation or exposing a rejected-source open action. The existing shared empty-media owner renders a visible semantic status and icon, replacing hidden decorative placeholder blocks.
 
 Extend existing navigation, media-pool and pointer owners. Do not map an arbitrary URL to the active file, strip distinguishing query parameters, add a renderer-specific media variant, or let recovery erase an uncommitted release. Panel drags start at the visible panel center, including clamped panels; pinned drags retain world depth. Recovery runs after native event dispatch, beyond capture-phase microtask checkpoints. Keep explicit layer priority and larger-under-smaller peer ordering.
 
@@ -331,7 +331,7 @@ readability limits; do not add another renderer or a permanent animation loop.
 
 ## MVP
 
-Media-visibility increment: at most six production modules and 15 KB changed source; initial 20-minute budget extended 15 minutes for tracing an empty imported image source and live verification. Verify distant and rear-hemisphere in-view panels, full and partial viewport exit, budget selection, shared empty image identity, continuous pan/zoom, drag release and larger-under-smaller ordering. Run the affected release gate and native live gestures before review publication. Roll back these owner changes together. Eleven focused geometry, gesture and empty-media checks pass. Live 3D verification retained eight panels through fit-to-view and three successive zoom-outs; the unavailable image exposed a hit-testable status and moved 95 px horizontally and -20 px vertically through its shared header. TypeScript, hygiene and conflict checks passed before the final source-action guard. Predecessor PR 1442 passed provider integration and documentation checks; the final affected gate must bind the final source before publication.
+D3 media zoom-direction increment: initial 20-minute budget extended ten minutes for a typed resize-fixture correction and final validation; at most four production modules and 10 KB source changes. Reproduce the authored frame remaining fixed under zoom, then verify default and authored sizes grow/shrink proportionally, with shared chrome, stable graph centers, offscreen placement, gesture release and no idle writes. Use existing regression owners and native live zoom controls; run the affected gate before review publication. Roll back the hook and shared fallback sizing together. Implemented in three production modules using the existing projection and painted-scale reader; resize deltas remain in logical units. Twenty focused checks pass, including a regression demonstrated failing before the fallback fix. Live native D3 zoom changed an authored panel from 92.75 × 52.19 px at 21% to 115.94 × 65.23 px at 26%, then back exactly, preserving its 439 px logical width and shared chrome. Storyboard also enlarged by 25% and returned exactly. Source hygiene passed; final affected validation must bind the corrected fixture and complete revision before review publication. Production remains unproven.
 
 Navigation/drag repair: at most eight production modules and 18 KB production changes. Initial 25-minute implementation budget exceeded after live reproduction exposed 2D callback churn and native 3D release ordering; final validation/review budget is 15 minutes. Cover URL identity/ambiguity, body/header drag with control exclusions, native release recovery, stable rerenders and deduplicated media coverage. Twenty focused checks and typecheck pass. Live 2D body drag commits 70/-45 px without changing the canvas transform; source selection reveals saved Markdown without a missing-file alert. Live 3D unpinned drag commits 80/50 px; a clamped pinned panel moves its center 100/60 px. Named shared panels retain larger-under-smaller order. Require hygiene and an exact-source native affected receipt before review publication. Roll back owner changes together without altering saved documents.
 
@@ -537,7 +537,7 @@ claim is implied.
 
 ## GTM
 
-The local interaction repair serves readers arranging imported media alongside a graph. Value is predictable manipulation with existing controls, without service costs or additional background work. Live distant-media visibility and shared empty-panel interaction are verified locally. Device-wide frame-rate parity and production delivery remain unproven; the next bounded action is final affected validation and review delivery by the implementation owner.
+The local interaction repair serves readers arranging imported media alongside a graph. Value is predictable manipulation with existing controls, without service costs or additional background work. Previous distant-media visibility and shared empty-panel interaction were verified locally; D3 2D now grows and shrinks whole frames through the shared owner, with measured native zoom proof and no new service or background loop. Device-wide frame-rate parity and production delivery remain unproven; the next bounded action is final affected validation and review delivery by the implementation owner.
 
 Deliver a local, free/FOSS interaction repair to existing document and graph readers. No new service, plan, addon or background crawl. Review evidence must distinguish local checks, live gestures and provider CI; no production-performance or deployment claim follows from local success.
 

@@ -299,6 +299,8 @@ export const TEST_CASES_POST_PARSER_2: TestCaseTuple[] = [
   ["mediaOverlayLayout2d.nodeAnchors.gestureFrames","@/__tests__/mediaOverlayWorldProjectionChrome.test","testMediaOverlayFollowsLiveNodeAnchorsAcrossGestures"],
   ["mediaOverlayLayout2d.fallbackWhenPosMissing","@/__tests__/mediaOverlayLayoutLoop2dFallback.test","testMediaOverlayLayoutLoop2dFallsBackWhenNodePosMissing"],
   ["mediaOverlayLayout2d.worldProjection.cardChromeMetrics","@/__tests__/mediaOverlayWorldProjectionChrome.test","testMediaOverlayWorldProjectionKeepsUnscaledCardChromeMetrics"],
+  ["mediaOverlayLayout2d.worldProjection.zoomDirection","@/__tests__/mediaOverlayWorldProjectionChrome.test","testMediaOverlayWorldProjectionScalesDefaultAndAuthoredFramesOnce"],
+  ["mediaOverlayLayout2d.worldProjection.resizeScale","@/__tests__/mediaOverlayWorldProjectionChrome.test","testD3MediaResizeUsesPaintedScale"],
   ["mediaOverlayLayout2d.worldProjection.sharedCardPaintScale","@/__tests__/mediaOverlayWorldProjectionChrome.test","testMediaOverlayWorldProjectionUsesSharedPaintScale"],
   ["mediaOverlayLayout2d.infiniteCanvas.noViewportBounce","@/__tests__/mediaOverlayLayoutLoop2dFallback.test","testMediaOverlayLayoutLoop2dPreservesInfiniteCanvasOffscreenPositions"],
   ["mediaOverlayLayout2d.frontmatter.visibleMarginReseed","@/__tests__/mediaOverlayLayoutLoop2dFallback.test","testMediaOverlayLayoutLoop2dReseedsManualFrontmatterOverlapsInsideVisibleMargins"],

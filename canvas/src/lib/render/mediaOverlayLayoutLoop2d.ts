@@ -140,7 +140,7 @@ export function startMediaOverlayLayoutLoop2d(args: {
       density,
       viewportW: layoutViewport.width,
       viewportH: layoutViewport.height,
-      zoomK: k,
+      zoomK: args.projectWithWorldTransformScale === true ? 1 : k,
       itemCount: args.items.length,
       config: args.sizingConfig,
     })
