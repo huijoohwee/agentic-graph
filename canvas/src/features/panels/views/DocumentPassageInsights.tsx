@@ -33,6 +33,8 @@ export default function DocumentPassageInsights({ source, analyze = analyzePassa
   const passage = current?.passages.find(p => p.id === selected)
   const group = passage ? current?.groups.find(g => g.members.includes(passage.id)) : null
   const edges = passage ? current?.graph.edges.filter(edge => edge.source === passage.id || edge.target === passage.id) ?? [] : []
+  const metadata = current?.graph.metadata?.passageAnalysis
+  const analysis = metadata && typeof metadata === 'object' && !Array.isArray(metadata) ? metadata : null
   const jump = () => {
     if (!passage || !jumpToDocumentInsight(source, passage.line)) setStatus('Source changed. Analyze the current document again.')
     else setStatus(`Source line ${passage.line} selected.`)
@@ -52,6 +54,15 @@ export default function DocumentPassageInsights({ source, analyze = analyzePassa
       <output role="status" aria-live="polite">{busy ? 'Analyzing passages…' : status}</output>
       {current ? <>
         <p>{current.passages.length} passages · {current.graph.edges.length} relationships · {current.groups.length} lexical groups · {current.policy}</p>
+        <details className="min-w-0">
+          <summary className="cursor-pointer underline">Analysis provenance</summary>
+          <dl className="grid gap-1 break-all pt-1">
+            <dt>Source</dt><dd>{source.key}</dd>
+            <dt>Local text revision</dt><dd>{String(analysis?.revision ?? 'Unknown')} · local change identifier, not proof of authenticity</dd>
+            <dt>Algorithm version</dt><dd>{String(analysis?.version ?? 'Unknown')}</dd>
+            <dt>Segmentation</dt><dd>{current.policy}</dd>
+          </dl>
+        </details>
         <div className="flex flex-wrap gap-2">
           <button type="button" className="rounded border px-2 py-1" onClick={() => setStatus(applyDocumentPassageLayer(source, current.graph, useGraphStore.getState()) ? 'Passage layer added. Source text and authored nodes are preserved.' : 'Open this source’s document graph before adding its passage layer.')}>Add passage layer to graph</button>
           <button type="button" className="rounded border px-2 py-1" onClick={() => setStatus(applyDocumentPassageLayer(source, null, useGraphStore.getState()) ? 'Passage layer removed. Source text is unchanged.' : 'Source or graph changed. No layer was removed.')}>Remove passage layer</button>
@@ -69,14 +80,27 @@ export default function DocumentPassageInsights({ source, analyze = analyzePassa
           <button type="button" className="justify-self-start underline" onClick={jump}>Jump to passage source · line {passage.line}</button>
           <p>Authored section: {current.passages.find(p => p.id === passage.section)?.text || 'No heading parent'}.</p>
           <p>{group ? `Lexical group: ${group.terms.join(', ')} · ${group.members.length} passages` : 'No supported lexical group.'}</p>
+          {group ? <details className="min-w-0">
+            <summary className="cursor-pointer underline">Group evidence</summary>
+            <p>Method: lexical label propagation, split into connected components. These passages are connected by shared-word relationships; this is not a factual classification.</p>
+            <p className="break-all">Member-set identity: {group.id}</p>
+          </details> : null}
           {group ? <nav aria-label="Lexical group members" className="flex flex-wrap gap-2">{group.members.map(id => <button type="button" key={id} className="underline" aria-pressed={selected === id} onClick={() => setSelected(id)}>Line {current.passages.find(p => p.id === id)?.line}</button>)}</nav> : null}
           <ol aria-label="Passage relationships" className="max-h-56 space-y-2 overflow-auto">
             {edges.map(edge => {
               const other = current.passages.find(p => p.id === (edge.source === passage.id ? edge.target : edge.source))!
               const terms = edge.properties['passage:terms']
+              const from = current.passages.find(p => p.id === edge.source)!
+              const to = current.passages.find(p => p.id === edge.target)!
               return <li key={edge.id} className="rounded border p-2">
                 <button type="button" className="underline" onClick={() => setSelected(other.id)}>{edge.label} · line {other.line}</button>
                 <p>{edge.label === 'similar_to' ? `Lexical cosine ${Number(edge.properties['passage:score']).toFixed(3)} · ${Array.isArray(terms) ? terms.join(', ') : ''}` : `${edge.source === passage.id ? 'Outgoing' : 'Incoming'} authored relationship`}</p>
+                <details className="min-w-0">
+                  <summary className="cursor-pointer underline">Relationship evidence</summary>
+                  <p>Source lines {from.line}–{from.endLine} {edge.label === 'similar_to' ? '↔' : '→'} {to.line}–{to.endLine}</p>
+                  <p>Source offsets [{from.start}, {from.end}) and [{to.start}, {to.end}) · UTF-16, end excluded</p>
+                  <p className="break-all">Method: {String(edge.properties['passage:method'])} · local text revision: {String(edge.metadata?.sourceRevision)}</p>
+                </details>
               </li>
             })}
           </ol>
