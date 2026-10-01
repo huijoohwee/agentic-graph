@@ -1,3 +1,5 @@
+import { persistImportInventory } from '@/features/workspace-fs/importInventoryPersistence'
+import type { ImportInventoryItem } from '@/features/workspace-fs/importInventory'
 import { beginLocalIncrementalImport } from './incrementalImport'
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import { WORKSPACE_ROOT_PATH, normalizeWorkspacePath } from '@/features/workspace-fs/path'
@@ -54,6 +56,7 @@ export async function importWorkspaceLocalFolder(args: {
 }): Promise<WorkspaceImportResult> {
   const files = toFileArray(args.files)
   if (files.length === 0) return { createdPaths: [], sources: [], skipped: [], failed: [] }
+  const inventory: ImportInventoryItem[] = []
   const createdPaths: WorkspacePath[] = []
   const sources: Array<{ path: WorkspacePath; source: WorkspaceEntrySource }> = []
   const skipped: Array<{ name: string; reason: 'unsupported' | 'missing-name' }> = []
@@ -76,6 +79,8 @@ export async function importWorkspaceLocalFolder(args: {
   for (let index = 0; index < files.length; index += 1) {
     const file = files[index]
     const nameRaw = String(file?.name || '').trim()
+    const inventoryItem: ImportInventoryItem = { source: `local:${normalizeWorkspacePath(file.webkitRelativePath || nameRaw || `[unnamed input ${index + 1}]`)}`, status: 'not imported' }
+    inventory.push(inventoryItem)
     try {
       bytesCurrent += Math.max(0, Number(file?.size || 0))
       args.onProgress?.({ current: index + 1, total: files.length, name: nameRaw, bytesCurrent, bytesTotal })
@@ -85,6 +90,7 @@ export async function importWorkspaceLocalFolder(args: {
     }
 
     if (!nameRaw) {
+      inventoryItem.detail = 'Missing filename'
       skipped.push({ name: '', reason: 'missing-name' })
       continue
     }
@@ -100,6 +106,7 @@ export async function importWorkspaceLocalFolder(args: {
       .replace(/^\/+/, '')
     if (spatialCaptureHandledFileKeys.has(relPath || nameRaw)) continue
     if (!isSupportedWorkspaceImportFile(file)) {
+      inventoryItem.detail = 'Unsupported format'
       skipped.push({ name: nameRaw, reason: 'unsupported' })
       continue
     }
@@ -289,6 +296,7 @@ export async function importWorkspaceLocalFolder(args: {
       })
     } catch (e) {
       succeeded = false
+      inventoryItem.detail = String((e as { message?: unknown })?.message ?? e)
       failed.push({ name: nameRaw, error: String((e as { message?: unknown })?.message ?? e) })
       try {
         const failPath = normalizeWorkspacePath(`${WORKSPACE_ROOT_PATH}/${relDir}/${relName}`)
@@ -320,6 +328,15 @@ export async function importWorkspaceLocalFolder(args: {
     sources.unshift({ path: videoSequencePath, source: { kind: 'local', originalName: buildVideoSequenceWorkspaceDocumentName(videoSequenceAssets) } })
   }
 
+  for (const unit of sourceUnits) {
+    const item = inventory.find(row => row.source === `local:${normalizeWorkspacePath(`${'/'}/${unit.relativePath}`)}`)
+    if (!item) continue
+    const sourcePath = normalizeWorkspacePath(unit.workspacePath)
+    const path = videoSequencePath && removedPaths.includes(sourcePath) ? videoSequencePath : sourcePath
+    item.outputs = [...(item.outputs || []), { path }]
+    item.status = unit.status === 'pending' ? 'pending' : 'imported'
+  }
+  await persistImportInventory(args.fs, inventory)
   return {
     ...buildCorpusWorkspaceImportResult({ createdPaths, sources, skipped, failed, sourceUnits }),
     ...(removedPaths.length > 0 ? { removedPaths } : {}),

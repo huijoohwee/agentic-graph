@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { initJsdomHarness, settleDiscovery } from '@/tests/lib/importInventoryHarness'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import { MarkdownWorkspaceSourceFilesList } from '@/features/markdown-workspace/MarkdownWorkspaceSourceFilesList'
 import { SourceFileWebsiteActions } from '@/features/source-files/SourceFileWebsiteActions'
@@ -50,7 +50,7 @@ test('folder import covers selected inventory beyond pagination and filtering wi
 })
 
 test('idle folder Import starts discovery and confirms actual selected descendant pages', async () => {
-  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   const host = document.createElement('section'); document.body.append(host)
   const root = createRoot(host), requests: unknown[] = [], imported: unknown[] = []
   let importedResolve!: () => void
@@ -67,6 +67,7 @@ test('idle folder Import starts discovery and confirms actual selected descendan
     await openFolderActions(host)
     assert.equal(button('Choose pages to import in websites').disabled, false)
     await act(async () => button('Choose pages to import in websites').click())
+    await settleDiscovery()
     assert.equal(requests.length, 1)
     assert.deepEqual(imported, [], 'discovery alone does not write pages')
     assert.equal(useWebsiteImportSelectionSession.getState().session?.selected.size, 2)
@@ -80,7 +81,7 @@ test('idle folder Import starts discovery and confirms actual selected descendan
 })
 
 test('multiple saved sources require choosing a URL before discovery', async () => {
-  const { restore } = initJsdomHarness(), previousFetch = globalThis.fetch
+  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   const host = document.createElement('section'); document.body.append(host)
   const root = createRoot(host), requests: Array<{ rootUrl: string; url: string }> = []
   globalThis.fetch = (async (_target, options) => {
@@ -96,12 +97,13 @@ test('multiple saved sources require choosing a URL before discovery', async () 
     assert.equal(select.options.length, 2)
     await act(async () => { select.value = '/websites/b.md'; select.dispatchEvent(new window.Event('change', { bubbles: true })) })
     await act(async () => Array.from(document.querySelectorAll('button')).find(item => item.textContent === 'Find pages to import')!.click())
+    await settleDiscovery()
     assert.equal(requests[0].rootUrl, 'https://second.test/')
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); globalThis.fetch = previousFetch; restore() }
 })
 
 test('folder confirmation preserves outside selections, retries failure, and rejects stale or concurrent calls', async () => {
-  const { restore } = initJsdomHarness()
+  const { restore } = await initJsdomHarness()
   const host = document.createElement('section'); document.body.append(host)
   const root = createRoot(host), urls = [url + 'inside', url + 'outside'], calls: string[][] = []
   let fail = true, release!: () => void

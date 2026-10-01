@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
@@ -165,21 +166,24 @@ export async function runLocalViteBrowserSmoke({
       + 'this proof requires a fresh server owned by the candidate checkout',
     )
   }
-  if (!reuseExistingServer) {
-    if (prepareBeforeStart) {
-      await runCommand(npmCommand, ['run', 'predev'], process.env)
-    }
-    devServer = startDevServer({
-      devServerPort,
-      devServerStartMode,
-      env: process.env,
-      previewOutDir,
-    })
-  } else {
-    console.log(`[${logLabel}] reusing existing dev server at ${devServerUrl}`)
-  }
-
+  // Owned browser fixtures may create workspace artifacts; keep them outside
+  // the source checkout but within the existing workspace filesystem boundary.
+  const storeRoot = reuseExistingServer ? null : await mkdtemp(resolve(process.cwd(), '../..', '.browser-smoke-store-'))
+  const runtimeEnv = { ...process.env, ...(storeRoot ? { AGENTIC_OS_WORKSPACE_STORE_ROOT: storeRoot } : {}) }
   try {
+    if (!reuseExistingServer) {
+      if (prepareBeforeStart) {
+        await runCommand(npmCommand, ['run', 'predev'], runtimeEnv)
+      }
+      devServer = startDevServer({
+        devServerPort,
+        devServerStartMode,
+        env: runtimeEnv,
+        previewOutDir,
+      })
+    } else {
+      console.log(`[${logLabel}] reusing existing dev server at ${devServerUrl}`)
+    }
     await Promise.race([
       waitForServerReady(devServerUrl, 120000),
       ...(devServer
@@ -194,7 +198,7 @@ export async function runLocalViteBrowserSmoke({
         cwd: process.cwd(),
         stdio: 'inherit',
         env: {
-          ...process.env,
+          ...runtimeEnv,
           [baseUrlEnvName]: devServerBaseUrl,
         },
       })
@@ -209,5 +213,6 @@ export async function runLocalViteBrowserSmoke({
     })
   } finally {
     await terminateProcess(devServer)
+    if (storeRoot) await rm(storeRoot, { recursive: true, force: true })
   }
 }

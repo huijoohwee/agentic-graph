@@ -45,7 +45,14 @@ try {
   const source = 'score = 2\nprint(score)\n'
   await page.locator('input[type="file"][accept*=".py"]').setInputFiles({ name: 'block-check.py', mimeType: 'text/plain', buffer: Buffer.from(source) })
   const python = page.getByRole('region', { name: 'Python learning workspace', exact: true })
+  // A seeded lesson can mount this pane before the selected import finishes.
+  // Bind each transition to the actual source before dismissing or reloading UI.
+  const awaitVisibleSource = expected => page.waitForFunction(text =>
+    document.querySelector('textarea[aria-label="Python source text"]')?.value === text,
+  expected, { timeout: 60000 })
   await python.waitFor({ timeout: 60000 })
+  await awaitVisibleSource(source)
+  phase = 'imported-source-ready'
   await dismissVisibleFloatingPanel(page)
   const awaitStoredSource = expected => page.waitForFunction(async value => {
     const name = (await indexedDB.databases()).find(database => database.name?.includes('kg:workspace-fs:indexeddb:v1'))?.name
@@ -104,12 +111,14 @@ try {
     python.getByRole('button', { name: 'Open verified offline workspace', exact: true }).click(),
   ])
   await python.waitFor({ timeout: 60000 })
+  await awaitVisibleSource(source)
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 60000 })
   await context.setOffline(true)
   phase = 'first-offline-reload'
   const response = await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
   assert.equal(response?.status(), 200)
   await python.waitFor({ timeout: 60000 })
+  await awaitVisibleSource(source)
   await dismissVisibleFloatingPanel(page)
   if (await explorer.isChecked()) await explorer.uncheck()
   await blockToggle.check()
@@ -127,6 +136,7 @@ try {
   phase = 'saved-edit-offline-reload'
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
   await python.waitFor({ timeout: 60000 })
+  await awaitVisibleSource(changed)
   await dismissVisibleFloatingPanel(page)
   if (await explorer.isChecked()) await explorer.uncheck()
   await blockToggle.check()
