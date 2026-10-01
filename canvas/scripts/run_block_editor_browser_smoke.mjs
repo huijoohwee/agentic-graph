@@ -18,13 +18,15 @@ const dev = process.argv.includes('--dev')
 const output = resolve(process.env.BLOCK_EDITOR_PROOF_DIR || join(tmpdir(), `block-editor-browser-${revision.slice(0, 12)}`))
 if (process.argv.includes('--build')) execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 240000 })
 let server, browser, page
+const errors = [], remote = [], assetFailures = [], consoleErrors = []
+const retain = (items, value) => { items.push(value); if (items.length > 40) items.shift() }
+let phase = 'startup'
 try {
   await mkdir(output, { recursive: true })
   if (!dev) server = await preview({ root: canvas, configFile: join(canvas, 'vite.config.ts'), configLoader: 'runner', base: '/agentic-graph/', preview: { host: '127.0.0.1', port: 4199, strictPort: true } })
   const origin = dev ? 'http://127.0.0.1:5175' : 'http://127.0.0.1:4199'
   browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
   const context = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true })
-  const errors = [], remote = []
   await context.route('**/*', route => {
     const url = new URL(route.request().url())
     if (url.origin === origin || !['http:', 'https:'].includes(url.protocol)) return route.continue()
@@ -33,6 +35,11 @@ try {
   })
   page = await context.newPage()
   page.on('pageerror', error => errors.push(error.message))
+  page.on('console', message => { if (message.type() === 'error') retain(consoleErrors, message.text().slice(0, 500)) })
+  page.on('requestfailed', request => {
+    const url = new URL(request.url())
+    if (url.origin === origin && url.pathname.includes('/assets/')) retain(assetFailures, { path: url.pathname, failure: request.failure()?.errorText })
+  })
   await page.goto(origin + (dev ? '/' : '/agentic-graph/') + '?openEditorWorkspace=1', { waitUntil: 'domcontentloaded', timeout: 60000 })
   await page.getByRole('region', { name: 'Source Files content', exact: true }).waitFor({ timeout: 60000 })
   const source = 'score = 2\nprint(score)\n'
@@ -91,6 +98,7 @@ try {
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 60000 })
   await python.getByRole('button', { name: 'Install offline lessons', exact: true }).click()
   await python.getByText(/^Verified \d+ files/).waitFor({ timeout: 190000 })
+  phase = 'verified-online-reopen'
   await Promise.all([
     page.waitForURL(url => url.searchParams.get('python-learning-offline') === sourceRevision, { waitUntil: 'load', timeout: 60000 }),
     python.getByRole('button', { name: 'Open verified offline workspace', exact: true }).click(),
@@ -98,6 +106,7 @@ try {
   await python.waitFor({ timeout: 60000 })
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 60000 })
   await context.setOffline(true)
+  phase = 'first-offline-reload'
   const response = await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
   assert.equal(response?.status(), 200)
   await python.waitFor({ timeout: 60000 })
@@ -115,6 +124,7 @@ try {
   await python.getByRole('button', { name: 'Save source', exact: true }).click()
   const changed = 'score = 3\nprint(score)\n'
   await awaitStoredSource(changed)
+  phase = 'saved-edit-offline-reload'
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
   await python.waitFor({ timeout: 60000 })
   await dismissVisibleFloatingPanel(page)
@@ -132,7 +142,8 @@ try {
   console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))
 } catch (error) {
   if (page) {
-    console.error('Page state:', await page.evaluate(() => ({ url: location.href, readyState: document.readyState })).catch(() => ({})))
+    console.error('Browser diagnostics:', JSON.stringify({ phase, pageErrors: errors, assetFailures, consoleErrors }))
+    console.error('Page state:', await page.evaluate(() => ({ url: location.href, readyState: document.readyState, html: document.documentElement.outerHTML.slice(0, 4000) })).catch(() => ({})))
     console.error('Visible failure:', (await page.locator('body').innerText()).slice(-6000))
     await page.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {})
   }
