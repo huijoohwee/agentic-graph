@@ -1,5 +1,15 @@
 /* Keep both states in one layer: utility defaults must not override reveal. */
 @layer components {
+  .kg-data-view-new-record-divider-action {
+    block-size: 1.5rem;
+    min-block-size: 1.5rem;
+  }
+
+  [data-kg-kanban-group-list="1"] > [data-kg-kanban-group-actions="1"] {
+    display: flex;
+    margin-block: -0.25rem;
+  }
+
   [data-kg-kanban-actions="1"],
   [data-kg-kanban-group-actions="1"] {
     opacity: 0;
@@ -15,6 +25,11 @@
   }
 
   @media (hover: none), (pointer: coarse) {
+    .kg-data-view-new-record-divider-action {
+      block-size: 2.75rem;
+      min-block-size: 2.75rem;
+    }
+
     [data-kg-kanban-actions="1"],
     [data-kg-kanban-group-actions="1"] {
       opacity: 1;

@@ -1,3 +1,4 @@
+import { testNewRecordDividerAffordance } from './newRecordDividerAffordance.test'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -76,7 +77,7 @@ export function testWorkspaceDataViewFloatingPanelOwnsQueryWorkbench() {
   const headerText = readUtf8('src/features/markdown-workspace/main/viewer/WorkspaceDataViewHeader.tsx')
   const newRecordButtonText = readUtf8('src/features/markdown-workspace/main/viewer/WorkspaceDataViewNewRecordButton.tsx')
   const responsiveCssText = readUtf8('src/styles/responsive-toolbar.css')
-  const indexCssText = readUtf8('src/index.css')
+  const kanbanActionsCss = readUtf8('src/styles/markdown-kanban-actions.css')
   const canvasViewportText = readUtf8('src/components/CanvasViewport.tsx')
   const bridgeText = readUtf8('src/features/markdown-workspace/main/viewer/CanvasWorkspaceDataViewFloatingRegistrationBridge.tsx')
   const derivedViewerText = readUtf8('src/features/markdown-workspace/main/viewer/MarkdownWorkspaceDerivedViewer.tsx')
@@ -112,7 +113,7 @@ export function testWorkspaceDataViewFloatingPanelOwnsQueryWorkbench() {
   if (!kanbanDividerRowText.includes('<WorkspaceDataViewNewRecordButton') || !kanbanDividerRowText.includes('presentation="divider"')) {
     throw new Error('expected shared kanban divider row utility to own the semantic New Record divider presentation')
   }
-  if (!kanbanGroupText.includes('data-kg-kanban-group-header="1"') || !kanbanGroupText.includes('data-kg-kanban-group-list="1"') || !kanbanGroupText.includes('<KanbanNewRecordDividerRow') || !indexCssText.includes('[data-kg-kanban-group-header="1"]:hover [data-kg-kanban-group-actions="1"]') || !indexCssText.includes('[data-kg-kanban-group-list="1"]:hover [data-kg-kanban-group-actions="1"]')) {
+  if (!kanbanGroupText.includes('data-kg-kanban-group-header="1"') || !kanbanGroupText.includes('data-kg-kanban-group-list="1"') || !kanbanGroupText.includes('<KanbanNewRecordDividerRow') || !kanbanActionsCss.includes('[data-kg-kanban-group-header="1"]:is(:hover, :focus-within) [data-kg-kanban-group-actions="1"]') || !kanbanActionsCss.includes('[data-kg-kanban-group-list="1"]:is(:hover, :focus-within) [data-kg-kanban-group-actions="1"]')) {
     throw new Error('expected shared kanban group actions to reveal from both the lane header and semantic card list and reuse the shared New Record divider row utility')
   }
   if (!storyboardCanvasText.includes('data-kg-kanban-group-header="1"') || !storyboardCanvasText.includes('data-kg-kanban-group-list="1"') || !storyboardCanvasText.includes('<KanbanNewRecordDividerRow')) {
@@ -190,6 +191,7 @@ export function testWorkspaceDataViewFloatingPanelOwnsQueryWorkbench() {
   if (settingsPanelText.includes("<span className={['text-xs', UI_THEME_TOKENS.text.secondary].join(' ')}>Group</span>")) {
     throw new Error('expected FloatingPanel View query workbench to avoid a duplicate Group selector label')
   }
+  return testNewRecordDividerAffordance()
 }
 
 export function testWorkspaceTableUserFacingCopyUsesMultiDimensionalTableSsot() {
