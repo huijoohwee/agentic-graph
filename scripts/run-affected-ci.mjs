@@ -62,6 +62,28 @@ export function validateExecutionPartitions(partitions, policy) {
   }
 }
 
+export async function sourcePlanReuse(partition, partitions, {
+  environment = process.env, verify, captureInputs = ownerInputDigest, log = console.log,
+} = {}) {
+  readExecutionPartition(partition === 'all' ? [] : [`--partition=${partition}`])
+  const selected = Object.entries(partitions).filter(([name]) => partition === 'all' || name === partition)
+  if (!selected.some(([, commands]) => commands.length > 0)) return null
+  const directory = environment.AGENTIC_OS_CI_SOURCE_EVIDENCE_DIR
+  if (!directory || environment.GITHUB_ACTIONS !== 'true' || environment.GITHUB_EVENT_NAME !== 'push'
+    || environment.GITHUB_REF !== 'refs/heads/main') return null
+  try {
+    const runCiEvidence = verify ?? (await import('../node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs')).runCiEvidence
+    return runCiEvidence(['verify', '--policy=.agentic-os-ci-source-evidence.json',
+      `--lookup=${path.join(directory, 'ci-evidence-lookup.json')}`,
+      `--evidence=${path.join(directory, 'protected-ci-evidence/evidence.json')}`,
+      `--output=${path.join(directory, `ci-source-reuse-${partition}.json`)}`],
+    { ...environment, AGENTIC_OS_CI_OWNER_INPUTS: await captureInputs() })
+  } catch {
+    log('[agentic-graph] source reuse unavailable; executing original plan')
+    return null
+  }
+}
+
 export const main = async (args = process.argv.slice(2)) => {
   const partition = readExecutionPartition(args)
   const contract = await readContract()
@@ -88,19 +110,7 @@ export const main = async (args = process.argv.slice(2)) => {
   if (plan.commands.length) {
     const { runValidationStages, recordCiStageReuse } = await import('../node_modules/agentic-os/bin/agentic-os-validation-stages.mjs')
     const partitions = partitionAffectedCommands(plan.commands, contract)
-    let reuse = null
-    const directory = process.env.AGENTIC_OS_CI_SOURCE_EVIDENCE_DIR
-    if (directory && process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_EVENT_NAME === 'push'
-      && process.env.GITHUB_REF === 'refs/heads/main') {
-      try {
-        const { runCiEvidence } = await import('../node_modules/agentic-os/bin/agentic-os-ci-evidence.mjs')
-        reuse = runCiEvidence(['verify', '--policy=.agentic-os-ci-source-evidence.json',
-          `--lookup=${path.join(directory, 'ci-evidence-lookup.json')}`,
-          `--evidence=${path.join(directory, 'protected-ci-evidence/evidence.json')}`,
-          `--output=${path.join(directory, 'ci-source-reuse.json')}`],
-        { ...process.env, AGENTIC_OS_CI_OWNER_INPUTS: await ownerInputDigest() })
-      } catch { console.log('[agentic-graph] source reuse unavailable; executing original plan') }
-    }
+    const reuse = await sourcePlanReuse(partition, partitions)
     for (const [name, commands] of Object.entries(partitions)) {
       if (partition !== 'all' && partition !== name) continue
       console.log(`[agentic-graph] ${name} partition: ${commands.length}/${plan.commands.length} selected checks`)

@@ -244,6 +244,9 @@ test('main reuse retains fresh canonical preflight and verifies once at the plan
   const script = read('scripts/run-affected-ci.mjs')
   assert.match(script, /runCiEvidence\(\['verify'/)
   assert.match(script, /reuse\?\.reused === true/)
+  assert.match(script, /await sourcePlanReuse\(partition, partitions\)/)
+  assert.equal(integration.find(step => step.name === 'Retain source-plan reuse decision').with.path,
+    '${{ runner.temp }}/ci-source-reuse-*.json')
   assert.match(script, /else await runValidationStages\(repoRoot, stages\)/)
   assert.ok(integration.findIndex(s => s.name === 'Seal PR source-plan evidence') > integration.findIndex(s => s.name === 'Run XR v2 runtime review-candidate gate'))
   assert.match(integration.find(s => s.id === 'validation_observation').run,
