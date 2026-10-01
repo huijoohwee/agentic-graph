@@ -290,10 +290,8 @@ export const createNodesLayer = (args: {
       h: shapeByNodeId.get(String(n.id)) === 'circle' ? 2 * r : height }
   }
   const effectiveZKeys = nodeZKeyById || buildNodeZKeyById({ nodes: renderNodes, groups: [] })
-  const keyForId = (id: string): NodeZKey => ({
-    ...(effectiveZKeys.get(id) || { groupDepth: -1, groupSize: Infinity, zIndex: 0, zMode: 'group', yIndex: 0, xIndex: 0 }), id: '',
-  })
-  const cmp = (a: GraphNode, b: GraphNode) => compareNodeZKey(keyForId(String(a.id)), keyForId(String(b.id)))
+  const cmp = (a: GraphNode, b: GraphNode) =>
+    (effectiveZKeys.get(String(a.id))?.zIndex || 0) - (effectiveZKeys.get(String(b.id))?.zIndex || 0)
     || compareCanvasSurfaceArea(surfaceFor(a), surfaceFor(b))
   node.sort(cmp)
   if (groupChevronSel) groupChevronSel.sort(cmp)

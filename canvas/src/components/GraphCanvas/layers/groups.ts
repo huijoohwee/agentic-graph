@@ -20,7 +20,7 @@ import { readSchemaGroupBoundsOverrides } from '../../../lib/canvas/groupBoundsO
 import { commitGroupBoundsOverrideToStore } from '../../../lib/canvas/groupBoundsOverridesStore'
 import { readAllowGroupResize } from '../../../lib/canvas/groupResizePolicy'
 import { readGroupResizeHandleConfig } from '@/lib/canvas/groupResizeHandleConfig'
-import { createGroupsLayoutEngine } from '@/components/GraphCanvas/layers/groupsLayout'
+import { createGroupsLayoutEngine, createGroupsLayoutUpdater } from '@/components/GraphCanvas/layers/groupsLayout'
 import { bindGroupsResizeHandle } from '@/components/GraphCanvas/layers/groupsResizeHandle'
 import { readSnapGridConfigFromSchema } from '@/lib/canvas/gridSnap'
 import { filterGroupsByCollapsedAncestors } from '@/lib/graph/groupVisibility'
@@ -545,7 +545,6 @@ export const createGroupsLayer = (args: {
     if (!id) return
     groupDatumById.set(id, d)
   })
-  let lastSelectedGroupId = ''
   let activeResizeGroupId = ''
 
   function commitGroupBounds(groupId: string, bounds: { x: number; y: number; width: number; height: number; labelX?: number; labelY?: number }) {
@@ -601,44 +600,11 @@ export const createGroupsLayer = (args: {
     },
   })
 
-  const update = () => {
-    const selectedGroupId = String(useGraphStore.getState().selectedGroupId || '').trim()
-    const prevSelectedGroupId = lastSelectedGroupId
-    if (allowResize && selectedGroupId !== prevSelectedGroupId) {
-      const ids = [prevSelectedGroupId, selectedGroupId]
-      for (let i = 0; i < ids.length; i += 1) {
-        const id = String(ids[i] || '').trim()
-        if (!id) continue
-        const d = groupDatumById.get(id) || null
-        if (!d) continue
-        const cached = layoutCache.get(id) || null
-        const computed = cached || computeBoundsAndLabel(d)
-        applyComputedToGroup(d, computed, selectedGroupId, activeResizeGroupId)
-      }
-    }
-    lastSelectedGroupId = selectedGroupId
-    itemSel.each(function (d) {
-      const idKey = String(d.id || '').trim()
-      if (!idKey) return
-      const computed = computeBoundsAndLabel(d)
-      const prev = layoutCache.get(idKey) || null
-      if (
-        prev &&
-        Math.abs(prev.x - computed.x) < eps &&
-        Math.abs(prev.y - computed.y) < eps &&
-        Math.abs(prev.w - computed.w) < eps &&
-        Math.abs(prev.h - computed.h) < eps &&
-        Math.abs(prev.labelX - computed.labelX) < eps &&
-        Math.abs(prev.labelY - computed.labelY) < eps &&
-        Math.abs(prev.chevronCx - computed.chevronCx) < eps &&
-        Math.abs(prev.chevronCy - computed.chevronCy) < eps &&
-        prev.d === computed.d
-      ) {
-        return
-      }
-      applyComputedToGroup(d, computed, selectedGroupId, activeResizeGroupId)
-    })
-  }
+  const update = createGroupsLayoutUpdater({ itemSel, layoutCache, computeBoundsAndLabel, applyComputedToGroup,
+    groupDatumById, allowResize, eps, readSelectedId: () => String(useGraphStore.getState().selectedGroupId || '').trim(),
+    readActiveResizeId: () => activeResizeGroupId,
+    hitRoot: hitLayer.node()!,
+  })
 
   update()
   return { update }

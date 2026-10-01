@@ -55,6 +55,8 @@ export function testCanvasNodesPaintLargerUnderneath() {
     const simulation = d3.forceSimulation(nodes).stop()
     createNodesLayer({ g: root as unknown as d3.Selection<SVGGElement, unknown, null, undefined>,
       graphData: graph, schema: { ...defaultSchema, behavior: { ...defaultSchema.behavior, allowNodeDrag: false } },
+      nodeZKeyById: new Map(nodes.map((node, i) => [node.id, { id: node.id, groupDepth: i, groupSize: 3 - i,
+        zIndex: node.id === 'raised' ? 2 : 0, zMode: 'group' as const, yIndex: i, xIndex: i }])),
       zoomOnDoubleClick: false, renderMediaAsNodes: false, mediaPanelDensity: 'default',
       tempLinkSelRef: { current: null }, linkDragRef: { current: null }, simulation,
       addEdge: () => {}, updateEdge: () => {}, getSelectedEdgeId: () => null,

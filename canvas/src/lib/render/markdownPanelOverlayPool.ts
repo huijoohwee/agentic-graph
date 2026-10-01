@@ -1,7 +1,6 @@
 import type { GraphNode } from '@/lib/graph/types'
 import type { MarkdownDesignLayout } from '@/features/markdown-edgeless/markdownDesignLayout'
 import { looksLikeSingleTagBlock } from 'grph-shared/markdown/mediaHtml'
-import { hasNodeMedia } from '@/components/GraphCanvas/helpers'
 import { getNodeMediaSpec } from '@/lib/canvas/graph-elements/mediaSpec'
 import { toMetadataRecord } from '@/lib/graph/documentMetadata'
 import { readNodeProperties } from '@/lib/graph/nodeProperties'
@@ -28,7 +27,7 @@ function isPanelOnlyParagraphNode(n: GraphNode): boolean {
   if (propsObj.calloutType === true) return true
   if (text.startsWith('>')) return true
   if (text && /<\s*iframe\b/i.test(text) && text.toLowerCase().startsWith('<iframe') && looksLikeSingleTagBlock(text, 'iframe')) return true
-  if (hasNodeMedia(n)) return true
+  if (getNodeMediaSpec(n)?.kind === 'iframe') return true
   return false
 }
 

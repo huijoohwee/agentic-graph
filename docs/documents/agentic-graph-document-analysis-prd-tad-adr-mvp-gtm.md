@@ -2,14 +2,14 @@
 title: "Native document analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "GRAPH-NATIVE-TEXT-001"
-version: "1.0.27"
+version: "1.0.28"
 date: "2026-10-01"
 lang: "en-US"
-prd_revision: "1.0.27"
-tad_revision: "1.0.27"
-adr_revision: "1.0.27"
-mvp_revision: "1.0.27"
-gtm_revision: "1.0.27"
+prd_revision: "1.0.28"
+tad_revision: "1.0.28"
+adr_revision: "1.0.28"
+mvp_revision: "1.0.28"
+gtm_revision: "1.0.28"
 owner: "agentic-graph"
 frontmatter_contract: "required"
 local_rung: "dev-proven"
@@ -23,12 +23,12 @@ agent_id: "codex"
 
 # Native document analysis
 
-All five roles consume GRAPH-NATIVE-TEXT-001@1.0.27. The user authorizes native enhancements,
+All five roles consume GRAPH-NATIVE-TEXT-001@1.0.28. The user authorizes native enhancements,
 local validation and review delivery. Merge and production effects require their own authority.
 
 ## PRD
 
-Rounded orthogonal edges must remain smooth in every direction, including reverse and very short routes. The visible stroke and semantic selection path must share continuous geometry; route corners must never double back or leave a false gap.
+Keyword, Frontmatter and Document Structure modes share world projection: zoom scales content and controls once; resize divides pointer deltas by painted scale. Live graph anchors own document panel positions, including same-ID anchors. Peer surfaces paint by descending area within authored layers; selection does not raise a larger surface. Named shared controls remain selectable. Rounded orthogonal edges must remain smooth in every direction, including reverse and very short routes. The visible stroke and semantic selection path must share continuous geometry; route corners must never double back or leave a false gap.
 
 D3 2D zoom-in enlarges the entire rich media frame and zoom-out shrinks it, for default and authored sizes, matching the shared 3D and Storyboard projection contract. Content, header and controls scale once together; graph anchoring and unbounded placement persist. Pinned 3D media follows its projected graph anchor during pan, drag and zoom, including crossing viewport edges. It must not snap to a viewport border or reappear as a screen-fixed fallback when its world anchor is offscreen. Camera distance and globe-label backface rules must not hide in-view media; only the camera frustum and projected panel bounds determine visibility before the existing count budget. Empty imported image sources use the shared media empty state, never a generic rectangle. Free panels retain explicit screen anchors. Shared media controls and larger-under-smaller ordering remain authoritative.
 
@@ -121,7 +121,7 @@ existing selection, pin and resize controls. A settled canvas must do no continu
 
 ## TAD
 
-One shared smoothstep geometry owner supplies SVG and Canvas corner points. Derive both axis signs from endpoints and cap radius by adjacent segment lengths after applying softness. D3 painted and hit paths consume the same builder. Collinear routes collapse to a straight segment.
+Document panels and edge attachment bounds use shared world dimensions, center projection, frame metrics, painted-scale reader and area comparator. Resolve graph anchors before stale block coordinates and flush projection with graph updates. Preserve explicit layer and ancestor ordering while ranking peers by measured bounds. One shared smoothstep geometry owner supplies SVG and Canvas corner points. Derive both axis signs from endpoints and cap radius by adjacent segment lengths after applying softness. D3 painted and hit paths consume the same builder. Collinear routes collapse to a straight segment.
 D3 2D enables the existing world-transform projection in the shared media layout loop. Resolve fallback dimensions at unit zoom; preserve authored dimensions, then apply the camera scale once to the whole frame. Reuse the 2D media path’s continuous `applyPanelBox` transform, unbounded `computePanelRect`, shared frame metrics and pointer/wheel owners. The 3D adapter supplies camera projection and camera-space depth only. Scale the whole logical panel instead of quantizing its width or refitting it to the viewport; convert resize deltas through the painted scale. Missing world positions may use an initial screen slot; culled world positions may not. Determine panel bounds once with shared sizing, intersect them with the viewport before budget selection, and retain partially visible panels without clamping. Declared image nodes retain media identity when their URL is missing or rejected; the shared empty panel owns that state.
 
 Reuse workspace import source-URL identity for navigation, preferring the matching active capture and rejecting ambiguous alternatives. The shared media pool carries covered source node IDs through deduplication. Shared panel pointer routing owns body/header drag; 2D and 3D recovery run after the pointer owner commits and never poll or cancel a live drag on a timer. The shared SVG semantic binder owns background and root naming.
@@ -263,7 +263,7 @@ work through the shared flush contract. Retain the existing sizing bounds with o
 
 ## ADR
 
-Remove duplicated smoothstep corner arithmetic from SVG and Canvas paths. Bend magnitude may tune rounding, but bend polarity must not reverse travel direction. Preserve existing layer ownership and semantic edge controls; no new renderer, dependency or background work.
+Remove the document overlay’s unused collective-fit branch, hidden drag decoration and retained stale exclusions. Image/video paragraphs stay eligible for the shared media owner; only actual document panels suppress their graph bodies. A panel with its own graph ID must use the same live lookup and drag owner as an aliased panel. Persist graph panel resize through node properties. Remove duplicated smoothstep corner arithmetic from SVG and Canvas paths. Bend magnitude may tune rounding, but bend polarity must not reverse travel direction. Preserve existing layer ownership and semantic edge controls; no new renderer, dependency or background work.
 
 Enable shared world projection for D3 2D rather than scaling chrome inside a screen-fixed authored frame. Resolve fallback size at unit zoom to avoid double scaling; keep screen-layout consumers on their existing sizing contract. Remove the 3D-only viewport clamp, 16 px size steps and fallback for culled world anchors. Keep one logical media frame and project it through the existing shared matrix-placement owner. This preserves subpixel motion and makes resized panels track zoom. Native 3D controls keep camera ownership; no parallel renderer or dependency. Remove the fixed-distance and globe-label backface filters from media layout: neither represents media visibility. Use camera projection and shared panel bounds, keeping count limits. Retire the two distance controls from the settings registry; persisted store fields remain compatibility data only. Missing image sources resolve to an empty image spec without relaxing URL validation or exposing a rejected-source open action. The existing shared empty-media owner renders a visible semantic status and icon, replacing hidden decorative placeholder blocks.
 
@@ -271,7 +271,7 @@ Extend existing navigation, media-pool and pointer owners. Do not map an arbitra
 
 Remove the 3D-only overlap stacking passes and duplicate eager-media loader. Apply the common area comparator within authored layer peers; retain native WebGL gesture ownership and the shared HTML media controls. No parallel renderer, domain rule or new dependency.
 
-Keep semantic SVG buttons and the existing RichMediaPanel rather than adding a second HTML graph renderer. Preserve authored node layer/group priority; use painted area before identity ties. Size-based media ranks update through the existing layout flush, preserving the previous motion repair.
+Keep semantic SVG buttons and the existing RichMediaPanel rather than adding a second HTML graph renderer. Preserve authored node layer priority and cluster ancestry; use painted area before identity ties. Size-based media ranks update through the existing layout flush, preserving the previous motion repair.
 
 - Finder reveals a stable named copy tree; content hashes identify private revision backups only.
   Preserve old hash directories, share one save owner for files and folders, and reject local-edit
@@ -336,7 +336,7 @@ readability limits; do not add another renderer or a permanent animation loop.
 
 ## MVP
 
-Edge-routing increment: initial 25-minute budget, at most four production modules and 12 KB source changes, plus validation. Reproduce reverse-corner backtracking, then cover all quadrants, short/collinear/coincident endpoints, curve hints and SVG/Canvas parity with domain-neutral fixtures. Fifteen focused checks and typecheck pass. Live inspection after reload confirms 75 painted paths match 75 semantic hit paths, with no reversed corners; the reported edge exists and supports selection. Its enclosing selection box includes empty space outside the route. Require affected validation before review publication. Roll back the shared geometry and adapters together.
+Document-surface increment: initial 30-minute/six-module budget expanded to ten production modules and 18 KB changed-source cap after live evidence exposed image-paragraph ownership conflicts and inverse edge bounds; allow 15 minutes for final validation. Implemented shared projection/resize, live same-ID anchors, current-mode exclusions and peer area ordering. Fifteen focused checks, typecheck and source hygiene pass. Native UI zoom grows panels 25% and returns exactly in Document Structure (58.10→72.63 px), Keyword (81.29→101.61 px) and Frontmatter (51.51→64.38 px). A 40 px resize at 18.53% zoom changes logical width 320→536 and lowers the larger panel’s rank, with camera transform unchanged. The three reported routes retain painted paths and visible endpoint owners. Require exact-source affected validation before review publication; production remains unproven. Roll back projection, ownership and endpoint-bound changes together. Edge-routing increment: initial 25-minute budget, at most four production modules and 12 KB source changes, plus validation. Reproduce reverse-corner backtracking, then cover all quadrants, short/collinear/coincident endpoints, curve hints and SVG/Canvas parity with domain-neutral fixtures. Fifteen focused checks and typecheck pass. Live inspection after reload confirms 75 painted paths match 75 semantic hit paths, with no reversed corners; the reported edge exists and supports selection. Its enclosing selection box includes empty space outside the route. Require affected validation before review publication. Roll back the shared geometry and adapters together.
 
 D3 media zoom-direction increment: initial 20-minute budget extended ten minutes for a typed resize-fixture correction and final validation; at most four production modules and 10 KB source changes. Reproduce the authored frame remaining fixed under zoom, then verify default and authored sizes grow/shrink proportionally, with shared chrome, stable graph centers, offscreen placement, gesture release and no idle writes. Use existing regression owners and native live zoom controls; run the affected gate before review publication. Roll back the hook and shared fallback sizing together. Implemented in three production modules using the existing projection and painted-scale reader; resize deltas remain in logical units. Twenty focused checks pass, including a regression demonstrated failing before the fallback fix. Live native D3 zoom changed an authored panel from 92.75 × 52.19 px at 21% to 115.94 × 65.23 px at 26%, then back exactly, preserving its 439 px logical width and shared chrome. Storyboard also enlarged by 25% and returned exactly. Source hygiene passed; final affected validation must bind the corrected fixture and complete revision before review publication. Production remains unproven.
 
@@ -544,7 +544,7 @@ claim is implied.
 
 ## GTM
 
-Edge-routing repair ships through the existing canvas controls. Communicate verified geometry and live selection results; do not claim device parity or production delivery from a local browser check.
+Document-surface changes reuse existing mode and media controls, add no network work or dependencies, and roll back through the projection and ordering owners together. Edge-routing repair ships through the existing canvas controls. Communicate verified geometry and live selection results; do not claim device parity or production delivery from a local browser check.
 The local interaction repair serves readers arranging imported media alongside a graph. Value is predictable manipulation with existing controls, without service costs or additional background work. Previous distant-media visibility and shared empty-panel interaction were verified locally; D3 2D now grows and shrinks whole frames through the shared owner, with measured native zoom proof and no new service or background loop. Device-wide frame-rate parity and production delivery remain unproven; the next bounded action is final affected validation and review delivery by the implementation owner.
 
 Deliver a local, free/FOSS interaction repair to existing document and graph readers. No new service, plan, addon or background crawl. Review evidence must distinguish local checks, live gestures and provider CI; no production-performance or deployment claim follows from local success.

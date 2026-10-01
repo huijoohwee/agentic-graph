@@ -775,34 +775,7 @@ export default function GraphCanvas({ active = true }: { active?: boolean }) {
     return { panelOnlyNodeIdsKey: sorted.join('|'), panelOnlyNodeIdSet: new Set(sorted) }
   }, [graphBlockPanel, markdownAnchorNodeIdByBlockId, markdownPanelLineRanges, panelIframeNodeIdSet, sceneGraphData])
 
-  const panelOnlyNodeIdSetRef = React.useRef<Set<string> | null>(null)
-  const panelOnlyNodeIdsKeyRef = React.useRef<string>('')
-  React.useEffect(() => {
-    if (panelOnlyNodeIdSet && panelOnlyNodeIdSet.size > 0) {
-      panelOnlyNodeIdSetRef.current = panelOnlyNodeIdSet
-      panelOnlyNodeIdsKeyRef.current = panelOnlyNodeIdsKey
-    }
-  }, [panelOnlyNodeIdSet, panelOnlyNodeIdsKey])
-
-  const panelOnlyNodeIdSetForScene = useMemo(() => {
-    const nodes = Array.isArray(sceneGraphData?.nodes) ? (sceneGraphData!.nodes as GraphNode[]) : []
-    const base = panelOnlyNodeIdSetRef.current || panelOnlyNodeIdSet || null
-    const extra = nodes.length > 0 ? buildPanelOnlyNodeIdSetFromGraphNodes(nodes) : null
-    if (!base && (!extra || extra.size === 0)) return null
-    if (!extra || extra.size === 0) return base
-    if (!base) return extra
-    let needsCopy = false
-    for (const id of extra) {
-      if (!base.has(id)) {
-        needsCopy = true
-        break
-      }
-    }
-    if (!needsCopy) return base
-    const out = new Set<string>(base)
-    for (const id of extra) out.add(id)
-    return out
-  }, [panelOnlyNodeIdSet, sceneGraphData])
+  const panelOnlyNodeIdSetForScene = panelOnlyNodeIdSet
   const panelOnlyNodeIdsKeyForScene = useMemo(() => {
     if (!panelOnlyNodeIdSetForScene) return ''
     return Array.from(panelOnlyNodeIdSetForScene).sort((a, b) => a.localeCompare(b)).join('|')

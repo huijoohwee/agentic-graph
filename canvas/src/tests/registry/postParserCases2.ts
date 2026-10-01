@@ -1,6 +1,10 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_2: TestCaseTuple[] = [
+  ["documentSurface.edgeBounds", "@/__tests__/documentSurfaceProjection.test", "testDocumentPanelEdgeBoundsUseWorldDimensions"],
+  ["documentSurface.mediaOwnership", "@/__tests__/documentSurfaceProjection.test", "testImageParagraphRetainsRichMediaOwnership"],
+  ["documentSurface.liveAnchor", "@/__tests__/documentSurfaceProjection.test", "testDocumentSurfaceTracksSameIdAndAliasAnchors"],
+  ["documentSurface.groupAreaOrder", "@/__tests__/documentSurfaceProjection.test", "testDocumentGroupsRerankPaintAndHitTargets"],
   ["canvas.semanticLayers.targets", "@/__tests__/canvasSemanticLayers2d.test", "testCanvasSemanticTargetsReuseActions"],
   ["canvas.semanticLayers.nodeOrder", "@/__tests__/canvasSemanticLayers2d.test", "testCanvasNodesPaintLargerUnderneath"],
   ["canvas.semanticLayers.mediaOrder", "@/__tests__/canvasSemanticLayers2d.test", "testCanvasMediaLayersRerankOnResize"],
@@ -309,7 +313,7 @@ export const TEST_CASES_POST_PARSER_2: TestCaseTuple[] = [
   ["richMedia.overlay.infiniteCanvas.clampPolicy","@/__tests__/mediaOverlayLayoutLoop2dFallback.test","testRichMediaOverlayCallersUseInfiniteCanvasClampPolicy"],
   ["markdownPanelOverlay.worldScale.cardLayout","@/__tests__/markdownPanelOverlayWorldScaleRegression.test","testMarkdownPanelOverlayUsesWorldSizeAndScaleForCardLayout"],
   ["markdownPanelOverlay.viewportOrigin.clamp","@/__tests__/markdownPanelOverlayWorldScaleRegression.test","testMarkdownPanelOverlayClampUsesViewportOrigin"],
-  ["markdownPanelOverlay.viewportOrigin.collectiveFit","@/__tests__/markdownPanelOverlayWorldScaleRegression.test","testMarkdownPanelOverlayCollectiveFitSpreadsPanelsInVisibleViewport"],
+  ["markdownPanelOverlay.worldScale.zoomAndOrder","@/__tests__/markdownPanelOverlayWorldScaleRegression.test","testMarkdownPanelOverlayZoomAndAreaOrder"],
   ["markdownPanelOverlay.cardMarkdown.tableWidth","@/__tests__/markdownPanelOverlayWorldScaleRegression.test","testMarkdownCardPreviewTablesUseCardWidthContract"],
   ["export.htmlViewerSnapshot.inlineUrl.usesFetchRemoteOnLocalhost","@/__tests__/exportHtmlViewerSnapshotInlineUrl.test","testResolveSnapshotInlineFetchUrlUsesFetchRemoteOnLocalhost"],
   ["export.htmlWorkspace.composesViewerAndCanvas","@/__tests__/exportHtmlWorkspace.test","testBuildWorkspaceHtmlExportDocumentEmbedsEditorAndCanvasPayloads"],
