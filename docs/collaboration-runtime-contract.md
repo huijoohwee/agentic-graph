@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 77
+contract_version: 78
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -81,9 +81,9 @@ ci_scopes:
     commands:
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/activeWorkspaceSourceVisibility.test.tsx", "canvas/src/__tests__/websiteImportRendererDefaults.test.ts"]
   native_document_analysis:
-    roots: ["canvas/src/lib/graph/textAnalysis/", "canvas/src/lib/graph/graphragTextAnalytics.ts", "canvas/src/lib/graph/graphragTextPipeline.ts", "canvas/src/lib/graph/extractiveSummarization.ts", "canvas/src/lib/semantic-mode/keyword", "canvas/src/features/semantic-mode/keywordStopwords.ts", "canvas/src/features/panels/views/DocumentInsights.tsx", "canvas/src/features/panels/views/DocumentKeywordInsights.tsx", "canvas/src/components/DashboardCanvas/", "canvas/src/__tests__/nativeDocumentAnalysis", "canvas/src/__tests__/keywordMode.test.ts"]
+    roots: ["canvas/src/lib/graph/textAnalysis/", "canvas/src/lib/graph/graphragTextAnalytics.ts", "canvas/src/lib/graph/graphragTextPipeline.ts", "canvas/src/lib/graph/extractiveSummarization.ts", "canvas/src/lib/semantic-mode/keyword", "canvas/src/features/semantic-mode/keywordStopwords.ts", "canvas/src/features/panels/views/DocumentInsights.tsx", "canvas/src/features/panels/views/DocumentKeywordInsights.tsx", "canvas/src/components/DashboardCanvas/", "canvas/src/__tests__/nativeDocumentAnalysis", "canvas/src/__tests__/keywordMode.test.ts", "canvas/src/lib/parsers/documentPassageGraph", "canvas/src/workers/documentPassageGraph.worker.ts", "canvas/src/features/panels/views/DocumentPassageInsights.tsx", "canvas/src/features/markdown-workspace/documentInsightsRuntime.ts", "canvas/src/__tests__/documentPassage"]
     commands:
-      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/nativeDocumentAnalysis.test.ts", "canvas/src/__tests__/nativeDocumentAnalysisPanel.test.tsx"]
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/nativeDocumentAnalysis.test.ts", "canvas/src/__tests__/nativeDocumentAnalysisPanel.test.tsx", "canvas/src/__tests__/documentPassageGraph.test.ts", "canvas/src/__tests__/documentPassageGraphWorker.test.ts", "canvas/src/__tests__/documentPassageInsights.test.tsx"]
       - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "keywordMode", "documentInsights", "dashboardCanvas", "textAnalysis", "policy.boundary.forbidHardcodedRuntimeValidationInput"]
   website_markdown_safety:
     roots: ["canvas/src/cli/convert-webpage-url-to-md.ts", "canvas/src/lib/markdown/htmlToMarkdownUnified.ts", "canvas/src/lib/markdown/htmlToMarkdownHast.ts", "canvas/src/lib/markdown/htmlToMarkdownLayout.ts", "canvas/src/lib/markdown/htmlToMarkdownMedia.ts", "canvas/src/lib/websites/server/crawlerNetworkPolicy.ts", "canvas/src/lib/websites/server/websiteImportCore.ts", "canvas/src/lib/websites/server/websiteImportStorage.ts", "canvas/src/lib/websites/server/websiteImportServer.ts", "canvas/src/lib/websites/server/nativeWebsiteCrawler.ts", "canvas/src/lib/websites/webpageClientConvert.ts", "canvas/src/lib/websites/webpageHtmlToMarkdownArtifact.ts", "canvas/src/__tests__/websiteImportSafety.test.ts", "canvas/src/__tests__/webpageConversionSafety.test.ts", "canvas/src/__tests__/crossRepoBoundaryGuards.test.ts", "canvas/src/__tests__/htmlToMarkdownUnified.test.ts", "canvas/src/__tests__/markdownGithubIngestion.test.ts", "canvas/src/__tests__/markdownImageRichMediaPreview.test.tsx", "canvas/src/__tests__/staticRichMediaPanelPreview.test.tsx", "canvas/src/__tests__/webpageLayoutToGraph.test.ts"]
