@@ -72,6 +72,8 @@ test('Viewer phrases match complete Unicode tokens across inline markup within b
     assert.equal(collectTextSelectionMatchHighlightRects({ root: element, phrase: { text: 'café', locale: 'fr' } }).length, 2)
     element.innerHTML = `<p>${'quartz tools. '.repeat(500)}</p>`
     assert.equal(collectTextSelectionMatchHighlightRects({ root: element, phrase, maxRects: 9999 }).length, 300)
+    element.innerHTML = `<p>${' '.repeat(59997)}quartz tools</p>`
+    assert.equal(collectTextSelectionMatchHighlightRects({ root: element, phrase: { text: 'qua', locale: 'en' } }).length, 0)
     element.innerHTML = `<p>${' '.repeat(60000)}quartz tools</p>`
     assert.equal(collectTextSelectionMatchHighlightRects({ root: element, phrase }).length, 0)
     assert.equal(collectTextSelectionMatchHighlightRects({ root: element, phrase: { ...phrase, locale: 'invalid_locale' } }).length, 0)

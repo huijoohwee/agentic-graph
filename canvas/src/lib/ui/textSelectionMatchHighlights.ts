@@ -109,17 +109,18 @@ const collectTextSegments = (root: HTMLElement, phrase = false): TextSegment[] =
   const walker = doc.createTreeWalker(root, showText)
   const segments: TextSegment[] = []
   let cursor = 0
+  // One lookahead character lets the shared matcher reject a word cut by its scan cap.
   let previousBlock: Element | null = null
   let current = walker.nextNode()
-  while (current && (!phrase || cursor < KEYWORD_TEXT_LIMIT)) {
+  while (current && (!phrase || cursor < KEYWORD_TEXT_LIMIT + 1)) {
     if (current.nodeType === textNodeType) {
       const node = current as Text
       if (!shouldSkipTextNode(node, root)) {
         const block = node.parentElement?.closest('p,h1,h2,h3,h4,h5,h6,li,td,th,pre,div,section') ?? null
         if (phrase && segments.length && block !== previousBlock) cursor++
         previousBlock = block
-        if (phrase && cursor >= KEYWORD_TEXT_LIMIT) break
-        const text = String(node.nodeValue || '').slice(0, phrase ? KEYWORD_TEXT_LIMIT - cursor : undefined)
+        if (phrase && cursor >= KEYWORD_TEXT_LIMIT + 1) break
+        const text = String(node.nodeValue || '').slice(0, phrase ? KEYWORD_TEXT_LIMIT + 1 - cursor : undefined)
         segments.push({ node, start: cursor, end: cursor + text.length, text })
         cursor += text.length
       }
