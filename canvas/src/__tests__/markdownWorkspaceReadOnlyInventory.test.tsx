@@ -9,10 +9,65 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import { notifyWorkspaceFsChanged, runWorkspaceFsChangedBatch } from '@/features/workspace-fs/workspaceFsEvents'
 import { writeWorkspaceAutoRefreshEnabledSetting, writeWorkspaceSeedSyncEnabledSetting } from '@/lib/workspace/workspaceStoreSyncSettings'
+import { renderImportInventory } from '@/features/workspace-fs/importInventory'
 
 export async function testMarkdownWorkspaceReadOnlyInventorySettles() {
   await testReadOnlyInventorySettles()
   await testMutationRefreshPreservesExplicitReconciliation()
+  await testDamagedImportIndexKeepsFilesReachable()
+}
+
+async function testDamagedImportIndexKeepsFilesReachable() {
+  const { dom, restore } = initJsdomHarness()
+  resetWorkspaceFsForTests()
+  writeWorkspaceSeedSyncEnabledSetting(false)
+  const container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container), fs = await getWorkspaceFs()
+  const originals = { listEntries: fs.listEntries, ensureSeed: fs.ensureSeed, readFileText: fs.readFileText, writeFileText: fs.writeFileText }
+  const originalSources = useGraphStore.getState().sourceFiles
+  useGraphStore.getState().setSourceFiles([])
+  const canonical = renderImportInventory([{ source: 'local:/next.txt', status: 'not imported' }])
+  const damaged = canonical.replace('| not imported |', '| My status |')
+  let index = damaged, writes = 0
+  fs.ensureSeed = async () => false
+  fs.listEntries = async () => [
+    { path: '/', parentPath: null, name: '', kind: 'folder', updatedAtMs: 1 },
+    { path: '/note.md', parentPath: '/', name: 'note.md', kind: 'file', text: '# Saved note', updatedAtMs: 1 },
+    { path: '/_import-index.md', parentPath: '/', name: '_import-index.md', kind: 'file', text: index, updatedAtMs: 1 },
+  ]
+  fs.readFileText = async path => path === '/_import-index.md' ? index : path === '/note.md' ? '# Saved note' : null
+  fs.writeFileText = async () => { writes++; throw Error('An edited index must not be overwritten') }
+  let refresh: ReturnType<typeof useMarkdownWorkspaceExplorerState>['refresh'] | undefined
+  const errors: string[] = [], infos: string[] = []
+  function Harness() {
+    const state = useMarkdownWorkspaceBootstrapState({ activePath: null, effectiveBottomSurfaceCollapsed: false })
+    const explorer = useMarkdownWorkspaceExplorerState({ ...state, active: false,
+      setStatusInfo: value => { infos.push(String(value)) }, setStatusError: value => { errors.push(String(value)) }, setStatusProgress: () => {} })
+    refresh = explorer.refresh
+    return <output>{state.loading ? 'Loading' : state.loadError || state.entries.map(entry => entry.path).join(',')}</output>
+  }
+  try {
+    await act(async () => { root.render(<Harness />) })
+    await act(async () => { await refresh!() })
+    assert.equal(container.textContent, '/,/note.md,/_import-index.md', 'One invalid catalog must not hide any files')
+    assert.equal(index, damaged); assert.equal(writes, 0)
+    assert.equal(errors.length, 1)
+    assert.match(errors[0], /Files refreshed; import index preserved.*\/_import-index.md:.*edited/)
+    assert.equal(infos.length, 0, 'A preserved index problem is not falsely reported Ready')
+    await act(async () => { await refresh!({ silent: true }) })
+    assert.equal(errors.length, 1, 'Background refresh does not repeat the same warning')
+    index = canonical
+    await act(async () => { await refresh!() })
+    assert.equal(container.textContent, '/,/note.md,/_import-index.md')
+    assert.equal(infos.at(-1), 'Ready', 'Explicit Refresh settles after the index is repaired')
+    assert.equal(errors.length, 1); assert.equal(writes, 0)
+  } finally {
+    await act(async () => { root.unmount() })
+    Object.assign(fs, originals)
+    useGraphStore.getState().setSourceFiles(originalSources)
+    resetWorkspaceFsForTests(); restore()
+  }
 }
 
 async function testReadOnlyInventorySettles() {

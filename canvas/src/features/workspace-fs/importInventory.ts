@@ -78,7 +78,11 @@ export function readImportInventory(text: string): ImportInventoryItem[] {
   if (!payload) throw new Error('Import index has unrelated or damaged content; it was preserved.')
   const parsed = JSON.parse(payload[1])
   if (parsed.version !== 1 || !Array.isArray(parsed.items) || parsed.items.length > 5000) throw new Error('Unsupported import index.')
-  if (renderImportInventory(parsed.items) !== block && renderImportInventory(parsed.items, true) !== block) throw new Error('The generated import index was edited; its content was preserved. Keep notes outside the managed block.')
+  const generated = renderImportInventory(parsed.items)
+  // Recover a table whose links became labels, only when every other byte still agrees
+  // with validated metadata. Never normalize metadata, notes, or changed table cells.
+  const labelsOnly = generated.replace(/^\| .* \|$/gm, line => line.replace(/\[([^\]\n]*)\]\(<[^>\n]*>\)/g, '$1'))
+  if (generated !== block && labelsOnly !== block && renderImportInventory(parsed.items, true) !== block) throw new Error('The generated import index was edited; its content was preserved. Keep notes outside the managed block.')
   return parsed.items
 }
 
