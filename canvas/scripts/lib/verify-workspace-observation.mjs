@@ -120,9 +120,10 @@ export async function verifyWorkspaceObservation(page, openDashboard) {
     await editor.getByText('Loading…', { exact: true }).waitFor({ state: 'detached' })
     await editor.getByRole('button', { name: 'Folder docs', exact: true }).waitFor()
     await editor.getByRole('button', { name: 'File agent-mission.manifest.json', exact: true }).click({ button: 'right' })
-    await editor.getByRole('button', { name: 'Copy Relative Path', exact: true }).waitFor()
+    const fileActions = page.getByRole('toolbar', { name: 'Actions for agent-mission.manifest.json', exact: true })
+    await fileActions.getByRole('button', { name: 'Copy Relative Path', exact: true }).waitFor()
     for (const name of ['Rename', 'Delete', 'Share URL', 'Share canvas embed', 'Reveal in Finder', 'New file', 'Clear']) {
-      assert.equal(await editor.getByRole('button', { name, exact: true }).isDisabled(), true, 'Inapplicable actions remain visible and disabled in the shared menu')
+      assert.equal(await fileActions.getByRole('button', { name, exact: true }).isDisabled(), true, 'Inapplicable actions remain visible and disabled in the shared menu')
     }
     await page.keyboard.press('Escape')
     generation = 2

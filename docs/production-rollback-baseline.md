@@ -87,3 +87,22 @@ apply. A nonempty inventory uses the original expired-artifact path.
 
 Repair budget: six owner files including CI selection, 20 KiB authored delta, no added dependencies.
 Review this authority-controlling source separately before production capture.
+
+## Retain terminal evidence before provider expiry
+
+After a successful Production Release, complete local closeout through the existing lifecycle owner:
+
+```sh
+npm run release:lifecycle:receipts -- retain \
+  --repository huijoohwee/agentic-graph --run-id <exact-run-id> \
+  --source-sha <exact-integrated-source> \
+  --docs-root /absolute/path/to/agentic-os/catalog/dictionaries \
+  --docs-sha <pinned-agentic-os-revision> \
+  --output-dir /absolute/path/to/private-release-evidence
+```
+
+This read-only operation downloads the completed lifecycle, release evidence and raw observations for that exact successful run. It invokes the existing native terminal validator, joins source/deployment identities to the rollback capture, and records file sizes and SHA-256 hashes in `retention.json`. Complete run/artifact inventories are mandatory. Budgets:100 artifacts surveyed,32 MiB compressed evidence,64 MiB retained bytes,2,048 files and8 MiB per file. It downloads no application bundle.
+
+The output directory is private and must be new or an identical verified replay. A changed or unrelated destination fails without replacement. Failed downloads retain their partial directory for diagnosis and never emit a completed inventory. Replays re-observe the provider, validate all local bytes and invoke the native validator again. Provider-expired evidence cannot be downloaded or replaced by a local success assertion; previously retained carriers remain independently inspectable with the existing `validate` command.
+
+Include the retention directory and result in the product's release handover. No background schedule is installed. This observation adapter does not authorize deployment, renew credentials, change cleanup rules or establish physical-device acceptance.

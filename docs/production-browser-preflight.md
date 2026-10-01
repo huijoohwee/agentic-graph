@@ -3,7 +3,7 @@ title: "Production browser preflight"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 status: "active"
 continuity_id: "GRAPH-BROWSER-PREFLIGHT-001"
-revision: 6
+revision: 9
 owner: "agentic-graph"
 frontmatter_contract: "required"
 version: "0.1.1"
@@ -178,3 +178,39 @@ Use the stated persona and pain hypothesis to test one priced pilot in the exist
 
 Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. No feature implementation artifact was independently bound by this document review; implementation disposition remains **unverified** pending the document owner’s source-to-VCC check.
 Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.
+
+## Terminal evidence retention — revision 7
+
+PRD: operators must preserve authentic completed release and rollback evidence before configured GitHub expiry. TAD: the existing lifecycle command owns `retain`; its local I/O helpers are separated without changing prior command behavior. A read-only GitHub adapter selects only the exact successful protected-main run and its three terminal artifacts. Existing native schema and constructor validation remains authoritative.
+
+ADR: no scheduled task, paid storage, new package or production mutation. Preserve incomplete downloads in a private partial directory; reject identity drift, missing/expired artifacts, changed replay bytes and symlinks. Keep provider receipts byte-exact and store a separate local inventory with SHA-256 hashes. The local inventory grants no authority and cannot reconstruct lost receipts.
+
+MVP: seven files, at most 20 KiB net authored bytes, each changed file below 600 lines. Verify failure/replay boundaries, run existing lifecycle and persistence regressions, then retain and replay the actual completed release36643343443. Source review/integration remains separate from the already completed production release.
+
+GTM: use the current operator's demonstrated expired-artifact recovery pain as the first validation case. Successful retention proves evidence durability on this device only; buyer demand, a $1 pilot payment and physical-device acceptance require separate observed outcomes.
+
+## Retention integration and deployment handover — 2026-10-01
+
+PRD/MVP: finish the existing retention lane, then promote the exact integrated source through the
+protected release owner. PR #1398 at `240ebec7e4f9a38100cd4e0673413014e9f3bfe5` passed its
+original Integration Gate but became stale. Native successor `production-receipt-retention-integrated`
+retains that candidate and its seven-path scope; current main merged without conflicts.
+TAD/ADR: preserve the published predecessor; rebind its mission and validate the current candidate.
+No gate bypass, production-controller change, added dependency or product module is introduced.
+
+Current-main validation exposed a stale mission-browser locator: the shared source-file action
+toolbar renders through the existing body portal, outside the Markdown Workspace region.
+The eighth admitted path fixes that existing browser check to target the toolbar's exact accessible
+name; visibility and all seven disabled-action assertions remain enforced. Repair budget: one test
+owner, under 1 KiB test delta and 20 active minutes; provider waits remain separate.
+
+The current successful production baseline is run `36687839906`, source
+`e8d8e9ab02b95697ed8e8682a04f3ba2b507a8fb`. The native retain operation downloaded and validated
+132 authentic evidence files; terminal carrier SHA-256 is
+`467da865ae3e9a3e9e3dcfaa228c1ec22fd7612356a7d2ae281a4f3c12b1a28e`. This protects the rollback
+evidence before provider expiry; it neither changes production nor renews its authorization.
+
+GTM: no new spend, demand or payment claim. Development validation, protected source integration,
+canonical localhost review, immutable candidate preparation, exact production authorization and
+live readback remain separate receipts. Next owner action: finish fresh protected source checks,
+close both retained source identities, and prepare deployment using this observed baseline.
