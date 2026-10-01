@@ -40,14 +40,15 @@ export const testNativeCrawlerParsesCredentialSafeProxyPool = () => {
 export const testNativeCrawlerStoresArtifactsInSiblingSandbox = () => {
   const resolved = resolveWebsiteImportWorkspaceRoot({
     repoRoot: '/workspace/agentic-graph',
+    storeRoot: '/workspace/sandbox',
     outputDirRel: 'agentic-graph-workspace/website-imports',
   })
   if (resolved.ok !== true) throw new Error(resolved.error)
   if (resolved.abs !== path.resolve('/workspace/sandbox/agentic-graph-workspace/website-imports')) {
-    throw new Error(`expected sibling sandbox website store, received ${resolved.abs}`)
+    throw new Error(`expected explicitly configured sandbox website store, received ${resolved.abs}`)
   }
   if (resolved.rel !== 'agentic-graph-workspace/website-imports') throw new Error('expected logical artifact paths to remain portable')
-  const legacy = resolveWebsiteImportWorkspaceRoot({ repoRoot: '/workspace/agentic-graph', outputDirRel: '.agentic-graph-workspace/website-imports' })
+  const legacy = resolveWebsiteImportWorkspaceRoot({ repoRoot: '/workspace/agentic-graph', storeRoot: '/workspace/sandbox', outputDirRel: '.agentic-graph-workspace/website-imports' })
   if (legacy.ok !== true || legacy.abs !== resolved.abs || legacy.rel !== '.agentic-graph-workspace/website-imports') {
     throw new Error('expected existing dot-prefixed artifact references to resolve into the renamed physical store')
   }
@@ -328,16 +329,15 @@ export const testNativeCrawlerWidgetRunReusesImportUrlBridgeAndPublishesRichMedi
   if (!websiteImportActionSource.includes('startedAtMs > 30 * 60_000')) {
     throw new Error('expected production-size native crawls to remain attached beyond the old ten-minute timeout')
   }
-  if (!websiteImportNodeWriterSource.includes('const ensureFolder = await createWorkspaceFolderTreeEnsurer(fs)')
+  if (!websiteImportNodeWriterSource.includes('const ensureFolder = await createWorkspaceFolderTreeEnsurer(')
     || !websiteImportNodeWriterSource.includes('ensureFolder(normalized)')) {
     throw new Error('expected repeat crawl materialization to reuse canonical persisted workspace folders')
   }
   if (websiteImportNodeWriterSource.includes('await fs.createFolder({ parentPath: parent, name })')) {
     throw new Error('website materialization must not blindly create numbered duplicate folders after restart')
   }
-  if (!websiteImportNodeWriterSource.includes('upsertWorkspaceTextDocument({ fs, parentPath: rootFolder')) {
-    throw new Error('expected same-token crawl documents to update canonical files instead of creating duplicate files')
-  }
+  // Same-capture idempotence and retained cross-capture history are exercised by
+  // websiteImportProgress.test through real workspace writes, independent of helper spelling.
   const workflowActionsSource = fs.readFileSync(path.resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetWorkflowActions.ts'), 'utf8')
   if (!workflowActionsSource.includes('persistDraftGraphData: args.persistDraftGraphData')) {
     throw new Error('expected workflow actions to forward terminal graph persistence')

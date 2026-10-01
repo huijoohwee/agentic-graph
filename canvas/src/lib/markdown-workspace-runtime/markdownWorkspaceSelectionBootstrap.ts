@@ -1,3 +1,4 @@
+import { resolvePreviousWorkspacePath } from '@/features/workspace-fs/websiteCollections'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
 import {
   CUSTOM_TEST_VALIDATION_WORKSPACE_SEED_ACTIVE,
@@ -22,10 +23,13 @@ export function resolveMarkdownWorkspaceBootstrapActivePath(args: {
   const canonicalize = (path: WorkspacePath | null | undefined): WorkspacePath | null => {
     const normalized = normalizeMarkdownWorkspaceSelectionPath(path || null)
     if (!normalized) return null
-    return resolveMarkdownWorkspaceDocsMirrorCanonicalPath(normalized, args.entriesIndex) || normalized
+    return resolveMarkdownWorkspaceDocsMirrorCanonicalPath(normalized, args.entriesIndex)
+      || (!hasWorkspaceEntry(args.entriesIndex, normalized) && resolvePreviousWorkspacePath(normalized, args.entriesIndex.byPath.values())) || normalized
   }
   const activePath = canonicalize(args.activePath)
   const rawActivePath = normalizeMarkdownWorkspaceSelectionPath(args.activePath)
+
+  if (rawActivePath && activePath !== rawActivePath && activePath && hasWorkspaceEntry(args.entriesIndex, activePath)) return activePath
 
   const preferCustomValidationSeed =
     CUSTOM_TEST_VALIDATION_WORKSPACE_SEED_ACTIVE &&

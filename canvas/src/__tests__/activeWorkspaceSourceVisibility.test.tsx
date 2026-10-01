@@ -48,7 +48,10 @@ test('active source remains identifiable and can be revealed through filtering a
   try {
     await act(async () => root.render(<Harness />))
     const reveal = host.querySelector<HTMLButtonElement>('button[aria-label="Reveal active file in Source Files"]')!
-    assert.equal(reveal.textContent, activePath, 'the complete source identity remains visible outside the collapsed tree')
+    assert.equal(host.querySelector('[aria-label="Active source file"]'), null, 'the duplicate full-path strip is removed')
+    assert.ok(reveal.closest('nav[aria-label="Explorer actions"]'), 'reveal uses the shared Explorer header')
+    assert.equal(reveal.title, activePath, 'the complete source identity remains available in the tooltip')
+    assert.equal(reveal.textContent, '', 'reveal is an icon action')
     for (let attempt = 0; attempt < 3; attempt++) {
       if (attempt === 1) await act(async () => reset())
       scrolled.length = 0

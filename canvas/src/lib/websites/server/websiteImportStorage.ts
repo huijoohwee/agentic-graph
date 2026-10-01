@@ -53,6 +53,12 @@ export const resolveWebsiteImportGenerationToken = (raw: unknown, timestampMs = 
   return isWebsiteImportGenerationToken(existing) ? existing : formatWebsiteImportGenerationToken(timestampMs)
 }
 
+/** Reuse the configured document mirror's sibling output directory on every device. */
+export const resolveWorkspaceDocumentOutputRoot = (repoRoot: string): string => {
+  const docsRoot = String(process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT || '').trim()
+  return docsRoot ? path.resolve(docsRoot, '..', 'docs_') : path.resolve(repoRoot, '..', 'docs_')
+}
+
 export const resolveWebsiteImportWorkspaceRoot = (args: {
   repoRoot: string
   outputDirRel?: string | null
@@ -69,9 +75,25 @@ export const resolveWebsiteImportWorkspaceRoot = (args: {
 
   const repoRootAbs = path.resolve(args.repoRoot)
   const configuredStoreRoot = String(args.storeRoot || process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT || '').trim()
-  const storeRootAbs = path.resolve(configuredStoreRoot || path.join(repoRootAbs, '..', 'sandbox'))
+  const storeRootAbs = path.resolve(configuredStoreRoot || resolveWorkspaceDocumentOutputRoot(repoRootAbs))
   const physicalRel = [WEBSITE_IMPORT_OUTPUT_ROOT, ...parts.slice(1)].join('/')
   const abs = path.resolve(storeRootAbs, physicalRel)
   if (!abs.startsWith(storeRootAbs + path.sep) && abs !== storeRootAbs) return { ok: false, error: 'outputDirRel escapes workspace store root' }
   return { ok: true, abs, rel: normalized, storeRootAbs }
+}
+
+/** Existing generations keep their original location; only new runs use the new default. */
+export async function resolveExistingWebsiteImportWorkspaceRoot(args: { repoRoot: string; outputDirRel?: string | null; importId: unknown }) {
+  const current = resolveWebsiteImportWorkspaceRoot(args)
+  if (current.ok !== true || !isWebsiteImportGenerationToken(args.importId) || process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT?.trim()) return current
+  const legacy = resolveWebsiteImportWorkspaceRoot({ ...args, storeRoot: path.resolve(args.repoRoot, '..', 'sandbox') })
+  if (legacy.ok !== true || legacy.abs === current.abs) return current
+  for (const candidate of [current, legacy]) {
+    try {
+      // An incomplete current generation still owns its ID; never mix artifacts between stores.
+      if ((await fs.lstat(path.join(candidate.abs, args.importId))).isDirectory()) return candidate
+      return current
+    } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
+  }
+  return current
 }
