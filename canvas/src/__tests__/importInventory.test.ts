@@ -19,6 +19,11 @@ const file = (name: string, text: string, relative?: string) => {
   return value as unknown as globalThis.File
 }
 
+test('workspace refresh preserves files and reports catalog failures independently', async () => {
+  const { testMarkdownWorkspaceReadOnlyInventorySettles } = await import('./markdownWorkspaceReadOnlyInventory.test')
+  await testMarkdownWorkspaceReadOnlyInventorySettles()
+})
+
 test('one host index consolidates page links and saved content with all prior discoveries, without fetching', async () => {
   const fs = createMemoryWorkspaceFs(), previousFetch = globalThis.fetch
   globalThis.fetch = (async () => { throw new Error('Inventory must not fetch') }) as typeof fetch
@@ -117,6 +122,28 @@ test('concurrent discovery sessions merge, encoded links stay valid, and size ex
   assert.equal(readImportInventory(text).length, 629)
   await assert.rejects(persistImportInventory(fs, Array.from({ length: 2000 }, (_, i) => ({ source: `${source}/${'long-path-'.repeat(40)}${i}`, status: 'not imported' }))), /480 KiB/)
   assert.equal(await fs.readFileText(indexPath), text)
+})
+
+test('label-only inventory tables recover links without accepting authored changes or touching outside notes', async () => {
+  const fs = createMemoryWorkspaceFs()
+  const path = await document(fs, 'inventory-labels.md', `---\nkgWebpageUrl: "${source}"\n---\nSaved capture`)
+  await persistImportInventory(fs, [{ source: `${source}/next`, status: 'not imported', detail: '[Keep](<https://notes.example.invalid/>)' }])
+  const canonical = (await fs.readFileText(indexPath))!
+  const flattened = canonical.replace(/^\| .* \|$/gm, line => line.replace(/\[([^\]\n]*)\]\(<[^>\n]*>\)/g, '$1'))
+  assert.notEqual(flattened, canonical)
+  assert.deepEqual(readImportInventory(flattened), readImportInventory(canonical))
+  for (const changed of [flattened.replace('| imported |', '| missing |'),
+    flattened.replace('| /reference |', '| My reference |'),
+    flattened.replace('inventory-labels.md |', 'different.md |'),
+    flattened.replace('"status":"imported"', '"status":"pending"')]) {
+    assert.throws(() => readImportInventory(changed), /edited/, 'Real row and metadata edits remain protected')
+  }
+  const prefix = 'My [notes](<https://notes.example.invalid/>)\n', suffix = '\nKeep this footer'
+  await fs.writeFileText(indexPath, prefix + flattened + suffix)
+  assert.equal(await persistImportInventory(fs), true)
+  assert.equal(await fs.readFileText(indexPath), prefix + canonical + suffix)
+  assert.ok((await fs.readFileText(path))!.endsWith('Saved capture'))
+  assert.equal(await persistImportInventory(fs), false, 'Recovery writes once; settled refresh is a no-op')
 })
 
 test('local host copies use the existing writer once per change and retry a failed copy without rewriting workspace content', async () => {

@@ -78,7 +78,9 @@ export function persistImportInventory(fs: WorkspaceFs, known: ImportInventoryIt
     for (const [path, incoming] of groups) {
       const current = await fs.readFileText(path)
       // Never take ownership of an unrelated file merely because it shares the reserved name.
-      const prior = current === null ? [] : readImportInventory(current)
+      let prior: ImportInventoryItem[]
+      try { prior = current === null ? [] : readImportInventory(current) }
+      catch (error) { throw new Error(`${path}: ${error instanceof Error ? error.message : String(error)}`) }
       const rows = new Map(prior.filter(item => item.outputs?.length || !isArtifactLink(item.source)).map(item => [item.source, item]))
       for (const item of incoming) rows.set(item.source, mergeItem(rows.get(item.source), item))
       for (const [key, item] of rows) {

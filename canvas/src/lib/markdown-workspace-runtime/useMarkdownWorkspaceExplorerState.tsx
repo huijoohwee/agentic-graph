@@ -93,6 +93,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
   const seedSyncInFlightRef = React.useRef(false)
   const workspaceSeedSyncSignatureRef = React.useRef('')
   const workspaceRefreshSemanticKeyRef = React.useRef('')
+  const inventoryWarningRef = React.useRef('')
   const [workspaceSyncSettingsRev, setWorkspaceSyncSettingsRev] = React.useState(0)
   const chatLocalStorageRootPath = useGraphStore(state => state.chatLocalStorageRootPath)
   const entriesIndex = React.useMemo(() => buildWorkspaceEntriesIndex(args.entries), [args.entries])
@@ -175,7 +176,18 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
       const { persistImportInventory } = await import('@/features/workspace-fs/importInventoryPersistence')
       const { useWebsiteImportSelectionSession } = await import('@/features/source-files/websiteImportSelectionSession')
       const discoveries = useWebsiteImportSelectionSession.getState().session?.pages || []
-      if (await persistImportInventory(fs, discoveries.map(page => ({ source: page.url, status: 'not imported' })), list)) list = await fs.listEntries()
+      let inventoryWarning = ''
+      try {
+        if (await persistImportInventory(fs, discoveries.map(page => ({ source: page.url, status: 'not imported' })), list)) list = await fs.listEntries()
+      } catch (error) {
+        inventoryWarning = `Import index update: ${String((error as { message?: unknown })?.message ?? error)}`
+        list = await fs.listEntries()
+      }
+      runtime.setLoadError('')
+      if (inventoryWarning && (!silent || inventoryWarning !== inventoryWarningRef.current))
+        applyMarkdownWorkspaceErrorStatus({ setStatusError: runtime.setStatusError,
+          prefix: 'Files refreshed; import index preserved', error: inventoryWarning, includeDetail: true })
+      inventoryWarningRef.current = inventoryWarning
       const hydratedList = await hydrateWorkspaceEntriesInlineText({
         fs,
         workspaceEntries: list,
@@ -227,7 +239,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
         void 0
       }
       if (!silent) runtime.setLoading(false)
-      if (!silent) {
+      if (!silent && !inventoryWarning) {
         applyMarkdownWorkspaceInfoStatus({
           setStatusInfo: runtime.setStatusInfo,
           label: 'Ready',
