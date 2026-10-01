@@ -1,3 +1,4 @@
+import { handleWebsiteImportRevalidation } from './websiteImportRevalidation'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { clampInt, hashHex, normalizeUrl } from './websiteImportCore'
@@ -28,6 +29,9 @@ export function createWebsiteImportHandler(args: { repoRoot: string }): import('
     if (req.method === 'POST' && pathname === '/__website_import/discover') {
       await handleWebsiteDiscovery(req, res)
       return
+    }
+    if (req.method === 'POST' && pathname === '/__website_import/revalidate') {
+      await handleWebsiteImportRevalidation(req, res); return
     }
     const workspaceArgs = { repoRoot: args.repoRoot, outputDirRel: parsed.searchParams.get('outputDirRel') }
     let workspaceResolved: ReturnType<typeof resolveWebsiteImportWorkspaceRoot>

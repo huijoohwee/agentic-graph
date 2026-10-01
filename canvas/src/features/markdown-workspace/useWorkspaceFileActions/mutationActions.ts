@@ -43,6 +43,7 @@ export function useWorkspaceMutationActions(args: {
       options?: {
         getFsOverride?: () => ReturnType<typeof getFs>
         activeDocumentSourceUrl?: string | null
+        skipWrite?: boolean
       },
     ) => {
       const normalized = normalizeWorkspacePath(path)
@@ -54,6 +55,7 @@ export function useWorkspaceMutationActions(args: {
         path: normalized,
         text,
         getFs: options?.getFsOverride || getFs,
+        skipWrite: options?.skipWrite,
         lastLoadedRef,
         setEntries,
         synchronizeActiveDocument,
@@ -97,6 +99,13 @@ export function useWorkspaceMutationActions(args: {
       try {
         const fs = await getFs()
         const prevText = await fs.readFileText(normalized).catch(() => '')
+        if (/^https?:\/\//i.test(src.url) && typeof location !== 'undefined' && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) {
+          const { refreshIndexedSource } = await import('../workspaceImport/refreshIndexedSource')
+          const refreshed = await refreshIndexedSource(fs, normalized, src.url)
+          if (!refreshed.unchanged) await writeMutationWorkspaceText(normalized, refreshed.text, { activeDocumentSourceUrl: src.url, skipWrite: true })
+          status.setStatusInfo(refreshed.unchanged ? 'Source unchanged; reused saved content' : 'Updated changed source')
+          return
+        }
         const { refreshWebsiteImportMarkdown } = await import('../workspaceImport/refreshWebsiteImportMarkdown')
         const capturedText = await refreshWebsiteImportMarkdown(prevText || '', src.url)
         if (capturedText !== null) {

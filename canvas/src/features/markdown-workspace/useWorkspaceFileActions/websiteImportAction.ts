@@ -1,3 +1,4 @@
+import { indexSavedUrlImports, recordUrlImport } from '../workspaceImport/incrementalImport'
 import React from 'react'
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -226,9 +227,26 @@ export async function runWorkspaceWebsiteImport(args: {
   setEntries?: React.Dispatch<React.SetStateAction<import('@/features/workspace-fs/types').WorkspaceEntry[]>>
   setExpandedPaths?: React.Dispatch<React.SetStateAction<Set<string>>>
   focusAfterImport?: (createdPath: WorkspacePath, opts?: { sourceUrl?: string | null; applyToGraph?: boolean; jobId?: number }) => Promise<void>
-}): Promise<{ createdPaths: WorkspacePath[]; host: string; websiteImportManifest: WebsiteImportManifestV1; websiteImportSummary: WorkspaceWebsiteImportSummary }> {
+}): Promise<{ createdPaths: WorkspacePath[]; host: string; websiteImportManifest?: WebsiteImportManifestV1; websiteImportSummary?: WorkspaceWebsiteImportSummary }> {
   const settings = resolveWebsiteImportSettings(args.opts)
   if (settings.destinationPath !== undefined && settings.selectedUrls?.length !== 1) throw new Error('An in-place import requires exactly one selected page.')
+  const retained: WorkspacePath[] = []
+  if (settings.selectedUrls?.length) {
+    const existingFs = await args.getFs()
+    const savedByUrl = await indexSavedUrlImports(existingFs)
+    const missing: string[] = []
+    for (const url of settings.selectedUrls) {
+      const key = new URL(url); key.hash = ''
+      const saved = savedByUrl.get(key.href)
+      if (saved && (!settings.destinationPath || saved.path === settings.destinationPath)) retained.push(saved.path)
+      else missing.push(url)
+    }
+    if (!missing.length) {
+      args.status.setStatusProgress(`Reused ${retained.length} saved pages`, retained.length, retained.length)
+      return { createdPaths: retained, host: new URL(args.url).host }
+    }
+    settings.selectedUrls = missing
+  }
   if (settings.applyToCanvas) {
     const { applyCanvasFrontmatterPreset } = await import('@/features/parsers/canvasFrontmatterPreset')
     if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
@@ -257,6 +275,7 @@ export async function runWorkspaceWebsiteImport(args: {
       onFileCreated: async source => {
         if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
         pagePathsByUrl.set(source.source.url, source.path)
+        await recordUrlImport(fs!, source.path, source.source.url)
         bulkSetWorkspaceEntrySources([source])
         args.setEntries?.(previous => addCompletedWebsiteFileToExplorer(previous, source.path))
         args.setExpandedPaths?.(previous => {
@@ -321,7 +340,7 @@ export async function runWorkspaceWebsiteImport(args: {
         await activateFirstImportedWorkspaceFile({ fs, createdPaths: [first], applyToGraph: false })
       }
     }
-    return { createdPaths: created.createdPaths, host, websiteImportManifest: manifest, websiteImportSummary: buildWebsiteImportManifestSummary(manifest) }
+    return { createdPaths: [...retained, ...created.createdPaths], host, websiteImportManifest: manifest, websiteImportSummary: buildWebsiteImportManifestSummary(manifest) }
   } finally {
     finishExplorerUpdates?.()
     if (!reconciliationAttempted && (writer || finishExplorerUpdates) && isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) await args.refresh?.()
