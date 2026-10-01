@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Rocket } from 'lucide-react'
 import IconButton from '@/components/IconButton'
 import { useToolMenuShortcuts } from '@/features/toolbar/useToolMenuShortcuts'
@@ -218,7 +219,7 @@ export function ToolbarMenuLauncher({
           onCloseMainPanel={onCloseMainPanel}
         />
       </React.Suspense>
-      {isToolMenuOpen && (
+      {isToolMenuOpen && typeof document !== 'undefined' && createPortal(
         <React.Suspense fallback={null}>
           <ToolbarToolMenuLazy
             toolMenuCardRef={toolMenuCardRef}
@@ -230,7 +231,8 @@ export function ToolbarMenuLauncher({
             exportStatus={null}
             onClose={closeToolMenu}
           />
-        </React.Suspense>
+        </React.Suspense>,
+        document.body,
       )}
     </>
   )

@@ -262,7 +262,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
           </main>
         ) : (
           <>
-            {workspaceCanvasPaneVisible && !liveCanvasHeroOwnsWorkspace ? (
+            {(workspaceCanvasPaneVisible || workspaceEditorOverlayOpen) && !liveCanvasHeroOwnsWorkspace ? (
               <header
                 ref={toolbarHeaderRef}
                 className={`absolute inset-0 pointer-events-none ${toolbarHeaderLayerClassName}`}
@@ -271,7 +271,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
               >
                 <nav
                   className={`${UI_RESPONSIVE_CANVAS_WORKSPACE_TOOLBAR_DOCK_CLASSNAME} ${canvasToolbarDockSpansViewport ? '[&_button]:min-h-11 [&_button]:!min-w-11' : ''}`}
-                  style={workspaceToolbarBoundaryStyle}
+                  style={{ ...workspaceToolbarBoundaryStyle, display: workspaceCanvasPaneVisible ? undefined : 'none' }}
                   aria-label="Canvas Toolbar"
                   role="navigation"
                 >

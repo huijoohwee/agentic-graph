@@ -485,11 +485,6 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     if (!props.dataViewSource) void setGeospatialModeEnabled(true).catch(() => void 0)
   }, [props])
 
-  const openViewSettingsPanel = React.useCallback((panel: 'layout' | 'properties' | 'filter' | 'sort' | 'group' | 'reset') => {
-    setSettingsPanel(panel)
-    emitFloatingPanelOpen({ tab: 'view', open: true })
-  }, [])
-
   const viewSettingsBinding = React.useMemo<WorkspaceDataViewFloatingBinding | null>(() => {
     if (!selected || !viewConfig) return null
     const registrationId = hashSignatureParts([
@@ -553,7 +548,12 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     viewConfig,
   ])
 
-  useWorkspaceDataViewFloatingRegistration(viewSettingsBinding)
+  const activateViewSettings = useWorkspaceDataViewFloatingRegistration(viewSettingsBinding)
+  const openViewSettingsPanel = React.useCallback((panel: 'layout' | 'properties' | 'filter' | 'sort' | 'group' | 'reset') => {
+    activateViewSettings(panel)
+    setSettingsPanel(panel)
+    emitFloatingPanelOpen({ tab: 'view', open: true })
+  }, [activateViewSettings])
 
   if (props.floatingPanelRegistrationOnly === true) return null
 

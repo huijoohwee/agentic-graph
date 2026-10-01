@@ -52,6 +52,7 @@ export type WorkspaceDataViewFloatingDensity = {
 
 const listeners = new Set<() => void>()
 let currentBinding: WorkspaceDataViewFloatingBinding | null = null
+const registeredBindings = new Map<string, WorkspaceDataViewFloatingBinding>()
 let currentDensity: WorkspaceDataViewFloatingDensity = {
   rowHeightPreset: 'comfortable',
   fieldLineMode: 'single',
@@ -131,18 +132,27 @@ export function useWorkspaceDataViewFloatingDensity() {
 export function useWorkspaceDataViewFloatingRegistration(
   binding: WorkspaceDataViewFloatingBinding | null,
 ) {
-  const previousRegistrationIdRef = React.useRef<string | null>(null)
-
+  const registrationId = binding?.registrationId ?? null
   React.useLayoutEffect(() => {
-    if (!binding) {
-      clearWorkspaceDataViewFloatingBinding(previousRegistrationIdRef.current)
-      previousRegistrationIdRef.current = null
-      return
+    if (!binding) return
+    registeredBindings.set(binding.registrationId, binding)
+    if (!currentBinding || currentBinding.registrationId === binding.registrationId) {
+      setWorkspaceDataViewFloatingBinding(binding)
     }
-    previousRegistrationIdRef.current = binding.registrationId
-    setWorkspaceDataViewFloatingBinding(binding)
+  }, [binding])
+  React.useLayoutEffect(() => {
     return () => {
-      clearWorkspaceDataViewFloatingBinding(binding.registrationId)
+      if (!registrationId) return
+      registeredBindings.delete(registrationId)
+      if (currentBinding?.registrationId === registrationId) {
+        setWorkspaceDataViewFloatingBinding(registeredBindings.values().next().value ?? null)
+      }
     }
+  }, [registrationId])
+  return React.useCallback((activePanel: WorkspaceDataViewSettingsPanelKey) => {
+    if (!binding) return
+    const active = { ...binding, activePanel }
+    registeredBindings.set(binding.registrationId, active)
+    setWorkspaceDataViewFloatingBinding(active)
   }, [binding])
 }

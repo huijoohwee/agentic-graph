@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-export function testToolbarAlwaysExpandedWithoutCollapseControls() {
+export async function testToolbarAlwaysExpandedWithoutCollapseControls() {
   const filePath = path.resolve(process.cwd(), 'src', 'components', 'Toolbar.tsx')
   const text = fs.readFileSync(filePath, { encoding: 'utf8' })
   const launcherText = fs.readFileSync(path.resolve(process.cwd(), 'src', 'features', 'toolbar', 'ToolbarMenuLauncher.tsx'), { encoding: 'utf8' })
@@ -46,4 +46,6 @@ export function testToolbarAlwaysExpandedWithoutCollapseControls() {
   if (!text.includes('if (shouldRouteToStrybldrRunAll) {') || !text.includes('primeStoryboardWidgetRunAllLayoutLockFromToolbar()\n          emitToolbarRunAll()')) {
     throw new Error('expected multi-Widget Storyboards to dispatch through the shared workflow runner instead of the Strybldr handoff')
   }
+  const { testViewerSettingsRemainReachableFromHiddenCanvasToolbar } = await import('./viewerDataViewControls.test')
+  await testViewerSettingsRemainReachableFromHiddenCanvasToolbar()
 }
