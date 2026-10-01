@@ -73,7 +73,7 @@ test('new imports use configured docs_ while existing sandbox generations remain
     assert.ok(explicit.ok && explicit.storeRootAbs.endsWith('explicit-store'))
     const copy = await fetch(`${base}/__agentic_os_fs_reveal`, { method: 'POST',
       headers: { 'content-type': 'application/json', origin: base },
-      body: JSON.stringify({ saveOnly: true, snapshot: { workspacePath: '/websites/example.test/_import-index.md', text: '# Import index\n' } }) })
+      body: JSON.stringify({ saveOnly: true, outputRoot: expected, snapshot: { workspacePath: '/websites/example.test/_import-index.md', text: '# Import index\n' } }) })
     assert.equal(copy.status, 200, await copy.text())
     assert.equal(await fs.readFile(path.join(root, 'explicit-store/websites/example.test/_import-index.md'), 'utf8'), '# Import index\n')
     await assert.rejects(fs.access(path.join(expected, 'websites/example.test/_import-index.md')))

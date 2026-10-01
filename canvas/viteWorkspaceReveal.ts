@@ -110,7 +110,11 @@ export function createWorkspaceRevealHandler(repoRoot: string, policy: KgFsPathP
           } catch (error) { if (!(error instanceof RevealError && error.status === 404)) throw error }
         }
         if (!target) {
-          const outputRoot = request.outputRoot ?? resolveWorkspaceDocumentOutputRoot(repoRoot)
+          // Automatic import copies follow the host's explicit store even when
+          // the browser supplies an output path derived from its seed source.
+          const outputRoot = saveOnly && process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT?.trim()
+            ? resolveWorkspaceDocumentOutputRoot(repoRoot)
+            : request.outputRoot ?? resolveWorkspaceDocumentOutputRoot(repoRoot)
           if (typeof outputRoot !== 'string' || !path.isAbsolute(outputRoot) || !policy.isAllowed(outputRoot)) {
             throw new RevealError(403, 'Output folder is outside the local workspace')
           }
