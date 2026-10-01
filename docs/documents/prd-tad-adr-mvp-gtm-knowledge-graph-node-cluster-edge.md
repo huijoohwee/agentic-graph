@@ -2,12 +2,12 @@
 title: "Document nodes, relationships and evidence groups"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "kg-node-cluster-edge"
-version: "0.6.3"
-prd_revision: "0.6.3"
-tad_revision: "0.6.3"
-adr_revision: "0.6.3"
-mvp_revision: "0.6.3"
-gtm_revision: "0.6.3"
+version: "0.6.4"
+prd_revision: "0.6.4"
+tad_revision: "0.6.4"
+adr_revision: "0.6.4"
+mvp_revision: "0.6.4"
+gtm_revision: "0.6.4"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Document graph product function"
@@ -19,7 +19,7 @@ universal_scope: false
 lifecycle_status: "implementation-validated"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/kanban-divider-affordance"
+worktree_id: "agent/device-0232231d4a19/kanban-divider-local-hover"
 agent_id: "codex-document-graph-author"
 agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
@@ -565,21 +565,25 @@ production delivery and untested devices remain separate evidence requirements.
 
 PRD: add-record affordances occupy less space between cards while remaining visible
 to selection tools, pointer activation and keyboard focus. Apply the same shared
-button to every source. No generic layout wrappers or hidden decorative elements.
+button to every source. Hover reveals only the insertion position under the pointer;
+keyboard focus reveals only its own divider. No generic wrappers or hidden decoration.
 
 TAD: `WorkspaceDataViewNewRecordButton` renders its divider as a native button with
 one labelled SVG image; line, circle and plus route activation to that button.
 `markdown-kanban-actions.css` reduces the fine-pointer inter-card space from 60 to
 32 CSS pixels (24-pixel control and two four-pixel gaps). Non-hover/coarse pointers
-retain a 44-pixel target. Existing hover/focus reveal and mutation callbacks remain.
+retain visible 44-pixel targets. Each native list item owns hover/focus reveal of its
+child button; lane/header hover cannot reveal other dividers. Mutation callbacks remain.
 
 ADR A10: use semantic vector content, avoiding extra interactive descendants,
-pseudo-element hit surfaces, per-record state or new dependencies. Rollback reverts
+pseudo-element hit surfaces, per-record state or new dependencies. Keep the list item
+hit-testable while its child button is hidden so local hover can reveal it. Rollback reverts
 the shared presentation changes; stored records and import receipts are unaffected.
 
 MVP: measure card spacing and hit-test the line, circle and plus in live Dev, inspect
 the named button/image and absence of hidden wrappers, and check keyboard focus and
-44-pixel touch emulation. The existing query-workbench test awaits a mounted-component
-regression for graphic-part activation; its moved CSS ownership assertion is updated.
+44-pixel touch emulation. Verify neighboring dividers stay hidden on local hover/focus
+and header/card hover reveals none. The query-workbench contract rejects broad reveal;
+the mounted regression verifies independent semantic rows and graphic-part activation.
 GTM: improve scan density without losing discoverability; preserve inventory counts.
 Physical-device accessibility, paid adoption and production delivery need separate proof.

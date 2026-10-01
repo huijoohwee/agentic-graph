@@ -113,8 +113,11 @@ export function testWorkspaceDataViewFloatingPanelOwnsQueryWorkbench() {
   if (!kanbanDividerRowText.includes('<WorkspaceDataViewNewRecordButton') || !kanbanDividerRowText.includes('presentation="divider"')) {
     throw new Error('expected shared kanban divider row utility to own the semantic New Record divider presentation')
   }
-  if (!kanbanGroupText.includes('data-kg-kanban-group-header="1"') || !kanbanGroupText.includes('data-kg-kanban-group-list="1"') || !kanbanGroupText.includes('<KanbanNewRecordDividerRow') || !kanbanActionsCss.includes('[data-kg-kanban-group-header="1"]:is(:hover, :focus-within) [data-kg-kanban-group-actions="1"]') || !kanbanActionsCss.includes('[data-kg-kanban-group-list="1"]:is(:hover, :focus-within) [data-kg-kanban-group-actions="1"]')) {
-    throw new Error('expected shared kanban group actions to reveal from both the lane header and semantic card list and reuse the shared New Record divider row utility')
+  if (!kanbanGroupText.includes('data-kg-kanban-group-header="1"') || !kanbanGroupText.includes('data-kg-kanban-group-list="1"') || !kanbanGroupText.includes('<KanbanNewRecordDividerRow') || !kanbanActionsCss.includes('[data-kg-kanban-group-header="1"]:is(:hover, :focus-within) [data-kg-kanban-group-actions="1"]') || !kanbanActionsCss.includes('[data-kg-kanban-divider="1"]:is(:hover, :focus-within) > .kg-data-view-new-record-divider-action')) {
+    throw new Error('expected header actions and each semantic divider to own their hover/focus reveal independently')
+  }
+  if (kanbanActionsCss.includes('[data-kg-kanban-group-list="1"]:is(:hover, :focus-within)') || kanbanActionsCss.includes(':focus-within) ~ *')) {
+    throw new Error('expected lane and header hover/focus never to reveal neighboring record dividers')
   }
   if (!storyboardCanvasText.includes('data-kg-kanban-group-header="1"') || !storyboardCanvasText.includes('data-kg-kanban-group-list="1"') || !storyboardCanvasText.includes('<KanbanNewRecordDividerRow')) {
     throw new Error('expected Storyboard lanes to reuse the shared kanban header and semantic list action reveal contract, including the shared New Record divider row utility')
