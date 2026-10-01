@@ -55,6 +55,8 @@ export const resolveWebsiteImportGenerationToken = (raw: unknown, timestampMs = 
 
 /** Reuse the configured document mirror's sibling output directory on every device. */
 export const resolveWorkspaceDocumentOutputRoot = (repoRoot: string): string => {
+  const storeRoot = String(process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT || '').trim()
+  if (storeRoot) return path.resolve(storeRoot)
   const docsRoot = String(process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT || '').trim()
   return docsRoot ? path.resolve(docsRoot, '..', 'docs_') : path.resolve(repoRoot, '..', 'docs_')
 }

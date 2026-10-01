@@ -6,6 +6,8 @@ import path from 'node:path'
 import { createServer } from 'node:http'
 import { resolveExistingWebsiteImportWorkspaceRoot, resolveWebsiteImportWorkspaceRoot, resolveWorkspaceDocumentOutputRoot } from '../lib/websites/server/websiteImportStorage'
 import { createWebsiteImportHandler } from '../lib/websites/server/websiteImportServer'
+import { createWorkspaceRevealHandler } from '../../viteWorkspaceReveal'
+import { createKgFsPathPolicy } from '../../viteWorkspaceArtifactBridge'
 
 test('new imports use configured docs_ while existing sandbox generations remain readable and immutable', async () => {
   const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'website-storage-')))
@@ -16,7 +18,11 @@ test('new imports use configured docs_ while existing sandbox generations remain
   delete process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT
   await fs.mkdir(repo); await fs.writeFile(path.join(repo, 'sample.html'), '<h1>Portable local article</h1>')
   const handler = createWebsiteImportHandler({ repoRoot: repo })
-  const server = createServer((req, res) => { void handler(req, res, () => { res.statusCode = 404; res.end() }) })
+  const reveal = createWorkspaceRevealHandler(repo, createKgFsPathPolicy(repo))
+  const server = createServer((req, res) => {
+    const next = () => { res.statusCode = 404; res.end() }
+    void (req.url === '/__agentic_os_fs_reveal' ? reveal : handler)(req, res, next)
+  })
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
   const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`
   const oldId = '20260102T030405Z', oldRoot = path.join(root, 'sandbox/agentic-graph-workspace/website-imports')
@@ -65,6 +71,13 @@ test('new imports use configured docs_ while existing sandbox generations remain
     process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT = path.join(root, 'explicit-store')
     const explicit = await resolveExistingWebsiteImportWorkspaceRoot({ repoRoot: repo, importId: oldId })
     assert.ok(explicit.ok && explicit.storeRootAbs.endsWith('explicit-store'))
+    const copy = await fetch(`${base}/__agentic_os_fs_reveal`, { method: 'POST',
+      headers: { 'content-type': 'application/json', origin: base },
+      body: JSON.stringify({ saveOnly: true, snapshot: { workspacePath: '/websites/example.test/_import-index.md', text: '# Import index\n' } }) })
+    assert.equal(copy.status, 200, await copy.text())
+    assert.equal(await fs.readFile(path.join(root, 'explicit-store/websites/example.test/_import-index.md'), 'utf8'), '# Import index\n')
+    await assert.rejects(fs.access(path.join(expected, 'websites/example.test/_import-index.md')))
+    await assert.rejects(fs.access(path.join(repo, 'docs_')))
   } finally {
     await new Promise<void>(resolve => server.close(() => resolve()))
     if (previousDocs === undefined) delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
