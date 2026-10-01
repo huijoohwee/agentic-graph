@@ -1,11 +1,11 @@
 import { resolveInitializedWorkspaceFs } from './workspaceFsInitialization'
 import { normalizeWorkspacePath } from './path'
-import type { WorkspaceFs, WorkspacePath } from './types'
+import type { WorkspaceEntry, WorkspaceFs, WorkspacePath } from './types'
 
 /** One operation may reuse its folder inventory without rereading document bodies. */
-export async function createWorkspaceFolderTreeEnsurer(injected?: WorkspaceFs): Promise<(path: WorkspacePath) => Promise<void>> {
+export async function createWorkspaceFolderTreeEnsurer(injected?: WorkspaceFs, inventory?: WorkspaceEntry[]): Promise<(path: WorkspacePath) => Promise<void>> {
   const fs = await resolveInitializedWorkspaceFs(injected)
-  const list = await fs.listEntries()
+  const list = inventory || await fs.listEntries()
   const folders = new Set(
     list
       .filter(entry => entry.kind === 'folder')

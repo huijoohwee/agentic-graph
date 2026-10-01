@@ -1,3 +1,4 @@
+import { computeSmoothStepGeometry } from '@/lib/graph/smoothStepGeometry'
 import type { GraphSchema } from '@/lib/graph/schema'
 import type { GraphEdge } from '@/lib/graph/types'
 import { readRadarForceConfig } from '@/lib/graph/radarForces'
@@ -366,26 +367,10 @@ export const buildEdgePathD = (args: {
     const my = (sy + ty) * 0.5
     return `M${sx},${sy} L${sx},${my} L${tx},${my} L${tx},${ty}`
   }
-  if (axis === 'x') {
-    const mx = (sx + tx) * 0.5
-    const dyAbs = Math.abs(dy)
-    const baseR = Math.min(24, Math.max(2, Math.min(Math.abs(mx - sx), dyAbs * 0.5)))
-    const radialSoftness = curve?.orbital ? 0.88 : 1
-    const r = Math.max(2, baseR * (bendAbs > 0 ? Math.max(0.4, (0.7 + bendAbs) * radialSoftness) : 1))
-    const sySign = bendAbs > 0 ? bendSign : dy >= 0 ? 1 : -1
-    const yA = sy + sySign * r
-    const yB = ty - sySign * r
-    return `M${sx},${sy} L${mx - r},${sy} Q${mx},${sy} ${mx},${yA} L${mx},${yB} Q${mx},${ty} ${mx + r},${ty} L${tx},${ty}`
-  }
-  const my = (sy + ty) * 0.5
-  const dxAbs = Math.abs(dx)
-  const baseR = Math.min(24, Math.max(2, Math.min(Math.abs(my - sy), dxAbs * 0.5)))
-  const radialSoftness = curve?.orbital ? 0.88 : 1
-  const r = Math.max(2, baseR * (bendAbs > 0 ? Math.max(0.4, (0.7 + bendAbs) * radialSoftness) : 1))
-  const sxSign = bendAbs > 0 ? bendSign : dx >= 0 ? 1 : -1
-  const xA = sx + sxSign * r
-  const xB = tx - sxSign * r
-  return `M${sx},${sy} L${sx},${my - r} Q${sx},${my} ${xA},${my} L${xB},${my} Q${tx},${my} ${tx},${my + r} L${tx},${ty}`
+  const corners = computeSmoothStepGeometry({ sx, sy, tx, ty, axis, bendAbs, orbital: curve?.orbital === true })
+  if (!corners) return `M${sx},${sy} L${tx},${ty}`
+  const { entry, first, exitFirst, entryLast, last, exit } = corners
+  return `M${sx},${sy} L${entry.x},${entry.y} Q${first.x},${first.y} ${exitFirst.x},${exitFirst.y} L${entryLast.x},${entryLast.y} Q${last.x},${last.y} ${exit.x},${exit.y} L${tx},${ty}`
 }
 
 const shouldUseForwardFlowTrack = (args: {
@@ -556,33 +541,13 @@ export const traceEdgePathOnCanvas = (args: {
     ctx.lineTo(tx, ty)
     return
   }
-  if (axis === 'x') {
-    const mx = (sx + tx) * 0.5
-    const dyAbs = Math.abs(dy)
-    const baseR = Math.min(24, Math.max(2, Math.min(Math.abs(mx - sx), dyAbs * 0.5)))
-    const radialSoftness = curve?.orbital ? 0.88 : 1
-    const r = Math.max(2, baseR * (bendAbs > 0 ? Math.max(0.4, (0.7 + bendAbs) * radialSoftness) : 1))
-    const sySign = bendAbs > 0 ? bendSign : dy >= 0 ? 1 : -1
-    const yA = sy + sySign * r
-    const yB = ty - sySign * r
-    ctx.lineTo(mx - r, sy)
-    ctx.quadraticCurveTo(mx, sy, mx, yA)
-    ctx.lineTo(mx, yB)
-    ctx.quadraticCurveTo(mx, ty, mx + r, ty)
-    ctx.lineTo(tx, ty)
-    return
+  const corners = computeSmoothStepGeometry({ sx, sy, tx, ty, axis, bendAbs, orbital: curve?.orbital === true })
+  if (corners) {
+    const { entry, first, exitFirst, entryLast, last, exit } = corners
+    ctx.lineTo(entry.x, entry.y)
+    ctx.quadraticCurveTo(first.x, first.y, exitFirst.x, exitFirst.y)
+    ctx.lineTo(entryLast.x, entryLast.y)
+    ctx.quadraticCurveTo(last.x, last.y, exit.x, exit.y)
   }
-  const my = (sy + ty) * 0.5
-  const dxAbs = Math.abs(dx)
-  const baseR = Math.min(24, Math.max(2, Math.min(Math.abs(my - sy), dxAbs * 0.5)))
-  const radialSoftness = curve?.orbital ? 0.88 : 1
-  const r = Math.max(2, baseR * (bendAbs > 0 ? Math.max(0.4, (0.7 + bendAbs) * radialSoftness) : 1))
-  const sxSign = bendAbs > 0 ? bendSign : dx >= 0 ? 1 : -1
-  const xA = sx + sxSign * r
-  const xB = tx - sxSign * r
-  ctx.lineTo(sx, my - r)
-  ctx.quadraticCurveTo(sx, my, xA, my)
-  ctx.lineTo(xB, my)
-  ctx.quadraticCurveTo(tx, my, tx, my + r)
   ctx.lineTo(tx, ty)
 }

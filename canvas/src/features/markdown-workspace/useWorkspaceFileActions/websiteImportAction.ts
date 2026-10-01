@@ -15,6 +15,7 @@ export { importWebsiteViaWorkspaceRuntime, useWorkspaceWebsiteImportAction } fro
 
 type WebsiteImportSettings = {
   selectedUrls?: string[]
+  destinationPath?: string
   outputDirRel: string
   discoverSitemap: boolean
   maxPages: number
@@ -52,6 +53,7 @@ function resolveWebsiteImportSettings(opts?: WorkspaceImportWebsiteOpts): Websit
   const requestedMaxPages = Number.isFinite(opts?.maxPages) ? Number(opts?.maxPages) : configuredMaxPages
   return {
     selectedUrls: opts?.selectedUrls,
+    destinationPath: opts?.destinationPath,
     outputDirRel: String(store.websiteImportOutputDirRel || '').trim(),
     discoverSitemap: store.websiteImportDiscoverSitemap !== false,
     maxPages: clampWebsiteImportMaxPages(requestedMaxPages, opts?.minPages),
@@ -226,6 +228,7 @@ export async function runWorkspaceWebsiteImport(args: {
   focusAfterImport?: (createdPath: WorkspacePath, opts?: { sourceUrl?: string | null; applyToGraph?: boolean; jobId?: number }) => Promise<void>
 }): Promise<{ createdPaths: WorkspacePath[]; host: string; websiteImportManifest: WebsiteImportManifestV1; websiteImportSummary: WorkspaceWebsiteImportSummary }> {
   const settings = resolveWebsiteImportSettings(args.opts)
+  if (settings.destinationPath !== undefined && settings.selectedUrls?.length !== 1) throw new Error('An in-place import requires exactly one selected page.')
   if (settings.applyToCanvas) {
     const { applyCanvasFrontmatterPreset } = await import('@/features/parsers/canvasFrontmatterPreset')
     if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
@@ -236,6 +239,7 @@ export async function runWorkspaceWebsiteImport(args: {
   let openedSourceFiles = false
   let finishExplorerUpdates: (() => void) | null = null
   let reconciliationAttempted = false
+  const pagePathsByUrl = new Map<string, WorkspacePath>()
   const getWriter = async (importId: string) => {
     if (writer) return writer
     fs = await args.getFs()
@@ -252,6 +256,7 @@ export async function runWorkspaceWebsiteImport(args: {
       },
       onFileCreated: async source => {
         if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
+        pagePathsByUrl.set(source.source.url, source.path)
         bulkSetWorkspaceEntrySources([source])
         args.setEntries?.(previous => addCompletedWebsiteFileToExplorer(previous, source.path))
         args.setExpandedPaths?.(previous => {
@@ -292,18 +297,22 @@ export async function runWorkspaceWebsiteImport(args: {
     finishExplorerUpdates = null
     reconciliationAttempted = true
     const refreshed = args.refresh ? await args.refresh() : null
-    if (settings.applyToCanvas && canvasPath) {
+    const selectedUrl = settings.selectedUrls?.length === 1 ? settings.selectedUrls[0] : null
+    const selectedPagePath = selectedUrl ? pagePathsByUrl.get(selectedUrl) : null
+    if (selectedUrl && !selectedPagePath) throw new Error(`The requested page was not saved: ${selectedUrl}`)
+    const activationPath = selectedPagePath || canvasPath || created.createdPaths[0]
+    if (settings.applyToCanvas && activationPath) {
       const { applyWorkspaceImportToCanvasBestEffort } = await import('./importRuntimeActions')
       await applyWorkspaceImportToCanvasBestEffort({
         fs,
-        createdPaths: [canvasPath],
+        createdPaths: [activationPath],
         opts: {
           applyToGraph: true,
           ...(refreshed ? { workspaceEntries: refreshed.entries, sourcesByPath: refreshed.sourcesByPath } : {}),
         },
       })
     }
-    const first = settings.preserveActiveDocument ? null : (canvasPath || created.createdPaths[0])
+    const first = settings.preserveActiveDocument ? null : activationPath
     if (first) {
       if (args.focusAfterImport) {
         await args.focusAfterImport(first, { sourceUrl: null, applyToGraph: false, jobId: args.jobId })

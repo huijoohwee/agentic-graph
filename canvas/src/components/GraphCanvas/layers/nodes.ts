@@ -1,3 +1,4 @@
+import { compareCanvasSurfaceArea } from '@/lib/canvas/layerOrder2d'
 import * as d3 from 'd3';
 import type { MutableRefObject } from 'react';
 import type { GraphNode, GraphEdge, GraphData } from '@/lib/graph/types';
@@ -21,7 +22,7 @@ import { buildNodeShapePathD } from '@/components/GraphCanvas/shapePaths2d';
 import type { HoverInfo } from '@/components/GraphHoverTooltip'
 import { isTooltipRelatedTarget } from '@/features/panels/ui/tooltipUtils'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { compareNodeZKey, type NodeZKey } from '@/lib/canvas/groupZOrder'
+import { buildNodeZKeyById, compareNodeZKey, type NodeZKey } from '@/lib/canvas/groupZOrder'
 import { bindNodeDraggingWithGroupContainment } from '@/components/GraphCanvas/layers/nodesDragBinding'
 import { createNodeGroupChevronSel } from '@/components/GraphCanvas/layers/nodesGroupChevrons'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
@@ -144,33 +145,7 @@ export const createNodesLayer = (args: {
 
   const nodeLayer = g.append('g').attr('data-kg-layer', 'nodes').style('pointer-events', 'all');
 
-  const eligibleNodes = (() => {
-    if (!Array.isArray(renderNodes) || renderNodes.length < 2) return renderNodes
-    let hasAnyZ = false
-    for (let i = 0; i < renderNodes.length; i += 1) {
-      const n = renderNodes[i]
-      const props = (n?.properties || {}) as Record<string, unknown>
-      const z = props['visual:zIndex']
-      if (typeof z === 'number' && Number.isFinite(z)) {
-        hasAnyZ = true
-        break
-      }
-    }
-    if (!hasAnyZ) return renderNodes
-    const readZ = (n: GraphNode): number => {
-      const props = (n?.properties || {}) as Record<string, unknown>
-      const z = props['visual:zIndex']
-      return typeof z === 'number' && Number.isFinite(z) ? z : 0
-    }
-    return renderNodes
-      .slice()
-      .sort((a, b) => {
-        const za = readZ(a)
-        const zb = readZ(b)
-        if (za !== zb) return za - zb
-        return String(a.id || '').localeCompare(String(b.id || ''))
-      })
-  })();
+  const eligibleNodes = renderNodes
   const circleNodes = eligibleNodes.filter(n => shapeByNodeId.get(String(n.id)) === 'circle');
   const rectNodes = eligibleNodes.filter(n => shapeByNodeId.get(String(n.id)) === 'rect');
   const diamondNodes = eligibleNodes.filter(n => shapeByNodeId.get(String(n.id)) === 'diamond');
@@ -247,6 +222,7 @@ export const createNodesLayer = (args: {
   const node = nodeLayer.selectAll<SVGElement, GraphNode>('circle,rect,path[data-kg-node-shape]')
   node
     .attr('data-node-id', (d: GraphNode) => String(d.id))
+    .attr('data-kg-covered-by-media', (d: GraphNode) => shouldHideNodeBody(d) ? '1' : null)
     .style('display', (d: GraphNode) => {
       const id = String(d.id)
       if (panelOnlyNodeIdSet?.has(id)) return 'none'
@@ -254,7 +230,7 @@ export const createNodesLayer = (args: {
     })
     .style('pointer-events', (d: GraphNode) => {
       const id = String(d.id)
-      if (panelOnlyNodeIdSet?.has(id)) return 'none'
+      if (panelOnlyNodeIdSet?.has(id) || shouldHideNodeBody(d)) return 'none'
       return 'all'
     })
      .attr('fill', (d: GraphNode) => (shouldHideNodeBody(d) ? 'transparent' : getNodeBaseFill(d, schema)))
@@ -307,13 +283,20 @@ export const createNodesLayer = (args: {
 
   const groupChevronSel = createNodeGroupChevronSel({ g, nodes: renderNodes })
 
-  if (nodeZKeyById) {
-    const keyForId = (id: string): NodeZKey =>
-      nodeZKeyById.get(id) || { id, groupDepth: -1, groupSize: Number.POSITIVE_INFINITY, zIndex: 0, zMode: 'group', yIndex: 0, xIndex: 0 }
-    const cmp = (a: GraphNode, b: GraphNode) => compareNodeZKey(keyForId(String(a.id)), keyForId(String(b.id)))
-    node.sort(cmp)
-    if (groupChevronSel) groupChevronSel.sort(cmp)
+  const surfaceFor = (n: GraphNode) => {
+    const { width, height } = getNodeRectDimensions2d(n, schema)
+    const r = getRenderNodeRadius2d(n, schema)
+    return { id: String(n.id), w: shapeByNodeId.get(String(n.id)) === 'circle' ? 2 * r : width,
+      h: shapeByNodeId.get(String(n.id)) === 'circle' ? 2 * r : height }
   }
+  const effectiveZKeys = nodeZKeyById || buildNodeZKeyById({ nodes: renderNodes, groups: [] })
+  const keyForId = (id: string): NodeZKey => ({
+    ...(effectiveZKeys.get(id) || { groupDepth: -1, groupSize: Infinity, zIndex: 0, zMode: 'group', yIndex: 0, xIndex: 0 }), id: '',
+  })
+  const cmp = (a: GraphNode, b: GraphNode) => compareNodeZKey(keyForId(String(a.id)), keyForId(String(b.id)))
+    || compareCanvasSurfaceArea(surfaceFor(a), surfaceFor(b))
+  node.sort(cmp)
+  if (groupChevronSel) groupChevronSel.sort(cmp)
 
   if (schema.behavior?.allowNodeDrag !== false) {
     bindNodeDraggingWithGroupContainment({

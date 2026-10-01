@@ -1,3 +1,4 @@
+import { compareCanvasSurfaceArea } from '@/lib/canvas/layerOrder2d'
 import type * as d3 from 'd3'
 import type { MediaPanelDensity } from '@/lib/render/mediaPanelSpec'
 import type { GraphSchema } from '@/lib/graph/schema'
@@ -65,6 +66,7 @@ export function startMediaOverlayLayoutLoop2d(args: {
   loop: 'always' | 'onDemand'
   items: readonly MediaOverlayLayoutItem[]
   manualPlacement?: boolean
+  anchorToNode?: boolean
   density: MediaPanelDensity
   viewportW: number
   viewportH: number
@@ -108,13 +110,13 @@ export function startMediaOverlayLayoutLoop2d(args: {
   let collectiveCenterWarmupStartedAtMs: number | null = null
   let collectiveCenterWarmupAttempts = 0
   const lastWorldCenterById = new Map<string, { x: number; y: number }>()
-  const lastAppliedBoxById = new Map<string, { left: number; top: number; w: number; h: number; scale?: number }>()
+  const lastAppliedBoxById = new Map<string, { left: number; top: number; w: number; h: number; scale?: number; zIndex?: number }>()
   const zoomLayoutBaseBoxById = new Map<string, { left: number; top: number; w: number; h: number; scale: number; layoutScale: number }>()
   let scheduleCollectiveLayoutUpdate: () => void = () => void 0
 
   const quantizePanelPos = (v: number) => {
     if (!Number.isFinite(v)) return 0
-    return Math.round(v)
+    return args.anchorToNode ? v : Math.round(v)
   }
 
   const update = () => {
@@ -138,7 +140,7 @@ export function startMediaOverlayLayoutLoop2d(args: {
       density,
       viewportW: layoutViewport.width,
       viewportH: layoutViewport.height,
-      zoomK: k,
+      zoomK: args.projectWithWorldTransformScale === true ? 1 : k,
       itemCount: args.items.length,
       config: args.sizingConfig,
     })
@@ -287,7 +289,7 @@ export function startMediaOverlayLayoutLoop2d(args: {
         ? { cx: projectedWorldBox.left + (w * projectedWorldBox.scale) / 2, cy: projectedWorldBox.top + (h * projectedWorldBox.scale) / 2 }
         : projectedZoomBox
         ? { cx: projectedZoomBox.left + w / 2, cy: projectedZoomBox.top + h / 2 }
-        : scaleChanged && previousBox
+        : scaleChanged && previousBox && !args.anchorToNode
           ? {
               cx: previousBox.left + previousBox.w / 2,
               cy: previousBox.top + previousBox.h / 2,
@@ -302,7 +304,7 @@ export function startMediaOverlayLayoutLoop2d(args: {
         h,
         scale: anchoredWorldBox ? anchoredWorldBox.scale : projectedWorldBox ? projectedWorldBox.scale : 1,
         el,
-        preserveWorldTopLeft: !!anchoredWorldBox || (!!projectedWorldBox && !!topLeftNow),
+        preserveWorldTopLeft: args.anchorToNode || !!anchoredWorldBox || (!!projectedWorldBox && !!topLeftNow),
       })
     }
 
@@ -496,22 +498,25 @@ export function startMediaOverlayLayoutLoop2d(args: {
       }
     }
 
+    const layerById = args.anchorToNode
+      ? new Map([...preferred].sort(compareCanvasSurfaceArea).map((item, index) => [item.id, index + 1])) : null
     for (let i = 0; i < preferred.length; i += 1) {
       const p = preferred[i]!
       const pos = nextById.get(p.id) || { left: p.left, top: p.top }
       applyMediaPanelCssVars(p.el, frameCssVars)
       applyMediaEagerLoadingOnce(p.el)
       const snappedPos = p.preserveWorldTopLeft ? pos : snapPanelTopLeftToGrid(pos)
-      const nextBox = { left: quantizePanelPos(snappedPos.left), top: quantizePanelPos(snappedPos.top), w: p.w, h: p.h, scale: Math.max(0.001, Number(p.scale) || 1) }
+      const nextBox = { zIndex: layerById?.get(p.id), left: quantizePanelPos(snappedPos.left), top: quantizePanelPos(snappedPos.top), w: p.w, h: p.h, scale: Math.max(0.001, Number(p.scale) || 1) }
       const prevBox = lastAppliedBoxById.get(p.id) || null
       const boxChanged = !prevBox
-        || Math.abs(prevBox.left - nextBox.left) >= 1
-        || Math.abs(prevBox.top - nextBox.top) >= 1
+        || prevBox.zIndex !== nextBox.zIndex
+        || Math.abs(prevBox.left - nextBox.left) >= (args.anchorToNode ? 0.001 : 1)
+        || Math.abs(prevBox.top - nextBox.top) >= (args.anchorToNode ? 0.001 : 1)
         || Math.abs(prevBox.w - nextBox.w) >= 0.5
         || Math.abs(prevBox.h - nextBox.h) >= 0.5
         || Math.abs((prevBox.scale || 1) - nextBox.scale) >= 0.001
       if (boxChanged) {
-        applyPanelBox(p.el, { left: nextBox.left, top: nextBox.top, w: nextBox.w, h: nextBox.h, display: args.panelDisplay || 'block', scale: nextBox.scale })
+        applyPanelBox(p.el, { zIndex: nextBox.zIndex, left: nextBox.left, top: nextBox.top, w: nextBox.w, h: nextBox.h, display: args.panelDisplay || 'block', scale: nextBox.scale, positionMode: args.anchorToNode ? 'matrix' : undefined })
         lastAppliedBoxById.set(p.id, nextBox)
       }
       if (args.scaleLayoutOnZoom === true && !scaleChanged) {
@@ -525,7 +530,7 @@ export function startMediaOverlayLayoutLoop2d(args: {
         })
       }
       try {
-        ;(p.el as unknown as { dataset?: Record<string, string> }).dataset!.kgOverlayHasPos = '1'
+        if (p.el.dataset.kgOverlayHasPos !== '1') p.el.dataset.kgOverlayHasPos = '1'
       } catch {
         void 0
       }

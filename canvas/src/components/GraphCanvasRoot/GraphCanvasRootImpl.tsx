@@ -1075,9 +1075,9 @@ export default function GraphCanvas({ active = true }: { active?: boolean }) {
       />
       <svg
         ref={svgRef}
-        aria-hidden="true" focusable="false" role="presentation"
+        role="group" aria-label="Interactive graph"
         className={`${CANVAS_INTERACTIVE_CLASS} z-10`}
-        data-kg-canvas-interactive="1" data-kg-canvas-svg-viewport="presentation" style={{ pointerEvents: 'visiblePainted' }}
+        data-kg-canvas-interactive="1" data-kg-canvas-svg-viewport="interactive" style={{ pointerEvents: 'visiblePainted' }}
         viewBox={`0 0 ${Math.max(1, width)} ${Math.max(1, height)}`} preserveAspectRatio="xMidYMid meet"
         onPointerDownCapture={() => {
           try {
