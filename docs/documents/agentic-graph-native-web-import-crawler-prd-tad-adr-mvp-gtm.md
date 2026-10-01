@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.47"
+version: "0.2.48"
 date: "2026-10-01"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -33,14 +33,14 @@ guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "dba06613e881c7d6387b0e3a6ebd2d7381191c6a"
 previous_document_version: "0.2.46"
-prd_revision: "0.2.47"
-tad_revision: "0.2.47"
-adr_revision: "0.2.47"
-mvp_revision: "0.2.47"
-gtm_revision: "0.2.47"
+prd_revision: "0.2.48"
+tad_revision: "0.2.48"
+adr_revision: "0.2.48"
+mvp_revision: "0.2.48"
+gtm_revision: "0.2.48"
 ---
 # Reference implementation: agentic-graph Native Web Import Crawler
-## 2026-10-01 Consolidated import inventory — revision 0.2.47
+## 2026-10-01 Consolidated import inventory — revision 0.2.48
 
 **PRD / acceptance.** A visible `_import-index.md` at each website host or local collection root must retain all known discovered URLs and selected file/folder inputs, including imported, not imported, pending, missing and failed-attempt details. Consolidate navigation inventories into this catalog while preserving captured page bodies and linking their saved paths. Opening a catalog or resuming its website selection must not crawl or reinstate content. VCCs: durable restart recovery; saved and unsaved rows coexist; unsupported and failed local inputs remain visible; repeat imports make no content or catalog writes; one changed input retains its path; missing outputs stay missing until explicit import; concurrent changes and notes survive.
 
@@ -48,9 +48,9 @@ gtm_revision: "0.2.47"
 
 **ADR / boundaries.** Use `/websites/<host>/_import-index.md` for website collections and `<local-collection-root>/_import-index.md` for local inputs, without date folders. Preserve original capture documents and legacy artifacts; the index consolidates their inventory responsibility, not their authored content. Explicit remote links and generated sitemap rows contribute discoveries; local export/artifact links do not become remote page URLs. Imported status requires a current workspace output; pending placeholders and deleted outputs are separate states. Serialize writes and compare expected text; reserve exact index paths, reject unrelated or modified managed blocks, preserve outside notes, and fail visibly at 480 KiB/5,000 records rather than truncate. Persist validators/digests with outputs, retain prior discoveries across sessions, and suppress unchanged receipt rewrites. Seed reconciliation remains with its existing owner; inventory must not reseed deleted documents. Browser storage remains the active receipt cache; WorkspaceFs supplies the portable catalog.
 
-**MVP / evidence.** Eight new generic regressions and six existing incremental-import regressions pass, covering consolidated page links, saved and unsaved rows, restart metadata recovery, zero-write repeats, unsupported/failed file and folder inputs, missing-file behavior, race protection, preserved notes, encoded URLs, concurrent discovery and size exhaustion. A generic 627-item inventory stays below the document byte ceiling; all 98 selected import compatibility checks pass. Local-copy retry, unchanged-copy suppression and final aggregate-media output links have owner tests. Fifteen discovery UI cases isolate persisted state and check fresh-chooser index reuse. Live task Dev shows the host-level index using existing workspace discoveries and saved documents; the rendered table and browser reload retain the same inventory. Website catalogs also use the existing guarded local-copy writer; no timestamp directory is introduced. The pre-existing native folder chooser automation limitation remains; automated folder-owner coverage is not live-picker parity. Runtime validation input remains outside repository fixtures and product logic. Affected checks, protected merge and certified Dev require their own exact candidate receipts.
+**MVP / evidence.** Eight new generic regressions and six existing incremental-import regressions pass, covering consolidated page links, saved and unsaved rows, restart metadata recovery, zero-write repeats, unsupported/failed file and folder inputs, missing-file behavior, race protection, preserved notes, encoded URLs, concurrent discovery and size exhaustion. A generic 627-item inventory stays below the document byte ceiling; all 98 selected import compatibility checks pass. Local-copy retry, unchanged-copy suppression and final aggregate-media output links have owner tests. Fifteen discovery UI cases isolate persisted state and check fresh-chooser index reuse. Live task Dev shows the host-level index using existing workspace discoveries and saved documents; the rendered table and browser reload retain the same inventory. Website catalogs also use the existing guarded local-copy writer; no timestamp directory is introduced. The pre-existing native folder chooser automation limitation remains; automated folder-owner coverage is not live-picker parity. Runtime validation input remains outside repository fixtures and product logic. All ten local affected partitions pass. Protected attempt one failed on a late offline module; a fresh exact-candidate browser diagnostic passed. Attempt two exposed a seeded-lesson/import readiness race in the mobile smoke. Its successor waits for the exact imported or restored source before panel and offline actions, preserving every assertion. Protected merge and certified Dev require separate exact receipts.
 
-**GTM / execution / rollback.** Pain: repeated discovery, uncertain saved state and duplicated catalogs cost user time and device resources. Measure avoided requests and writes, not unproven revenue or dollar savings. `/change #import-inventory @codex` binds this continuity ID and all five roles at 0.2.47. Initial 45-minute/six-module budget was revised to 120 active minutes and seven runtime modules to include skipped/failed file and folder inputs, media aggregation and persisted discovery test isolation; keep a 60 KB changed-source cap, free/FOSS dependencies and existing mobile/local/offline controls. Next owner action: finish live verification and the affected gate, publish through the native protected lane, certify canonical Dev, and record separate source/runtime receipts. Production remains separately authorized. Rollback is a protected source revert; saved captures and Markdown inventory documents remain readable.
+**GTM / execution / rollback.** Pain: repeated discovery, uncertain saved state and duplicated catalogs cost user time and device resources. Measure avoided requests and writes, not unproven revenue or dollar savings. `/change #import-inventory-readiness @codex` binds this continuity ID and all five roles at 0.2.48. Initial 45-minute/six-module budget was revised to 120 active minutes and seven runtime modules to include skipped/failed file and folder inputs, media aggregation and persisted discovery test isolation; keep a 60 KB changed-source cap, free/FOSS dependencies and existing mobile/local/offline controls. Readiness repair is bounded to the existing smoke and this plan, 20 active minutes, no added runtime module or increased 60 KB cap. Next owner action: validate the changed smoke, publish its native successor, certify canonical Dev, and retain exact source/runtime receipts. Production remains separately authorized. Rollback is a protected source revert; saved captures and Markdown inventory documents remain readable.
 
 ## 2026-10-01 stable website import destinations
 
