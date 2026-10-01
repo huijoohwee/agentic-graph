@@ -4,8 +4,8 @@ import { WorkspaceDataViewNewRecordButton } from '@/features/markdown-workspace/
 export function KanbanNewRecordDividerRow(props: { onClick: () => void }) {
   return (
     <li
-      data-kg-kanban-group-actions="1"
-      className="list-none transition-opacity"
+      data-kg-kanban-divider="1"
+      className="list-none"
     >
       <WorkspaceDataViewNewRecordButton
         onClick={props.onClick}

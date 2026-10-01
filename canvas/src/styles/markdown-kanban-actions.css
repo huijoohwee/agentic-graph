@@ -5,21 +5,21 @@
     min-block-size: 1.5rem;
   }
 
-  [data-kg-kanban-group-list="1"] > [data-kg-kanban-group-actions="1"] {
+  [data-kg-kanban-group-list="1"] > [data-kg-kanban-divider="1"] {
     display: flex;
     margin-block: -0.25rem;
   }
 
   [data-kg-kanban-actions="1"],
-  [data-kg-kanban-group-actions="1"] {
+  [data-kg-kanban-group-actions="1"],
+  [data-kg-kanban-divider="1"] > .kg-data-view-new-record-divider-action {
     opacity: 0;
     pointer-events: none;
   }
 
   [data-kg-kanban-card="1"]:is(:hover, :focus-within) [data-kg-kanban-actions="1"],
   [data-kg-kanban-group-header="1"]:is(:hover, :focus-within) [data-kg-kanban-group-actions="1"],
-  [data-kg-kanban-group-header="1"]:is(:hover, :focus-within) ~ * [data-kg-kanban-group-actions="1"],
-  [data-kg-kanban-group-list="1"]:is(:hover, :focus-within) [data-kg-kanban-group-actions="1"] {
+  [data-kg-kanban-divider="1"]:is(:hover, :focus-within) > .kg-data-view-new-record-divider-action {
     opacity: 1;
     pointer-events: auto;
   }
@@ -31,7 +31,8 @@
     }
 
     [data-kg-kanban-actions="1"],
-    [data-kg-kanban-group-actions="1"] {
+    [data-kg-kanban-group-actions="1"],
+    [data-kg-kanban-divider="1"] > .kg-data-view-new-record-divider-action {
       opacity: 1;
       pointer-events: auto;
     }
