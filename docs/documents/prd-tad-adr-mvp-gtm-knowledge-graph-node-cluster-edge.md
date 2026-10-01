@@ -2,12 +2,12 @@
 title: "Document nodes, relationships and evidence groups"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "kg-node-cluster-edge"
-version: "0.6.2"
-prd_revision: "0.6.2"
-tad_revision: "0.6.2"
-adr_revision: "0.6.2"
-mvp_revision: "0.6.2"
-gtm_revision: "0.6.2"
+version: "0.6.3"
+prd_revision: "0.6.3"
+tad_revision: "0.6.3"
+adr_revision: "0.6.3"
+mvp_revision: "0.6.3"
+gtm_revision: "0.6.3"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Document graph product function"
@@ -19,7 +19,7 @@ universal_scope: false
 lifecycle_status: "implementation-validated"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/kanban-hover-controls"
+worktree_id: "agent/device-0232231d4a19/kanban-divider-affordance"
 agent_id: "codex-document-graph-author"
 agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
@@ -35,7 +35,7 @@ source_docs:
 
 # Document nodes, relationships and evidence groups
 
-`kg-node-cluster-edge@0.6.2` joins PRD, TAD, ADR, MVP and GTM. It adds local passage inspection,
+`kg-node-cluster-edge@0.6.3` joins PRD, TAD, ADR, MVP and GTM. It adds local passage inspection,
 source-backed relationships and connected lexical groups to existing document analysis. The core,
 worker, panel component and revision-guarded graph layer are implemented and locally tested.
 The original implementation merged in PR #1450. This increment completes inspectable provenance: method,
@@ -46,7 +46,7 @@ from production deployment and business outcomes.
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
-| `kg-node-cluster-edge@0.6.2` | C: G1–G8 expose reusable owners; E1–E2 establish baseline limits. I: make passage relationships inspectable with local bounded work. D: implement F1–F5 with original-source evidence and publish only through native lifecycle. | R: Document graph product function · A: Extend native derivation and inspection · O: Reviewable code, tests and joined specification · check: V1–V5, E3–E8 and exact release receipt | 2026-10-01 |
+| `kg-node-cluster-edge@0.6.3` | C: G1–G8 expose reusable owners; E1–E2 establish baseline limits. I: make passage relationships inspectable with local bounded work. D: implement F1–F5 with original-source evidence and publish only through native lifecycle. | R: Document graph product function · A: Extend native derivation and inspection · O: Reviewable code, tests and joined specification · check: V1–V5, E3–E8 and exact release receipt | 2026-10-01 |
 
 ## Grounding — reference implementation
 
@@ -199,7 +199,7 @@ receipts; no <500KB production-chunk claim is inferred from small source files.
 ### Five flows — reference implementation
 
 The five diagrams project on the declared 2D D3 surface. Version 1 binds the role/feature contracts at
-0.6.2. E3 checks parse projection only. Journey J1–J3 covers F1–F5; workflow W1–W4 applies F4 across
+0.6.3. E3 checks parse projection only. Journey J1–J3 covers F1–F5; workflow W1–W4 applies F4 across
 that journey; data D1–D4 supports evidence at J2; harness H1–H4 executes that request; topology T1–T3
 binds all operations to the device. Browser integration still requires V5.
 
@@ -379,7 +379,7 @@ dependencies. Set `KG_PROBE_SCRIPT`, `KG_PASSAGE_PROBE`, `KG_BROWSER_PROBE`, `KG
 |---|---|---|
 | E1 | `env TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/nativeDocumentAnalysis.test.ts` → 6/6, 522ms | Baseline native analysis, not new feature acceptance |
 | E2 | `env TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx "$KG_PROBE_SCRIPT"` → three identical baseline hashes; max keyword degree 9; four edgeless raw labels compressed to two display labels | Motivates mutual-degree bound and raw groups. No article-specific golden counts |
-| E3 | `node "$GUIDELINES_ROOT/scripts/check-diagram-canvas-render.mjs" "$KG_PLAN"` → version 0.6.2: five projections, 18 nodes, 8 edges, one cluster, zero findings | Parse-only, not UI proof |
+| E3 | `node "$GUIDELINES_ROOT/scripts/check-diagram-canvas-render.mjs" "$KG_PLAN"` → version 0.6.3: five projections, 18 nodes, 8 edges, one cluster, zero findings | Parse-only, not UI proof |
 | E4 | Native `policy.boundary.forbidHardcodedRuntimeValidationInput` with environment-fed input → pass | Native unit runner: 1/1 pass; scans tracked/untracked text. No corpus copied |
 | E5 | `npm run check --workspace=@agentic-graph/canvas` and `npm run ci:affected` → exit 0; 10/10 native owner checks pass | Expanded plan passed: native/new suites, no-hardcode guard, canvas and collaboration checks; standard partition 83.46s. Native receipt `validation-7cb484d9628a9cb44e83c888` |
 | E6 | `env TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/documentPassageGraph.test.ts canvas/src/__tests__/documentPassageGraphWorker.test.ts canvas/src/__tests__/documentPassageInsights.test.tsx` → 14/14, 4.09s | Source/edge/group invariants, bounds, cancel/timeout, current-source UI/layer and native-parent reachability; no production parity |
@@ -439,7 +439,7 @@ Capacity/response times are unknown. No supplier/hiring commitment is implied.
 
 ## Coverage and findings
 
-Coverage binds `kg-node-cluster-edge@0.6.2`; it records disposition, not VCC acceptance. Roles:
+Coverage binds `kg-node-cluster-edge@0.6.3`; it records disposition, not VCC acceptance. Roles:
 P = Product function, E = Engineering function, O = Product operator.
 
 | Domain | Disposition / artifact | Owner / next evidence |
@@ -560,3 +560,26 @@ emulation does not establish physical-device or full accessibility acceptance.
 GTM: recover the existing authoring workflow within a six-file, 20 KB first-pass
 budget. Acceptance is usable controls with unchanged inventory counts. Revenue,
 production delivery and untested devices remain separate evidence requirements.
+
+## Compact selectable divider — reference implementation
+
+PRD: add-record affordances occupy less space between cards while remaining visible
+to selection tools, pointer activation and keyboard focus. Apply the same shared
+button to every source. No generic layout wrappers or hidden decorative elements.
+
+TAD: `WorkspaceDataViewNewRecordButton` renders its divider as a native button with
+one labelled SVG image; line, circle and plus route activation to that button.
+`markdown-kanban-actions.css` reduces the fine-pointer inter-card space from 60 to
+32 CSS pixels (24-pixel control and two four-pixel gaps). Non-hover/coarse pointers
+retain a 44-pixel target. Existing hover/focus reveal and mutation callbacks remain.
+
+ADR A10: use semantic vector content, avoiding extra interactive descendants,
+pseudo-element hit surfaces, per-record state or new dependencies. Rollback reverts
+the shared presentation changes; stored records and import receipts are unaffected.
+
+MVP: measure card spacing and hit-test the line, circle and plus in live Dev, inspect
+the named button/image and absence of hidden wrappers, and check keyboard focus and
+44-pixel touch emulation. The existing query-workbench test awaits a mounted-component
+regression for graphic-part activation; its moved CSS ownership assertion is updated.
+GTM: improve scan density without losing discoverability; preserve inventory counts.
+Physical-device accessibility, paid adoption and production delivery need separate proof.
