@@ -27,6 +27,15 @@ test('passage inspection is lazy, follows source lines and rejects stale navigat
     const select = host.querySelector('select')!
     await act(async () => { select.value = select.options[1]!.value; Simulate.change(select) })
     assert.match(host.textContent!, /Lexical group/)
+    const result = deriveDocumentPassageGraph({ documentId: source.key, text })
+    const relationship = Array.from(host.querySelectorAll('li')).find(item => item.textContent?.includes('similar_to'))!
+    assert.match(relationship.textContent!, /Source lines 3–3 ↔ 5–5/)
+    assert.ok(relationship.textContent!.includes(`Source offsets [${text.indexOf('Copper')}, ${text.indexOf('\n\nCopper', text.indexOf('Copper'))}) and [${text.lastIndexOf('Copper')}, ${text.length})`))
+    assert.match(relationship.textContent!, /lexical-tfidf-cosine-v1/)
+    assert.ok(relationship.textContent!.includes(String(result.graph.edges.find(edge => edge.label === 'similar_to')!.metadata!.sourceRevision)))
+    assert.match(host.textContent!, /not proof of authenticity/)
+    assert.match(host.textContent!, /split into connected components/)
+    assert.ok(host.textContent!.includes(result.groups[0]!.id))
     const jump = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.startsWith('Jump to passage'))!
     await act(async () => jump.click())
     assert.deepEqual(visited, [3])

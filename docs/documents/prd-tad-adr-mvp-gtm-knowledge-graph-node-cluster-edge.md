@@ -2,12 +2,12 @@
 title: "Document nodes, relationships and evidence groups"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "kg-node-cluster-edge"
-version: "0.5.0"
-prd_revision: "0.5.0"
-tad_revision: "0.5.0"
-adr_revision: "0.5.0"
-mvp_revision: "0.5.0"
-gtm_revision: "0.5.0"
+version: "0.6.0"
+prd_revision: "0.6.0"
+tad_revision: "0.6.0"
+adr_revision: "0.6.0"
+mvp_revision: "0.6.0"
+gtm_revision: "0.6.0"
 date: "2026-10-01"
 lang: "en-US"
 owner: "Document graph product function"
@@ -19,7 +19,7 @@ universal_scope: false
 lifecycle_status: "implementation-validated"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/knowledge-graph-delivery"
+worktree_id: "agent/device-0232231d4a19/passage-live-verification"
 agent_id: "codex-document-graph-author"
 agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
@@ -35,23 +35,24 @@ source_docs:
 
 # Document nodes, relationships and evidence groups
 
-`kg-node-cluster-edge@0.5.0` joins PRD, TAD, ADR, MVP and GTM. It adds local passage inspection,
+`kg-node-cluster-edge@0.6.0` joins PRD, TAD, ADR, MVP and GTM. It adds local passage inspection,
 source-backed relationships and connected lexical groups to existing document analysis. The core,
 worker, panel component and revision-guarded graph layer are implemented and locally tested.
-The native parent panel, affected CI and full-app source/layer journey pass locally. Source publication,
-deployed runtime proof and business outcomes remain separate.
+The original implementation merged in PR #1450. This increment completes inspectable provenance: method,
+revision, paired source ranges and connected member-set identity. Current live UI proof remains separate
+from production deployment and business outcomes.
 
 ## Planning record — 2026-10-01
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
-| `kg-node-cluster-edge@0.5.0` | C: G1–G8 expose reusable owners; E1–E2 establish baseline limits. I: make passage relationships inspectable with local bounded work. D: implement F1–F5 with original-source evidence and publish only through native lifecycle. | R: Document graph product function · A: Extend native derivation and inspection · O: Reviewable code, tests and joined specification · check: V1–V5, E3–E8 and exact release receipt | 2026-10-01 |
+| `kg-node-cluster-edge@0.6.0` | C: G1–G8 expose reusable owners; E1–E2 establish baseline limits. I: make passage relationships inspectable with local bounded work. D: implement F1–F5 with original-source evidence and publish only through native lifecycle. | R: Document graph product function · A: Extend native derivation and inspection · O: Reviewable code, tests and joined specification · check: V1–V5, E3–E8 and exact release receipt | 2026-10-01 |
 
 ## Grounding — reference implementation
 
 Baseline G is `agentic-graph@e8d8e9ab02b95697ed8e8682a04f3ba2b507a8fb`. G locators below refer to
 that immutable revision. I locators refer to this admitted working diff, not a committed or delivered
-revision. Current integration base B is `d3a6a3bbc17e626fa37b33029ebb9fb1a655b1ac`; inspected
+revision. Current integration base B is `02e8ed01b7ae8ea262dddb7efcf524c09a35d845`; inspected
 parser/source/parent contracts are unchanged from G. Bind the diff to its publication SHA. No sibling-repository source import or new dependency is introduced.
 
 | ID | Exact source at G / export | Observed capability → decision |
@@ -70,7 +71,7 @@ parser/source/parent contracts are unchanged from G. Bind the diff to its public
 | I1 | `canvas/src/lib/parsers/documentPassageGraph.ts`: `deriveDocumentPassageGraph`, `PassageGraphInput`, `PassageGraphResult` | Pure ranged projection, TF-IDF mutual neighbors and connected groups; V1–V3 |
 | I2 | `canvas/src/lib/parsers/documentPassageGraphWorker.ts`: `analyzePassagesInWorker`; `canvas/src/workers/documentPassageGraph.worker.ts` | One worker per requested analysis, terminated on completion, cancel or timeout; V4 |
 | I3 | `canvas/src/features/markdown-workspace/documentInsightsRuntime.ts`: `isCurrentDocumentInsightsSource`, `applyDocumentPassageLayer` | Current source/revision guard; preserve authored graph or fail without writing; V4 |
-| I4 | `canvas/src/features/panels/views/DocumentPassageInsights.tsx`: default component | Lazy inspection, original text, relationship evidence, group members, source jump and explicit layer actions; V5 partial |
+| I4 | `canvas/src/features/panels/views/DocumentPassageInsights.tsx`: default component | Lazy inspection, original text, relationship evidence, group members, source jump, explicit layers and expandable method/revision/range/group evidence; V5 partial |
 | I5 | `canvas/src/__tests__/documentPassageGraph.test.ts`, `documentPassageGraphWorker.test.ts`, `documentPassageInsights.test.tsx` | 14 original regression tests; E6 |
 
 The general analysis owner remains `GRAPH-NATIVE-TEXT-001@1.0.29` at B; this artifact owns only the
@@ -130,7 +131,7 @@ merge disconnected components. Singletons stay ungrouped. There is no target top
 | V2 / F2 | I5 endpoint/degree/provenance assertions and E7 graph audit | Local pass: endpoints, authored direction, unresolved targets, finite scores and mutual bound. Counts are observations, never narrative golden answers |
 | V3 / F3 | I5 disconnected/isolate cases and E7 equal-input runs | Local pass: connected member evidence, singleton omission and deterministic graph bytes across three runs. Semantic-quality benchmark remains open |
 | V4 / F4 | I5 bounds, worker and explicit-layer tests | Local pass: invalid metadata/options, input/token limits, cancel/timeout termination, out-of-order/stale results, wrong source, authored nodes and authored edge dependencies. Production cache/migration evidence not claimed |
-| V5 / F5 | I5 panel tests; E8 browser walkthrough and integrated UI | Partial: real worker and source navigation pass in the full app; 360px layout passes in a test host. Actual-device accessibility, installed-app warm-offline and measured human completion remain open |
+| V5 / F5 | I5 panel tests; E8 browser walkthrough and integrated UI | Partial: real worker, source/group navigation, layer actions, 360px layout and offline-session rerun pass. Actual-device accessibility, installed-app warm-offline and measured human completion remain open |
 
 TTV includes opening an already available local document, selecting evidence and returning to source.
 Measure app load, compute time and human task time separately. Compute target: p95≤3s across 20 bounded
@@ -169,6 +170,7 @@ are extractive terms, not inferred semantic labels. Locale/fallback policy is di
 I3 applies only to the currently registered source object and matching source graph/revision. It removes
 only that source's generated passage layer, retains authored nodes/edges and rejects identifier collisions.
 If an authored edge depends on a layer node, replacement/removal fails instead of silently deleting it.
+The inspector exposes method, both line/UTF-16 ranges and local revision per relationship, plus algorithm/segmentation and connected member-set provenance. The revision is labeled a change identifier, not authenticity. Details expand by keyboard and wrap at narrow widths.
 Adding/removing a layer requires an explicit user action. New analysis clears old inspection results;
 stale or cancelled work cannot apply. There is no new persistent cache to migrate.
 
@@ -197,7 +199,7 @@ receipts; no <500KB production-chunk claim is inferred from small source files.
 ### Five flows — reference implementation
 
 The five diagrams project on the declared 2D D3 surface. Version 1 binds the role/feature contracts at
-0.5.0. E3 checks parse projection only. Journey J1–J3 covers F1–F5; workflow W1–W4 applies F4 across
+0.6.0. E3 checks parse projection only. Journey J1–J3 covers F1–F5; workflow W1–W4 applies F4 across
 that journey; data D1–D4 supports evidence at J2; harness H1–H4 executes that request; topology T1–T3
 binds all operations to the device. Browser integration still requires V5.
 
@@ -346,16 +348,16 @@ not complete product acceptance or release parity.
 | S1 / Document engineer | Compose G1/G3 → ranged occurrence projection | I1; V1 local pass |
 | S2 / Document engineer | Reuse G5 → typed evidence and connected memberships | I1; V2–V3 local pass |
 | S3 / Workspace engineer | Terminate bounded work and guard explicit layer apply | I2/I3; V4 local pass |
-| S4 / Interface engineer | Extend native inspector → inspect and return to source | I4 plus G7 parent; integration regression passes; V5 device/pilot proof partial |
+| S4 / Interface engineer | Extend native inspector → inspect and return to source | I4 plus G7 parent; provenance and full-app narrow-screen journey pass; device/pilot proof partial |
 | S5 / Independent checks | Original fixtures plus external runtime input → criterion receipts | I5/E3–E8; release/integrated-device evidence remains open |
 
 Implementation sprint announced: 60 active minutes, at most eight production modules and 40KB added
-production source; no dependencies/models/paid execution. Current production footprint is six files, below the added-source byte cap; each new file is below 600 lines. Documentation has its own one-file <40KB/<600-line
+production source; no dependencies/models/paid execution. Current production footprint remains six files, below the added-source byte cap; each new file is below 600 lines. Documentation has its own one-file <40KB/<600-line
 cap; temporary validation stays outside the repository. Installed modules are reused through ignored
 symlinks. CI registration extends the existing native-analysis scope.
 
 This revision refreshes the original two-sprint estimate against completed work. Remaining local work:
-one ≤30-minute bounded verification/integration sprint, same cumulative production byte/module caps.
+one ≤30-minute bounded verification/integration sprint, same cumulative production byte/module caps. Current scope is the existing inspector, its test and this document; no new module or dependency.
 The coordinated writer blocker was resolved through native source closeout. Provider CI/review waits
 have no completion ETA. Do not expand
 scope to redesign unrelated renderer/layout code. Authoring tokens, energy and billing are unmeasured;
@@ -377,7 +379,7 @@ dependencies. Set `KG_PROBE_SCRIPT`, `KG_PASSAGE_PROBE`, `KG_BROWSER_PROBE`, `KG
 |---|---|---|
 | E1 | `env TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/nativeDocumentAnalysis.test.ts` → 6/6, 522ms | Baseline native analysis, not new feature acceptance |
 | E2 | `env TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx "$KG_PROBE_SCRIPT"` → three identical baseline hashes; max keyword degree 9; four edgeless raw labels compressed to two display labels | Motivates mutual-degree bound and raw groups. No article-specific golden counts |
-| E3 | `node "$GUIDELINES_ROOT/scripts/check-diagram-canvas-render.mjs" "$KG_PLAN"` → version 0.5.0: five projections, 18 nodes, 8 edges, one cluster, zero findings | Parse-only, not UI proof |
+| E3 | `node "$GUIDELINES_ROOT/scripts/check-diagram-canvas-render.mjs" "$KG_PLAN"` → version 0.6.0: five projections, 18 nodes, 8 edges, one cluster, zero findings | Parse-only, not UI proof |
 | E4 | Native `policy.boundary.forbidHardcodedRuntimeValidationInput` with environment-fed input → pass | Native unit runner: 1/1 pass; scans tracked/untracked text. No corpus copied |
 | E5 | `npm run check --workspace=@agentic-graph/canvas` and `npm run ci:affected` → exit 0; 10/10 native owner checks pass | Expanded plan passed: native/new suites, no-hardcode guard, canvas and collaboration checks; standard partition 83.46s. Native receipt `validation-7cb484d9628a9cb44e83c888` |
 | E6 | `env TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/documentPassageGraph.test.ts canvas/src/__tests__/documentPassageGraphWorker.test.ts canvas/src/__tests__/documentPassageInsights.test.tsx` → 14/14, 4.09s | Source/edge/group invariants, bounds, cancel/timeout, current-source UI/layer and native-parent reachability; no production parity |
@@ -437,7 +439,7 @@ Capacity/response times are unknown. No supplier/hiring commitment is implied.
 
 ## Coverage and findings
 
-Coverage binds `kg-node-cluster-edge@0.5.0`; it records disposition, not VCC acceptance. Roles:
+Coverage binds `kg-node-cluster-edge@0.6.0`; it records disposition, not VCC acceptance. Roles:
 P = Product function, E = Engineering function, O = Product operator.
 
 | Domain | Disposition / artifact | Owner / next evidence |
@@ -474,26 +476,30 @@ Unchecked finding types are not assigned zero. Local rung remains `spec-complete
 
 ## Handover — reference implementation
 
-Implemented: I1–I5, source-preserving graph layers and this joined specification. No external validation
-text/path, private reference, new dependency or paid service is included. Local core/component checks
-pass as recorded, including the full-app source/layer journey. Provider integration and deployment remain open.
+I1–I5 and source-preserving layers merged in PR #1450 as
+`750130d1f3358b413d22b0cfbc9c9c38e6c21503`; PR/main runs `36822204072`/`36823077124` passed.
+Native recovery preserved its checkout. CI tooling subsequently merged as B; main run `36824327295`
+passed and Dev was certified.
 
-Predecessor PR #1448 at `7f1ca1666049c6e1d6a42df08c12211061f18f2d` passed its protected
-Integration Gate. Native successor `agent/device-0232231d4a19/knowledge-graph-delivery` preserves
-that publication and its checkout. A clean protected-main join at
-`3f302e085cb7f59a2b869ad32a700a0b83df4688` incorporates B without changing the passage owners.
-This revision updates only the plan. Native affected validation passed all ten selected owner checks in
-46.76 seconds on the joined source; no full-suite parity is inferred. Provider receipts bind publication.
+This increment exposes provenance already retained by the graph: expandable method, revision, paired
+ranges and connected-group identity in I4, with independent synthetic range checks in I5. Live source
+jumps passed before editing. Native publication binds the diff to its reviewed SHA.
 
-The prerequisite retention release completed independently: source PR #1449 merged at B; source
-cleanup plan `354b4b5d005aae11c0e1b68c1d75fe2bd0e05d22f98979e221d1ac6621fbbb97`
-preserved its checkout and registration in native recovery. Production run `36818672753` passed after
-exact human authorization, deployed Pages `743d3ef1-dcfa-45e5-8cd3-05bbe5fabe86`, verified all three
-transports and published mirror `1d1941b60c07a64401b46242a499acd875778fa8`. Native retention validated
-132 evidence files and terminal carrier `27fbf063be8b6f33f9683ff227389d9b39c773cb032d98cc8a9e38bf7a53db53`.
-Those receipts cover B, not this knowledge-graph successor. Private planning retains the release evidence.
+E9: full-app browser, admitted checkout, external runtime input and real disposable worker:
+33 passages, 60 relationships, two connected groups. Keyboard selection, group navigation, source
+jumps and explicit add/remove actions passed. Method/revision/ranges matched the source. At 360px,
+the inspector client/scroll widths both measured 300px; references contained zero active links.
+Screenshots and observations are retained outside the repository. Production-mode build and PWA
+HTML-ownership checks passed. With browser networking disabled, a fresh worker rerun completed and
+source navigation passed; networking was restored. This proves a loaded offline session, not offline
+reload, installed PWA, physical-device or assistive-technology acceptance.
 
-Completion requires affected checks, this updated artifact and exact source publication disposition.
-Knowledge-graph production remains separate and requires its own exact authorization. Preserve the
-lane and receipts during provider waits. Next owner is Document graph product function for V5
-actual-device/offline/human pilot and E-L1; refresh on source/schema/guideline drift or review findings.
+The environment-fed probe passed three equal graph hashes, unchanged input and zero fetch attempts.
+The focused panel suite passed 4/4 in 1.99s. Initial native affected validation passed in 71.69s with
+three selected owner checks captured; this is affected coverage, not full-suite parity. The final source
+check and protected publication receipts are recorded by native release and private handover owners.
+
+Production remains the separately authorized retention revision `d3a6a3bbc17e626fa37b33029ebb9fb1a655b1ac`
+from run `36818672753`; it does not include this feature. No external input text/path, private reference,
+dependency or paid service is added. Document graph product function owns remaining V5 device/PWA/
+accessibility checks and E-L1. Refresh on source/schema/guideline drift; production needs exact authority.
