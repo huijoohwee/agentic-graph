@@ -3,6 +3,7 @@ import { createPersistedCollectionDb, type PersistedCollectionDb, type Persisted
 import type { IndexedDbCollectionDb } from '@/lib/storage/indexedDbCollectionStore'
 import { normalizeWorkspacePath } from './path'
 import type { WorkspaceEntry } from './types'
+import { consolidateWebsiteCollections } from './websiteCollections'
 
 export const WORKSPACE_FS_LEGACY_KEY = 'kg:workspace-fs'
 export const WORKSPACE_FS_INDEXED_DB = 'kg:workspace-fs:indexeddb:v1'
@@ -134,6 +135,7 @@ export async function createWorkspaceFsDb(options: {
   try {
     assertDurable(db)
     await migrateLegacyEntries(db, options.legacyStorage === undefined ? getLocalStorage() : options.legacyStorage)
+    await consolidateWebsiteCollections(db)
     return { ...db, collections: workspaceCollections(db), atomicWrite: mutations => db.atomicWriteWithRevisions(mutations, []) }
   } catch (error) {
     await db.db.close()

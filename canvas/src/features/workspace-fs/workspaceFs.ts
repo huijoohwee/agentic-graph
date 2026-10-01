@@ -25,9 +25,7 @@ import {
   snapshotShadowEntries,
   upsertShadowEntry,
 } from './workspaceFsShadow'
-
 import { notifyWorkspaceFsDegraded } from './workspaceFsDegraded'
-
 let fsSingleton: WorkspaceFs | null = null
 let warnedDegraded = false
 let fsGeneration = 0
@@ -48,14 +46,13 @@ const waitConflictRetryTick = async (attemptIndex: number): Promise<void> => {
     setTimeout(resolve, delayMs)
   })
 }
-
 const MAX_RX_CONFLICT_RETRIES = 3
-
 export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGeneration): WorkspaceFs => {
   const run = async <T>(op: keyof WorkspaceFs, fn: (fs: WorkspaceFs) => Promise<T>): Promise<T> => {
     try {
       return await fn(inner)
     } catch (e: unknown) {
+      if (e instanceof Error && e.name === 'WebsiteCollectionMigrationError') throw e
       if (isRxConflictError(e)) {
         let conflictError: unknown = e
         for (let attempt = 0; attempt < MAX_RX_CONFLICT_RETRIES; attempt += 1) {
@@ -135,8 +132,8 @@ export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGe
       // A conditional save must never degrade into a shadow-memory write.
       return options && Object.hasOwn(options, 'expectedText') ? write(inner) : run('writeFileText', write)
     },
-    createFile: args =>
-      run('createFile', async fs => {
+    createFile: args => {
+      const create = async (fs: WorkspaceFs) => {
         const path = await fs.createFile(args)
         const p = normalizeWorkspacePath(path)
         upsertShadowEntry({
@@ -148,7 +145,10 @@ export const createResilientWorkspaceFs = (inner: WorkspaceFs, generation = fsGe
           updatedAtMs: Date.now(),
         })
         return path
-      }),
+      }
+      // Exact creation preserves durable collision results without a shadow copy.
+      return args.requireExactPath ? create(inner) : run('createFile', create)
+    },
     createFolder: args =>
       run('createFolder', async fs => {
         const path = await fs.createFolder(args)
@@ -181,6 +181,7 @@ export function getWorkspaceFs(): Promise<WorkspaceFs> {
       initialized = createResilientWorkspaceFs(createWorkspacePersistedFs(), generation)
       await initialized.ensureSeed()
     } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'WebsiteCollectionMigrationError') throw error
       const { createMemoryWorkspaceFs } = await import('./workspaceFsMemory.ts')
       const memory = createMemoryWorkspaceFs({ initialEntries: snapshotShadowEntries() })
       initialized = createResilientWorkspaceFs(memory, generation)

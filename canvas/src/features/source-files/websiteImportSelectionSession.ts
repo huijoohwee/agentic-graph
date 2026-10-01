@@ -15,9 +15,10 @@ export type WebsiteSelectionSession = {
   error: string
   limited: boolean
   query: string
-  restorable?: boolean
+  visibleCount?: number
   restored?: boolean
   importing?: boolean
+  importingUrl?: string
   selectAllOnDiscover?: boolean
 }
 
@@ -35,7 +36,7 @@ function draftStorage(): Storage | null {
 }
 
 function writeDraft(session: WebsiteSelectionSession | null): string {
-  if (!session?.restorable) return ''
+  if (!session) return ''
   const storage = draftStorage()
   if (!storage) return 'Browser storage is unavailable; this selection cannot be resumed after restart.'
   const saved: SavedSelection = { version: 1, url: session.url, sourcePath: session.sourcePath, pages: session.pages,
@@ -53,7 +54,7 @@ function clearDraft() {
   try { draftStorage()?.removeItem(draftKey) } catch { /* A blocked browser store cannot contain a new draft. */ }
 }
 
-/** Restore only explicit Source Files drafts; no network request or import occurs on startup. */
+/** Restore discovered pages and selection; no network request or import occurs on startup. */
 export function restoreWebsiteImportSelectionDraft() {
   if (useWebsiteImportSelectionSession.getState().session) return
   const storage = draftStorage()
@@ -65,7 +66,7 @@ export function restoreWebsiteImportSelectionDraft() {
     const saved = JSON.parse(raw) as SavedSelection
     const root = new URL(saved.url)
     if (saved.version !== 1 || !['http:', 'https:'].includes(root.protocol) || !Array.isArray(saved.pages)
-      || saved.pages.length > 500 || !Array.isArray(saved.selected) || !Array.isArray(saved.visited)
+      || saved.pages.length > 2_000 || !Array.isArray(saved.selected) || !Array.isArray(saved.visited)
       || typeof saved.query !== 'string' || saved.query.length > 500
       || (saved.sourcePath !== undefined && (typeof saved.sourcePath !== 'string' || !saved.sourcePath.startsWith('/')))) throw new Error('Saved selection is invalid.')
     const pages = saved.pages.map(page => {
@@ -77,13 +78,13 @@ export function restoreWebsiteImportSelectionDraft() {
     })
     const allowed = new Set(pages.map(page => page.url))
     const selected = saved.selected.map(url => new URL(url).href)
-    if (selected.length > 500 || selected.some(url => !allowed.has(url)) || saved.visited.length > 500
+    if (selected.length > 500 || selected.some(url => !allowed.has(url)) || saved.visited.length > 2_000
       || saved.visited.some(url => typeof url !== 'string' || !['http:', 'https:'].includes(new URL(url).protocol))) throw new Error('Saved page selection is invalid.')
     controller?.abort(); controller = null
     resolveSelection?.(null); resolveSelection = null
     useWebsiteImportSelectionSession.setState({ session: { id: ++sequence, url: root.href, sourcePath: saved.sourcePath,
       pages, selected: new Set(selected), visited: new Set(saved.visited), busy: false, error: '', limited: saved.limited === true,
-      query: saved.query, restorable: true, restored: true }, recoveryError: '' })
+      query: saved.query, restored: true }, recoveryError: '' })
   } catch {
     clearDraft()
     useWebsiteImportSelectionSession.setState({ recoveryError: 'The saved page selection could not be restored. Find pages again to continue.' })
@@ -102,9 +103,24 @@ export function finishWebsiteImportSelection(urls: string[] | null) {
   controller = null
   const resolve = resolveSelection
   resolveSelection = null
-  clearDraft()
-  useWebsiteImportSelectionSession.setState({ session: null, recoveryError: '' })
+  const current = useWebsiteImportSelectionSession.getState().session
+  const retained = urls?.length && current ? { ...current, selected: new Set(urls), busy: false, importing: true, restored: true } : null
+  if (!retained) clearDraft()
+  useWebsiteImportSelectionSession.setState({ session: retained, recoveryError: writeDraft(retained) })
   resolve?.(urls)
+}
+
+/** Cancel pending work without removing the discovered inventory from Source Files. */
+export function cancelWebsiteImportSelection() {
+  const current = useWebsiteImportSelectionSession.getState().session
+  if (!current || current.importing) return
+  controller?.abort(); controller = null
+  const resolve = resolveSelection
+  resolveSelection = null
+  const retained = { ...current, id: ++sequence, selected: new Set<string>(), busy: false,
+    error: '', restored: true, selectAllOnDiscover: false }
+  useWebsiteImportSelectionSession.setState({ session: retained, recoveryError: writeDraft(retained) })
+  resolve?.(null)
 }
 
 export async function discoverWebsiteSelection(url: string, selectAllOnDiscover = false) {
@@ -120,12 +136,12 @@ export async function discoverWebsiteSelection(url: string, selectAllOnDiscover 
     updateSession(session.id, current => {
       const merged = new Map(current.pages.map(page => [page.url, page]))
       result.pages.forEach(page => merged.set(page.url, page))
-      const pages = [...merged.values()].slice(0, 500)
+      const pages = [...merged.values()].slice(0, 2_000)
       return { ...current, pages,
-        selected: current.selectAllOnDiscover ? new Set([...current.selected, ...pages.map(page => page.url)]) : current.selected,
+        selected: current.selectAllOnDiscover ? new Set([...current.selected, ...pages.map(page => page.url)].slice(0, 500)) : current.selected,
         selectAllOnDiscover: false,
         error: current.selectAllOnDiscover && !result.pages.length ? 'No linked pages were found. Try the source link or a different website file.' : '',
-        visited: new Set([...current.visited, url]), limited: current.limited || result.limited || merged.size > 500 }
+        visited: new Set([...current.visited, url]), limited: current.limited || result.limited || merged.size > 2_000 }
     })
   } catch (failure) {
     if (!active.signal.aborted) updateSession(session.id, current => ({ ...current, selectAllOnDiscover: false, error: String((failure as Error).message || failure) }))
@@ -139,23 +155,44 @@ export function toggleWebsiteSelection(urls: string[], checked: boolean) {
   if (!session || session.importing) return
   updateSession(session.id, current => {
     const selected = new Set(current.selected)
-    urls.forEach(url => checked ? selected.add(url) : selected.delete(url))
+    const allowed = new Set(current.pages.map(page => page.url))
+    urls.forEach(url => { if (!checked) selected.delete(url); else if (allowed.has(url) && selected.size < 500) selected.add(url) })
     return { ...current, selected }
   })
 }
 
-export function setWebsiteSelectionQuery(query: string) {
-  const session = useWebsiteImportSelectionSession.getState().session
-  if (session) updateSession(session.id, current => ({ ...current, query }))
+export function websiteSelectionPagination(session: WebsiteSelectionSession) {
+  const query = session.query.trim().toLowerCase()
+  const matches = session.pages.filter(page => `${page.url} ${page.title || ''}`.toLowerCase().includes(query))
+  const visible = matches.slice(0, session.visibleCount || 100)
+  return { visible, matching: matches.length, remaining: matches.length - visible.length,
+    hiddenByFilter: session.pages.length - matches.length, filtered: !!query }
 }
 
-export function chooseWebsiteImportPages(url: string, sourcePath?: string, restorable = false, selectAllOnDiscover = false): Promise<string[] | null> {
+export function visibleWebsiteSelectionPages(session: WebsiteSelectionSession) {
+  return websiteSelectionPagination(session).visible
+}
+
+export function showMoreWebsiteSelectionPages() {
+  const session = useWebsiteImportSelectionSession.getState().session
+  if (!session || session.importing) return
+  const { remaining, hiddenByFilter } = websiteSelectionPagination(session)
+  if (remaining > 0) updateSession(session.id, current => ({ ...current, visibleCount: (current.visibleCount || 100) + 100 }))
+  else if (hiddenByFilter > 0) setWebsiteSelectionQuery('')
+}
+
+export function setWebsiteSelectionQuery(query: string) {
+  const session = useWebsiteImportSelectionSession.getState().session
+  if (session) updateSession(session.id, current => ({ ...current, query, visibleCount: 100 }))
+}
+
+export function chooseWebsiteImportPages(url: string, sourcePath?: string, selectAllOnDiscover = false): Promise<string[] | null> {
   const source = new URL(url)
   if (!['http:', 'https:'].includes(source.protocol)) throw new Error('Enter an HTTP or HTTPS website URL.')
   url = source.href
   finishWebsiteImportSelection(null)
   const result = new Promise<string[] | null>(resolve => { resolveSelection = resolve })
-  const session: WebsiteSelectionSession = { id: ++sequence, url, sourcePath, pages: [], selected: new Set(), visited: new Set(), busy: true, error: '', limited: false, query: '', restorable, selectAllOnDiscover }
+  const session: WebsiteSelectionSession = { id: ++sequence, url, sourcePath, pages: [], selected: new Set(), visited: new Set(), busy: true, error: '', limited: false, query: '', selectAllOnDiscover }
   useWebsiteImportSelectionSession.setState({ session, recoveryError: writeDraft(session) })
   openMarkdownWorkspaceEditorPane(useGraphStore.getState())
   requestMarkdownExplorerSourceFilesOpen(sourcePath)
@@ -164,31 +201,52 @@ export function chooseWebsiteImportPages(url: string, sourcePath?: string, resto
 }
 
 export async function importWebsiteFromSourceFiles(url: string, sourcePath?: string, beforeImport?: () => Promise<unknown>, options?: { selectAllOnDiscover?: boolean }) {
-  const selectedUrls = await chooseWebsiteImportPages(url, sourcePath, !beforeImport, options?.selectAllOnDiscover)
+  const selection = chooseWebsiteImportPages(url, sourcePath, options?.selectAllOnDiscover)
+  const session = useWebsiteImportSelectionSession.getState().session
+  const selectedUrls = await selection
   if (!selectedUrls?.length) return
-  return importSelectedWebsitePages(url, selectedUrls, beforeImport)
+  try {
+    const result = await importSelectedWebsitePages(url, selectedUrls, beforeImport)
+    if (session) updateSession(session.id, current => ({ ...current, importing: false, selected: new Set(), error: '' }))
+    return result
+  } catch (failure) {
+    if (session) updateSession(session.id, current => ({ ...current, importing: false, error: String((failure as Error).message || failure) }))
+    throw failure
+  }
 }
 
-export async function importSelectedWebsitePages(url: string, selectedUrls: string[], beforeImport?: () => Promise<unknown>) {
+export async function importSelectedWebsitePages(url: string, selectedUrls: string[], beforeImport?: () => Promise<unknown>, destinationPath?: string) {
   await beforeImport?.()
   const { getMarkdownWorkspaceActionBridge } = await import('@/features/markdown-explorer/workspaceActionBridge')
   const importWebsite = getMarkdownWorkspaceActionBridge().importWebsite
     ?? (await import('@/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction')).importWebsiteViaWorkspaceRuntime
   const { buildAutoWebsiteImportOptions } = await import('@/lib/toolbar/importUrlWebsiteMode')
-  const result = await importWebsite(url, { ...buildAutoWebsiteImportOptions(), selectedUrls })
+  const result = await importWebsite(url, { ...buildAutoWebsiteImportOptions(), selectedUrls, ...(destinationPath ? { destinationPath } : {}),
+    minPages: selectedUrls.length, maxPages: selectedUrls.length, source: 'invocation' })
   if (result && result.error) throw new Error(result.error)
   return result
 }
 
 export async function confirmRestoredWebsiteSelection(id: number, urls: string[]) {
+  return importSessionPages(id, urls, true)
+}
+
+/** Explicit page action leaves the batch chooser and other selections intact. */
+export async function importDiscoveredWebsitePage(id: number, url: string, destinationPath?: string) {
+  return importSessionPages(id, [url], false, destinationPath)
+}
+
+async function importSessionPages(id: number, urls: string[], consumeSelection: boolean, destinationPath?: string) {
   const session = useWebsiteImportSelectionSession.getState().session
-  if (session?.id !== id || !session.restored || session.importing || !urls.length) return
-  updateSession(id, current => ({ ...current, importing: true, error: '' }))
+  if (session?.id !== id || session.busy || session.importing || !urls.length || urls.length > 500
+    || (consumeSelection && !session.restored) || urls.some(url => !session.pages.some(page => page.url === url))) return
+  updateSession(id, current => ({ ...current, importing: true, importingUrl: urls.length === 1 ? urls[0] : undefined, error: '' }))
   try {
-    await importSelectedWebsitePages(session.url, urls)
-    if (useWebsiteImportSelectionSession.getState().session?.id === id) finishWebsiteImportSelection(null)
+    await importSelectedWebsitePages(session.url, urls, undefined, destinationPath)
+    updateSession(id, current => ({ ...current, importing: false, importingUrl: undefined,
+      selected: consumeSelection ? new Set() : current.selected, error: '' }))
   } catch (failure) {
-    updateSession(id, current => ({ ...current, importing: false, error: String((failure as Error).message || failure) }))
+    updateSession(id, current => ({ ...current, importing: false, importingUrl: undefined, error: String((failure as Error).message || failure) }))
     throw failure
   }
 }

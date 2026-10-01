@@ -355,7 +355,7 @@ export const MarkdownParagraphBlock = React.memo(function MarkdownParagraphBlock
       'webpage',
       <MediaWebpageSnapshot
         url={normalizedHref}
-        title="Webpage"
+        title={linkText || linkDomain || normalizedHref}
         presentationMode={opts.markdownPresentationMode}
         cardPreviewMode={opts.markdownCardPreviewMode}
       />,
