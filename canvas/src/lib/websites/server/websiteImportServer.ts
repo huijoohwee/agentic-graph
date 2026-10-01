@@ -4,7 +4,7 @@ import { clampInt, hashHex, normalizeUrl } from './websiteImportCore'
 import { NativeWebsiteCrawler } from './nativeWebsiteCrawler'
 import { handleWebsiteImportArtifact } from './websiteImportArtifactServer'
 import type { WebsiteImportManifestV1, WebsiteImportNode, WebsiteImportOptions, WebsiteImportProgress, WebsiteImportRuntime } from './websiteImportTypes'
-import { resolveWebsiteImportGenerationToken, resolveWebsiteImportWorkspaceRoot } from './websiteImportStorage'
+import { reserveWebsiteImportRun, resolveExistingWebsiteImportWorkspaceRoot, resolveWebsiteImportWorkspaceRoot } from './websiteImportStorage'
 import { extractTitleFromHtml, posixPathFromFsAbs, readJsonFile, readLocalTextWithLimit, resolveLocalInputPath, sanitizeImportId, toTreePath, writeJsonFileAtomic, WEBSITE_IMPORT_PAGE_MAX_BYTES } from './websiteImportServerHelpers'
 import { fetchTextWithLimit } from './websiteImportCore'
 import { handleWebsiteDiscovery, readWebsiteImportRequest, validateSelectedWebsiteUrls } from './websiteImportDiscovery'
@@ -29,7 +29,16 @@ export function createWebsiteImportHandler(args: { repoRoot: string }): import('
       await handleWebsiteDiscovery(req, res)
       return
     }
-    const workspaceResolved = resolveWebsiteImportWorkspaceRoot({ repoRoot: args.repoRoot, outputDirRel: parsed.searchParams.get('outputDirRel') })
+    const workspaceArgs = { repoRoot: args.repoRoot, outputDirRel: parsed.searchParams.get('outputDirRel') }
+    let workspaceResolved: ReturnType<typeof resolveWebsiteImportWorkspaceRoot>
+    try {
+      workspaceResolved = req.method === 'GET'
+        ? await resolveExistingWebsiteImportWorkspaceRoot({ ...workspaceArgs, importId: parsed.searchParams.get('importId') })
+        : resolveWebsiteImportWorkspaceRoot(workspaceArgs)
+    } catch {
+      res.statusCode = 500; res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ ok: false, error: 'Could not resolve the local import directory' })); return
+    }
     if (workspaceResolved.ok !== true) {
       res.statusCode = 400
       res.setHeader('Content-Type', 'application/json')
@@ -37,6 +46,20 @@ export function createWebsiteImportHandler(args: { repoRoot: string }): import('
       return
     }
     const workspaceAbs = workspaceResolved.abs
+    const claimRun = async (token: unknown, request: unknown) => {
+      try {
+        const existing = await resolveExistingWebsiteImportWorkspaceRoot({ ...workspaceArgs, importId: token })
+        if (existing.ok === true && existing.abs !== workspaceAbs) throw new Error('Import run belongs to an earlier output folder; start a fresh run')
+        return await reserveWebsiteImportRun(workspaceAbs, token, request)
+      }
+      catch (error) {
+        res.statusCode = 409
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ ok: false, error: String((error as Error).message || error) }))
+        return null
+      }
+    }
+
 
     if (req.method === 'GET' && pathname === '/__website_import/manifest') {
       const importId = sanitizeImportId(parsed.searchParams.get('importId') || '')
@@ -86,13 +109,23 @@ export function createWebsiteImportHandler(args: { repoRoot: string }): import('
       }
 
       const opt = (body.options && typeof body.options === 'object' ? (body.options as Record<string, unknown>) : {})
-      void opt
-      const importId = resolveWebsiteImportGenerationToken(opt.generationToken)
+      const claim = await claimRun(opt.generationToken, { kind: 'page', url: pageUrl })
+      if (!claim) return
+      const { importId } = claim
       const nodeId = hashHex(pageUrl).slice(0, 24)
       const importDirAbs = path.join(workspaceAbs, importId)
       const nodeDirAbs = path.join(importDirAbs, 'nodes', nodeId)
       const manifestPathAbs = path.join(importDirAbs, 'manifest.json')
       const errors: Array<{ url: string; error: string }> = []
+      if (claim.existing) {
+        const manifest = await readJsonFile<WebsiteImportManifestV1>(manifestPathAbs)
+        const ok = manifest?.status === 'done'
+        res.statusCode = ok ? 200 : 409
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ ok, importId, nodeId, url: pageUrl, ...(!ok ? { error: 'Import run is incomplete; use a fresh run to retry' } : {}) }))
+        return
+      }
+
 
       try {
         await fs.mkdir(nodeDirAbs, { recursive: true })
@@ -110,11 +143,7 @@ export function createWebsiteImportHandler(args: { repoRoot: string }): import('
           errors.push({ url: pageUrl, error: rawHtmlRes.error })
         } else {
           const html = String(rawHtmlRes.text || '')
-          try {
-            await fs.writeFile(path.join(nodeDirAbs, 'raw.html'), html, 'utf8')
-          } catch {
-            void 0
-          }
+          await fs.writeFile(path.join(nodeDirAbs, 'raw.html'), html, 'utf8')
         }
 
         const importedRawHtml = rawHtmlRes.ok === true ? String(rawHtmlRes.text || '') : ''
@@ -232,29 +261,19 @@ export function createWebsiteImportHandler(args: { repoRoot: string }): import('
         maxDownloadBytes: 0,
       }
 
-      const importId = resolveWebsiteImportGenerationToken(options.generationToken)
+      const { generationToken, ...requestOptions } = options
+      const claim = await claimRun(generationToken, { kind: 'crawl', rootUrl, options: requestOptions })
+      if (!claim) return
+      const { importId } = claim
       const importDirAbs = path.join(workspaceAbs, importId)
       const manifestPathAbs = path.join(importDirAbs, 'manifest.json')
-      const existingManifest = await readJsonFile<WebsiteImportManifestV1>(manifestPathAbs)
-      if (existingManifest && JSON.stringify(existingManifest.selectedUrls || null) !== JSON.stringify(selectedUrls || null)) {
-        res.statusCode = 409
-        res.setHeader('Content-Type', 'application/json')
-        res.end(JSON.stringify({ ok: false, error: 'This import run belongs to a different page selection. Start a fresh run.' }))
-        return
-      }
-      const existingProgressUpdatedAtMs = existingManifest?.progress?.updatedAtMs || existingManifest?.startedAtMs || 0
-      const existingRunIsFresh = Boolean(
-        existingManifest
-        && existingManifest.rootUrl === rootUrl
-        && (existingManifest.status === 'queued' || existingManifest.status === 'running')
-        && Date.now() - existingProgressUpdatedAtMs < 2 * 60_000,
-      )
-      if (existingManifest?.rootUrl === rootUrl && (existingManifest.status === 'done' || existingRunIsFresh)) {
-        const out: StartResponse = { ok: true, importId }
-        res.statusCode = 200
+      if (claim.existing) {
+        const manifest = await readJsonFile<WebsiteImportManifestV1>(manifestPathAbs)
+        const ok = Boolean(manifest && manifest.status !== 'failed')
+        res.statusCode = ok ? 200 : 409
         res.setHeader('Content-Type', 'application/json')
         res.setHeader('Cache-Control', 'no-store')
-        res.end(JSON.stringify(out))
+        res.end(JSON.stringify({ ok, importId, ...(!ok ? { error: 'Import run is incomplete; use a fresh run to retry' } : {}) }))
         return
       }
       const initialProgress: WebsiteImportProgress = {

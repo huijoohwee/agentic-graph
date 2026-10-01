@@ -9,12 +9,14 @@ export type MarkdownFileTreeContextMenuItem = {
   label: string
   tone?: 'default' | 'danger'
   disabled?: boolean
+  disabledReason?: string
   onSelect: () => void | Promise<void>
 }
 
 type BuildMarkdownFileTreeContextMenuItemsArgs = {
   entry: WorkspaceEntry
   readOnly?: boolean
+  unavailableReason?: string
   copyToClipboard: (text: string) => Promise<boolean>
   buildShareUrl?: (entry: WorkspaceEntry) => string | null | Promise<string | null>
   buildCanvasEmbedUrl?: (entry: WorkspaceEntry) => string | null | Promise<string | null>
@@ -103,88 +105,91 @@ export function buildMarkdownFileTreeContextMenuItems(
     },
   ]
 
-  if (args.entry.kind === 'file') {
-    items.splice(1, 0, {
-      key: 'shareCanvasEmbed',
-      label: 'Share canvas embed',
-      onSelect: () => {
-        args.onCanvasEmbedStart?.(args.entry)
-        const sharing = resolveAndShareUrl({
-          buildUrl: () => args.buildCanvasEmbedUrl?.(args.entry) || null,
-          copyToClipboard: args.copyToClipboard,
-          promptShareUrl: args.promptShareUrl,
-          onShareUrlError: args.onShareUrlError,
-          unavailableMessage: 'Canvas embed URL is unavailable because the file could not be published.',
-          onResolved: url => args.onCanvasEmbedReady?.(args.entry, url),
-          buildShareText: buildCanvasEmbedIframeMarkup,
-          allowNativeShare: false,
-          promptTitle: 'Copy canvas iframe embed',
-        })
+  items.splice(1, 0, {
+    key: 'shareCanvasEmbed',
+    label: 'Share canvas embed',
+    onSelect: () => {
+      args.onCanvasEmbedStart?.(args.entry)
+      const sharing = resolveAndShareUrl({
+        buildUrl: () => args.buildCanvasEmbedUrl?.(args.entry) || null,
+        copyToClipboard: args.copyToClipboard,
+        promptShareUrl: args.promptShareUrl,
+        onShareUrlError: args.onShareUrlError,
+        unavailableMessage: 'Canvas embed URL is unavailable because the file could not be published.',
+        onResolved: url => args.onCanvasEmbedReady?.(args.entry, url),
+        buildShareText: buildCanvasEmbedIframeMarkup,
+        allowNativeShare: false,
+        promptTitle: 'Copy canvas iframe embed',
+      })
+      args.closeContextMenu()
+      return sharing
+    },
+  })
+  items.push({
+    key: 'newFile',
+    label: 'New file',
+    onSelect: () => {
+      const parentPath = args.entry.kind === 'folder'
+        ? args.entry.path
+        : args.entry.parentPath || WORKSPACE_ROOT_PATH
+      args.onCreateNewFile?.(parentPath)
+      args.closeContextMenu()
+    },
+  })
+  items.push({
+    key: 'clear',
+    label: 'Clear',
+    onSelect: () => {
+      args.onClearFile?.(entryPath)
+      args.closeContextMenu()
+    },
+  })
+  items.push({
+    key: 'rename',
+    label: 'Rename',
+    onSelect: () => {
+      const current = String(args.entry.name || '').trim()
+      const next = promptRename(current)
+      if (!next || String(next).trim() === current) {
         args.closeContextMenu()
-        return sharing
-      },
-    })
+        return
+      }
+      args.onRenameEntry?.(entryPath, String(next).trim())
+      args.closeContextMenu()
+    },
+  })
+  items.push({
+    key: 'delete',
+    label: 'Delete',
+    tone: 'danger',
+    onSelect: async () => {
+      if (!await confirmDelete(entryPath)) {
+        args.closeContextMenu()
+        return
+      }
+      args.onDeleteEntry?.(entryPath)
+      args.closeContextMenu()
+    },
+  })
+  const fileRequired = args.entry.kind === 'file' ? undefined : 'Requires a file'
+  const protectedReason = isInitializationEntry ? 'Protected workspace entry' : undefined
+  const capabilityReasons: Partial<Record<MarkdownFileTreeContextMenuItem['key'], string | undefined>> = {
+    shareUrl: fileRequired || (!args.buildShareUrl ? 'Sharing is unavailable' : undefined),
+    shareCanvasEmbed: fileRequired || (!args.buildCanvasEmbedUrl ? 'Canvas sharing is unavailable' : undefined),
+    reveal: !args.onRevealInFinder ? 'Local reveal is unavailable' : undefined,
+    newFile: !args.onCreateNewFile ? 'File creation is unavailable' : undefined,
+    clear: fileRequired || (!args.onClearFile ? 'Clearing is unavailable' : undefined),
+    rename: protectedReason || (!args.onRenameEntry ? 'Renaming is unavailable' : undefined),
+    delete: protectedReason || (!args.onDeleteEntry ? 'Deletion is unavailable' : undefined),
   }
-
-  if (args.onCreateNewFile || args.readOnly) {
-    items.push({
-      key: 'newFile',
-      label: 'New file',
-      onSelect: () => {
-        const parentPath = args.entry.kind === 'folder'
-          ? args.entry.path
-          : args.entry.parentPath || WORKSPACE_ROOT_PATH
-        args.onCreateNewFile?.(parentPath)
-        args.closeContextMenu()
-      },
-    })
-  }
-
-  if (args.entry.kind === 'file' && (args.onClearFile || args.readOnly)) {
-    items.push({
-      key: 'clear',
-      label: 'Clear',
-      onSelect: () => {
-        args.onClearFile?.(entryPath)
-        args.closeContextMenu()
-      },
-    })
-  }
-
-  if (!isInitializationEntry) {
-    items.push({
-      key: 'rename',
-      label: 'Rename',
-      onSelect: () => {
-        const current = String(args.entry.name || '').trim()
-        const next = promptRename(current)
-        if (!next || String(next).trim() === current) {
-          args.closeContextMenu()
-          return
-        }
-        args.onRenameEntry?.(entryPath, String(next).trim())
-        args.closeContextMenu()
-      },
-    })
-    items.push({
-      key: 'delete',
-      label: 'Delete',
-      tone: 'danger',
-      onSelect: async () => {
-        if (!await confirmDelete(entryPath)) {
-          args.closeContextMenu()
-          return
-        }
-        args.onDeleteEntry?.(entryPath)
-        args.closeContextMenu()
-      },
-    })
-  }
-
-  // Read-only files may share an explicitly supplied replay; mutation stays disabled.
-  return args.readOnly ? items.map(item => item.key === 'copyPath' || item.key === 'copyRelativePath'
-    || (item.key === 'shareCanvasEmbed' && !!args.buildCanvasEmbedUrl)
-    ? item : { ...item, disabled: true, onSelect: () => {} }) : items
+  return items.map(item => {
+    const readOnlyAllowed = item.key === 'copyPath' || item.key === 'copyRelativePath'
+      || (item.key === 'shareCanvasEmbed' && !!args.buildCanvasEmbedUrl)
+    const disabledReason = args.unavailableReason
+      || (args.readOnly && !readOnlyAllowed ? 'Read-only observation' : undefined)
+      || capabilityReasons[item.key]
+    return disabledReason ? { ...item, disabled: true, disabledReason, onSelect: () => {} } : item
+  })
 }
 
 async function resolveAndShareUrl(args: {

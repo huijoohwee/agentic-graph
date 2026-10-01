@@ -395,3 +395,21 @@ export async function testCanvasSelectionSyncRetriesKeywordTextHighlightWhenSour
     bootstrap.restore()
   }
 }
+
+export function testCanvasSelectionResolvesImportedSourceIdentity() {
+  const source = 'https://docs.example.test/guide?edition=current'
+  const capture = (path: string, url: string): WorkspaceEntry => ({
+    kind: 'file', path, parentPath: '/', name: path.slice(1), updatedAtMs: 1,
+    text: `---\nkgWebpageUrl: "${url}"\n---\n# Imported document`,
+  })
+  const first = capture('/first.md', source)
+  const second = capture('/second.md', source)
+  const other = capture('/other.md', 'https://docs.example.test/guide?edition=older')
+  const resolve = (entries: WorkspaceEntry[], docKey = source, activePath?: string) =>
+    resolveCanvasMarkdownSyncTargetPath({ entries, docKey, activePath })
+  if (resolve([first, other], `${source}#L42`, other.path) !== first.path) throw new Error('source URL must open its saved document, not the active unrelated file')
+  if (resolve([first, second], source, second.path) !== second.path) throw new Error('matching active capture must retain its line identity')
+  if (resolve([first, second]) !== null) throw new Error('ambiguous captures must not select arbitrary content')
+  if (resolve([other], source, other.path) !== null) throw new Error('query variants are different source documents')
+  if (resolve([first], 'https://missing.example.test/guide', first.path) !== null) throw new Error('unrelated remote URL must not map to the active document')
+}

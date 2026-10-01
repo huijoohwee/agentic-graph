@@ -296,7 +296,7 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["workspaceFs.indexedDb.invalidLegacy","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceIndexedDbMigrationPreservesExistingAndInvalidBytes"],
   ["workspaceFs.indexedDb.writeFailure","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceIndexedDbWriteFailureAndMigrationRetry"],
   ["workspaceFs.indexedDb.conditionalTwoTabSave","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceConditionalSaveKeepsOneWinnerAcrossTabs"],
-  ["sourceFiles.ownership.summary.canonicalRoots","@/__tests__/sourceFilesOwnershipProjection.test","testSourceFilesOwnershipSummaryRendersCanonicalRoots"],
+  ["workspace.storage.ownership.canonicalRoots","@/__tests__/sourceFilesOwnershipProjection.test","testWorkspaceStorageOwnershipRendersCanonicalRoots"],
   ["sourceFiles.ownership.tree.workspaceSeeds","@/__tests__/sourceFilesOwnershipProjection.test","testSourceFilesTreeMarksAgenticGraphWorkspaceSeedAuthority"],
   ["sourceFiles.collaboration.repositoryAuthorityMismatch","@/__tests__/sourceFilesPocketBaseYjsCollaboration.test","testCollaborationSaveBridgeRejectsRepositoryTargetMismatch"],
   ["settings.documentStorage.offlinePreference","@/__tests__/workspaceStoreSyncSettings.test","testWorkspaceCloudSyncPreferenceDoesNotDisableLocalMirrorSettings"],

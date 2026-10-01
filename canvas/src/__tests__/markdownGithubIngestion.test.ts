@@ -120,7 +120,7 @@ export async function testMarkdownHtmlIframeIngestionProducesMediaNodes() {
     '',
     'Paragraph with HTML iframe:',
     '',
-    '<iframe src="https://www.ycombinator.com/library/8d-how-to-build-a-great-series-a-pitch-and-deck"></iframe>',
+    '<iframe src="https://docs.fixture.invalid/articles/sample-article"></iframe>',
     '',
   ].join('\n')
 
@@ -134,12 +134,12 @@ export async function testMarkdownHtmlIframeIngestionProducesMediaNodes() {
     const props = (n.properties || {}) as Record<string, unknown>
     const kind = String(props.media_kind || '')
     const url = String(props.iframe_url || props.media_url || props.url || '')
-    return kind === 'iframe' && /ycombinator\.com\/library\/8d/i.test(url)
+    return kind === 'iframe' && /docs\.fixture\.invalid\/articles\/sample-article/i.test(url)
   })
   if (iframeNodes.length === 0) throw new Error('expected iframe media node from html iframe tag')
   const iframeProps = (iframeNodes[0]?.properties || {}) as Record<string, unknown>
-  if (!String(iframeProps.media_url || '').includes('ycombinator.com/library/8d')) throw new Error('expected html iframe media_url alias')
-  if (!String(iframeProps.media || '').includes('ycombinator.com/library/8d')) throw new Error('expected html iframe generic media URL property')
+  if (!String(iframeProps.media_url || '').includes('docs.fixture.invalid/articles/sample-article')) throw new Error('expected html iframe media_url alias')
+  if (!String(iframeProps.media || '').includes('docs.fixture.invalid/articles/sample-article')) throw new Error('expected html iframe generic media URL property')
   if (iframeProps.media_interactive !== true) throw new Error('expected html iframe to stay interactive')
   await Promise.resolve()
 }

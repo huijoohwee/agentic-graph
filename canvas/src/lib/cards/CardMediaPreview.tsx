@@ -113,49 +113,6 @@ function getCardMediaSkeletonBlocks(variant: CardMediaSkeletonVariant, labelWidt
   ]
 }
 
-function getCardMediaEmptyBlocks(variant: CardMediaPlaceholderVariant): ReadonlyArray<SkeletonBlock> {
-  if (variant === 'text') {
-    return [
-      { width: '46%', height: 12, radius: 999 },
-      { width: '100%', height: 16, radius: 8 },
-      { width: '92%', height: 16, radius: 8 },
-      { width: '96%', minHeight: 58, flex: 1, radius: 12 },
-      { width: '64%', height: 10, radius: 999 },
-    ]
-  }
-  if (variant === 'image') {
-    return [
-      { width: '34%', height: 12, radius: 999 },
-      { width: '100%', minHeight: 80, flex: 1, radius: 14 },
-      { width: '48%', height: 10, radius: 999 },
-      { width: '66%', height: 10, radius: 999 },
-    ]
-  }
-  if (variant === 'video') {
-    return [
-      { width: '38%', height: 12, radius: 999 },
-      { width: '100%', minHeight: 80, flex: 1, radius: 14 },
-      { width: '28%', height: 8, radius: 999 },
-      { width: '52%', height: 8, radius: 999 },
-      { width: '40%', height: 8, radius: 999 },
-    ]
-  }
-  if (variant === 'audio') {
-    return [
-      { width: '36%', height: 12, radius: 999 },
-      { width: '92%', height: 18, radius: 999 },
-      { width: '100%', height: 44, radius: 14 },
-      { width: '52%', height: 8, radius: 999 },
-    ]
-  }
-  return [
-    { width: '42%', height: 12, radius: 999 },
-    { width: '100%', minHeight: 76, flex: 1, radius: 14 },
-    { width: '72%', height: 10, radius: 999 },
-    { width: '56%', height: 10, radius: 999 },
-  ]
-}
-
 function getCardMediaEmptyStatusLabel(variant: CardMediaPlaceholderVariant) {
   if (variant === 'text') return 'Waiting for text content'
   if (variant === 'image') return 'Waiting for image content'
@@ -245,76 +202,23 @@ export function CardMediaEmptyPlaceholder({
   variant: CardMediaPlaceholderVariant
   richMediaDataAttrs?: boolean
 }) {
-  const blocks = getCardMediaEmptyBlocks(variant)
   const statusLabel = getCardMediaEmptyStatusLabel(variant)
-
   return (
     <section
       aria-label="Card media empty state"
       role="status"
-      className="w-full h-full"
+      className="flex h-full w-full items-center justify-center overflow-hidden p-3"
       data-kg-card-media-empty-placeholder="1"
       data-kg-card-media-empty-variant={variant}
       data-kg-rich-media-empty-card-placeholder={richMediaDataAttrs ? '1' : undefined}
       data-kg-rich-media-empty-card-static={richMediaDataAttrs ? '1' : undefined}
       data-kg-rich-media-empty-card-variant={richMediaDataAttrs ? variant : undefined}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 14,
-        borderRadius: 'calc(var(--kg-media-panel-radius, 10px) * 0.8)',
-        background: 'transparent',
-        userSelect: 'none',
-        pointerEvents: 'none',
-        overflow: 'hidden',
-      }}
+      style={{ pointerEvents: 'auto', userSelect: 'none' }}
     >
-      <section
-        aria-hidden="true"
-        style={{
-          width: '100%',
-          maxWidth: 260,
-          minHeight: 132,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12,
-          padding: 14,
-          background: 'transparent',
-        }}
-      >
-        {blocks.map((block, index) => (
-          <span
-            key={`${variant}-${index}`}
-            style={{
-              display: 'block',
-              width: block.width,
-              height: block.height,
-              minHeight: block.minHeight,
-              flex: block.flex,
-              borderRadius: block.radius,
-              background: index === 0
-                ? 'rgba(148, 163, 184, 0.18)'
-                : 'rgba(148, 163, 184, 0.12)',
-            }}
-          />
-        ))}
-      </section>
-      <span
-        style={{
-          position: 'absolute',
-          width: 1,
-          height: 1,
-          padding: 0,
-          margin: -1,
-          overflow: 'hidden',
-          clip: 'rect(0, 0, 0, 0)',
-          whiteSpace: 'nowrap',
-          border: 0,
-        }}
-      >
-        {statusLabel}
-      </span>
+      <figure className="m-0 flex max-w-full flex-col items-center gap-2 text-center text-sm">
+        <ImageIcon role="img" aria-label={`${variant} content`} aria-hidden={false} className="h-6 w-6 shrink-0" />
+        <figcaption>{statusLabel}</figcaption>
+      </figure>
     </section>
   )
 }

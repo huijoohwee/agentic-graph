@@ -100,15 +100,16 @@ export function extractPriceSignalLabelsFromLine(line: string, opts?: { maxLabel
   const maxLabelLen = opts?.maxLabelLen ?? 52
   const s = String(line || '')
   const out: string[] = []
-  const priceRe = /(\$\s?\d{1,3}(?:,\d{3})*(?:\.\d+)?(?:\s*\/\s*(?:mo|month|yr|year))?)/gi
+  const priceRe = /(\$\s?\d+(?:,\d{3})*(?:\.\d+)?(?:\s?(?:billion|million|thousand|[kmbt])\b)?(?:\s*\/\s*(?:month|year|mo|yr))?)/gi
   let m: RegExpExecArray | null
   while ((m = priceRe.exec(s))) {
     const token = truncate(m[1] || '', maxLabelLen)
     if (!token) continue
     out.push(`[PRICE] ${token}`)
   }
+  const withoutCurrency = s.replace(priceRe, token => ' '.repeat(token.length))
   const perRe = /\b\d+(?:\.\d+)?\s*\/\s*(?:mo|month|yr|year)\b/gi
-  while ((m = perRe.exec(s))) {
+  while ((m = perRe.exec(withoutCurrency))) {
     if (typeof m.index === 'number' && m.index > 0 && s.charCodeAt(m.index - 1) === 36) continue
     const token = truncate(m[0] || '', maxLabelLen)
     if (!token) continue
@@ -121,7 +122,7 @@ export function extractTimeSignalLabelsFromLine(line: string, opts?: { maxLabelL
   const maxLabelLen = opts?.maxLabelLen ?? 52
   const s = String(line || '')
   const out: string[] = []
-  const timeRe = /\b\d{1,2}:\d{2}\b/g
+  const timeRe = /\b\d{1,3}:[0-5]\d(?::[0-5]\d)?\b/g
   let m: RegExpExecArray | null
   while ((m = timeRe.exec(s))) {
     const token = truncate(m[0] || '', maxLabelLen)
@@ -137,43 +138,64 @@ export function summarizeCategorizedSignalsFromMarkdown(markdown: string, opts?:
   price: Array<{ label: string; count: number }>
   time: Array<{ label: string; count: number }>
 } {
-  const maxLines = opts?.maxLines ?? 2000
-  const maxPerKind = opts?.maxPerKind ?? 6
-  const lines = String(markdown || '').split(/\r\n|\n|\r/).slice(0, maxLines)
+  const index = indexDocumentSignals(markdown, { maxLines: opts?.maxLines, maxGroups: opts?.maxPerKind ?? 6 })
+  const counts = (matches: DocumentSignalMatch[]) => matches.map(({ label, count }) => ({ label, count }))
+  return { nav: counts(index.nav), cta: counts(index.cta), price: counts(index.price), time: counts(index.time) }
+}
 
-  const countMap = (labels: string[]) => {
-    const map = new Map<string, number>()
-    for (const l of labels) map.set(l, (map.get(l) || 0) + 1)
-    return map
-  }
+export type DocumentSignalKind = 'nav' | 'cta' | 'price' | 'time'
+export type DocumentSignalMatch = { label: string; count: number; lines: number[] }
+export type DocumentSignalIndex = Record<DocumentSignalKind, DocumentSignalMatch[]> & { truncated: boolean; scannedLines: number }
 
-  const links: string[] = []
-  const prices: string[] = []
-  const times: string[] = []
-  for (const line of lines) {
-    links.push(...extractLinkSignalLabelsFromLine(line))
-    prices.push(...extractPriceSignalLabelsFromLine(line))
-    times.push(...extractTimeSignalLabelsFromLine(line))
-  }
-
-  const linkCounts = countMap(links)
-  const priceCounts = countMap(prices)
-  const timeCounts = countMap(times)
-
-  const pick = (m: Map<string, number>, prefix: string) => {
-    const items: Array<{ label: string; count: number }> = []
-    for (const [label, count] of m.entries()) {
-      if (!label.startsWith(prefix)) continue
-      items.push({ label, count })
+/** Bounded, source-addressable heuristics. Line numbers always refer to the original text. */
+export function indexDocumentSignals(markdown: string, opts?: { maxLines?: number; maxGroups?: number }): DocumentSignalIndex {
+  const boundedLimit = (value: number | undefined, cap: number) => typeof value === 'number' && Number.isFinite(value)
+    ? Math.max(0, Math.min(cap, Math.floor(value))) : cap
+  const maxChars = 2_000_000, maxLines = boundedLimit(opts?.maxLines, 8000), maxGroups = boundedLimit(opts?.maxGroups, 24), maxLocations = 10
+  const bounded = markdown.slice(0, maxChars)
+  const sourceLines = bounded.split(/\r\n|\n|\r/, maxLines + 1)
+  const maps = { nav: new Map<string, DocumentSignalMatch>(), cta: new Map<string, DocumentSignalMatch>(), price: new Map<string, DocumentSignalMatch>(), time: new Map<string, DocumentSignalMatch>() }
+  let frontmatter = /^\uFEFF?---\s*$/.test(sourceLines[0] || '')
+  let fence = '', fenceLength = 0
+  const scannedLines = Math.min(sourceLines.length, maxLines)
+  let omittedLocations = false, omittedLongLines = false
+  for (let index = 0; index < scannedLines; index++) {
+    const raw = sourceLines[index]
+    if (frontmatter) {
+      if (index > 0 && /^(---|\.\.\.)\s*$/.test(raw)) frontmatter = false
+      continue
     }
-    items.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
-    return items.slice(0, maxPerKind)
+    const marker = raw.match(/^ {0,3}(`{3,}|~{3,})/)
+    if (marker) {
+      if (!fence) { fence = marker[1][0]; fenceLength = marker[1].length }
+      else if (marker[1][0] === fence && marker[1].length >= fenceLength && !raw.slice(marker[0].length).trim()) fence = ''
+      continue
+    }
+    if (fence || /^( {4}|\t)/.test(raw)) continue
+    if (raw.length > 4096) { omittedLongLines = true; continue }
+    const content = raw.replace(/!\[[^\]]*\]\([^)]*\)/g, '').replace(/`[^`]*`/g, '')
+    const labels = extractLinkSignalLabelsFromLine(content)
+    const visible = content.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/https?:\/\/\S+|data:\S+/gi, '').replace(/<[^>]*>/g, '')
+    labels.push(...extractPriceSignalLabelsFromLine(visible), ...extractTimeSignalLabelsFromLine(visible))
+    for (const label of labels) {
+      const kind = label.slice(1, label.indexOf(']')).toLowerCase() as DocumentSignalKind
+      if (!(kind in maps)) continue
+      const map = maps[kind]
+      const item = map.get(label) || { label, count: 0, lines: [] }
+      item.count++
+      if (!item.lines.includes(index + 1)) {
+        if (item.lines.length < maxLocations) item.lines.push(index + 1)
+        else omittedLocations = true
+      }
+      map.set(label, item)
+    }
   }
-
-  return {
-    nav: pick(linkCounts, '[NAV]'),
-    cta: pick(linkCounts, '[CTA]'),
-    price: pick(priceCounts, '[PRICE]'),
-    time: pick(timeCounts, '[TIME]'),
+  let truncated = omittedLocations || omittedLongLines || markdown.length > maxChars || sourceLines.length > maxLines
+  const result = {} as DocumentSignalIndex
+  for (const kind of ['nav', 'cta', 'price', 'time'] as const) {
+    const all = [...maps[kind].values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+    if (all.length > maxGroups) truncated = true
+    result[kind] = all.slice(0, maxGroups)
   }
+  return { ...result, truncated, scannedLines }
 }

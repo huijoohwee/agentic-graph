@@ -1,6 +1,7 @@
 import React from 'react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
+import { ancestorPathsForWorkspacePath } from '@/features/workspace-fs/path'
 import { MarkdownExplorerSection } from './MarkdownExplorerSection'
 import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import { loadWorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
@@ -119,6 +120,33 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
   const tocSectionRef = React.useRef<HTMLElement | null>(null)
   const backlinksSectionRef = React.useRef<HTMLElement | null>(null)
   const [sectionHeightsPx, setSectionHeightsPx] = React.useState<MarkdownExplorerSectionHeightsPx | null>(null)
+  const [revealPath, setRevealPath] = React.useState<WorkspacePath | null>(null)
+  const revealActiveFile = () => {
+    if (!activePath) return
+    setSearch('')
+    setSourceFilesCollapsed(false)
+    for (const path of ancestorPathsForWorkspacePath(activePath)) {
+      if (!expandedPaths.has(path)) toggleExpanded(path)
+    }
+    setRevealPath(activePath)
+  }
+  React.useLayoutEffect(() => {
+    if (!revealPath) return
+    if (revealPath !== activePath) { setRevealPath(null); return }
+    if (search || sourceFilesCollapsed || loading) return
+    const row = Array.from(sourceFilesSectionRef.current?.querySelectorAll<HTMLButtonElement>('button[title]:not([aria-pressed])') ?? [])
+      .find(button => button.title === revealPath)
+    if (!row) return
+    row.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+    const section = sourceFilesSectionRef.current
+    const headerBottom = section?.querySelector('header')?.getBoundingClientRect().bottom
+    if (section && headerBottom != null) {
+      const overlap = headerBottom - row.getBoundingClientRect().top
+      if (overlap > 0) section.scrollTop -= overlap
+    }
+    row.focus({ preventScroll: true })
+    setRevealPath(null)
+  }, [revealPath, activePath, search, sourceFilesCollapsed, loading, filteredEntries, expandedPaths])
 
   const readCurrentSectionHeightsPx = React.useCallback((): MarkdownExplorerSectionHeightsPx | null => {
     return readMarkdownExplorerSectionHeightsPx({
@@ -194,8 +222,11 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
           onRefresh={handleRefresh}
           search={search}
           setSearch={setSearch}
+          activePath={activePath}
+          onRevealActiveFile={revealActiveFile}
         />
       </WorkspaceHeaderRow>
+
 
       <section className={UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_CONTENT_CLASSNAME} aria-label="Explorer content">
         <MarkdownExplorerSection
