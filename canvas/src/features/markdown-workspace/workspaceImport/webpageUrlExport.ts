@@ -3,7 +3,8 @@ import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
 import { ensureMarkdownFileName } from '@/features/workspace-fs/upsertWorkspaceTextDocument'
 import { ensureWorkspaceDocsMirrorFolder, upsertWorkspaceDocsMirrorText } from '@/features/workspace-fs/workspaceSeedProvider'
-import { readWorkspaceImportShareExportRootPathSetting } from '@/lib/workspace/workspaceStoreSyncSettings'
+import { resolveWebsiteImportNodeRelativeDocumentPath, safeWebsitePathSegment } from '@/lib/websites/websitePathUtils'
+import { saveWorkspaceWebsiteLocalCopy } from '@/features/workspace-fs/workspaceRevealInFileManager'
 import { readWorkspaceImportMarkdownSourceUrl, workspaceImportSourceUrlsMatch } from './sourceUrlIdentity'
 
 const hasWebpageSourceFrontmatter = (text: string): boolean =>
@@ -86,14 +87,14 @@ export const persistImportedWebpageUrlArtifact = async (args: {
   mirrorToHost?: boolean
 }): Promise<null | { exportMarkdownPath: string; removedPaths?: string[] }> => {
   if (!isImportedWebpageUrlArtifactEligible(args)) return null
-  const rootFolderPath = normalizeWorkspacePath(
-    String(args.rootFolderPath || '').trim() || readWorkspaceImportShareExportRootPathSetting(),
-  )
+  const explicitRoot = String(args.rootFolderPath || '').trim()
+  const urlPath = `/websites/${safeWebsitePathSegment(new URL(args.url).host)}/${resolveWebsiteImportNodeRelativeDocumentPath({ nodeUrl: args.url })}`
+  const rootFolderPath = normalizeWorkspacePath(explicitRoot || readParentPath(urlPath))
   if (!rootFolderPath || rootFolderPath === '/') return null
 
   const importedText = String(args.importedText || '').trimEnd() + '\n'
-  const fileName = ensureMarkdownFileName(args.importedName)
-  const primaryFileName = stripNumericCollisionSuffixFromMarkdownFileName(fileName) || fileName
+  const fileName = explicitRoot ? ensureMarkdownFileName(args.importedName) : urlPath.slice(urlPath.lastIndexOf('/') + 1)
+  const primaryFileName = explicitRoot ? stripNumericCollisionSuffixFromMarkdownFileName(fileName) || fileName : fileName
   const sourceMatchedPath = await findExistingWebpageArtifactBySourceUrl({ fs: args.fs, rootFolderPath, url: args.url })
   const canonicalPrimaryPath = normalizeWorkspacePath(`${rootFolderPath}/${primaryFileName}`)
   const primaryPath = sourceMatchedPath && !hasNumericCollisionSuffix(sourceMatchedPath) ? sourceMatchedPath : canonicalPrimaryPath
@@ -103,6 +104,7 @@ export const persistImportedWebpageUrlArtifact = async (args: {
   if (existing !== null) {
     const existingSourceUrl = readWorkspaceImportMarkdownSourceUrl(existing)
     if (!existingSourceUrl || !workspaceImportSourceUrlsMatch(args.url, existingSourceUrl)) {
+      if (!explicitRoot) throw new Error(`Website destination belongs to another document: ${primaryPath}`)
       await ensureWorkspaceFolderTreeIfMissing({ fs: args.fs, folderPath: rootFolderPath })
       exportMarkdownPath = await args.fs.createFile({
         parentPath: rootFolderPath,
@@ -115,22 +117,24 @@ export const persistImportedWebpageUrlArtifact = async (args: {
   if (exportMarkdownPath === primaryPath) {
     await ensureWorkspaceFolderTreeIfMissing({ fs: args.fs, folderPath: readParentPath(exportMarkdownPath) })
     if (existing === null) {
-      await args.fs.deleteEntry(primaryPath)
-      exportMarkdownPath = await args.fs.createFile({ parentPath: rootFolderPath, name: primaryFileName, text: importedText })
+      exportMarkdownPath = await args.fs.createFile({ parentPath: rootFolderPath, name: primaryFileName, text: importedText, requireExactPath: !explicitRoot })
     } else {
-      await args.fs.writeFileText(exportMarkdownPath, importedText)
+      await args.fs.writeFileText(exportMarkdownPath, importedText, { expectedText: existing })
     }
   }
 
-  const removedPaths = await removeDuplicateWebpageArtifactsBySourceUrl({
+  const removedPaths = explicitRoot ? await removeDuplicateWebpageArtifactsBySourceUrl({
     fs: args.fs,
     rootFolderPath,
     url: args.url,
     keepPath: exportMarkdownPath,
-  })
+  }) : []
   if (args.mirrorToHost !== false) {
-    await ensureWorkspaceDocsMirrorFolder({ workspacePath: readParentPath(exportMarkdownPath) })
-    await upsertWorkspaceDocsMirrorText({ workspacePath: exportMarkdownPath, text: importedText })
+    if (exportMarkdownPath.startsWith('/websites/')) await saveWorkspaceWebsiteLocalCopy(exportMarkdownPath, importedText)
+    else {
+      await ensureWorkspaceDocsMirrorFolder({ workspacePath: readParentPath(exportMarkdownPath) })
+      await upsertWorkspaceDocsMirrorText({ workspacePath: exportMarkdownPath, text: importedText })
+    }
   }
   return { exportMarkdownPath: normalizeWorkspacePath(exportMarkdownPath), ...(removedPaths.length > 0 ? { removedPaths } : {}) }
 }

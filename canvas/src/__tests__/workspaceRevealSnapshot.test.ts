@@ -103,7 +103,7 @@ test('independently revealed files and their folder share one stable local tree 
   const a = await saveWorkspaceRevealSnapshot(repo, first)
   const b = await saveWorkspaceRevealSnapshot(repo, second)
   assert.equal(path.dirname(a), path.dirname(b))
-  assert.equal(a, path.join(repo, 'revealed/current', first.workspacePath))
+  assert.equal(a, path.join(repo, first.workspacePath))
   assert.deepEqual((await fs.readdir(path.dirname(a))).sort(), ['first.md', 'second.md'])
   const folder = await saveWorkspaceRevealFolderSnapshot(repo, { workspacePath: parent,
     entries: [{ ...first, text: 'New first article', kind: 'file' }, { ...second, kind: 'file' }] })

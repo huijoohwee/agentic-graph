@@ -30,9 +30,8 @@ function capturedRoots(entries: readonly WorkspaceEntry[]): Map<string, string[]
   return new Map([...roots].map(([host, paths]) => [host, [...paths].sort()]))
 }
 
-export function resolveWebsiteCollectionRoot(entries: readonly WorkspaceEntry[], host: string, importId: string): string {
-  return capturedRoots(entries).get(safeWebsitePathSegment(host))?.[0]
-    || `/websites/${safeWebsitePathSegment(host)}/${safeWebsitePathSegment(importId)}`
+export function resolveWebsiteCollectionRoot(_entries: readonly WorkspaceEntry[], host: string, _importId: string): string {
+  return `/websites/${safeWebsitePathSegment(host)}`
 }
 
 export function resolvePreviousWorkspacePath(path: string, entries: Iterable<WorkspaceEntry>): string | null {
@@ -48,11 +47,11 @@ function retainPreviousPaths(entry: WorkspaceEntry, old: WorkspaceEntry): Worksp
 export function planWebsiteCollectionConsolidation(observed: readonly WorkspaceEntry[]) {
   const next = new Map(observed.map(entry => [entry.path, entry]))
   const moved = new Map<string, string>()
-  for (const roots of capturedRoots(observed).values()) {
+  for (const [host, roots] of capturedRoots(observed)) {
     const dated = roots.filter(root => timestampPattern.test(root.split('/').at(-1)!))
-    const targetRoot = dated[0]
-    if (!targetRoot || dated.length < 2) continue
-    for (const root of dated.slice(1)) {
+    const targetRoot = `/websites/${host}`
+    if (!dated.length) continue
+    for (const root of dated) {
       const capture = root.split('/').at(-1)!
       const descendants = observed.filter(entry => entry.path === root || entry.path.startsWith(`${root}/`))
         .sort((a, b) => a.path.length - b.path.length || a.path.localeCompare(b.path))

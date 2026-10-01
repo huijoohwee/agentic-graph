@@ -1,5 +1,6 @@
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import type { WorkspaceEntrySource, WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
+import { resolveWebsiteImportNodeRelativeDocumentPath, safeWebsitePathSegment } from '@/lib/websites/websitePathUtils'
 import { parseWebpageFrontmatterMeta } from '@/lib/markdown/frontmatter'
 import { visibleWebsiteSelectionPages, type WebsiteSelectionSession } from './websiteImportSelectionSession'
 
@@ -41,7 +42,12 @@ export function projectWebsiteImportTree(entries: WorkspaceEntry[], sources: Wor
   if (source) existingByUrl.set(session.url, source)
   const base = (source?.parentPath || `/websites/${encodeURIComponent(new URL(session.url).hostname)}`).replace(/\/$/, '')
   const destinationForUrl = (raw: string) => {
-    const url = new URL(raw), segments = url.pathname.split('/').filter(Boolean)
+    const url = new URL(raw)
+    if (base.startsWith('/websites/')) {
+      const stem = `/websites/${safeWebsitePathSegment(url.host)}/${resolveWebsiteImportNodeRelativeDocumentPath({ nodeUrl: raw })}`
+      return { stem, parent: stem.slice(0, stem.lastIndexOf('/')), leaf: stem.slice(stem.lastIndexOf('/') + 1, -3) }
+    }
+    const segments = url.pathname.split('/').filter(Boolean)
     const leaf = `${segments.pop() || 'index'}${url.search}`
     const parent = `${base}${segments.length ? '/' + segments.map(encodeURIComponent).join('/') : ''}`
     return { leaf, parent, stem: `${parent}/${encodeURIComponent(leaf)}.md` }

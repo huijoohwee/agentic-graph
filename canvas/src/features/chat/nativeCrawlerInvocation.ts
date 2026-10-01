@@ -207,8 +207,8 @@ export const executeNativeCrawlerInvocation = async (
   }
   const recoveredManifest = args?.recoveryOnly ? await readManifest() : null
   if (recoveredManifest?.status === 'done') {
-    const host = safeWebsitePathSegment(new URL(recoveredManifest.rootUrl || invocation.url).hostname)
-    const root = `/websites/${host}/${recoveredManifest.importId}`
+    const host = safeWebsitePathSegment(new URL(recoveredManifest.rootUrl || invocation.url).host)
+    const root = `/websites/${host}`
     return buildResult({
       createdPaths: [`${root}/website.crawl.canvas.md`, `${root}/website.sitemap.md`],
       manifest: recoveredManifest,

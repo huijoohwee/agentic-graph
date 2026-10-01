@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.43"
+version: "0.2.44"
 date: "2026-10-01"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -33,14 +33,22 @@ guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
 previous_document_version: "0.2.42"
-prd_revision: "0.2.43"
-tad_revision: "0.2.43"
-adr_revision: "0.2.43"
-mvp_revision: "0.2.43"
-gtm_revision: "0.2.43"
+prd_revision: "0.2.44"
+tad_revision: "0.2.44"
+adr_revision: "0.2.44"
+mvp_revision: "0.2.44"
+gtm_revision: "0.2.44"
 ---
 
 # Reference implementation: agentic-graph Native Web Import Crawler
+
+## 2026-10-01 stable website import destinations
+
+- PRD: `/fix #website-stable-paths @codex` imports each website page into one host/path document under the configured local `docs_/websites` root. New captures must not create timestamp folders or duplicate date-suffixed copies. Repeat imports update the same URL-owned document; local edits and unrelated files fail closed.
+- TAD / ADR: single-page and crawl imports share URL path identity and the existing guarded local-copy publisher. Local Dev awaits each final document write; remote browsers retain their workspace store. Concurrent page writes serialize through the existing guarded publisher, and refreshed host files project into the same workspace paths. Discovery and recovered crawl links use the same host/path identity. Reveal uses the same direct website tree. Private crawler run artifacts retain capture provenance, while workspace migration flattens proven dated collections and preserves conflicting historical bytes and previous-path navigation.
+- MVP: eleven existing runtime modules, affected tests and this joined contract; 30 active minutes, 40 KB textual diff, no new dependency or runtime module. Check repeat imports across capture IDs, distinct query URLs, old-path restoration, local copy readback, edited-file conflicts, concurrency and same-origin bounds. Verify the user-supplied URL live without adding its URL or content to product fixtures.
+- Observed: the live task UI imported the supplied URL twice and retained exactly one directly saved document with unchanged bytes. The URL, content and filesystem receipt remain outside repository fixtures.
+- GTM / rollback: remove repeated-folder navigation from the existing import flow; no revenue claim. Revert this scoped change to restore former destination behavior, preserving existing files. Protected source integration, Dev certification and production remain distinct receipt boundaries.
 
 ## 2026-10-01 Folder Import entry and scoped confirmation
 

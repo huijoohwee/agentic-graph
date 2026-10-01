@@ -4,6 +4,7 @@ import { createWorkspaceFolderTreeEnsurer } from '@/features/workspace-fs/ensure
 import { resolveInitializedWorkspaceFs } from '@/features/workspace-fs/workspaceFsInitialization'
 import { resolveWebsiteCollectionRoot } from '@/features/workspace-fs/websiteCollections'
 import { extractYamlFrontmatterHeaderBlock, readYamlFrontmatterValue } from '@/lib/markdown/frontmatter'
+import { saveWorkspaceWebsiteLocalCopy } from '@/features/workspace-fs/workspaceRevealInFileManager'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import { mapLimit } from '@/lib/async/mapLimit'
 import { resolveWebsiteImportNodeRelativeDocumentPath, safeWebsitePathSegment } from '@/lib/websites/websitePathUtils'
@@ -135,24 +136,20 @@ export async function createWebsiteImportWorkspaceWriter(args: {
     return await pending
   }
   const createCaptureFile = async (parentPath: string, name: string, text: string) => {
-    const reuseCapture = async (path: string, existing: string | null) => {
-      if (existing === text) return true
-      const header = existing && extractYamlFrontmatterHeaderBlock(existing)
-      if (!header || readYamlFrontmatterValue(header.rawBlock, 'kgWebsiteImportId') !== importId) return false
-      await fs.writeFileText(path, text, { expectedText: existing })
-      return true
-    }
-    let path = `${parentPath}/${name}`
+    const path = `${parentPath}/${name}`
     const existing = await fs.readFileText(path)
-    if (await reuseCapture(path, existing)) return path
-    if (existing !== null) {
-      const dot = name.lastIndexOf('.')
-      name = dot > 0 ? `${name.slice(0, dot)}--${safeWebsitePathSegment(importId)}${name.slice(dot)}`
-        : `${name}--${safeWebsitePathSegment(importId)}`
-      path = `${parentPath}/${name}`
-      if (await reuseCapture(path, await fs.readFileText(path))) return path
-    }
-    return fs.createFile({ parentPath, name, text })
+    if (existing !== null && existing !== text) {
+      const previous = extractYamlFrontmatterHeaderBlock(existing)
+      const incoming = extractYamlFrontmatterHeaderBlock(text)
+      const identity = (header: typeof previous) => header && (readYamlFrontmatterValue(header.rawBlock, 'kgWebpageUrl')
+        || readYamlFrontmatterValue(header.rawBlock, 'kgWebsiteRootUrl'))
+      if (!previous || !incoming || !identity(previous) || identity(previous) !== identity(incoming)) {
+        throw new Error(`Website destination belongs to another document: ${path}`)
+      }
+      await fs.writeFileText(path, text, { expectedText: existing })
+    } else if (existing === null) await fs.createFile({ parentPath, name, text, requireExactPath: true })
+    await saveWorkspaceWebsiteLocalCopy(path, text)
+    return path
   }
   const writeNodes = async (nodes: WebsiteImportNode[]) => {
     const freshNodes = nodes.filter(node => {
@@ -212,7 +209,6 @@ export async function createWebsiteImportWorkspaceWriter(args: {
         const primaryName = documentParts[documentParts.length - 1] || 'index.md'
         const folderParts = documentParts.slice(0, Math.max(0, documentParts.length - 1))
         const folderPath = folderParts.length ? await ensureFolderCached(`${rootFolder}/${folderParts.join('/')}`) : rootFolder
-        const nameBase = primaryName.replace(/\.md$/i, '') || 'index'
 
         const text = await (async () => {
           if (!generateArtifactDocs) return stubForNode(row.nodeUrl, row.nodeId)
@@ -266,6 +262,7 @@ export async function createWebsiteImportWorkspaceWriter(args: {
           const createdPath = destination
             ? await fs.createFile({ parentPath: folderPath, name, text, requireExactPath: true })
             : await createCaptureFile(folderPath, name, text)
+          if (destination) await saveWorkspaceWebsiteLocalCopy(createdPath, text)
           createdPaths.push(createdPath)
           const source = { path: createdPath, source: { kind: 'url' as const, url: row.nodeUrl, path: `workspace:${createdPath}` } }
           sources.push(source)
@@ -282,19 +279,8 @@ export async function createWebsiteImportWorkspaceWriter(args: {
           return source
         }
 
-        let source: WebsiteImportCreated['sources'][number] | null = null
-        try {
-          source = await tryCreate(primaryName)
-        } catch (error) {
-          if (destination || !isWebsiteImportJobCurrent(importJobRef, jobId)) throw error
-          const alt = `${nameBase}-${hashStringToHex(row.nodeUrl).slice(0, 6)}.md`
-          try {
-            source = await tryCreate(alt)
-          } catch {
-            void 0
-          }
-        }
-        if (source) await args.onFileCreated?.(source)
+        const source = await tryCreate(primaryName)
+        await args.onFileCreated?.(source)
       },
       {
         signal: ctrl.signal,
@@ -313,7 +299,7 @@ export async function createWebsiteImportWorkspaceWriter(args: {
       status.setStatusProgress('Writing', 1, 1)
       return { created: { createdPaths, sources }, host, canvasPath: null }
     }
-    try {
+    {
       const sitemapText = buildWebsiteSitemapMarkdown({
         rootUrl,
         importId,
@@ -332,12 +318,10 @@ export async function createWebsiteImportWorkspaceWriter(args: {
       const sitemapPath = await createCaptureFile(rootFolder, 'website.sitemap.md', sitemapText)
       createdPaths.unshift(sitemapPath)
       sources.unshift({ path: sitemapPath, source: { kind: 'url', url: rootUrl, path: `workspace:${sitemapPath}` } })
-    } catch {
-      void 0
     }
 
     let canvasPath: WorkspacePath | null = null
-    try {
+    {
       const canvasText = buildWebsiteCrawlCanvasMarkdown({
         rootUrl,
         importId,
@@ -348,8 +332,6 @@ export async function createWebsiteImportWorkspaceWriter(args: {
       canvasPath = await createCaptureFile(rootFolder, 'website.crawl.canvas.md', canvasText)
       createdPaths.unshift(canvasPath)
       sources.unshift({ path: canvasPath, source: { kind: 'url', url: rootUrl, path: `workspace:${canvasPath}` } })
-    } catch {
-      void 0
     }
 
     status.setStatusProgress('Writing', createdPaths.length, createdPaths.length)
