@@ -27,12 +27,12 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
     files.getByRole('button', { name: 'Folder .workspace', exact: true }).waitFor({ state: 'visible', timeout: remaining() }),
     manifest.waitFor({ state: 'visible', timeout: remaining() }),
   ])
-  // Empty authored roots are valid. Capture actual persisted paths rather than assuming a docs folder.
+  await verifyFullCanvas(page)
+  // The first editor mount must finish active-file materialization and native inventory reconciliation.
+  await waitForAuthoredWorkspaceSource(remaining())
+  // Empty authored roots are valid. Observe persisted paths only after the native refresh settles.
   const sourcePaths = await page.evaluate(async () => (await (await import('/src/features/workspace-fs/workspaceFs.ts'))
     .getWorkspaceFs()).listEntries().then(entries => entries.map(entry => entry.path).sort()))
-  await verifyFullCanvas(page)
-  // The first editor mount can still materialize its active file after base bootstrap completes.
-  await waitForAuthoredWorkspaceSource(remaining())
   const before = await authoredSnapshot()
   await manifest.click()
   const editor = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
