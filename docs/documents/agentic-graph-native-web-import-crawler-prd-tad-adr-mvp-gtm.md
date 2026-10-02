@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.52"
-date: "2026-10-02"
+version: "0.2.53"
+date: "2026-10-03"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.native-web-import-crawler"
@@ -31,26 +31,26 @@ worktree_id: "device-0232231d4a19--youtube-import-freeze"
 agent_id: "codex-01a0fd1c"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "c8ccb768b3f0020b85a22e0cc1d4ec3e02b0f1f0"
-previous_document_version: "0.2.51"
-prd_revision: "0.2.52"
-tad_revision: "0.2.52"
-adr_revision: "0.2.52"
-mvp_revision: "0.2.52"
-gtm_revision: "0.2.52"
+reviewed_source_revision: "52642d62e6a975d58d3280425f2e7f16d864775c"
+previous_document_version: "0.2.52"
+prd_revision: "0.2.53"
+tad_revision: "0.2.53"
+adr_revision: "0.2.53"
+mvp_revision: "0.2.53"
+gtm_revision: "0.2.53"
 ---
 # Reference implementation: agentic-graph Native Web Import Crawler
-## 2026-10-02 Bounded video URL import previews — revision 0.2.52
+## 2026-10-03 Restore authored VIDEO timeline thumbnails — revision 0.2.53
 
-**PRD / acceptance.** `/fix #youtube-import-freeze @codex` repairs Import URL hanging the local browser. Preserve source playback, full duration, available transcript content, all eight graph nodes and unavailable-transcript status. Import previews explicitly sample at most 16 frames; they do not claim exhaustive frame analysis. VCCs: inactive frame images request nothing; one extraction request remains pending per analysis panel; subframe clock ticks do not extract again; encoded media tokens cannot dominate semantic selection; oversized generated documents fail visibly before preview writes.
+**PRD / acceptance.** `/fix #youtube-timeline-thumbnails @codex-01a0fd1c` restores thumbnails inside the VIDEO bar of the imported Gantt-Timeline transport. Render validated authored frame samples when native video thumbnails are unavailable; preserve native-thumbnail precedence and keep generic empty source scaffolds blank. Retain the prior import repair's full duration, transcript, eight graph nodes, unavailable-transcript status, 16 preview samples and explicit 500,000-byte generated-document guard. Bounded previews do not claim exhaustive frame coverage.
 
-**TAD / grounding.** Native START admits a fresh task lane from protected source `c8ccb768b3f0020b85a22e0cc1d4ec3e02b0f1f0`; the original running lane and unrelated canonical seed edits remain preserved. Extend existing URL builder, video pipeline/frame sampling, frame-analysis projection and storyboard selection owners. Pipeline callers retain the existing 120-sample default; URL imports opt into 16. Generated preview Markdown stays below 500,000 UTF-8 bytes. Selection descriptors exclude opaque Gantt media payloads and are computed once per row/port, with each pair scored once. A versioned projection upgrades recognized app-owned saved frame-analysis fragments in memory, preserving surrounding HTML, annotations and stored source bytes; unknown fragments remain unchanged.
+**TAD / grounding.** Native successor/readmit retains the current checkout at published predecessor `52642d62e6a975d58d3280425f2e7f16d864775c`. That predecessor's protected Integration Gate passed; source merge remains a separate effect. VIDEO already carries authored `kgframes_` samples, but the source-set resolver rejects generic source labels and the ruler consumes tokens only for FBF. Extend the existing source-set resolver and shared authored-frame converter on four disjoint paths; leave the concurrently reserved ruler unchanged. Reuse the existing lazy thumbnail strip and matching source-time windows. Preserve the predecessor's selection descriptors, managed saved-panel projection and one pending extraction per analysis panel.
 
-**ADR / boundaries.** Keep authored diagram text and row identity intact while matching semantic labels. Preserve strict first-winner ties and both selection maps. Defer image sources until their sample is active, wait for pending extraction to settle and use sample timestamps rather than every timeline tick. Preserve annotation interpolation. Bound generated preview sampling and reject excess preview bytes without truncating transcripts or overwriting files; the existing importer may already have saved its source document. No package, service, paid resource, source-specific branch or new storage owner is added.
+**ADR / boundaries.** Decode authored VIDEO frame tokens through the existing thumbnail-source owner without generating synthetic FBF images for video. Prefer an exact native source match with actual thumbnails; otherwise retain pending source metadata, filter explicit or matching source windows before downsampling, and use at most 16 evenly distributed authored samples. Larger saved sets remain unchanged in storage. Preserve AUDIO, image, empty-placeholder and FBF behavior. Native START confirms disjoint reservations; no owner handoff or overlapping edit is required. No package, service, paid resource, source-specific branch or storage owner is added. The preview byte guard still does not claim atomicity for the existing source-import write.
 
-**MVP / evidence.** The original tab and a fresh same-origin tab stall; the isolated task preview completes the supplied import. Diagnosis measures parser about 160 ms, storyboard model 41 ms and selection bridge 788 ms; the final descriptor implementation preserves both maps and reduces that bridge to 2.2–17.2 ms in four paired runs. The preview fixture shrinks from 1,983,681 to about 448,000 bytes. Twelve focused regressions pass, including request budgets, duration, transcript/node retention, selection and byte rejection. The requested local endpoint imports the supplied video in about 11 seconds and remains interactive. Typechecking and all ten native owner checks pass after restoring ignored executable links to the existing lockfile-pinned compiler and correcting test-only DOM array types. The saved-panel upgrade receives final focused and native checks before publication. Exact candidate checks and local runtime readback remain separate receipts. Runtime URLs and captures stay outside tracked fixtures.
+**MVP / evidence.** Read-only diagnosis confirms valid provider tokens on VIDEO and FBF and a cached same-origin PNG; the watch page supplies no native media-file thumbnails. Two focused registered cases pass, exercising all eleven resolver regressions and actual ruler rendering; nine existing video pipeline, frame-analysis and import cases also pass. Coverage includes sixteen lazy provider images, real producer native-source IDs, empty/malformed tokens, eighty-sample legacy sets, trim filtering before downsampling, sparse trims and unchanged FBF. The reported saved import displays all sixteen loaded VIDEO images across 0:00–0:52 and retains them after reload at port 5190; a screenshot records the visible strip. Exact affected native validation is required before publication and its receipt is retained separately. Predecessor evidence remains twelve focused tests, ten native checks, about eleven-second import and 448 KB preview. Runtime URLs and captures stay outside tracked fixtures.
 
-**GTM / execution / rollback.** Buyer pain is a blocked local import and wasted CPU/extraction work; reuse the nearly built importer before adding capabilities. Initial 30-minute diagnostic sprint extends by one 15-minute repair checkpoint and a three-minute saved-panel follow-up; scope cap ten authored files, 40 KB changed-source text, no dependencies, source files below 600 lines and preview documents below 500 KB. CI waits are recorded separately. All five plan roles advance together to 0.2.52. Validate the requested local endpoint, publish the scoped source handoff and observe protected checks; local Dev, integration and Production require separate proof. Revert this candidate to restore former sampling/selection behavior, preserving saved imports and canonical seeds. Free/FOSS mobile/local/offline remains the target; physical-device parity, revenue and Production activation are unverified.
+**GTM / execution / rollback.** Buyer pain is a blank video editing bar despite successful import; reuse the existing resolver and lazy strip before adding capability. Budget: ten-minute diagnosis, thirty-minute repair, six source/test files plus this joined plan, 40 KB changed source, no dependencies and files below 600 lines. Concurrent admission and external CI waits are recorded as dependencies with recheck conditions. All five roles advance together to 0.2.53. Publish the exact source handoff after local proof and affected checks; Dev runtime, protected integration and Production retain separate receipts. Revert only this successor to restore prior VIDEO thumbnail selection while preserving the import freeze repair, stored documents and unrelated canonical seeds. Free/FOSS mobile/local/offline remains the target; physical-device parity, revenue and Production activation are unverified.
 
 ## 2026-10-01 stable website import destinations
 
