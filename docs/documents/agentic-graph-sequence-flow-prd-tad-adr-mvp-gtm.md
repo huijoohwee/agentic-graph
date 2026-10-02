@@ -65,7 +65,10 @@ the checked wiring is applied. Live findings required corrections in five alread
 feature modules and the existing sequence test, within the original 29-module/120 KiB cap.
 The final source handoff pass estimates 15 active minutes with a 25-minute checkpoint,
 no runtime expansion, one evidence update ≤20 KiB and no serving tokens/spend.
-No runtime candidate is published at this checkpoint.
+Native publication committed 829ea93baf2a2e92d1e4800a4adbbabe04225a73, then
+refused its stale protected base. A source-preserving merge of protected main produced
+e6d027a9a7247d69f6a49818bebb6c41ff5bfce8 with no conflicts. Native readmission
+passed at that exact head; no runtime candidate is remotely published at this checkpoint.
 
 ## PRD
 
@@ -503,9 +506,9 @@ host boundaries; pure parser code is the small always-load delta required for in
 | Implementation evidence | Result and practical limit |
 |---|---|
 | I1 domain suite | `TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test canvas/src/__tests__/sequenceFlow.test.ts`: 11/11 pass, including fidelity, exact SVG binding, graph round-trip identity, limits, nested branches, millisecond intervals, queued Mermaid cancellation/recovery, stale RAF rejection, note selection, branch/source callback fences and distinct numbered topology connections. |
-| I2 native build types | Typecheck passed after wiring and live repairs; final no-emit build exited 0. Existing pinned canvas dependency directories are reused through ignored local links; no package added. Log: `/tmp/sequence-wired-final-typecheck.log`. |
+| I2 native build types | Typecheck passed after wiring and live repairs; final no-emit build exited 0. Existing pinned canvas dependency directories are reused through ignored local links; no package added. After protected-base refresh, `npm --prefix canvas run typecheck` also passed in `/tmp/sequence-refreshed-typecheck.log`. |
 | I3 source hygiene | Changed-file hygiene and `git diff --check` pass. The pre-existing 1,823-line routing test was corrected without line growth; every new module is below 600 lines. Log: `/tmp/sequence-wired-hygiene.log`. |
-| I4 baseline regression | Canvas View / Timeline / Mermaid / panel selectors: 47/47 pass with dictionary revision e0ef770860905830157e64c455f0a342084b6d25. Corrected one stale assertion to read its extracted icon owner. Log: `/tmp/sequence-wired-regressions.log`; bounded local proof, not required candidate CI. |
+| I4 baseline regression | Canvas View / Timeline / Mermaid / panel selectors: 47/47 pass with dictionary revision e0ef770860905830157e64c455f0a342084b6d25. Corrected one stale assertion to read its extracted icon owner. After protected-base refresh the same 47/47 pass in `/tmp/sequence-refreshed-regressions.log`; bounded local proof, not required candidate CI. |
 | I5 native owner handoff | PR #1489 exact head b55cdb1cdd0d72a6141ec05c162ccb93edc4a0e8 passed protected Integration Gate run 36977601824 and merged as 305536912ea5f6995c37396bce65902361b33693. Native complete now records sourceIntegrated=true, canonicalCurrent=true, cleanupSatisfied=true, laneDisposition=quarantined and missionState=source_complete. Exact owner message releases the seven paths. Receipt: `/tmp/autonomous-graph-complete-synced.log`. |
 | I6 host admission and wiring | Native readmission at own HEAD 79c9add872c02e7f8cc480855946800db4360bdb passed with writeDigest a545a59dc2b4550610a9680603f3c4ed7b85ba8d2862f71950254720911ae98b. All seven protected input blobs match the retained checked patch, which is now applied (SHA256 db3a80dc11be0eaeb2d12ae71e8151ca4f60e81443f555bbb6bfb0351fc6b4c2). Shared registry, host, invocation/menu and initial UI state expose both choices. |
 | I7 live desktop and tools | At 127.0.0.1:5190, both menu entries are visible and both WebMCP option IDs invoke the same host. Native Connections exposes four participants/eight distinct events; Lifelines toggles without seeking. Mermaid binds eight accessible event buttons. Branch and playhead survive native/notation switches. Screenshot: `sequence-menu-fixed.jpg`. |
@@ -513,7 +516,8 @@ host boundaries; pure parser code is the small always-load delta required for in
 | I9 mobile and reduced motion | 390×844 has document/body width 390 and no page horizontal overflow; header actions are at least 44×44px. Canvas retains internal horizontal pan. Reduced-motion emulation produced zero moving pulses. 1280×800 and keyboard selection/seek passed. Screenshot: `sequence-mobile-live.jpg`; temporary motion/viewport overrides are restored. |
 | I10 production build | Build passed in 39.15s; new UI chunks are SequenceInspector 2.74 kB, SequenceTimeline 5.28 kB and SequenceCanvas 14.93 kB. Existing unrelated app chunks exceed 500 kB; no whole-app budget parity is claimed. Log: `/tmp/sequence-wired-build.log`. Working-tree build identifies own base 79c9add; it is not an exact release receipt. |
 | I11 offline and remaining matrix | Built preview at 127.0.0.1:5200/agentic-graph/ renders the saved local demo. Disconnected reload failed with ERR_INTERNET_DISCONNECTED; the page reports data-kg-offline-ready=0, so Q6 remains unproved. Browser recovery retained the saved authored demo and eight event buttons. Fresh normal-load diagnostics were empty; changing the hook scope through HMR caused one transient update-depth error that cleared after reload. Source-edit race UI, negative-input UI, unknown-ID rejection UI, 200-event frame measurement and full required candidate CI remain unverified. |
-| I12 validation selection | Native check:plan selected 10 affected partitions (standard prerequisite plus nine extended), no unmatched paths and no broad reason, with a one-hour run budget. This is selection evidence, not passing CI. Log: `/tmp/sequence-validation-plan.log`. |
+| I12 refreshed source | The unpublished feature commit is retained in merge e6d027a9a7247d69f6a49818bebb6c41ff5bfce8, with protected main 305536912ea5f6995c37396bce65902361b33693 as an ancestor. Native readmission passed at this exact head with the same writeDigest. Fresh live preview at 5190 again shows both menu entries and eight event buttons; selecting native view and Next step synchronizes Create payment request at 1s. Screenshot `sequence-menu-fixed.jpg` was refreshed from this source. |
+| I13 validation selection | Native check:plan selected 10 affected partitions (standard prerequisite plus nine extended), no unmatched paths and no broad reason, with a one-hour run budget. This is selection evidence, not passing CI. Log: `/tmp/sequence-validation-plan.log`. |
 
 
 Native implementation: [sequenceModel.ts](../../canvas/src/features/sequence/sequenceModel.ts),
@@ -553,7 +557,6 @@ Tracked authoring majors: 4. Full authoring artifact-bearing-rule coverage has n
 alignment verdict is claimed. Diagram/canvas-domain checks prove only their selected
 structural contract; runtime, licensing, demand and delivery remain separate checks.
 
-Next: source-preserving protected-base refresh and native publication of this bounded
-implementation; required CI and remaining VCC observations then determine acceptance.
+Next: native publication of this bounded refreshed implementation; required CI and remaining VCC observations then determine acceptance.
 Recheck every affected receipt on source drift. Preserve lane/source bytes if publication
 or lifecycle effects are blocked. Production remains behind its separate protected owner.
