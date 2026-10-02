@@ -17,7 +17,7 @@ export const UI_COLOR_DANGER_RED_BG = UI_INTENT_TOKENS.danger.bg
 
 export const UI_COLOR_DANGER_RED_TEXT = UI_INTENT_TOKENS.danger.text
 
-export const uiPrimaryIconActiveClassName = `${UI_COLOR_PRIMARY_BLUE} ${UI_COLOR_PRIMARY_BLUE_BG}`
+export const uiPrimaryIconActiveClassName = UI_THEME_TOKENS.button.selectedIcon
 
 export const uiPrimaryIconInactiveClassName = UI_THEME_TOKENS.icon.color
 

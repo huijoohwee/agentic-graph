@@ -15,7 +15,7 @@ export function readInlineMediaCommandThumbnailClassName(args: {
   const isInline = args.variant === 'inline'
   const base = isInline
     ? `m-0 h-3 w-3 shrink-0 rounded-full border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.input.bg}`
-    : `m-0 h-8 w-14 shrink-0 rounded-full border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.input.bg} shadow-sm`
+    : `m-0 h-8 w-14 shrink-0 rounded-full border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.input.bg} shadow-none`
   if (args.hasThumbnail) return `relative flex overflow-hidden ${base} p-[2px]`
   return `grid place-items-center ${base} ${UI_THEME_TOKENS.text.tertiary}`
 }
@@ -44,7 +44,7 @@ export function InlineMediaCommandThumbnail(props: {
         />
         {kind === 'video' ? (
           <span className="absolute inset-0 grid place-items-center bg-black/15 text-white">
-            <Video className={`${iconClassName} drop-shadow`} strokeWidth={1.8} />
+            <Video className={`${iconClassName} drop-shadow`} />
           </span>
         ) : null}
       </>
@@ -69,10 +69,10 @@ export function InlineMediaCommandThumbnail(props: {
     )
   }
   const icon = kind === 'video'
-    ? <Video className={iconClassName} strokeWidth={1.8} />
+    ? <Video className={iconClassName} />
     : kind === 'audio'
-      ? <FileAudio className={iconClassName} strokeWidth={1.8} />
-      : <Image className={iconClassName} strokeWidth={1.8} />
+      ? <FileAudio className={iconClassName} />
+      : <Image className={iconClassName} />
   return isInline ? (
     <span
       className={readInlineMediaCommandThumbnailClassName({ hasThumbnail: false, kind, variant: 'inline' })}

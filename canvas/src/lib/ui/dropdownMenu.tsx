@@ -5,7 +5,7 @@ import { uiSelectableRowClassName } from 'grph-shared/ui/selectedRowClasses'
 
 /** One DOM menu surface for toolbar and field dropdowns; options stay hit-testable. */
 export function DropdownMenuSurface({ className = '', ...props }: React.HTMLAttributes<HTMLMenuElement>) {
-  return <menu {...props} className={`kg-toolbar-dropdown-menu p-1 flex flex-col gap-1 list-none m-0 ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.border.outline} rounded shadow-md ${className}`} />
+  return <menu {...props} className={`kg-toolbar-dropdown-menu p-1 flex flex-col gap-1 list-none m-0 ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.border.outline} rounded ${UI_THEME_TOKENS.shadow.overlay} ${className}`} />
 }
 
 export function dropdownMenuOptionClassName(active: boolean): string {

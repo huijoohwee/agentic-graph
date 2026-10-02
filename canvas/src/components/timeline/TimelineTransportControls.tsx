@@ -236,7 +236,7 @@ export function TimelineTransportControls(props: TimelineTransportControlsProps)
           disabled={disabled}
           onClick={onTogglePlayback}
         >
-          {playing ? <Pause className="h-4 w-4" strokeWidth={2} role="img" aria-label="Pause" /> : <Play className="h-4 w-4" strokeWidth={2} role="img" aria-label="Play" />}
+          {playing ? <Pause className="h-4 w-4" role="img" aria-label="Pause" /> : <Play className="h-4 w-4" role="img" aria-label="Play" />}
         </button>
         <section className="time timeline-timecode" aria-live="polite">
           <time className="timeline-timecode-current">{currentLabel}</time>

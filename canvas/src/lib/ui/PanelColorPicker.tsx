@@ -52,7 +52,7 @@ export function PanelColorPicker({ value, onValueChange, className = '', disable
     </button>
     {open && <AnchorOverlay anchorRef={anchor} open onClose={() => close()} align="bottom-right">
       <section id={`${id}-palette`} role="dialog" aria-modal="false" aria-label={`${label} palette`}
-        className={`kg-color-palette rounded border shadow-md ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border} ${panelTextClass}`}
+        className={`kg-color-palette rounded border shadow-[var(--kg-shadow-overlay)] ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border} ${panelTextClass}`}
         onClick={event => event.stopPropagation()} onPointerDown={event => event.stopPropagation()}
         onKeyDown={event => { event.stopPropagation(); if (event.key === 'Escape') { event.preventDefault(); close(true) } }}>
         <header className="flex min-w-0 items-center gap-2"><Palette role="img" aria-label="Colour palette" className="h-4 w-4 shrink-0" /><strong className="min-w-0 flex-1 truncate">{label}</strong><button type="button" className="App-toolbar__btn" onClick={() => close(true)}>Done</button></header>

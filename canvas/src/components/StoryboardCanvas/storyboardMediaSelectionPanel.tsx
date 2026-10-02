@@ -428,7 +428,7 @@ function StoryboardMediaSelectionSlotView(props: {
           }}
           {...dropTargetProps}
         >
-          <Plus className="h-4 w-4" strokeWidth={1.7} aria-hidden="true" />
+          <Plus className="h-4 w-4" aria-hidden="true" />
         </button>
       )}
     </figure>
@@ -504,7 +504,7 @@ export function StoryboardMediaSelectionPanel(props: {
               props.onAddMedia()
             }}
           >
-            <Plus className="h-4 w-4" strokeWidth={1.7} aria-hidden="true" />
+            <Plus className="h-4 w-4" aria-hidden="true" />
             <span className="sr-only">Add media</span>
           </button>
           <section className="min-h-0 rounded-lg border border-transparent" aria-hidden="true" />

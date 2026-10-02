@@ -101,7 +101,7 @@
   border: var(--kg-surface-border);
   border-radius: 6px;
   background: rgb(255 255 255 / 0.98);
-  box-shadow: 0 10px 24px rgb(15 23 42 / 0.16);
+  box-shadow: var(--kg-shadow-overlay);
   padding: 4px;
 }
 .timeline-tool-menu--clip .timeline-tool-menu-panel {

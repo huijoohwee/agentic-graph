@@ -12,7 +12,7 @@ export const getKanbanCardDragVisualState = (args: {
       className: 'scale-[1.01] -rotate-[1deg] opacity-95 z-20 cursor-grabbing',
       style: {
         borderColor: UI_COLOR_PRIMARY_BLUE_INDICATOR,
-        boxShadow: `0 18px 38px rgba(15, 23, 42, 0.18), 0 0 0 1px ${UI_COLOR_PRIMARY_BLUE_INDICATOR}`,
+        boxShadow: `var(--kg-shadow-raised), 0 0 0 1px ${UI_COLOR_PRIMARY_BLUE_INDICATOR}`,
       },
     }
   }
@@ -21,7 +21,7 @@ export const getKanbanCardDragVisualState = (args: {
       className: 'translate-y-0',
       style: {
         borderColor: UI_COLOR_PRIMARY_BLUE_INDICATOR,
-        boxShadow: `0 10px 24px rgba(15, 23, 42, 0.12), 0 0 0 1px ${UI_COLOR_PRIMARY_BLUE_INDICATOR}`,
+        boxShadow: `var(--kg-shadow-raised), 0 0 0 1px ${UI_COLOR_PRIMARY_BLUE_INDICATOR}`,
       },
     }
   }
@@ -50,16 +50,16 @@ export const getKanbanLaneDragVisualState = (args: {
 }): { className: string; style?: React.CSSProperties } => {
   if (args.isDragOver) {
     return {
-      className: 'shadow-md',
+      className: 'shadow-[var(--kg-shadow-raised)]',
       style: {
         borderColor: UI_COLOR_PRIMARY_BLUE_INDICATOR,
-        boxShadow: `0 0 0 1px ${UI_COLOR_PRIMARY_BLUE_INDICATOR}, 0 14px 30px rgba(15, 23, 42, 0.10)`,
+        boxShadow: `0 0 0 1px ${UI_COLOR_PRIMARY_BLUE_INDICATOR}, var(--kg-shadow-raised)`,
       },
     }
   }
   if (args.isCommitFlash) {
     return {
-      className: 'shadow-md',
+      className: 'shadow-[var(--kg-shadow-raised)]',
       style: {
         borderColor: UI_COLOR_PRIMARY_BLUE_INDICATOR,
         boxShadow: `0 0 0 1px ${UI_COLOR_PRIMARY_BLUE_INDICATOR}, 0 0 0 8px ${UI_COLOR_PRIMARY_BLUE_INDICATOR}1f`,
@@ -68,7 +68,7 @@ export const getKanbanLaneDragVisualState = (args: {
   }
   if (args.isSourceLane) {
     return {
-      className: 'shadow-sm opacity-95',
+      className: 'shadow-[var(--kg-shadow-raised)] opacity-95',
       style: {
         boxShadow: `0 0 0 1px ${UI_COLOR_PRIMARY_BLUE_INDICATOR}66 inset`,
       },

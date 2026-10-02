@@ -39,7 +39,7 @@ export function MarkdownBlockContainerCommentPreviewOverlay(props: {
       align="bottom-center"
       autoFocus={false}
       className={[
-        `${UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_CLASSNAME} overflow-hidden rounded border shadow-lg`,
+        `${UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_CLASSNAME} overflow-hidden rounded border shadow-[var(--kg-shadow-overlay)]`,
         UI_THEME_TOKENS.panel.bg,
         UI_THEME_TOKENS.panel.border,
       ].join(' ')}

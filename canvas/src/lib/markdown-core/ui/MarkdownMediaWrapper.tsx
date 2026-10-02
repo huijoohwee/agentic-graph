@@ -165,7 +165,7 @@ export const MediaWrapper = ({
           title="Download media"
           aria-label="Download media"
           className={[
-            `${UI_RESPONSIVE_MEDIA_OVERLAY_ACTION_DEFAULT_CLASSNAME} absolute right-2 top-2 z-10 rounded border shadow-sm`,
+            `${UI_RESPONSIVE_MEDIA_OVERLAY_ACTION_DEFAULT_CLASSNAME} absolute right-2 top-2 z-10 rounded border shadow-none`,
             UI_THEME_TOKENS.panel.border,
             UI_THEME_TOKENS.panel.bg,
             UI_THEME_TOKENS.text.primary,
@@ -175,7 +175,7 @@ export const MediaWrapper = ({
             try { event.stopPropagation() } catch { void 0 }
           }}
         >
-          <Download className={UI_RESPONSIVE_MEDIA_OVERLAY_ACTION_ICON_CLASSNAME} strokeWidth={1.8} aria-hidden="true" />
+          <Download className={UI_RESPONSIVE_MEDIA_OVERLAY_ACTION_ICON_CLASSNAME} aria-hidden="true" />
         </a>
       ) : null}
     </figure>

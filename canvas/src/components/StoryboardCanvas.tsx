@@ -1933,7 +1933,7 @@ export default function StoryboardCanvas({
                 key={lane.id}
                 data-kg-kanban-group="1"
                 className={[
-                  'flex shrink-0 flex-col overflow-hidden rounded-2xl border shadow-sm',
+                  'flex shrink-0 flex-col overflow-hidden rounded-2xl border shadow-none',
                   shouldUseFullHeightFixedLanes ? `h-full ${UI_RESPONSIVE_KANBAN_LANE_CLASSNAME}` : `max-h-full ${storyboardLaneWidthClassName}`,
                   getKanbanLaneDragVisualState({
                     hasActiveDrag: storyboardDrag.draggingRowId !== null,
@@ -2197,7 +2197,7 @@ export default function StoryboardCanvas({
                           ) : null}
                           <article
                           className={[
-                            'group overflow-hidden rounded-2xl border bg-white shadow-sm transition-transform duration-150 select-none',
+                            'group overflow-hidden rounded-2xl border bg-white shadow-none transition-transform duration-150 select-none',
                             storyboardCardRatioClassName,
                             shouldUseFullHeightFixedLanes ? '' : 'max-w-full',
                             UI_THEME_TOKENS.kanban.cardHoverBg,

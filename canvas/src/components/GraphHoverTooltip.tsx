@@ -742,7 +742,7 @@ export function GraphHoverTooltip({ hoverInfo, containerRef, nodes, edges, schem
                   borderRadius: 999,
                   background: 'transparent',
                   border: '2px solid var(--kg-canvas-accent)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+                  boxShadow: 'var(--kg-shadow-overlay)',
                   transition: 'var(--kg-transition-group-resize-dot)',
                 }}
               />

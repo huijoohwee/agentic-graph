@@ -58,7 +58,7 @@ export function StrybldrCameraFloatingPanelView() {
         <header className={cn('mb-1 grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-camera-catalog-summary="1">
           <section className="flex items-start gap-2">
             <span className={cn('grid size-10 shrink-0 place-items-center rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)}>
-              <Camera className="size-5" strokeWidth={1.7} aria-hidden />
+              <Camera className="size-5" aria-hidden />
             </span>
             <section className="min-w-0 flex-1">
               <h3 className="text-xs font-semibold">Camera Runtime</h3>

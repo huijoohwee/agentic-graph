@@ -25,7 +25,7 @@ import {
 } from './gameFpsDecisionStore'
 import { subscribeGlobalCancelEvents } from '@/lib/browser/globalCancelEvents'
 
-const actionButtonClass = 'min-h-11 min-w-11 rounded-xl border border-white/25 bg-slate-950/70 px-3 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur-sm active:bg-cyan-700/80'
+const actionButtonClass = 'min-h-11 min-w-11 rounded-xl border border-white/25 bg-slate-950/70 px-3 py-2 text-xs font-semibold text-white shadow-none backdrop-blur-sm active:bg-cyan-700/80'
 
 export function GameFpsHud() {
   const gameMode = React.useSyncExternalStore(
@@ -134,7 +134,7 @@ export function GameFpsHud() {
       data-kg-game-mode-error={gameModeError || undefined}
     >
       <header className="absolute left-3 right-3 top-3 flex items-start justify-between gap-3 pt-[env(safe-area-inset-top)]">
-        <section className="min-w-0 max-w-[58vw] rounded-xl border border-white/20 bg-slate-950/75 px-3 py-2 shadow-lg backdrop-blur-sm">
+        <section className="min-w-0 max-w-[58vw] rounded-xl border border-white/20 bg-slate-950/75 px-3 py-2 shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm">
           <p className="text-xs font-semibold uppercase tracking-normal text-cyan-200">Mission 1 · Local deterministic ECS</p>
           <p className="mt-1 text-sm font-semibold" data-kg-game-fps-objective>{phaseLabel}</p>
           <p className="mt-1 text-xs text-slate-300">{saveLabel}</p>
@@ -154,7 +154,7 @@ export function GameFpsHud() {
             </p>
           ) : null}
         </section>
-        <section className="grid min-w-[7.25rem] shrink-0 grid-cols-3 gap-2 rounded-xl border border-white/20 bg-slate-950/75 px-2 py-2 text-center shadow-lg backdrop-blur-sm">
+        <section className="grid min-w-[7.25rem] shrink-0 grid-cols-3 gap-2 rounded-xl border border-white/20 bg-slate-950/75 px-2 py-2 text-center shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm">
           <span className="text-xs text-slate-300">HEALTH<strong className="block text-sm text-white">{mission.player.health}</strong></span>
           <span className="text-xs text-slate-300">AMMO<strong className="block text-sm text-white">{mission.ammo}/{mission.reserve}</strong></span>
           <span className="text-xs text-slate-300">NPC<strong className="block text-sm text-white">{mission.enemiesAlive}</strong></span>

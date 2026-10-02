@@ -49,7 +49,7 @@ function ChoreographyCard({
         role="img"
         aria-label={`${title} choreography path`}
       >
-        <Icon className={cn('size-8', UI_THEME_TOKENS.text.tertiary)} strokeWidth={1.45} aria-hidden />
+        <Icon className={cn('size-8', UI_THEME_TOKENS.text.tertiary)} aria-hidden />
       </span>
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1">
         <header className="flex min-w-0 items-center justify-between gap-2" data-kg-xr-choreography-card-row="title">

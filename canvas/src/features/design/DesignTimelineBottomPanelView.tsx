@@ -37,7 +37,7 @@ export function DesignTimelineBottomPanelView({ compact = false }: { compact?: b
     >
       <header className="flex min-w-0 flex-wrap items-center justify-between gap-2">
         <section className={cn('flex min-w-0 items-center gap-2 text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>
-          <Film className="h-4 w-4" strokeWidth={1.8} aria-hidden={true} />
+          <Film className="h-4 w-4" aria-hidden={true} />
           <span>Design Video Timeline</span>
         </section>
         <dl className="flex min-w-0 flex-wrap items-center gap-1">
@@ -58,7 +58,7 @@ export function DesignTimelineBottomPanelView({ compact = false }: { compact?: b
         <aside className={cn('grid border-r p-2', UI_THEME_TOKENS.panel.border)} aria-label="Design timeline lane labels">
           {artifact.manifest.timelineLanes.map(lane => (
             <section key={lane.id} className={cn('flex min-w-0 items-center gap-1 text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>
-              <Rows3 className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden={true} />
+              <Rows3 className="h-3.5 w-3.5" aria-hidden={true} />
               <span className="truncate">{lane.label}</span>
             </section>
           ))}
@@ -82,7 +82,7 @@ export function DesignTimelineBottomPanelView({ compact = false }: { compact?: b
               return (
                 <article
                   key={track.id}
-                  className="absolute top-12 flex min-w-0 items-center rounded border border-[var(--kg-accent)] bg-[var(--kg-accent-soft-bg)] px-2 py-1 text-xs text-[var(--kg-text-primary)] shadow-sm"
+                  className="absolute top-12 flex min-w-0 items-center rounded border border-[var(--kg-accent)] bg-[var(--kg-accent-soft-bg)] px-2 py-1 text-xs text-[var(--kg-text-primary)] shadow-[var(--kg-shadow-raised)]"
                   style={{
                     left: `${leftPercent}%`,
                     width: `${Math.min(100 - leftPercent, widthPercent)}%`,

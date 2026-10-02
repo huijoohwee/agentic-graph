@@ -52,7 +52,7 @@ import {
   subscribeFlightSimTrainingSnapshot,
 } from './flightSimTrainingRuntime'
 
-const buttonClass = 'min-h-11 rounded-xl border border-white/25 bg-slate-950/75 px-3 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur-sm disabled:opacity-50'
+const buttonClass = 'min-h-11 rounded-xl border border-white/25 bg-slate-950/75 px-3 py-2 text-xs font-semibold text-white shadow-none backdrop-blur-sm disabled:opacity-50'
 
 function envelopeClassName(severity: 'nominal' | 'caution' | 'warning'): string {
   if (severity === 'warning') return 'border-rose-300/60 bg-rose-950/85 text-rose-50'
@@ -217,7 +217,7 @@ export function FlightSimHud() {
       <header
         className={`absolute left-3 right-3 top-3 grid grid-cols-1 gap-2 pt-[env(safe-area-inset-top)] ${floatingPanelOpen ? 'sm:right-[var(--kg-flight-sim-panel-clearance)]' : 'sm:flex sm:items-start sm:justify-between sm:gap-3'}`}
       >
-        <section className={`max-w-none rounded-xl border px-3 py-2 shadow-lg backdrop-blur-sm sm:max-w-[58vw] ${hudPanelClassName}`}>
+        <section className={`max-w-none rounded-xl border px-3 py-2 shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm sm:max-w-[58vw] ${hudPanelClassName}`}>
           <p className="text-xs font-semibold uppercase tracking-normal text-cyan-200">Local deterministic flight mission</p>
           <p
             className="mt-1 text-sm font-semibold"
@@ -243,7 +243,7 @@ export function FlightSimHud() {
           {flight.runtimeError ? <p className="mt-1 text-xs text-rose-200" role="alert">{flight.runtimeError}</p> : null}
           {save.error ? <p className="mt-1 text-xs text-rose-200" role="alert">{save.error}</p> : null}
         </section>
-        <section className={`grid min-w-0 grid-cols-3 gap-2 rounded-xl border px-2 py-2 text-center shadow-lg backdrop-blur-sm sm:grid-cols-6 ${hudPanelClassName} ${floatingPanelOpen ? '' : 'sm:min-w-[22rem]'}`}>
+        <section className={`grid min-w-0 grid-cols-3 gap-2 rounded-xl border px-2 py-2 text-center shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm sm:grid-cols-6 ${hudPanelClassName} ${floatingPanelOpen ? '' : 'sm:min-w-[22rem]'}`}>
           <span className="text-xs text-slate-300">KTS<strong className="block text-sm text-white">{training.airspeedReliable ? (projection.airspeed * 1.94384).toFixed(0) : '---'}</strong></span>
           <span className="text-xs text-slate-300">ALT<strong className="block text-sm text-white">{flight.aircraft.position[1].toFixed(1)}</strong></span>
           <span className="text-xs text-slate-300">HDG<strong className="block text-sm text-white">{projection.headingDegrees.toFixed(0)}°</strong></span>
@@ -255,7 +255,7 @@ export function FlightSimHud() {
 
       {flight.active && (flight.phase === 'ready' || flight.phase === 'flying') ? (
         <section
-          className={`absolute left-1/2 top-32 w-[min(24rem,calc(100%-1.5rem))] -translate-x-1/2 rounded-xl border px-3 py-2 text-center shadow-lg backdrop-blur-sm sm:top-20 ${envelopeClassName(training.envelope.severity)}`}
+          className={`absolute left-1/2 top-32 w-[min(24rem,calc(100%-1.5rem))] -translate-x-1/2 rounded-xl border px-3 py-2 text-center shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm sm:top-20 ${envelopeClassName(training.envelope.severity)}`}
           aria-label="Flight envelope director"
           role={training.envelope.severity === 'warning' ? 'alert' : 'status'}
         >

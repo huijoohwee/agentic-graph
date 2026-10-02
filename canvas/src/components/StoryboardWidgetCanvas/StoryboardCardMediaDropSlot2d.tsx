@@ -60,7 +60,7 @@ export function StoryboardCardMediaDropSlot2d({ card, displayMedia, displayMedia
           />
           {inlineMediaKind ? (
             <figcaption className="pointer-events-none absolute bottom-1 left-1 right-1 z-10 flex min-w-0">
-              <span className={`${CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_PILL_CLASS_NAME} max-w-full bg-[color:var(--kg-panel-bg)]/90 shadow-sm backdrop-blur`} data-kg-storyboard-card-media-chip="1">
+              <span className={`${CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_PILL_CLASS_NAME} max-w-full bg-[color:var(--kg-panel-bg)]/90 shadow-none backdrop-blur`} data-kg-storyboard-card-media-chip="1">
                 <InlineMediaCommandThumbnail kind={inlineMediaKind} thumbnailUrl={mediaChipThumbnailUrl} variant="inline" />
                 <span className={CARD_MARKDOWN_PREVIEW_INLINE_MEDIA_LABEL_CLASS_NAME}>{mediaChipLabel}</span>
               </span>

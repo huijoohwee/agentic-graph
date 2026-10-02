@@ -98,7 +98,7 @@ export function MediaCandidateListRow({
       }}
     >
       <span className={mediaCompactListIconFrameClassName()} aria-hidden>
-        <Icon className={cn('h-3.5 w-3.5', UI_THEME_TOKENS.text.tertiary)} strokeWidth={1.7} />
+        <Icon className={cn('h-3.5 w-3.5', UI_THEME_TOKENS.text.tertiary)} />
       </span>
       <section className="min-w-0" aria-label={`${displayName} media compact summary`}>
         <h3 className={floatingPanelCatalogCompactRowTitleClassName()} title={displayName} data-kg-media-list-row-section="title">{displayName}</h3>
@@ -114,7 +114,7 @@ export function MediaSourceMetadataListRow({ item }: { item: MediaCatalogSourceM
   return (
     <article className={mediaCompactListItemClassName()} data-kg-media-source-metadata="video-sequence" data-kg-command-menu-media-kind="video" data-kg-media-list-row-layout={MEDIA_COMPACT_LIST_ROW_LAYOUT} data-kg-media-list-view-row="1">
       <span className={mediaCompactListIconFrameClassName()} aria-hidden>
-        <Video className={cn('h-3.5 w-3.5', UI_THEME_TOKENS.text.tertiary)} strokeWidth={1.7} />
+        <Video className={cn('h-3.5 w-3.5', UI_THEME_TOKENS.text.tertiary)} />
       </span>
       <section className="min-w-0" aria-label={`${item.name} source compact metadata`}>
         <h3 className={floatingPanelCatalogCompactRowTitleClassName()} title={item.name} data-kg-media-list-row-section="title">{item.name}</h3>
@@ -167,7 +167,7 @@ export function MediaActionListRow({
       }}
     >
       <span className={mediaCompactListIconFrameClassName()} aria-hidden>
-        <Icon className={cn('h-3.5 w-3.5', UI_THEME_TOKENS.text.tertiary)} strokeWidth={1.7} />
+        <Icon className={cn('h-3.5 w-3.5', UI_THEME_TOKENS.text.tertiary)} />
       </span>
       <section className="min-w-0" aria-label={`${action.label} compact action`}>
         <h3 className={floatingPanelCatalogCompactRowTitleClassName()} data-kg-media-list-row-section="title">{action.label}</h3>
@@ -272,7 +272,7 @@ export function UploadedMediaListRow({
         {generatedThumbnail.url ? (
           <img src={generatedThumbnail.url} alt="" className="h-full w-full rounded object-cover" data-kg-command-menu-media-thumbnail="1" loading="lazy" decoding="async" {...LOW_PRIORITY_MEDIA_THUMBNAIL_IMAGE_PROPS} draggable={false} />
         ) : (
-          <Icon className={cn('h-3.5 w-3.5', UI_THEME_TOKENS.text.tertiary)} strokeWidth={1.7} aria-hidden />
+          <Icon className={cn('h-3.5 w-3.5', UI_THEME_TOKENS.text.tertiary)} aria-hidden />
         )}
       </button>
       <section className="min-w-0" aria-label={`${item.name} uploaded media compact summary`}>
@@ -291,7 +291,7 @@ export function UploadedMediaListRow({
           onDelete(item)
         }}
       >
-        <Trash2 className="h-3 w-3" strokeWidth={1.7} aria-hidden />
+        <Trash2 className="h-3 w-3" aria-hidden />
       </button>
     </article>
   )

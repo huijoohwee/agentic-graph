@@ -46,7 +46,7 @@ export function TimelineVideoSequenceToolButton({
       data-kg-video-sequence-tool-active={active ? '1' : undefined}
       onClick={onClick}
     >
-      <Icon className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label={title} />
+      <Icon className="h-3.5 w-3.5" role="img" aria-label={title} />
     </button>
   )
 }

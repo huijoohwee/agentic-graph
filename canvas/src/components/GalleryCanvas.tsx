@@ -213,7 +213,7 @@ export default function GalleryCanvas(props: GalleryCanvasProps) {
       />
       <section className="absolute inset-0 z-[1] overflow-auto" data-kg-gallery-scroll-surface="1">
         <section className={UI_RESPONSIVE_VIEWPORT_FIT_CONTENT_CLASSNAME} style={GALLERY_CONTENT_STYLE}>
-          <section className="flex min-h-[min(720px,calc(100vh-8rem))] min-w-0 overflow-hidden rounded border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] shadow-sm">
+          <section className="flex min-h-[min(720px,calc(100vh-8rem))] min-w-0 overflow-hidden rounded border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] shadow-none">
             <MarkdownPreview
               markdownText={sourceMarkdownText}
               activeDocumentPath={activeDocumentPath}

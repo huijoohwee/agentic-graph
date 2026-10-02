@@ -35,7 +35,9 @@ export function resolveMarkdownWorkspaceBootstrapActivePath(args: {
     CUSTOM_TEST_VALIDATION_WORKSPACE_SEED_ACTIVE &&
     TEST_VALIDATION_WORKSPACE_SEED_REL_PATH !== DEFAULT_TEST_VALIDATION_WORKSPACE_SEED_REL_PATH
 
-  if (!args.lastSetActivePath || preferCustomValidationSeed) {
+  // A remounted Explorer may have only a partial inventory. Its default starter
+  // cannot replace a non-empty document selection owned by the existing session.
+  if ((!rawActivePath && !args.lastSetActivePath) || preferCustomValidationSeed) {
     const startupPath = resolveWorkspaceStartupActivePath({
       workspaceFilePaths: args.entriesIndex.filePaths,
       activePath: args.activePath,

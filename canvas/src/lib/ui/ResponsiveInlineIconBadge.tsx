@@ -36,7 +36,7 @@ export function ResponsiveInlineIconBadge({
       title={title || label}
       data-kg-responsive-inline-icon-badge={label}
     >
-      <Icon className={cn('h-3 w-3 shrink-0', iconClassName)} strokeWidth={1.7} aria-hidden />
+      <Icon className={cn('h-3 w-3 shrink-0', iconClassName)} aria-hidden />
       <span className={cn('min-w-0 truncate', textClassName)}>{label}</span>
     </span>
   )

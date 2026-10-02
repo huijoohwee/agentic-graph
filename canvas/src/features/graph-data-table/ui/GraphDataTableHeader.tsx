@@ -167,7 +167,7 @@ export const HeaderCell = React.memo(function HeaderCell({
 
             <menu
               className={[
-                'rounded border shadow-sm p-1 z-20',
+                'rounded border shadow-[var(--kg-shadow-overlay)] p-1 z-20',
                 UI_THEME_TOKENS.panel.bg,
                 UI_THEME_TOKENS.panel.border,
                 UI_RESPONSIVE_COLUMN_HEADER_MENU_PANEL_CLASSNAME,
