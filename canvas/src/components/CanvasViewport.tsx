@@ -480,7 +480,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
             aria-label={`${CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].title} activation`}
             data-kg-canvas-heavy-runtime-intent={heavyRuntimeIntentSurface}
           >
-            <section className="w-full max-w-sm rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-5 py-5 text-left shadow-sm">
+            <section className="w-full max-w-sm rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-5 py-5 text-left shadow-none">
               <p className="text-xs font-semibold uppercase tracking-normal text-[var(--kg-text-secondary)]">
                 {CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].eyebrow}
               </p>
@@ -560,7 +560,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
                 className="absolute inset-0 z-[80] flex items-center justify-center bg-[var(--kg-canvas-bg)]"
                 aria-label={documentSwitchPendingLabel}
               >
-                <section className="rounded border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-4 py-3 text-center shadow-sm">
+                <section className="rounded border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-4 py-3 text-center shadow-none">
                   <p className="text-sm font-medium text-[var(--kg-text-primary)]">{documentSwitchPendingLabel}</p>
                   <p className="mt-1 text-xs text-[var(--kg-text-secondary)]">Preparing canvas view...</p>
                 </section>

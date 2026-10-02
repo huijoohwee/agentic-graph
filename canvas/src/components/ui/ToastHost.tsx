@@ -90,7 +90,7 @@ function ToastCard({
     <article
       className={cn(
         'kg-toast-card pointer-events-auto flex-none',
-        'rounded border shadow-sm',
+        'rounded border shadow-[var(--kg-shadow-overlay)]',
         'bg-[rgba(var(--panel-bg-rgb),var(--panel-opacity))]',
         UI_THEME_TOKENS.panel.border,
         getKindClasses(toast.kind),

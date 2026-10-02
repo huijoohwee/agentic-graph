@@ -56,7 +56,7 @@ export function FloatingPanelBlockLibraryView() {
           </button>
           {open && <ul className="space-y-1.5 pt-1.5">{entries.map(item => <li key={item.id}>
             <button type="button" onClick={() => { setSelectedId(item.id); setSelectedGeneration(session?.generation ?? null); setFeedback('') }} aria-pressed={selectedId === item.id}
-              className={`block w-full rounded-lg border border-transparent px-2.5 py-2 text-left shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 ${uiSelectedRowStateClassName(selectedId === item.id)}`}
+              className={`block w-full rounded-lg border border-transparent px-2.5 py-2 text-left shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 ${uiSelectedRowStateClassName(selectedId === item.id)}`}
               style={{ background: `color-mix(in srgb, ${tone} 8%, var(--kg-panel-bg, white))`,
                 outline: selectedId === item.id ? undefined : `1px solid color-mix(in srgb, ${tone} 45%, transparent)` }}>
               <span className="flex min-w-0 items-start gap-2">

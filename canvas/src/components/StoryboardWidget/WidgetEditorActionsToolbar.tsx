@@ -238,7 +238,7 @@ export const WidgetEditorActionsToolbar = React.memo(function WidgetEditorAction
     <>
       <nav
         className={cn(
-          'Island App-toolbar App-toolbar--compact App-toolbar--touch-scroll pointer-events-auto w-fit shadow-lg',
+          'Island App-toolbar App-toolbar--compact App-toolbar--touch-scroll pointer-events-auto w-fit shadow-[var(--kg-shadow-raised)]',
           args.navClassName || '',
         )}
         aria-label={args.ariaLabel || UI_LABELS.flowWidgetActions}
@@ -467,7 +467,7 @@ export const WidgetEditorActionsToolbar = React.memo(function WidgetEditorAction
         maxHeightPx={260}
         onClose={() => setImportUrlOpen(false)}
       >
-        <section className={`${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border} border rounded p-2 shadow-sm`}>
+        <section className={`${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border} border rounded p-2 shadow-none`}>
           <menu className={uiToolbarColumnMenuListClassName} aria-label="Storyboard widget media selector">
             <li>
               <ImportUrlPrompt

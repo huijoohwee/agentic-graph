@@ -139,6 +139,7 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         }}
         className={cn(
           'kg-icon-button group relative select-none rounded justify-center',
+          UI_THEME_TOKENS.button.iconControl,
           UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME,
           paddingClass,
           isDisabled

@@ -425,7 +425,7 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
             toggleWordWrap()
           }}
         >
-          <WrapText className="w-3.5 h-3.5" strokeWidth={1.5} />
+          <WrapText className="w-3.5 h-3.5" />
         </button>
         <AnnotateDisplayModeToggle
           baseMode={baseMode}

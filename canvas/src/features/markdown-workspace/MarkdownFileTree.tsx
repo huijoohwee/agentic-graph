@@ -251,7 +251,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     <nav className={UI_RESPONSIVE_MARKDOWN_WORKSPACE_EXPLORER_LIST_CLASSNAME} aria-label="Source files">
       {renderNode(tree, 0)}
       {deleteTarget && <dialog ref={deleteDialog} aria-labelledby="workspace-delete-title"
-        className={`w-[min(90vw,28rem)] rounded border p-4 shadow-lg backdrop:bg-black/60 ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border}`}
+        className={`w-[min(90vw,28rem)] rounded border p-4 shadow-[var(--kg-shadow-overlay)] backdrop:bg-black/60 ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border}`}
         onCancel={event => { event.preventDefault(); answerDelete(false) }} onPointerDown={event => event.stopPropagation()}>
         <h2 id="workspace-delete-title">Delete source file?</h2>
         <p className="break-words">{deleteTarget}</p>

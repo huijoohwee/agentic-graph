@@ -155,7 +155,7 @@ function AnimationPresetCard({
       data-kg-animation-card-applied={appliedTo ? "1" : "0"}
     >
       <span className={floatingPanelCatalogThreeRowThumbnailFrameClassName('items-center justify-center')} role="img" aria-label={`${preset.label} procedural animation preview`}>
-        <Icon className="size-8" strokeWidth={1.45} aria-hidden />
+        <Icon className="size-8" aria-hidden />
       </span>
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1">
         <header className="flex min-w-0 items-center justify-between gap-2" data-kg-animation-card-row="title">

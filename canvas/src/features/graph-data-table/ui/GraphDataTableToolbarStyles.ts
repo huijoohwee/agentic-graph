@@ -47,7 +47,7 @@ export const uiPrimaryLinkSmallClassName = `${UI_COLOR_PRIMARY_BLUE} hover:under
 export const uiPrimaryLinkButtonClassName = `underline ${UI_COLOR_PRIMARY_BLUE} ${UI_THEME_TOKENS.button.primaryLinkHoverText} focus:outline-none`
 
 export const graphDataTableToolbarButtonClassName = (active: boolean) =>
-  `inline-flex items-center justify-center whitespace-nowrap font-normal transition-colors focus-visible:outline-none ${UI_THEME_TOKENS.focus.primaryRing} disabled:pointer-events-none disabled:opacity-50 border ${UI_RESPONSIVE_GRAPH_DATA_TABLE_TOOLBAR_BUTTON_CLASSNAME} ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.panel.bg} shadow-sm ${UI_THEME_TOKENS.button.hoverBg} rounded-md shrink-0 truncate ${
+  `inline-flex items-center justify-center whitespace-nowrap font-normal transition-colors focus-visible:outline-none ${UI_THEME_TOKENS.focus.primaryRing} disabled:pointer-events-none disabled:opacity-50 border ${UI_RESPONSIVE_GRAPH_DATA_TABLE_TOOLBAR_BUTTON_CLASSNAME} ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.panel.bg} shadow-none ${UI_THEME_TOKENS.button.hoverBg} rounded-md shrink-0 truncate ${
     active ? `${UI_THEME_TOKENS.button.activeSoft}` : `${UI_THEME_TOKENS.panel.border}`
   }`
 

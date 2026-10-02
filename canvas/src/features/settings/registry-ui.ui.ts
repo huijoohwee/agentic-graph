@@ -1,3 +1,4 @@
+import { UI_ICON_DEFAULTS } from '@/lib/ui/theme-tokens'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { SettingMeta } from './types'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -211,7 +212,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
     read: () => s().uiIconStrokeWidth,
     write: (v) => s().setUiIconStrokeWidth(Number(v)),
     docKey: 'uiIconStrokeWidth',
-    default: () => 2,
+    default: () => UI_ICON_DEFAULTS.strokeWidth,
   },
   {
     key: 'uiIconColorClass',

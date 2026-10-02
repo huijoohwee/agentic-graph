@@ -102,9 +102,9 @@ export function SlidesSidebar(props: SlidesSidebarProps) {
         showTooltip
       >
         {showSlideThumbnails ? (
-          <LayoutPanelTop className="w-4 h-4" strokeWidth={1.5} aria-hidden={true} />
+          <LayoutPanelTop className="w-4 h-4" aria-hidden={true} />
         ) : (
-          <LayoutList className="w-4 h-4" strokeWidth={1.5} aria-hidden={true} />
+          <LayoutList className="w-4 h-4" aria-hidden={true} />
         )}
       </IconButton>
     </section>

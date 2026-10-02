@@ -34,7 +34,7 @@ type FlowWidgetTraceEntry = {
 
 const FLOW_QE_TRACE_LS_KEY = 'kg:debug:storyboardWidgetTrace'
 const EMPTY_STRING_ARRAY: string[] = []
-const spotlightCardClassName = `pointer-events-auto rounded-xl border ${UI_THEME_TOKENS.panel.border} bg-[color:var(--kg-panel-bg)]/95 shadow-lg px-4 py-3 ${UI_RESPONSIVE_FLOATING_NOTICE_CARD_CLASSNAME}`
+const spotlightCardClassName = `pointer-events-auto rounded-xl border ${UI_THEME_TOKENS.panel.border} bg-[color:var(--kg-panel-bg)]/95 shadow-[var(--kg-shadow-overlay)] px-4 py-3 ${UI_RESPONSIVE_FLOATING_NOTICE_CARD_CLASSNAME}`
 const spotlightGhostButtonClassName = `${UI_THEME_TOKENS.text.tertiary} ${UI_THEME_TOKENS.button.hoverBg}`
 const spotlightActionButtonBaseClassName = `${UI_RESPONSIVE_PANEL_TEXT_ACTION_BUTTON_CLASSNAME} inline-flex items-center justify-center rounded border`
 const spotlightGhostActionButtonClassName = `${spotlightActionButtonBaseClassName} border-transparent ${spotlightGhostButtonClassName}`

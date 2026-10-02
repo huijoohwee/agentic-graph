@@ -73,7 +73,7 @@ export function XrCameraMovePresetControl({
       data-kg-xr-camera-move-timeline-owner="bottom-panel"
     >
       <header className="flex items-start gap-2">
-        <Orbit className="mt-0.5 size-4 shrink-0" strokeWidth={1.8} aria-hidden />
+        <Orbit className="mt-0.5 size-4 shrink-0" aria-hidden />
         <section className="min-w-0">
           <h4 className="text-xs font-bold uppercase tracking-normal">Camera moves</h4>
           <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>Target-bound presets author linked marks in the shared Camera lane.</p>

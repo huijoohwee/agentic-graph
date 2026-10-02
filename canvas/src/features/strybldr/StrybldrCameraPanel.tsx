@@ -415,7 +415,7 @@ export function StrybldrCameraPanel({
     >
       <section className="flex min-w-0 items-center justify-between gap-2">
         <section className="flex min-w-0 items-center gap-2">
-          <Camera className="h-4 w-4 shrink-0" strokeWidth={1.7} aria-hidden={true} />
+          <Camera className="h-4 w-4 shrink-0" aria-hidden={true} />
           <section className="min-w-0 text-xs font-semibold">Camera</section>
         </section>
         <section className={cn('min-w-0 truncate text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary)}>
@@ -510,7 +510,7 @@ export function StrybldrCameraPanel({
         title={`Reframe ${selectedCardTitle}`}
         onClick={() => onReframe({ ...settings, note: settings.note.trim() })}
       >
-        <Layers className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden={true} />
+        <Layers className="h-3.5 w-3.5" aria-hidden={true} />
         Reframe
       </button>
       <section className={cn('sr-only')} aria-live="polite">

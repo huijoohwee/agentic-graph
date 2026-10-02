@@ -96,7 +96,7 @@ function buildVideoSequenceFloatingPanelRowTree({
             }}
             data-kg-video-sequence-floating-panel-disclosure={sectionExpanded ? 'expanded' : 'collapsed'}
           >
-            <MarkdownTocExpandGlyph isExpanded={sectionExpanded} className="h-3.5 w-3.5" strokeWidth={1.5} />
+            <MarkdownTocExpandGlyph isExpanded={sectionExpanded} className="h-3.5 w-3.5" />
           </button>
           {lane ? (
             <label

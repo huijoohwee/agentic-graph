@@ -86,7 +86,7 @@ function CellJsonEditor({
   
   return (
     <section
-      className={`h-32 ${UI_RESPONSIVE_STRUCTURED_EDITOR_PANEL_CLASSNAME} border ${UI_THEME_TOKENS.panel.border} rounded overflow-hidden ${UI_THEME_TOKENS.panel.bg} shadow-lg relative z-10`}
+      className={`h-32 ${UI_RESPONSIVE_STRUCTURED_EDITOR_PANEL_CLASSNAME} border ${UI_THEME_TOKENS.panel.border} rounded overflow-hidden ${UI_THEME_TOKENS.panel.bg} shadow-[var(--kg-shadow-overlay)] relative z-10`}
       aria-label="Cell JSON Editor"
     >
       <MarkdownStructuredTextEditor

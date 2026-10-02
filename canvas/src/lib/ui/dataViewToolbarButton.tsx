@@ -41,7 +41,7 @@ const readDataViewIconActionSizeClassName = (size: DataViewToolbarButtonSize): s
 
 const readDataViewToolbarVariantClassName = (variant: DataViewToolbarButtonVariant): string =>
   variant === 'primary'
-    ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeBorder, UI_THEME_TOKENS.button.activeText)
+    ? cn(UI_THEME_TOKENS.button.selectedIcon, UI_THEME_TOKENS.button.activeBorder)
     : variant === 'ghost'
       ? cn('border-transparent', UI_THEME_TOKENS.button.hoverBg, UI_THEME_TOKENS.text.secondary)
       : cn(UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)
@@ -53,7 +53,8 @@ export function getDataViewToolbarButtonClassName(options: DataViewToolbarClassN
   return cn(
     UI_RESPONSIVE_ACTION_ROW_CLASSNAME,
     readDataViewActionSizeClassName(size),
-    'justify-center select-none rounded border text-xs',
+    'justify-center select-none rounded text-xs',
+    UI_THEME_TOKENS.border.width,
     UI_FOCUS_RING,
     readDataViewToolbarVariantClassName(variant),
     options.disabled ? 'opacity-50 pointer-events-none' : undefined,
@@ -98,13 +99,15 @@ export type DataViewIconButtonProps = {
 export type DataViewIconClassNameOptions = DataViewToolbarClassNameOptions
 
 export function getDataViewIconButtonClassName(options: DataViewIconClassNameOptions = {}): string {
-  const variant = options.variant ?? 'default'
+  const variant = options.variant ?? 'ghost'
   const size = options.size ?? 'md'
 
   return cn(
     UI_RESPONSIVE_ACTION_ROW_CLASSNAME,
     readDataViewIconActionSizeClassName(size),
-    'justify-center rounded-md border',
+    'justify-center border-transparent',
+    UI_THEME_TOKENS.button.iconControl,
+    UI_THEME_TOKENS.border.width,
     UI_FOCUS_RING,
     readDataViewToolbarVariantClassName(variant),
     options.disabled ? 'opacity-50 pointer-events-none' : undefined,

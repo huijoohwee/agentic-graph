@@ -95,7 +95,7 @@ export function AgentRunSpanViews({ rows, selectedId, onSelect, search = '', met
               <span aria-hidden="true" className="inline-block w-4 text-center font-mono">{expanded ? '−' : '+'}</span>
             </button>}</span>
             <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border"
-              style={{ background: tone.fill, color: tone.stroke, borderColor: tone.stroke }}><MainPanelTypeIcon iconKey={iconKey} className="h-5 w-5" strokeWidth={1.6} /></span>
+              style={{ background: tone.fill, color: tone.stroke, borderColor: tone.stroke }}><MainPanelTypeIcon iconKey={iconKey} className="h-5 w-5" /></span>
             <span className="min-w-0" data-span-description="">
               <span className="block truncate text-sm font-medium leading-5" title={span.operation}>{span.operation}</span>
               <span className="block truncate text-xs leading-4 opacity-70" aria-label="Span resources" title={summary}>{summary}</span>

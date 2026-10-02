@@ -234,7 +234,7 @@ export function MediaCatalogPanelView({
               data-kg-media-new-button="1"
               onClick={onNewMedia}
             >
-              <Plus className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden />
+              <Plus className="h-3.5 w-3.5" aria-hidden />
             </button> : null}
             <MediaCatalogModeControls mode={catalogMode} onChange={setMediaCatalogMode} />
             {catalogMode === 'media' ? <section className={cn('inline-flex h-6 items-center overflow-hidden rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)} role="group" aria-label="Media layout" data-kg-media-layout-selector="1">
@@ -259,7 +259,7 @@ export function MediaCatalogPanelView({
                     data-kg-media-layout-toggle={option.layout}
                     onClick={() => onLayoutChange(option.layout)}
                   >
-                    <Icon className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden />
+                    <Icon className="h-3.5 w-3.5" aria-hidden />
                   </button>
                 )
               })}

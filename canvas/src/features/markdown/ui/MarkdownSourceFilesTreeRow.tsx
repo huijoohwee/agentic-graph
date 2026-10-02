@@ -61,15 +61,15 @@ export function MarkdownSourceFilesTreeRow(props: MarkdownSourceFilesTreeRowProp
   const icon = isFolder ? (
     node.hasChildren ? (
       expanded ? (
-        <ChevronDown className={iconClassName} strokeWidth={1.5} aria-hidden="true" />
+        <ChevronDown className={iconClassName} aria-hidden="true" />
       ) : (
-        <ChevronRight className={iconClassName} strokeWidth={1.5} aria-hidden="true" />
+        <ChevronRight className={iconClassName} aria-hidden="true" />
       )
     ) : (
-      <ChevronRight className={`${iconClassName} opacity-30`} strokeWidth={1.5} aria-hidden="true" />
+      <ChevronRight className={`${iconClassName} opacity-30`} aria-hidden="true" />
     )
   ) : (
-    <FileText className={iconClassName} strokeWidth={1.5} aria-hidden="true" />
+    <FileText className={iconClassName} aria-hidden="true" />
   )
 
   if (isFolder) {
@@ -153,7 +153,7 @@ export function MarkdownSourceFilesTreeRow(props: MarkdownSourceFilesTreeRowProp
               void onDeleteFile(node.path)
             }}
           >
-            <Trash2 className={iconClassName} strokeWidth={1.5} aria-hidden="true" />
+            <Trash2 className={iconClassName} aria-hidden="true" />
           </button>
         ) : null}
       </article>

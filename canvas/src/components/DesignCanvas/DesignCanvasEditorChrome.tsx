@@ -58,7 +58,7 @@ export function DesignCanvasEditorChrome(props: {
   return (
     <section className={UI_RESPONSIVE_DESIGN_CANVAS_EDITOR_CHROME_CLASSNAME} aria-label="Design editor chrome">
       <nav
-        className={cn('pointer-events-auto flex shrink-0 flex-col gap-1 rounded border p-1 shadow-sm', UI_THEME_TOKENS.panel.overlayBg, UI_THEME_TOKENS.panel.border)}
+        className={cn('pointer-events-auto flex shrink-0 flex-col gap-1 rounded border p-1 shadow-[var(--kg-shadow-raised)]', UI_THEME_TOKENS.panel.overlayBg, UI_THEME_TOKENS.panel.border)}
         aria-label="Design tools"
       >
         <button
@@ -115,7 +115,7 @@ export function DesignCanvasEditorChrome(props: {
       </nav>
       <section
         className={cn(
-          'pointer-events-none flex min-w-0 items-center gap-2 rounded border px-2 py-1 shadow-sm',
+          'pointer-events-none flex min-w-0 items-center gap-2 rounded border px-2 py-1 shadow-[var(--kg-shadow-raised)]',
           UI_RESPONSIVE_CANVAS_STATUS_ROW_CLASSNAME,
           UI_THEME_TOKENS.panel.overlayBg,
           UI_THEME_TOKENS.panel.border,

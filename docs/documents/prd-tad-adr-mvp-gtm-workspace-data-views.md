@@ -585,3 +585,7 @@ footer cell's bottom rule where the enclosing card already has one. MVP: compute
 borders match in the local preview; the final footer has one line while intervening footer rows
 retain separators. GTM: no change to the voluntary pilot or pricing hypothesis. Bound: four
 files, under 8 KB diff, 15 active minutes plus required checks, zero dependencies or spend.
+
+## Global appearance continuation — 2026-10-02
+
+The next implemented UI increment is joined under [ui-appearance@1.0.0](./prd-tad-adr-mvp-gtm-ui-appearance.md): shared 1.5 icon stroke, 1 px borders, flat selected icon controls with blue fill, and global enforcement. Earlier checkpoints above remain historical evidence; the new design guide supersedes local icon/elevation recipes.

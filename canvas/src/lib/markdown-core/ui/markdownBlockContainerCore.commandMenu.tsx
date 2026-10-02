@@ -137,7 +137,7 @@ export const MarkdownBlockContainerCommandMenu = (props: {
   return (
     <section aria-label={props.ariaLabel}>
       <label className={`mb-2 flex items-center gap-1 rounded border px-2 ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.border}`}>
-        <Search className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} strokeWidth={1.6} aria-hidden />
+        <Search className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} aria-hidden />
         <input
           ref={inputRef}
           className={`${props.inputClassName} border-0 px-0`}

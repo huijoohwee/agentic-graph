@@ -173,7 +173,7 @@ function MarkdownPreviewGalleryCard(props: {
   return (
     <article
       className={[
-        'relative min-w-0 overflow-hidden rounded-md border p-0 shadow-sm transition-transform duration-150',
+        'relative min-w-0 overflow-hidden rounded-md border p-0 shadow-none transition-transform duration-150',
         UI_THEME_TOKENS.panel.bg,
         props.selected ? uiSelectedRowStateClassName(true) : UI_THEME_TOKENS.panel.border,
         cardDragVisualState.className,
