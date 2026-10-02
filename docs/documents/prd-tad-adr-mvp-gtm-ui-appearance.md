@@ -106,7 +106,10 @@ failed the complete native browser run while focused Apex passed. An earlier tra
 startup followed by deferred source reconciliation, before activation. TAD corrects the acceptance
 owner: the installed Playwright polls Promise objects as truthy, so an async readiness predicate did
 not wait for initialization. The native helper now preloads modules once and polls a synchronous
-boolean under the existing startup deadline, with no host polling loop. ADR retains exact equality,
+boolean under the existing startup deadline, with no host polling loop. The active source is matched
+by path anywhere in the native inventory: its merge owner preserves retained files and does not
+guarantee the active source is first. The real wait exposed that invalid first-row assumption.
+A positive regression retains another source before the active source. ADR retains exact equality,
 all source fields, and all lifecycle assertions; no production source writer is changed for this cause.
 The earlier empty-only selection bootstrap guard remains independently regression-covered; it did
 not resolve this acceptance failure. A browser regression holds each readiness prerequisite false

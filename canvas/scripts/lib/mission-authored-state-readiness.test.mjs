@@ -36,7 +36,8 @@ test('authored readiness stays pending until every synchronous prerequisite is t
       await page.waitForFunction(reads => window.__fixture.reads >= reads + 2, reads, { timeout: 10000 })
       assert.equal(settled, false, 'A Promise or incomplete startup must never satisfy readiness')
     }
-    await page.evaluate(() => { window.__fixture.sourceFiles = [{ source: { path: 'workspace:/docs/owned.md' } }] })
+    await page.evaluate(() => { window.__fixture.sourceFiles = [{ source: { path: 'workspace:/docs/retained.md' } },
+      { source: { path: 'workspace:/docs/owned.md' } }] })
     await pending
     assert.equal(settled, true)
   } finally { await browser.close() }

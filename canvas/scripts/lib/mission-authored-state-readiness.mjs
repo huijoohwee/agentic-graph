@@ -12,7 +12,7 @@ export async function waitForAuthoredWorkspaceSource(page, timeout = 60000) {
       const state = useGraphStore.getState(), path = useMarkdownExplorerStore.getState().activePath
       return sync.readWorkspaceSeedSyncRuntimeSnapshot().activeTaskCount === 0
         && readSourceFilesBootstrapReady() && state.historyIndex >= 0 && !!path
-        && state.sourceFiles[0]?.source?.path === `workspace:${path}`
+        && state.sourceFiles.some(file => file?.source?.path === `workspace:${path}`)
     }
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
   })
