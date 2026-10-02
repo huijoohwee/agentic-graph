@@ -89,7 +89,7 @@ test('history keys bind source, docs and execution configuration with canonical 
   assert.notEqual(name, historyArtifactName({ ...binding, runtime: { ...binding.runtime, node: '24' } }))
 })
 
-test('passed browser history survives a proved pre-deployment stop, never a mutation or failed browser', () => {
+test('passed browser history survives exact authorization or preflight stops, never mutation or failed verification', () => {
   const run = { id: 41, run_attempt: 1, head_sha: 'a'.repeat(40), path: '.github/workflows/release.yml',
     event: 'workflow_dispatch', head_branch: 'main', status: 'completed', conclusion: 'failure' }
   const job = (name, conclusion, steps = []) => ({ name, conclusion, steps, run_id: run.id,
@@ -99,28 +99,43 @@ test('passed browser history survives a proved pre-deployment stop, never a muta
     'Reconcile canonical docs into D1', 'Publish exact canonical documents through the storage owner',
     'Publish verified production mirror', 'Restore exact prior travel mesh versions',
     'Roll back Pages to exact last-known-good deployment', 'Restore and reconcile last-known-good D1 state']
-  const jobs = [job('Verify Release Candidate', 'success'),
-    job('Human-Authorized Deploy, Verify, And Publish Mirror', 'failure', [
-      { name: 'Preflight protected travel mesh without mutation', status: 'completed', conclusion: 'failure' },
-      ...skipped.map(name => ({ name, status: 'completed', conclusion: 'skipped' })),
-      { name: 'Require an exact successful deployment attempt', status: 'completed', conclusion: 'failure' },
-    ])]
-  assert.doesNotThrow(() => assertPriorBrowserRun(run, '42', jobs))
-  for (const mutate of [
-    value => { value[0].conclusion = 'failure' },
-    value => { value[0].head_sha = 'b'.repeat(40) },
-    value => { value[1].run_id = 40 },
-    value => { value[1].run_attempt = 2 },
-    value => { value[1].status = 'in_progress' },
-    value => { value.push(value[0]) },
-    value => { value[1].steps.pop(); value[1].steps.push({ name: 'Unknown failure', conclusion: 'failure' }) },
-    value => { value[1].steps.splice(1, 1) },
-    ...skipped.map(name => value => { value[1].steps.find(step => step.name === name).conclusion = 'success' }),
-  ]) {
-    const changed = structuredClone(jobs); mutate(changed)
-    assert.throws(() => assertPriorBrowserRun(run, '42', changed))
+  const authorization = 'Record exact human authorization and claim release controller'
+  const preflight = 'Preflight protected travel mesh without mutation'
+  const step = (name, conclusion) => ({ name, status: 'completed', conclusion })
+  for (const stoppedAtAuthorization of [false, true]) {
+    const jobs = [job('Verify Release Candidate', 'success'),
+      job('Human-Authorized Deploy, Verify, And Publish Mirror', 'failure', [
+        step(authorization, stoppedAtAuthorization ? 'failure' : 'success'),
+        step(preflight, stoppedAtAuthorization ? 'skipped' : 'failure'),
+        ...skipped.map(name => step(name, 'skipped')),
+        step('Require an exact successful deployment attempt', 'failure'),
+      ])]
+    assert.doesNotThrow(() => assertPriorBrowserRun(run, '42', jobs))
+    const mutateStep = (name, change) => value => Object.assign(value[1].steps.find(item => item.name === name), change)
+    const invalidConclusions = stoppedAtAuthorization ? ['success', 'failure', 'cancelled', null] : ['success', 'skipped', 'cancelled', null]
+    for (const mutate of [
+      value => { value[0].conclusion = 'failure' },
+      value => { value[0].head_sha = 'b'.repeat(40) },
+      value => { value[1].run_id = 40 },
+      value => { value[1].run_attempt = 2 },
+      value => { value[1].status = 'in_progress' },
+      value => { value.push(value[0]) },
+      value => { value[1].steps.push(step('Unknown failure', 'failure')) },
+      ...[authorization, preflight, ...skipped].flatMap(name => [
+        value => { value[1].steps = value[1].steps.filter(item => item.name !== name) },
+        value => { value[1].steps.push(structuredClone(value[1].steps.find(item => item.name === name))) },
+        mutateStep(name, { status: 'in_progress' }),
+      ]),
+      ...['skipped', 'cancelled', null].map(conclusion => mutateStep(authorization, { conclusion })),
+      mutateStep(authorization, { conclusion: stoppedAtAuthorization ? 'success' : 'failure' }),
+      ...invalidConclusions.map(conclusion => mutateStep(preflight, { conclusion })),
+      ...skipped.flatMap(name => ['success', 'failure', 'cancelled', null].map(conclusion => mutateStep(name, { conclusion }))),
+    ]) {
+      const changed = structuredClone(jobs); mutate(changed)
+      assert.throws(() => assertPriorBrowserRun(run, '42', changed))
+    }
+    assert.throws(() => assertPriorBrowserRun({ ...run, conclusion: 'cancelled' }, '42', jobs))
   }
-  assert.throws(() => assertPriorBrowserRun({ ...run, conclusion: 'cancelled' }, '42', jobs))
 })
 
 test('artifact identity detects changed browser bytes and rejects symlink substitutions', async () => {
