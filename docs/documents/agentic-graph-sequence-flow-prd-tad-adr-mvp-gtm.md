@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.11"
-prd_revision: "1.3.11"
-tad_revision: "1.3.11"
-adr_revision: "1.3.11"
-mvp_revision: "1.3.11"
-gtm_revision: "1.3.11"
+version: "1.3.12"
+prd_revision: "1.3.12"
+tad_revision: "1.3.12"
+adr_revision: "1.3.12"
+mvp_revision: "1.3.12"
+gtm_revision: "1.3.12"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,7 +31,7 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.11**. The user authorized implementation
+All five roles join **SEQUENCE-FLOW-001@1.3.12**. The user authorized implementation
 and live UI verification on 2026-10-02. Work extends the existing workspace through
 an admitted successor lane. Remote service invocation, production mirrors, deployment
 and payment remain separate effects with no new grant here.
@@ -479,7 +479,7 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.11. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.12. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 
@@ -594,6 +594,6 @@ Tracked authoring majors: 4. Full authoring artifact-bearing-rule coverage has n
 alignment verdict is claimed. Diagram/canvas-domain checks prove only their selected
 structural contract; runtime, licensing, demand and delivery remain separate checks.
 
-Implemented at 1.3.11: native scene/media/workflow lanes and inserted lanes reuse VideoSequenceTimelineLaneLabels and VideoSequenceTimelineLaneRows with one selection attribute and style owner. Native row selection derives from the existing selected clip/display-lane map; inserted content retains its selection adapter. Selecting the scene clip highlights SCENE and its full row; selecting The Wolf clears scene selection and highlights that object row. Semantic named section rows retain ruler pointer seeking, and native clips stay above row surfaces. Extracted shared rendering reduces VideoSequenceTimelineRuler from 689 to 598 lines. Two affected XR/shared-routing contracts, typecheck, hygiene and whitespace checks pass; preview 5190 verifies both selection directions and /tmp/timeline-scene-row-selected.png records the scene highlight. Sprint allowance refreshed to 15 active minutes, five paths and 30 KiB; patch 25.2 KiB, no new dependency or spend. Native successor of PR #1506 at ab8eb3f83; protected main refresh at 82d74c91 had no conflicts and includes its catalog anchor fix. Predecessor CI timed out at authored mission workspace readiness; successor CI must verify the combined candidate. Publication recovery refreshes the checkpoint to 20 active minutes; candidate CI and protected integration remain separate effects. Remaining VCC observations stay open.
+Implemented at 1.3.12: WORKFLOW, sequence participants and XR object labels/rows reuse the generic selection attribute, shared rendering and inset blue border owner introduced at 1.3.11. Removed the XR feature override that suppressed row/label shadows; no replacement style or file-path rule was added. The rehearsal adapter now passes its selected row key through the shared ruler, including pointer/keyboard clip selection and outcome controls; participant bar/event interaction clears the workflow key while retaining authored event highlighting. Preview 5190 verifies identical three-edge label borders and adjoining row borders for WORKFLOW, CUSTOMER and The Wolf, with semantic aria-current state. Review captures: /tmp/timeline-selected-workflow-border.png and /tmp/timeline-selected-wolf-border.png. Typecheck, two XR/shared-routing contracts and 26 sequence/website-import cases pass; hygiene and whitespace are checked before publication. Sprint cap: 15 active minutes, six paths and 30 KiB; implementation changes three paths, no dependency or spend. Native successor of PR #1507 at 17297fc964. Its Integration Gate failed in the unrelated website-import cancel/restart wait; the isolated import suite passes locally, so full candidate CI remains required. Prior shared scene-row behavior and its 598-line ruler owner remain intact. Remaining VCC observations and protected integration/production effects stay open.
 Recheck every affected receipt on source drift. Preserve lane/source bytes if publication
 or lifecycle effects are blocked. Production remains behind its separate protected owner.

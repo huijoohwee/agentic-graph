@@ -19,6 +19,7 @@ export function SequenceTimelineRuler({ sequence, viewportRef, timelineZoom, sce
   sceneControls: React.ReactNode
 }) {
   const { model, events, duration, current, transport, selectEvent } = sequence
+  const [selectedRowKey, setSelectedRowKey] = React.useState('')
   const contentRef = React.useRef<HTMLElement>(null)
   const maxMinutes = duration / 60000
   const scaleMinutes = resolveVideoSequenceTimelineScaleMaxMinutes({ maxMinutes, mediaDurationSeconds: duration / 1000 })
@@ -29,8 +30,8 @@ export function SequenceTimelineRuler({ sequence, viewportRef, timelineZoom, sce
   const interactions = useGanttTimelineInteractions({
     autoSnappingEnabled: false, markdownDocumentName: '', markdownText: '',
     maxMinutes, scrubMaxMinutes: scaleMinutes, positionMinutes: transport.playbackPosition / 60000,
-    resolveRowKeyAtPosition: () => '', selectedRowKey: '', selectionFollowsPlayhead: false,
-    setSelectedRowKey: () => {}, spans, onCommitDrag: () => {},
+    resolveRowKeyAtPosition: () => '', selectedRowKey, selectionFollowsPlayhead: false,
+    setSelectedRowKey, spans, onCommitDrag: () => {},
     setTransportPlaying: transport.setTransportPlaying,
     setTransportPlaybackPosition: value => transport.setTransportPlaybackPosition(value * 60000),
   })
@@ -41,10 +42,12 @@ export function SequenceTimelineRuler({ sequence, viewportRef, timelineZoom, sce
     content: <TimelineTransportTimeAxisClip laneStyle="video" className="sequence-participant-track"
       aria-label={`${participant.label} sequence lane`} style={{ left: resolveVideoSequenceRulerInsetLeft(0), width: resolveVideoSequenceRulerInsetWidth(scaleMinutes ? maxMinutes / scaleMinutes * 100 : 0), minWidth: 0 }}>
       <button className="timeline-transport-time-axis-bar sequence-participant-bar" aria-label={`Scrub ${participant.label} sequence lane`} data-kg-video-sequence-ruler-scrub-target="1" title="Drag to scrub the authored sequence"
+        onPointerDown={() => setSelectedRowKey('')}
         onKeyDown={event => {
           const delta = event.key === 'ArrowRight' ? 1000 : event.key === 'ArrowLeft' ? -1000 : 0
           if (!delta && event.key !== 'Home' && event.key !== 'End') return
           event.preventDefault()
+          setSelectedRowKey('')
           transport.setTransportPlaying(false)
           transport.setTransportPlaybackPosition(event.key === 'Home' ? 0 : event.key === 'End' ? duration : Math.min(duration, Math.max(0, transport.playbackPosition + delta)))
         }}>
@@ -57,8 +60,8 @@ export function SequenceTimelineRuler({ sequence, viewportRef, timelineZoom, sce
           data-sequence-timeline-event={event.id} aria-pressed={current?.id === event.id}
           aria-label={`Seek step ${event.ordinal}: ${event.label} in ${participant.label}`}
           title={`${event.ordinal}. ${event.label} · ${event.startMs / 1000}s · Source line ${event.line}`}
-          onPointerDown={event => event.stopPropagation()} onClick={() => selectEvent(event.id)}
-          onKeyDown={keyboard => { if (keyboard.key === 'Enter' || keyboard.key === ' ') { keyboard.preventDefault(); selectEvent(event.id) } }}>
+          onPointerDown={event => event.stopPropagation()} onClick={() => { setSelectedRowKey(''); selectEvent(event.id) }}
+          onKeyDown={keyboard => { if (keyboard.key === 'Enter' || keyboard.key === ' ') { keyboard.preventDefault(); setSelectedRowKey(''); selectEvent(event.id) } }}>
           <span>{event.ordinal}</span>
         </TimelineTransportTimeAxisMark>
       ))}
@@ -67,10 +70,10 @@ export function SequenceTimelineRuler({ sequence, viewportRef, timelineZoom, sce
   return <section style={{ height: '100%', '--sequence-axis-min-width': `${Math.max(520, scaleMinutes * 60 * 52)}px` } as React.CSSProperties}><VideoSequenceTimelineRuler contentRef={contentRef} viewportRef={viewportRef}
     displayTicks={[]} dragPreview={null} draggingMode={null} draggingRowKey="" editable={false}
     maxMinutes={maxMinutes} mediaDurationSeconds={duration / 1000} playheadPercent={duration ? transport.playbackPosition / duration * 100 : 0}
-    projectionMode="workflow" selectedRowKey="" taskSpans={spans} timelineInsertedLanes={lanes} timelineZoom={timelineZoom}
-    renderClipOverlay={() => model.branches.length ? <section className="timeline-transport-clip-controls" aria-label="Sequence rehearsal outcomes" onPointerDown={event => event.stopPropagation()}>{sceneControls}</section> : null}
+    projectionMode="workflow" selectedRowKey={selectedRowKey} taskSpans={spans} timelineInsertedLanes={lanes} timelineZoom={timelineZoom}
+    renderClipOverlay={() => model.branches.length ? <section className="timeline-transport-clip-controls" aria-label="Sequence rehearsal outcomes" onPointerDown={event => { event.stopPropagation(); setSelectedRowKey(model.key) }}>{sceneControls}</section> : null}
     timeAxisControls={<span title="Authored order · one second per message">Sequence</span>}
-    onRulerPointerDown={interactions.handleRulerPointerScrub} onSelectRowKey={() => {}}
+    onRulerPointerDown={interactions.handleRulerPointerScrub} onSelectRowKey={setSelectedRowKey}
     onSelectRowPosition={(_key, minutes) => { transport.setTransportPlaying(false); transport.setTransportPlaybackPosition(minutes * 60000) }}
     onDropMedia={() => false} onTrackPointerStart={() => {}} /></section>
 }

@@ -235,9 +235,3 @@
 .xr-camera-motion-mark-selection-controls--lane[data-kg-xr-ruler-mark-editor="cast"] [data-kg-xr-mark-position-axis] {
   width: 38px;
 }
-
-/* The shared clip border is the sole selection outline, including inserted lanes. */
-[data-kg-xr-timeline-transport] .timeline-video-sequence-inserted-lane[data-kg-video-sequence-inserted-lane-selected="1"],
-[data-kg-xr-timeline-transport] .timeline-video-sequence-lane-label[data-kg-video-sequence-inserted-lane-selected="1"] {
-  box-shadow: none;
-}
