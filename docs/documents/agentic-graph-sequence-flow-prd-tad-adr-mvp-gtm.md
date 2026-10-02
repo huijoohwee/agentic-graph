@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.12"
-prd_revision: "1.3.12"
-tad_revision: "1.3.12"
-adr_revision: "1.3.12"
-mvp_revision: "1.3.12"
-gtm_revision: "1.3.12"
+version: "1.3.13"
+prd_revision: "1.3.13"
+tad_revision: "1.3.13"
+adr_revision: "1.3.13"
+mvp_revision: "1.3.13"
+gtm_revision: "1.3.13"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,7 +31,7 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.12**. The user authorized implementation
+All five roles join **SEQUENCE-FLOW-001@1.3.13**. The user authorized implementation
 and live UI verification on 2026-10-02. Work extends the existing workspace through
 an admitted successor lane. Remote service invocation, production mirrors, deployment
 and payment remain separate effects with no new grant here.
@@ -479,7 +479,7 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.12. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.13. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 
@@ -594,6 +594,6 @@ Tracked authoring majors: 4. Full authoring artifact-bearing-rule coverage has n
 alignment verdict is claimed. Diagram/canvas-domain checks prove only their selected
 structural contract; runtime, licensing, demand and delivery remain separate checks.
 
-Implemented at 1.3.12: WORKFLOW, sequence participants and XR object labels/rows reuse the generic selection attribute, shared rendering and inset blue border owner introduced at 1.3.11. Removed the XR feature override that suppressed row/label shadows; no replacement style or file-path rule was added. The rehearsal adapter now passes its selected row key through the shared ruler, including pointer/keyboard clip selection and outcome controls; participant bar/event interaction clears the workflow key while retaining authored event highlighting. Preview 5190 verifies identical three-edge label borders and adjoining row borders for WORKFLOW, CUSTOMER and The Wolf, with semantic aria-current state. Review captures: /tmp/timeline-selected-workflow-border.png and /tmp/timeline-selected-wolf-border.png. Typecheck, two XR/shared-routing contracts and 26 sequence/website-import cases pass; hygiene and whitespace are checked before publication. Sprint cap: 15 active minutes, six paths and 30 KiB; implementation changes three paths, no dependency or spend. Native successor of PR #1507 at 17297fc964. Its Integration Gate failed in the unrelated website-import cancel/restart wait; the isolated import suite passes locally, so full candidate CI remains required. Prior shared scene-row behavior and its 598-line ruler owner remain intact. Remaining VCC observations and protected integration/production effects stay open.
+Implemented at 1.3.13: the shared lane-label renderer exposes a full-label semantic button for every native lane with a selectable clip, using the same row-key-to-display-lane map and onSelectRowKey owner as clip selection. Clicking SCENE or WORKFLOW highlights its label and entire row. A lane with several clips retains its currently selected clip, otherwise selecting its first authored clip; empty lanes do not select a missing clip. Existing inserted object buttons retain their adapter and are not nested inside new controls. Shared label styling inherits typography, fills the label hit area and retains the generic blue border owner established at 1.3.12. Preview 5190 verifies pointer and Enter activation of WORKFLOW and SCENE, switching from The Wolf to SCENE with only the scene row selected. Review captures: /tmp/timeline-workflow-label-selection.png and /tmp/timeline-scene-label-selection.png. Twelve sequence/shared-label interaction cases, two XR/shared-routing contracts and typecheck pass; hygiene and whitespace are checked before publication. The interaction regression covers clip preservation, whole-row state, row transfer, empty lanes and single inserted callback delivery. Sprint cap: 15 active minutes, six paths and 30 KiB; five changed paths, no dependencies or spend. Shared ruler is 599 lines and stylesheet 584 lines. Native successor of PR #1508 at 057725c19d; full candidate CI and protected integration remain separate required receipts. Prior source-specific XR border suppression remains removed. Remaining VCC observations and production effects stay open.
 Recheck every affected receipt on source drift. Preserve lane/source bytes if publication
 or lifecycle effects are blocked. Production remains behind its separate protected owner.

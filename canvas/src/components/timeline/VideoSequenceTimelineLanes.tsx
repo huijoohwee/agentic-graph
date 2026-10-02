@@ -22,13 +22,18 @@ export function buildVideoSequenceLaneSidebarStyle(lanes: readonly { id: string 
   return { gridTemplateRows: `repeat(${lanes.length}, ${VIDEO_SEQUENCE_LANE_HEIGHT_PX}px)` }
 }
 
-export function VideoSequenceTimelineLaneLabels({ lanes, selectedDisplayLaneId, scrollRef }: LaneProps & {
+export function VideoSequenceTimelineLaneLabels({ lanes, selectedDisplayLaneId, scrollRef, rowKeyToDisplayLaneId, selectedRowKey, onSelectRowKey }: LaneProps & {
   scrollRef: React.RefObject<HTMLElement | null>
+  rowKeyToDisplayLaneId: ReadonlyMap<string, string>
+  selectedRowKey: string
+  onSelectRowKey: (rowKey: string) => void
 }) {
   return <section ref={scrollRef} className="timeline-video-sequence-lane-sidebar-scroll" style={buildVideoSequenceLaneSidebarStyle(lanes)}>
     {lanes.map(lane => {
       const inserted = 'content' in lane
       const insertedSelected = laneSelected(lane, selectedDisplayLaneId)
+      const selectRowKey = rowKeyToDisplayLaneId.get(selectedRowKey) === lane.id
+        ? selectedRowKey : [...rowKeyToDisplayLaneId].find(([, laneId]) => laneId === lane.id)?.[0]
       return <section key={lane.id}
         className={`timeline-video-sequence-lane-label ${insertedSelected ? 'timeline-video-sequence-lane-label--selected' : ''}`}
         aria-current={insertedSelected ? 'true' : undefined}
@@ -39,7 +44,9 @@ export function VideoSequenceTimelineLaneLabels({ lanes, selectedDisplayLaneId, 
         data-kg-video-sequence-inserted-lane-row-selection={inserted && insertedSelected ? lane.id : undefined}
         data-kg-video-sequence-lane-append={'append' in lane && lane.append ? '1' : undefined}
         data-kg-video-sequence-lane-label={'semanticId' in lane ? lane.semanticId : 'inserted'}
-      >{lane.label}</section>
+      >{!inserted && selectRowKey ? <button type="button" className="timeline-video-sequence-lane-select"
+        aria-label={`Select ${lane.label} timeline lane`} aria-pressed={insertedSelected}
+        onClick={() => onSelectRowKey(selectRowKey)}>{lane.label}</button> : lane.label}</section>
     })}
   </section>
 }

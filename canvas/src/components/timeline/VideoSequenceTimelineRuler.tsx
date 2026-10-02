@@ -294,7 +294,8 @@ export function VideoSequenceTimelineRuler({
     >
       <aside className="timeline-video-sequence-lane-sidebar" aria-label={workflowProjection ? 'Workflow lane labels' : 'Video sequence lane labels'}>
         <VideoSequenceTimeAxisControls>{timeAxisControls}</VideoSequenceTimeAxisControls>
-        <VideoSequenceTimelineLaneLabels lanes={timelineLanes} selectedDisplayLaneId={displayLaneIdByRowKey.get(selectedRowKey)} scrollRef={laneSidebarScrollRef} />
+        <VideoSequenceTimelineLaneLabels lanes={timelineLanes} selectedDisplayLaneId={displayLaneIdByRowKey.get(selectedRowKey)} scrollRef={laneSidebarScrollRef}
+          rowKeyToDisplayLaneId={displayLaneIdByRowKey} selectedRowKey={selectedRowKey} onSelectRowKey={onSelectRowKey} />
       </aside>
       <section ref={setRulerScrollElement} className="timeline-video-sequence-ruler-scroll timeline-video-sequence-ruler-surface" aria-label={workflowProjection ? 'Workflow timeline rail' : 'Video sequence timeline rail'} data-kg-video-sequence-ruler-scroll="1" {...mediaDropTargetProps}>
         <section className="timeline-video-sequence-ruler-scroll-content" aria-label={workflowProjection ? 'Workflow timeline workspace' : 'Video sequence timeline workspace'} style={{ minHeight, width: `${workspaceLayout.workspaceWidthPercent}%` }}>

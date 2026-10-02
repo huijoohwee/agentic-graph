@@ -90,6 +90,22 @@
   color: var(--kg-canvas-accent, #2563eb);
 }
 
+.timeline-video-sequence-lane-label:has(> .timeline-video-sequence-lane-select) { padding: 0; }
+.timeline-video-sequence-lane-select {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  padding-inline: 18px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
 .timeline-video-sequence-lane-row[data-kg-video-sequence-lane-selected="1"] {
   z-index: 1;
   background: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 6%, var(--kg-panel-bg, #fff));
