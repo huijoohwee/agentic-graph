@@ -2,12 +2,12 @@
 title: "Workspace data views: Table, Kanban and Calendar"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "workspace-data-views"
-version: "1.1.0"
-prd_revision: "1.1.0"
-tad_revision: "1.1.0"
-adr_revision: "1.1.0"
-mvp_revision: "1.1.0"
-gtm_revision: "1.1.0"
+version: "1.2.0"
+prd_revision: "1.2.0"
+tad_revision: "1.2.0"
+adr_revision: "1.2.0"
+mvp_revision: "1.2.0"
+gtm_revision: "1.2.0"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Workspace data-view product function"
@@ -19,7 +19,7 @@ universal_scope: false
 lifecycle_status: "implemented"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/workspace-view-controls"
+worktree_id: "agent/device-0232231d4a19/calendar-refinements"
 agent_id: "codex-workspace-data-view-author"
 source_docs:
   - "Reference implementation: agentic-graph@8b258a4a116cd7ef70718acd28307fc4a62af897"
@@ -29,7 +29,7 @@ source_docs:
 
 # Workspace data views: Table, Kanban and Calendar
 
-`workspace-data-views@1.1.0` joins all five roles below. After the specification-first checkpoint,
+`workspace-data-views@1.2.0` joins all five roles below. After the specification-first checkpoint,
 the operator authorized implementation on 2026-10-02. Shared settings, versioned queries and native
 Calendar are now implemented in the existing owners. B records the historical baseline; the
 implementation checkpoint below separates verified behavior from remaining acceptance evidence.
@@ -77,7 +77,7 @@ D5: Derive behavior from typed content and explicit configuration, never a filen
 | R5 Sort / 11–12 | Add multiple fields; ascending/descending; reorder precedence; remove one or clear all | V4 / T4 |
 | R6 Group / 13 | Group-by property, empty-group policy, per-group visibility and bulk visibility; counts and ungrouped records remain inspectable | V5 / T3 |
 | R7 Global renderers / 19–21 | Restore Kanban as a named 2D choice and add Calendar; choices activate real surfaces and survive reload/source switch | V1 / T1 |
-| R8 Calendar / 1, 21 | Explicit start field, optional end field, month navigation, Today, date labels, date selection and unscheduled/invalid-date records | V6 / T5 |
+| R8 Calendar / 1, 21 and Calendar follow-up 1–5 | Explicit start/end fields; localized month grid and date navigator; Today highlight; day-local New row; compact records and bounded overflow; unscheduled/invalid-date records | V6 / T5 |
 | R9 Shared affordances / 16–18 | Same settings outcome across three surfaces; preserve compact local-hover add-record behavior and source mutation guards | V7, V8 / T2, T3 |
 
 External calendars, subscriptions, recurrence, remote sync, notifications and week/day scheduling are
@@ -273,7 +273,7 @@ Use original neutral records or runtime-supplied user input; never embed a user'
 | V3 Filters | Nested AND/OR and every operator produce expected row IDs; edit/wrap/duplicate/delete preserve unaffected clauses | New pure truth-table/migration tests, malformed/depth/size tests; mounted controls and reload |
 | V4 Sort | Two or more fields obey precedence and typed tie/null/invalid policy; legacy comparator remains unchanged until explicit conversion | Extend state/query behavior suite; reordered sorts change only expected record ordering |
 | V5 Groups | Hidden/empty/configured/encountered/ungrouped lanes reflect policy and counts | Extend Kanban projection tests and `ui.dataViewKanban.cardLists.sharedResponsiveOwner`; live hide/show/reload |
-| V6 Calendar | Correct civil/instant boundaries, month navigation, intervals and unscheduled/invalid recovery | New deterministic projection tests (leap day/DST/offset/midnight); explicit date edit roundtrip and source revision rejection |
+| V6 Calendar | Correct civil/instant boundaries, month navigation, intervals and unscheduled/invalid recovery; day-local creation, keyboard date navigation and complete paged overflow | New deterministic projection tests (leap day/DST/offset/midnight); explicit date edit roundtrip and source revision rejection |
 | V7 View lifecycle | Duplicate has independent config; deleting selected view preserves records and valid active view; final-view deletion is disabled with a reason; all surfaces show same queried IDs | Extend `markdownDataView.state.duplicateDelete`, `markdownDataView.state.columnCrudCleanup`; source selection and read-only tests |
 | V8 Accessible bounded UI | Named hit targets, keyboard/touch/narrow layout, local hover, offline and lazy budgets pass | `ui.workspace.responsiveMenusAndDataViewSurfaces`, `floatingPanel.formControls.sharedDensity`; live interaction/screenshot and production-build chunk measurements |
 
@@ -398,3 +398,52 @@ Full external calendar adapters, recurrence and drag scheduling remain deferred.
 checkpoint is the consented operator journey after the outstanding acceptance checks, with the
 same source-loss and zero-spend stop criteria. Preserve this increment's diff, validation logs,
 neutral live evidence and native release receipt in private execution evidence.
+
+
+## Checkpoint — Calendar interaction refinement, 2026-10-02
+
+`workspace-data-views@1.2.0` joins the five roles for the operator's Calendar enhancement request.
+The existing source writer, date projection, view state and lazy renderer remain the owners.
+The published 1.1.0 candidate is retained unchanged; scope `#calendar-refinements` uses its native
+successor allocation. Admission digest: `70fe99a82bcd1c0cec03d51a9cb12a61fddd3a1fb6b24a8aedc7f0366675b169`.
+
+- **PRD / value:** reduce the steps to add a record on a known day and make a dense month readable.
+  A localized month heading, weekday labels, muted adjacent-month cells and a timezone-correct today
+  highlight establish date context. Every populated day previews up to three named records; an empty
+  title reads Untitled. A named more-records button opens the full day list with existing pagination.
+- **TAD / ownership:** `markdownDataViewCalendar.ts` shares month cells with the main grid and compact
+  navigator. The projection retains its 42-day bound; display trims unused trailing weeks.
+  `MarkdownDataViewCalendarNavigation.tsx` owns month/date selection and arrow/Home/End focus movement;
+  its semantic disclosure returns focus on selection or Escape. `MarkdownDataViewCalendarView.tsx`
+  owns the day-local composer and passes only title/start-date seeds to the existing record callback.
+  `markdownDataViewCalendar.css` scopes presentation and local-hover/focus/coarse-pointer rules.
+- **ADR / choice:** use a native semantic table, buttons, time elements, details and forms. Reuse the
+  configured timezone and browser locale without a calendar package. Keep record previews bounded
+  instead of rendering an unbounded stack inside every cell. No generic div or aria-hidden decoration
+  is introduced by these controls. View navigation does not write source content.
+- **MVP / acceptance:** hovering one day reveals only its New row control; focus and touch keep it
+  discoverable. Entering a title or accepting Untitled creates a row on that day through the same
+  writer; Cancel/Escape writes nothing. Read-only or non-Date properties expose no civil-date writer.
+  The date navigator, Previous/Next/Today, overflow and record details are interactive.
+  The focused interaction suite covers creation/cancel seeds, focus, date selection, overflow paging,
+  month changes and read-only controls; date tests retain leap/DST/range coverage and check 4/5/6-week
+  presentation. Browser verification owns CSS hover visibility and the persisted write/readback.
+- **GTM / learning:** retain the existing voluntary pilot and price hypothesis. Compare time and
+  mistakes when adding three dated records through the inline day composer; no revenue or conversion
+  claim follows from this implementation.
+
+Sprint cap refreshed after CI diagnostics: ten files, 44 KB of added text, approximately 35 active minutes plus required checks,
+zero paid resources. The new navigation and styles remain within the existing lazy Calendar module.
+No new storage version, remote calendar, recurrence, notifications, drag rescheduling, source identity
+policy or Production effect is introduced. Physical-device/offline and formal p95 acceptance remain
+open; exact validation and release receipts accompany the candidate separately.
+
+Validation includes three Calendar cases, the TypeScript check, eight responsibility-flow cases,
+and live browser creation/readback of a titled record on 2026-10-15, record details, compact date
+selection and keyboard movement. The first build emitted a lazy Calendar module of 18.64 KB JS and
+3.46 KB CSS; shared pre-existing oversized chunks remain outside this feature's bundle claim.
+The predecessor's remote Mission browser check lost its context during navigation. An unchanged
+settings generation also reproduced a local preview reload. The existing artifact writer now skips
+identical content while retaining staged writes for changes; its regression test checks unchanged
+inode/mtime and changed-byte persistence. This removes one concurrent-verification reload source;
+the exact candidate's protected CI remains the release authority, not that diagnosis alone.

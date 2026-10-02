@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { projectDataViewCalendar, shiftCalendarMonth } from '@/features/markdown/ui/markdownDataViewCalendar'
+import { calendarDateLabel, calendarMonthDays, projectDataViewCalendar, shiftCalendarMonth, visibleCalendarDays } from '@/features/markdown/ui/markdownDataViewCalendar'
 import { parseDataViewDate } from '@/features/markdown-workspace/main/viewer/workspaceDataViewDates'
 import type { MarkdownDataView } from '@/features/markdown/ui/markdownDataViewModel'
 const config = { startColumnId: 'start', endColumnId: 'end', timeZone: 'America/New_York', month: '2024-03' }
@@ -27,6 +27,16 @@ export function testDataViewCalendarStrictRanges() {
   assert.ok(parseDataViewDate('2024-02-29'))
   assert.equal(shiftCalendarMonth('2024-12', 1), '2025-01')
   assert.equal(shiftCalendarMonth('2024-01', -1), '2023-12')
+  assert.equal(shiftCalendarMonth('9999-12', 1), '9999-12', 'month navigation stays in supported year syntax')
+  assert.equal(calendarMonthDays('2026-13').length, 0)
+  for (const month of ['0000-01', '9999-12']) {
+    assert.equal(calendarMonthDays(month).length, 42)
+    for (const day of calendarMonthDays(month)) assert.ok(calendarDateLabel(day.date, { day: 'numeric' }))
+  }
+  assert.equal(visibleCalendarDays(calendarMonthDays('2026-10')).length, 35)
+  assert.equal(visibleCalendarDays(calendarMonthDays('2026-08')).length, 42)
+  assert.equal(visibleCalendarDays(calendarMonthDays('2026-02')).length, 28)
+  assert.equal(calendarDateLabel('2026-10-02', { month: 'long', year: 'numeric' }, 'en-US'), 'October 2026')
   const fall = projectDataViewCalendar(model([['Fall DST', '2024-11-03T00:00:00-04:00', '2024-11-04T00:00:00-05:00']]), { ...config, month: '2024-11' })
   assert.equal(fall.days.filter(day => day.rows.length).length, 1)
   const civilZone = projectDataViewCalendar(model([['Date only', '2024-03-01', '']]), { ...config, timeZone: 'Pacific/Honolulu' })
