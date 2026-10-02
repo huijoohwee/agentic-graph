@@ -234,8 +234,8 @@ export function StrybldrTimelineBottomPanel({
   }, [initialView, setBottomSurfaceCollapsed, setBottomSurfaceTab])
   const showStrybldrTimelineView = React.useCallback(() => {
     setView('strybldrTimeline')
-    if (bottomSurfaceDiagramRequested) setBottomSurfaceCollapsed(true)
-  }, [bottomSurfaceDiagramRequested, setBottomSurfaceCollapsed])
+    setBottomSurfaceCollapsed(false)
+  }, [setBottomSurfaceCollapsed])
   const showDocumentVersionGraphView = React.useCallback(() => {
     setView('documentVersionGraph')
     setBottomSurfaceTab('documentVersionGraph')
@@ -335,11 +335,7 @@ export function StrybldrTimelineBottomPanel({
   }
   const panelHeightStyle = minimized
     ? { height: 'var(--kg-toolbar-compact-surface-height)' }
-    : view === 'activity' || view === 'documentVersionGraph' || view === 'flowchart' || view === 'gitGraph' || view === 'gantt' || view === 'timeline' || view === 'designTimeline' || view === 'architecture' || view === 'eventModeling'
-      ? pinned
-        ? expandedPinnedHeightStyle
-        : expandedUnpinnedHeightStyle
-      : { maxHeight: 'min(32vh, 12rem)' }
+    : pinned ? expandedPinnedHeightStyle : expandedUnpinnedHeightStyle
   const panelPosition = position || getDefaultUnpinnedPosition()
   const layerStyle = React.useMemo(() => ({ left: workspaceLayerInsetLeft }), [workspaceLayerInsetLeft])
   const panelStyle = pinned
@@ -399,9 +395,9 @@ export function StrybldrTimelineBottomPanel({
             }}
             onPointerDown={handleHeaderPointerDown}
           >
-            <section className="flex min-w-0 items-center gap-1">
+            <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [&_button]:!min-w-[var(--kg-control-height,28px)] [&_button]:shrink-0" aria-label="Bottom panel views">
               <span className="min-w-0 truncate text-xs font-semibold">{view === 'activity' ? 'Activity' : 'Timeline'}</span>
-              <IconButton className="App-toolbar__btn" style={{ minWidth: 44, minHeight: 44 }} title="Activity" showTooltip aria-pressed={view === 'activity'} onClick={() => { setView('activity'); setBottomSurfaceTab('activity'); setBottomSurfaceCollapsed(false); setMinimized(false) }}><Activity className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" /></IconButton>
+              <IconButton className="App-toolbar__btn" title="Activity" showTooltip aria-pressed={view === 'activity'} onClick={() => { setView('activity'); setBottomSurfaceTab('activity'); setBottomSurfaceCollapsed(false); setMinimized(false) }}><Activity className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" /></IconButton>
               <IconButton
                 className={cn(
                   'App-toolbar__btn',
@@ -417,23 +413,21 @@ export function StrybldrTimelineBottomPanel({
               >
                 <History className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
               </IconButton>
-              {active ? (
-                <IconButton
-                  className={cn(
-                    'App-toolbar__btn',
-                    view === 'strybldrTimeline'
-                      ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                      : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                  )}
-                  title="Strybldr Timeline"
-                  showTooltip
-                  aria-pressed={view === 'strybldrTimeline'}
-                  onClick={showStrybldrTimelineView}
-                  data-kg-strybldr-bottom-timeline-strybldr-toggle="1"
-                >
-                  <MonitorPlay className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-                </IconButton>
-              ) : null}
+              <IconButton
+                className={cn(
+                  'App-toolbar__btn',
+                  view === 'strybldrTimeline'
+                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
+                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
+                )}
+                title="Storyboard"
+                showTooltip
+                aria-pressed={view === 'strybldrTimeline'}
+                onClick={showStrybldrTimelineView}
+                data-kg-strybldr-bottom-timeline-strybldr-toggle="1"
+              >
+                <MonitorPlay className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
+              </IconButton>
               <IconButton
                 className={cn(
                   'App-toolbar__btn',
@@ -524,7 +518,7 @@ export function StrybldrTimelineBottomPanel({
               >
                 <Workflow className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
               </IconButton>
-            </section>
+            </nav>
             <HeaderActions
               onPinToggle={handlePinToggle}
               pinned={pinned}
@@ -579,7 +573,7 @@ export function StrybldrTimelineBottomPanel({
                   <EventModelingBottomPanelViewLazy compact />
                 </React.Suspense>
               ) : (
-                <StrybldrTimelinePanel active={active} />
+                <StrybldrTimelinePanel active />
               )}
             </section>
           ) : null}
