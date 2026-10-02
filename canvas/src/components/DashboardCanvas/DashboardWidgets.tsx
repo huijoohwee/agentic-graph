@@ -1,3 +1,4 @@
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import React from 'react'
 import { DashboardMarkdown } from './DashboardMarkdown'
 import { useDashboardCardDrag } from './DashboardWidgetBoard'
@@ -145,7 +146,7 @@ function DashboardTableRows(props: {
           className={[
             'border-b border-[var(--kg-border)] px-2 py-2 last:border-b-0',
             rowMovable ? 'cursor-grab select-none active:cursor-grabbing' : '',
-            selected ? 'rounded border-b-transparent bg-blue-50/80' : '',
+            uiSelectedRowStateClassName(selected),
             dragging ? 'opacity-45' : '',
           ].join(' ')}
           data-kg-dashboard-table-row={row.id}

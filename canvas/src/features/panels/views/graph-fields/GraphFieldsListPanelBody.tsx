@@ -352,7 +352,7 @@ export function GraphFieldsListPanelBody({
           const localSchemaButtonClassName = (active: boolean) =>
             [
               `${UI_RESPONSIVE_GRAPH_FIELDS_LIST_ROW_CLASSNAME} border-b ${UI_THEME_TOKENS.panel.divider} last:border-b-0`,
-              'flex items-center gap-2 border-l-2',
+              'flex items-center gap-2',
               active ? UI_THEME_TOKENS.table.rowSelected : `${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.table.rowHover}`,
               'text-left',
             ].join(' ')

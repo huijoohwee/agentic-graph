@@ -1,3 +1,4 @@
+import { UI_ROW_SELECTION_PAINT, UI_THEME_TOKENS } from 'grph-shared/ui/themeTokens'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
@@ -20,7 +21,7 @@ const listSourceFiles = (root: string): string[] =>
 
 export function testSelectedRowClassAuthorityForbidsLegacyDuplicateVariants() {
   if (!UI_SELECTED_ROW_ACTIVE_CLASS_NAME.includes('border')) {
-    throw new Error('expected the shared selected-row authority to own the full-row border')
+    throw new Error('expected the shared selected-row authority to reserve a neutral full-row border')
   }
   if (uiSelectedRowStateClassName(true) !== UI_SELECTED_ROW_ACTIVE_CLASS_NAME) {
     throw new Error('expected active selected rows to resolve through the shared class authority')
@@ -86,6 +87,13 @@ export function testSelectedRowClassAuthorityForbidsLegacyDuplicateVariants() {
     }
   }
 
+  const paint = UI_ROW_SELECTION_PAINT
+  for (const fragment of [`${paint.accent}_${paint.alpha * 100}%`, `inset_${paint.accentWidthPx}px_0_0_${paint.accent}`, 'hover:!bg-', '[&>td:first-child]', '[&>th:first-child]']) {
+    if (!UI_THEME_TOKENS.table.rowSelected.includes(fragment)) throw new Error(`selected-row DOM/canvas paint contract drift: ${fragment}`)
+  }
+  if (!UI_SELECTED_ROW_ACTIVE_CLASS_NAME.includes(UI_THEME_TOKENS.table.rowSelected) || UI_SELECTED_ROW_ACTIVE_CLASS_NAME.includes('border-blue')) {
+    throw new Error('selected rows must use the shared inset accent and highlight, without the legacy full blue border')
+  }
   const staleNames = ['uiPrimary', 'ChipActiveClassName', 'primary', 'ChipActive']
   const staleExportName = `${staleNames[0]}${staleNames[1]}`
   const staleTokenName = `${staleNames[2]}${staleNames[3]}`
@@ -96,7 +104,7 @@ export function testSelectedRowClassAuthorityForbidsLegacyDuplicateVariants() {
 
   for (const path of sourceFiles) {
     const text = readFileSync(path, 'utf8')
-    if (text.includes(staleExportName) || text.includes(staleTokenName)) {
+    if (text.includes(staleExportName) || text.includes(staleTokenName) || /rowSelectionStyle|rowSelectedBorder/.test(text)) {
       throw new Error(`legacy selected-row authority remains in ${path}`)
     }
     const directRowVariant = /(?:UI_RESPONSIVE_MENU(?:_OPTION)?_ROW_CLASSNAME|w-full\s+text-left|flex-1[^\n]*text-left)[^\n]{0,320}UI_THEME_TOKENS\.button\.active(?:Bg|Border|Text)/
@@ -108,6 +116,22 @@ export function testSelectedRowClassAuthorityForbidsLegacyDuplicateVariants() {
     }
     if (text.includes('UI_SELECTED_ROW_INACTIVE_CLASS_NAME')) {
       throw new Error(`neutral-row consumers must use the shared selectable-row utility in ${path}`)
+    }
+    // Canvas node bounds and spherical map markers encode geometry, not selectable list rows.
+    const geometricSelectionLiterals = [
+      "selected ? 'border-black/30 ring-1 ring-black/10'",
+      "selected ? 'bg-black/10'",
+      "selected ? 'scale-125 ring-2 ring-white/70'",
+      "selected ? 'h-5 w-5 scale-125 ring-2 ring-white/60'",
+    ]
+    const nonRowLiterals = path.endsWith('/SemanticSpacePanel.tsx')
+      ? ["selected?.id === item.id ? 'border-amber-400'"]
+      : path.endsWith('/fast-grid/DateCellEditor.tsx')
+        ? ["selected ? 'bg-blue-600 text-white'"] : []
+    const checkedText = [...geometricSelectionLiterals, ...nonRowLiterals].reduce((result, literal) => result.replaceAll(literal, ''), text.replace(/\s+/g, ' '))
+    const localSelectionPaint = /(?:\bselected|\bisSelected|props\.selected|row\.selected|selectedId === item\.id|selected\?\.id === item\.id|index === activeIdx|props\.selectedRowId === r\.id)\s*\?\s*['"`][^'"`\n]*(?:bg-|ring-|outline-|border-)/
+    if (!path.includes('/__tests__/') && localSelectionPaint.test(checkedText)) {
+      throw new Error(`local row/card selection paint bypasses the shared owner in ${path}`)
     }
     const directBlueSelectedRow = /(?:DESIGN_PANEL_(?:TREE|LIST)_ROW_CLASSNAME|px-3 py-2 text-sm flex items-center justify-between)[^\n]{0,240}(?:bg-blue-50|dark:bg-blue-900\/20)/
     if (directBlueSelectedRow.test(text)) {

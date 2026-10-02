@@ -2,12 +2,12 @@
 title: "Workspace data views: Table, Kanban and Calendar"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "workspace-data-views"
-version: "1.2.1"
-prd_revision: "1.2.1"
-tad_revision: "1.2.1"
-adr_revision: "1.2.1"
-mvp_revision: "1.2.1"
-gtm_revision: "1.2.1"
+version: "1.3.0"
+prd_revision: "1.3.0"
+tad_revision: "1.3.0"
+adr_revision: "1.3.0"
+mvp_revision: "1.3.0"
+gtm_revision: "1.3.0"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Workspace data-view product function"
@@ -19,7 +19,7 @@ universal_scope: false
 lifecycle_status: "implemented"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/calendar-record-dialog"
+worktree_id: "agent/device-0232231d4a19/shared-row-selection"
 agent_id: "codex-workspace-data-view-author"
 source_docs:
   - "Reference implementation: agentic-graph@8b258a4a116cd7ef70718acd28307fc4a62af897"
@@ -29,7 +29,7 @@ source_docs:
 
 # Workspace data views: Table, Kanban and Calendar
 
-`workspace-data-views@1.2.1` joins all five roles below. After the specification-first checkpoint,
+`workspace-data-views@1.3.0` joins all five roles below. After the specification-first checkpoint,
 the operator authorized implementation on 2026-10-02. Shared settings, versioned queries and native
 Calendar are now implemented in the existing owners. B records the historical baseline; the
 implementation checkpoint below separates verified behavior from remaining acceptance evidence.
@@ -485,3 +485,52 @@ Live checks at 1351 × 952 and 390 × 844 confirm zero center offset, a 44 × 44
 menu hit testing above the dialog and beyond its bounds. Mobile menu bounds remain in the viewport.
 Escape and the close icon restore focus to the selected record. Protected CI remains the separate
 source-integration gate; no Production runtime proof follows from these local observations.
+
+
+## Checkpoint — Shared row selection, 2026-10-02
+
+`workspace-data-views@1.3.0` joins five roles for the operator's traversal/reuse annotation.
+Native successor: `/refactor #shared-row-selection @codex`; baseline is
+`b7efa896e7d7f21733f5db39180b8ef67c76e088`. The previous checkpoint remains historical;
+its local `rowSelectionStyle.ts` helper is removed by this increment.
+
+- **PRD / value:** selected records, list/tree rows and command choices retain one visible
+  highlight and left accent, including on hover. The user can identify their current item without
+  interpreting different rings, outlines, category stripes or background strengths on each surface.
+- **TAD / ownership:** extend `grph-shared/src/ui/selectedRowClasses.ts` and its existing
+  `themeTokens.ts` authority. Calendar, hierarchy/span rows, table rows, search results, dashboard
+  records, gallery/Kanban cards, semantic outlines, block-library and command lists consume it.
+  Existing explorer/TOC, history, design trees, graph outlines and menu consumers inherit the owner.
+  GitGraph and diagram command rows lose their separate inset/ring/background variant. The fast
+  canvas grid imports the same owner’s paint constants; pinned DOM cells inherit the row background
+  and the first cell receives the accent so sticky backgrounds cannot obscure selection.
+- **ADR / choice:** use the existing theme's selected-row token for a 22% highlight and four-pixel
+  inset left accent. Transparent borders preserve the existing helper contract; the inset avoids
+  moving content. Remove the duplicate style helper, unused selected-border token and row-local
+  selection literals. Keep domain colors in icons/swatches, keyboard focus outlines, dashed drop
+  targets, canvas geometric bounds and date-cell selection: these represent distinct interactions.
+  Settings, typography, icon owners, state callbacks and source writers are unchanged. No new
+  module, storage schema, API, package, asset or external runtime dependency is introduced.
+- **MVP / VCC:** selecting and hovering a Calendar record uses the same computed highlight/accent
+  as another native row; closing details retains selection. Table selection remains visible through
+  pinned cells. The existing selected-row authority test now checks DOM/canvas paint agreement and
+  scans source for retired helpers, tokens and row/card selection literals. Its narrow exclusions
+  cover canvas geometry, map markers and date cells; it is a regression guard, not a complete CSS
+  parser or proof of every interactive surface. Browser checks target desktop and narrow viewport.
+- **GTM / learning:** retain the existing voluntary pilot and setup-price hypothesis; observe
+  wrong-item reopening and time to locate the current row. This consistency fix establishes no
+  willingness-to-pay, revenue or production-readiness claim.
+
+Bound refreshed to 26 files, 45 KB diff and 40 active minutes plus required checks; zero paid
+resources. Reservation recovery preserved the authored patch while the native pending expansion
+was reconciled; no user edits were reverted. Canvas modules remain in their existing load paths.
+The source-wide guard, TypeScript and affected-owner checks plus browser evidence determine local
+acceptance; final exact candidate and protected integration receipts are retained separately.
+Next: author verifies these conditions, publishes the admitted candidate and rechecks protected CI;
+Production, physical-device/offline parity and formal performance acceptance remain separate.
+
+Validation so far: `ui.selectedRow.authority.forbidsLegacyDuplicateVariants` and
+`workspaceDataView.calendar.interactions` pass; Canvas TypeScript passes. The live desktop DOM
+confirms matching Calendar/Explorer highlight and four-pixel inset accent after record close.
+Exact-head affected checks and remaining browser observations are recorded in the candidate's
+private verification receipt, without upgrading Production readiness.

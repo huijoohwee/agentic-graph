@@ -1,3 +1,4 @@
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import React from 'react'
 import { buildKanbanCardDropIntentLabel } from '@/features/markdown/ui/kanban/kanbanDragIntent'
 import { getKanbanCardDragVisualState } from '@/features/markdown/ui/kanban/kanbanDragVisualState'
@@ -174,7 +175,7 @@ function MarkdownPreviewGalleryCard(props: {
       className={[
         'relative min-w-0 overflow-hidden rounded-md border p-0 shadow-sm transition-transform duration-150',
         UI_THEME_TOKENS.panel.bg,
-        props.selected ? 'border-blue-300 ring-1 ring-blue-300' : UI_THEME_TOKENS.panel.border,
+        props.selected ? uiSelectedRowStateClassName(true) : UI_THEME_TOKENS.panel.border,
         cardDragVisualState.className,
         dragging ? '' : 'hover:-translate-y-[1px]',
       ].join(' ')}

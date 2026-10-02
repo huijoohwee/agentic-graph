@@ -5,7 +5,7 @@ import type { WorkspaceDataViewConfig } from '@/features/markdown-workspace/main
 import { DataViewAction } from '@/features/markdown-workspace/main/viewer/WorkspaceDataViewSettingsActions'
 import { PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { rowSelectionStyle } from '@/lib/ui/rowSelectionStyle'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import { MarkdownDataViewTableView } from './MarkdownDataViewTableView'
 import { dayInDataViewZone, isDataViewTimeZone, parseDataViewDate } from '@/features/markdown-workspace/main/viewer/workspaceDataViewDates'
 import { CALENDAR_DAY_PREVIEW_SIZE, CALENDAR_PAGE_SIZE, calendarDateLabel, defaultDataViewCalendar, projectDataViewCalendar, visibleCalendarDays } from './markdownDataViewCalendar'
@@ -42,7 +42,7 @@ export default function MarkdownDataViewCalendarView(props: {
   React.useEffect(() => { setPages({}) }, [calendar.month, props.view])
   React.useEffect(() => { composer.current?.querySelector('input')?.focus() }, [creatingDay])
   React.useEffect(() => { if (recordOpen && selectedRow && !dialog.current?.open) dialog.current?.showModal(); else if (!recordOpen || !selectedRow) dialog.current?.close() }, [recordOpen, selectedRow])
-  const recordButton = (row: MarkdownDataViewRow) => <li key={row.id} className="list-none min-w-0"><button type="button" className="kg-calendar-record" style={rowSelectionStyle(selectedRowId === row.id)} aria-pressed={selectedRowId === row.id} aria-haspopup="dialog" aria-label={`Open record: ${title(row)}`} title={title(row)} onClick={() => { setSelectedRowId(row.id); setRecordOpen(true) }}>{title(row)}</button></li>
+  const recordButton = (row: MarkdownDataViewRow) => <li key={row.id} className="list-none min-w-0"><button type="button" className={`kg-calendar-record ${uiSelectedRowStateClassName(selectedRowId === row.id)}`} aria-pressed={selectedRowId === row.id} aria-haspopup="dialog" aria-label={`Open record: ${title(row)}`} title={title(row)} onClick={() => { setSelectedRowId(row.id); setRecordOpen(true) }}>{title(row)}</button></li>
   const pagedList = (rows: MarkdownDataViewRow[], key: string) => {
     const page = Math.min(pages[key] ?? 0, Math.max(0, Math.ceil(rows.length / CALENDAR_PAGE_SIZE) - 1))
     return <>

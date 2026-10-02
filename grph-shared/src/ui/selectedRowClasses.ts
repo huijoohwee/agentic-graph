@@ -1,6 +1,6 @@
 import { UI_THEME_TOKENS } from './themeTokens.js'
 
-export const UI_SELECTED_ROW_ACTIVE_CLASS_NAME = `border ${UI_THEME_TOKENS.button.activeSoft}`
+export const UI_SELECTED_ROW_ACTIVE_CLASS_NAME = `border border-transparent ${UI_THEME_TOKENS.table.rowSelected}`
 export const UI_SELECTED_ROW_INACTIVE_CLASS_NAME = `border border-transparent ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`
 
 export const uiSelectedRowStateClassName = (active: boolean): string =>
