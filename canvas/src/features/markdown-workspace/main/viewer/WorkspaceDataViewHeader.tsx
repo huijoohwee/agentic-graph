@@ -84,6 +84,7 @@ export function WorkspaceDataViewHeader(props: {
 
   return (
     <WorkspaceHeader ariaLabel="Data view header" border="border" className="relative z-20 kg-data-view-header kg-data-view-new-record-hover-scope">
+      {props.viewConfig?.recoveryError && <p role="alert" className="p-2 text-xs">{props.viewConfig.recoveryError}</p>}
       <section className={`kg-data-view-header-controls ${uiToolbarRowScrollClassName} gap-2 px-3 py-1.5`} aria-label="Data view controls">
         <button
           type="button"

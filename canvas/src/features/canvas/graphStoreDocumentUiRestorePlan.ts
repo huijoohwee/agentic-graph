@@ -1,3 +1,4 @@
+import { isDataViewCanvas2dRenderer } from '@/lib/config.render'
 import { isFrontmatterFlowGraph } from '@/lib/graph/frontmatterMode'
 import type { GraphData } from '@/lib/graph/types'
 import type { PerDocumentUiState } from '@/lib/persistence/perDocumentUiState'
@@ -32,7 +33,7 @@ export function buildSavedDocumentUiPresentationPlan(args: {
   saved: PerDocumentUiState
 }): SavedDocumentUiPresentationPlan {
   return {
-    shouldPreferFrontmatterFlowLanding: isFrontmatterFlowGraph(args.graphData),
+    shouldPreferFrontmatterFlowLanding: isFrontmatterFlowGraph(args.graphData) && !((args.saved.canvasRenderMode ?? '2d') === '2d' && isDataViewCanvas2dRenderer(args.saved.canvas2dRenderer)),
     modeState: buildSavedDocumentUiModeState(args.saved),
   }
 }

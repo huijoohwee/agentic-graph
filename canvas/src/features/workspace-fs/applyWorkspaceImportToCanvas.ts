@@ -7,10 +7,10 @@ import {
   WORKSPACE_IMPORT_AUTO_PARSE_MAX_FILE_CHARS,
   WORKSPACE_IMPORT_AUTO_PARSE_MAX_TOTAL_CHARS,
 } from '@/lib/config'
-import { DEFAULT_CANVAS_2D_RENDERER } from '@/lib/config.render'
+import { DEFAULT_CANVAS_2D_RENDERER, isDataViewCanvas2dRenderer } from '@/lib/config.render'
 import { extractYamlFrontmatterHeaderBlock, isFrontmatterOnlyDoc, parseCanvasWorkspaceFrontmatterPreset } from '@/lib/markdown/frontmatter'
 import { applyFrontmatterFlowImportModes } from '@/features/parsers/frontmatterFlowImportMode'
-import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
+import { applyCanvasFrontmatterPreset, resolveCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
 import {
   waitForCanvasFrontmatterSurfaceTransition,
 } from '@/features/parsers/canvasFrontmatterSurfaceTransition'
@@ -58,6 +58,10 @@ export function applyInteractiveImportModes(args?: { graphData?: GraphData | nul
   const graphData = args?.graphData || null
   const frontmatterOnlyDoc = args?.frontmatterOnlyDoc === true
   const rawText = String(args?.rawText || '')
+  // Restoring a plain source must not replace the operator's saved record view.
+  if (store.canvasRenderMode === '2d' && isDataViewCanvas2dRenderer(store.canvas2dRenderer)
+    && !resolveCanvasFrontmatterPreset({ graphData, rawText })
+    && !shouldActivateStrybldrImportSurface({ graphData, rawText })) return
 
   try {
     const schema = store.schema
