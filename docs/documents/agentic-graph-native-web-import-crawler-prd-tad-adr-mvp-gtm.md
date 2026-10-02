@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.51"
-date: "2026-10-01"
+version: "0.2.52"
+date: "2026-10-02"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.native-web-import-crawler"
@@ -27,30 +27,30 @@ constraints:
   - "no proxy endpoint or credential in client options, manifests, Canvas documents, or logs"
 frontmatter_contract: "required"
 continuity_id: "PLAN-AGENTIC-GRAPH-NATIVE-WEB-IMPORT-CRAWLER-PRD-TAD-ADR-MVP-GTM"
-worktree_id: "device-0232231d4a19--import-inventory"
-agent_id: "codex-01a0940a"
+worktree_id: "device-0232231d4a19--youtube-import-freeze"
+agent_id: "codex-01a0fd1c"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "25794100ef1e17cfb5a9dc7f4c429a05a458b538"
-previous_document_version: "0.2.50"
-prd_revision: "0.2.51"
-tad_revision: "0.2.51"
-adr_revision: "0.2.51"
-mvp_revision: "0.2.51"
-gtm_revision: "0.2.51"
+reviewed_source_revision: "c8ccb768b3f0020b85a22e0cc1d4ec3e02b0f1f0"
+previous_document_version: "0.2.51"
+prd_revision: "0.2.52"
+tad_revision: "0.2.52"
+adr_revision: "0.2.52"
+mvp_revision: "0.2.52"
+gtm_revision: "0.2.52"
 ---
 # Reference implementation: agentic-graph Native Web Import Crawler
-## 2026-10-01 Single-table import inventory — revision 0.2.51
+## 2026-10-02 Bounded video URL import previews — revision 0.2.52
 
-**PRD / acceptance.** One visible `_import-index.md` at each website host or local collection root retains every known discovered URL and selected file/folder input, including imported, not imported, pending, missing and failed-attempt details. The Markdown table is the single portable record set; the existing Viewer table and Kanban project those same rows, with no second JSON metadata block. Source, saved path, detail, input/output digests, checked-at milliseconds, check result, ETag and Last modified stay together. VCCs: migrate existing catalogs without losing receipts or outside notes; preserve captures and unknown discoveries; retain unsupported and failed inputs; repeat reconciliation writes nothing; preserve edited catalogs and filesystem access; recover label-only links; keep output-specific receipts correctly paired when one source has multiple saved documents.
+**PRD / acceptance.** `/fix #youtube-import-freeze @codex` repairs Import URL hanging the local browser. Preserve source playback, full duration, available transcript content, all eight graph nodes and unavailable-transcript status. Import previews explicitly sample at most 16 frames; they do not claim exhaustive frame analysis. VCCs: inactive frame images request nothing; one extraction request remains pending per analysis panel; subframe clock ticks do not extract again; encoded media tokens cannot dominate semantic selection; oversized generated documents fail visibly before preview writes.
 
-**TAD / grounding.** Protected source `25794100ef1e17cfb5a9dc7f4c429a05a458b538` integrates the refresh repair through PR #1463, with green PR and merge-commit checks. Extend the existing `workspace-fs/importInventory.ts` portable codec; `importInventoryPersistence.ts`, WorkspaceFs, URL/file/folder import owners, source-index cache and generic Markdown data views remain its consumers. Version 2 parses table cells directly, derives validated receipt identity from Source, and emits one row per saved output or one unsaved row; the heading counts unique sources. Path-first URL labels retain their origin, and full saved-path labels preserve identity if links are flattened; earlier full-URL table labels remain readable. Numeric character references protect delimiters, special characters and edge spaces. Optional empty strings remain distinct from absent receipt fields. No new database, service, package, renderer or dependency is added.
+**TAD / grounding.** Native START admits a fresh task lane from protected source `c8ccb768b3f0020b85a22e0cc1d4ec3e02b0f1f0`; the original running lane and unrelated canonical seed edits remain preserved. Extend existing URL builder, video pipeline/frame sampling, frame-analysis projection and storyboard selection owners. Pipeline callers retain the existing 120-sample default; URL imports opt into 16. Generated preview Markdown stays below 500,000 UTF-8 bytes. Selection descriptors exclude opaque Gantt media payloads and are computed once per row/port, with each pair scored once. A versioned projection upgrades recognized app-owned saved frame-analysis fragments in memory, preserving surrounding HTML, annotations and stored source bytes; unknown fragments remain unchanged.
 
-**ADR / boundaries.** Consolidate metadata into existing table columns rather than hiding a second record copy. Keep the version-1 renderer only as a read/migration validator for persisted catalogs, including their previously supported encoded-target and labels-only forms; all new writes use version 2. Existing conditional writes migrate once, preserve outside notes and reject altered managed content. Reuse the shared non-security string checksum to detect accidental table edits; it is not authentication or import authority. Receipt hashes and source ownership retain their existing authority. Unknown legacy fields fail visibly rather than disappear during migration. The table retains validators/digests and multiple outputs without a JSON block; browser storage remains only the active cache. Preserve stable host/collection paths, 480 KiB/5,000-source limits, serialized expected-text writes, missing outputs and zero-fetch reconciliation.
+**ADR / boundaries.** Keep authored diagram text and row identity intact while matching semantic labels. Preserve strict first-winner ties and both selection maps. Defer image sources until their sample is active, wait for pending extraction to settle and use sample timestamps rather than every timeline tick. Preserve annotation interpolation. Bound generated preview sampling and reject excess preview bytes without truncating transcripts or overwriting files; the existing importer may already have saved its source document. No package, service, paid resource, source-specific branch or new storage owner is added.
 
-**MVP / evidence.** Twelve generic inventory regressions pass, including the real Explorer hook cases, complete receipts with multiple outputs, escaped source/path/detail fields, empty validators, stale-cell guards, version-1 migration with notes, labels-only recovery, restart restoration and settled no-op writes. Existing URL/file/folder, concurrent-write, size-limit, local-copy and grouped-media checks remain. All ten native affected partitions passed for the initial table codec, including rebuilt mobile/offline browser smoke; the final path-first readability change is revalidated before publication. Live task Dev Refresh and reload pass, and exact comparison with the preserved original confirms all 628 source records and five saved outputs remain. The Viewer has no separate Import metadata section; an existing local-file index exposes its digest and check columns in the same table. The restored website catalog shrank from 175,914 to 134,073 bytes (about 24%). Runtime input and screenshots remain private, with no site-specific product logic or repository fixture. Native folder-picker and cross-device parity remain unverified; these checks do not claim Production activation.
+**MVP / evidence.** The original tab and a fresh same-origin tab stall; the isolated task preview completes the supplied import. Diagnosis measures parser about 160 ms, storyboard model 41 ms and selection bridge 788 ms; the final descriptor implementation preserves both maps and reduces that bridge to 2.2–17.2 ms in four paired runs. The preview fixture shrinks from 1,983,681 to about 448,000 bytes. Twelve focused regressions pass, including request budgets, duration, transcript/node retention, selection and byte rejection. The requested local endpoint imports the supplied video in about 11 seconds and remains interactive. Typechecking and all ten native owner checks pass after restoring ignored executable links to the existing lockfile-pinned compiler and correcting test-only DOM array types. The saved-panel upgrade receives final focused and native checks before publication. Exact candidate checks and local runtime readback remain separate receipts. Runtime URLs and captures stay outside tracked fixtures.
 
-**GTM / execution / rollback.** Pain: duplicated table/JSON records consume space and expose two representations for users to inspect. `/fix #import-index-table @codex` binds this continuity ID and all five roles at 0.2.51. Budget: 30 active minutes, at most eight existing files and 30 KB changed-source text; the current implementation touches the codec, its existing test file and this joined plan. Reuse the existing Viewer instead of adding UI or storage owners. Measure retained records, actual byte reduction and avoided writes; revenue and monetary savings remain unknown. Keep files below 600 lines and free/FOSS mobile/local/offline behavior. Next owner action: finish live verification and native affected checks, publish one protected candidate, and retain source/runtime evidence. Canonical Dev still awaits the user's choice about an unrelated preserved seed edit. Rollback must retain this version-2 reader for already migrated catalogs; reverting to a version-1-only reader requires an explicit preserved-data conversion, never an automatic overwrite.
+**GTM / execution / rollback.** Buyer pain is a blocked local import and wasted CPU/extraction work; reuse the nearly built importer before adding capabilities. Initial 30-minute diagnostic sprint extends by one 15-minute repair checkpoint and a three-minute saved-panel follow-up; scope cap ten authored files, 40 KB changed-source text, no dependencies, source files below 600 lines and preview documents below 500 KB. CI waits are recorded separately. All five plan roles advance together to 0.2.52. Validate the requested local endpoint, publish the scoped source handoff and observe protected checks; local Dev, integration and Production require separate proof. Revert this candidate to restore former sampling/selection behavior, preserving saved imports and canonical seeds. Free/FOSS mobile/local/offline remains the target; physical-device parity, revenue and Production activation are unverified.
 
 ## 2026-10-01 stable website import destinations
 

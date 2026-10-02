@@ -72,9 +72,7 @@ const readSourceUrlFromFrameRequest = (srcDoc: string): string => {
 const buildFrameAnalysisRuntimeScript = (timing: string): string => [
   `(function(){var frames=${timing};var root=document.querySelector('[data-kg-video-agent-frame-analysis="1"]');if(!root||!frames.length)return;`,
   `if(root.parentElement)root.parentElement.setAttribute('data-kg-video-agent-projected','1');`,
-  `var raf=0;var template=root.getAttribute('data-kg-video-agent-frame-url-template')||'';var refinedBoxes=Object.create(null);var componentBoxes=Object.create(null);`,
-  `function frameSampleMs(){var min=0;for(var index=1;index<frames.length;index+=1){var delta=Number(frames[index].timestampMs)-Number(frames[index-1].timestampMs);if(delta>0&&(!min||delta<min))min=delta;}return min>0?Math.max(80,Math.min(180,min/3)):0;}`,
-  `var sampleMs=frameSampleMs();`,
+  `var raf=0;var template=root.getAttribute('data-kg-video-agent-frame-url-template')||'';var refinedBoxes=Object.create(null);var componentBoxes=Object.create(null);var pendingFrameImage=null;`,
   `function formatSeconds(ms){var text=(Math.max(0,ms)/1000).toFixed(3);return text.replace(/0+$/,'').replace(/\\.$/,'');}`,
   `function frameState(timeMs){var t=Number.isFinite(timeMs)?Math.max(0,timeMs):0;for(var index=0;index<frames.length;index+=1){var current=frames[index];var next=frames[index+1]||current;if(t>=current.timestampMs&&t<current.endMs){var span=Math.max(1,Number(next.timestampMs)-Number(current.timestampMs));return{current:current,next:next,ratio:Math.max(0,Math.min(1,(t-current.timestampMs)/span))};}}var last=frames[frames.length-1];return{current:last,next:last,ratio:0};}`,
   `function clamp01(value){value=Number(value)||0;return Math.max(0,Math.min(1,value));}`,
@@ -87,11 +85,11 @@ const buildFrameAnalysisRuntimeScript = (timing: string): string => [
   `function readSaliencyBox(img,frame,detectionIndex,fallback){if(!img||!img.complete||!img.naturalWidth||!img.naturalHeight)return null;var key=String(frame.frameIndex)+':'+String(detectionIndex)+':'+String(img.currentSrc||img.src||'');if(refinedBoxes[key])return refinedBoxes[key];try{var canvas=document.createElement('canvas');var width=160;var height=90;canvas.width=width;canvas.height=height;var ctx=canvas.getContext('2d',{willReadFrequently:true});if(!ctx)return null;ctx.drawImage(img,0,0,width,height);var base=normalizeBox(fallback);var data=ctx.getImageData(0,0,width,height).data;var candidates=readComponentCandidates(buildScoreMap(data,width,height,base),width,height,base);if(!candidates.length)return null;var chosen=candidates[Math.min(candidates.length-1,Math.max(0,detectionIndex%candidates.length))];var marginX=Math.max(3,width*0.018);var marginY=Math.max(3,height*0.024);var refined=[clamp01((chosen.minX-marginX)/width),clamp01((chosen.minY-marginY)/height),clamp01((chosen.maxX-chosen.minX+1+marginX*2)/width),clamp01((chosen.maxY-chosen.minY+1+marginY*2)/height)];if(refined[2]<0.035||refined[3]<0.035||refined[2]>0.68||refined[3]>0.68)return null;var blended=[refined[0]*0.9+base[0]*0.1,refined[1]*0.9+base[1]*0.1,refined[2]*0.9+base[2]*0.1,refined[3]*0.9+base[3]*0.1];refinedBoxes[key]=blended;root.setAttribute('data-kg-video-agent-bbox-mode','component-refined');return blended;}catch(error){return null;}}`,
   `function applyBox(mark,state,img){var detectionIndex=Number(mark.getAttribute('data-kg-video-agent-detection-index'))||0;var fallback=mixedBox(state,detectionIndex);var refined=readSaliencyBox(img,state.current,detectionIndex,fallback);var box=refined||fallback;mark.style.left=(box[0]*100)+'%';mark.style.top=(box[1]*100)+'%';mark.style.width=(box[2]*100)+'%';mark.style.height=(box[3]*100)+'%';mark.setAttribute('data-kg-video-agent-bbox-refined',refined?'1':'0');}`,
   `function renderComponentMarks(img,state){var layer=root.querySelector('[data-kg-video-agent-frame-box-layer="1"]');if(!layer)return;layer.querySelectorAll('[data-kg-video-agent-component-mark="1"]').forEach(function(mark){mark.remove();});var boxes=readFrameComponents(img,state.current);boxes.forEach(function(box,index){var mark=document.createElement('mark');mark.setAttribute('data-kg-video-agent-frame',String(state.current.frameIndex));mark.setAttribute('data-kg-video-agent-component-mark','1');mark.setAttribute('data-kg-video-agent-bbox-refined','1');mark.style.left=(box[0]*100)+'%';mark.style.top=(box[1]*100)+'%';mark.style.width=(box[2]*100)+'%';mark.style.height=(box[3]*100)+'%';var span=document.createElement('span');span.textContent=(state.current.timestampMs/1000).toFixed(1)+'s component '+String(index+1);mark.appendChild(span);layer.appendChild(mark);});if(boxes.length)root.setAttribute('data-kg-video-agent-component-count',String(boxes.length));}`,
-  `function updateFrameImage(img,timeMs){if(!img||!template||!(sampleMs>0))return;var bucket=Math.max(0,Math.round((Number(timeMs)||0)/sampleMs)*sampleMs);if(String(img.getAttribute('data-kg-video-agent-frame-time-ms')||'')===String(bucket))return;try{var url=new URL(template,'http://localhost');url.searchParams.set('time',formatSeconds(bucket));img.setAttribute('src',url.pathname+url.search);img.setAttribute('data-kg-video-agent-frame-time-ms',String(bucket));}catch(e){}}`,
+  `function updateFrameImage(img,timeMs){if(!img||!template)return;var bucket=Math.max(0,Number(timeMs)||0);if(String(img.getAttribute('data-kg-video-agent-frame-time-ms')||'')===String(bucket))return;if(pendingFrameImage&&!pendingFrameImage.complete)return;try{var url=new URL(template,'http://localhost');url.searchParams.set('time',formatSeconds(bucket));pendingFrameImage=img;img.setAttribute('src',url.pathname+url.search);img.setAttribute('data-kg-video-agent-frame-time-ms',String(bucket));}catch(e){}}`,
   `function fitLayer(img){var layer=root.querySelector('[data-kg-video-agent-frame-box-layer="1"]');if(!layer)return;var w=root.clientWidth||root.getBoundingClientRect().width||0;var h=root.clientHeight||root.getBoundingClientRect().height||0;var nw=img&&img.naturalWidth?img.naturalWidth:16;var nh=img&&img.naturalHeight?img.naturalHeight:9;if(!(w>0)||!(h>0)||!(nw>0)||!(nh>0)){layer.style.inset='0';return;}var scale=Math.min(w/nw,h/nh);var vw=nw*scale;var vh=nh*scale;layer.style.left=((w-vw)/2)+'px';layer.style.top=((h-vh)/2)+'px';layer.style.width=vw+'px';layer.style.height=vh+'px';layer.style.right='auto';layer.style.bottom='auto';}`,
-  `function sync(rawTimeMs){var timeMs=Number(rawTimeMs)||0;var state=frameState(timeMs);var active=state.current.frameIndex;root.setAttribute('data-kg-video-agent-frame-state',String(active));window.__AGENTIC_OS_RENDER_TIME_MS__=timeMs;root.querySelectorAll('[data-kg-video-agent-frame]').forEach(function(element){if(element.getAttribute('data-kg-video-agent-component-mark')==='1')return;element.hidden=Number(element.getAttribute('data-kg-video-agent-frame'))!==active;});var img=root.querySelector('li:not([hidden]) img');updateFrameImage(img,timeMs);fitLayer(img);root.querySelectorAll('mark[data-kg-video-agent-frame]').forEach(function(mark){if(mark.getAttribute('data-kg-video-agent-component-mark')==='1')return;if(Number(mark.getAttribute('data-kg-video-agent-frame'))===active)applyBox(mark,state,img);});renderComponentMarks(img,state);}`,
+  `function sync(rawTimeMs){var timeMs=Number(rawTimeMs)||0;var state=frameState(timeMs);var active=state.current.frameIndex;root.setAttribute('data-kg-video-agent-frame-state',String(active));window.__AGENTIC_OS_RENDER_TIME_MS__=timeMs;root.querySelectorAll('[data-kg-video-agent-frame]').forEach(function(element){if(element.getAttribute('data-kg-video-agent-component-mark')==='1')return;element.hidden=Number(element.getAttribute('data-kg-video-agent-frame'))!==active;});var img=root.querySelector('li:not([hidden]) img');updateFrameImage(img,state.current.timestampMs);fitLayer(img);root.querySelectorAll('mark[data-kg-video-agent-frame]').forEach(function(mark){if(mark.getAttribute('data-kg-video-agent-component-mark')==='1')return;if(Number(mark.getAttribute('data-kg-video-agent-frame'))===active)applyBox(mark,state,img);});renderComponentMarks(img,state);}`,
   `function schedule(){if(raf)return;var next=typeof requestAnimationFrame==='function'?requestAnimationFrame:function(fn){return setTimeout(fn,0);};raf=next(function(){raf=0;sync(Number(window.__AGENTIC_OS_RENDER_TIME_MS__)||0);});}`,
-  `root.querySelectorAll('img').forEach(function(img){img.addEventListener('load',schedule,{passive:true});});`,
+  `root.querySelectorAll('img').forEach(function(img){img.addEventListener('load',schedule,{passive:true});img.addEventListener('error',schedule,{passive:true});});`,
   `try{if(window.ResizeObserver){new ResizeObserver(schedule).observe(root);}}catch(e){}`,
   `window.addEventListener('resize',schedule,{passive:true});window.addEventListener('agentic-graph:render-frame',function(event){sync(Number(event&&event.detail&&event.detail.timeMs)||0);});sync(Number(window.__AGENTIC_OS_RENDER_TIME_MS__)||0);}());`,
 ].join('')
@@ -107,7 +105,7 @@ const buildFrameAnalysisMarkup = (
       timeSeconds: box.timestampMs / 1000,
       format: 'png',
     })
-    return `<li data-kg-video-agent-frame="${box.frameIndex}" hidden><img src="${escapeHtml(url)}" alt="" loading="eager" decoding="async"></li>`
+    return `<li data-kg-video-agent-frame="${box.frameIndex}" hidden><img data-kg-video-agent-frame-src="${escapeHtml(url)}" alt="" decoding="async"></li>`
   }).join('')
   const overlays = boxes.map(box => {
     const [x, y, width, height] = box.bbox
@@ -127,7 +125,7 @@ const buildFrameAnalysisMarkup = (
     format: 'png',
   })
   return [
-    `<section data-kg-video-agent-frame-analysis="1" data-kg-rich-media-panel-size="viewport" data-kg-video-agent-frame-url-template="${escapeHtml(frameUrlTemplate)}" aria-label="Timeline-synchronized frame analysis">`,
+    `<section data-kg-video-agent-frame-analysis="1" data-kg-video-agent-frame-analysis-version="2" data-kg-rich-media-panel-size="viewport" data-kg-video-agent-frame-url-template="${escapeHtml(frameUrlTemplate)}" aria-label="Timeline-synchronized frame analysis">`,
     `<ol aria-label="Source video frame sequence">${images}</ol>`,
     `<section data-kg-video-agent-frame-box-layer="1" aria-label="Active frame bounding boxes">${overlays}</section>`,
     '</section>',
@@ -156,12 +154,21 @@ export const projectVideoAgentFrameAnalysisSrcDoc = (args: {
   srcDoc: string
 }): string => {
   const srcDoc = String(args.srcDoc || '')
-  if (!srcDoc || srcDoc.includes('data-kg-video-agent-frame-analysis=')) return srcDoc
-  if (srcDoc.includes('data-composition-id="agentic-graph-video-agent-runtime"')) return srcDoc
-  if (srcDoc.includes('class="frame-images"') && srcDoc.includes('data-frame-index=')) return srcDoc
+  if (!srcDoc || srcDoc.includes('data-kg-video-agent-frame-analysis-version="2"')) return srcDoc
   const boxes = readFrameAnalysisBoxes(args.frameBoundingBoxes)
   const sourceUrl = readSourceUrlFromFrameRequest(srcDoc)
   if (!boxes.length || !sourceUrl) return srcDoc
+  if (srcDoc.includes('data-kg-video-agent-frame-analysis=')) {
+    const start = srcDoc.indexOf('<section data-kg-video-agent-frame-analysis="1" data-kg-rich-media-panel-size="viewport"')
+    if (start < 0) return srcDoc
+    const legacy = /^<section data-kg-video-agent-frame-analysis="1" data-kg-rich-media-panel-size="viewport" data-kg-video-agent-frame-url-template="[^"]+" aria-label="Timeline-synchronized frame analysis"><ol aria-label="Source video frame sequence">[\s\S]*?<\/ol><section data-kg-video-agent-frame-box-layer="1" aria-label="Active frame bounding boxes">[\s\S]*?<\/section><\/section><style>([\s\S]*?)<\/style><script>([\s\S]*?)<\/script>/.exec(srcDoc.slice(start))
+    if (!legacy || !legacy[1].includes('.thumbnail[data-kg-video-agent-projected="1"]')
+      || !legacy[2].includes('var frames=') || !legacy[2].includes('function updateFrameImage(img,timeMs)')) return srcDoc
+    const legacySourceUrl = readSourceUrlFromFrameRequest(legacy[0]) || sourceUrl
+    return `${srcDoc.slice(0, start)}${buildFrameAnalysisMarkup(boxes, legacySourceUrl)}${srcDoc.slice(start + legacy[0].length)}`
+  }
+  if (srcDoc.includes('data-composition-id="agentic-graph-video-agent-runtime"')) return srcDoc
+  if (srcDoc.includes('class="frame-images"') && srcDoc.includes('data-frame-index=')) return srcDoc
   const thumbnailStart = /<section\b(?=[^>]*\bclass=["'][^"']*\bthumbnail\b[^"']*["'])[^>]*>/i
   if (!thumbnailStart.test(srcDoc)) return srcDoc
   return srcDoc.replace(thumbnailStart, match => `${match}${buildFrameAnalysisMarkup(boxes, sourceUrl)}`)
