@@ -28,6 +28,7 @@
 }
 
 .timeline-video-sequence-time-axis-controls > * { max-width: 100%; min-width: 0; flex-wrap: nowrap; overflow-x: auto; align-items: center; }
+.timeline-video-sequence-time-axis-controls > * > * { flex-shrink: 0; }
 
 .timeline-transport-ruler--video-sequence .timeline-video-sequence-ruler-append-space {
   flex: 0 0 auto;

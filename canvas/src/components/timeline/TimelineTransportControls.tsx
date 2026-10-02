@@ -9,6 +9,7 @@ import {
 } from './timelineTransport'
 import './TimelineTransportControls.css'
 import './TimelineTransportControlsMermaidGantt.css'
+import './TimelineTransportLane.css'
 
 export type TimelineTransportControlsProps = {
   ariaLabel: string

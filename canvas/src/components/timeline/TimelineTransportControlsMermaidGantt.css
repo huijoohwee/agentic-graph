@@ -483,34 +483,6 @@
   overflow: visible;
 }
 
-.timeline-transport-time-axis-bar {
-  position: absolute; top: 50%; left: 0; width: 100%;
-  transform: translateY(-50%); overflow: hidden;
-  text-align: left;
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-}
-.timeline-transport-time-axis-bar:focus-visible { outline: 2px solid var(--kg-canvas-accent); outline-offset: -2px; }
-.timeline-transport-time-axis-bar[aria-pressed='true'] { border-color: var(--kg-canvas-accent); }
-.timeline-transport-clip-controls {
-  position: absolute;
-  top: 50%;
-  right: var(--kg-toolbar-compact-pad-x);
-  left: var(--kg-toolbar-compact-pad-x);
-  height: var(--kg-control-height);
-  transform: translateY(-50%);
-  z-index: 3;
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: var(--toolbar-gap);
-  overflow-x: auto;
-  background: var(--island-bg);
-}
-.timeline-transport-clip-controls > *, .timeline-transport-clip-controls label { flex-shrink: 0; white-space: nowrap; }
-.timeline-transport-clip-controls :is(button, input, select) { height: var(--kg-control-height); min-height: var(--kg-control-height); border-radius: var(--island-radius); }
-
 .timeline-transport-chrome--mermaid-gantt .timeline-transport-ruler-layout {
   flex: 1 1 auto;
   min-height: 0;

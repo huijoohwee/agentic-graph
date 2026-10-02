@@ -21,7 +21,8 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
   const denseFbfCssText = readSource('components', 'timeline', 'VideoSequenceTimelineDenseFbf.css')
   const rulerGeometryText = readSource('components', 'timeline', 'videoSequenceTimelineRulerGeometry.ts')
   const mermaidTransportCssText = readSource('components', 'timeline', 'TimelineTransportControlsMermaidGantt.css')
-  const transportCssText = ['TimelineTransportControls.css', 'TimelineTransportPlayer.css', 'TimelineTransportControlsMermaidGantt.css'].map(file => readSource('components', 'timeline', file)).join('\n')
+  const laneCssText = readSource('components', 'timeline', 'TimelineTransportLane.css')
+  const transportCssText = ['TimelineTransportControls.css', 'TimelineTransportPlayer.css', 'TimelineTransportControlsMermaidGantt.css', 'TimelineTransportLane.css'].map(file => readSource('components', 'timeline', file)).join('\n')
   const timelineTransportText = readSource('components', 'timeline', 'timelineTransport.ts')
   const videoSequenceToolButtonText = readSource('components', 'timeline', 'VideoSequenceTimelineToolButton.tsx')
   const transportText = readSource('components', 'timeline', 'TimelineTransportControls.tsx')
@@ -36,7 +37,8 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
   const contextCssText = readSource('features', 'gitgraph', 'GanttTimelineTransportClipContext.css')
   const mediaPlayerText = readSource('features', 'gitgraph', 'GanttTimelineTransportMediaPlayer.tsx')
   const shellText = readSource('features', 'gitgraph', 'GanttTimelineTransportShell.tsx')
-  const editRailCssText = `${denseFbfCssText}\n${rulerCssText}`
+  const editRailCssText = `${laneCssText}\n${denseFbfCssText}\n${rulerCssText}`
+  if (!transportText.includes("import './TimelineTransportLane.css'") || [denseFbfCssText, mermaidTransportCssText].some(css => css.includes('.timeline-transport-time-axis-bar'))) throw new Error('expected one shared transport lane/bar style owner')
   expectSourceIncludes(rulerText, [
     'data-kg-video-sequence-active-track', 'data-kg-video-sequence-drag-mode={dragging ? draggingMode',
     'data-kg-compact-source-placeholder={compactSourcePlaceholder ?',

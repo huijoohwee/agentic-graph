@@ -55,30 +55,6 @@
   pointer-events: none;
 }
 
-/* Compact clips and time-axis bars share their surface at the transport owner. */
-.timeline-transport-time-axis-bar,
-.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-time-axis-mark):not(.timeline-transport-track-clip--milestone):not([data-kg-video-sequence-dense-fbf="1"]) {
-  height: var(--kg-timeline-bar-height);
-  border: var(--kg-surface-border);
-  border-radius: var(--island-radius);
-  background: var(--island-bg);
-  color: var(--kg-text-secondary);
-  padding-inline: var(--kg-toolbar-compact-pad-x);
-  box-shadow: none;
-}
-.timeline-transport-time-axis-bar span, .timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"] .timeline-transport-track-clip-label { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .6; color: inherit; }
-.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--milestone):not(.timeline-transport-time-axis-mark):not([data-kg-video-sequence-dense-fbf="1"]) {
-  overflow: hidden;
-  translate: 0 calc((var(--kg-video-sequence-lane-height, 61px) - var(--kg-timeline-bar-height)) / 2);
-}
-
-.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"].timeline-transport-track-clip--selected:not(.timeline-transport-track-clip--milestone):not(.timeline-transport-time-axis-mark):not([data-kg-video-sequence-dense-fbf="1"]),
-.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"][data-kg-video-sequence-active-track="1"]:not(.timeline-transport-track-clip--milestone):not(.timeline-transport-time-axis-mark):not([data-kg-video-sequence-dense-fbf="1"]),
-.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:focus-within:not(.timeline-transport-track-clip--milestone):not(.timeline-transport-time-axis-mark):not([data-kg-video-sequence-dense-fbf="1"]) {
-  border-color: var(--kg-canvas-accent, rgb(59 130 246 / 1));
-  box-shadow: none;
-}
-
 .timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:hover:not(.timeline-transport-track-clip--lane-audio):not(.timeline-transport-track-clip--lane-fbf):not(.timeline-transport-track-clip--milestone):not(.timeline-transport-time-axis-mark):not([data-kg-video-sequence-dense-fbf="1"]),
 .timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:focus-within:not(.timeline-transport-track-clip--lane-audio):not(.timeline-transport-track-clip--lane-fbf):not(.timeline-transport-track-clip--milestone):not(.timeline-transport-time-axis-mark):not([data-kg-video-sequence-dense-fbf="1"]) {
   contain: layout style;
@@ -139,22 +115,6 @@
   bottom: auto;
   min-height: 15px;
   padding-top: 3px;
-}
-
-.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"] .timeline-transport-track-clip-label {
-  position: static;
-  z-index: 9;
-  max-width: 100%;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  font-size: var(--kg-text-xs);
-  font-weight: 400;
-  line-height: var(--kg-text-xs-line);
-  padding: 0;
-  text-shadow: none;
-  pointer-events: none;
 }
 
 .timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"] .timeline-video-sequence-clip-timecode {
