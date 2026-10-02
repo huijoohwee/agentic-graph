@@ -7,7 +7,6 @@ import { PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { XR_MOTION_REFERENCE_SELECTION_COLOR } from './xrMotionReferenceModel'
 import { resolveXrCameraMoveLabel } from './xrCameraMoveCatalog'
 import {
   readXrMotionReferenceRuntime,
@@ -303,7 +302,7 @@ export function CameraMotionMarkRetime({
               key={`${track.actorId}:${mark.id}`}
               laneStyle="video"
               className="xr-camera-motion-retime-lane-mark"
-              style={{ ...markAxisStyle(mark.timeSeconds, scaleDurationSeconds), '--kg-xr-ruler-mark-color': track.color } as React.CSSProperties}
+              style={markAxisStyle(mark.timeSeconds, scaleDurationSeconds)}
               title={`${beatLabel ? `${beatLabel} · ` : ''}${track.label} · ${mark.timeSeconds}s · ${mark.gait} · ${mark.transition} · click to seek; drag to retime`}
               aria-label={`${track.label} mark ${index + 1} at ${mark.timeSeconds} seconds${beatLabel ? ` · ${beatLabel}` : ''}`}
               aria-pressed={selected}
@@ -321,7 +320,7 @@ export function CameraMotionMarkRetime({
               data-kg-xr-lane-mark-shape="circle-only"
               data-kg-xr-stage-highlight-target={selected ? 'cast-mark' : undefined}
             >
-              <span style={{ backgroundColor: selected ? XR_MOTION_REFERENCE_SELECTION_COLOR : track.color }}>{index + 1}</span>
+              <span>{index + 1}</span>
             </TimelineTransportTimeAxisMark>
           )
         })}
@@ -382,7 +381,7 @@ export function CameraMotionMarkRetime({
               data-kg-xr-lane-mark-shape="circle-only"
               data-kg-xr-stage-highlight-target={selected ? 'camera-mark' : undefined}
             >
-              <span style={selected ? { backgroundColor: XR_MOTION_REFERENCE_SELECTION_COLOR } : undefined}>C{index + 1}</span>
+              <span>C{index + 1}</span>
             </TimelineTransportTimeAxisMark>
           )
         })}
