@@ -1482,7 +1482,7 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
   const helpCloudflareMediaSectionPath = path.resolve(root, 'src', 'features', 'panels', 'views', 'HelpCloudflareMediaSection.tsx')
   const launcherPath = path.resolve(root, 'src', 'features', 'toolbar', 'ToolbarMenuLauncher.tsx')
   const typesPath = path.resolve(root, 'src', 'features', 'toolbar', 'ToolbarToolMenuTypes.ts')
-  const text = readUtf8(filePath), xrSceneViewsText = readUtf8(xrSceneViewsPath)
+  const text = readUtf8(filePath) + readUtf8(path.resolve(root, 'src/features/toolbar/FloatingPanelViewTabs.tsx')), xrSceneViewsText = readUtf8(xrSceneViewsPath)
   const iconLibraryText = readUtf8(iconLibraryPath)
   const floatingPanelTypesText = readUtf8(floatingPanelTypesPath)
   const uiSliceInitialStateText = readUtf8(uiSliceInitialStatePath)
@@ -1799,10 +1799,10 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
   if (
     !commandCatalogPanelText.includes('data-kg-command-menu-media-thumbnail')
     || !commandCatalogPanelText.includes('mediaListThumbnailFrameClassName')
-    || !commandCatalogPanelText.includes('rounded border')
-    || !commandCatalogPanelText.includes('UI_THEME_TOKENS.panel.border')
-    || !commandCatalogPanelText.includes('UI_THEME_TOKENS.input.bg')
-    || !commandCatalogPanelText.includes('shadow-sm')
+    || !floatingPanelCatalogLayoutText.includes('rounded border')
+    || !floatingPanelCatalogLayoutText.includes('UI_THEME_TOKENS.panel.border')
+    || !floatingPanelCatalogLayoutText.includes('UI_THEME_TOKENS.input.bg')
+    || !floatingPanelCatalogLayoutText.includes('shadow-none')
   ) {
     throw new Error('Expected FloatingPanel Media thumbnails to use the shared tokenized proportional thumbnail frame')
   }

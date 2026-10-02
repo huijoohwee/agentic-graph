@@ -21,6 +21,7 @@ export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
     store.setWorkspaceViewMode('canvas')
     store.setCanvasRenderMode('2d')
     store.setCanvas2dRenderer('design')
+    store.setFloatingPanelView('propsPanel')
 
     const container = dom.window.document.getElementById('root')
     if (!container) throw new Error('missing root container')
@@ -44,8 +45,8 @@ export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
 
     const buttons = Array.from(nav.querySelectorAll('button')) as HTMLButtonElement[]
     const labels = buttons.map(b => String(b.getAttribute('aria-label') || ''))
-    if (labels[0] !== UI_LABELS.propsPanel) {
-      throw new Error(`expected first floating panel view to be ${UI_LABELS.propsPanel}, got ${labels[0]}`)
+    if (labels[0] !== 'Sequence Diagram' || buttons.length !== 27) {
+      throw new Error(`expected all 27 canonical floating views, got ${JSON.stringify(labels)}`)
     }
     if (!labels.includes(UI_LABELS.geo)) {
       throw new Error(`expected floating panel views to include ${UI_LABELS.geo}, got ${JSON.stringify(labels)}`)
@@ -59,6 +60,42 @@ export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
     if (labels.includes(UI_LABELS.layerMode)) {
       throw new Error(`expected floating panel views to exclude ${UI_LABELS.layerMode} after Workflow Manager consolidation`)
     }
+
+    const readTabs = () => Array.from(container.querySelectorAll('nav[aria-label="Floating panel views"] button')) as HTMLButtonElement[]
+    const assertTabs = () => {
+      const tabs = readTabs()
+      if (JSON.stringify(tabs.map(button => button.getAttribute('aria-label'))) !== JSON.stringify(labels)
+        || tabs.some(button => button.disabled || button.getAttribute('aria-pressed') == null)
+        || tabs.filter(button => button.getAttribute('aria-pressed') === 'true').length !== 1
+        || !tabs.every(button => button.querySelector('svg[role="img"][aria-label]'))) {
+        throw new Error('expected one stable, selectable tab strip with named icons across sources and shell states')
+      }
+    }
+    assertTabs()
+    // Changing source/render capabilities must never choose another tab-strip variant.
+    const previousGraph = useGraphStore.getState().graphData
+    const previousRender = useGraphStore.getState().canvasRenderMode
+    const previous3d = useGraphStore.getState().canvas3dMode
+    for (const mode of ['d3', 'design', 'xr'] as const) {
+      await act(async () => {
+        useGraphStore.setState({ graphData: null, canvasRenderMode: mode === 'xr' ? '3d' : '2d', canvas2dRenderer: mode === 'xr' ? 'd3' : mode, canvas3dMode: mode === 'xr' ? 'xr' : previous3d })
+        await waitForNextTask()
+      })
+      assertTabs()
+    }
+    await act(async () => {
+      useGraphStore.setState({ graphData: previousGraph, canvasRenderMode: previousRender, canvas2dRenderer: 'design', canvas3dMode: previous3d })
+      container.querySelector<HTMLButtonElement>('button[aria-label="Minimize floating panel"]')?.click()
+      await waitForNextTask()
+    })
+    assertTabs()
+    if (!container.querySelector('button[aria-label="Restore floating panel"]')) throw new Error('expected minimized shell restore control')
+    await act(async () => {
+      readTabs().find(button => button.getAttribute('aria-label') === 'Sequence Diagram')?.click()
+      await waitForNextTask()
+    })
+    assertTabs()
+    if (!container.querySelector('button[aria-label="Minimize floating panel"]') || readTabs()[0]?.getAttribute('aria-pressed') !== 'true') throw new Error('expected selecting a different tab to restore the shared body')
 
     let designLayers: HTMLElement | null = null
     for (let i = 0; i < 30; i++) {
@@ -90,6 +127,7 @@ export async function testFloatingPanelInteractionViewIsRemovedAfterSkillsComman
     store.setWorkspaceViewMode('canvas')
     store.setCanvasRenderMode('2d')
     store.setCanvas2dRenderer('d3')
+    store.setFloatingPanelView('skillsCommands')
 
     const container = dom.window.document.getElementById('root')
     if (!container) throw new Error('missing root container')

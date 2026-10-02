@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.7"
-prd_revision: "1.3.7"
-tad_revision: "1.3.7"
-adr_revision: "1.3.7"
-mvp_revision: "1.3.7"
-gtm_revision: "1.3.7"
+version: "1.3.8"
+prd_revision: "1.3.8"
+tad_revision: "1.3.8"
+adr_revision: "1.3.8"
+mvp_revision: "1.3.8"
+gtm_revision: "1.3.8"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,7 +31,7 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.7**. The user authorized implementation
+All five roles join **SEQUENCE-FLOW-001@1.3.8**. The user authorized implementation
 and live UI verification on 2026-10-02. Work extends the existing workspace through
 an admitted successor lane. Remote service invocation, production mirrors, deployment
 and payment remain separate effects with no new grant here.
@@ -364,7 +364,7 @@ failure models and provider evidence; it is outside scope. Deterministic local r
 is the FOSS alternative and chosen approach. Consequences: authored timing is visibly
 distinct from measured latency; unsupported branch semantics fail loudly. Recovery:
 disable the sequence adapter and retain source, transport and existing timelines.
-Implemented at 1.3.7: one neutral BottomPanel tab strip stays available for every source; Storyboard selection keeps the panel open. Storyboard, Design and warehouse project through existing transport/ruler/bar owners; shared read-only commands prevent generated projections from mutating Markdown. XR selection retains Timeline and uses the existing Media inspector for object details. Desktop tab shapes reuse toolbar controls; mobile targets follow the shared control-height token and scroll inside the shell. No paid service, dependency or source-path dispatch is added. Prior 1.3.6: shared chrome binds usePanelTypography for every host. Lane descendants inherit common font and uppercase treatment; clip-control outputs inherit neutral caption typography. Remove XR label sizes, colored/heavy captions and duplicate sequence wrapper binding. No file/path branch owns typography. Reuse the existing workflow/participant ruler and clip/mark
+Implemented at 1.3.8: FloatingPanel has one static 27-view registry and one expanded/minimized header, reusing IconButton, icon metadata, typography and control-height tokens. Remove the separate Graph Traversal overflow button and hidden/disabled tab-spec fields. Named button/icon semantics expose selection; contained scrolling reveals the selected view. XR routing retains its shared capability owner while shell selection always commits; choosing any tab restores the body. No source/path or feature payload can choose a tab variant. Prior 1.3.7: one neutral BottomPanel tab strip stays available for every source; Storyboard selection keeps the panel open. Storyboard, Design and warehouse project through existing transport/ruler/bar owners; shared read-only commands prevent generated projections from mutating Markdown. XR selection retains Timeline and uses the existing Media inspector for object details. Desktop tab shapes reuse toolbar controls; mobile targets follow the shared control-height token and scroll inside the shell. No paid service, dependency or source-path dispatch is added. Prior 1.3.6: shared chrome binds usePanelTypography for every host. Lane descendants inherit common font and uppercase treatment; clip-control outputs inherit neutral caption typography. Remove XR label sizes, colored/heavy captions and duplicate sequence wrapper binding. No file/path branch owns typography. Reuse the existing workflow/participant ruler and clip/mark
 components; delete the duplicate step rail, card grid and separate scrub slider.
 One millisecond-to-minute adapter aligns clips and pointer scrubbing with the shared
 rounded display scale. Marks keep exact authored IDs and ordinals. Minimum axis width
@@ -479,7 +479,7 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.7. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.8. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 
@@ -594,6 +594,6 @@ Tracked authoring majors: 4. Full authoring artifact-bearing-rule coverage has n
 alignment verdict is claimed. Diagram/canvas-domain checks prove only their selected
 structural contract; runtime, licensing, demand and delivery remain separate checks.
 
-Next: publish bottom-panel-shared-surfaces as successor of PR #1500 (cf09a74f9). Eight affected registry checks, nine adapter routing tests and canvas typecheck pass. Live scene/reference shells expose the same nine tabs at matching desktop sizes; Storyboard and Design render the shared ruler with semantic interactive playheads. Mobile width 390 keeps the tab strip inside the shell; targets follow the shared 44px control token. Cap refreshed to 25 active minutes, eleven reserved files, 40 KiB patch and $0. Native publication stops at provider handoff; required candidate CI determines integration. Remaining VCC observations stay open.
+Next: publish floating-panel-shared-tabs as native successor of PR #1501 (39347737c). Nine affected registry checks and canvas typecheck pass after stale assertions follow canonical tab/catalog owners. Live XR and sequence documents expose the same 27 tabs; minimized mode preserves the list and selection restores the body. Desktop buttons measure 32×28px; mobile width 390 gives 44×44px tabs with contained scrolling. Patch cap: 25 active minutes, twelve reserved files, 40 KiB and $0; eight files used, existing oversized test files do not grow. Joined roles remain aligned at 1.3.8; candidate CI controls integration, and native publication stops at provider handoff. Remaining VCC observations stay open.
 Recheck every affected receipt on source drift. Preserve lane/source bytes if publication
 or lifecycle effects are blocked. Production remains behind its separate protected owner.
