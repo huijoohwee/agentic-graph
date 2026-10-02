@@ -119,6 +119,18 @@ waits require changed receipts rather than an ETA. Full native browser acceptanc
 Integration Gate remain required before source merge. Canonical seed edits remain authored recovery
 inputs; shared Context closeout is unresolved because native workspace admission lacks a trust anchor.
 
+Notification acceptance repair: protected run `36974750108` passed the graph and Mission stages,
+then failed Python offline acceptance when an empty notification row intercepted the lesson selector.
+PRD/MVP require ordinary workspace input through empty toast frames while notification text remains
+selectable and Copy, Pin, Dismiss and actions remain interactive. TAD uses the existing explicit child
+hit targets; only the noninteractive card frame becomes pointer-transparent. ADR preserves the live
+region, TTL, persistent errors and native click assertions; no force-click or notification suppression
+is permitted. The existing owner guard and real browser hit tests cover frame, text and controls;
+the complete Python offline proof and protected Integration Gate remain required. GTM adds no new
+feature or Production claim. Repair cap: four paths, 5 KB added source, 15 active minutes; no new
+module, dependency, subscription or polling loop. Canonical authored inputs and Context admission
+remain separate unresolved closeout obligations.
+
 Position this as consistent built-in controls across the local workspace. Do not claim measured
 conversion, paid value, exhaustive platform parity or a Production rollout. A useful demonstration
 shows the global setting changing mixed controls together without document edits. Roll back via
