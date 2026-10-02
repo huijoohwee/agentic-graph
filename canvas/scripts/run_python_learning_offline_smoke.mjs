@@ -83,7 +83,12 @@ try {
     await row.click(); await nativePane.waitFor()
     await page.waitForFunction(id => document.querySelector('button[data-kg-select="true"][aria-label="Python lesson"]')?.value === id, file.id)
     assert.equal(await nativePane.getAttribute('data-learning-state'), 'idle', 'opening a source file never runs it')
-    await page.getByRole('button', { name: `Local saved copy: ${file.name}. Sign in to sync this file.`, exact: true }).waitFor()
+    // Cloud status belongs to the native file actions, not the navigation row.
+    await row.click({ button: 'right' })
+    const actions = page.getByRole('toolbar', { name: `Actions for ${file.name}`, exact: true })
+    await actions.getByRole('button', { name: `Local saved copy: ${file.name}. Sign in to sync this file.`, exact: true }).waitFor()
+    await page.keyboard.press('Escape')
+    await expect(actions).toBeHidden()
   }
   await nativePane.getByRole('button', { name: 'Run', exact: true }).click()
   await page.locator('.python-learning[data-learning-state="completed"]').waitFor({ timeout: 15000 })
