@@ -1,3 +1,4 @@
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import { buildAgenticOsInvocationChipTitle, readAgenticOsInvocationTokenKind } from '@/features/agentic-os/agenticOsInvocationChips'
 import React from 'react'
 import { Search } from 'lucide-react'
@@ -172,7 +173,7 @@ export const MarkdownBlockContainerCommandMenu = (props: {
                 <button
                   id={`${props.ariaLabel}-${item.id}`}
                   type="button"
-                  className={`${className} ${selected ? 'bg-black/5 dark:bg-white/10' : ''}`}
+                  className={`${className} ${uiSelectedRowStateClassName(selected)}`}
                   disabled={item.disabled}
                   title={item.title || (readAgenticOsInvocationTokenKind(item.label) ? buildAgenticOsInvocationChipTitle(item.label) : [item.label, item.description].filter(Boolean).join("\n"))}
                   role="option"
