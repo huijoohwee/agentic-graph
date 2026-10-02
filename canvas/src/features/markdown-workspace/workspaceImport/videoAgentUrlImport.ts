@@ -46,6 +46,8 @@ const TRANSCRIPT_PANEL_NODE_ID = 'video_agent_transcript_panel'
 const FRAME_ANALYSIS_PANEL_NODE_ID = 'video_agent_frame_analysis_panel'
 const FRAME_TABLE_PANEL_NODE_ID = 'video_agent_multi_dimensional_table_panel'
 const DATASET_PANEL_NODE_ID = 'video_agent_dataset_panel'
+const URL_IMPORT_PREVIEW_SAMPLE_LIMIT = 16
+const URL_IMPORT_DOCUMENT_BYTE_LIMIT = 500_000
 
 const cleanInline = (value: unknown): string => String(value || '').replace(/\s+/g, ' ').trim()
 
@@ -121,6 +123,7 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
     sourceUrl,
     intent: 'Load, parse, annotate, count zones, compile, generate, and stream the imported video.',
     durationMs: transcriptDurationMs || undefined,
+    maxFrameSamples: URL_IMPORT_PREVIEW_SAMPLE_LIMIT,
     workspaceOutputRoot,
   })
   if (result.ok === false) throw new Error(result.reason)
@@ -179,6 +182,7 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
     'kgDocumentSemanticMode: "document"',
     'kgFrontmatterModeEnabled: true',
     'kgVideoAgentImport: true',
+    `kgVideoAgentPreviewSampleLimit: ${URL_IMPORT_PREVIEW_SAMPLE_LIMIT}`,
     `kgWorkspaceOutputRoot: ${yamlQuote(workspaceOutputRoot)}`,
   ]
   if (youtubeId) lines.push(`kgYoutubeVideoId: ${yamlQuote(youtubeId)}`)
@@ -501,7 +505,7 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
     '',
     '## Parsed Outputs',
     '',
-    `- Frame boxes: ${pipeline.frameBoundingBoxes.length}`,
+    `- Preview frame samples: ${pipeline.frameBoundingBoxes.length} (maximum ${URL_IMPORT_PREVIEW_SAMPLE_LIMIT}; full source duration retained)`,
     `- Transcript segments: ${transcriptArtifacts.sourceTranscript.segmentCount}`,
     `- Frame transcript rows: ${transcriptArtifacts.frameByFrameTranscript.length}`,
     `- Visual dataset samples: ${pipeline.datasetRuntime.visualDataset.samples.length}`,
@@ -515,7 +519,11 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
   if (sourceText) {
     lines.push('## Source Transcript', '', sourceText, '')
   }
-  return lines.join('\n')
+  const markdown = lines.join('\n')
+  if (new TextEncoder().encode(markdown).byteLength > URL_IMPORT_DOCUMENT_BYTE_LIMIT) {
+    throw new Error('Video import exceeds the 500 KB preview document limit. Import a shorter transcript or segment.')
+  }
+  return markdown
 }
 
 export async function materializeVideoAgentUrlImportDocument(args: {
