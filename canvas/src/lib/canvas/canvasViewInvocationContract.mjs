@@ -16,6 +16,8 @@ export const CANVAS_VIEW_CONTROL_OPTION_IDS = Object.freeze([
   'renderer:media',
   'renderer:flowchart',
   'renderer:multiDimTable',
+  'renderer:kanban',
+  'renderer:calendar',
   'renderer:gitGraph',
   'renderer:gantt',
   'renderer:flow',

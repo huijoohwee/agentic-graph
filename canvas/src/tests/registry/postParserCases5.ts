@@ -1,6 +1,14 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_5: TestCaseTuple[] = [
+  ["workspaceDataView.renderer.restoration", "@/__tests__/workspaceDataViewEnhancements.test", "testDataViewRendererRestoration"],
+  ["workspaceDataView.settings.interactions", "@/__tests__/workspaceDataViewEnhancements.test", "testDataViewSettingsMountedInteractions"],
+  ["workspaceDataView.nestedQueries.migration", "@/__tests__/workspaceDataViewEnhancements.test", "testDataViewNestedQueriesAndLegacyMigration"],
+  ["workspaceDataView.sort.groups.lifecycle", "@/__tests__/workspaceDataViewEnhancements.test", "testDataViewTypedSortGroupsAndLifecycle"],
+  ["workspaceDataView.storage.recovery", "@/__tests__/workspaceDataViewEnhancements.test", "testDataViewVersionedStorageRecovery"],
+  ["workspaceDataView.calendar.ranges", "@/__tests__/markdownDataViewCalendar.test", "testDataViewCalendarStrictRanges"],
+  ["workspaceDataView.calendar.bounds", "@/__tests__/markdownDataViewCalendar.test", "testDataViewCalendarBoundedProjection"],
+  ["workspaceDataView.calendar.interactions", "@/__tests__/markdownDataViewCalendarInteractions.test", "testCalendarDayInteractions"],
   ["previewContext.ScopeAndNarration","@/__tests__/previewContext.test","testPreviewContextScopeAndNarration"],
   ["previewContext.ExplicitHandoff","@/__tests__/previewContext.test","testPreviewExplicitHandoff"],
   ["previewContext.ModeIsolation","@/__tests__/previewContext.test","testPreviewContextModeIsolation"],

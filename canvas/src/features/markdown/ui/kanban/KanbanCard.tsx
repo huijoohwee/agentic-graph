@@ -375,7 +375,7 @@ export const KanbanCard = React.memo(function KanbanCard(props: KanbanCardProps)
                                 setMoveMenuOpen(false)
                               }}
                             >
-                              <span className={UI_TEXT_TRUNCATE}>{t}</span>
+                              <span className={UI_TEXT_TRUNCATE}>{t || MARKDOWN_DATA_VIEW_COPY.ungroupedLabel}</span>
                             </button>
                           </li>
                         ))}

@@ -39,7 +39,7 @@ export function testMultiDimTableSurfacePreservesWorkspaceModeOwners() {
   if (fs.existsSync(workspacePath)) {
     throw new Error('expected removed legacy table workspace runtime to stay deleted')
   }
-  if (!surfaceText.includes('MarkdownWorkspaceDerivedViewer') || !surfaceText.includes('viewerMode="multiDimTable"')) {
+  if (!surfaceText.includes('MarkdownWorkspaceDerivedViewer') || !surfaceText.includes('viewerMode={viewerMode}') || !surfaceText.includes("renderer === 'kanban'") || !surfaceText.includes("renderer === 'calendar'")) {
     throw new Error('expected MultiDimTableSurface to reuse the Markdown workspace derived-viewer owner')
   }
   if (!surfaceText.includes('replaceMarkdownLineRange') || !surfaceText.includes('setMarkdownDocument') || !surfaceText.includes('writeWorkspaceSourceTextIfPresent')) {

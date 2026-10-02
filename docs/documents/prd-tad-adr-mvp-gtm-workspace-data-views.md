@@ -2,24 +2,24 @@
 title: "Workspace data views: Table, Kanban and Calendar"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "workspace-data-views"
-version: "1.0.0"
-prd_revision: "1.0.0"
-tad_revision: "1.0.0"
-adr_revision: "1.0.0"
-mvp_revision: "1.0.0"
-gtm_revision: "1.0.0"
+version: "1.2.1"
+prd_revision: "1.2.1"
+tad_revision: "1.2.1"
+adr_revision: "1.2.1"
+mvp_revision: "1.2.1"
+gtm_revision: "1.2.1"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Workspace data-view product function"
 frontmatter_contract: "required"
-local_rung: "spec-complete"
+local_rung: "implemented-local"
 delivered_rung: "undocumented"
-lane: "authoring"
+lane: "verification"
 universal_scope: false
-lifecycle_status: "proposed"
+lifecycle_status: "implemented"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/data-view-layouts"
+worktree_id: "agent/device-0232231d4a19/calendar-record-dialog"
 agent_id: "codex-workspace-data-view-author"
 source_docs:
   - "Reference implementation: agentic-graph@8b258a4a116cd7ef70718acd28307fc4a62af897"
@@ -29,10 +29,10 @@ source_docs:
 
 # Workspace data views: Table, Kanban and Calendar
 
-`workspace-data-views@1.0.0` joins all five roles below. This is a specification update,
-not implementation or live acceptance of the proposed capabilities. The operator explicitly
-selected specification-first on 2026-10-02. Existing behavior is grounded at source revision B;
-all requirements and proposed interfaces remain unimplemented unless the grounding table says otherwise.
+`workspace-data-views@1.2.1` joins all five roles below. After the specification-first checkpoint,
+the operator authorized implementation on 2026-10-02. Shared settings, versioned queries and native
+Calendar are now implemented in the existing owners. B records the historical baseline; the
+implementation checkpoint below separates verified behavior from remaining acceptance evidence.
 The [parent document](./prd-tad-adr-mvp-gtm-knowledge-graph-node-cluster-edge.md) retains its
 passage-graph and completed import-index interaction scope. This module owns the new view increment.
 
@@ -42,8 +42,8 @@ passage-graph and completed import-index interaction scope. This module owns the
 and global renderer choices do not expose a complete, consistent view model.
 **Intent I-DV:** configure one source once, then inspect records as Table, Kanban or Calendar without
 losing filters, hidden properties, ordering, provenance or edits.
-**Zero:** native source-backed table/card rendering and per-view persistence exist; the requested
-calendar and richer query controls do not. **One:** after implementation, an operator can switch
+**Zero at B:** native source-backed table/card rendering and per-view persistence existed; Calendar
+and richer query controls were absent. **One:** an operator can switch
 views, configure a compound filter, order records and inspect scheduled/unscheduled records in a
 three-minute local demonstration with source bytes unchanged by presentation-only actions.
 
@@ -77,7 +77,7 @@ D5: Derive behavior from typed content and explicit configuration, never a filen
 | R5 Sort / 11–12 | Add multiple fields; ascending/descending; reorder precedence; remove one or clear all | V4 / T4 |
 | R6 Group / 13 | Group-by property, empty-group policy, per-group visibility and bulk visibility; counts and ungrouped records remain inspectable | V5 / T3 |
 | R7 Global renderers / 19–21 | Restore Kanban as a named 2D choice and add Calendar; choices activate real surfaces and survive reload/source switch | V1 / T1 |
-| R8 Calendar / 1, 21 | Explicit start field, optional end field, month navigation, Today, date labels, date selection and unscheduled/invalid-date records | V6 / T5 |
+| R8 Calendar / 1, 21 and Calendar follow-up 1–5 | Explicit start/end fields; localized month grid and date navigator; Today highlight; day-local New row; compact records and bounded overflow; unscheduled/invalid-date records | V6 / T5 |
 | R9 Shared affordances / 16–18 | Same settings outcome across three surfaces; preserve compact local-hover add-record behavior and source mutation guards | V7, V8 / T2, T3 |
 
 External calendars, subscriptions, recurrence, remote sync, notifications and week/day scheduling are
@@ -112,7 +112,7 @@ extract their touched responsibilities in the implementation lane and keep chang
 
 ## TAD — owners and interfaces
 
-| Design | PRD join | Owner extension / proposed interface | Consumers and check |
+| Design | PRD join | Implemented owner extension / interface | Consumers and check |
 |---|---|---|---|
 | T1 Renderer family | D1–D2, R1/R7 | G7/G9/G10; explicit kanban/calendar IDs and mode-to-surface mapping; separate data-view-family predicate from graph-enabled interpretation | Main toolbar, restore/frontmatter, existing WebMCP action; V1 |
 | T2 View state and mutations | D1–D2/D4, R1/R9 | G2/G6; normalize legacy config into next version; use existing view store and source mutation callbacks; expose lifecycle helpers through current binding | Inline/Workspace/Canvas; V7 |
@@ -120,9 +120,8 @@ extract their touched responsibilities in the implementation lane and keep chang
 | T4 Query | D1/D4/D5, R3–R5 | Extract from G2; pure bounded filter expression, ordered comparator, immutable node operations | Both G6 consumers and Calendar projection; V3/V4 |
 | T5 Calendar | D1/D3–D5, R8 | New pure month projection beside existing data-view model; lazy semantic Calendar view and date-field settings; G8 editing seam | Viewer/inline/Canvas; V6/V8 |
 
-Proposed filter expression: rule `{id, kind: rule, columnId, operator, operand}` or group
-`{id, kind: group, conjunction: and|or, children}`. This is a proposed internal shape, not an
-existing export or second public schema. Use stable IDs and one normalized tree per saved view.
+Implemented filter expression: rule `{id, kind: rule, columnId, operator, operand}` or group
+`{id, kind: group, conjunction: and|or, children}`. This is the internal `workspaceDataViewFilterTree.ts` shape, not a second public schema. Use stable IDs and one normalized tree per saved view.
 Limits: depth ≤8, total nodes ≤128, sort fields ≤16. Reject invalid/over-budget input with a visible
 configuration error; preserve the last valid state and the submitted bytes for recovery.
 
@@ -239,7 +238,7 @@ insertion remains scoped to one divider, with focus reveal and persistent touch 
 
 Free/FOSS only, no package addition or external requests. Warm-offline operation uses already loaded
 source and modules; cold-offline availability requires the existing cache path's own proof.
-Lazy-load Calendar on intent. Proposed limits: <500 KB per emitted chunk; ≤40 KB gzip Calendar delta;
+Lazy-load Calendar on intent. Acceptance limits: <500 KB per emitted chunk; ≤40 KB gzip Calendar delta;
 ≤1 KB gzip always-load registry delta. Benchmark 1,000 neutral rows/128 clauses and a 42-day month;
 target query+projection p95 ≤100 ms and control-to-visible-result p95 ≤200 ms on a recorded device.
 These are acceptance targets, not measurements. No full inventory render per hidden settings section.
@@ -262,8 +261,9 @@ approval remain independently evidenced effects.
 
 ## MVP — acceptance and evidence plan
 
-No new feature VCC below has passed in this specification-only turn. B's native tests are reusable
-baseline mechanisms; extend them with behavior assertions, not implementation-text-only substitutes.
+Behavior tests, mounted settings controls, a neutral live Calendar journey and a production build
+have passed locally. The checkpoint records the exact evidence boundaries; the table below retains
+the complete acceptance contract, including device/offline and release checks not inferred from unit tests.
 Use original neutral records or runtime-supplied user input; never embed a user's corpus in repository tests.
 
 | VCC | Observable completion condition | Independent check / coverage boundary |
@@ -273,7 +273,7 @@ Use original neutral records or runtime-supplied user input; never embed a user'
 | V3 Filters | Nested AND/OR and every operator produce expected row IDs; edit/wrap/duplicate/delete preserve unaffected clauses | New pure truth-table/migration tests, malformed/depth/size tests; mounted controls and reload |
 | V4 Sort | Two or more fields obey precedence and typed tie/null/invalid policy; legacy comparator remains unchanged until explicit conversion | Extend state/query behavior suite; reordered sorts change only expected record ordering |
 | V5 Groups | Hidden/empty/configured/encountered/ungrouped lanes reflect policy and counts | Extend Kanban projection tests and `ui.dataViewKanban.cardLists.sharedResponsiveOwner`; live hide/show/reload |
-| V6 Calendar | Correct civil/instant boundaries, month navigation, intervals and unscheduled/invalid recovery | New deterministic projection tests (leap day/DST/offset/midnight); explicit date edit roundtrip and source revision rejection |
+| V6 Calendar | Correct civil/instant boundaries, month navigation, intervals and unscheduled/invalid recovery; day-local creation, keyboard date navigation and complete paged overflow | New deterministic projection tests (leap day/DST/offset/midnight); explicit date edit roundtrip and source revision rejection |
 | V7 View lifecycle | Duplicate has independent config; deleting selected view preserves records and valid active view; final-view deletion is disabled with a reason; all surfaces show same queried IDs | Extend `markdownDataView.state.duplicateDelete`, `markdownDataView.state.columnCrudCleanup`; source selection and read-only tests |
 | V8 Accessible bounded UI | Named hit targets, keyboard/touch/narrow layout, local hover, offline and lazy budgets pass | `ui.workspace.responsiveMenusAndDataViewSurfaces`, `floatingPanel.formControls.sharedDensity`; live interaction/screenshot and production-build chunk measurements |
 
@@ -284,8 +284,11 @@ Physical devices, production behavior and complete accessibility certification n
 
 ## MVP — execution sequence and checkpoints
 
-All stages are planned; this turn authors only the specification. Each later admission owns exact
-paths and a fresh base, uses START → affected checks → protected RELEASE, and updates this artifact.
+S1–S4 are implemented in the existing source owners; S5 has focused and live evidence below.
+START admission binds the changed paths; affected checks and protected RELEASE remain independent gates.
+The active implementation budget was refreshed to 51 files / 140 KB of source changes; no paid resources.
+The shared Canvas tool description is concise so the added renderer choices retain the existing
+32 KiB browser-discovery cap, complete input validation and execution ownership.
 
 | Stage / RAO action | Dependencies / reusable owner | Exit / budget and next check |
 |---|---|---|
@@ -328,33 +331,157 @@ covered applicable domains = 8/16. Coverage is not runtime, demand or production
 | C01 Purpose/customer | covered / PRD | Operator comments and P1–P3; WTP remains unknown |
 | C02 Market/timing | deferred / GTM | Buyer counts and two-method market sizing await voluntary pilot evidence |
 | C03 Offer/alternatives | covered / GTM+ADR | Existing manual views versus native extensions; price validation at pilot |
-| C04 Experience | covered / PRD | R1–R9/V1–V8; implementation and live completion pending |
-| C05 Architecture/data | covered / TAD | G1–G10/T1–T5 at B; implementation source recheck |
-| C06 Quality/security | covered / TAD | Bounded input, revision guards, inert data and no new remote dependency; tests pending |
+| C04 Experience | covered / PRD | R1–R9/V1–V8; implemented shared controls; complete device acceptance remains in V8 |
+| C05 Architecture/data | covered / TAD | G1–G10 baseline plus implemented owners in the checkpoint |
+| C06 Quality/security | covered / TAD | Bounded input, revision guards, inert data and no new remote dependency; focused tests passed |
 | C07 Decisions/tradeoffs | covered / ADR | A1–A4 choices, consequences and reversible state boundaries |
-| C08 Smallest validated slice | covered / MVP | S1–S5 and V1–V8 state scope and gaps; no new runtime acceptance claimed |
+| C08 Smallest validated slice | covered / MVP | S1–S5 and V1–V8 state scope and gaps; local evidence below; no Production acceptance claimed |
 | C09 Acquisition/retention | deferred / GTM | Draft pilot experiment exists; channel, conversion and retention evidence await consented sessions |
 | C10 Business operations | deferred / GTM | Reuse existing delivery/incident process; measure setup/support capacity during priced pilot |
 | C11 Organization/obligations | deferred / Product function | Named S1–S5 owners; entity, hiring, IP/data/contract review await any commercial or adapter expansion |
 | C12 Financial viability | deferred / GTM | Zero new runtime fees; price, margin and linked scenario statements require measured pilot cost/payment |
 | C13 Funding/capital | deferred / GTM | No funded expansion in this local increment; revisit on priced demand |
-| C14 ADLC execution | covered / MVP | Exact admission, future stages, source/release/deploy separation and local evidence checkpoint |
+| C14 ADLC execution | covered / MVP | Exact admission, implemented stages, source/release/deploy separation and local evidence checkpoint |
 | C15 Audience projections | deferred / Product function | No deck/plan/financial audience handoff authorized; require joined evidence first |
 | C16 Learning | deferred / GTM | Defined 14-day experiment begins after V1–V8; outcome not yet observed |
 
-## Checkpoint — reference implementation
+## Checkpoint — native implementation, 2026-10-02
 
-2026-10-02: native source audit completed against B; this artifact and parent link are the only product
-changes. The current authoring lane is `agent/device-0232231d4a19/data-view-layouts`; admission digest
-`ea41207e4028fa5cd61fba276cfb9bef3fa4d2c2a23bea780f07f7bc33f3fed3` binds the two document paths.
-The native lifecycle mission retains its pre-existing import-plan binding; this specification does
-not silently replace that admission record. Subsequent implementation must explicitly admit these
-criteria and the exact code paths before editing.
-Development: specification and source grounding only. Production Release: no new promotion.
-Runtime: existing Dev remains the prior implemented UI; screenshots supplied by the operator are
-request evidence, not proof of proposed functionality. The diagram canvas-render checker reports five projections and zero findings; this is parse-only
-validation. An independent document check resolves 19 explicit source paths at B, coherent five-role
-versions, 16 coverage decisions, eight VCCs and module limits. Native affected validation is run on
-the final document bytes; retain its exact receipt under the private execution evidence owner.
-The next authorized checkpoint is document publication; implementation begins with S1 on a
-subsequent implementation instruction.
+The specification baseline was integrated separately. This increment retains its import-plan mission
+binding and explicitly readmits the shared view source paths under scope `#workspace-view-controls`.
+Admission digest: `923cd3b9293b0e395b2a788ff82b1166a58d863f1c1cc15d27239b0988bbcbfe`.
+All five role revisions advance together to 1.1.0; no external dependency or source corpus is added.
+
+| Stage / native owner | Implemented behavior and local evidence |
+|---|---|
+| S1 / `workspaceDataViewConfig.ts`, `workspaceDataViewFilterTree.ts`, `workspaceDataViewQuery.ts`, `workspaceDataViewLegacyQuery.ts`, `workspaceDataViewExtensions.ts` | v3 state validates atomically; bounded AND/OR expressions and immutable edits; ordered typed sorts; v2 query/order preserved until explicit conversion; corruption and delayed-write tests pass |
+| S2 / existing Settings sections, `WorkspaceDataViewSettingsGroupSection.tsx`, `WorkspaceDataViewSettingsLifecycle.tsx`, `useSavedWorkspaceDataView.ts` | Single property inventory, bulk visibility and native property-type selector; nested filter editor; sort precedence; group visibility; saved-view duplication/deletion; same-owner notifications and write failures; mounted interaction tests pass |
+| S3 / `config.render.ts`, `canvasViewMenu.ts`, `canvasViewInvocationContract.mjs`, `workspaceEditorMode.ts`, `MultiDimTableSurface.tsx` | Canonical Kanban/Calendar renderer IDs route through the existing source-backed surface; graph interpretation remains separate; existing WebMCP discovery exposes both choices; renderer regressions pass |
+| S4 / `markdownDataViewCalendar.ts`, `MarkdownDataViewCalendarView.tsx`, `WorkspaceDataViewCalendarSurface.tsx`, `WorkspaceDataViewSettingsCalendarSection.tsx` | Strict month projection, explicit date properties/zone, range boundaries, day selection, paged lists, native record dialog and source-backed civil-date creation; Calendar lazy-loads |
+| S5 / `workspaceDataViewEnhancements.test.ts`, `markdownDataViewCalendar.test.ts`, existing registry cases | Twenty focused cases cover mounted settings, migration/recovery, sorting/groups/lifecycle, Calendar semantics/bounds and existing surface/property/hover regressions; TypeScript and production build pass |
+
+The named owner files above are under `canvas/src/features/markdown-workspace/main/viewer/`,
+except Calendar projection/view under `canvas/src/features/markdown/ui/`, renderer files under the
+G7 paths, and tests under `canvas/src/__tests__/`. `useWorkspaceDataViewMutations.ts` extracts the
+existing source writer callbacks without introducing another writer. All touched source modules
+remain below 600 lines.
+
+Persistence uses a `:v3` key and retains old v2 bytes for rollback, with a last-valid v3 backup.
+Invalid stored payloads remain intact and block writes with a visible recovery error. A view update
+addresses its own ID and cannot select a newer active view. The settings scope normalizes the
+Markdown table range to its start line so appended records retain configuration; the previous exact
+range key is read for migration. Native workspace path normalization unifies leading-slash and
+relative paths; validated legacy path/range aliases are promoted before source edits while preserving
+their original bytes. Regression coverage combines alias changes and growing tables. Moving a table's starting line remains a known identity limitation.
+No source content is changed by these settings operations.
+
+Live localhost verification used a new neutral four-record document: one two-day civil range,
+one later record, one missing date and one invalid date. Calendar placed the range on both days,
+kept the two exception lists separate, and a Title filter reduced the result to that range. Wrapping
+the rule preserved the result. Property type selection and independent saved-view duplication worked. A dated record created through
+the native source writer appeared on the selected day while keeping Calendar configuration and both
+exception counts. Passive source composition and saved-view restoration retain data-view renderers;
+explicit source presets keep their precedence. The existing import-materialization owner preserves
+a selected record renderer for sources without a renderer preset.
+This is targeted interaction evidence, not a timed 180-second acceptance run or physical-device proof.
+
+The production build completed in 52.90 seconds. The new Calendar chunk is 14.19 KB raw / 5.86 KB
+gzip. Its own chunk meets the 40 KB gzip ceiling; a before/after dependency-closure or always-load
+registry delta was not measured. Existing unrelated output chunks exceed 500 KB and remain baseline
+release debt; this increment does not claim repository-wide chunk compliance. The bounded projection
+test covers 10,000 long-range records; formal 1,000-row/128-clause p95 and interaction-latency sampling,
+cold/warm offline browser acceptance and physical mobile/touch evidence remain open V8 checks.
+
+Development: native implementation with the local checks above. Protected integration is separately
+recorded by the release receipt; no Production promotion or pilot-demand result is claimed here.
+Full external calendar adapters, recurrence and drag scheduling remain deferred. The next value
+checkpoint is the consented operator journey after the outstanding acceptance checks, with the
+same source-loss and zero-spend stop criteria. Preserve this increment's diff, validation logs,
+neutral live evidence and native release receipt in private execution evidence.
+
+
+## Checkpoint — Calendar interaction refinement, 2026-10-02
+
+`workspace-data-views@1.2.0` joins the five roles for the operator's Calendar enhancement request.
+The existing source writer, date projection, view state and lazy renderer remain the owners.
+The published 1.1.0 candidate is retained unchanged; scope `#calendar-refinements` uses its native
+successor allocation. Admission digest: `70fe99a82bcd1c0cec03d51a9cb12a61fddd3a1fb6b24a8aedc7f0366675b169`.
+
+- **PRD / value:** reduce the steps to add a record on a known day and make a dense month readable.
+  A localized month heading, weekday labels, muted adjacent-month cells and a timezone-correct today
+  highlight establish date context. Every populated day previews up to three named records; an empty
+  title reads Untitled. A named more-records button opens the full day list with existing pagination.
+- **TAD / ownership:** `markdownDataViewCalendar.ts` shares month cells with the main grid and compact
+  navigator. The projection retains its 42-day bound; display trims unused trailing weeks.
+  `MarkdownDataViewCalendarNavigation.tsx` owns month/date selection and arrow/Home/End focus movement;
+  its semantic disclosure returns focus on selection or Escape. `MarkdownDataViewCalendarView.tsx`
+  owns the day-local composer and passes only title/start-date seeds to the existing record callback.
+  `markdownDataViewCalendar.css` scopes presentation and local-hover/focus/coarse-pointer rules.
+- **ADR / choice:** use a native semantic table, buttons, time elements, details and forms. Reuse the
+  configured timezone and browser locale without a calendar package. Keep record previews bounded
+  instead of rendering an unbounded stack inside every cell. No generic div or aria-hidden decoration
+  is introduced by these controls. View navigation does not write source content.
+- **MVP / acceptance:** hovering one day reveals only its New row control; focus and touch keep it
+  discoverable. Entering a title or accepting Untitled creates a row on that day through the same
+  writer; Cancel/Escape writes nothing. Read-only or non-Date properties expose no civil-date writer.
+  The date navigator, Previous/Next/Today, overflow and record details are interactive.
+  The focused interaction suite covers creation/cancel seeds, focus, date selection, overflow paging,
+  month changes and read-only controls; date tests retain leap/DST/range coverage and check 4/5/6-week
+  presentation. Browser verification owns CSS hover visibility and the persisted write/readback.
+- **GTM / learning:** retain the existing voluntary pilot and price hypothesis. Compare time and
+  mistakes when adding three dated records through the inline day composer; no revenue or conversion
+  claim follows from this implementation.
+
+Sprint cap refreshed after CI diagnostics: ten files, 44 KB of added text, approximately 35 active minutes plus required checks,
+zero paid resources. The new navigation and styles remain within the existing lazy Calendar module.
+No new storage version, remote calendar, recurrence, notifications, drag rescheduling, source identity
+policy or Production effect is introduced. Physical-device/offline and formal p95 acceptance remain
+open; exact validation and release receipts accompany the candidate separately.
+
+Validation includes three Calendar cases, the TypeScript check, eight responsibility-flow cases,
+and live browser creation/readback of a titled record on 2026-10-15, record details, compact date
+selection and keyboard movement. The first build emitted a lazy Calendar module of 18.64 KB JS and
+3.46 KB CSS; shared pre-existing oversized chunks remain outside this feature's bundle claim.
+The predecessor's remote Mission browser check lost its context during navigation. An unchanged
+settings generation also reproduced a local preview reload. The existing artifact writer now skips
+identical content while retaining staged writes for changes; its regression test checks unchanged
+inode/mtime and changed-byte persistence. This removes one concurrent-verification reload source;
+the exact candidate's protected CI remains the release authority, not that diagnosis alone.
+
+
+## Checkpoint — Calendar record details, 2026-10-02
+
+`workspace-data-views@1.2.1` joins the five roles for the five record-dialog browser comments.
+The native successor scope is `#calendar-record-dialog`; published predecessors remain immutable.
+
+- **PRD / value:** keep record details centered and column actions accessible, then retain the
+  operator's place in the calendar after closing details. The close action uses the existing X icon
+  with an accessible name and a 44-pixel target.
+- **TAD / ownership:** `MarkdownDataViewCalendarView.tsx` separates selected record identity from
+  dialog visibility. Its scoped stylesheet centers the native modal within the viewport and bounds
+  its scrolling height. Shared `DetailsMenu.tsx` portals to the trigger's open dialog, falling back
+  to the document body outside dialogs; viewport clamping and nonblocking pointer behavior remain.
+- **ADR / choice:** reuse the native dialog top layer instead of increasing a body portal's z-index.
+  Keyboard activation of the column summary is accepted without changing pointer label guards.
+  Escape closes the open menu first and returns focus to its trigger. A small shared
+  `rowSelectionStyle.ts` extracts the existing hierarchy-row accent and selected background; both
+  span rows and calendar record buttons use that owner with a four-pixel inline-start border.
+  Record selection is presentation state and never writes source or persisted view configuration.
+- **MVP / acceptance:** the dialog is centered on desktop and a narrow viewport; a menu extends
+  beyond its short dialog without being obscured. Closing by icon or Escape retains the record's
+  accent/highlight, selecting a different record transfers it, and repeated open/close works.
+  Focused interaction tests cover modal menu ownership, Escape, icon naming, selection and zero
+  source writes; live browser checks cover geometry, hit testing and focus restoration.
+- **GTM / learning:** retain the voluntary pilot and setup-price hypothesis. Observe wrong-record
+  reopenings and menu failures during the existing dated-record journey; no conversion claim.
+
+Bound: eight files, 24 KB of added text, approximately 20 active minutes plus required checks;
+zero dependencies or paid resources. The shared style helper adds a small synchronous module to
+existing hierarchy consumers; Calendar remains lazy. Production and physical-device verification
+remain separate from this local fix; exact validation and protected release receipts accompany it.
+
+Validation: focused Calendar interactions and the existing menu toggle guard pass; TypeScript passes.
+Live checks at 1351 × 952 and 390 × 844 confirm zero center offset, a 44 × 44 close target, and
+menu hit testing above the dialog and beyond its bounds. Mobile menu bounds remain in the viewport.
+Escape and the close icon restore focus to the selected record. Protected CI remains the separate
+source-integration gate; no Production runtime proof follows from these local observations.

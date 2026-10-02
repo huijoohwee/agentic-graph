@@ -176,7 +176,9 @@ export function testWorkspaceDataViewFloatingPanelOwnsQueryWorkbench() {
   }
   for (const expected of [
     'Properties field inventory',
-    'Properties field inventory list',
+    'Properties chooser',
+    'Show all properties',
+    'Hide all properties',
     'Search properties',
     'Hide property:',
     'Show property:',

@@ -1,17 +1,16 @@
+import { DataViewAction } from './WorkspaceDataViewSettingsActions'
 import React from 'react'
 import { ChevronDown, ChevronRight, Copy, Eye, EyeOff, Link2, Search, Trash2 } from 'lucide-react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_FOCUS_RING } from '@/lib/ui/focusRing'
-import { defaultColumnTypeForInferredKind, type MarkdownDataViewColumnType } from '@/features/markdown/ui/markdownDataViewColumnType'
+import { defaultColumnTypeForInferredKind, MARKDOWN_DATA_VIEW_COLUMN_TYPE_OPTIONS, isColumnTypeEditable, type MarkdownDataViewColumnType } from '@/features/markdown/ui/markdownDataViewColumnType'
 import { MarkdownDataViewAddColumnMenu } from '@/features/markdown/ui/MarkdownDataViewAddColumnMenu'
-import { MarkdownDataViewColumnTypeMenu } from '@/features/markdown/ui/MarkdownDataViewColumnTypeMenu'
 import { iconByColumnType } from '@/features/markdown/ui/markdownDataViewColumnTypeMenuIcons'
 import type { MarkdownDataViewColumn } from '@/features/markdown/ui/markdownDataViewModel'
 import type { WorkspaceDataViewConfig } from './workspaceDataViewConfig'
 import { GripDotsIcon, VisibilityIcon } from '@/features/graph-fields/ui/graphFieldIcons'
 import { UI_COLOR_PRIMARY_BLUE_INDICATOR } from '@/features/toolbar/ui/toolbarStyles'
 import { reorderList } from '@/lib/reorder'
-import { DetailsMenu } from '@/components/ui/DetailsMenu'
 import { UI_TEXT_TRUNCATE } from '@/lib/ui/textLayout'
 import {
   UI_RESPONSIVE_DATA_VIEW_MENU_PANEL_CLASSNAME,
@@ -36,6 +35,7 @@ const PROPERTY_SMALL_ICON_PLACEHOLDER_CLASS = getDataViewIconButtonClassName({ s
 
 export function WorkspaceDataViewSettingsPropertiesSection(props: {
   canMutate: boolean
+  titleColumnId?: string
   columns: readonly MarkdownDataViewColumn[]
   view: WorkspaceDataViewConfig
   onChangeView: (next: WorkspaceDataViewConfig) => void
@@ -67,13 +67,14 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
     if (!raw) return allIds
     const set = new Set(raw)
     const normalized = raw.filter(id => allIds.includes(id))
+    if (props.titleColumnId && !normalized.includes(props.titleColumnId)) normalized.unshift(props.titleColumnId)
     for (const id of allIds) {
       if (!set.has(id)) continue
       if (normalized.includes(id)) continue
       normalized.push(id)
     }
     return normalized
-  }, [allIds, props.view.visibleColumnIds])
+  }, [allIds, props.view.visibleColumnIds, props.titleColumnId])
 
   const hiddenIds = React.useMemo(() => {
     const visibleSet = new Set(visibleIds)
@@ -102,6 +103,7 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
   const setVisibleIds = React.useCallback(
     (nextVisibleIds: readonly string[]) => {
       const normalized = nextVisibleIds.filter(id => allIds.includes(id))
+      if (props.titleColumnId && !normalized.includes(props.titleColumnId)) normalized.unshift(props.titleColumnId)
       const isDefaultAllVisibleOrder =
         normalized.length === allIds.length && normalized.every((id, idx) => id === allIds[idx])
       props.onChangeView({
@@ -198,77 +200,11 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
             placeholder="Search properties"
           />
         </label>
-        <section className="max-h-48 space-y-1 overflow-y-auto pr-1" aria-label="Properties field inventory list">
-          {filteredVisibleIds.map(columnId => {
-            const column = props.columns.find(item => item.id === columnId)
-            if (!column) return null
-            return (
-              <section
-                key={`inventory:${column.id}`}
-                className={[
-                  UI_RESPONSIVE_DATA_VIEW_PROPERTY_ROW_CLASSNAME,
-                  UI_RESPONSIVE_ELEMENT_ROW_CLASSNAME,
-                  'gap-2',
-                  UI_THEME_TOKENS.panel.border,
-                ].join(' ')}
-              >
-                <button
-                  type="button"
-                  className={['App-toolbar__btn shrink-0', UI_THEME_TOKENS.button.hoverBg].join(' ')}
-                  aria-label={`Hide property: ${column.name}`}
-                  onClick={() => setColumnVisible(column.id, false)}
-                >
-                  <Eye className={['h-4 w-4', UI_THEME_TOKENS.icon.color].join(' ')} aria-hidden="true" />
-                </button>
-                <section className="min-w-0 flex-1">
-                  <section className={['text-xs font-medium', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.primary].join(' ')}>
-                    {column.name}
-                  </section>
-                  <section className={['text-xs', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>
-                    {column.kind}
-                  </section>
-                </section>
-              </section>
-            )
-          })}
-          {filteredHiddenIds.map(columnId => {
-            const column = props.columns.find(item => item.id === columnId)
-            if (!column) return null
-            return (
-              <section
-                key={`inventory:${column.id}`}
-                className={[
-                  UI_RESPONSIVE_DATA_VIEW_PROPERTY_ROW_CLASSNAME,
-                  UI_RESPONSIVE_ELEMENT_ROW_CLASSNAME,
-                  'gap-2',
-                  UI_THEME_TOKENS.panel.border,
-                ].join(' ')}
-              >
-                <button
-                  type="button"
-                  className={['App-toolbar__btn shrink-0', UI_THEME_TOKENS.button.hoverBg].join(' ')}
-                  aria-label={`Show property: ${column.name}`}
-                  onClick={() => setColumnVisible(column.id, true)}
-                >
-                  <EyeOff className={['h-4 w-4', UI_THEME_TOKENS.text.tertiary].join(' ')} aria-hidden="true" />
-                </button>
-                <section className="min-w-0 flex-1">
-                  <section className={['text-xs font-medium', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.tertiary].join(' ')}>
-                    {column.name}
-                  </section>
-                  <section className={['text-xs', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.secondary].join(' ')}>
-                    {column.kind}
-                  </section>
-                </section>
-              </section>
-            )
-          })}
-          {(filteredVisibleIds.length + filteredHiddenIds.length) === 0 ? (
-            <section className={['px-2 py-1 text-xs', UI_THEME_TOKENS.text.secondary].join(' ')}>
-              No properties match.
-            </section>
-          ) : null}
-        </section>
+        <menu className="m-0 p-0 flex gap-2" aria-label="Property visibility actions">
+          <li className="list-none"><DataViewAction onClick={() => setVisibleIds(allIds)}>Show all properties</DataViewAction></li>
+          <li className="list-none"><DataViewAction onClick={() => setVisibleIds(props.titleColumnId ? [props.titleColumnId] : [])}>Hide all properties</DataViewAction></li>
+        </menu>
+        <p className="text-xs">The title stays visible to identify records.</p>
       </section>
       {props.canMutate && props.onAddColumn ? (
         <section className="mb-3" aria-label="Add column">
@@ -290,13 +226,12 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
         </section>
       ) : null}
       <section className="space-y-1" aria-label="Properties chooser">
-        {visibleIds.map(columnId => {
+        {filteredVisibleIds.map(columnId => {
           const c = props.columns.find(x => x.id === columnId)
           if (!c) return null
           const visible = true
           const type = (props.view.columnTypesById && props.view.columnTypesById[c.id]) || defaultColumnTypeForInferredKind(c.kind)
           const graphRole = (props.view.graphRolesByColumnId && props.view.graphRolesByColumnId[c.id]) || inferRoleForColumn(c.name)
-          const Icon = iconByColumnType[type]
           const isDragOver = dragOverColumnId === c.id && draggingColumnId && draggingColumnId !== c.id
           const isExpanded = expandedColumnId === c.id
 
@@ -350,28 +285,17 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
 
               <section className={`${UI_RESPONSIVE_ELEMENT_ROW_CLASSNAME} gap-2`}>
                 <section className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+                  <menu className="m-0 p-0 flex" aria-label={`Reorder property ${c.name}`}>
+                    <li className="list-none"><DataViewAction aria-label={`Move ${c.name} up`} disabled={visibleIds.indexOf(c.id) <= 0} onClick={() => moveVisibleColumn(c.id, visibleIds[visibleIds.indexOf(c.id) - 1])}>↑</DataViewAction></li>
+                    <li className="list-none"><DataViewAction aria-label={`Move ${c.name} down`} disabled={visibleIds.indexOf(c.id) === visibleIds.length - 1} onClick={() => moveVisibleColumn(c.id, visibleIds[visibleIds.indexOf(c.id) + 1])}>↓</DataViewAction></li>
+                  </menu>
                   <GripDotsIcon className={['w-4 h-4 shrink-0', UI_THEME_TOKENS.text.tertiary].join(' ')} />
 
-                  <DetailsMenu
-                    ariaLabel={`Property type: ${c.name}`}
-                    detailsClassName="relative"
-                    summaryClassName={[
-                      PROPERTY_SMALL_ICON_BUTTON_CLASS,
-                      'list-none cursor-pointer',
-                    ].join(' ')}
-                    menuClassName="kg-column-header-children kg-click-expand-menu-children mt-1"
-                    summary={<Icon className={icon14} aria-hidden="true" />}
-                    menu={({ close }) => (
-                      <MarkdownDataViewColumnTypeMenu
-                        ariaLabel={`Property type: ${c.name}`}
-                        value={type}
-                        onSelect={(next) => {
-                          setColumnType({ column: c, nextType: next })
-                          close()
-                        }}
-                      />
-                    )}
-                  />
+                  <select aria-label={`Property type: ${c.name}`} value={type}
+                    className={['w-20 min-w-0 shrink-0 rounded border p-1 text-xs', UI_THEME_TOKENS.input.bg, UI_THEME_TOKENS.input.border, UI_FOCUS_RING].join(' ')}
+                    onChange={event => setColumnType({ column: c, nextType: event.target.value as MarkdownDataViewColumnType })}>
+                    {MARKDOWN_DATA_VIEW_COLUMN_TYPE_OPTIONS.map(option => <option key={option.key} value={option.key} disabled={!isColumnTypeEditable(option.key)}>{option.label}</option>)}
+                  </select>
 
                   {editingColumnId === c.id ? (
                     <WorkspaceDataViewComfortableTextInput
@@ -411,7 +335,8 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
                     className={PROPERTY_ICON_BUTTON_CLASS}
                     onClick={() => setColumnVisible(c.id, false)}
                     aria-pressed={visible}
-                    aria-label="Hide"
+                    aria-label={`Hide property: ${c.name}`}
+                          disabled={c.id === props.titleColumnId}
                   >
                     <VisibilityIcon hidden={!visible} iconClassName="w-4 h-4" />
                   </button>
@@ -486,7 +411,7 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
           <section className="mt-2" aria-label="Hidden properties">
             <section className={['text-xs font-medium px-2 py-1', UI_THEME_TOKENS.text.secondary].join(' ')}>Hidden</section>
             <section className="space-y-1">
-              {hiddenIds.map(columnId => {
+              {filteredHiddenIds.map(columnId => {
                 const c = props.columns.find(x => x.id === columnId)
                 if (!c) return null
                 const visible = false
@@ -539,7 +464,7 @@ export function WorkspaceDataViewSettingsPropertiesSection(props: {
                           className={PROPERTY_ICON_BUTTON_CLASS}
                           onClick={() => setColumnVisible(c.id, true)}
                           aria-pressed={visible}
-                          aria-label="Show"
+                          aria-label={`Show property: ${c.name}`}
                         >
                           <VisibilityIcon hidden={!visible} iconClassName="w-4 h-4" />
                         </button>

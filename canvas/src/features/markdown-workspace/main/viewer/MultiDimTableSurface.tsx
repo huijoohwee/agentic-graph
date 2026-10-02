@@ -1,3 +1,4 @@
+import { useGraphStore } from '@/hooks/useGraphStore'
 import React from 'react'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -17,6 +18,8 @@ const NOOP_REVEAL_LINE = () => void 0
 const NOOP_VIEWER_ROOT_REF = () => void 0
 
 export function MultiDimTableSurface(props: { active?: boolean; ariaLabel?: string; dataViewSource?: WorkspaceDataViewSource }) {
+  const renderer = useGraphStore(state => state.canvas2dRenderer)
+  const viewerMode = renderer === 'kanban' ? 'kanban' : renderer === 'calendar' ? 'calendar' : 'multiDimTable'
   const active = props.active !== false
   const panelTypography = usePanelTypography()
   const source = useCanvasWorkspaceDataViewSource('multi-dimensional-table.md')
@@ -127,7 +130,8 @@ export function MultiDimTableSurface(props: { active?: boolean; ariaLabel?: stri
     <section className={`${UI_VIEW_EDIT_SURFACE_AREA_CLASS_NAME} ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.primary}`} aria-label={props.ariaLabel || 'Multi-dimensional Table'} {...UI_VIEW_EDIT_SURFACE_DATA_ATTRIBUTES}>
       <MarkdownWorkspaceDerivedViewer
         viewerKind="markdown"
-        viewerMode="multiDimTable"
+        viewerMode={viewerMode}
+        onChangeViewerMode={mode => useGraphStore.getState().setCanvas2dRenderer(mode === 'kanban' ? 'kanban' : mode === 'calendar' ? 'calendar' : 'multiDimTable')}
         dataViewSource={props.dataViewSource}
         markdownText={props.dataViewSource ? '' : markdownText}
         title={props.dataViewSource?.label ?? source.title}
