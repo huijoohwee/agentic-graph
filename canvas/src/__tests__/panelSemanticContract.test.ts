@@ -589,8 +589,8 @@ export const testResponsiveMenusAndDataViewSurfacesStayBounded = () => {
     throw new Error('Expected compact toolbar dropdowns to reuse the shared compact width owner')
   }
   const narrowToolbarDropdowns = [
-    readUtf8(toolbarToolMenuPath),
     readUtf8(designFloatingPanelPath),
+    // FloatingPanel tabs now use PanelViewTabs instead of a dropdown.
   ]
   const storyboardWidgetSpecificationTab = readUtf8(storyboardWidgetSpecificationTabPath)
   const slimToolbarDropdowns = [

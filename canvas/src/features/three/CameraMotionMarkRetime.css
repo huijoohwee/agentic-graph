@@ -119,26 +119,6 @@
   pointer-events: none;
 }
 
-.timeline-video-sequence-ruler-content [data-kg-gantt-timeline-track-row-key*="xr_stage_scene"] .xr-camera-motion-retime-lane-mark.timeline-transport-time-axis-mark {
-  position: absolute;
-  top: 50%;
-  left: var(--kg-xr-retime-mark-left);
-  z-index: 2;
-  display: grid;
-  width: 16px;
-  height: 16px;
-  min-width: 16px;
-  max-width: 16px;
-  place-items: center;
-  transform: translate(-50%, -50%);
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-  pointer-events: auto;
-}
-
 .xr-timeline-scene-stage-select {
   width: clamp(92px, 14vw, 156px);
   font-size: var(--kg-text-xs);
@@ -165,63 +145,7 @@
   visibility: hidden;
 }
 
-.timeline-video-sequence-ruler-content .timeline-video-sequence-inserted-lane .xr-shot-target-timeline-lane .xr-camera-motion-retime-lane-mark.timeline-transport-time-axis-mark {
-  position: absolute;
-  top: 50%;
-  left: var(--kg-xr-retime-mark-left);
-  z-index: 1;
-  display: grid;
-  width: 16px;
-  height: 16px;
-  min-width: 16px;
-  max-width: 16px;
-  place-items: center;
-  transform: translate(-50%, -50%);
-  translate: 0;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  box-shadow: none;
-  contain: none;
-  padding: 0;
-  cursor: ew-resize;
-  pointer-events: auto;
-  touch-action: none;
-  user-select: none;
-}
-
-.timeline-video-sequence-ruler-content .timeline-video-sequence-inserted-lane .timeline-transport-track-clip.xr-camera-motion-retime-lane-mark.timeline-transport-time-axis-mark[data-kg-timeline-clip-compact="1"][data-kg-xr-lane-mark-shape="circle-only"] {
-  width: 16px;
-  min-width: 16px;
-  height: 16px;
-  min-height: 16px;
-  overflow: visible;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  translate: none;
-}
-
-.timeline-video-sequence-inserted-lane .xr-camera-motion-retime-lane-mark.timeline-transport-time-axis-mark::before,
-.timeline-video-sequence-inserted-lane .xr-camera-motion-retime-lane-mark.timeline-transport-time-axis-mark::after {
-  display: none;
-  content: none;
-}
-
-.xr-camera-motion-retime-lane-mark > span {
-  display: grid;
-  min-width: 20px;
-  height: 20px;
-  place-items: center;
-  border: 1px solid rgb(255 255 255 / 0.92);
-  border-radius: 999px;
-  background: var(--kg-xr-ruler-mark-color, rgb(8 145 178));
-  box-shadow: 0 1px 3px rgb(15 23 42 / 0.22);
-  color: white;
-  font-size: var(--kg-text-xs);
-  font-weight: 800;
-  line-height: 1;
-}
+.xr-camera-motion-retime-lane-mark { left: var(--kg-xr-retime-mark-left); cursor: ew-resize; }
 
 .xr-camera-motion-retime-lane-empty {
   position: absolute;
@@ -230,15 +154,6 @@
   transform: translateY(-50%);
   color: var(--kg-text-tertiary, #64748b);
   font-size: var(--kg-text-xs);
-}
-
-.xr-camera-motion-retime-lane-mark[aria-pressed="true"] {
-  z-index: 4;
-}
-
-.xr-camera-motion-retime-lane-mark[aria-pressed="true"] > span {
-  box-shadow: 0 0 0 2px #facc15, 0 1px 4px rgb(15 23 42 / 0.28);
-  color: #0f172a;
 }
 
 .xr-camera-motion-mark-selection-controls {

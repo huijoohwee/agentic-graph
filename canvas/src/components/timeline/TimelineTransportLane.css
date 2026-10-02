@@ -9,7 +9,7 @@
   padding-inline: var(--kg-toolbar-compact-pad-x);
   box-shadow: none;
 }
-.timeline-transport-time-axis-bar span, .timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"] .timeline-transport-track-clip-label { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .6; color: inherit; }
+.timeline-transport-time-axis-bar span, .timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"] .timeline-transport-track-clip-label { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; }
 .timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--milestone):not(.timeline-transport-time-axis-mark):not([data-kg-video-sequence-dense-fbf="1"]) {
   overflow: hidden;
   translate: 0 calc((var(--kg-video-sequence-lane-height, 61px) - var(--kg-timeline-bar-height)) / 2);
@@ -91,3 +91,24 @@
   transform: none;
   z-index: 10;
 }
+
+/* Every authored mark reuses the reference geometry and selection affordance. */
+.timeline-video-sequence-ruler-content .timeline-transport-time-axis-mark {
+  position: absolute; top: 50%; z-index: 1;
+  display: grid; place-items: center;
+  width: 44px; min-width: 44px; max-width: 44px;
+  height: 44px; min-height: 44px; padding: 10px;
+  transform: translate(-50%, -50%); translate: none;
+  border: 0; border-radius: 50%; background: transparent;
+  box-shadow: none; contain: none; overflow: visible;
+  cursor: pointer; pointer-events: auto; touch-action: none; user-select: none;
+}
+.timeline-transport-time-axis-mark > span {
+  display: grid; place-items: center; width: 24px; height: 24px;
+  border: 1px solid var(--kg-panel-bg); border-radius: 50%;
+  background: var(--kg-canvas-accent); color: white;
+  font: inherit; font-weight: 700; line-height: 1; box-shadow: none;
+}
+.timeline-transport-time-axis-mark[aria-pressed='true'] { z-index: 4; }
+.timeline-transport-time-axis-mark[aria-pressed='true'] > span { box-shadow: 0 0 0 3px var(--kg-accent-soft-bg); }
+.timeline-transport-time-axis-mark:focus-visible { outline: 2px solid var(--kg-canvas-accent); outline-offset: -2px; }

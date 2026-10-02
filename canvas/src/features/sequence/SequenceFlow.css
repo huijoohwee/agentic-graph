@@ -29,10 +29,5 @@
 .sequence-transport .timeline-transport-ruler--video-sequence { overflow: auto; }
 .sequence-transport .timeline-transport-header-tools { overflow-x: auto; }
 .sequence-transport .timeline-video-sequence-ruler-viewport { min-width: var(--sequence-axis-min-width); }
-.timeline-video-sequence-ruler-content .sequence-event-mark { position: absolute; top: 50%; width: 44px; min-width: 44px; height: 44px; padding: 10px; transform: translate(-50%, -50%); border: 0; background: transparent; box-shadow: none; overflow: visible; cursor: pointer; }
-.sequence-event-mark > span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--kg-panel-bg); background: var(--kg-canvas-accent); color: white; font-weight: 700; }
-.sequence-event-mark[aria-pressed='true'] { z-index: 3; }
-.sequence-event-mark[aria-pressed='true'] > span { box-shadow: 0 0 0 3px var(--kg-accent-soft-bg); }
 .sequence-event-mark[data-sequence-state='complete'] > span { opacity: .6; }
-.sequence-event-mark:focus-visible { outline: 2px solid var(--kg-canvas-accent); outline-offset: -2px; }
 @media (max-width: 640px) { .sequence-svg-host { padding: 8px; } .sequence-flow .timeline-player-toolbar button { min-height: 44px; min-width: 44px; } }

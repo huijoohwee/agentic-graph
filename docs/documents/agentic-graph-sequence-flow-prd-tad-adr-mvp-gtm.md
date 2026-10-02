@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.9"
-prd_revision: "1.3.9"
-tad_revision: "1.3.9"
-adr_revision: "1.3.9"
-mvp_revision: "1.3.9"
-gtm_revision: "1.3.9"
+version: "1.3.10"
+prd_revision: "1.3.10"
+tad_revision: "1.3.10"
+adr_revision: "1.3.10"
+mvp_revision: "1.3.10"
+gtm_revision: "1.3.10"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,7 +31,7 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.9**. The user authorized implementation
+All five roles join **SEQUENCE-FLOW-001@1.3.10**. The user authorized implementation
 and live UI verification on 2026-10-02. Work extends the existing workspace through
 an admitted successor lane. Remote service invocation, production mirrors, deployment
 and payment remain separate effects with no new grant here.
@@ -364,7 +364,7 @@ failure models and provider evidence; it is outside scope. Deterministic local r
 is the FOSS alternative and chosen approach. Consequences: authored timing is visibly
 distinct from measured latency; unsupported branch semantics fail loudly. Recovery:
 disable the sequence adapter and retain source, transport and existing timelines.
-Implemented at 1.3.9: MainPanel, FloatingPanel and BottomPanel reuse PanelViewTabs/PanelViewTab for one contained rail, selected styling, named icon/button semantics and control-height targets, with no document or renderer input. Remove the unused MainPanel text-tab variant and duplicated FloatingPanel/BottomPanel controls; missing MainPanel icon metadata fails loudly. Selecting a minimized MainPanel tab restores its body. FloatingPanel warehouse composition now consumes the shared capability hook, with a semantic section scroll wrapper. One small shared module replaces more tab code than it adds; selected feature bodies stay lazy and all existing lane/bar owners remain unchanged. Prior 1.3.8: FloatingPanel has one static 27-view registry and one expanded/minimized header, reusing IconButton, icon metadata, typography and control-height tokens. Remove the separate Graph Traversal overflow button and hidden/disabled tab-spec fields. Named button/icon semantics expose selection; contained scrolling reveals the selected view. XR routing retains its shared capability owner while shell selection always commits; choosing any tab restores the body. No source/path or feature payload can choose a tab variant. Prior 1.3.7: one neutral BottomPanel tab strip stays available for every source; Storyboard selection keeps the panel open. Storyboard, Design and warehouse project through existing transport/ruler/bar owners; shared read-only commands prevent generated projections from mutating Markdown. XR selection retains Timeline and uses the existing Media inspector for object details. Desktop tab shapes reuse toolbar controls; mobile targets follow the shared control-height token and scroll inside the shell. No paid service, dependency or source-path dispatch is added. Prior 1.3.6: shared chrome binds usePanelTypography for every host. Lane descendants inherit common font and uppercase treatment; clip-control outputs inherit neutral caption typography. Remove XR label sizes, colored/heavy captions and duplicate sequence wrapper binding. No file/path branch owns typography. Reuse the existing workflow/participant ruler and clip/mark
+Implemented at 1.3.10: TimelineTransportLane owns every authored mark: 44px hit target, 24px circle, inherited font, accent selection, visible focus and no decorative shadow. Remove duplicate sequence and XR mark geometry, heavy XR numerals and per-track/beat inline color variants; retain time positions and scrub/retime behavior. Shared pointer handling chooses the nearest sibling mark when hit areas overlap; keyboard activation stays on the focused mark. Shared bar captions use full text opacity for legibility. A stale responsive-menu assertion stops expecting a removed FloatingPanel dropdown. Prior 1.3.9: MainPanel, FloatingPanel and BottomPanel reuse PanelViewTabs/PanelViewTab for one contained rail, selected styling, named icon/button semantics and control-height targets, with no document or renderer input. Remove the unused MainPanel text-tab variant and duplicated FloatingPanel/BottomPanel controls; missing MainPanel icon metadata fails loudly. Selecting a minimized MainPanel tab restores its body. FloatingPanel warehouse composition now consumes the shared capability hook, with a semantic section scroll wrapper. One small shared module replaces more tab code than it adds; selected feature bodies stay lazy and all existing lane/bar owners remain unchanged. Prior 1.3.8: FloatingPanel has one static 27-view registry and one expanded/minimized header, reusing IconButton, icon metadata, typography and control-height tokens. Remove the separate Graph Traversal overflow button and hidden/disabled tab-spec fields. Named button/icon semantics expose selection; contained scrolling reveals the selected view. XR routing retains its shared capability owner while shell selection always commits; choosing any tab restores the body. No source/path or feature payload can choose a tab variant. Prior 1.3.7: one neutral BottomPanel tab strip stays available for every source; Storyboard selection keeps the panel open. Storyboard, Design and warehouse project through existing transport/ruler/bar owners; shared read-only commands prevent generated projections from mutating Markdown. XR selection retains Timeline and uses the existing Media inspector for object details. Desktop tab shapes reuse toolbar controls; mobile targets follow the shared control-height token and scroll inside the shell. No paid service, dependency or source-path dispatch is added. Prior 1.3.6: shared chrome binds usePanelTypography for every host. Lane descendants inherit common font and uppercase treatment; clip-control outputs inherit neutral caption typography. Remove XR label sizes, colored/heavy captions and duplicate sequence wrapper binding. No file/path branch owns typography. Reuse the existing workflow/participant ruler and clip/mark
 components; delete the duplicate step rail, card grid and separate scrub slider.
 One millisecond-to-minute adapter aligns clips and pointer scrubbing with the shared
 rounded display scale. Marks keep exact authored IDs and ordinals. Minimum axis width
@@ -479,7 +479,7 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.9. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.10. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 
@@ -594,6 +594,6 @@ Tracked authoring majors: 4. Full authoring artifact-bearing-rule coverage has n
 alignment verdict is claimed. Diagram/canvas-domain checks prove only their selected
 structural contract; runtime, licensing, demand and delivery remain separate checks.
 
-Next: publish panel-shared-controls as native successor of PR #1503 (af7273062). Nine affected registry checks and canvas typecheck pass, including tab activation and named semantics; the stale routing assertion now reads the canonical FloatingPanel registry. Live sequence and XR source checks preserve 11 MainPanel, 27 FloatingPanel and 9 BottomPanel choices. All three use the same font and 32×28px desktop controls; mobile width 390 gives 44×44px controls with contained rail scrolling. MainPanel minimize/select/restore is verified. Patch cap: 25 active minutes, twelve files, 40 KiB and $0; eleven files used, existing oversized tests and this document do not grow. Joined roles align at 1.3.9; candidate CI controls integration, and native publication stops at provider handoff. Remaining VCC observations stay open.
+Next: publish timeline-marker-fidelity as native successor of PR #1505 (6915c51d). Four affected XR, typography, shared-routing and responsive-menu contracts pass, together with typecheck and hygiene. Live sequence and XR checks confirm matching typography and mark geometry, crowded-pointer selection, keyboard seeking and 390px mobile targets without page overflow. Patch cap: 20 active minutes, nine files, 30 KiB and $0. Nine files use 25.2 KiB; existing oversized tests and this document do not grow. Joined roles align at 1.3.10; candidate CI controls integration, and native publication stops at provider handoff. Remaining VCC observations stay open.
 Recheck every affected receipt on source drift. Preserve lane/source bytes if publication
 or lifecycle effects are blocked. Production remains behind its separate protected owner.
