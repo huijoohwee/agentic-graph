@@ -1,5 +1,6 @@
 @import './VideoSequenceTimelineDenseFbf.css';
 @import './VideoSequenceTimelineScope.css';
+.timeline-video-sequence-ruler-content > .timeline-transport-track-clip { z-index: 2; }
 
 .timeline-transport-shell--video-sequence {
   display: grid;
@@ -68,7 +69,7 @@
   pointer-events: none;
 }
 
-.timeline-video-sequence-inserted-lane {
+.timeline-video-sequence-lane-row {
   position: absolute;
   right: 0;
   left: 0;
@@ -78,7 +79,7 @@
   background: transparent;
 }
 
-.timeline-video-sequence-lane-label[data-kg-video-sequence-inserted-lane-selected="1"] {
+.timeline-video-sequence-lane-label[data-kg-video-sequence-lane-selected="1"] {
   position: relative;
   z-index: 1;
   background: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 10%, var(--kg-panel-bg, #fff));
@@ -89,8 +90,8 @@
   color: var(--kg-canvas-accent, #2563eb);
 }
 
-.timeline-video-sequence-inserted-lane[data-kg-video-sequence-inserted-lane-selected="1"] {
-  z-index: 3;
+.timeline-video-sequence-lane-row[data-kg-video-sequence-lane-selected="1"] {
+  z-index: 1;
   background: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 6%, var(--kg-panel-bg, #fff));
   box-shadow:
     inset -2px 0 0 var(--kg-canvas-accent, #2563eb),

@@ -75,7 +75,7 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
   const timelineSource = readSource('features', 'three', 'XrCameraMotionSection.tsx') + readSource('features', 'three', 'XrTimelineSceneStageControls.tsx')
   const timelineChromeSource = readSource('components', 'timeline', 'TimelineTransportControls.tsx')
   const timelineChromeGanttCssSource = readSource('components', 'timeline', 'TimelineTransportControlsMermaidGantt.css')
-  const timelineRulerSource = readSource('components', 'timeline', 'VideoSequenceTimelineRuler.tsx')
+  const timelineRulerSource = readSource('components', 'timeline', 'VideoSequenceTimelineRuler.tsx') + readSource('components', 'timeline', 'VideoSequenceTimelineLanes.tsx')
   const timelineRulerCssSource = readSource('components', 'timeline', 'VideoSequenceTimelineRuler.css')
   const timelineTimeAxisControlsSource = readSource('components', 'timeline', 'VideoSequenceTimeAxisControls.tsx')
   const ganttTransportSource = readSource('features', 'gitgraph', 'GanttTimelineTransportPanel.tsx')
@@ -198,14 +198,14 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
   if (!ganttTransportSource.includes('supplementalLanes') || !ganttTransportSource.includes('timeAxisControls') || !ganttTransportSource.includes('timeRulerOverlay') || !ganttTransportSource.includes('timelineInsertedLanes') || !ganttTransportSource.includes('renderClipOverlay')) {
     throw new Error('expected the shared Gantt transport to own supplemental-lane, time-axis, ruler-overlay, inserted-lane, and clip-overlay slots')
   }
-  for (const marker of ['selected?: boolean', 'renderClipOverlay?: VideoSequenceTimelineClipOverlayRenderer', 'const clipOverlay = renderClipOverlay?.({', '{clipOverlay}', 'timeAxisControls?: React.ReactNode', 'timeRulerOverlay?: React.ReactNode', 'timelineInsertedLanes?: readonly VideoSequenceTimelineInsertedLane[]', '<VideoSequenceTimeAxisControls>{timeAxisControls}</VideoSequenceTimeAxisControls>', '{timeRulerOverlay}', 'visibleLanes.flatMap(lane', 'data-kg-video-sequence-inserted-lane-content', 'data-kg-video-sequence-inserted-lane-selected={insertedSelected ?', 'data-kg-video-sequence-inserted-lane-row-selection={insertedSelected ?', 'timeline-video-sequence-lane-label--inserted-selected', 'timeline-video-sequence-inserted-lane--selected-row', 'aria-current={insertedSelected ?']) {
+  for (const marker of ['selected?: boolean', 'renderClipOverlay?: VideoSequenceTimelineClipOverlayRenderer', 'const clipOverlay = renderClipOverlay?.({', '{clipOverlay}', 'timeAxisControls?: React.ReactNode', 'timeRulerOverlay?: React.ReactNode', 'timelineInsertedLanes?: readonly VideoSequenceTimelineInsertedLane[]', '<VideoSequenceTimeAxisControls>{timeAxisControls}</VideoSequenceTimeAxisControls>', '{timeRulerOverlay}', 'visibleLanes.flatMap(lane', 'data-kg-video-sequence-inserted-lane-content', 'data-kg-video-sequence-lane-selected={insertedSelected ?', 'data-kg-video-sequence-inserted-lane-row-selection={inserted && insertedSelected ?', 'timeline-video-sequence-lane-label--selected', 'timeline-video-sequence-lane-row--selected', 'aria-current={insertedSelected ?']) {
     if (!timelineRulerSource.includes(marker)) throw new Error(`expected the shared time ruler to expose ${marker}`)
   }
-  for (const marker of ['.timeline-video-sequence-lane-label[data-kg-video-sequence-inserted-lane-selected="1"]', '.timeline-video-sequence-inserted-lane[data-kg-video-sequence-inserted-lane-selected="1"]', 'inset 2px 0 0 var(--kg-canvas-accent, #2563eb)', 'inset -2px 0 0 var(--kg-canvas-accent, #2563eb)', 'inset 0 2px 0 var(--kg-canvas-accent, #2563eb)', 'inset 0 -2px 0 var(--kg-canvas-accent, #2563eb)']) {
-    if (!timelineRulerCssSource.includes(marker)) throw new Error(`expected selected inserted lanes to draw a row-wide border through ${marker}`)
+  for (const marker of ['.timeline-video-sequence-lane-label[data-kg-video-sequence-lane-selected="1"]', '.timeline-video-sequence-lane-row[data-kg-video-sequence-lane-selected="1"]', 'inset 2px 0 0 var(--kg-canvas-accent, #2563eb)', 'inset -2px 0 0 var(--kg-canvas-accent, #2563eb)', 'inset 0 2px 0 var(--kg-canvas-accent, #2563eb)', 'inset 0 -2px 0 var(--kg-canvas-accent, #2563eb)']) {
+    if (!timelineRulerCssSource.includes(marker)) throw new Error(`expected selected timeline lanes to draw a row-wide border through ${marker}`)
   }
   for (const forbiddenSelectedBorder of ['border-left: 2px solid var(--kg-canvas-accent, #2563eb)', 'border-right: 2px solid var(--kg-canvas-accent, #2563eb)', 'border-top: 2px solid var(--kg-canvas-accent, #2563eb)', 'border-bottom: 2px solid var(--kg-canvas-accent, #2563eb)']) {
-    if (timelineRulerCssSource.includes(forbiddenSelectedBorder)) throw new Error(`expected selected inserted lanes to avoid size-changing physical borders, found ${forbiddenSelectedBorder}`)
+    if (timelineRulerCssSource.includes(forbiddenSelectedBorder)) throw new Error(`expected selected timeline lanes to avoid size-changing physical borders, found ${forbiddenSelectedBorder}`)
   }
   for (const marker of [':not(.timeline-transport-time-axis-clip)', ':not(.timeline-transport-time-axis-mark)']) {
     if (!timelineRulerCssSource.includes(marker)) throw new Error(`expected nested shared time-axis primitives to opt out of full clip chrome through ${marker}`)

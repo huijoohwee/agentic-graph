@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.10"
-prd_revision: "1.3.10"
-tad_revision: "1.3.10"
-adr_revision: "1.3.10"
-mvp_revision: "1.3.10"
-gtm_revision: "1.3.10"
+version: "1.3.11"
+prd_revision: "1.3.11"
+tad_revision: "1.3.11"
+adr_revision: "1.3.11"
+mvp_revision: "1.3.11"
+gtm_revision: "1.3.11"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,7 +31,7 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.10**. The user authorized implementation
+All five roles join **SEQUENCE-FLOW-001@1.3.11**. The user authorized implementation
 and live UI verification on 2026-10-02. Work extends the existing workspace through
 an admitted successor lane. Remote service invocation, production mirrors, deployment
 and payment remain separate effects with no new grant here.
@@ -479,7 +479,7 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.10. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.11. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 
@@ -594,6 +594,6 @@ Tracked authoring majors: 4. Full authoring artifact-bearing-rule coverage has n
 alignment verdict is claimed. Diagram/canvas-domain checks prove only their selected
 structural contract; runtime, licensing, demand and delivery remain separate checks.
 
-Next: publish timeline-marker-fidelity as native successor of PR #1505 (6915c51d). Four affected XR, typography, shared-routing and responsive-menu contracts pass, together with typecheck and hygiene. Live sequence and XR checks confirm matching typography and mark geometry, crowded-pointer selection, keyboard seeking and 390px mobile targets without page overflow. Patch cap: 20 active minutes, nine files, 30 KiB and $0. Nine files use 25.2 KiB; existing oversized tests and this document do not grow. Joined roles align at 1.3.10; candidate CI controls integration, and native publication stops at provider handoff. Remaining VCC observations stay open.
+Implemented at 1.3.11: native scene/media/workflow lanes and inserted lanes reuse VideoSequenceTimelineLaneLabels and VideoSequenceTimelineLaneRows with one selection attribute and style owner. Native row selection derives from the existing selected clip/display-lane map; inserted content retains its selection adapter. Selecting the scene clip highlights SCENE and its full row; selecting The Wolf clears scene selection and highlights that object row. Semantic named section rows retain ruler pointer seeking, and native clips stay above row surfaces. Extracted shared rendering reduces VideoSequenceTimelineRuler from 689 to 598 lines. Two affected XR/shared-routing contracts, typecheck, hygiene and whitespace checks pass; preview 5190 verifies both selection directions and /tmp/timeline-scene-row-selected.png records the scene highlight. Sprint allowance refreshed to 15 active minutes, five paths and 30 KiB; patch 25.2 KiB, no new dependency or spend. Native successor of PR #1506 at ab8eb3f83; candidate CI and protected integration remain separate effects. Remaining VCC observations stay open.
 Recheck every affected receipt on source drift. Preserve lane/source bytes if publication
 or lifecycle effects are blocked. Production remains behind its separate protected owner.
