@@ -561,7 +561,7 @@ export function VideoSequenceTimelineRuler({
             </article>
           )
         })}
-        {scopes.length ? (
+        {renderableSpans.length && scopes.length ? (
           <section className="timeline-video-sequence-ruler-scope-strip" aria-label="Video sequence scopes" data-kg-video-sequence-ruler-scopes="1">
             {scopes.map(scope => (
               <section

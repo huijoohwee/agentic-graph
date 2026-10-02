@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.14"
-prd_revision: "1.3.14"
-tad_revision: "1.3.14"
-adr_revision: "1.3.14"
-mvp_revision: "1.3.14"
-gtm_revision: "1.3.14"
+version: "1.3.15"
+prd_revision: "1.3.15"
+tad_revision: "1.3.15"
+adr_revision: "1.3.15"
+mvp_revision: "1.3.15"
+gtm_revision: "1.3.15"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,7 +31,7 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.14**. The user authorized implementation
+All five roles join **SEQUENCE-FLOW-001@1.3.15**. The user authorized implementation
 and live UI verification on 2026-10-02. Work extends the existing workspace through
 an admitted successor lane. Remote service invocation, production mirrors, deployment
 and payment remain separate effects with no new grant here.
@@ -479,7 +479,7 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.14. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.15. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 
@@ -594,6 +594,6 @@ Tracked authoring majors: 4. Full authoring artifact-bearing-rule coverage has n
 alignment verdict is claimed. Diagram/canvas-domain checks prove only their selected
 structural contract; runtime, licensing, demand and delivery remain separate checks.
 
-Implemented at 1.3.14: empty BottomPanel timelines use the existing shared transport, time ruler, playhead, lane labels, row renderer and context status. The media lane resolver no longer fabricates VIDEO, IMAGE, SCENE or EFFECT lanes when no renderable clips exist; the redundant display-lane fallback is removed. Empty and fully hidden authored timelines yield zero semantic/display lanes and a matching zero count. Authored clips still determine their semantic lanes, and multi-source append lanes remain tied to actual sources. PRD: remove conflicting empty layouts across source files. TAD/ADR: fix the shared data projection owner without file-path branches, replacement components or CSS variants. MVP: browser preview 5190 verifies zero labels, rows and clips for the Strybldr and SME care documents; both retain the same 0:00 transport, ruler and context status. Review captures: /tmp/timeline-empty-strybldr.png and /tmp/timeline-empty-sme-care.png. Focused semantic-lane, multi-source, shared-routing, surface-owner and empty-media-drop contracts plus typecheck validate the change; the surface contract now reads the extracted shared lane owner instead of expecting inline ruler markup. GTM: local preview evidence only, no full parity or production claim. Sprint cap: 15 active minutes, six paths and 30 KiB; four changed paths, no new modules, dependencies or spend. The resolver is 569 lines and expanded semantic test 523 lines; the pre-existing oversized surface contract does not grow. Native successor of PR #1509 at 8b59bbfb7335; full candidate CI and protected integration remain separate receipts. Prior 1.3.13 shared native lane buttons, selected-row borders, inserted object adapters and click/Enter behavior remain in place. Remaining VCC observations and production effects stay open.
+Implemented at 1.3.15: the shared ruler renders media scopes only while renderable authored clips exist. This removes the remaining synthetic scope strip from empty media timelines and fully hidden timelines, completing the 1.3.14 shared empty-lane cleanup without a file-specific branch or CSS variant. PRD: empty timelines share a neutral blank body. TAD/ADR: one renderable-spans condition at the existing shared ruler owner; no replacement module. MVP: live preview 5190 confirms zero rows and zero scope strips for the empty SME care document; an authored media sequence still renders two labels, two rows and two clips. The surface-owner contract checks the empty-scope guard, and typecheck passes. The Strybldr and SME care empty review captures remain /tmp/timeline-empty-strybldr.png and /tmp/timeline-empty-sme-care.png. GTM: local review evidence only; no production or broad parity claim. Follow-up cap: five active minutes, three paths and 8 KiB; no dependencies, modules or spend. Shared ruler stays 599 lines and the pre-existing oversized surface contract does not grow. Native successor of PR #1510 at e390428610f9. Prior 1.3.14 removes fabricated VIDEO/IMAGE/SCENE/EFFECT empty lanes and the redundant display-lane fallback; five focused contracts cover empty/hidden lane counts, authored semantics, multiple sources, shared routing/surfaces and empty-media-drop bootstrapping. Prior 1.3.13 shared label buttons, selected-row borders and inserted adapters remain in place. Candidate CI and protected integration require separate receipts; remaining VCC observations and production effects stay open.
 Recheck every affected receipt on source drift. Preserve lane/source bytes if publication
 or lifecycle effects are blocked. Production remains behind its separate protected owner.

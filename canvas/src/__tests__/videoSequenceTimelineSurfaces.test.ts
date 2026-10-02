@@ -340,7 +340,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     !rulerText.includes('data-kg-video-sequence-trim-end') ||
     !rulerText.includes('timeline-transport-track-handle-grip') ||
     !rulerText.includes('timeline-video-sequence-trim-guide') ||
-    !rulerText.includes('timeline-video-sequence-ruler-scope-strip') ||
+    !rulerText.includes('timeline-video-sequence-ruler-scope-strip') || !rulerText.includes('{renderableSpans.length && scopes.length ? (') ||
     !rulerText.includes('timeline-video-sequence-ruler-scope-bars') ||
     !rulerText.includes('buildTimelineAnimationState') ||
     !rulerText.includes("surface: 'bottom-timeline'") ||
