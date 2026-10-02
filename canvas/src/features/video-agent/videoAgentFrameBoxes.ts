@@ -57,8 +57,11 @@ const buildVideoAgentFrameImageUrl = (sourceUrl: string, timestampMs: number): s
   })
 }
 
-export const buildVideoAgentFrameBoundingBoxes = (durationMs: number, sourceUrl: string): VideoAgentFrameBoundingBox[] => {
-  const sampleCount = clampInteger(Math.ceil(durationMs / 700), 10, 10, 120)
+export const buildVideoAgentFrameBoundingBoxes = (durationMs: number, sourceUrl: string, maxFrameSamples?: number): VideoAgentFrameBoundingBox[] => {
+  const sampleLimit = typeof maxFrameSamples === 'number' && Number.isFinite(maxFrameSamples)
+    ? Math.max(10, Math.min(120, Math.floor(maxFrameSamples)))
+    : 120
+  const sampleCount = clampInteger(Math.ceil(durationMs / 700), 10, 10, sampleLimit)
   const frameStepMs = Math.max(1, Math.floor(durationMs / sampleCount))
   return Array.from({ length: sampleCount }, (_, index) => {
     const progress = index / Math.max(1, sampleCount - 1)
