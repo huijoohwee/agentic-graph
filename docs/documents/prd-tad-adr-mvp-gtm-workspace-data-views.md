@@ -286,7 +286,9 @@ Physical devices, production behavior and complete accessibility certification n
 
 S1–S4 are implemented in the existing source owners; S5 has focused and live evidence below.
 START admission binds the changed paths; affected checks and protected RELEASE remain independent gates.
-The active implementation budget was refreshed to 50 modules / 140 KB of source changes; no paid resources.
+The active implementation budget was refreshed to 51 files / 140 KB of source changes; no paid resources.
+The shared Canvas tool description is concise so the added renderer choices retain the existing
+32 KiB browser-discovery cap, complete input validation and execution ownership.
 
 | Stage / RAO action | Dependencies / reusable owner | Exit / budget and next check |
 |---|---|---|

@@ -26,7 +26,7 @@ export const buildCanvasViewAgentReadyToolContracts = ({ buildWebName }) => [{
   name: CANVAS_VIEW_AGENT_READY_TOOL_IDS.controlLocalCanvasView,
   webName: buildWebName(CANVAS_VIEW_AGENT_READY_TOOL_IDS.controlLocalCanvasView),
   title: 'Control Local Canvas View',
-  description: 'Apply one canonical Canvas View Mode row value through the same browser-local selection owner used by the toolbar. Accepts an option id or the strict /canvas.view.set #canvas-view @canvas-view option=<id> invocation.',
+  description: 'Set the local Canvas view through the toolbar owner. Supply either optionId or the strict /canvas.view.set #canvas-view @canvas-view option=<id> invocation.',
   inputSchema: {
     type: 'object',
     additionalProperties: false,
