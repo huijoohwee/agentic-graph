@@ -529,6 +529,8 @@
   font-weight: 700;
   letter-spacing: normal;
 }
+.timeline-video-sequence-lane-label :is(button, b, small, span) { font: inherit; text-transform: inherit; }
+.timeline-transport-clip-controls > output { font: inherit; line-height: var(--kg-text-xs-line); color: inherit; opacity: .6; }
 
 .timeline-transport-chrome--mermaid-gantt .timeline-video-sequence-ruler-surface {
   background:

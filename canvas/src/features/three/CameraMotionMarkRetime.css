@@ -15,14 +15,12 @@
 
 .xr-camera-motion-retime-lane-label b {
   overflow: hidden;
-  font-size: var(--kg-text-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .xr-camera-motion-retime-lane-label small {
   color: var(--kg-text-tertiary, #64748b);
-  font-size: var(--kg-text-xs);
 }
 
 .xr-shot-target-lane-label {
@@ -113,8 +111,6 @@
 .xr-timeline-scene-selection-label {
   flex: 0 0 auto;
   max-width: 148px;
-  color: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 82%, var(--kg-text-primary, #0f172a));
-  font-weight: 800;
 }
 
 .timeline-video-sequence-ruler-content [data-kg-gantt-timeline-track-row-key*="xr_stage_scene"] .xr-camera-motion-retime-lane--scene {

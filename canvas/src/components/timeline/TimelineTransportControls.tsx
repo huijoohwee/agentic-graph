@@ -317,7 +317,8 @@ export function TimelineTransportChrome(props: TimelineTransportChromeProps) {
     titleLabel,
     ...transportProps
   } = props
-  const rootClassName = cn('timeline-transport-chrome', chromeClassName)
+  const { panelTextClass } = usePanelTypography()
+  const rootClassName = cn('timeline-transport-chrome', chromeClassName, panelTextClass)
   const rulerRootClassName = cn('timeline-transport-ruler', rulerClassName)
   const inlineHeaderAside = !titleLabel && !subtitleLabel ? headerAside : null
   const headerAsideContent = inlineHeaderAside ? null : headerAside

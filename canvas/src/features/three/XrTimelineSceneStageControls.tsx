@@ -59,7 +59,7 @@ export function XrTimelineSceneStageControls({
       onPointerDown={event => event.stopPropagation()}
     >
       <output
-        className="xr-camera-motion-mark-selection-label xr-timeline-scene-selection-label"
+        className="xr-timeline-scene-selection-label"
         aria-label="XR timeline scene or 3D object shot target"
         data-kg-camera-target="scene-or-object"
         data-kg-xr-timeline-shot-target="scene-clip"

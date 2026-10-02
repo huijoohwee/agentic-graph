@@ -2,7 +2,6 @@ import React from 'react'
 import { ChevronLeft, ChevronRight, RotateCcw, ZoomIn, ZoomOut, Maximize, LocateFixed } from 'lucide-react'
 import { TimelineTransportChrome, TimelineTransportMiniActionBar } from '@/components/timeline/TimelineTransportControls'
 import { useSequenceDocument } from './useSequenceDocument'
-import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { useGanttTimelineTransportView } from '@/features/gitgraph/useGanttTimelineTransportView'
 import { sequenceParticipantLabel } from './sequencePresentation'
 import { SequenceTimelineRuler } from './SequenceTimelineRuler'
@@ -20,13 +19,12 @@ export function SequenceBranches() {
 export function SequenceTimeline() {
   const sequence = useSequenceDocument()
   const { model, events, duration, current, transport, selectEvent } = sequence
-  const typography = usePanelTypography()
   const currentIndex = Math.max(0, events.findIndex(event => event.id === current?.id))
   const { playbackPosition, playing, playbackRate, setTransportPlaying, setTransportPlaybackPosition, setTransportPlaybackRate } = transport
   const viewportRef = React.useRef<HTMLElement>(null)
   const view = useGanttTimelineTransportView({ disabled: !events.length, maxMinutes: duration / 60000, positionMinutes: playbackPosition / 60000, rulerViewportRef: viewportRef })
   const label = (id: string) => sequenceParticipantLabel(model, id)
-  return <section className={`sequence-flow ${typography.panelTextClass}`} aria-label="Sequence Timeline">
+  return <section className="sequence-flow" aria-label="Sequence Timeline">
     <TimelineTransportChrome ariaLabel="Sequence transport" showRange={false} chromeClassName="timeline-transport-chrome--mermaid-gantt sequence-transport" rulerClassName="timeline-transport-ruler--video-sequence" rulerProps={{ onWheel: view.handleRulerWheelZoom }} currentLabel={`${(playbackPosition / 1000).toFixed(1)}s`} totalLabel={`${duration / 1000}s · ${events.length} steps`} max={duration} value={playbackPosition} step={10} playing={playing} playbackRate={playbackRate} disabled={!events.length}
       onPlaybackRateChange={setTransportPlaybackRate} onValueChange={value => { setTransportPlaying(false); setTransportPlaybackPosition(value) }}
       onTogglePlayback={() => { if (!playing && playbackPosition >= duration) setTransportPlaybackPosition(0); setTransportPlaying(!playing) }}
