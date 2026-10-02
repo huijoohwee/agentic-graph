@@ -100,6 +100,18 @@ the separate source/Production evidence boundary. This repair is capped at three
 
 ## GTM and rollback
 
+Autonomous closeout repair (2026-10-02): PRD/MVP retain exact authored-state equality for Apex
+inspection, including selected sources and their order. The failed candidate `46812227446cf142547be4649c156fb25b9a5b8a`
+changed the selected Python source to a default demo while mounting the Explorer. TAD repairs the
+existing selection bootstrap: default starter selection applies only to an empty session selection;
+explicit custom validation inputs and canonical path reconciliation retain their owners. ADR rejects
+replacing a non-empty authored path merely because a remounted Explorer has a partial inventory.
+The regression checks both complete and partial inventories, and retains cold-start behavior.
+GTM adds no economic, adoption or Production claim. Cap: eight affected paths, 20 KB added source,
+45 active minutes, no dependency or service; provider waits require changed receipts rather than an ETA.
+Full native browser acceptance and protected Integration Gate remain required before source merge.
+The two modified canonical seed files remain authored recovery inputs for governed canonical sync.
+
 Position this as consistent built-in controls across the local workspace. Do not claim measured
 conversion, paid value, exhaustive platform parity or a Production rollout. A useful demonstration
 shows the global setting changing mixed controls together without document edits. Roll back via
