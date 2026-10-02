@@ -32,7 +32,7 @@ export function ClipboardCopyButton({ text, disabled = false }: { text: string; 
       type="button"
       disabled={disabled}
     >
-      {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+      {copied ? <Check className="w-3.5 h-3.5 text-green-500" strokeWidth={1.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}
     </button>
   )
 }

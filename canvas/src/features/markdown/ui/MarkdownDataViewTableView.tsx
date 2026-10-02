@@ -537,7 +537,7 @@ export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTab
             <tr>
               <td
                 colSpan={visibleColumnMeta.length + (hasNestedRowHierarchy ? 1 : 0) + (canMutate && props.onAddColumn ? 1 : 0)}
-                className={`${cellPaddingClassName} border-b ${UI_THEME_TOKENS.table.cellBorder}`}
+                className={`${cellPaddingClassName} ${hiddenRowCount > 0 ? `border-b ${UI_THEME_TOKENS.table.cellBorder}` : ''}`}
               >
                 <button
                   type="button"
@@ -554,7 +554,7 @@ export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTab
             <tr>
               <td
                 colSpan={visibleColumnMeta.length + (hasNestedRowHierarchy ? 1 : 0) + (canMutate && props.onAddColumn ? 1 : 0)}
-                className={`${cellPaddingClassName} border-b ${UI_THEME_TOKENS.table.cellBorder}`}
+                className={cellPaddingClassName}
               >
                 <button
                   type="button"

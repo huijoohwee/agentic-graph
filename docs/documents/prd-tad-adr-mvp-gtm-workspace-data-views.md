@@ -2,12 +2,12 @@
 title: "Workspace data views: Table, Kanban and Calendar"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "workspace-data-views"
-version: "1.3.3"
-prd_revision: "1.3.3"
-tad_revision: "1.3.3"
-adr_revision: "1.3.3"
-mvp_revision: "1.3.3"
-gtm_revision: "1.3.3"
+version: "1.3.4"
+prd_revision: "1.3.4"
+tad_revision: "1.3.4"
+adr_revision: "1.3.4"
+mvp_revision: "1.3.4"
+gtm_revision: "1.3.4"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Workspace data-view product function"
@@ -19,7 +19,7 @@ universal_scope: false
 lifecycle_status: "implemented"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/code-output-selected-shadow"
+worktree_id: "agent/device-0232231d4a19/code-toolbar-border-alignment"
 agent_id: "codex-workspace-data-view-author"
 source_docs:
   - "Reference implementation: agentic-graph@8b258a4a116cd7ef70718acd28307fc4a62af897"
@@ -29,7 +29,7 @@ source_docs:
 
 # Workspace data views: Table, Kanban and Calendar
 
-`workspace-data-views@1.3.3` joins all five roles below. After the specification-first checkpoint,
+`workspace-data-views@1.3.4` joins all five roles below. After the specification-first checkpoint,
 the operator authorized implementation on 2026-10-02. Shared settings, versioned queries and native
 Calendar are now implemented in the existing owners. B records the historical baseline; the
 implementation checkpoint below separates verified behavior from remaining acceptance evidence.
@@ -574,3 +574,14 @@ and Beside controls have no box shadow in the local browser; mode switching stil
 retain the existing voluntary pilot; this polish adds no conversion claim. Bound: two files,
 one source line, 10 active minutes plus required checks, zero dependencies or spend. Protected
 integration and Production/device verification remain separate receipts.
+
+## Checkpoint — Code and data-view line alignment, 2026-10-02
+
+`workspace-data-views@1.3.4` joins the five roles for the operator's line-weight review. PRD:
+adjacent code actions use one icon stroke and code/data cards present one frame weight. TAD:
+`ClipboardCopyButton`, `MarkdownCodeBlock`, and the table footer own these paint details.
+ADR: use the existing 1.5 px action stroke, remove the code card shadow, and omit the terminal
+footer cell's bottom rule where the enclosing card already has one. MVP: computed strokes and
+borders match in the local preview; the final footer has one line while intervening footer rows
+retain separators. GTM: no change to the voluntary pilot or pricing hypothesis. Bound: four
+files, under 8 KB diff, 15 active minutes plus required checks, zero dependencies or spend.
