@@ -48,6 +48,7 @@ import type {
 } from './core'
 
 export type FloatingPanelView =
+  | 'sequence'
   | 'propsPanel'
   | 'skillsCommands'
   | 'blockLibrary'

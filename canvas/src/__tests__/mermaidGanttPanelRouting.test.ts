@@ -486,7 +486,7 @@ export async function testGanttPanelRoutingUsesSharedGitGraphMermaidUtilities() 
     !configRenderText.includes("registryLabel: 'Animatic'") ||
     !configRenderText.includes('isGanttCanvas2dRenderer') ||
     !uiCopyText.includes('2D Renderer: Gantt-timeline') ||
-    !canvasViewMenuText.includes('gantt: ChartGantt') ||
+    !readSource('components', 'toolbar', 'canvasViewRendererOptions.ts').includes('gantt: ChartGantt') ||
     !canvasViewMenuText.includes('canvasViewRendererGanttTitle') ||
     !canvasViewportText.includes('MermaidGanttCanvasLazy') ||
     !canvasViewportText.includes("active2dSurface === 'gantt'") ||

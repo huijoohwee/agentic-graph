@@ -61,6 +61,7 @@ const GalleryCanvasLazy = React.lazy(() => importWithRetry(() => import('@/compo
 const MediaCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/MediaCanvas'), { retries: 2, retryDelayMs: 50 }))
 const MultiDimTableSurfaceLazy = React.lazy(() => importWithRetry(() => import('@/features/markdown-workspace/main/viewer/MultiDimTableSurface'), { retries: 2, retryDelayMs: 50 }).then(mod => ({ default: mod.MultiDimTableSurface })))
 const CanvasWorkspaceDataViewFloatingRegistrationBridgeLazy = React.lazy(() => importWithRetry(() => import('@/features/markdown-workspace/main/viewer/CanvasWorkspaceDataViewFloatingRegistrationBridge'), { retries: 2, retryDelayMs: 50 }).then(mod => ({ default: mod.CanvasWorkspaceDataViewFloatingRegistrationBridge })))
+const SequenceCanvasLazy = React.lazy(() => import('@/features/sequence/SequenceCanvas').then(module => ({ default: module.SequenceCanvas })))
 const MermaidGitGraphCanvasLazy = React.lazy(() => import('@/components/MermaidGitGraphCanvas'))
 const MermaidGanttCanvasLazy = React.lazy(() => import('@/components/MermaidGanttCanvas'))
 const FlowCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/FlowCanvas'), { retries: 2, retryDelayMs: 50 }))
@@ -399,6 +400,9 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
                 </section>
                 <section className={`absolute inset-0 ${active2dSurface === 'gitGraph' ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`} aria-hidden={active2dSurface !== 'gitGraph'}>
                   {active2dSurface === 'gitGraph' ? <MermaidGitGraphCanvasLazy active /> : null}
+                </section>
+                <section className={`absolute inset-0 ${active2dSurface === 'sequence' ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`} aria-hidden={active2dSurface !== 'sequence'}>
+                  {active2dSurface === 'sequence' ? <SequenceCanvasLazy active rendererId={canvas2dRenderer} mermaid={canvas2dRenderer === 'sequenceMermaid'} /> : null}
                 </section>
                 <section className={`absolute inset-0 ${active2dSurface === 'gantt' ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`} aria-hidden={active2dSurface !== 'gantt'}>
                   {active2dSurface === 'gantt' ? <MermaidGanttCanvasLazy active /> : null}
