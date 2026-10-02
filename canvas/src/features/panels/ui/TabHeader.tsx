@@ -1,13 +1,9 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import IconButton from '@/components/IconButton'
+import { PanelViewTabs, PanelViewTab } from './PanelViewTabs'
 import { getIconSizeClass } from '@/lib/ui'
 import { UI_SELECTORS } from '@/lib/config'
 import {
-  uiPrimaryPillActiveClassName,
-  uiToolbarToggleActiveClassName,
-  uiPrimaryIconInactiveClassName,
-  uiToolbarButtonMutedClassName,
   uiToolbarRowScrollClassName,
   uiToolbarRowScrollJustifyEndClassName,
 } from '@/features/toolbar/ui/toolbarStyles'
@@ -36,7 +32,6 @@ interface TabHeaderProps {
   searchQuery?: string
   onSearchChange?: (q: string) => void
   rightSlot?: React.ReactNode
-  tabVariant?: 'text' | 'icon'
   tabIconByKey?: Partial<Record<string, TabIconComponent>>
 }
 
@@ -54,7 +49,6 @@ function TabHeaderImpl({
   searchQuery,
   onSearchChange,
   rightSlot,
-  tabVariant = 'text',
   tabIconByKey,
 }: TabHeaderProps) {
   const clickTimeoutRef = React.useRef<number | null>(null)
@@ -139,56 +133,32 @@ function TabHeaderImpl({
     >
 	      <nav className={`kg-panel-tabs-nav ${uiToolbarRowScrollClassName} basis-full w-full sm:basis-auto sm:w-auto sm:flex-1`} aria-label="Panel tabs">
         {tabs.length > 0 && (
-          <section
+          <PanelViewTabs
+            activeKey={activeTab || ''}
             role="tablist"
             aria-label="Tabs"
             aria-orientation="horizontal"
-	            className={`kg-panel-tablist ${uiToolbarRowScrollClassName} w-full gap-1 pb-[1px] sm:w-auto sm:overscroll-x-contain ${tabVariant === 'icon' ? '' : 'sm:whitespace-nowrap'}`}
+            className="kg-panel-tablist w-full pb-[1px] sm:w-auto"
           >
             {tabs.map(t => {
-              if (tabVariant === 'icon') {
-                const TabIcon = tabIconByKey?.[t.key]
-                if (!TabIcon) return null
-                return (
-                  <IconButton
-                    key={t.key}
-                    data-kg-spotlight-tab={t.key}
-                    title={t.label}
-                    onClick={() => onTabChange && onTabChange(t.key)}
-                    className={`App-toolbar__btn ${
-                      activeTab === t.key ? uiPrimaryPillActiveClassName : uiPrimaryIconInactiveClassName
-                    }`}
-                    showTooltip
-                    role="tab"
-                    id={`${base}-${t.key}-tab`}
-                    aria-selected={activeTab === t.key}
-                    aria-controls={`${base}-${t.key}-panel`}
-                  >
-                    <TabIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
-                  </IconButton>
-                )
-              }
+              const TabIcon = tabIconByKey?.[t.key]
+              if (!TabIcon) throw new Error(`Missing panel tab icon: ${t.key}`)
               return (
-                <button
+                <PanelViewTab
                   key={t.key}
                   data-kg-spotlight-tab={t.key}
-                  type="button"
-                  onClick={() => onTabChange && onTabChange(t.key)}
+                  title={t.label}
+                  onClick={() => onTabChange?.(t.key)}
                   role="tab"
                   id={`${base}-${t.key}-tab`}
                   aria-selected={activeTab === t.key}
                   aria-controls={`${base}-${t.key}-panel`}
-                  className={`App-toolbar__btn text-xs ${
-                    activeTab === t.key
-                      ? uiToolbarToggleActiveClassName
-                      : uiToolbarButtonMutedClassName
-                  }`}
                 >
-                  {t.label}
-                </button>
+                  <TabIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+                </PanelViewTab>
               )
             })}
-          </section>
+          </PanelViewTabs>
         )}
       </nav>
 	      <section className={`${uiToolbarRowScrollJustifyEndClassName} w-full gap-1 sm:w-auto sm:shrink-0 sm:gap-2`} aria-label="Panel tools">

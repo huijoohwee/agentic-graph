@@ -21,7 +21,6 @@ interface MainPanelFrameProps {
   onTabChange?: (key: string) => void
   tabIdBase?: string
   footer?: React.ReactNode
-  tabVariant?: 'text' | 'icon'
   tabIconByKey?: Partial<Record<string, TabIconComponent>>
 }
 
@@ -41,7 +40,6 @@ export default function MainPanelFrame({
   onTabChange,
   tabIdBase,
   footer,
-  tabVariant,
   tabIconByKey,
 }: MainPanelFrameProps) {
   const uiHeaderRowHeightClass = useGraphStore(
@@ -67,7 +65,6 @@ export default function MainPanelFrame({
           searchQuery={searchQuery}
           onSearchChange={onSearchChange}
           rightSlot={rightSlot}
-          tabVariant={tabVariant}
           tabIconByKey={tabIconByKey}
         />
         {!collapsed && (

@@ -133,6 +133,8 @@ function loadNativeMediaElementMetadata(url: string): Promise<NativeMediaElement
     const video = document.createElement('video')
     const cleanup = () => {
       window.clearTimeout(timeoutId)
+      video.onloadedmetadata = null
+      video.onerror = null
       video.removeAttribute('src')
       video.load()
     }

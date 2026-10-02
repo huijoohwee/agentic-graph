@@ -519,7 +519,7 @@ export function testSkillsCommandsMovedFromMainPanelIntoFloatingPanelTab() {
   const skillsCommandsView = readFileSync(resolve(repoRoot, 'src/features/panels/views/SkillsCommandsView.tsx'), 'utf8')
   const mediaCatalogPanelView = readFileSync(resolve(repoRoot, 'src/features/command-menu/MediaCatalogPanelView.tsx'), 'utf8')
   const mediaCatalogListItems = readFileSync(resolve(repoRoot, 'src/features/command-menu/mediaCatalogListItems.tsx'), 'utf8')
-  const toolbar = readFileSync(resolve(repoRoot, 'src/lib/toolbar/ToolbarToolMenu.impl.tsx'), 'utf8')
+  const toolbar = readFileSync(resolve(repoRoot, 'src/lib/toolbar/ToolbarToolMenu.impl.tsx'), 'utf8') + readFileSync(resolve(repoRoot, 'src/features/toolbar/FloatingPanelViewTabs.tsx'), 'utf8')
   const storeTypes = readFileSync(resolve(repoRoot, 'src/hooks/store/store-types/graph-state-chat-import.ts'), 'utf8')
   const storeSlice = readFileSync(resolve(repoRoot, 'src/hooks/store/uiSliceInitialState.ts'), 'utf8')
 
