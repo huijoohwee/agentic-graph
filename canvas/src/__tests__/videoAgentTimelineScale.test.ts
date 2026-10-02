@@ -14,6 +14,7 @@ import {
   resolveVideoSequenceTimelineLane,
   resolveVisibleVideoSequenceTimelineDisplayLanes,
   resolveVisibleVideoSequenceTimelineLanes,
+  resolveVisibleVideoSequenceTimelineLaneCount,
 } from '@/components/timeline/videoSequenceTimeline'
 import { readMermaidGanttFrameSamples } from '@/lib/mermaid/mermaidGanttFrameThumbnailToken'
 import { readFileSync } from 'node:fs'
@@ -60,6 +61,23 @@ export function testSourceMediaTimelineChromeUsesSemanticLaneLabels() {
   section Source audio
   Source audio waveform : audio_neutral_hash, kgpos_0, 0.25m`
   const spans = buildMermaidGanttTimelineModel(code).taskSpans
+  const hiddenOptions = { disabledLaneIds: ['video', 'fbf', 'audio'] as const }
+  const emptyInputs = [[], buildMermaidGanttTimelineModel('gantt\n  title No authored clips').taskSpans]
+  for (const emptySpans of emptyInputs) {
+    if (resolveVisibleVideoSequenceTimelineLanes(emptySpans).length
+      || resolveVisibleVideoSequenceTimelineDisplayLanes(emptySpans).length
+      || resolveVisibleVideoSequenceTimelineLaneCount(emptySpans)) {
+      throw new Error('expected empty timelines to expose no fabricated media lanes')
+    }
+  }
+  if (resolveVisibleVideoSequenceTimelineLanes(spans, hiddenOptions).length
+    || resolveVisibleVideoSequenceTimelineDisplayLanes(spans, hiddenOptions).length
+    || resolveVisibleVideoSequenceTimelineLaneCount(spans, hiddenOptions)) {
+    throw new Error('expected hidden authored lanes to stay empty without replacement lanes')
+  }
+  if (resolveVisibleVideoSequenceTimelineLanes(spans).map(lane => lane.id).join(',') !== 'video,fbf,audio') {
+    throw new Error('expected authored lane semantics to survive empty-lane cleanup')
+  }
   if (!spans.length || !spans.every(span => isCompactSourceMediaSpan(span, resolveVideoSequenceTimelineLane(span)))) {
     throw new Error(`expected semantic source-media labels to activate shared compact timeline chrome: ${JSON.stringify(spans)}`)
   }

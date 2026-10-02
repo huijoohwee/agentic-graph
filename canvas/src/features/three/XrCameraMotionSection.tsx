@@ -552,7 +552,7 @@ export function XrCameraMotionSection() {
                     >
                       <button
                         type="button"
-                        className={cn('xr-shot-target-timeline-bar', selected && 'timeline-transport-track-clip--selected')}
+                        className={cn('timeline-transport-time-axis-bar xr-shot-target-timeline-bar', selected && 'timeline-transport-track-clip--selected')}
                         style={{ '--kg-xr-shot-target-color': target.color } as React.CSSProperties}
                         aria-label={`Link SHOOT to ${target.label} for the full scene. Drag to scrub XR timeline.`}
                         aria-pressed={selected}
@@ -622,7 +622,7 @@ export function XrCameraMotionSection() {
                   >
                     <button
                       type="button"
-                      className={cn('xr-shot-target-timeline-bar xr-shot-target-timeline-bar--camera', cameraTimelineLaneSelected && 'timeline-transport-track-clip--selected')}
+                      className={cn('timeline-transport-time-axis-bar xr-shot-target-timeline-bar', cameraTimelineLaneSelected && 'timeline-transport-track-clip--selected')}
                       style={{ '--kg-xr-shot-target-color': '#64748b' } as React.CSSProperties}
                       aria-label="Select Camera choreography lane. Drag to scrub XR timeline."
                       aria-pressed={cameraTimelineLaneSelected}
@@ -689,7 +689,7 @@ export function XrCameraMotionSection() {
                   >
                     <button
                       type="button"
-                      className={cn('xr-shot-target-timeline-bar', simulationTimelineLaneSelected && 'timeline-transport-track-clip--selected')}
+                      className={cn('timeline-transport-time-axis-bar xr-shot-target-timeline-bar', simulationTimelineLaneSelected && 'timeline-transport-track-clip--selected')}
                       style={{ '--kg-xr-shot-target-color': '#22c55e' } as React.CSSProperties}
                       aria-label={`Open XR Simulation workbench. ${simulationPhase}; ${simulationBodyCount} bodies. Drag to scrub XR timeline.`}
                       aria-pressed={simulationTimelineLaneSelected}
@@ -752,7 +752,7 @@ export function XrCameraMotionSection() {
                     >
                       <button
                         type="button"
-                        className={cn('xr-shot-target-timeline-bar', selected && 'timeline-transport-track-clip--selected')}
+                        className={cn('timeline-transport-time-axis-bar xr-shot-target-timeline-bar', selected && 'timeline-transport-track-clip--selected')}
                         style={{ '--kg-xr-shot-target-color': npcColor } as React.CSSProperties}
                         aria-label={`Select ${npc.id} for shared 3D for XR controls. Drag to scrub XR timeline.`}
                         aria-pressed={selected}

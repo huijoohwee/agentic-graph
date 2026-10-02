@@ -14,6 +14,11 @@ import {
   buildTimelinePreviewSyncPlan,
   resolveTimelinePlanSourceUrl,
 } from './timelinePlanSync'
+import {
+  readVideoSequenceSourceRevision,
+  restoreVideoSequenceSourceFiles,
+  subscribeVideoSequenceSources,
+} from './videoSequenceSourceRegistry'
 
 export type TimelinePreviewMediaSourceItem = {
   kind: 'image' | 'video' | 'audio'
@@ -32,6 +37,18 @@ export type TimelinePreviewMediaSession = {
 }
 
 const clean = (value: unknown): string => String(value || '').trim()
+const EMPTY_SOURCES: readonly VideoSequenceTimelineSource[] = []
+
+export function useTimelinePreviewSourceRecovery(sources?: readonly VideoSequenceTimelineSource[]): number {
+  const sourceRevision = React.useSyncExternalStore(subscribeVideoSequenceSources, readVideoSequenceSourceRevision, readVideoSequenceSourceRevision)
+  React.useEffect(() => {
+    if (!sources?.length) return
+    void restoreVideoSequenceSourceFiles(sources).catch(error => {
+      console.warn('Local video source could not be restored for the preview.', error)
+    })
+  }, [sources])
+  return sourceRevision
+}
 
 const readTimelinePreviewMediaSourceLabel = (source: VideoSequenceTimelineSource): string => {
   return clean(source.originalName)
@@ -57,6 +74,12 @@ export function useTimelinePreviewMediaSession(args: {
   markdownText: string
   selectedRowKey?: string | null
 }): TimelinePreviewMediaSession {
+  const videoSequenceModel = React.useMemo(
+    () => readVideoSequenceTimelineModelFromMarkdown(args.markdownText),
+    [args.markdownText],
+  )
+  const sources = videoSequenceModel?.sources || EMPTY_SOURCES
+  const sourceRevision = useTimelinePreviewSourceRecovery(sources)
   return React.useMemo(() => {
     const code = resolveMermaidDiagramCode(
       readYamlFrontmatterMermaidDiagramCodes(args.markdownText, 'gantt'),
@@ -70,8 +93,6 @@ export function useTimelinePreviewMediaSession(args: {
         sequenceMaxMinutes: 0,
       }
     }
-    const videoSequenceModel = readVideoSequenceTimelineModelFromMarkdown(args.markdownText)
-    const sources = videoSequenceModel?.sources || []
     const exportPlan = buildVideoSequenceExportPlan({
       code,
       filenameHint: args.markdownDocumentName,
@@ -101,5 +122,5 @@ export function useTimelinePreviewMediaSession(args: {
       previewPlan,
       sequenceMaxMinutes: Math.max(0, buildMermaidGanttTimelineModel(code).durationMinutes || 0),
     }
-  }, [args.markdownDocumentName, args.markdownText, args.selectedRowKey])
+  }, [args.markdownDocumentName, args.markdownText, args.selectedRowKey, sourceRevision, sources])
 }
