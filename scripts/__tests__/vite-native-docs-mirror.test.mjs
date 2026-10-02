@@ -20,7 +20,14 @@ test('native docs stay readable after the Vite configuration runner closes', { t
   let server
   try {
     // A reviewed checkout may have any basename; keep real Git source validation.
-    execFileSync('git', ['clone', '--shared', '--quiet', path.resolve(sourceDocsRoot, '../..'), checkout])
+    const sourceCheckout = path.resolve(sourceDocsRoot, '../..')
+    execFileSync('git', ['clone', '--shared', '--quiet', sourceCheckout, checkout])
+    // Actions checks out the pinned source detached; cloning it may omit origin/main.
+    execFileSync('git', ['checkout', '--detach', '--quiet'], { cwd: checkout })
+    execFileSync('git', ['update-ref', '-d', 'refs/remotes/origin/main'], { cwd: checkout })
+    // Transfer the actual fetched source anchor; do not manufacture it from fixture HEAD.
+    execFileSync('git', ['fetch', '--quiet', '--no-tags', sourceCheckout,
+      'refs/remotes/origin/main:refs/remotes/origin/main'], { cwd: checkout })
     execFileSync('git', ['remote', 'set-url', 'origin', 'https://github.com/huijoohwee/agentic-os.git'], { cwd: checkout })
     process.env.AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT = docsRoot
     await writeFile(configFile, `

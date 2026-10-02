@@ -2,12 +2,12 @@
 title: "Global UI appearance alignment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "ui-appearance"
-version: "1.0.1"
-prd_revision: "1.0.1"
-tad_revision: "1.0.1"
-adr_revision: "1.0.1"
-mvp_revision: "1.0.1"
-gtm_revision: "1.0.1"
+version: "1.0.2"
+prd_revision: "1.0.2"
+tad_revision: "1.0.2"
+adr_revision: "1.0.2"
+mvp_revision: "1.0.2"
+gtm_revision: "1.0.2"
 date: "2026-10-02"
 owner: "Application UI function"
 frontmatter_contract: "required"
@@ -17,12 +17,12 @@ lane: "verification"
 lifecycle_status: "implemented"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/dev-catalog-projection"
+worktree_id: "agent/device-0232231d4a19/dev-catalog-source-anchor"
 ---
 
 # Global UI appearance alignment
 
-`ui-appearance@1.0.1` joins all five roles; the completed Production release remains bound to `ui-appearance@1.0.0`. The canonical rules live in the
+`ui-appearance@1.0.2` joins all five roles; the completed Production release remains bound to `ui-appearance@1.0.0`. The canonical rules live in the
 [UI/UX design guide](./agentic-graph-ui-ux-design-document.md#global-appearance-authority).
 This increment continues [workspace-data-views@1.3.4](./prd-tad-adr-mvp-gtm-workspace-data-views.md).
 
@@ -196,3 +196,15 @@ receipt or END ADLC claim is inferred from local quarantine.
 Cap: three Graph paths, two private planning paths, under 16 KiB added source/content,
 zero new runtime modules/dependencies/services, one bounded startup/offline observation,
 30 active minutes initially; provider wait is reported with its next receipt, not an ETA.
+
+
+Detached fixture acceptance repair (1.0.2): PRD/MVP require the same native trust check
+in local and Actions checkouts. Protected run 37004064322 attempt 2 rejected a fixture
+whose clone of the detached pinned source omitted `origin/main`; the runtime check was
+correct. TAD makes the fixture detached with that anchor absent, then fetches the actual
+`refs/remotes/origin/main` from the selected source checkout into the fixture. ADR forbids
+setting the anchor from fixture HEAD, weakening ancestry validation, changing the OS pin,
+or mutating the source checkout. The local regression fails before the transfer and passes
+after it. GTM retains published predecessor fad830bba in PR 1502 and requires independent
+protected integration of its native successor. Repair cap: same three paths, under 2 KiB
+added content, 10 active minutes, no new module, dependency, runtime behavior or effect.
