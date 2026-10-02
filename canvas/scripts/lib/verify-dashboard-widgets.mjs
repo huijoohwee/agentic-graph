@@ -12,7 +12,7 @@ export async function verifyFullCanvas(page) {
     'Full sizing is the default for the shared renderer container')
 }
 
-export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored) {
+export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored, waitForAuthoredWorkspaceSource) {
   await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: false }))
   const shell = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
   // Cold module loading may remount the shell before the source inventory is ready.
@@ -31,6 +31,8 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
   const sourcePaths = await page.evaluate(async () => (await (await import('/src/features/workspace-fs/workspaceFs.ts'))
     .getWorkspaceFs()).listEntries().then(entries => entries.map(entry => entry.path).sort()))
   await verifyFullCanvas(page)
+  // The first editor mount can still materialize its active file after base bootstrap completes.
+  await waitForAuthoredWorkspaceSource(remaining())
   const before = await authoredSnapshot()
   await manifest.click()
   const editor = page.getByRole('region', { name: 'Markdown Workspace', exact: true })

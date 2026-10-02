@@ -88,6 +88,14 @@ persisted paths before/after inspection. ADR retains the startup deadline, singl
 content and private-evidence non-persistence checks. GTM gains no new feature or Production claim.
 The full native browser smoke remains required; this repair is capped at two paths, 3 KB, 10 active minutes.
 
+Active-file acceptance checkpoint: the selected-archive browser run observed the first editor mount
+materializing its authored file after base bootstrap reported ready. PRD/MVP keep exact authored-state
+equality around inspection. TAD reuses the existing active-file/history readiness predicate before the
+first snapshot, within the same startup deadline; bounded read-only browser readiness replaces its
+50 ms polling loop. ADR adds no delay, dispatch retry, source exclusion or weaker assertion. GTM retains
+the separate source/Production evidence boundary. This repair is capped at three paths, 4 KB,
+10 active minutes; full native browser acceptance binds the clean published successor.
+
 ## GTM and rollback
 
 Position this as consistent built-in controls across the local workspace. Do not claim measured

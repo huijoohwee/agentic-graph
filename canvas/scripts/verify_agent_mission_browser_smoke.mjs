@@ -38,15 +38,15 @@ const waitForMissionExit = async () => {
   assert.equal(await page.evaluate(async () => (await import('/src/features/agent-ready/agentRunInspectionStore.ts')).readAgentRunWorkspace()), null)
   assert.equal(await selected.count(), 0, 'Leaving Mission must clear selected private evidence')
 }
-async function waitForAuthoredWorkspaceSource() {
-  await waitForAsync(async () => {
+async function waitForAuthoredWorkspaceSource(timeout = 60000) {
+  await page.waitForFunction(async () => {
     const { readSourceFilesBootstrapReady } = await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')
     const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
     const { useMarkdownExplorerStore } = await import('/src/features/markdown-explorer/store.ts')
     const state = useGraphStore.getState(), path = useMarkdownExplorerStore.getState().activePath
     return readSourceFilesBootstrapReady() && state.historyIndex >= 0 && !!path
       && state.sourceFiles[0]?.source?.path === `workspace:${path}`
-  })
+  }, null, { timeout })
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
 }
 const openRunSource = (scope = mission) => showMissionFace(scope, true)
@@ -420,7 +420,7 @@ try {
     await closeFloatingPanel(page, floating)
   }
   assert.equal(requests.length, 0, 'Dashboard must not load or poll before opening')
-  await verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored)
+  await verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored, waitForAuthoredWorkspaceSource)
   await openDashboard()
   await waitText(mission, '2 retained matches')
   await showEvidence(); await verifyDashboardWidgets(page)
