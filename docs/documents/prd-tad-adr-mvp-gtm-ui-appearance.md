@@ -2,12 +2,12 @@
 title: "Global UI appearance alignment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "ui-appearance"
-version: "1.0.0"
-prd_revision: "1.0.0"
-tad_revision: "1.0.0"
-adr_revision: "1.0.0"
-mvp_revision: "1.0.0"
-gtm_revision: "1.0.0"
+version: "1.0.1"
+prd_revision: "1.0.1"
+tad_revision: "1.0.1"
+adr_revision: "1.0.1"
+mvp_revision: "1.0.1"
+gtm_revision: "1.0.1"
 date: "2026-10-02"
 owner: "Application UI function"
 frontmatter_contract: "required"
@@ -17,12 +17,12 @@ lane: "verification"
 lifecycle_status: "implemented"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/global-ui-appearance"
+worktree_id: "agent/device-0232231d4a19/dev-catalog-projection"
 ---
 
 # Global UI appearance alignment
 
-`ui-appearance@1.0.0` joins all five roles. The canonical rules live in the
+`ui-appearance@1.0.1` joins all five roles; the completed Production release remains bound to `ui-appearance@1.0.0`. The canonical rules live in the
 [UI/UX design guide](./agentic-graph-ui-ux-design-document.md#global-appearance-authority).
 This increment continues [workspace-data-views@1.3.4](./prd-tad-adr-mvp-gtm-workspace-data-views.md).
 
@@ -150,3 +150,49 @@ Position this as consistent built-in controls across the local workspace. Do not
 conversion, paid value, exhaustive platform parity or a Production rollout. A useful demonstration
 shows the global setting changing mixed controls together without document edits. Roll back via
 a reviewed source revert; presentation-only changes require no record/data migration.
+
+
+## Dev catalog and closeout follow-through (1.0.1)
+
+PRD: Prompt Presets must work when the exact pinned OS documentation lives in a reviewed
+checkout with a different directory name. The observed Dev failure omitted PROMPT-PRESETS
+and exposed only three dictionaries. Restore the existing catalog without changing the
+consumer pin, saved workspace, published storage, or Production runtime.
+
+TAD: the Vite native-docs owner recognizes the configured `catalog/dictionaries` suffix,
+then retains exact configured-root equality and the native Git origin, clean source,
+revision, regular-file, digest and bounds validation. Runtime-created module resolution
+remains on demand. The regression clones the exact docs into a differently named checkout,
+normalizes macOS filesystem aliases, and rejects an unrelated catalog root.
+
+ADR: fix the existing root classifier; do not add a loader, package, service, always-load
+module, profile, authority or broad filesystem search. Reuse locked dependencies and
+completed release/cleanup evidence. Private Context publication uses the owner's explicit
+scoped checked-PR fallback; it does not fabricate a missing native workspace trust anchor.
+Local quarantine and protected claim retirement remain separate evidence categories.
+
+MVP: the new regression fails against the old classifier and passes after the repair.
+The task preview exposes 31 native docs and all 15 Prompt Presets; no model call is made.
+The exact bare Node regression, full repository type check and browser-runner contract
+checks pass; both affected published-storage and local-docs catalog tests pass (2/2).
+One unthrottled Chromium observation at 390 × 844 reported FCP 1.9 s, DOM content loaded
+0.562 s and load 0.846 s. Its 250-entry resource buffer was full: 3,120,734 transferred
+bytes are partial coverage. Renderer heap after startup was 407,424,420 bytes; this is
+not physical-device memory or a field metric. The warm service worker was controlled at
+revision ebd4bc5e, but the offline reload reached ERR_INTERNET_DISCONNECTED; installed
+offline parity remains unproven. These measurements prioritize future owner work and do
+not authorize an unrelated runtime rewrite. Retained cleanup took a 324.194 s log window
+including waits and preserved 1,587,998,966 bytes across 92,185 entries; it is not a CPU
+benchmark and was not rerun.
+
+GTM: completed protected release 36993232293 and its terminal carrier/live readback own
+Production evidence for source ebd4bc5e92cd283c04196ab77d024366a4f45ac3. This Dev loader
+repair receives independent source checks and integration evidence. It adds no paid
+resource, buyer/conversion claim or new Production deployment. The shared Context records
+the actual release, rollback predecessor and unresolved governance finding. Generic native
+completion still reports authority-repository-unresolved; no protected claim-retirement
+receipt or END ADLC claim is inferred from local quarantine.
+
+Cap: three Graph paths, two private planning paths, under 16 KiB added source/content,
+zero new runtime modules/dependencies/services, one bounded startup/offline observation,
+30 active minutes initially; provider wait is reported with its next receipt, not an ETA.
