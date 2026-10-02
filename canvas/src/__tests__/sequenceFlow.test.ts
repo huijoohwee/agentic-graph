@@ -18,7 +18,7 @@ import { initJsdomHarness } from '../tests/lib/jsdomHarness'
 import { useGraphStore } from '../hooks/useGraphStore'
 import { useSequenceDocument } from '../features/sequence/useSequenceDocument'
 
-const demo = readFileSync(new URL('../../../docs/workspace-seeds/sequence-flow/demo.md', import.meta.url), 'utf8')
+const demo = readFileSync(new URL('../features/sequence/fixtures/demo.md', import.meta.url), 'utf8')
 const code = demo.match(/```mermaid\n([\s\S]*?)\n```/)![1]!
 
 test('fidelity fixture keeps actors, aliases, eight messages, activations and both alternatives', () => {
