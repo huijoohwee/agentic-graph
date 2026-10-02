@@ -37,9 +37,9 @@
 }
 
 .timeline-video-sequence-ruler-content .timeline-transport-track-clip:not(.timeline-transport-track-clip--milestone):not(.timeline-transport-time-axis-clip):not(.timeline-transport-time-axis-mark):not([data-kg-video-sequence-dense-fbf="1"]) {
-  contain: layout paint style; height: var(--kg-timeline-bar-height, calc(var(--kg-main-toolbar-height, 38px) * 1.5));
+  contain: layout paint style; height: var(--kg-timeline-bar-height, var(--kg-toolbar-compact-surface-height));
   overflow: visible;
-  border-radius: 6px; will-change: transform;
+  border-radius: var(--island-radius); will-change: transform;
 }
 
 .timeline-video-sequence-editor[data-kg-animation-engine="native"] {

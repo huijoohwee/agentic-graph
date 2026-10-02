@@ -121,7 +121,6 @@ export function TimelineTransportTimeAxisClip({
         className,
       )}
       aria-label={rootProps['aria-label'] || 'Timeline time-axis control lane'}
-      data-kg-timeline-clip-compact="1"
       data-kg-timeline-time-axis-clip={laneStyle}
     >
       <section className="timeline-transport-inline-clip-content timeline-transport-time-axis-clip-content">

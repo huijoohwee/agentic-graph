@@ -40,7 +40,7 @@ export function SequenceTimelineRuler({ sequence, viewportRef, timelineZoom, sce
     selected: current?.from === participant.id || current?.to === participant.id,
     content: <TimelineTransportTimeAxisClip laneStyle="video" className="sequence-participant-track"
       aria-label={`${participant.label} sequence lane`} style={{ left: resolveVideoSequenceRulerInsetLeft(0), width: resolveVideoSequenceRulerInsetWidth(scaleMinutes ? maxMinutes / scaleMinutes * 100 : 0), minWidth: 0 }}>
-      <button className="sequence-participant-bar" aria-label={`Scrub ${participant.label} sequence lane`} data-kg-video-sequence-ruler-scrub-target="1" title="Drag to scrub the authored sequence"
+      <button className="timeline-transport-time-axis-bar sequence-participant-bar" aria-label={`Scrub ${participant.label} sequence lane`} data-kg-video-sequence-ruler-scrub-target="1" title="Drag to scrub the authored sequence"
         onKeyDown={event => {
           const delta = event.key === 'ArrowRight' ? 1000 : event.key === 'ArrowLeft' ? -1000 : 0
           if (!delta && event.key !== 'Home' && event.key !== 'End') return
@@ -68,7 +68,7 @@ export function SequenceTimelineRuler({ sequence, viewportRef, timelineZoom, sce
     displayTicks={[]} dragPreview={null} draggingMode={null} draggingRowKey="" editable={false}
     maxMinutes={maxMinutes} mediaDurationSeconds={duration / 1000} playheadPercent={duration ? transport.playbackPosition / duration * 100 : 0}
     projectionMode="workflow" selectedRowKey="" taskSpans={spans} timelineInsertedLanes={lanes} timelineZoom={timelineZoom}
-    renderClipOverlay={() => model.branches.length ? <section className="sequence-rehearsal-controls" aria-label="Sequence rehearsal outcomes" onPointerDown={event => event.stopPropagation()}>{sceneControls}</section> : null}
+    renderClipOverlay={() => model.branches.length ? <section className="timeline-transport-clip-controls" aria-label="Sequence rehearsal outcomes" onPointerDown={event => event.stopPropagation()}>{sceneControls}</section> : null}
     timeAxisControls={<span title="Authored order · one second per message">Sequence</span>}
     onRulerPointerDown={interactions.handleRulerPointerScrub} onSelectRowKey={() => {}}
     onSelectRowPosition={(_key, minutes) => { transport.setTransportPlaying(false); transport.setTransportPlaybackPosition(minutes * 60000) }}

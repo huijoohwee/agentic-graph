@@ -1,5 +1,5 @@
 .timeline-video-sequence-ruler-content {
-  --kg-compact-source-media-bar-height: calc(var(--kg-main-toolbar-height, 38px) * 1.5);
+  --kg-compact-source-media-bar-height: var(--kg-timeline-bar-height, var(--kg-toolbar-compact-surface-height));
   --kg-compact-source-placeholder-bar-height: var(--kg-compact-source-media-bar-height);
 }
 
@@ -59,7 +59,7 @@
   height: var(--kg-compact-source-media-bar-height);
   overflow: hidden;
   border-color: var(--kg-border, rgb(226 232 240 / 1));
-  border-radius: 6px;
+  border-radius: var(--island-radius);
   box-shadow: none;
   translate: 0 calc((var(--kg-video-sequence-lane-height, 61px) - var(--kg-compact-source-media-bar-height)) / 2);
 }
