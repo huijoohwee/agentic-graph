@@ -7,8 +7,8 @@ import {
   type VideoSequenceExportPlan,
 } from '@/components/timeline/videoSequenceExport'
 import { useTimelinePreviewMonitorBinding } from '@/components/timeline/useTimelinePreviewMonitorBinding'
+import { useTimelinePreviewSourceRecovery } from '@/components/timeline/useTimelinePreviewMediaSession'
 import { readVideoSequenceTimelineModelFromMarkdown } from '@/components/timeline/videoSequenceTimeline'
-import { readVideoSequenceSourceRevision, restoreVideoSequenceSourceFiles, subscribeVideoSequenceSources } from '@/components/timeline/videoSequenceSourceRegistry'
 import { type MermaidGanttTimelineTaskSpan } from '@/lib/mermaid/mermaidGanttBarInteraction'
 
 export type GanttTimelineTransportPreviewSession = {
@@ -32,12 +32,7 @@ export function useGanttTimelineTransportPreviewSession(args: {
     () => readVideoSequenceTimelineModelFromMarkdown(args.markdownText),
     [args.markdownText],
   )
-  const sourceRevision = React.useSyncExternalStore(subscribeVideoSequenceSources, readVideoSequenceSourceRevision, readVideoSequenceSourceRevision)
-  React.useEffect(() => {
-    void restoreVideoSequenceSourceFiles(videoSequenceModel?.sources || []).catch(error => {
-      console.warn('Local video source could not be restored for the timeline.', error)
-    })
-  }, [videoSequenceModel?.sources])
+  const sourceRevision = useTimelinePreviewSourceRecovery(videoSequenceModel?.sources)
   const previewMonitorBinding = useTimelinePreviewMonitorBinding({
     markdownDocumentName: args.markdownDocumentName,
     markdownText: args.markdownText,

@@ -13,6 +13,10 @@ import {
 } from '@/components/timeline/videoSequenceSourceRegistry'
 import type { VideoSequenceTimelineSource } from '@/components/timeline/videoSequenceTimeline'
 import { loadTimelineMediaReaderSummary } from '@/components/timeline/timelineMediaReader'
+import React, { act } from 'react'
+import { createRoot } from 'react-dom/client'
+import { JSDOM } from 'jsdom'
+import { useTimelinePreviewMediaSession, type TimelinePreviewMediaSession } from '@/components/timeline/useTimelinePreviewMediaSession'
 
 Dexie.dependencies.indexedDB = indexedDB
 Dexie.dependencies.IDBKeyRange = IDBKeyRange
@@ -265,4 +269,62 @@ test('delayed revocation preserves directory handles and reimport recreates a re
   assert.match(reimportedUrl, /^blob:/)
   assert.notEqual(reimportedUrl, oldUrl, 'a revoked signature must create a new handle')
   assert.equal(await (await fetch(reimportedUrl)).text(), 'old!')
+})
+
+test('mounted MainPanel restores local bytes and refreshes plans without document edits or BottomPanel', async () => {
+  const item = { ...source('mounted-main-recovery.mp4'), id: 'clip_main_recovery' }
+  await writeLocalMediaFiles([record(item)])
+  const markdownText = ['---', 'kgVideoSequenceTimeline: true', `kgVideoSequenceSources: ${JSON.stringify([item])}`,
+    'flow_diagrams:', '  video_sequence:', '    type: mermaid_gantt', '    value: |-',
+    '      gantt', '        dateFormat HH:mm', '        section Video',
+    `        ${item.originalName} : ${item.id}, kgsrc_0_1, kgpos_0, 0.0167m`, '---'].join('\n')
+  const dom = new JSDOM('<main id="test-main"></main>', { url: 'http://127.0.0.1/' })
+  const previous = new Map(['window', 'document', 'IS_REACT_ACT_ENVIRONMENT'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
+  Object.defineProperties(globalThis, {
+    window: { configurable: true, value: dom.window }, document: { configurable: true, value: dom.window.document },
+    IS_REACT_ACT_ENVIRONMENT: { configurable: true, value: true },
+  })
+  const snapshots: TimelinePreviewMediaSession[] = []
+  function MainPreview() {
+    const session = useTimelinePreviewMediaSession({ markdownDocumentName: 'recovery.md', markdownText })
+    snapshots.push(session)
+    return React.createElement('output', null, session.items[0]?.src || 'Waiting for local source')
+  }
+  const root = createRoot(dom.window.document.getElementById('test-main')!)
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  let unsubscribe = () => {}
+  const recovered = new Promise<void>((resolve, reject) => {
+    timeout = setTimeout(() => reject(new Error('MainPanel did not restore its source')), 3000)
+    unsubscribe = subscribeVideoSequenceSources(() => {
+      if (resolveVideoSequenceSourceRuntimeUrl(item)) { clearTimeout(timeout); resolve() }
+    })
+  })
+  try {
+    await act(async () => { root.render(React.createElement(MainPreview)) })
+    await act(async () => { await recovered })
+    assert.equal(snapshots[0].items.length, 0, 'first render precedes asynchronous device-local recovery')
+    const restored = snapshots[snapshots.length - 1]
+    assert.equal(restored.items.length, 1)
+    assert.match(restored.items[0].src, /^blob:/)
+    assert.ok(restored.exportPlan?.segments.length)
+    assert.ok(restored.previewPlan?.segments.length)
+    assert.notEqual(restored.exportPlan, snapshots[0].exportPlan)
+    assert.notEqual(restored.previewPlan, snapshots[0].previewPlan)
+    const oldUrl = restored.items[0].src
+    await act(async () => {
+      registerVideoSequenceSourceFiles([new File(['live'], item.originalName, { type: item.mimeHint, lastModified: 456 })])
+    })
+    const reimported = snapshots[snapshots.length - 1]
+    assert.notEqual(reimported.items[0].src, oldUrl, 'unchanged document follows the newly imported source')
+    assert.equal(await (await fetch(reimported.items[0].src)).text(), 'live')
+    assert.equal(dom.window.document.querySelector('output')?.textContent, reimported.items[0].src)
+  } finally {
+    unsubscribe(); clearTimeout(timeout)
+    await act(async () => { root.unmount() })
+    dom.window.close()
+    for (const [key, descriptor] of previous) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor)
+      else Reflect.deleteProperty(globalThis, key)
+    }
+  }
 })
