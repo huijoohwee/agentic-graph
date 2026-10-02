@@ -67,6 +67,9 @@ const createObjectUrl = (file: File): string => {
 
 const revokeObjectUrl = (value: string): void => {
   if (!value || !value.startsWith('blob:') || typeof URL === 'undefined' || typeof URL.revokeObjectURL !== 'function') return
+  for (const [signature, registered] of registryBySignature) {
+    if (registered.objectUrl === value) registryBySignature.delete(signature)
+  }
   try {
     URL.revokeObjectURL(value)
   } catch {
@@ -89,6 +92,7 @@ const scheduleObjectUrlRevoke = (value: string): void => {
   clearPendingObjectUrlRevoke(value)
   const timerId = setTimeout(() => {
     pendingObjectUrlRevokes.delete(value)
+    if (Array.from(registry.values()).some(registered => registered.objectUrl === value)) return
     revokeObjectUrl(value)
   }, OBJECT_URL_REVOKE_DELAY_MS)
   pendingObjectUrlRevokes.set(value, timerId)
@@ -120,6 +124,7 @@ export function registerVideoSequenceSourceFiles(files: readonly File[]): void {
     keys: buildVideoSequenceSourceRegistryKeys({ originalName: file.name, relativePath: readFileRelativePath(file), mimeHint: file.type, byteSize: file.size }),
     blob: file,
     name: file.name,
+    relativePath: readFileRelativePath(file),
     lastModified: file.lastModified,
   }))
   if (!records.length) return
@@ -129,15 +134,15 @@ export function registerVideoSequenceSourceFiles(files: readonly File[]): void {
   }).catch(error => { console.warn('Local video source could not be saved for reopening.', error) })
 }
 
-function registerRuntimeFiles(files: readonly File[]): void {
+function registerRuntimeFiles(files: readonly File[], recovered?: { keys: string[]; relativePath: string; fileSignature: string }): void {
   let changed = false
   for (const file of Array.from(files || [])) {
     if (inferCorpusMediaKind(file.name, file.type) !== 'video') continue
-    const fileSignature = buildVideoSequenceSourceFileSignature(file)
+    const fileSignature = recovered?.fileSignature || buildVideoSequenceSourceFileSignature(file)
     const existing = registryBySignature.get(fileSignature) || null
     const objectUrl = existing?.objectUrl || createObjectUrl(file)
     if (!objectUrl) continue
-    const relativePath = readFileRelativePath(file)
+    const relativePath = recovered?.relativePath ?? readFileRelativePath(file)
     const registered: RegisteredVideoSequenceSourceFile = {
       file: existing?.file || file,
       fileSignature,
@@ -149,7 +154,7 @@ function registerRuntimeFiles(files: readonly File[]): void {
       lastModifiedMs: readLastModifiedMs(file),
       registeredAtMs: Date.now(),
     }
-    const keys = buildVideoSequenceSourceRegistryKeys({
+    const keys = recovered?.keys ?? buildVideoSequenceSourceRegistryKeys({
       originalName: registered.originalName,
       relativePath: registered.relativePath,
       mimeHint: registered.mimeHint,
@@ -180,24 +185,44 @@ export async function restoreVideoSequenceSourceFiles(sources: readonly VideoSeq
   if (!missing.length) return
   await pendingPersistence
   const { readLocalMediaFiles } = await import('@/lib/storage/localMediaFileStore')
-  const records = await readLocalMediaFiles(missing.flatMap(buildVideoSequenceSourceRegistryKeys))
+  const { records, ambiguousKeys } = await readLocalMediaFiles(missing.flatMap(buildVideoSequenceSourceRegistryKeys))
+  const ambiguous = new Set(ambiguousKeys)
   for (const source of missing) {
     // A new import can win while IndexedDB is being read. Never replace its live handle.
     if (resolveVideoSequenceSourceRuntimeUrl(source)) continue
     const keys = buildVideoSequenceSourceRegistryKeys(source)
-    const record = records.find(record => keys.some(key => record.keys.includes(key))
-      && (!source.byteSize || record.blob.size === source.byteSize)
-      && (!source.mimeHint || record.blob.type === source.mimeHint))
+    const relativePath = cleanKeyPart(source.relativePath)
+    let record: typeof records[number] | undefined
+    for (const key of keys) {
+      if (ambiguous.has(key)) {
+        console.warn('Local video source identity is ambiguous; reconnect the original file.', source.originalName)
+        break
+      }
+      record = records.find(candidate => candidate.keys.includes(key)
+        && (!source.byteSize || candidate.blob.size === source.byteSize)
+        && (!source.mimeHint || candidate.blob.type === source.mimeHint)
+        && (!relativePath.includes('/') || cleanKeyPart(candidate.relativePath) === relativePath
+          || candidate.keys.some(candidateKey => candidateKey === relativePath || candidateKey.startsWith(`${relativePath}|`))))
+      if (record) break
+    }
     if (!record) continue
-    registerRuntimeFiles([new File([record.blob], record.name, { type: record.blob.type, lastModified: record.lastModified })])
+    registerRuntimeFiles([new File([record.blob], record.name, { type: record.blob.type, lastModified: record.lastModified })], {
+      keys: record.keys.filter(key => !ambiguous.has(key)),
+      relativePath: record.relativePath || (source.relativePath.includes('/') ? source.relativePath : ''),
+      fileSignature: record.id,
+    })
   }
 }
 
 export function resolveVideoSequenceSourceRuntimeUrl(source: VideoSequenceTimelineSource | null | undefined): string {
   if (!source) return ''
+  const relativePath = cleanKeyPart(source.relativePath)
   for (const key of buildVideoSequenceSourceRegistryKeys(source)) {
     const registered = registry.get(key)
-    if (registered?.objectUrl) return registered.objectUrl
+    if (registered?.objectUrl
+      && (!source.byteSize || registered.byteSize === source.byteSize)
+      && (!source.mimeHint || cleanKeyPart(registered.mimeHint) === cleanKeyPart(source.mimeHint))
+      && (!relativePath.includes('/') || cleanKeyPart(registered.relativePath) === relativePath)) return registered.objectUrl
   }
   return ''
 }

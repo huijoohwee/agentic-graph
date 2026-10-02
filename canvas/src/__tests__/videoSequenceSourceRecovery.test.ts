@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import Dexie from 'dexie'
 import { IDBKeyRange, indexedDB } from 'fake-indexeddb'
-import { createLocalMediaFileStore, writeLocalMediaFiles } from '@/lib/storage/localMediaFileStore'
+import { createLocalMediaFileStore, writeLocalMediaFiles, type LocalMediaFileRecord } from '@/lib/storage/localMediaFileStore'
 import {
   buildVideoSequenceSourceRegistryKeys,
   readVideoSequenceSourceRevision,
@@ -26,8 +26,17 @@ const record = (item: VideoSequenceTimelineSource) => ({
   keys: buildVideoSequenceSourceRegistryKeys(item),
   blob: new Blob([new Uint8Array([1, 2, 3, 4])], { type: item.mimeHint }),
   name: item.originalName,
+  relativePath: item.relativePath,
   lastModified: 123,
 })
+const versionRecord = (item: VideoSequenceTimelineSource, bytes: string, lastModified: number): LocalMediaFileRecord => ({
+  ...record(item), id: `${item.id}|${lastModified}`, blob: new Blob([bytes], { type: item.mimeHint }), lastModified,
+})
+const openFileTable = (name = 'agentic-graph-local-media-files') => {
+  const database = new Dexie(name)
+  database.version(1).stores({ files: '&id, *keys' })
+  return { database, files: database.table<LocalMediaFileRecord, string>('files') }
+}
 
 test('local media retains original bytes across a database reopen', async () => {
   const name = `media-reopen-${Date.now()}`
@@ -37,12 +46,99 @@ test('local media retains original bytes across a database reopen', async () => 
   initial.close()
   const reopened = createLocalMediaFileStore(name)
   try {
-    const [restored] = await reopened.read(buildVideoSequenceSourceRegistryKeys(item))
+    const { records: [restored], ambiguousKeys } = await reopened.read(buildVideoSequenceSourceRegistryKeys(item))
+    assert.deepEqual(ambiguousKeys, [])
     assert.equal(restored.name, item.originalName)
     assert.equal(restored.lastModified, 123)
     assert.deepEqual(new Uint8Array(await restored.blob.arrayBuffer()), new Uint8Array([1, 2, 3, 4]))
-    assert.deepEqual(await reopened.read(['other.mp4']), [])
+    assert.deepEqual(await reopened.read(['other.mp4']), { records: [], ambiguousKeys: [] })
   } finally { reopened.close() }
+})
+
+test('latest import owns aliases even with an older modification time, and old bytes can be reimported', async () => {
+  const name = `media-version-ownership-${Date.now()}`
+  const store = createLocalMediaFileStore(name)
+  const item = source('version-ownership.mp4')
+  const old = versionRecord(item, 'old!', 999)
+  const current = versionRecord(item, 'new!', 1)
+  const keys = buildVideoSequenceSourceRegistryKeys(item)
+  const inspection = openFileTable(name)
+  try {
+    await store.write([old])
+    await store.write([current])
+    const latest = await store.read(keys)
+    assert.deepEqual(latest.ambiguousKeys, [])
+    assert.equal(latest.records.length, 1)
+    assert.equal(await latest.records[0].blob.text(), 'new!', 'import order, not file modification time, owns the alias')
+    const retainedOld = await inspection.files.get(old.id)
+    assert.ok(retainedOld)
+    assert.equal(await retainedOld.blob.text(), 'old!', 'alias replacement must preserve original bytes')
+    assert.deepEqual(retainedOld.keys, [])
+    await store.write([old])
+    const reimported = await store.read(keys)
+    assert.deepEqual(reimported.ambiguousKeys, [])
+    assert.equal(reimported.records.length, 1)
+    assert.equal(await reimported.records[0].blob.text(), 'old!')
+  } finally { inspection.database.close(); store.close() }
+})
+
+test('concurrent store writers leave exactly one committed owner for shared aliases', async () => {
+  const name = `media-concurrent-ownership-${Date.now()}`
+  const firstStore = createLocalMediaFileStore(name)
+  const secondStore = createLocalMediaFileStore(name)
+  const item = source('concurrent-ownership.mp4')
+  const first = versionRecord(item, 'one!', 100)
+  const second = versionRecord(item, 'two!', 200)
+  const committed: string[] = []
+  try {
+    await Promise.all([
+      firstStore.write([first]).then(() => { committed.push(first.id) }),
+      secondStore.write([second]).then(() => { committed.push(second.id) }),
+    ])
+    const read = await firstStore.read(buildVideoSequenceSourceRegistryKeys(item))
+    assert.deepEqual(read.ambiguousKeys, [])
+    assert.equal(read.records.length, 1)
+    assert.equal(read.records[0].id, committed[committed.length - 1])
+    assert.equal(await read.records[0].blob.text(), read.records[0].id === first.id ? 'one!' : 'two!')
+  } finally { firstStore.close(); secondStore.close() }
+})
+
+test('ambiguous legacy path identity blocks recovery before weaker aliases', async () => {
+  const item = { ...source('legacy-ambiguous-recovery.mp4'), relativePath: 'legacy/legacy-ambiguous-recovery.mp4' }
+  const strongestKey = buildVideoSequenceSourceRegistryKeys(item)[0]
+  const first = { ...versionRecord(item, 'old!', 1), keys: [strongestKey] }
+  const second = { ...versionRecord(item, 'new!', 2), keys: [strongestKey] }
+  const weaker = { ...versionRecord(item, 'weak', 3), keys: buildVideoSequenceSourceRegistryKeys(source(item.originalName)) }
+  const legacy = openFileTable()
+  try {
+    await legacy.files.bulkPut([first, second, weaker])
+    const store = createLocalMediaFileStore()
+    try {
+      const read = await store.read(buildVideoSequenceSourceRegistryKeys(item))
+      assert.deepEqual(read.ambiguousKeys, [strongestKey])
+    } finally { store.close() }
+    await restoreVideoSequenceSourceFiles([item])
+    assert.equal(resolveVideoSequenceSourceRuntimeUrl(item), '', 'a weaker unique alias must not resolve ambiguous source bytes')
+  } finally { legacy.database.close() }
+})
+
+test('directory-specific identities survive recovery in either order despite a shared basename', async () => {
+  for (const reverse of [false, true]) {
+    const name = `directory-recovery-${reverse}.mp4`
+    const first = { ...source(name), id: `left/${name}`, relativePath: `left/${name}` }
+    const second = { ...source(name), id: `right/${name}`, relativePath: `right/${name}` }
+    await writeLocalMediaFiles([versionRecord(first, 'left', 1), versionRecord(second, 'rght', 2)])
+    await restoreVideoSequenceSourceFiles(reverse ? [second, first] : [first, second])
+    const firstUrl = resolveVideoSequenceSourceRuntimeUrl(first)
+    const secondUrl = resolveVideoSequenceSourceRuntimeUrl(second)
+    assert.match(firstUrl, /^blob:/)
+    assert.match(secondUrl, /^blob:/)
+    assert.notEqual(firstUrl, secondUrl)
+    assert.equal(await (await fetch(firstUrl)).text(), 'left')
+    assert.equal(await (await fetch(secondUrl)).text(), 'rght')
+    assert.equal(resolveVideoSequenceSourceRuntimeUrl({ ...first, byteSize: 5 }), '')
+    assert.equal(resolveVideoSequenceSourceRuntimeUrl({ ...second, mimeHint: 'video/webm' }), '')
+  }
 })
 
 test('stored video rehydrates the shared runtime and publishes one revision', async () => {
@@ -135,4 +231,38 @@ test('reimporting a known file version refreshes its plan once', () => {
     registerVideoSequenceSourceFiles([first])
     assert.equal(notifications, 1)
   } finally { unsubscribe() }
+})
+
+test('delayed revocation preserves directory handles and reimport recreates a revoked version', async () => {
+  const item = source('delayed-version-lifecycle.mp4')
+  const old = new File(['old!'], item.originalName, { type: item.mimeHint, lastModified: 101 })
+  const current = new File(['new!'], item.originalName, { type: item.mimeHint, lastModified: 102 })
+  registerVideoSequenceSourceFiles([old])
+  const oldUrl = resolveVideoSequenceSourceRuntimeUrl(item)
+  registerVideoSequenceSourceFiles([current])
+  assert.notEqual(resolveVideoSequenceSourceRuntimeUrl(item), oldUrl)
+
+  const name = 'delayed-directory-lifecycle.mp4'
+  const left = { ...source(name), id: `left/${name}`, relativePath: `left/${name}` }
+  const right = { ...source(name), id: `right/${name}`, relativePath: `right/${name}` }
+  const leftFile = new File(['left'], name, { type: left.mimeHint, lastModified: 103 })
+  const rightFile = new File(['rght'], name, { type: right.mimeHint, lastModified: 104 })
+  Object.defineProperty(leftFile, 'webkitRelativePath', { value: left.relativePath })
+  Object.defineProperty(rightFile, 'webkitRelativePath', { value: right.relativePath })
+  registerVideoSequenceSourceFiles([leftFile, rightFile])
+  const leftUrl = resolveVideoSequenceSourceRuntimeUrl(left)
+  const rightUrl = resolveVideoSequenceSourceRuntimeUrl(right)
+  assert.match(leftUrl, /^blob:/)
+  assert.match(rightUrl, /^blob:/)
+  assert.notEqual(leftUrl, rightUrl)
+
+  await new Promise(resolve => setTimeout(resolve, 2100))
+  await assert.rejects(fetch(oldUrl), 'the replaced version should release its old handle')
+  assert.equal(await (await fetch(leftUrl)).text(), 'left', 'path-specific aliases still own this handle')
+  assert.equal(await (await fetch(rightUrl)).text(), 'rght')
+  registerVideoSequenceSourceFiles([old])
+  const reimportedUrl = resolveVideoSequenceSourceRuntimeUrl(item)
+  assert.match(reimportedUrl, /^blob:/)
+  assert.notEqual(reimportedUrl, oldUrl, 'a revoked signature must create a new handle')
+  assert.equal(await (await fetch(reimportedUrl)).text(), 'old!')
 })

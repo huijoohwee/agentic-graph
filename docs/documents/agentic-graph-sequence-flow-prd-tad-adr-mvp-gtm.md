@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.16"
-prd_revision: "1.3.16"
-tad_revision: "1.3.16"
-adr_revision: "1.3.16"
-mvp_revision: "1.3.16"
-gtm_revision: "1.3.16"
+version: "1.3.17"
+prd_revision: "1.3.17"
+tad_revision: "1.3.17"
+adr_revision: "1.3.17"
+mvp_revision: "1.3.17"
+gtm_revision: "1.3.17"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,7 +31,7 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.16**. The user authorized implementation
+All five roles join **SEQUENCE-FLOW-001@1.3.17**. The user authorized implementation
 and live UI verification on 2026-10-02. Work extends the existing workspace through
 an admitted successor lane. Remote service invocation, production mirrors, deployment
 and payment remain separate effects with no new grant here.
@@ -594,6 +594,6 @@ Tracked authoring majors: 4. Full authoring artifact-bearing-rule coverage has n
 alignment verdict is claimed. Diagram/canvas-domain checks prove only their selected
 structural contract; runtime, licensing, demand and delivery remain separate checks.
 
-Implemented at 1.3.16: imported video bytes now persist in a lazily loaded device-local Dexie store and rehydrate the existing source registry when the Timeline reopens. PRD: local video frame strips retain their source across reloads; no file-specific lane, clip, style or thumbnail substitute. TAD/ADR: existing registry publishes stable revisions to refresh shared preview/export/thumbnail plans, serializes binary writes, checks restored size/MIME identity and preserves a concurrent live import. Reimporting a known file version also publishes one revision; listener snapshots prevent notification resubscription loops. The native reader clears metadata handlers before removing its source so teardown cannot reenter error cleanup. MVP: five direct behavior tests cover binary reopen, concurrent recovery, identity mismatch/live-import precedence, metadata teardown and version reimport/resubscription. Eleven existing frame/import/export/shared-surface contracts and canvas typecheck pass. A bounded isolated shared-transport DOM diagnostic settles after three renders; it does not prove native video decoding. Live preview 5190 verification remains blocked: fresh in-app previews still time out after the user closes tabs and reports a browser restart, so no restored-frame screenshot or reload receipt is claimed. GTM: local candidate only; production and broad parity remain unverified. Scope cap: six paths and 30 KiB, no added dependency or spend; one lazy binary-store module uses existing Dexie. Native successor of PR #1511 at 3187287d5dd1. Prior 1.3.15 shared empty-scope guard, 1.3.14 empty-lane cleanup and 1.3.13 label buttons/selected-row borders remain in place. Original imported video remains on disk; previously uncached imports need their original file reconnected once. Candidate CI and protected integration require separate receipts; visual frame/reload verification stays open.
+Implemented at 1.3.17: shared local video recovery keeps the last committed import as owner of each registry alias in one IndexedDB write transaction; older binary records remain retained. PRD: restored native-frame sources must follow the selected import and preserve distinct directory identities without file-specific variants. TAD/ADR: recovery respects ordered identity keys, rejects ambiguous legacy keys, preserves path/signature keys during runtime hydration and checks size/MIME/path before returning a handle. Deferred URL cleanup retains handles still used by other aliases and clears revoked signature caches so an older version can be reimported safely. The 1.3.16 lazy device-local Dexie store, revision-driven shared preview/export/thumbnail plans, serial writes, concurrent live-import precedence, snapshot notifications and metadata teardown remain in place. MVP: ten direct behavior checks pass, including last-import/reimport ordering, concurrent store writers, ambiguous legacy data, two same-name directory sources in both recovery orders and delayed URL cleanup/reimport. Eleven existing native-frame/import/export/shared-surface contracts pass. Canvas typecheck and changed-file hygiene pass. The unintended broad contract invocation was stopped after an unrelated Markdown mention-thumbnail failure; no broad-suite pass is claimed. Isolated preview 5191 was responsive before importing the original 12,867,837-byte MP4, then browser control stalled; restored-frame visibility and reload fidelity still have no browser receipt. Prior PR #1512 CI passed 302 contracts and eight Flight boundary checks; retained diagnostics identify a 300-second Python offline smoke timeout after the warehouse rehearsal passed, with its internal build complete and no failed assertion. No green integration proof is claimed. GTM: local candidate only; production and broad parity remain unverified. Scope cap: four paths and 35 KiB; implementation validation is complete, with browser and provider receipts tracked separately; no added dependency, module or spend. Native successor retains draft PR #1512 at 530bfd677dcc; the previous published candidate remains immutable. Original video bytes remain on disk and in retained local records; uncached or ambiguous imports require the original file reconnected once. Candidate CI, visual verification, protected integration, canonical synchronization, cleanup and production authorization remain separate uncompleted transitions.
 Recheck every affected receipt on source drift. Preserve lane/source bytes if publication
 or lifecycle effects are blocked. Production remains behind its separate protected owner.
