@@ -347,7 +347,7 @@ export function VideoSequenceTimelineRuler({
           aria-label="Timeline playhead"
           onPointerDown={onRulerPointerDown}
         />
-        <VideoSequenceTimelineLaneRows lanes={timelineLanes} selectedDisplayLaneId={displayLaneIdByRowKey.get(selectedRowKey)} />
+        <VideoSequenceTimelineLaneRows lanes={timelineLanes} selectedDisplayLaneId={displayLaneIdByRowKey.get(selectedRowKey)} selectedRowKey={selectedRowKey} onSelectRowKey={onSelectRowKey} />
         {renderableSpans.map((span, index) => {
           const media = clipMediaByRowKey.get(span.rowKey)
           if (!media) return null

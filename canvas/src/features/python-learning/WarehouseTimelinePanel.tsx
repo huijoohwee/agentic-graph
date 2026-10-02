@@ -61,11 +61,11 @@ export function WarehouseTimelinePanel({ compact = true }: { compact?: boolean }
       commandAdapter={READ_ONLY_GANTT_TIMELINE_COMMAND_ADAPTER} mode="media" publishPlaybackRequest={false}
       runtimeDocumentKey={documentKey} runtimeDurationSeconds={duration} runtimeFrameRate={WAREHOUSE_INSPECTION_FPS}
       timelineInsertedLanes={laneGroups.map(([id, cues]) => ({
-        id: `warehouse:${id}`, insertAfterLaneId: 'scene', label: names[id] ?? id,
-        content: <TimelineTransportTimeAxisClip laneStyle="video" aria-label={`${names[id] ?? id} inspection cues`}>
+        id: `warehouse:${id}`, selectRowKey: `warehouse:${id}`, insertAfterLaneId: 'scene', label: names[id] ?? id,
+        content: ({ selectRow }) => <TimelineTransportTimeAxisClip laneStyle="video" aria-label={`${names[id] ?? id} inspection cues`}>
           <section aria-label={`${names[id] ?? id} cues`} className={`relative w-full ${UI_THEME_TOKENS.control.height}`}>
             {cues.map(cue => <button key={cue.id} type="button" title={`${cue.label} · ${cue.startSeconds.toFixed(1)}–${cue.endSeconds.toFixed(1)} s`}
-              aria-label={`Seek ${cue.label}`} onClick={() => seek(cue.startSeconds)}
+              aria-label={`Seek ${cue.label}`} onClick={() => { selectRow(); seek(cue.startSeconds) }}
               className="timeline-transport-time-axis-bar"
               style={{ left: `${cue.startSeconds / scaleSeconds * 100}%`, width: `${Math.max(0.15, (cue.endSeconds - cue.startSeconds) / scaleSeconds * 100)}%` }}>
               <span>{cue.label}</span>

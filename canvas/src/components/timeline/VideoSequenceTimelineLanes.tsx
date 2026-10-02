@@ -4,6 +4,7 @@ import { VIDEO_SEQUENCE_LANE_HEIGHT_PX, VIDEO_SEQUENCE_TIMELINE_LANES, type Vide
 export type VideoSequenceTimelineInsertedLaneRenderArgs = {
   selected: boolean
   selectRowKey: string
+  selectRow: () => void
 }
 export type VideoSequenceTimelineInsertedLane = {
   content: React.ReactNode | ((args: VideoSequenceTimelineInsertedLaneRenderArgs) => React.ReactNode)
@@ -14,9 +15,11 @@ export type VideoSequenceTimelineInsertedLane = {
   selected?: boolean
 }
 type TimelineLane = VideoSequenceTimelineDisplayLane | VideoSequenceTimelineInsertedLane
-type LaneProps = { lanes: readonly TimelineLane[]; selectedDisplayLaneId?: string }
-function laneSelected(lane: TimelineLane, selectedDisplayLaneId?: string): boolean {
-  return 'content' in lane ? lane.selected === true : lane.id === selectedDisplayLaneId
+type LaneProps = { lanes: readonly TimelineLane[]; selectedDisplayLaneId?: string; selectedRowKey: string }
+function laneSelected(lane: TimelineLane, selectedDisplayLaneId?: string, selectedRowKey?: string): boolean {
+  return 'content' in lane
+    ? lane.selected ?? (!!lane.selectRowKey && lane.selectRowKey === selectedRowKey)
+    : lane.id === selectedDisplayLaneId
 }
 export function buildVideoSequenceLaneSidebarStyle(lanes: readonly { id: string }[] = VIDEO_SEQUENCE_TIMELINE_LANES): React.CSSProperties {
   return { gridTemplateRows: `repeat(${lanes.length}, ${VIDEO_SEQUENCE_LANE_HEIGHT_PX}px)` }
@@ -31,9 +34,11 @@ export function VideoSequenceTimelineLaneLabels({ lanes, selectedDisplayLaneId, 
   return <section ref={scrollRef} className="timeline-video-sequence-lane-sidebar-scroll" style={buildVideoSequenceLaneSidebarStyle(lanes)}>
     {lanes.map(lane => {
       const inserted = 'content' in lane
-      const insertedSelected = laneSelected(lane, selectedDisplayLaneId)
-      const selectRowKey = rowKeyToDisplayLaneId.get(selectedRowKey) === lane.id
-        ? selectedRowKey : [...rowKeyToDisplayLaneId].find(([, laneId]) => laneId === lane.id)?.[0]
+      const insertedSelected = laneSelected(lane, selectedDisplayLaneId, selectedRowKey)
+      const selectRowKey = inserted ? lane.selectRowKey
+        : rowKeyToDisplayLaneId.get(selectedRowKey) === lane.id
+          ? selectedRowKey : [...rowKeyToDisplayLaneId].find(([, laneId]) => laneId === lane.id)?.[0]
+      const nativeLabel = typeof lane.label === 'string' || typeof lane.label === 'number'
       return <section key={lane.id}
         className={`timeline-video-sequence-lane-label ${insertedSelected ? 'timeline-video-sequence-lane-label--selected' : ''}`}
         aria-current={insertedSelected ? 'true' : undefined}
@@ -44,21 +49,24 @@ export function VideoSequenceTimelineLaneLabels({ lanes, selectedDisplayLaneId, 
         data-kg-video-sequence-inserted-lane-row-selection={inserted && insertedSelected ? lane.id : undefined}
         data-kg-video-sequence-lane-append={'append' in lane && lane.append ? '1' : undefined}
         data-kg-video-sequence-lane-label={'semanticId' in lane ? lane.semanticId : 'inserted'}
-      >{!inserted && selectRowKey ? <button type="button" className="timeline-video-sequence-lane-select"
+      >{nativeLabel && selectRowKey ? <button type="button" className="timeline-video-sequence-lane-select"
         aria-label={`Select ${lane.label} timeline lane`} aria-pressed={insertedSelected}
         onClick={() => onSelectRowKey(selectRowKey)}>{lane.label}</button> : lane.label}</section>
     })}
   </section>
 }
 
-export function VideoSequenceTimelineLaneRows({ lanes, selectedDisplayLaneId }: LaneProps) {
+export function VideoSequenceTimelineLaneRows({ lanes, selectedDisplayLaneId, selectedRowKey, onSelectRowKey }: LaneProps & {
+  onSelectRowKey: (rowKey: string) => void
+}) {
   return <>{lanes.map((lane, laneIndex) => {
     const inserted = 'content' in lane
-    const insertedSelected = laneSelected(lane, selectedDisplayLaneId)
+    const insertedSelected = laneSelected(lane, selectedDisplayLaneId, selectedRowKey)
     const laneSelectRowKey = inserted ? lane.selectRowKey || '' : ''
     const laneContent = inserted
       ? typeof lane.content === 'function'
-        ? lane.content({ selected: insertedSelected, selectRowKey: laneSelectRowKey })
+        ? lane.content({ selected: insertedSelected, selectRowKey: laneSelectRowKey,
+          selectRow: () => { if (laneSelectRowKey) onSelectRowKey(laneSelectRowKey) } })
         : lane.content
       : null
     return <section key={lane.id}
