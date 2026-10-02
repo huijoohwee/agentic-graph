@@ -56,7 +56,21 @@ const NEUTRAL_BORDER_WIDTH_CLASS_NAME = 'border-[length:var(--kg-surface-border-
 
 const CONTROL_HEIGHT_CLASS_NAME = 'h-[var(--kg-control-height,28px)]'
 
+/** Paint counterpart of table.rowSelected for the virtualized canvas grid. */
+export const UI_ROW_SELECTION_PAINT = { accent: '#3b82f6', alpha: 0.22, accentWidthPx: 4 } as const
+
+/** One setting controls UI glyphs; authored SVG/chart strokes keep their own semantics. */
+export const UI_ICON_DEFAULTS = { strokeWidth: 1.5 } as const
+export function normalizeUiIconStrokeWidth(value: number): number {
+  return Number.isFinite(value) ? Math.max(0.5, Math.min(4, value)) : UI_ICON_DEFAULTS.strokeWidth
+}
+
 export const UI_THEME_TOKENS = {
+  shadow: {
+    flat: 'shadow-none',
+    raised: 'shadow-[var(--kg-shadow-raised)]',
+    overlay: 'shadow-[var(--kg-shadow-overlay)]',
+  },
   border: {
     width: NEUTRAL_BORDER_WIDTH_CLASS_NAME,
     color: NEUTRAL_BORDER_COLOR_CLASS_NAME,
@@ -67,6 +81,8 @@ export const UI_THEME_TOKENS = {
     singleLine: `${CONTROL_HEIGHT_CLASS_NAME} box-border min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-2 py-0`,
   },
   button: {
+    iconControl: 'kg-icon-control rounded transition-colors shadow-none',
+    selectedIcon: `${UI_INTENT_TOKENS.primary.bg} ${UI_INTENT_TOKENS.primary.text}`,
     text: 'text-[color:var(--kg-text-secondary)]',
     hoverText: 'hover:text-[color:var(--kg-text-primary)]',
     hoverBg: 'hover:bg-[var(--kg-panel-action-bg-hover)]',
@@ -133,8 +149,8 @@ export const UI_THEME_TOKENS = {
     textSecondary: 'text-[color:var(--kg-text-secondary)]',
     rowBg: 'bg-[var(--kg-panel-bg)]',
     rowBgAlt: 'bg-[var(--kg-panel-bg)]',
-    rowSelected: 'bg-blue-50 dark:bg-blue-900/20',
-    rowSelectedBorder: 'ring-1 ring-inset ring-blue-500 dark:ring-blue-400',
+    // Inset accent avoids layout shifts; first-cell paint keeps it above sticky table cells.
+    rowSelected: '!bg-[color-mix(in_srgb,#3b82f6_22%,var(--kg-panel-bg,white))] hover:!bg-[color-mix(in_srgb,#3b82f6_22%,var(--kg-panel-bg,white))] !shadow-[inset_4px_0_0_#3b82f6] [&>td:first-child]:!shadow-[inset_4px_0_0_#3b82f6] [&>th:first-child]:!shadow-[inset_4px_0_0_#3b82f6] [&>td]:!bg-inherit [&>th]:!bg-inherit',
     rowRelated: 'bg-blue-50/50 dark:bg-blue-900/10',
     rowOutside: 'bg-[var(--kg-panel-bg)]',
   },

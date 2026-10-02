@@ -1097,9 +1097,9 @@ export const testResponsiveMenusAndDataViewSurfacesStayBounded = () => {
     throw new Error('Expected Kanban cards and lanes to reuse shared drag-intent captions instead of static drop labels')
   }
   const kanbanView = readUtf8(kanbanViewPath)
-  const kanbanReorderPath = path.resolve(root, 'src', 'features', 'markdown', 'ui', 'kanban', 'kanbanReorder.ts')
+  const dataViewGroupsPath = path.resolve(root, 'src', 'features', 'markdown-workspace', 'main', 'viewer', 'workspaceDataViewGroups.ts')
   const dataViewModelPath = path.resolve(root, 'src', 'features', 'markdown', 'ui', 'markdownDataViewModel.ts')
-  const kanbanReorder = readUtf8(kanbanReorderPath)
+  const dataViewGroups = readUtf8(dataViewGroupsPath)
   const dataViewModel = readUtf8(dataViewModelPath)
   if (!kanbanShortcutCopy.includes('KANBAN_SHORTCUT_HELP_LINES') || !panelConfig.includes('...KANBAN_SHORTCUT_HELP_LINES')) {
     throw new Error('Expected Kanban shortcut copy to be owned by a shared helper and surfaced from MainPanel Help shortcuts')
@@ -1167,8 +1167,8 @@ export const testResponsiveMenusAndDataViewSurfacesStayBounded = () => {
   if (!kanbanView.includes('registerFocusableRowElement') || !kanbanView.includes('kanbanDrag.commitMove({') || !kanbanView.includes('kanbanDrag.reportBlockedMove({') || !kanbanView.includes("'start-of-lane'") || !kanbanView.includes("'start-of-board'") || !kanbanView.includes("'end-of-board'") || !kanbanGroup.includes('onFocusableRowElement={props.onFocusableRowElement}')) {
     throw new Error('Expected Markdown kanban keyboard reorder, boundary feedback, and focus recovery to stay rooted in the shared drag owner and card registration path')
   }
-  if (!kanbanReorder.includes('export const resolveKanbanGroupOrder') || !kanbanView.includes('resolveKanbanGroupOrder')) {
-    throw new Error('Expected Markdown kanban lane ordering to reuse the shared configured-option order helper')
+  if (!dataViewGroups.includes('export function projectDataViewGroups') || !kanbanView.includes('projectDataViewGroups(view, groupById)')) {
+    throw new Error('Expected Markdown kanban lane ordering to reuse the shared data-view group projection owner')
   }
   if (!kanbanGroup.includes('KanbanLaneDragOverIndicator') || !kanbanGroup.includes('KanbanLaneDropPreview') || kanbanGroup.includes('h-[2px]') || !kanbanView.includes('showLaneDropPreview=')) {
     throw new Error('Expected Markdown kanban lanes to expose a shared end-of-lane drop affordance during pointer drag')

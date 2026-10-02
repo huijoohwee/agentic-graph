@@ -1,3 +1,4 @@
+import { UI_ICON_DEFAULTS, normalizeUiIconStrokeWidth } from '@/lib/ui/theme-tokens'
 import { normalizeSingleLineControlClassName } from 'grph-shared/ui/themeTokens'
 import { normalizeUiTextClasses } from 'grph-shared/ui/typography'
 
@@ -437,7 +438,7 @@ export const createUiInitialState = (
     uiIconFormat: lsJson<'default' | 'minimal' | '1'>(LS_KEYS.iconFormat, '1', value =>
       value === 'minimal' || value === 'default' || value === '1' ? value : '1',
     ),
-    uiIconStrokeWidth: lsNum(LS_KEYS.iconStrokeWidth, 2),
+    uiIconStrokeWidth: normalizeUiIconStrokeWidth(lsFloat(LS_KEYS.iconStrokeWidth, UI_ICON_DEFAULTS.strokeWidth)),
     uiIconColorClass: lsJson<string>(
       LS_KEYS.iconColorClass,
       UI_THEME_TOKENS.text.secondary,

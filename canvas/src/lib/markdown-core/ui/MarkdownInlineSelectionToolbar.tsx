@@ -244,32 +244,32 @@ export const MarkdownInlineSelectionToolbar = (props: {
           key: 'heading',
           ariaLabel: 'Heading',
           title: 'Heading',
-          summary: <Heading2 className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.6} />,
+          summary: <Heading2 className={markdownInlineSelectionToolbarIconClassName} />,
           menu: close => (
             <menu className={toolbarMenuPanelClassName} aria-label="Turn into menu">
-              <li className="list-none"><button type="button" className={props.toolbarMenuButtonClassName} onClick={(event) => runMenuAction(event, () => props.applyTurnInto('heading2'), close)}><Heading2 className={markdownInlineSelectionToolbarMenuIconClassName} strokeWidth={1.6} />H2</button></li>
-              <li className="list-none"><button type="button" className={props.toolbarMenuButtonClassName} onClick={(event) => runMenuAction(event, () => props.applyTurnInto('code'), close)}><Code className={markdownInlineSelectionToolbarMenuIconClassName} strokeWidth={1.6} />Code block</button></li>
+              <li className="list-none"><button type="button" className={props.toolbarMenuButtonClassName} onClick={(event) => runMenuAction(event, () => props.applyTurnInto('heading2'), close)}><Heading2 className={markdownInlineSelectionToolbarMenuIconClassName} />H2</button></li>
+              <li className="list-none"><button type="button" className={props.toolbarMenuButtonClassName} onClick={(event) => runMenuAction(event, () => props.applyTurnInto('code'), close)}><Code className={markdownInlineSelectionToolbarMenuIconClassName} />Code block</button></li>
               <li className={props.toolbarMenuDividerClassName} />
-              <li className="list-none"><button type="button" className={props.toolbarMenuButtonClassName} onClick={(event) => runMenuAction(event, () => props.applyToggleHeading(1), close)}><Heading2 className={markdownInlineSelectionToolbarMenuIconClassName} strokeWidth={1.6} />H1</button></li>
-              <li className="list-none"><button type="button" className={props.toolbarMenuButtonClassName} onClick={(event) => runMenuAction(event, () => props.applyToggleHeading(2), close)}><Heading2 className={markdownInlineSelectionToolbarMenuIconClassName} strokeWidth={1.6} />H2</button></li>
-              <li className="list-none"><button type="button" className={props.toolbarMenuButtonClassName} onClick={(event) => runMenuAction(event, () => props.applyToggleHeading(3), close)}><Heading2 className={markdownInlineSelectionToolbarMenuIconClassName} strokeWidth={1.6} />H3</button></li>
+              <li className="list-none"><button type="button" className={props.toolbarMenuButtonClassName} onClick={(event) => runMenuAction(event, () => props.applyToggleHeading(1), close)}><Heading2 className={markdownInlineSelectionToolbarMenuIconClassName} />H1</button></li>
+              <li className="list-none"><button type="button" className={props.toolbarMenuButtonClassName} onClick={(event) => runMenuAction(event, () => props.applyToggleHeading(2), close)}><Heading2 className={markdownInlineSelectionToolbarMenuIconClassName} />H2</button></li>
+              <li className="list-none"><button type="button" className={props.toolbarMenuButtonClassName} onClick={(event) => runMenuAction(event, () => props.applyToggleHeading(3), close)}><Heading2 className={markdownInlineSelectionToolbarMenuIconClassName} />H3</button></li>
             </menu>
           ),
         })}
-        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyDraftAction('bold'))} title="Bold"><Bold className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} /></button>
-        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyDraftAction('italic'))} title="Italic"><Italic className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} /></button>
-        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyDraftAction('strike'))} title="Strikethrough"><Strikethrough className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} /></button>
-        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyDraftAction('inlineCode'))} title="Inline Code"><Code className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} /></button>
-        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyDraftAction('link'))} title="Link"><LinkIcon className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} /></button>
-        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyTurnInto('bulletList'))} title="Bulleted List"><List className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} /></button>
-        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyTurnInto('numberedList'))} title="Numbered List"><ListOrdered className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} /></button>
-        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyTurnInto('blockquote'))} title="Quote"><Quote className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} /></button>
-        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, props.openSlashCommandMenu)} title="Slash commands"><Slash className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} /></button>
-        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, props.openVariableCommandMenu)} title="Variable commands"><AtSign className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} /></button>
+        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyDraftAction('bold'))} title="Bold"><Bold className={markdownInlineSelectionToolbarIconClassName} /></button>
+        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyDraftAction('italic'))} title="Italic"><Italic className={markdownInlineSelectionToolbarIconClassName} /></button>
+        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyDraftAction('strike'))} title="Strikethrough"><Strikethrough className={markdownInlineSelectionToolbarIconClassName} /></button>
+        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyDraftAction('inlineCode'))} title="Inline Code"><Code className={markdownInlineSelectionToolbarIconClassName} /></button>
+        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyDraftAction('link'))} title="Link"><LinkIcon className={markdownInlineSelectionToolbarIconClassName} /></button>
+        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyTurnInto('bulletList'))} title="Bulleted List"><List className={markdownInlineSelectionToolbarIconClassName} /></button>
+        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyTurnInto('numberedList'))} title="Numbered List"><ListOrdered className={markdownInlineSelectionToolbarIconClassName} /></button>
+        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyTurnInto('blockquote'))} title="Quote"><Quote className={markdownInlineSelectionToolbarIconClassName} /></button>
+        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, props.openSlashCommandMenu)} title="Slash commands"><Slash className={markdownInlineSelectionToolbarIconClassName} /></button>
+        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, props.openVariableCommandMenu)} title="Variable commands"><AtSign className={markdownInlineSelectionToolbarIconClassName} /></button>
         {renderToolbarMenu({
           key: 'align',
           ariaLabel: 'Align',
-          summary: <AlignLeft className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} />,
+          summary: <AlignLeft className={markdownInlineSelectionToolbarIconClassName} />,
           menu: close => (
             <menu className={toolbarMenuPanelClassName} aria-label="Align menu">
               <li className="list-none"><button type="button" className={props.toolbarMenuButtonClassName} onClick={(event) => runMenuAction(event, () => props.applyAlign('left'), close)}>Left</button></li>
@@ -278,9 +278,9 @@ export const MarkdownInlineSelectionToolbar = (props: {
             </menu>
           ),
         })}
-        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyWrap('<u>', '</u>'))} title="Underline"><Underline className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} /></button>
-        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyWrap('^', '^'))} title="Superscript"><Superscript className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} /></button>
-        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyWrap('~', '~'))} title="Subscript"><Subscript className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} /></button>
+        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyWrap('<u>', '</u>'))} title="Underline"><Underline className={markdownInlineSelectionToolbarIconClassName} /></button>
+        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyWrap('^', '^'))} title="Superscript"><Superscript className={markdownInlineSelectionToolbarIconClassName} /></button>
+        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, () => props.applyWrap('~', '~'))} title="Subscript"><Subscript className={markdownInlineSelectionToolbarIconClassName} /></button>
         <button
           type="button"
           className={markdownInlineSelectionToolbarButtonClassName}
@@ -309,7 +309,7 @@ export const MarkdownInlineSelectionToolbar = (props: {
           key: 'highlight',
           ariaLabel: 'Highlight',
           title: 'Highlight',
-          summary: <Highlighter className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} />,
+          summary: <Highlighter className={markdownInlineSelectionToolbarIconClassName} />,
           menu: close => (
             <menu className={toolbarMenuPanelClassName} aria-label="Highlight menu">
               <li className="list-none"><button type="button" className={props.toolbarMenuButtonClassName} onClick={(event) => runMenuAction(event, () => props.applyWrap('==', '=='), close)}>Default (==)</button></li>
@@ -324,7 +324,7 @@ export const MarkdownInlineSelectionToolbar = (props: {
           key: 'text-color',
           ariaLabel: 'Text color',
           title: 'Text color',
-          summary: <Palette className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} />,
+          summary: <Palette className={markdownInlineSelectionToolbarIconClassName} />,
           menu: close => (
             <menu className={toolbarMenuPanelClassName} aria-label="Text color menu">
               <li className="list-none"><button type="button" className={props.toolbarMenuButtonClassName} style={{ color: '#EF4444' }} onClick={(event) => runMenuAction(event, () => props.applyColor('#EF4444'), close)}>Red</button></li>
@@ -334,7 +334,7 @@ export const MarkdownInlineSelectionToolbar = (props: {
             </menu>
           ),
         })}
-        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, props.applyClearFormatting)} title="Clear formatting"><Eraser className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} /></button>
+        <button type="button" className={markdownInlineSelectionToolbarButtonClassName} onClick={(event) => runToolbarAction(event, props.applyClearFormatting)} title="Clear formatting"><Eraser className={markdownInlineSelectionToolbarIconClassName} /></button>
         <button
           type="button"
           className={markdownInlineSelectionToolbarButtonClassName}
@@ -344,14 +344,14 @@ export const MarkdownInlineSelectionToolbar = (props: {
           }}
           title="Comment"
         >
-          <MessageSquare className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} />
+          <MessageSquare className={markdownInlineSelectionToolbarIconClassName} />
         </button>
         {renderToolbarMenu({
           key: 'more',
           ariaLabel: 'More',
           title: 'More',
           portalPlacement: 'bottom-end',
-          summary: <MoreHorizontal className={markdownInlineSelectionToolbarIconClassName} strokeWidth={1.8} />,
+          summary: <MoreHorizontal className={markdownInlineSelectionToolbarIconClassName} />,
           menu: close => (
             <menu className={toolbarMenuPanelClassName} aria-label="More actions">
               {selectionActions ? (

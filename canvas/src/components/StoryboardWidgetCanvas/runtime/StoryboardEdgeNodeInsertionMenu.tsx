@@ -266,7 +266,7 @@ export function StoryboardEdgeNodeInsertionMenu(props: {
           key={anchor.edgeId}
           type="button"
           data-kg-edge-node-insert-trigger={anchor.edgeId}
-          className={`absolute pointer-events-auto grid h-6 w-6 place-items-center rounded-full border shadow-sm ${UI_THEME_TOKENS.panel.overlayBg} ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.button.text}`}
+          className={`absolute pointer-events-auto grid h-6 w-6 place-items-center rounded-full border shadow-none ${UI_THEME_TOKENS.panel.overlayBg} ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.button.text}`}
           style={{
             left: anchor.left,
             top: anchor.top,
@@ -286,7 +286,7 @@ export function StoryboardEdgeNodeInsertionMenu(props: {
             setActiveEdgeId(current => current === anchor.edgeId ? null : anchor.edgeId)
           }}
         >
-          <Plus size={14} strokeWidth={2.25} />
+          <Plus size={14} />
         </button>
       ))}
       {menuAnchor ? (
@@ -295,7 +295,7 @@ export function StoryboardEdgeNodeInsertionMenu(props: {
           role="menu"
           aria-label="Add node"
           data-kg-edge-node-insert-menu={menuAnchor.edgeId}
-          className={`absolute pointer-events-auto min-w-44 rounded-lg border p-1 shadow-lg ${UI_THEME_TOKENS.panel.overlayBg} ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.text.primary}`}
+          className={`absolute pointer-events-auto min-w-44 rounded-lg border p-1 shadow-[var(--kg-shadow-overlay)] ${UI_THEME_TOKENS.panel.overlayBg} ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.text.primary}`}
           style={{
             left: menuAnchor.left + 16,
             top: menuAnchor.top + 16,

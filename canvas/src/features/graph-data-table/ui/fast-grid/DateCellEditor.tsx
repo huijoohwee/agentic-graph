@@ -210,7 +210,7 @@ export function DateCellEditor(props: {
         <section
           role="dialog"
           aria-label="Date picker"
-          className={`absolute left-0 mt-1 rounded border shadow-lg ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}`}
+          className={`absolute left-0 mt-1 rounded border shadow-[var(--kg-shadow-overlay)] ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}`}
           style={GRAPH_DATA_TABLE_DATE_PICKER_STYLE}
           onPointerDown={e => {
             e.preventDefault()

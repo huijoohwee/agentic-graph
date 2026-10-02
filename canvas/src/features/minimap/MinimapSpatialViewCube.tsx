@@ -16,7 +16,7 @@ export function MinimapSpatialViewCube() {
       aria-label="Minimap XR spatial view cube"
       data-kg-minimap-xr-view-cube="1"
       data-kg-minimap-xr-view-cube-axis={spatialAxis}
-      className="kg-minimap-root kg-minimap-xr-view-cube grid size-[92px] place-items-center rounded-md border border-sky-400/60 bg-slate-950/36 text-xs font-bold text-white shadow-lg backdrop-blur"
+      className="kg-minimap-root kg-minimap-xr-view-cube grid size-[92px] place-items-center rounded-md border border-sky-400/60 bg-slate-950/36 text-xs font-bold text-white shadow-[var(--kg-shadow-overlay)] backdrop-blur"
     >
       <svg viewBox="0 0 92 92" role="img" aria-label="Minimap XR spatial view cube guide" className="absolute inset-0 h-full w-full" data-kg-minimap-xr-view-cube-guide="1">
         <line x1="42" y1="45" x2="68" y2="34" stroke="#fb7185" strokeWidth="2.2" strokeLinecap="round" />
@@ -34,7 +34,7 @@ export function MinimapSpatialViewCube() {
           aria-label={`XR view ${axis.toUpperCase()} axis`}
           aria-pressed={spatialAxis === axis}
           data-kg-minimap-xr-view-cube-axis-option={axis}
-          className={`absolute grid size-6 place-items-center rounded-full border border-white/35 shadow-sm ${axis === 'x' ? 'right-3 top-6 bg-rose-400 text-white' : axis === 'y' ? 'right-7 top-0 bg-emerald-400 text-slate-950' : 'right-1 top-12 bg-indigo-500 text-white'} ${spatialAxis === axis ? 'ring-2 ring-sky-200' : ''}`}
+          className={`absolute grid size-6 place-items-center rounded-full border border-white/35 shadow-none ${axis === 'x' ? 'right-3 top-6 bg-rose-400 text-white' : axis === 'y' ? 'right-7 top-0 bg-emerald-400 text-slate-950' : 'right-1 top-12 bg-indigo-500 text-white'} ${spatialAxis === axis ? 'ring-2 ring-sky-200' : ''}`}
           onClick={() => setSpatialCaptureAxis(axis)}
         >
           {axis.toUpperCase()}

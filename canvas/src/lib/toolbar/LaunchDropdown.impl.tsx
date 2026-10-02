@@ -168,7 +168,7 @@ export function LaunchDropdown({
     UI_THEME_TOKENS.panel.bg,
     'border',
     UI_THEME_TOKENS.panel.border,
-    'rounded shadow-md',
+    'rounded shadow-[var(--kg-shadow-overlay)]',
   )
 
   const fallbackExportActions = React.useMemo(
@@ -419,7 +419,7 @@ export function LaunchDropdown({
               aria-label="Home"
               data-kg-launch-home="true"
             >
-              <Home className={menuIconClass} strokeWidth={1.6} />
+              <Home className={menuIconClass} />
               <span className="truncate">Home</span>
               <WorkspaceLaunchRowValue label="Home" value="Open" optionId="home:open" />
             </a>
@@ -439,7 +439,7 @@ export function LaunchDropdown({
                   onLaunchSpotlight()
                 }}
               >
-                <Sparkles className={menuIconClass} strokeWidth={1.6} />
+                <Sparkles className={menuIconClass} />
                 <span className="truncate">Spotlight</span>
                 <WorkspaceLaunchRowValue label="Spotlight" value="Open" optionId="spotlight:open" />
               </button>
@@ -453,7 +453,7 @@ export function LaunchDropdown({
               aria-label="Workflow Manager"
               onClick={openWorkflowManager}
             >
-              <Workflow className={menuIconClass} strokeWidth={1.6} />
+              <Workflow className={menuIconClass} />
               <span className="truncate">Workflow Manager</span>
               <WorkspaceLaunchRowValue label="Workflow Manager" value="Open" optionId="workflowManager:open" />
             </button>
@@ -470,7 +470,7 @@ export function LaunchDropdown({
                 openFilePicker(fileInputRef.current)
               }}
             >
-              <Upload className={menuIconClass} strokeWidth={1.6} />
+              <Upload className={menuIconClass} />
               <span className="truncate">Import local files</span>
               <WorkspaceLaunchRowValue label="Import local files" value="Choose files" optionId="importLocalFiles:choose" />
             </button>
@@ -478,7 +478,7 @@ export function LaunchDropdown({
 
           <li className="list-none">
             <button type="button" className={menuItemClass} aria-label="Import Image" onClick={() => openFilePicker(imageInputRef.current)}>
-              <ImageIcon className={menuIconClass} strokeWidth={1.6} />
+              <ImageIcon className={menuIconClass} />
               <span className="truncate">Import Image</span>
               <WorkspaceLaunchRowValue label="Import Image" value="Choose images" optionId="importImage:choose" />
             </button>
@@ -491,7 +491,7 @@ export function LaunchDropdown({
               aria-label="Fetch API Data Source"
               onClick={fetchApiDataSource}
             >
-              <CloudDownload className={menuIconClass} strokeWidth={1.6} />
+              <CloudDownload className={menuIconClass} />
               <span className="truncate">Fetch API Data Source</span>
               <WorkspaceLaunchRowValue label="Fetch API Data Source" value="Open" optionId="fetchApiDataSource:open" />
             </button>
@@ -504,7 +504,7 @@ export function LaunchDropdown({
               aria-label="Import folder"
               onClick={() => { void importFolder().catch(error => pushUiToast({ id: 'launch:import:agent-graph-folder', kind: 'error', message: String((error as { message?: unknown })?.message || 'Knowledge graph folder import failed.'), ttlMs: UI_TOAST_TTL_MS.warningExtended, dismissible: true })) }}
             >
-              <FolderOpen className={menuIconClass} strokeWidth={1.6} />
+              <FolderOpen className={menuIconClass} />
               <span className="truncate">Import folder</span>
               <WorkspaceLaunchRowValue label="Import folder" value="Choose folder" optionId="importFolder:choose" />
             </button>
@@ -528,7 +528,7 @@ export function LaunchDropdown({
                 void createNewMarkdownFile()
               }}
             >
-              <FilePlus2 className={menuIconClass} strokeWidth={1.6} />
+              <FilePlus2 className={menuIconClass} />
               <span className="truncate">New .md</span>
               <WorkspaceLaunchRowValue label="New .md" value="Create" optionId="newMarkdown:create" />
             </button>
@@ -541,7 +541,7 @@ export function LaunchDropdown({
               aria-label="New folder"
               onClick={() => { void createNewFolder() }}
             >
-              <FolderPlus className={menuIconClass} strokeWidth={1.6} />
+              <FolderPlus className={menuIconClass} />
               <span className="truncate">New folder</span>
               <WorkspaceLaunchRowValue label="New folder" value="Create" optionId="newFolder:create" />
             </button>
@@ -555,7 +555,7 @@ export function LaunchDropdown({
               onClick={() => saveCurrentWorkspace()}
               disabled={typeof bridge.save !== 'function'}
             >
-              <Save className={menuIconClass} strokeWidth={1.6} />
+              <Save className={menuIconClass} />
               <span className="truncate">Save</span>
               <WorkspaceLaunchRowValue label="Save" value="Current" optionId="save:current" />
             </button>
@@ -591,7 +591,7 @@ export function LaunchDropdown({
                   onLaunchStatus()
                 }}
               >
-                <BarChart3 className={menuIconClass} strokeWidth={1.6} />
+                <BarChart3 className={menuIconClass} />
                 <span className="truncate">Status</span>
                 <WorkspaceLaunchRowValue label="Status" value="Open" optionId="status:open" />
               </button>

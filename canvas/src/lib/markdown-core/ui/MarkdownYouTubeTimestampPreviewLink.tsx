@@ -107,7 +107,7 @@ export function YouTubeTimestampPreviewLink({
         open
         interactive={false}
         contentSize={{ width: 224 }}
-        contentClassName={[UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_CLASSNAME, 'p-0 overflow-hidden rounded border shadow-xl', UI_THEME_TOKENS.panel.border].join(' ')}
+        contentClassName={[UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_CLASSNAME, 'p-0 overflow-hidden rounded border shadow-[var(--kg-shadow-overlay)]', UI_THEME_TOKENS.panel.border].join(' ')}
         contentDataAttrs={{
           'data-kg-youtube-timestamp-preview': '1',
           'data-kg-rich-media-preview-key': preview.semanticKey,

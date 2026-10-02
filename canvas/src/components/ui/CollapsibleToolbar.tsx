@@ -35,7 +35,7 @@ export const CollapsibleToolbar = React.memo(function CollapsibleToolbar(props: 
         portalPlacement="bottom-end"
         summary={<MoreHorizontal className="w-4 h-4" aria-hidden="true" />}
         menu={
-          <section className={['kg-collapsible-toolbar-overflow rounded border shadow-sm p-2', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}>
+          <section className={['kg-collapsible-toolbar-overflow rounded border shadow-[var(--kg-shadow-overlay)] p-2', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}>
             <section className={props.collapsedClassName || 'kg-collapsible-toolbar-overflow-items flex flex-col gap-2'} aria-label="Toolbar overflow items">
               {props.children}
             </section>

@@ -12,7 +12,7 @@ import {
   UI_RESPONSIVE_PANEL_CODE_EDITOR_FRAME_CLASSNAME,
   UI_RESPONSIVE_PANEL_CODE_EDITOR_SMALL_FRAME_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
-import { UI_THEME_TOKENS, normalizeSingleLineControlClassName, singleLineControlDecorationClassName } from '@/lib/ui/theme-tokens'
+import { UI_THEME_TOKENS, UI_ICON_DEFAULTS, normalizeSingleLineControlClassName, singleLineControlDecorationClassName } from '@/lib/ui/theme-tokens'
 import { PanelCheckbox, PanelTextarea, PanelTextInput, PanelSelect } from '@/lib/ui/panelFormControls'
 import { uiToolbarRowScrollClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
@@ -60,7 +60,7 @@ export const renderSettingInput = (
   const iconStrokeWidth =
     typeof values.uiIconStrokeWidth === 'number' && Number.isFinite(values.uiIconStrokeWidth)
       ? values.uiIconStrokeWidth
-      : 1.5
+      : UI_ICON_DEFAULTS.strokeWidth
   const setStringValue = (keyName: string, nextValue: string) => {
     dirtyRef.current.add(keyName)
     setValues(prev => ({ ...prev, [keyName]: nextValue }))

@@ -7,7 +7,7 @@ import {
 } from '@/lib/ui/responsiveElementClasses'
 import { uiToolbarRowScrollClassName } from '@/features/toolbar/ui/toolbarStyles'
 
-export const FLOATING_MENU_CLASSNAME = ['absolute mt-2 rounded border shadow-sm p-2 z-40', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')
+export const FLOATING_MENU_CLASSNAME = ['absolute mt-2 rounded border shadow-[var(--kg-shadow-overlay)] p-2 z-40', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')
 export const FLOATING_MENU_RIGHT_CLASSNAME = [FLOATING_MENU_CLASSNAME, 'kg-data-view-floating-menu right-0'].join(' ')
 export const FLOATING_MENU_RIGHT_W220_CLASSNAME = [FLOATING_MENU_CLASSNAME, 'kg-data-view-floating-menu right-0', UI_RESPONSIVE_DATA_VIEW_COMPACT_MENU_PANEL_CLASSNAME].join(' ')
 export const FLOATING_MENU_LEFT_W220_CLASSNAME = [FLOATING_MENU_CLASSNAME, 'kg-data-view-floating-menu left-0', UI_RESPONSIVE_DATA_VIEW_COMPACT_MENU_PANEL_CLASSNAME].join(' ')
@@ -18,7 +18,7 @@ export const FLOATING_MENU_DIVIDER_CLASSNAME = ['list-none my-2 h-px', UI_THEME_
 export const FLOATING_MENU_TRIGGER_CLASSNAME = [UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME, 'h-6 rounded border px-2 list-none cursor-pointer text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.button.hoverBg].join(' ')
 export const FLOATING_OVERLAY_TOOLBAR_CLASSNAME = [FLOATING_MENU_RIGHT_CLASSNAME, 'top-0 z-20 m-0 p-1', uiToolbarRowScrollClassName, 'gap-1 text-xs'].join(' ')
 export const FLOATING_POPOVER_ACTION_BUTTON_CLASSNAME = ['kg-toolbar-btn rounded cursor-pointer', UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME, 'justify-center', UI_THEME_TOKENS.button.square, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg].join(' ')
-export const FLOATING_POPOVER_PANEL_CLASSNAME = ['kg-data-view-floating-menu absolute rounded border shadow-sm z-20 m-0 p-2', UI_RESPONSIVE_DATA_VIEW_MENU_PANEL_CLASSNAME, UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')
+export const FLOATING_POPOVER_PANEL_CLASSNAME = ['kg-data-view-floating-menu absolute rounded border shadow-[var(--kg-shadow-overlay)] z-20 m-0 p-2', UI_RESPONSIVE_DATA_VIEW_MENU_PANEL_CLASSNAME, UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')
 export const FLOATING_POPOVER_INPUT_CLASSNAME = ['w-full rounded border px-2 py-1.5 text-xs outline-none', UI_THEME_TOKENS.input.bg, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.text.primary].join(' ')
 
-export const FLOATING_ICON_TOOLBAR_PANEL_CLASSNAME = ['rounded border shadow-sm m-0 p-1 text-xs', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')
+export const FLOATING_ICON_TOOLBAR_PANEL_CLASSNAME = ['rounded border shadow-[var(--kg-shadow-overlay)] m-0 p-1 text-xs', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')

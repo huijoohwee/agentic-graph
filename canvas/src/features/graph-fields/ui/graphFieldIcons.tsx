@@ -2,7 +2,7 @@ import React from 'react'
 import { fieldKindLabel } from '@/features/graph-fields/graphFields'
 import type { GraphFieldKind, GraphFieldScope } from '@/features/graph-fields/graphFields'
 import { UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { UI_THEME_TOKENS, UI_ICON_DEFAULTS, normalizeUiIconStrokeWidth } from '@/lib/ui/theme-tokens'
 
 const graphFieldIconDefaultClassName = UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME
 const graphFieldIconTertiaryClassName = `${UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME} ${UI_THEME_TOKENS.text.tertiary}`
@@ -44,7 +44,7 @@ export function resolveFieldTypeIconKind(fieldTypeLabel: string): GraphFieldKind
 
 export function GripDotsIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className ?? graphFieldIconDefaultClassName}>
+    <svg data-kg-ui-icon="true" viewBox="0 0 24 24" aria-hidden="true" className={className ?? graphFieldIconDefaultClassName}>
       <path
         d="M9 6h2v2H9V6Zm4 0h2v2h-2V6ZM9 11h2v2H9v-2Zm4 0h2v2h-2v-2ZM9 16h2v2H9v-2Zm4 0h2v2h-2v-2Z"
         fill="currentColor"
@@ -55,13 +55,13 @@ export function GripDotsIcon({ className }: { className?: string }) {
 
 export function SearchIcon({
   className,
-  strokeWidth = 2,
+  strokeWidth = UI_ICON_DEFAULTS.strokeWidth,
 }: {
   className?: string
   strokeWidth?: number
 }) {
   return (
-    <svg
+    <svg data-kg-ui-icon="true"
       viewBox="0 0 24 24"
       aria-hidden="true"
       className={className ?? graphFieldIconDefaultClassName}
@@ -79,13 +79,13 @@ export function SearchIcon({
 
 export function FieldKeyIcon({
   className,
-  strokeWidth = 2,
+  strokeWidth = UI_ICON_DEFAULTS.strokeWidth,
 }: {
   className?: string
   strokeWidth?: number
 }) {
   return (
-    <svg
+    <svg data-kg-ui-icon="true"
       viewBox="0 0 24 24"
       aria-hidden="true"
       className={className ?? graphFieldIconDefaultClassName}
@@ -103,13 +103,13 @@ export function FieldKeyIcon({
 
 export function GraphFieldsIcon({
   className,
-  strokeWidth = 2,
+  strokeWidth = UI_ICON_DEFAULTS.strokeWidth,
 }: {
   className?: string
   strokeWidth?: number
 }) {
   return (
-    <svg
+    <svg data-kg-ui-icon="true"
       viewBox="0 0 24 24"
       aria-hidden="true"
       className={className ?? graphFieldIconDefaultClassName}
@@ -136,14 +136,14 @@ export function GraphFieldsIcon({
 export function ScopeIcon({
   scope,
   className,
-  strokeWidth = 2,
+  strokeWidth = UI_ICON_DEFAULTS.strokeWidth,
 }: {
   scope: GraphFieldScope
   className?: string
   strokeWidth?: number
 }) {
   return (
-    <svg
+    <svg data-kg-ui-icon="true" strokeWidth={strokeWidth}
       viewBox="0 0 24 24"
       aria-hidden="true"
       className={className ?? graphFieldIconTertiaryClassName}
@@ -153,14 +153,14 @@ export function ScopeIcon({
           <circle cx="12" cy="7" r="3" fill="currentColor" opacity="0.9" />
           <circle cx="6" cy="17" r="3" fill="currentColor" opacity="0.8" />
           <circle cx="18" cy="17" r="3" fill="currentColor" opacity="0.8" />
-          <path d="M10.2 9.4L7.8 14.2M13.8 9.4l2.4 4.8" stroke="currentColor" strokeWidth={strokeWidth} />
+          <path d="M10.2 9.4L7.8 14.2M13.8 9.4l2.4 4.8" stroke="currentColor"  />
         </>
       ) : (
         <>
           <circle cx="7" cy="12" r="3" fill="currentColor" opacity="0.9" />
           <circle cx="17" cy="12" r="3" fill="currentColor" opacity="0.9" />
-          <path d="M10 12h4" stroke="currentColor" strokeWidth={strokeWidth} />
-          <path d="M12 6v12" stroke="currentColor" strokeWidth={strokeWidth} opacity="0.25" />
+          <path d="M10 12h4" stroke="currentColor"  />
+          <path d="M12 6v12" stroke="currentColor"  opacity="0.25" />
         </>
       )}
     </svg>
@@ -171,7 +171,7 @@ export function FieldTypeBadgeIcon({
   kind,
   fieldTypeLabel,
   className,
-  strokeWidth = 2,
+  strokeWidth = UI_ICON_DEFAULTS.strokeWidth,
 }: {
   kind: GraphFieldKind
   fieldTypeLabel?: string
@@ -179,10 +179,7 @@ export function FieldTypeBadgeIcon({
   strokeWidth?: number
 }) {
   const label = typeof fieldTypeLabel === 'string' && fieldTypeLabel.trim() ? fieldTypeLabel : fieldKindLabel(kind)
-  const safeStrokeWidth =
-    typeof strokeWidth === 'number' && Number.isFinite(strokeWidth)
-      ? Math.max(1.5, Math.min(2.5, Math.round(strokeWidth)))
-      : 2
+  const safeStrokeWidth = normalizeUiIconStrokeWidth(strokeWidth)
   const iconClassName = [className ?? graphFieldIconDefaultClassName].filter(Boolean).join(' ')
   const iconColor = 'var(--kg-text-secondary, #6b7280)'
   const iconStyle = {
@@ -215,7 +212,7 @@ export function FieldTypeBadgeIcon({
   const isJson = normalized.includes('json') || normalized.includes('object')
 
   return (
-    <svg
+    <svg data-kg-ui-icon="true"
       viewBox="0 0 24 24"
       aria-hidden="true"
       className={iconClassName}
@@ -295,7 +292,7 @@ export function KindPill({
   label,
   className,
   iconClassName,
-  iconStrokeWidth = 2,
+  iconStrokeWidth = UI_ICON_DEFAULTS.strokeWidth,
 }: {
   kind: GraphFieldKind
   label?: string
@@ -325,7 +322,7 @@ export function KindPill({
 export function BaseFieldIcon({
   className,
   iconClassName,
-  strokeWidth = 2,
+  strokeWidth = UI_ICON_DEFAULTS.strokeWidth,
 }: {
   className?: string
   iconClassName?: string
@@ -338,7 +335,7 @@ export function BaseFieldIcon({
       title={label}
       aria-label={label}
     >
-      <svg
+      <svg data-kg-ui-icon="true"
         viewBox="0 0 24 24"
         aria-hidden="true"
         className={iconClassName ?? graphFieldIconDefaultClassName}
@@ -370,7 +367,7 @@ export function FieldColorIcon({
   const fill = color && color.trim() ? color : '#9CA3AF'
   return (
     <span className={className ?? 'inline-flex items-center justify-center'} aria-hidden="true">
-      <svg
+      <svg data-kg-ui-icon="true"
         viewBox="0 0 24 24"
         aria-hidden="true"
         className={iconClassName ?? graphFieldIconDefaultClassName}
@@ -386,7 +383,7 @@ export function FieldOriginIcon({
   isCustom,
   className,
   iconClassName,
-  strokeWidth = 2,
+  strokeWidth = UI_ICON_DEFAULTS.strokeWidth,
 }: {
   isCustom: boolean
   className?: string
@@ -403,7 +400,7 @@ export function FieldOriginIcon({
       title={label}
       aria-label={label}
     >
-      <svg
+      <svg data-kg-ui-icon="true"
         viewBox="0 0 24 24"
         aria-hidden="true"
         className={iconClassName ?? graphFieldIconDefaultClassName}
@@ -433,7 +430,7 @@ export function VisibilityIcon({
   hidden,
   className,
   iconClassName,
-  strokeWidth = 2,
+  strokeWidth = UI_ICON_DEFAULTS.strokeWidth,
 }: {
   hidden: boolean
   className?: string
@@ -446,7 +443,7 @@ export function VisibilityIcon({
       className={className ?? 'inline-flex items-center justify-center'}
       aria-label={label}
     >
-      <svg
+      <svg data-kg-ui-icon="true"
         viewBox="0 0 24 24"
         aria-hidden="true"
         className={iconClassName ?? graphFieldIconDefaultClassName}

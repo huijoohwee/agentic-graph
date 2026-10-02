@@ -148,6 +148,43 @@
 
 ---
 
+## Global appearance authority
+
+This is the canonical application design guide; do not create a competing `DESIGN.md`.
+Implementation and release acceptance are joined in
+[UI appearance PRD–TAD–ADR–MVP–GTM](./prd-tad-adr-mvp-gtm-ui-appearance.md).
+
+| Surface | Required owner and behavior | Forbidden variants |
+|---|---|---|
+| UI icon stroke | `UI_ICON_DEFAULTS.strokeWidth = 1.5`; Settings may override globally within 0.5–4. `CanvasRootRuntime` publishes `--kg-icon-stroke-width`; Lucide and marked custom UI glyphs inherit it. | Local numeric `strokeWidth` on icon components; independent defaults of 2, 1.7 or 1.8; inline CSS stroke overrides. |
+| Icon size and alignment | `getIconSizeClass(uiIconScale)`, shared compact/default glyph sizes, centered inline-flex controls. | Ad hoc offsets or a different size for adjacent actions in the same toolbar. |
+| Selected icon action | `UI_THEME_TOKENS.button.selectedIcon`: blue glyph + soft blue background, matching Workspace View. Use `button.iconControl`; preserve a visible keyboard focus ring. | White-only selected background, selection extrusion, per-control shadows, record-row left accents on icon actions. |
+| Neutral frame/divider | `UI_THEME_TOKENS.border.outline` / `--kg-surface-border`: 1 CSS px. Give every shared edge exactly one owner. | Stacked footer/card lines, neutral 2 px borders, separate gray border palettes. |
+| Elevation | Flat controls and in-flow cards; `shadow.raised` for floating toolbars and `shadow.overlay` for menus, popovers and dialogs. Both map to shared light/dark CSS variables. | Per-feature elevation recipes, shadow-based selection, raised in-flow table/code frames. |
+| Record selection | Shared `uiSelectedRowStateClassName` / `table.rowSelected` owns the blue fill and inset left accent. | Applying record selection to Explorer navigation or settings/menu toggles; they retain their own soft selected state. |
+
+Exceptions are semantic, not compatibility aliases: authored diagrams, chart series, map overlays,
+canvas geometry, resize/drag handles, focus rings, record-selection accents and branding retain
+purpose-specific strokes or indicators. A focus ring must not be removed to make a control flat.
+Borders specified above are CSS pixels; SVG icon stroke widths use the glyph viewBox units,
+consistently across icons of the same shared size.
+
+Existing saved icon widths remain user preferences; Reset restores 1.5. Invalid/nonfinite values
+reset to the default, and valid finite values clamp to the supported range. No migration may
+silently reinterpret a deliberately saved width as an old default.
+
+`ui.appearance.sharedAuthority` traverses application TSX sources to reject numeric icon stroke
+variants and verifies the shared default/reset, selected-state and elevation owners. Changes to
+these owners require that guard plus browser checks of Workspace View, code Render/Copy, a
+data-view action and Settings in both themes. Preserve authored SVG/chart strokes in review.
+
+Application TS/TSX must not introduce `shadow-sm`, `shadow-md`, `shadow-lg`, `shadow-xl` or
+`shadow-2xl`. Use the shared flat, raised or overlay token according to surface role. The
+appearance authority test scans application sources; named SVG filters in authored canvas
+output retain their separate visual semantics.
+
+---
+
 ## Notifications (Toast)
 
 **Primary directive**: Use Toast for transient UI feedback; forbid duplicate “Banner” implementations drifting from toast behavior.

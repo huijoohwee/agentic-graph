@@ -21,7 +21,7 @@ import { emitGraphTraversalFloatingPanelOpen } from '@/features/panels/utils/gra
 import { emitMainPanelOpen } from '@/features/panels/utils/useMainPanelRect'
 import { MARKDOWN_DATA_VIEW_COPY } from '@/lib/config-copy/markdownDataViewCopy'
 
-const spotlightCardClassName = `pointer-events-auto rounded-xl border bg-[color:var(--kg-panel-bg)]/95 shadow-lg px-4 py-3 ${UI_RESPONSIVE_FLOATING_NOTICE_CARD_CLASSNAME}`
+const spotlightCardClassName = `pointer-events-auto rounded-xl border bg-[color:var(--kg-panel-bg)]/95 shadow-[var(--kg-shadow-overlay)] px-4 py-3 ${UI_RESPONSIVE_FLOATING_NOTICE_CARD_CLASSNAME}`
 const spotlightGhostButtonClassName = `${UI_THEME_TOKENS.text.tertiary} ${UI_THEME_TOKENS.button.hoverBg}`
 const spotlightActionButtonBaseClassName = `${UI_RESPONSIVE_PANEL_TEXT_ACTION_BUTTON_CLASSNAME} inline-flex items-center justify-center rounded border`
 const spotlightGhostActionButtonClassName = `${spotlightActionButtonBaseClassName} border-transparent ${spotlightGhostButtonClassName}`

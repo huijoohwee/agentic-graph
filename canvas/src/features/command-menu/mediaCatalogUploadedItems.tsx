@@ -192,7 +192,7 @@ export function UploadedMediaRow({
             <MediaThumbnailCaption format={generatedThumbnail.format} rasterFormat={generatedThumbnail.rasterFormat} timestampSeconds={generatedThumbnail.timestampSeconds} />
           </>
         ) : (
-          <Icon className={cn('m-auto h-4 w-4', UI_THEME_TOKENS.text.tertiary)} strokeWidth={1.7} aria-hidden />
+          <Icon className={cn('m-auto h-4 w-4', UI_THEME_TOKENS.text.tertiary)} aria-hidden />
         )}
       </button>
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1" aria-label={`${item.name} uploaded media summary`}>
@@ -252,7 +252,7 @@ export function UploadedMediaRow({
                   setEditingName(true)
                 }}
               >
-                <Pencil className="h-3 w-3" strokeWidth={1.7} aria-hidden />
+                <Pencil className="h-3 w-3" aria-hidden />
               </button>
             </span>
           )}
@@ -268,7 +268,7 @@ export function UploadedMediaRow({
               onDelete(item)
             }}
           >
-            <Trash2 className="h-3 w-3" strokeWidth={1.7} aria-hidden />
+            <Trash2 className="h-3 w-3" aria-hidden />
           </button>
         </header>
         <section className="flex min-w-0 flex-wrap items-center gap-1" data-kg-media-list-row-section="meta">
@@ -438,7 +438,7 @@ export function UploadedMediaCard({
                 setEditingName(true)
               }}
             >
-              <Pencil className="h-3 w-3" strokeWidth={1.7} aria-hidden />
+              <Pencil className="h-3 w-3" aria-hidden />
             </button>
           </span>
         )}
@@ -469,7 +469,7 @@ export function UploadedMediaCard({
               onDelete(item)
             }}
           >
-            <Trash2 className="h-3 w-3" strokeWidth={1.7} aria-hidden />
+            <Trash2 className="h-3 w-3" aria-hidden />
           </button>
         </li>
       </menu>

@@ -2,12 +2,12 @@
 title: "Workspace data views: Table, Kanban and Calendar"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "workspace-data-views"
-version: "1.2.0"
-prd_revision: "1.2.0"
-tad_revision: "1.2.0"
-adr_revision: "1.2.0"
-mvp_revision: "1.2.0"
-gtm_revision: "1.2.0"
+version: "1.3.4"
+prd_revision: "1.3.4"
+tad_revision: "1.3.4"
+adr_revision: "1.3.4"
+mvp_revision: "1.3.4"
+gtm_revision: "1.3.4"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Workspace data-view product function"
@@ -19,7 +19,7 @@ universal_scope: false
 lifecycle_status: "implemented"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/calendar-refinements"
+worktree_id: "agent/device-0232231d4a19/code-toolbar-border-alignment"
 agent_id: "codex-workspace-data-view-author"
 source_docs:
   - "Reference implementation: agentic-graph@8b258a4a116cd7ef70718acd28307fc4a62af897"
@@ -29,7 +29,7 @@ source_docs:
 
 # Workspace data views: Table, Kanban and Calendar
 
-`workspace-data-views@1.2.0` joins all five roles below. After the specification-first checkpoint,
+`workspace-data-views@1.3.4` joins all five roles below. After the specification-first checkpoint,
 the operator authorized implementation on 2026-10-02. Shared settings, versioned queries and native
 Calendar are now implemented in the existing owners. B records the historical baseline; the
 implementation checkpoint below separates verified behavior from remaining acceptance evidence.
@@ -447,3 +447,145 @@ settings generation also reproduced a local preview reload. The existing artifac
 identical content while retaining staged writes for changes; its regression test checks unchanged
 inode/mtime and changed-byte persistence. This removes one concurrent-verification reload source;
 the exact candidate's protected CI remains the release authority, not that diagnosis alone.
+
+
+## Checkpoint — Calendar record details, 2026-10-02
+
+`workspace-data-views@1.2.1` joins the five roles for the five record-dialog browser comments.
+The native successor scope is `#calendar-record-dialog`; published predecessors remain immutable.
+
+- **PRD / value:** keep record details centered and column actions accessible, then retain the
+  operator's place in the calendar after closing details. The close action uses the existing X icon
+  with an accessible name and a 44-pixel target.
+- **TAD / ownership:** `MarkdownDataViewCalendarView.tsx` separates selected record identity from
+  dialog visibility. Its scoped stylesheet centers the native modal within the viewport and bounds
+  its scrolling height. Shared `DetailsMenu.tsx` portals to the trigger's open dialog, falling back
+  to the document body outside dialogs; viewport clamping and nonblocking pointer behavior remain.
+- **ADR / choice:** reuse the native dialog top layer instead of increasing a body portal's z-index.
+  Keyboard activation of the column summary is accepted without changing pointer label guards.
+  Escape closes the open menu first and returns focus to its trigger. A small shared
+  `rowSelectionStyle.ts` extracts the existing hierarchy-row accent and selected background; both
+  span rows and calendar record buttons use that owner with a four-pixel inline-start border.
+  Record selection is presentation state and never writes source or persisted view configuration.
+- **MVP / acceptance:** the dialog is centered on desktop and a narrow viewport; a menu extends
+  beyond its short dialog without being obscured. Closing by icon or Escape retains the record's
+  accent/highlight, selecting a different record transfers it, and repeated open/close works.
+  Focused interaction tests cover modal menu ownership, Escape, icon naming, selection and zero
+  source writes; live browser checks cover geometry, hit testing and focus restoration.
+- **GTM / learning:** retain the voluntary pilot and setup-price hypothesis. Observe wrong-record
+  reopenings and menu failures during the existing dated-record journey; no conversion claim.
+
+Bound: eight files, 24 KB of added text, approximately 20 active minutes plus required checks;
+zero dependencies or paid resources. The shared style helper adds a small synchronous module to
+existing hierarchy consumers; Calendar remains lazy. Production and physical-device verification
+remain separate from this local fix; exact validation and protected release receipts accompany it.
+
+Validation: focused Calendar interactions and the existing menu toggle guard pass; TypeScript passes.
+Live checks at 1351 × 952 and 390 × 844 confirm zero center offset, a 44 × 44 close target, and
+menu hit testing above the dialog and beyond its bounds. Mobile menu bounds remain in the viewport.
+Escape and the close icon restore focus to the selected record. Protected CI remains the separate
+source-integration gate; no Production runtime proof follows from these local observations.
+
+
+## Checkpoint — Shared row selection, 2026-10-02
+
+`workspace-data-views@1.3.1` joins five roles for the operator's traversal/reuse annotation.
+Native successor: `/refactor #shared-row-selection @codex`; baseline is
+`b7efa896e7d7f21733f5db39180b8ef67c76e088`. The previous checkpoint remains historical;
+its local `rowSelectionStyle.ts` helper is removed by this increment.
+
+- **PRD / value:** selected records, list/tree rows and command choices retain one visible
+  highlight and left accent, including on hover. The user can identify their current item without
+  interpreting different rings, outlines, category stripes or background strengths on each surface.
+- **TAD / ownership:** extend `grph-shared/src/ui/selectedRowClasses.ts` and its existing
+  `themeTokens.ts` authority. Calendar, hierarchy/span rows, table rows, search results, dashboard
+  records, gallery/Kanban cards, semantic outlines, block-library and command lists consume it.
+  Existing TOC, history, design trees and graph outlines inherit the record owner. Explorer file
+  navigation and settings/menu choices retain the established shared soft background/border style.
+  GitGraph and diagram command rows lose their separate inset/ring/background variant. The fast
+  canvas grid imports the same owner’s paint constants; pinned DOM cells inherit the row background
+  and the first cell receives the accent so sticky backgrounds cannot obscure selection.
+- **ADR / choice:** use the existing theme's selected-row token for a 22% highlight and four-pixel
+  inset left accent. Transparent borders preserve the existing helper contract; the inset avoids
+  moving content. Remove the duplicate style helper, unused selected-border token and row-local
+  selection literals. Keep domain colors in icons/swatches, keyboard focus outlines, dashed drop
+  targets, canvas geometric bounds and date-cell selection: these represent distinct interactions.
+  The follow-up correction explicitly excludes Explorer file selection and Autosave/settings
+  choices from the record accent. The shared class owner selects between these two semantic roles;
+  no component introduces local paint. Typography, icons, state callbacks and source writers stay. No new
+  module, storage schema, API, package, asset or external runtime dependency is introduced.
+- **MVP / VCC:** selecting and hovering a Calendar record uses the same computed highlight/accent
+  as another native row; closing details retains selection. Table selection remains visible through
+  pinned cells. The existing selected-row authority test now checks DOM/canvas paint agreement and
+  scans source for retired helpers, tokens and row/card selection literals. Its narrow exclusions
+  cover canvas geometry, map markers and date cells; it is a regression guard, not a complete CSS
+  parser or proof of every interactive surface. Browser checks target desktop and narrow viewport.
+- **GTM / learning:** retain the existing voluntary pilot and setup-price hypothesis; observe
+  wrong-item reopening and time to locate the current row. This consistency fix establishes no
+  willingness-to-pay, revenue or production-readiness claim.
+
+Bound refreshed to 28 files, 55 KB diff and 50 active minutes plus required checks; zero paid
+resources. Reservation recovery preserved the authored patch while the native pending expansion
+was reconciled; no user edits were reverted. Canvas modules remain in their existing load paths.
+The source-wide guard, TypeScript and affected-owner checks plus browser evidence determine local
+acceptance; final exact candidate and protected integration receipts are retained separately.
+Next: author verifies these conditions, publishes the admitted candidate and rechecks protected CI;
+Production, physical-device/offline parity and formal performance acceptance remain separate.
+
+Validation so far: `ui.selectedRow.authority.forbidsLegacyDuplicateVariants` and
+`workspaceDataView.calendar.interactions` pass; Canvas TypeScript passes. The live desktop DOM
+confirmed the record accent before the operator excluded Explorer and settings choices.
+The follow-up guard now requires their original soft selection while retaining record paint.
+Exact-head affected checks and remaining browser observations are recorded in the candidate's
+private verification receipt, without upgrading Production readiness.
+
+Correction acceptance: Explorer file rows and settings choices (including Autosave and Storage
+Sync) use their previous shared selection classes with no inset left accent. Record selection
+continues to use the canonical accent/highlight; tests check both semantic roles. The first affected
+run was interrupted for this operator correction and supplies no final-candidate green claim.
+
+Correction verification: the focused authority and Calendar interaction checks pass. Live DOM
+inspection confirms Explorer, Autosave and Storage Sync use their original soft background/border
+and `box-shadow: none`; the user-facing settings retain their On values. No settings value was changed.
+
+The affected responsive-surface check exposed an outdated Kanban ownership assertion after the
+group projection extraction. Its source contract now targets `workspaceDataViewGroups.ts` and
+the view's existing delegation; group ordering behavior remains unchanged. Final acceptance
+requires rerunning the affected suite with this assertion repair and the restoration together.
+
+`workspace-data-views@1.3.2` carries the five-role contract and operator exclusions forward.
+The Mission browser check caught a header/row geometry mismatch: the header retained its old
+four-pixel left reservation while selected and neutral rows now share one-pixel borders.
+`AgentRunSpanViews.tsx` removes that legacy reservation and matches both horizontal row borders.
+This preserves metric-column alignment and the shared inset accent without changing selection,
+labels, resources or navigation/settings styling. The existing six-column browser assertion is
+the acceptance gate; the published predecessor's auto-merge was disabled pending this repair.
+Repair bound: one source line plus this joined checkpoint, no new module, 10 active minutes plus
+required checks, zero spend. Standard and XR checks passed on the predecessor; final acceptance
+requires exact successor evidence. GTM scope and unverified Production/device claims remain unchanged.
+
+## Checkpoint — Flat selected code output control, 2026-10-02
+
+`workspace-data-views@1.3.3` carries the five-role contract forward. PRD: selected code-block
+display controls remain identifiable without a raised shadow. TAD: the existing shared
+`AnnotateDisplayModeToggle` active class owns all three modes. ADR: remove its `shadow-sm` token;
+keep active background, text color, semantics, and focus behavior. MVP: selected Render, Inline,
+and Beside controls have no box shadow in the local browser; mode switching still works. GTM:
+retain the existing voluntary pilot; this polish adds no conversion claim. Bound: two files,
+one source line, 10 active minutes plus required checks, zero dependencies or spend. Protected
+integration and Production/device verification remain separate receipts.
+
+## Checkpoint — Code and data-view line alignment, 2026-10-02
+
+`workspace-data-views@1.3.4` joins the five roles for the operator's line-weight review. PRD:
+adjacent code actions use one icon stroke and code/data cards present one frame weight. TAD:
+`ClipboardCopyButton`, `MarkdownCodeBlock`, and the table footer own these paint details.
+ADR: use the existing 1.5 px action stroke, remove the code card shadow, and omit the terminal
+footer cell's bottom rule where the enclosing card already has one. MVP: computed strokes and
+borders match in the local preview; the final footer has one line while intervening footer rows
+retain separators. GTM: no change to the voluntary pilot or pricing hypothesis. Bound: four
+files, under 8 KB diff, 15 active minutes plus required checks, zero dependencies or spend.
+
+## Global appearance continuation — 2026-10-02
+
+The next implemented UI increment is joined under [ui-appearance@1.0.0](./prd-tad-adr-mvp-gtm-ui-appearance.md): shared 1.5 icon stroke, 1 px borders, flat selected icon controls with blue fill, and global enforcement. Earlier checkpoints above remain historical evidence; the new design guide supersedes local icon/elevation recipes.

@@ -1,8 +1,11 @@
 import React from 'react'
 import { Check, Copy } from 'lucide-react'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { getIconSizeClass } from '@/lib/ui/icons'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 
 export function ClipboardCopyButton({ text, disabled = false }: { text: string; disabled?: boolean }) {
+  const iconSizeClass = getIconSizeClass(useGraphStore(s => s.uiIconScale))
   const [copied, setCopied] = React.useState(false)
   const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -27,12 +30,12 @@ export function ClipboardCopyButton({ text, disabled = false }: { text: string; 
   return (
     <button
       aria-label="Copy code to clipboard"
-      className={`p-1.5 rounded-md transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.text.secondary}`}
+      className={`${UI_THEME_TOKENS.button.iconControl} ${UI_THEME_TOKENS.button.square} ${disabled ? 'opacity-50 cursor-not-allowed' : UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.text.secondary}`}
       onClick={handleCopy}
       type="button"
       disabled={disabled}
     >
-      {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+      {copied ? <Check className={`${iconSizeClass} text-green-500`} /> : <Copy className={iconSizeClass} />}
     </button>
   )
 }

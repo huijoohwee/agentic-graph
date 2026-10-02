@@ -85,7 +85,7 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
 
   return (
     <menu
-      className={[UI_RESPONSIVE_COLUMN_HEADER_MENU_PANEL_CLASSNAME, 'rounded border shadow-sm p-1', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}
+      className={[UI_RESPONSIVE_COLUMN_HEADER_MENU_PANEL_CLASSNAME, 'rounded border shadow-[var(--kg-shadow-overlay)] p-1', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}
       aria-label={props.ariaLabel}
     >
       <li className="list-none">
@@ -154,7 +154,7 @@ export const ColumnHeaderMenu = React.memo(function ColumnHeaderMenu(props: Colu
             }
             menu={({ close }) => (
               <section
-                className={[UI_RESPONSIVE_COLUMN_HEADER_FILTER_PANEL_CLASSNAME, 'rounded border shadow-sm p-2', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}
+                className={[UI_RESPONSIVE_COLUMN_HEADER_FILTER_PANEL_CLASSNAME, 'rounded border shadow-[var(--kg-shadow-overlay)] p-2', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}
                 aria-label="Filter editor"
               >
                 <header className="mb-2 flex min-w-0 items-center gap-2">

@@ -124,8 +124,8 @@ export async function testToastHostMessageIsSelectableAndCopiesSanitizedText() {
     if (card.getAttribute('role') !== 'status' || card.getAttribute('data-kg-selection-surface') !== 'toast') {
       throw new Error('expected toast article to expose a named, selection-visible notification surface')
     }
-    if (!card.classList.contains('pointer-events-auto')) {
-      throw new Error('expected toast article to be hit-testable for notification interaction')
+    if (!card.classList.contains('pointer-events-none')) {
+      throw new Error('expected empty notification frames to pass workspace input through')
     }
 
     const message = card.querySelector('p[data-kg-toast-message="toast:copy"]')

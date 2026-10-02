@@ -348,7 +348,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
                       onPointerDown={() => setToolbarHeaderElevated(false)}
                     >
                       <section
-                        className={`absolute inset-y-0 left-0 pointer-events-auto overflow-hidden bg-[var(--kg-panel-bg)] ${workspaceCanvasPaneVisible ? 'shadow-2xl' : ''}`}
+                        className={`absolute inset-y-0 left-0 pointer-events-auto overflow-hidden bg-[var(--kg-panel-bg)] ${workspaceCanvasPaneVisible ? 'shadow-[var(--kg-shadow-overlay)]' : ''}`}
                         style={{ width: workspaceCanvasPaneVisible ? workspacePaneBoundaryCss : '100%' }}
                         aria-label="Workspace left pane"
                         data-kg-workspace-left-pane="1"

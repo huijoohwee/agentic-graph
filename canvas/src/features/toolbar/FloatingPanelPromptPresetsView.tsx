@@ -206,7 +206,7 @@ export function FloatingPanelPromptPresetsView({
               onClick={() => { void invokePreset(preset) }}
             >
               <span className={floatingPanelCatalogCompactIconFrameClassName()} aria-hidden="true">
-                <MainPanelTypeIcon iconKey="floatingPanel.promptPresets" className="h-3.5 w-3.5" strokeWidth={1.7} />
+                <MainPanelTypeIcon iconKey="floatingPanel.promptPresets" className="h-3.5 w-3.5" />
               </span>
               <span className="min-w-0">
                 <span className={floatingPanelCatalogCompactRowTitleClassName('block')}>{preset.label}</span>

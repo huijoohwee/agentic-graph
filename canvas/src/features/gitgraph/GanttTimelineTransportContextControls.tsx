@@ -49,7 +49,7 @@ export function GanttTimelineTransportContextControls(args: GanttTimelineTranspo
                 data-kg-video-sequence-export-session-retry={session.retryState}
                 onClick={session.onRetry}
               >
-                <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} aria-hidden={true} />
+                <RotateCcw className="h-3.5 w-3.5" aria-hidden={true} />
               </button>
             </article>
           ))}

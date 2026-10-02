@@ -1,7 +1,9 @@
 @layer base {
   body { font-size: var(--kg-text-sm); }
   h3, h4 { font-size: var(--kg-text-base); line-height: var(--kg-text-base-line); }
-  .lucide {
+  .lucide,
+  [data-kg-ui-icon] {
+    stroke-width: var(--kg-icon-stroke-width, 1.5);
     flex-shrink: 0;
     vertical-align: -0.125em;
   }

@@ -46,7 +46,7 @@ export function XrNativeControllerDemoHud() {
       <span className="sr-only">Physics runtime {runtime.phase} with {runtime.mode} selected.</span>
       <output
         aria-live="polite"
-        className={`absolute left-1/2 top-[max(4rem,env(safe-area-inset-top))] w-max max-w-[calc(100%-1rem)] -translate-x-1/2 rounded-full border px-4 py-2 text-center text-sm font-bold shadow-lg backdrop-blur-sm ${runtime.objective === 'complete' ? 'border-amber-200 bg-amber-300/95 text-amber-950' : 'border-sky-100 bg-sky-600/92 text-white'}`}
+        className={`absolute left-1/2 top-[max(4rem,env(safe-area-inset-top))] w-max max-w-[calc(100%-1rem)] -translate-x-1/2 rounded-full border px-4 py-2 text-center text-sm font-bold shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm ${runtime.objective === 'complete' ? 'border-amber-200 bg-amber-300/95 text-amber-950' : 'border-sky-100 bg-sky-600/92 text-white'}`}
         data-kg-xr-playground-objective-copy="1"
       >
         {OBJECTIVE_COPY[runtime.objective]}
@@ -59,7 +59,7 @@ export function XrNativeControllerDemoHud() {
           type="button"
           onClick={runtime.phase === 'running' ? pauseXrNativeControllerDemo : resumeXrNativeControllerDemo}
           disabled={runtime.phase === 'off'}
-          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/75 bg-sky-500/95 px-4 py-2 text-sm font-semibold text-white shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/75 bg-sky-500/95 px-4 py-2 text-sm font-semibold text-white shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           data-kg-xr-playground-pause="1"
         >
           {runtime.phase === 'running' ? <Pause className="size-4" aria-hidden /> : <Play className="size-4" aria-hidden />}
@@ -70,7 +70,7 @@ export function XrNativeControllerDemoHud() {
           onClick={() => stepPausedXrNativeControllerDemo()}
           disabled={runtime.phase !== 'paused'}
           title="Pause, then advance one physics tick"
-          className="inline-flex min-h-11 min-w-11 items-center gap-2 rounded-full border border-white/75 bg-sky-500/95 px-4 py-2 text-sm font-semibold text-white shadow-lg disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          className="inline-flex min-h-11 min-w-11 items-center gap-2 rounded-full border border-white/75 bg-sky-500/95 px-4 py-2 text-sm font-semibold text-white shadow-none disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           data-kg-xr-playground-step="1"
         >
           <StepForward className="size-4" aria-hidden />
@@ -84,7 +84,7 @@ export function XrNativeControllerDemoHud() {
         <button
           type="button"
           onClick={resetSharedXrNativeControllerDemo}
-          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-amber-100 bg-amber-300/95 px-4 py-2 text-sm font-semibold text-amber-950 shadow-lg transition hover:bg-amber-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-amber-100 bg-amber-300/95 px-4 py-2 text-sm font-semibold text-amber-950 shadow-none transition hover:bg-amber-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           data-kg-xr-playground-replay={runtime.objective === 'complete' ? '1' : undefined}
           data-kg-xr-playground-reset="1"
         >
@@ -95,7 +95,7 @@ export function XrNativeControllerDemoHud() {
           type="button"
           aria-pressed={runtime.mode === 'ball'}
           onClick={() => chooseController('ball')}
-          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/75 bg-sky-500/95 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-sky-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white aria-pressed:ring-[3px] aria-pressed:ring-yellow-300"
+          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/75 bg-sky-500/95 px-4 py-2 text-sm font-semibold text-white shadow-none transition hover:bg-sky-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white aria-pressed:ring-[3px] aria-pressed:ring-yellow-300"
           data-kg-xr-playground-select="ball"
         >
           <span
@@ -109,7 +109,7 @@ export function XrNativeControllerDemoHud() {
           type="button"
           aria-pressed={runtime.mode === 'rocket'}
           onClick={() => chooseController('rocket')}
-          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/75 bg-sky-500/95 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-sky-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white aria-pressed:ring-[3px] aria-pressed:ring-yellow-300"
+          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/75 bg-sky-500/95 px-4 py-2 text-sm font-semibold text-white shadow-none transition hover:bg-sky-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white aria-pressed:ring-[3px] aria-pressed:ring-yellow-300"
           data-kg-xr-playground-select="rocket"
         >
           <Rocket className="size-4" aria-hidden />

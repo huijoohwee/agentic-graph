@@ -155,7 +155,7 @@ export function SpatialAssetToolsPanel() {
               onClick={() => setSpatialCapturePrimaryMode(id)}
               data-kg-media-3d-primary-mode={id}
             >
-              <Icon className="size-4" strokeWidth={1.8} aria-hidden="true" />
+              <Icon className="size-4" aria-hidden="true" />
             </button>
           ))}
         </nav>
@@ -175,7 +175,7 @@ export function SpatialAssetToolsPanel() {
               onClick={() => setSpatialCaptureTool(id)}
               data-kg-media-3d-spatial-tool={id}
             >
-              <Icon className="size-4" strokeWidth={1.7} aria-hidden="true" />
+              <Icon className="size-4" aria-hidden="true" />
             </button>
           ))}
         </nav>

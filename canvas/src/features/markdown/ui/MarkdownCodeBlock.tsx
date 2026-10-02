@@ -261,7 +261,7 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
     onReorder: (source, target, position) => opts.onReorderLineBlock?.(source, target, position),
   })
 
-  const documentCodeFrameClassName = `rounded-lg border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} overflow-hidden shadow-sm`
+  const documentCodeFrameClassName = `rounded-lg border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} overflow-hidden`
   const figureFrameClassName = cardPreviewMode ? CARD_MARKDOWN_PREVIEW_FRAME_CLASS_NAME : documentCodeFrameClassName
   const figureClassName = `${figureFrameClassName} highlight highlight-source-${lang} transition-shadow duration-200`
   const codeBlockSpacingClassName = cardPreviewMode
@@ -425,7 +425,7 @@ export const MarkdownCodeBlock = React.memo(function MarkdownCodeBlock({
             toggleWordWrap()
           }}
         >
-          <WrapText className="w-3.5 h-3.5" strokeWidth={1.5} />
+          <WrapText className="w-3.5 h-3.5" />
         </button>
         <AnnotateDisplayModeToggle
           baseMode={baseMode}

@@ -1,3 +1,4 @@
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import React from 'react'
 import type { MarkdownDataView } from './markdownDataViewModel'
 import type { MarkdownDataViewColumnType } from './markdownDataViewColumnType'
@@ -397,7 +398,7 @@ export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTab
             const isNestedRowCollapsed = collapsedNestedRowIds.has(r.id)
             return <tr
               key={r.id}
-              className={[`${UI_THEME_TOKENS.table.rowHoverHighlight} transition-colors`, onActivateRow ? 'cursor-pointer' : '', props.selectedRowId === r.id ? 'bg-blue-50/80 outline outline-1 -outline-offset-1 outline-[var(--kg-primary)]' : ''].join(' ')}
+              className={[`${UI_THEME_TOKENS.table.rowHoverHighlight} transition-colors`, onActivateRow ? 'cursor-pointer' : '', uiSelectedRowStateClassName(props.selectedRowId === r.id)].join(' ')}
               aria-selected={props.selectedRowId === undefined ? undefined : props.selectedRowId === r.id}
               tabIndex={onActivateRow ? 0 : undefined}
               onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onActivateRow?.(r.id) } }}
@@ -536,7 +537,7 @@ export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTab
             <tr>
               <td
                 colSpan={visibleColumnMeta.length + (hasNestedRowHierarchy ? 1 : 0) + (canMutate && props.onAddColumn ? 1 : 0)}
-                className={`${cellPaddingClassName} border-b ${UI_THEME_TOKENS.table.cellBorder}`}
+                className={`${cellPaddingClassName} ${hiddenRowCount > 0 ? `border-b ${UI_THEME_TOKENS.table.cellBorder}` : ''}`}
               >
                 <button
                   type="button"
@@ -553,7 +554,7 @@ export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTab
             <tr>
               <td
                 colSpan={visibleColumnMeta.length + (hasNestedRowHierarchy ? 1 : 0) + (canMutate && props.onAddColumn ? 1 : 0)}
-                className={`${cellPaddingClassName} border-b ${UI_THEME_TOKENS.table.cellBorder}`}
+                className={cellPaddingClassName}
               >
                 <button
                   type="button"

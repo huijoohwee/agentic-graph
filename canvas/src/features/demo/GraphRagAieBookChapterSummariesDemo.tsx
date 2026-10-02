@@ -45,7 +45,7 @@ const GraphRagAieBookChapterSummariesDemo = () => {
   return (
     <section className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 p-8">
       <section className={AIE_BOOK_DEMO_CONTENT_CLASS_NAME}>
-        <section className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
+        <section className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-[var(--kg-shadow-overlay)] border border-white/20">
           <section className="flex items-center gap-3 mb-2">
             <BookOpen className="w-10 h-10 text-indigo-400" />
             <h1 className="text-4xl font-bold text-white">GraphRAG Pipeline: AI Engineering Book</h1>
@@ -65,7 +65,7 @@ const GraphRagAieBookChapterSummariesDemo = () => {
                   onClick={() => setSelectedChapter(key)}
                   className={`px-4 py-3 rounded-lg font-medium transition-all text-left ${
                     selectedChapter === key
-                      ? 'bg-indigo-500 text-white shadow-lg scale-105'
+                      ? 'bg-indigo-500 text-white shadow-none scale-105'
                       : 'bg-white/10 text-white/70 hover:bg-white/20'
                   }`}
                 >
@@ -83,7 +83,7 @@ const GraphRagAieBookChapterSummariesDemo = () => {
                 onClick={() => setStep(i)}
                 className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
                   clampedStep === i
-                    ? 'bg-indigo-500 text-white shadow-lg scale-105'
+                    ? 'bg-indigo-500 text-white shadow-none scale-105'
                     : 'bg-white/10 text-white/70 hover:bg-white/20'
                 }`}
               >

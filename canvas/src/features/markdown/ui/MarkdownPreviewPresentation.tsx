@@ -466,7 +466,7 @@ export function MarkdownPreviewPresentation(props: MarkdownPreviewPresentationPr
           />
           <section className="w-full h-full flex" onContextMenu={onContextMenu}>
             <aside
-              className={`absolute left-0 top-0 h-full z-[50] transition-transform duration-300 ease-in-out ${UI_THEME_TOKENS.panel.bg} border-r ${UI_THEME_TOKENS.panel.divider} shadow-xl ${
+              className={`absolute left-0 top-0 h-full z-[50] transition-transform duration-300 ease-in-out ${UI_THEME_TOKENS.panel.bg} border-r ${UI_THEME_TOKENS.panel.divider} shadow-[var(--kg-shadow-overlay)] ${
                 showSlidesSidebar || isSidebarHovered ? 'translate-x-0' : '-translate-x-full'
               }`}
               onMouseEnter={handleSidebarMouseEnter}

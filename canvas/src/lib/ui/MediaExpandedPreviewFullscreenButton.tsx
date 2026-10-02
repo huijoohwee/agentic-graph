@@ -35,7 +35,7 @@ export function MediaExpandedPreviewFullscreenButton(props: MediaExpandedPreview
         toggleMediaExpandedPreviewFullscreen(targetRef.current)
       }}
     >
-      <Icon className="h-4 w-4" strokeWidth={1.7} aria-hidden />
+      <Icon className="h-4 w-4" aria-hidden />
     </button>
   )
 }

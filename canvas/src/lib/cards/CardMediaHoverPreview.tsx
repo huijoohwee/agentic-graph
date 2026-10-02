@@ -84,7 +84,7 @@ export function CardMediaHoverPreview(props: {
       contentSize={{ width: 320, height: isAudio ? 96 : 180 }}
       contentClassName={[
         UI_RESPONSIVE_ANCHOR_PREVIEW_OVERLAY_CLASSNAME,
-        'p-0 overflow-hidden rounded border shadow-xl',
+        'p-0 overflow-hidden rounded border shadow-[var(--kg-shadow-overlay)]',
         UI_THEME_TOKENS.panel.border,
       ].join(' ')}
       contentDataAttrs={{
