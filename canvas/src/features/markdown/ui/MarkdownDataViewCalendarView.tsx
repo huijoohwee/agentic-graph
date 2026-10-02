@@ -1,9 +1,11 @@
 import React from 'react'
+import { X } from 'lucide-react'
 import type { MarkdownDataView, MarkdownDataViewRow } from './markdownDataViewModel'
 import type { WorkspaceDataViewConfig } from '@/features/markdown-workspace/main/viewer/workspaceDataViewConfig'
 import { DataViewAction } from '@/features/markdown-workspace/main/viewer/WorkspaceDataViewSettingsActions'
 import { PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { rowSelectionStyle } from '@/lib/ui/rowSelectionStyle'
 import { MarkdownDataViewTableView } from './MarkdownDataViewTableView'
 import { dayInDataViewZone, isDataViewTimeZone, parseDataViewDate } from '@/features/markdown-workspace/main/viewer/workspaceDataViewDates'
 import { CALENDAR_DAY_PREVIEW_SIZE, CALENDAR_PAGE_SIZE, calendarDateLabel, defaultDataViewCalendar, projectDataViewCalendar, visibleCalendarDays } from './markdownDataViewCalendar'
@@ -25,6 +27,7 @@ export default function MarkdownDataViewCalendarView(props: {
   const [selectedDay, setSelectedDay] = React.useState<string | null>(null)
   const [creatingDay, setCreatingDay] = React.useState<string | null>(null)
   const [selectedRowId, setSelectedRowId] = React.useState<string | null>(null)
+  const [recordOpen, setRecordOpen] = React.useState(false)
   const [pages, setPages] = React.useState<Record<string, number>>({})
   const dialog = React.useRef<HTMLDialogElement>(null)
   const composer = React.useRef<HTMLFormElement>(null)
@@ -38,8 +41,8 @@ export default function MarkdownDataViewCalendarView(props: {
   const canCreateDate = props.canMutate && !!calendar.startColumnId && !projection.error && props.config.columnTypesById?.[calendar.startColumnId] === 'date'
   React.useEffect(() => { setPages({}) }, [calendar.month, props.view])
   React.useEffect(() => { composer.current?.querySelector('input')?.focus() }, [creatingDay])
-  React.useEffect(() => { if (selectedRow && !dialog.current?.open) dialog.current?.showModal(); else if (!selectedRow) dialog.current?.close() }, [selectedRow])
-  const recordButton = (row: MarkdownDataViewRow) => <li key={row.id} className="list-none min-w-0"><button type="button" className="kg-calendar-record" aria-label={`Open record: ${title(row)}`} title={title(row)} onClick={() => setSelectedRowId(row.id)}>{title(row)}</button></li>
+  React.useEffect(() => { if (recordOpen && selectedRow && !dialog.current?.open) dialog.current?.showModal(); else if (!recordOpen || !selectedRow) dialog.current?.close() }, [recordOpen, selectedRow])
+  const recordButton = (row: MarkdownDataViewRow) => <li key={row.id} className="list-none min-w-0"><button type="button" className="kg-calendar-record" style={rowSelectionStyle(selectedRowId === row.id)} aria-pressed={selectedRowId === row.id} aria-haspopup="dialog" aria-label={`Open record: ${title(row)}`} title={title(row)} onClick={() => { setSelectedRowId(row.id); setRecordOpen(true) }}>{title(row)}</button></li>
   const pagedList = (rows: MarkdownDataViewRow[], key: string) => {
     const page = Math.min(pages[key] ?? 0, Math.max(0, Math.ceil(rows.length / CALENDAR_PAGE_SIZE) - 1))
     return <>
@@ -104,9 +107,9 @@ export default function MarkdownDataViewCalendarView(props: {
     </aside>}
     <details><summary className="cursor-pointer p-2">Unscheduled ({projection.unscheduled.length})</summary>{pagedList(projection.unscheduled, 'Unscheduled')}</details>
     <details><summary className="cursor-pointer p-2">Invalid dates ({projection.invalid.length})</summary><p className="text-xs">Use valid YYYY-MM-DD dates or timestamps with offsets. End must follow start using the same format.</p>{pagedList(projection.invalid.map(entry => entry.row), 'Invalid dates')}</details>
-    <dialog ref={dialog} onCancel={() => setSelectedRowId(null)} onClose={() => setSelectedRowId(null)} className={['w-[min(90vw,60rem)] max-h-[85vh] overflow-auto rounded border p-3', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.text.primary].join(' ')} aria-label="Record details">
-      <header className="flex justify-between gap-2 mb-2"><h3>{selectedRow ? title(selectedRow) : 'Record details'}</h3><DataViewAction onClick={() => setSelectedRowId(null)}>Close record</DataViewAction></header>
-      {selectedRow && <MarkdownDataViewTableView view={{ ...props.view, rows: [selectedRow] }} canMutate={props.canMutate} onUpdateCell={props.onUpdateCell} onNewRecord={props.onNewRecord} visibleColumnIds={props.config.visibleColumnIds} columnTypesById={props.config.columnTypesById} />}
+    <dialog ref={dialog} onCancel={() => setRecordOpen(false)} onClose={() => { if (!dialog.current?.open) setRecordOpen(false) }} className={['kg-calendar-record-dialog rounded border p-3', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.text.primary].join(' ')} aria-label="Record details">
+      <header className="flex items-center justify-between gap-2 mb-2"><h3 className="min-w-0 break-words">{selectedRow ? title(selectedRow) : 'Record details'}</h3><DataViewAction className="inline-flex min-w-11 shrink-0 items-center justify-center sm:min-h-11" aria-label="Close record" title="Close record" onClick={() => setRecordOpen(false)}><X className="h-4 w-4" role="img" aria-label="Close record icon" /></DataViewAction></header>
+      {recordOpen && selectedRow && <MarkdownDataViewTableView view={{ ...props.view, rows: [selectedRow] }} canMutate={props.canMutate} onUpdateCell={props.onUpdateCell} onNewRecord={props.onNewRecord} visibleColumnIds={props.config.visibleColumnIds} columnTypesById={props.config.columnTypesById} />}
     </dialog>
   </section>
 }

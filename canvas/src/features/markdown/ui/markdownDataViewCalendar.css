@@ -22,9 +22,11 @@
 .kg-calendar-day > section { min-height: 9rem; display: flex; flex-direction: column; gap: .25rem; padding: .4rem; }
 .kg-calendar-date { align-self: flex-start; min-width: 2rem; min-height: 2rem; border-radius: .4rem; font-size: .75rem; }
 .kg-calendar-record { display: block; width: 100%; min-height: 1.65rem; padding: .25rem .4rem; border-radius: .3rem;
-  background: color-mix(in srgb, var(--calendar-accent) 12%, var(--kg-panel-bg)); border-inline-start: 2px solid var(--calendar-accent);
+  background: color-mix(in srgb, var(--calendar-accent) 12%, var(--kg-panel-bg)); border-inline-start: 4px solid transparent;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: start; font-size: .75rem; }
 .kg-calendar-record:hover { background: color-mix(in srgb, var(--calendar-accent) 23%, var(--kg-panel-bg)); }
+.kg-calendar-record-dialog { position: fixed; inset: 0; margin: auto; width: min(90vw, 60rem); max-width: calc(100vw - 2rem);
+  max-height: 85dvh; overflow: auto; background: var(--kg-panel-bg, white); box-shadow: 0 16px 48px #0003; }
 .kg-calendar-more, .kg-calendar-new-row { min-height: 1.75rem; padding: .25rem .4rem; font-size: .75rem; text-align: start; border-radius: .3rem; }
 .kg-calendar-new-row { margin-block-start: auto; opacity: 0; pointer-events: none; color: var(--kg-text-secondary); }
 .kg-calendar-day:is(:hover, :focus-within) .kg-calendar-new-row { opacity: 1; pointer-events: auto; }

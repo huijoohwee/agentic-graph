@@ -2,12 +2,12 @@
 title: "Workspace data views: Table, Kanban and Calendar"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "workspace-data-views"
-version: "1.2.0"
-prd_revision: "1.2.0"
-tad_revision: "1.2.0"
-adr_revision: "1.2.0"
-mvp_revision: "1.2.0"
-gtm_revision: "1.2.0"
+version: "1.2.1"
+prd_revision: "1.2.1"
+tad_revision: "1.2.1"
+adr_revision: "1.2.1"
+mvp_revision: "1.2.1"
+gtm_revision: "1.2.1"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Workspace data-view product function"
@@ -19,7 +19,7 @@ universal_scope: false
 lifecycle_status: "implemented"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/calendar-refinements"
+worktree_id: "agent/device-0232231d4a19/calendar-record-dialog"
 agent_id: "codex-workspace-data-view-author"
 source_docs:
   - "Reference implementation: agentic-graph@8b258a4a116cd7ef70718acd28307fc4a62af897"
@@ -29,7 +29,7 @@ source_docs:
 
 # Workspace data views: Table, Kanban and Calendar
 
-`workspace-data-views@1.2.0` joins all five roles below. After the specification-first checkpoint,
+`workspace-data-views@1.2.1` joins all five roles below. After the specification-first checkpoint,
 the operator authorized implementation on 2026-10-02. Shared settings, versioned queries and native
 Calendar are now implemented in the existing owners. B records the historical baseline; the
 implementation checkpoint below separates verified behavior from remaining acceptance evidence.
@@ -447,3 +447,41 @@ settings generation also reproduced a local preview reload. The existing artifac
 identical content while retaining staged writes for changes; its regression test checks unchanged
 inode/mtime and changed-byte persistence. This removes one concurrent-verification reload source;
 the exact candidate's protected CI remains the release authority, not that diagnosis alone.
+
+
+## Checkpoint — Calendar record details, 2026-10-02
+
+`workspace-data-views@1.2.1` joins the five roles for the five record-dialog browser comments.
+The native successor scope is `#calendar-record-dialog`; published predecessors remain immutable.
+
+- **PRD / value:** keep record details centered and column actions accessible, then retain the
+  operator's place in the calendar after closing details. The close action uses the existing X icon
+  with an accessible name and a 44-pixel target.
+- **TAD / ownership:** `MarkdownDataViewCalendarView.tsx` separates selected record identity from
+  dialog visibility. Its scoped stylesheet centers the native modal within the viewport and bounds
+  its scrolling height. Shared `DetailsMenu.tsx` portals to the trigger's open dialog, falling back
+  to the document body outside dialogs; viewport clamping and nonblocking pointer behavior remain.
+- **ADR / choice:** reuse the native dialog top layer instead of increasing a body portal's z-index.
+  Keyboard activation of the column summary is accepted without changing pointer label guards.
+  Escape closes the open menu first and returns focus to its trigger. A small shared
+  `rowSelectionStyle.ts` extracts the existing hierarchy-row accent and selected background; both
+  span rows and calendar record buttons use that owner with a four-pixel inline-start border.
+  Record selection is presentation state and never writes source or persisted view configuration.
+- **MVP / acceptance:** the dialog is centered on desktop and a narrow viewport; a menu extends
+  beyond its short dialog without being obscured. Closing by icon or Escape retains the record's
+  accent/highlight, selecting a different record transfers it, and repeated open/close works.
+  Focused interaction tests cover modal menu ownership, Escape, icon naming, selection and zero
+  source writes; live browser checks cover geometry, hit testing and focus restoration.
+- **GTM / learning:** retain the voluntary pilot and setup-price hypothesis. Observe wrong-record
+  reopenings and menu failures during the existing dated-record journey; no conversion claim.
+
+Bound: eight files, 24 KB of added text, approximately 20 active minutes plus required checks;
+zero dependencies or paid resources. The shared style helper adds a small synchronous module to
+existing hierarchy consumers; Calendar remains lazy. Production and physical-device verification
+remain separate from this local fix; exact validation and protected release receipts accompany it.
+
+Validation: focused Calendar interactions and the existing menu toggle guard pass; TypeScript passes.
+Live checks at 1351 × 952 and 390 × 844 confirm zero center offset, a 44 × 44 close target, and
+menu hit testing above the dialog and beyond its bounds. Mobile menu bounds remain in the viewport.
+Escape and the close icon restore focus to the selected record. Protected CI remains the separate
+source-integration gate; no Production runtime proof follows from these local observations.
