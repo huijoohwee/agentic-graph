@@ -19,7 +19,7 @@ export function AnnotateDisplayModeToggle(props: {
   const { baseMode, mode, setMode, clearOverride } = props
 
   const base = `p-1.5 rounded-md ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} transition-colors`
-  const active = `p-1.5 rounded-md ${UI_THEME_TOKENS.panel.bg} shadow-sm ${UI_THEME_TOKENS.button.activeText} transition-colors`
+  const active = `p-1.5 rounded-md ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.button.activeText} transition-colors`
 
   const onPick = (next: AnnotateDisplayMode) => {
     if (next === baseMode) {

@@ -2,12 +2,12 @@
 title: "Workspace data views: Table, Kanban and Calendar"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "workspace-data-views"
-version: "1.3.2"
-prd_revision: "1.3.2"
-tad_revision: "1.3.2"
-adr_revision: "1.3.2"
-mvp_revision: "1.3.2"
-gtm_revision: "1.3.2"
+version: "1.3.3"
+prd_revision: "1.3.3"
+tad_revision: "1.3.3"
+adr_revision: "1.3.3"
+mvp_revision: "1.3.3"
+gtm_revision: "1.3.3"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Workspace data-view product function"
@@ -19,7 +19,7 @@ universal_scope: false
 lifecycle_status: "implemented"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/shared-selection-alignment"
+worktree_id: "agent/device-0232231d4a19/code-output-selected-shadow"
 agent_id: "codex-workspace-data-view-author"
 source_docs:
   - "Reference implementation: agentic-graph@8b258a4a116cd7ef70718acd28307fc4a62af897"
@@ -29,7 +29,7 @@ source_docs:
 
 # Workspace data views: Table, Kanban and Calendar
 
-`workspace-data-views@1.3.2` joins all five roles below. After the specification-first checkpoint,
+`workspace-data-views@1.3.3` joins all five roles below. After the specification-first checkpoint,
 the operator authorized implementation on 2026-10-02. Shared settings, versioned queries and native
 Calendar are now implemented in the existing owners. B records the historical baseline; the
 implementation checkpoint below separates verified behavior from remaining acceptance evidence.
@@ -563,3 +563,14 @@ the acceptance gate; the published predecessor's auto-merge was disabled pending
 Repair bound: one source line plus this joined checkpoint, no new module, 10 active minutes plus
 required checks, zero spend. Standard and XR checks passed on the predecessor; final acceptance
 requires exact successor evidence. GTM scope and unverified Production/device claims remain unchanged.
+
+## Checkpoint — Flat selected code output control, 2026-10-02
+
+`workspace-data-views@1.3.3` carries the five-role contract forward. PRD: selected code-block
+display controls remain identifiable without a raised shadow. TAD: the existing shared
+`AnnotateDisplayModeToggle` active class owns all three modes. ADR: remove its `shadow-sm` token;
+keep active background, text color, semantics, and focus behavior. MVP: selected Render, Inline,
+and Beside controls have no box shadow in the local browser; mode switching still works. GTM:
+retain the existing voluntary pilot; this polish adds no conversion claim. Bound: two files,
+one source line, 10 active minutes plus required checks, zero dependencies or spend. Protected
+integration and Production/device verification remain separate receipts.
