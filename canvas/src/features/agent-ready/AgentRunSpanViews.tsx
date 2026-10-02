@@ -57,7 +57,7 @@ export function AgentRunSpanViews({ rows, selectedId, onSelect, search = '', met
   for (const { span } of rows) { const scope = span.timing.scope ?? ''; ends.set(scope, Math.max(ends.get(scope) ?? 1, (span.timing.offset ?? 0) + (span.timing.inclusive ?? 0))) }
   return <section aria-label="Span columns" data-agent-span-columns="" className="min-w-0 overflow-x-auto">
     <section style={{ minWidth: 348 + columns.length * 156 }}>
-    <header className="grid items-center gap-3 border-b border-l-4 border-b-[var(--kg-border)] border-l-transparent px-3 py-2 text-xs font-medium" style={{ gridTemplateColumns }}>
+    <header className="grid items-center gap-3 border-b border-x border-b-[var(--kg-border)] border-x-transparent px-3 py-2 text-xs font-medium" style={{ gridTemplateColumns }}>
       <span>Span</span>{columns.map(({ key, label }) => <span key={key} data-span-metric-heading={key} className="truncate" title={label}>{label}</span>)}
     </header>
     <ul ref={container} role="tree" aria-label="Span hierarchy" className="min-w-0 py-2">

@@ -299,14 +299,11 @@ export function GitGraphFloatingPanelView() {
               className={[
                 'flex w-full items-center gap-2 border-b border-[var(--kg-border)] px-2 py-1.5 text-left last:border-b-0',
                 selected
-                  ? 'text-[var(--kg-text-primary)] shadow-[inset_3px_0_0_var(--kg-canvas-accent)] ring-2 ring-inset ring-[var(--kg-canvas-accent)]'
+                  ? uiSelectedRowStateClassName(true)
                   : selectedCommand
                     ? 'text-[var(--kg-text-tertiary)] opacity-45 hover:bg-[var(--kg-panel-bg-hover)] hover:opacity-90'
                     : 'text-[var(--kg-text-secondary)] hover:bg-[var(--kg-panel-bg-hover)]',
               ].join(' ')}
-              style={selected ? {
-                backgroundColor: 'color-mix(in srgb, var(--kg-canvas-accent) 16%, var(--kg-panel-bg))',
-              } : undefined}
               data-kg-gitgraph-command-row="1"
               data-kg-gitgraph-command-kind={command.kind}
               data-kg-gitgraph-command-line={command.lineIndex}
