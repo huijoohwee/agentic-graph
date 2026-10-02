@@ -365,7 +365,7 @@ export function testInteractiveMermaidSelectionAnnotatesSiblingChartGeometry() {
   }
 }
 export async function testGanttPanelRoutingUsesSharedGitGraphMermaidUtilities() {
-  const toolbarText = readSource('lib', 'toolbar', 'ToolbarToolMenu.impl.tsx')
+  const toolbarText = readSource('lib', 'toolbar', 'ToolbarToolMenu.impl.tsx') + readSource('features', 'toolbar', 'FloatingPanelViewTabs.tsx')
   const canvasViewMenuText = readSource('components', 'toolbar', 'canvasViewMenu.ts')
   const canvasViewActionsText = readSource('components', 'toolbar', 'canvasViewActions.ts')
   const canvasViewSelectText = readSource('components', 'toolbar', 'Canvas2dRendererSelect.tsx')

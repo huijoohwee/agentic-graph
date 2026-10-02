@@ -1,11 +1,9 @@
 import React from 'react'
 import { ListOrdered } from 'lucide-react'
-import IconButton from '@/components/IconButton'
+import { PanelViewTabs, PanelViewTab } from '@/features/panels/ui/PanelViewTabs'
 import { FLOATING_PANEL_TYPE_ICON_BY_VIEW } from '@/features/panels/ui/mainPanelHelpIconLibrary'
-import { uiPrimaryPillActiveClassName, uiToolbarRowScrollClassName } from '@/features/toolbar/ui/toolbarStyles'
 import type { FloatingPanelView } from '@/hooks/store/store-types/graph-state-chat-import'
 import { UI_LABELS } from '@/lib/config'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 
 type FloatingPanelViewTab = Readonly<{
   view: FloatingPanelView
@@ -52,40 +50,23 @@ export function FloatingPanelViewTabs({ view, onSelect, iconSizeClass, iconStrok
   fontClass: string
   children?: React.ReactNode
 }) {
-  const navRef = React.useRef<HTMLElement>(null)
-  React.useEffect(() => {
-    const nav = navRef.current
-    const selected = nav?.querySelector<HTMLElement>('button[aria-pressed="true"]')
-    if (!nav || !selected) return
-    const rail = nav.getBoundingClientRect()
-    const tab = selected.getBoundingClientRect()
-    if (tab.left < rail.left) nav.scrollLeft -= rail.left - tab.left
-    else if (tab.right > rail.right) nav.scrollLeft += tab.right - rail.right
-  }, [view])
   return (
-    <nav
-      ref={navRef}
-      className={`${uiToolbarRowScrollClassName} min-w-0 flex-1 flex-nowrap gap-1 [&>span]:shrink-0 overflow-x-auto overflow-y-hidden ${fontClass}`}
-      aria-label="Floating panel views"
-    >
+    <PanelViewTabs activeKey={view} className={fontClass} aria-label="Floating panel views">
       {FLOATING_PANEL_VIEW_TABS.map(spec => {
         const Icon = spec.icon
         return (
-          <IconButton
+          <PanelViewTab
             key={spec.view}
             title={spec.title}
             onClick={() => onSelect(spec.view)}
             aria-pressed={view === spec.view}
-            className={`App-toolbar__btn shrink-0 ${view === spec.view ? uiPrimaryPillActiveClassName : UI_THEME_TOKENS.text.secondary}`}
-            style={{ minWidth: 'var(--kg-control-height, 28px)', minHeight: 'var(--kg-control-height, 28px)' }}
-            showTooltip
             data-kg-floating-panel-view-trigger={spec.view}
           >
             <Icon className={iconSizeClass} strokeWidth={iconStrokeWidth} role="img" aria-label={spec.title} />
-          </IconButton>
+          </PanelViewTab>
         )
       })}
       {children}
-    </nav>
+    </PanelViewTabs>
   )
 }

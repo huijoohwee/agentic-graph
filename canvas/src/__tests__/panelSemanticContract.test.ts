@@ -8,7 +8,7 @@ const readUtf8 = (absPath: string): string => {
 export const testPanelHeaderUsesAriaTablist = () => {
   const root = process.cwd()
   const tabHeaderPath = path.resolve(root, 'src', 'features', 'panels', 'ui', 'TabHeader.tsx')
-  const text = readUtf8(tabHeaderPath)
+  const text = readUtf8(tabHeaderPath) + readUtf8(path.resolve(root, 'src/features/panels/ui/PanelViewTabs.tsx'))
   if (!text.includes('role="tablist"') && !text.includes("role='tablist'")) {
     throw new Error('Expected TabHeader to render a tablist role')
   }
@@ -39,7 +39,7 @@ export const testPanelShellUsesResponsiveRowScrolling = () => {
   const responsiveElementClassesPath = path.resolve(root, 'src', 'lib', 'ui', 'responsiveElementClasses.ts')
   const toolbarStylesPath = path.resolve(root, 'src', 'features', 'toolbar', 'ui', 'toolbarStyles.ts')
 
-  const tabHeader = readUtf8(tabHeaderPath)
+  const tabHeader = readUtf8(tabHeaderPath) + readUtf8(path.resolve(root, 'src/features/panels/ui/PanelViewTabs.tsx'))
   if (!tabHeader.includes('uiToolbarRowScrollClassName') || !tabHeader.includes('uiToolbarRowScrollJustifyEndClassName')) {
     throw new Error('Expected TabHeader shell to use the toolbar row-scroll SSOT')
   }

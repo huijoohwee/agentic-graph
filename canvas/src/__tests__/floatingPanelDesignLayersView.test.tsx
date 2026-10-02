@@ -1,6 +1,9 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 
+import TabHeader from '@/features/panels/ui/TabHeader'
+import { MAIN_PANEL_TABS } from '@/features/panels/mainPanelTabs'
+import { MAIN_PANEL_TAB_TYPE_ICON_BY_KEY } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import { ToolbarToolMenu } from '@/lib/toolbar/ToolbarToolMenu.impl'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_LABELS } from '@/lib/config'
@@ -109,6 +112,24 @@ export async function testFloatingPanelDesignLayersViewRendersAsDiv() {
     }
 
     await unmountReactRoot(root, { tasks: 1 })
+    const mainRoot = createRoot(container)
+    let selected = 'help'
+    const renderMainTabs = () => <TabHeader tabs={MAIN_PANEL_TABS} tabIconByKey={MAIN_PANEL_TAB_TYPE_ICON_BY_KEY} activeTab={selected} onTabChange={key => { selected = key; mainRoot.render(renderMainTabs()) }} tabIdBase="main-panel" />
+    await mountReactRoot(mainRoot, renderMainTabs(), { tasks: 2 })
+    const readMainTabs = () => Array.from(container.querySelectorAll('[role="tab"]')) as HTMLButtonElement[]
+    const mainLabels = MAIN_PANEL_TABS.map(tab => tab.label)
+    const assertMainTabs = () => {
+      const tabs = readMainTabs()
+      if (JSON.stringify(tabs.map(button => button.getAttribute('aria-label'))) !== JSON.stringify(mainLabels)
+        || tabs.some(button => button.disabled || !button.querySelector('svg[role="img"][aria-label]'))
+        || tabs.filter(button => button.getAttribute('aria-selected') === 'true').length !== 1
+        || !tabs.every(button => button.style.minHeight === 'var(--kg-control-height, 28px)')) throw new Error('expected MainPanel to reuse named, selectable shared controls')
+    }
+    assertMainTabs()
+    await act(async () => { readMainTabs()[0]?.click(); await waitForNextTask() })
+    if (selected !== MAIN_PANEL_TABS[0].key) throw new Error('expected shared tab activation to commit MainPanel selection')
+    assertMainTabs()
+    await unmountReactRoot(mainRoot, { tasks: 1 })
   } finally {
     restore()
   }

@@ -1,6 +1,6 @@
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
-import IconButton from '@/components/IconButton'
+import { PanelViewTabs, PanelViewTab } from '@/features/panels/ui/PanelViewTabs'
 import { FloatingPanel } from '@/components/ui/FloatingPanel'
 import HeaderActions from '@/features/panels/ui/HeaderActions'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -395,130 +395,74 @@ export function StrybldrTimelineBottomPanel({
             }}
             onPointerDown={handleHeaderPointerDown}
           >
-            <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [&_button]:!min-w-[var(--kg-control-height,28px)] [&_button]:shrink-0" aria-label="Bottom panel views">
+            <PanelViewTabs activeKey={view} aria-label="Bottom panel views">
               <span className="min-w-0 truncate text-xs font-semibold">{view === 'activity' ? 'Activity' : 'Timeline'}</span>
-              <IconButton className="App-toolbar__btn" title="Activity" showTooltip aria-pressed={view === 'activity'} onClick={() => { setView('activity'); setBottomSurfaceTab('activity'); setBottomSurfaceCollapsed(false); setMinimized(false) }}><Activity className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" /></IconButton>
-              <IconButton
-                className={cn(
-                  'App-toolbar__btn',
-                  view === 'timeline' || view === 'designTimeline'
-                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                )}
+              <PanelViewTab title="Activity" aria-pressed={view === 'activity'} onClick={() => { setView('activity'); setBottomSurfaceTab('activity'); setBottomSurfaceCollapsed(false); setMinimized(false) }}><Activity className={iconSizeClass} strokeWidth={uiIconStrokeWidth} /></PanelViewTab>
+              <PanelViewTab
                 title="Timeline"
-                showTooltip
                 aria-pressed={view === 'timeline' || view === 'designTimeline'}
                 onClick={showTimelineView}
                 data-kg-strybldr-bottom-timeline-timeline-toggle="1"
               >
-                <History className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
-              <IconButton
-                className={cn(
-                  'App-toolbar__btn',
-                  view === 'strybldrTimeline'
-                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                )}
+                <History className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+              <PanelViewTab
                 title="Storyboard"
-                showTooltip
                 aria-pressed={view === 'strybldrTimeline'}
                 onClick={showStrybldrTimelineView}
                 data-kg-strybldr-bottom-timeline-strybldr-toggle="1"
               >
-                <MonitorPlay className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
-              <IconButton
-                className={cn(
-                  'App-toolbar__btn',
-                  view === 'documentVersionGraph'
-                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                )}
+                <MonitorPlay className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+              <PanelViewTab
                 title="Version Graph"
-                showTooltip
                 aria-pressed={view === 'documentVersionGraph'}
                 onClick={showDocumentVersionGraphView}
                 data-kg-strybldr-bottom-timeline-document-version-graph-toggle="1"
               >
-                <FileDiff className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
-              <IconButton
-                className={cn(
-                  'App-toolbar__btn',
-                  view === 'flowchart'
-                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                )}
+                <FileDiff className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+              <PanelViewTab
                 title="Flowchart"
-                showTooltip
                 aria-pressed={view === 'flowchart'}
                 onClick={showFlowchartView}
                 data-kg-strybldr-bottom-timeline-flowchart-toggle="1"
               >
-                <Columns2 className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
-              <IconButton
-                className={cn(
-                  'App-toolbar__btn',
-                  view === 'gitGraph'
-                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                )}
+                <Columns2 className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+              <PanelViewTab
                 title="GitGraph"
-                showTooltip
                 aria-pressed={view === 'gitGraph'}
                 onClick={showGitGraphView}
                 data-kg-strybldr-bottom-timeline-gitgraph-toggle="1"
               >
-                <GitGraph className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
-              <IconButton
-                className={cn(
-                  'App-toolbar__btn',
-                  view === 'gantt'
-                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                )}
+                <GitGraph className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+              <PanelViewTab
                 title="Gantt-Timeline"
-                showTooltip
                 aria-pressed={view === 'gantt'}
                 onClick={showGanttView}
                 data-kg-strybldr-bottom-timeline-gantt-toggle="1"
               >
-                <ChartGantt className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
-              <IconButton
-                className={cn(
-                  'App-toolbar__btn',
-                  view === 'architecture'
-                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                )}
+                <ChartGantt className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+              <PanelViewTab
                 title="Architecture"
-                showTooltip
                 aria-pressed={view === 'architecture'}
                 onClick={showArchitectureView}
                 data-kg-strybldr-bottom-timeline-architecture-toggle="1"
               >
-                <Network className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
-              <IconButton
-                className={cn(
-                  'App-toolbar__btn',
-                  view === 'eventModeling'
-                    ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}`
-                    : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`,
-                )}
+                <Network className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+              <PanelViewTab
                 title="Event Model"
-                showTooltip
                 aria-pressed={view === 'eventModeling'}
                 onClick={showEventModelingView}
                 data-kg-strybldr-bottom-timeline-event-modeling-toggle="1"
               >
-                <Workflow className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-              </IconButton>
-            </nav>
+                <Workflow className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
+              </PanelViewTab>
+            </PanelViewTabs>
             <HeaderActions
               onPinToggle={handlePinToggle}
               pinned={pinned}
