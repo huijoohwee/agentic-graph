@@ -16,22 +16,26 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
   await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: false }))
   const shell = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
   // Cold module loading may remount the shell before the source inventory is ready.
-  // Share one existing startup budget across the shell and its complete inventory.
+  // Share one startup budget across the shell and its required session evidence.
   const deadline = Date.now() + 60000
   const remaining = () => Math.max(1, deadline - Date.now())
   await shell.waitFor({ state: 'visible', timeout: remaining() })
   await shell.getByRole('checkbox', { name: 'Show Explorer pane', exact: true }).check({ timeout: remaining() })
   const files = shell.getByRole('region', { name: 'Source Files content', exact: true })
-  await Promise.all(['.workspace', 'docs'].map(name => files.getByRole('button', {
-    name: `Folder ${name}`, exact: true,
-  }).waitFor({ state: 'visible', timeout: remaining() })))
+  const manifest = files.getByRole('button', { name: 'File agent-mission.inspection.json', exact: true })
+  await Promise.all([
+    files.getByRole('button', { name: 'Folder .workspace', exact: true }).waitFor({ state: 'visible', timeout: remaining() }),
+    manifest.waitFor({ state: 'visible', timeout: remaining() }),
+  ])
+  // Empty authored roots are valid. Capture actual persisted paths rather than assuming a docs folder.
+  const sourcePaths = await page.evaluate(async () => (await (await import('/src/features/workspace-fs/workspaceFs.ts'))
+    .getWorkspaceFs()).listEntries().then(entries => entries.map(entry => entry.path).sort()))
   await verifyFullCanvas(page)
   const before = await authoredSnapshot()
-  await files.getByRole('button', { name: 'File agent-mission.inspection.json', exact: true }).click()
+  await manifest.click()
   const editor = page.getByRole('region', { name: 'Markdown Workspace', exact: true })
   assert.equal(await page.getByRole('region', { name: 'Markdown Workspace', exact: true }).count(), 1)
   assert.equal(await page.getByText('Agent observability', { exact: true }).count(), 0)
-  await editor.getByRole('button', { name: 'Folder docs', exact: true }).waitFor()
   await editor.getByRole('checkbox', { name: 'Show JSON editor pane', exact: true }).check()
   await editor.getByRole('region', { name: 'JSON Editor', exact: true }).getByText('agent-run-inspection/v1', { exact: false }).waitFor()
   await verifyFullCanvas(page)
@@ -42,6 +46,7 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
   await editor.getByRole('button', { name: 'Close', exact: true }).click()
   const persisted = await page.evaluate(async () => (await (await import('/src/features/workspace-fs/workspaceFs.ts')).getWorkspaceFs()).listEntries())
   assert.equal(persisted.some(entry => entry.path.startsWith('/.workspace/')), false, 'Session evidence must not enter persistent Source Files')
+  assert.deepEqual(persisted.map(entry => entry.path).sort(), sourcePaths, 'Manifest inspection must preserve the actual persistent source inventory')
 }
 
 async function configureWidget(frame, keyboard = false) {

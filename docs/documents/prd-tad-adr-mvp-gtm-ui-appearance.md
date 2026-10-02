@@ -81,6 +81,13 @@ navigation; dispatch errors still fail loudly. Two negative/positive tests cover
 the full native browser proof and protected candidate checks remain required. GTM claims no new
 runtime feature or Production evidence. Repair cap: three paths, 5 KB, 15 active minutes.
 
+Source inventory acceptance repair: the Mission fixture deliberately provides empty authored roots.
+PRD/MVP require unchanged authored state and persistent source inventory when opening session evidence;
+they do not require an incidental `docs` folder. TAD waits for the actual virtual manifest and captures
+persisted paths before/after inspection. ADR retains the startup deadline, single workspace, native JSON
+content and private-evidence non-persistence checks. GTM gains no new feature or Production claim.
+The full native browser smoke remains required; this repair is capped at two paths, 3 KB, 10 active minutes.
+
 ## GTM and rollback
 
 Position this as consistent built-in controls across the local workspace. Do not claim measured
