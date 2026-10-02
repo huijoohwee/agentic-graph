@@ -18,6 +18,8 @@ import type { KanbanDropPosition } from './kanbanReorder'
 
 export type KanbanGroupModel = {
   key: string
+  value?: string
+  label?: string
   rows: MarkdownDataViewRow[]
 }
 
@@ -53,6 +55,8 @@ export type KanbanGroupProps = {
 }
 
 export const KanbanGroup = React.memo(function KanbanGroup(props: KanbanGroupProps) {
+  const groupLabel = props.group.label ?? props.group.key
+  const groupValue = props.group.value ?? props.group.key
   const groupByColumnId = String(props.view.groupByColumnId || '')
   const laneDragVisualState = getKanbanLaneDragVisualState({
     hasActiveDrag: !!props.hasActiveDrag,
@@ -78,7 +82,7 @@ export const KanbanGroup = React.memo(function KanbanGroup(props: KanbanGroupPro
           UI_THEME_TOKENS.kanban.groupBg,
         ].join(' ')}
         style={laneDragVisualState.style}
-        aria-label={`Group: ${props.group.key}`}
+        aria-label={`Group: ${groupLabel}`}
         {...props.laneDropProps}
       >
         {props.isDragOver ? <KanbanLaneDragOverIndicator /> : null}
@@ -108,7 +112,7 @@ export const KanbanGroup = React.memo(function KanbanGroup(props: KanbanGroupPro
               <ChevronRight className={['w-4 h-4', UI_THEME_TOKENS.icon.color].join(' ')} aria-hidden="true" />
             )}
             <h3 className="min-w-0 flex items-center gap-2 m-0 text-sm font-medium">
-              <DataViewTagChip value={props.group.key} />
+              <DataViewTagChip value={groupLabel} />
               <span className={['inline-flex items-center justify-center w-5 h-5 rounded', UI_THEME_TOKENS.badge.chip, UI_THEME_TOKENS.text.secondary, 'text-xs'].join(' ')}>
                 {props.group.rows.length}
               </span>
@@ -130,11 +134,11 @@ export const KanbanGroup = React.memo(function KanbanGroup(props: KanbanGroupPro
                     'rounded-md',
                     UI_THEME_TOKENS.focus.primarySoftRing,
                   ].join(' ')}
-                  aria-label={`New record in ${props.group.key}`}
+                  aria-label={`New record in ${groupLabel}`}
                   onClick={e => {
                     e.preventDefault()
                     e.stopPropagation()
-                    props.onNewRecord({ [groupByColumnId]: props.group.key })
+                    props.onNewRecord({ [groupByColumnId]: groupValue })
                   }}
                 >
                   <Plus className="w-4 h-4 shrink-0" aria-hidden="true" />
@@ -149,18 +153,18 @@ export const KanbanGroup = React.memo(function KanbanGroup(props: KanbanGroupPro
             ref={props.laneScrollRef}
             data-kg-kanban-group-list="1"
             className={UI_RESPONSIVE_DATA_VIEW_KANBAN_CARD_LIST_CLASSNAME}
-            aria-label={`Cards in ${props.group.key}`}
+            aria-label={`Cards in ${groupLabel}`}
           >
             {props.group.rows.map((row, index) => {
               const title = String(row.cells[props.titleIndex] ?? '')
-              const groupValue = String(row.cells[props.groupByIndex] ?? '').trim() || props.group.key
+              const rowGroupValue = String(row.cells[props.groupByIndex] ?? '').trim()
               return (
                 <React.Fragment key={row.id}>
                   <li className="list-none">
                     <KanbanCard
                       row={row}
                       title={title}
-                      groupValue={groupValue}
+                      groupValue={rowGroupValue}
                       canMutate={props.canMutate}
                       groupByColumnId={groupByColumnId}
                       groupByIndex={props.groupByIndex}
@@ -183,18 +187,18 @@ export const KanbanGroup = React.memo(function KanbanGroup(props: KanbanGroupPro
                     />
                   </li>
                   {props.canMutate && index < props.group.rows.length - 1 ? (
-                    <KanbanNewRecordDividerRow onClick={() => props.onNewRecord({ [groupByColumnId]: props.group.key })} />
+                    <KanbanNewRecordDividerRow onClick={() => props.onNewRecord({ [groupByColumnId]: groupValue })} />
                   ) : null}
                 </React.Fragment>
               )
             })}
 
             {props.canMutate ? (
-              <KanbanNewRecordDividerRow onClick={() => props.onNewRecord({ [groupByColumnId]: props.group.key })} />
+              <KanbanNewRecordDividerRow onClick={() => props.onNewRecord({ [groupByColumnId]: groupValue })} />
             ) : null}
             {props.showLaneDropPreview ? (
               <li className="list-none">
-                <KanbanLaneDropPreview label={props.laneDropPreviewLabel || `Drop to place at end of ${props.group.key}`} compact />
+                <KanbanLaneDropPreview label={props.laneDropPreviewLabel || `Drop to place at end of ${groupLabel}`} compact />
               </li>
             ) : null}
           </ol>

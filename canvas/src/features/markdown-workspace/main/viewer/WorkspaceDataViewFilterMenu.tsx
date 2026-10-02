@@ -1,8 +1,9 @@
+import { emptyFilterTree, getFilterTree, upsertDataViewColumnFilter, validateFilterTree } from './workspaceDataViewFilterTree'
 import React from 'react'
 import { CircleCheck, ListChecks, Type, Plus, ArrowLeft } from 'lucide-react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import type { MarkdownDataViewColumn } from '@/features/markdown/ui/markdownDataViewModel'
-import type { WorkspaceDataViewConfig, WorkspaceDataViewFilterRule, WorkspaceDataViewFilterOp } from './workspaceDataViewConfig'
+import type { WorkspaceDataViewConfig, WorkspaceDataViewFilterOp } from './workspaceDataViewConfig'
 import { PanelField, PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_TEXT_TRUNCATE } from '@/lib/ui/textLayout'
 import {
@@ -19,27 +20,12 @@ type FilterTarget = {
   op: WorkspaceDataViewFilterOp
 }
 
-const makeId = (): string => {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
-  return `id_${Math.random().toString(16).slice(2)}_${Date.now()}`
-}
-
 const icon14 = ['w-4 h-4 shrink-0', UI_THEME_TOKENS.icon.color].join(' ')
 
 function guessDefaultOp(col: MarkdownDataViewColumn): WorkspaceDataViewFilterOp {
   if (col.kind === 'select') return 'equals'
   if (col.kind === 'multi-select') return 'includes'
   return 'contains'
-}
-
-function buildRule(target: FilterTarget, value: string): WorkspaceDataViewFilterRule {
-  return {
-    id: makeId(),
-    columnId: target.column.id,
-    columnKind: target.column.kind,
-    op: target.op,
-    value,
-  }
 }
 
 export function WorkspaceDataViewFilterMenu(props: {
@@ -51,6 +37,7 @@ export function WorkspaceDataViewFilterMenu(props: {
   const cfg = props.viewConfig
   const [target, setTarget] = React.useState<FilterTarget | null>(null)
   const [draftValue, setDraftValue] = React.useState('')
+  const [error, setError] = React.useState('')
 
   const filterableColumns = React.useMemo(() => {
     const visibleIds = cfg?.visibleColumnIds
@@ -67,23 +54,16 @@ export function WorkspaceDataViewFilterMenu(props: {
 
   const onAddGroup = React.useCallback(() => {
     if (!cfg) return
-    const next = {
-      ...cfg,
-      filterGroups: [...cfg.filterGroups, { id: makeId(), rules: [] }],
-    }
-    props.setViewConfig(next)
+    const root = getFilterTree(cfg)
+    const filterTree = { ...root, children: [...root.children, emptyFilterTree()] }
+    try { validateFilterTree(filterTree); props.setViewConfig({ ...cfg, v: 3, filterTree, filterGroups: [] }); setError('') } catch (reason) { setError(String(reason)) }
   }, [cfg, props])
 
   const onApply = React.useCallback(() => {
     if (!cfg) return
     if (!target) return
     const value = String(draftValue ?? '').trim()
-    const nextRule = buildRule(target, value)
-    const groups = cfg.filterGroups.length ? cfg.filterGroups : [{ id: 'g0', rules: [] }]
-    const lastIndex = groups.length - 1
-    const nextGroups = groups.map((g, idx) => (idx === lastIndex ? { ...g, rules: [...g.rules, nextRule] } : g))
-    props.setViewConfig({ ...cfg, filterGroups: nextGroups })
-    props.onCloseMenu()
+    try { props.setViewConfig(upsertDataViewColumnFilter(cfg, { columnId: target.column.id, columnKind: target.column.kind, op: target.op, value })); props.onCloseMenu() } catch (reason) { setError(String(reason)) }
   }, [cfg, draftValue, props, target])
 
   const onPickColumn = React.useCallback((column: MarkdownDataViewColumn) => {
@@ -108,6 +88,7 @@ export function WorkspaceDataViewFilterMenu(props: {
   return (
     <section className={UI_RESPONSIVE_DATA_VIEW_FILTER_MENU_PANEL_CLASSNAME} aria-label="New filter">
       <header className="flex min-w-0 items-center gap-2 px-2 py-1.5">
+        {error && <p role="alert">{error}</p>}
         {target ? (
           <button
             type="button"

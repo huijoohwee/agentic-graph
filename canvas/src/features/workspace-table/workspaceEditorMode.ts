@@ -1,15 +1,15 @@
 import { LS_KEYS } from '@/lib/config'
 import { lsJson, lsSetJson } from '@/lib/persistence'
 
-export type WorkspaceEditorMode = 'table' | 'multiDimTable' | 'kanban'
+export type WorkspaceEditorMode = 'table' | 'multiDimTable' | 'kanban' | 'calendar'
 export type WorkspaceTableViewMode = WorkspaceEditorMode | 'geospatial'
 export type WorkspaceBackedTableViewMode = WorkspaceEditorMode
 
-export const WORKSPACE_EDITOR_MODE_OPTIONS: WorkspaceEditorMode[] = ['table', 'multiDimTable', 'kanban']
-export const WORKSPACE_TABLE_VIEW_MODE_OPTIONS: WorkspaceTableViewMode[] = ['geospatial', 'kanban', 'multiDimTable', 'table']
+export const WORKSPACE_EDITOR_MODE_OPTIONS: WorkspaceEditorMode[] = ['table', 'multiDimTable', 'kanban', 'calendar']
+export const WORKSPACE_TABLE_VIEW_MODE_OPTIONS: WorkspaceTableViewMode[] = ['calendar', 'geospatial', 'kanban', 'multiDimTable', 'table']
 
 export function parseWorkspaceEditorMode(raw: unknown): WorkspaceEditorMode | null {
-  if (raw === 'table' || raw === 'multiDimTable' || raw === 'kanban') return raw
+  if (raw === 'table' || raw === 'multiDimTable' || raw === 'kanban' || raw === 'calendar') return raw
   return null
 }
 
@@ -29,7 +29,7 @@ export function toWorkspaceBackedTableViewMode(
 export function toWorkspaceEditorModeFromTableViewMode(
   mode: WorkspaceTableViewMode | null | undefined,
 ): WorkspaceEditorMode {
-  return mode === 'kanban' ? 'kanban' : mode === 'multiDimTable' || mode === 'geospatial' ? 'multiDimTable' : 'table'
+  return mode === 'calendar' ? 'calendar' : mode === 'kanban' ? 'kanban' : mode === 'multiDimTable' || mode === 'geospatial' ? 'multiDimTable' : 'table'
 }
 
 export function readWorkspaceEditorMode(): WorkspaceEditorMode {

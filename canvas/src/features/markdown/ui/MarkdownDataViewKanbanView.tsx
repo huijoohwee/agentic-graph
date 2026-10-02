@@ -1,16 +1,19 @@
+import { projectDataViewGroups, dataViewGroupValue, dataViewGroupLabel } from '@/features/markdown-workspace/main/viewer/workspaceDataViewGroups'
 import React from 'react'
 import type { MarkdownDataView } from './markdownDataViewModel'
 import { MARKDOWN_DATA_VIEW_COPY } from '@/lib/config-copy/markdownDataViewCopy'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { KanbanGroup, type KanbanGroupModel } from './kanban/KanbanGroup'
+import { KanbanGroup } from './kanban/KanbanGroup'
 import { buildKanbanCardDropIntentLabel, buildKanbanDragStatusText, buildKanbanLaneDropIntentLabel } from './kanban/kanbanDragIntent'
 import { buildKanbanDropOutcomeText, isKanbanMoveNoOp } from './kanban/kanbanMoveOutcomes'
 import { useKanbanDragAndDrop } from './kanban/useKanbanDragAndDrop'
-import { reorderKanbanRowIds, resolveKanbanGroupOrder } from './kanban/kanbanReorder'
+import { reorderKanbanRowIds } from './kanban/kanbanReorder'
 import { UI_RESPONSIVE_DATA_VIEW_KANBAN_STATUS_ROW_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 
 type MarkdownDataViewKanbanViewProps = {
   view: MarkdownDataView
+  hiddenGroupIds?: readonly string[]
+  hideEmptyGroups?: boolean
   visibleColumnIds?: string[] | null
   canMutate: boolean
   onUpdateCell: (args: { rowId: string; columnId: string; nextValue: string }) => void
@@ -39,24 +42,9 @@ export const MarkdownDataViewKanbanView = React.memo(function MarkdownDataViewKa
     return view.columns.findIndex(c => c.id === view.titleColumnId)
   }, [view.columns, view.titleColumnId])
 
-  const groups = React.useMemo(() => {
-    if (groupByIndex < 0) return [] as KanbanGroupModel[]
-    const buckets = new Map<string, typeof view.rows>()
-    for (const row of view.rows) {
-      const key = String(row.cells[groupByIndex] ?? '').trim() || MARKDOWN_DATA_VIEW_COPY.ungroupedLabel
-      const list = buckets.get(key)
-      if (list) list.push(row)
-      else buckets.set(key, [row])
-    }
-    const col = view.columns[groupByIndex]
-    const opts = Array.isArray(col.options) ? col.options : []
-    const encountered = Array.from(buckets.keys())
-    const order = resolveKanbanGroupOrder({
-      configuredGroupOrder: opts,
-      encounteredGroupOrder: encountered,
-    })
-    return order.map(key => ({ key, rows: buckets.get(key) || [] }))
-  }, [groupByIndex, view.columns, view.rows])
+  const groups = React.useMemo(() => projectDataViewGroups(view, groupById).filter(group =>
+    !props.hiddenGroupIds?.includes(group.key) && (!props.hideEmptyGroups || group.rows.length > 0)),
+  [view, groupById, props.hiddenGroupIds, props.hideEmptyGroups])
 
   const rowIdToGroupKey = React.useMemo(() => {
     const map = new Map<string, string>()
@@ -73,7 +61,7 @@ export const MarkdownDataViewKanbanView = React.memo(function MarkdownDataViewKa
     return map
   }, [groups])
 
-  const moveTargets = React.useMemo(() => groups.map(x => x.key).filter(Boolean), [groups])
+  const moveTargets = React.useMemo(() => groups.map(x => x.value), [groups])
   const rowIdToTitle = React.useMemo(() => {
     const map = new Map<string, string>()
     for (const row of view.rows) {
@@ -115,14 +103,14 @@ export const MarkdownDataViewKanbanView = React.memo(function MarkdownDataViewKa
     }),
     buildOutcomeMessage: ({ kind, move, sourceGroupKey, blockedReason }) => buildKanbanDropOutcomeText({
       kind,
-      sourceLaneLabel: sourceGroupKey || move?.sourceGroupKey || null,
-      targetLaneLabel: move?.targetGroupKey || null,
+      sourceLaneLabel: sourceGroupKey ? dataViewGroupLabel(sourceGroupKey) : null,
+      targetLaneLabel: move?.targetGroupKey ? dataViewGroupLabel(move.targetGroupKey) : null,
       targetCardLabel: move?.targetRowId ? rowIdToTitle.get(move.targetRowId) || move.targetRowId : null,
       blockedReason,
     }),
     onCommitMove: ({ rowId, targetGroupKey, targetRowId, position }) => {
       if (!view.groupByColumnId) return
-      const nextValue = targetGroupKey === MARKDOWN_DATA_VIEW_COPY.ungroupedLabel ? '' : targetGroupKey
+      const nextValue = dataViewGroupValue(targetGroupKey)
       if (!onReorderRows) {
         onUpdateCell({
           rowId,
@@ -274,12 +262,12 @@ export const MarkdownDataViewKanbanView = React.memo(function MarkdownDataViewKa
             isCommitFlash={kanbanDrag.commitFlashGroupKey === group.key}
             commitFlashRowId={kanbanDrag.commitFlashRowId}
             onFocusableRowElement={kanbanDrag.registerFocusableRowElement}
-            laneDropPreviewLabel={buildKanbanLaneDropIntentLabel({ targetLaneLabel: group.key })}
+            laneDropPreviewLabel={buildKanbanLaneDropIntentLabel({ targetLaneLabel: group.label })}
             getCardDropPreviewLabel={({ rowId }) =>
               buildKanbanCardDropIntentLabel({
                 position: kanbanDrag.dragOverPosition,
                 targetCardLabel: rowIdToTitle.get(rowId) || rowId,
-                targetLaneLabel: group.key,
+                targetLaneLabel: group.label,
               })
             }
             laneScrollRef={element => {

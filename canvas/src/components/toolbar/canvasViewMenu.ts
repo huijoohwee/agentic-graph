@@ -1,6 +1,6 @@
-import { AlignCenter, Box, ChartGantt, Circle, CircleDot, Columns2, Cuboid, Diamond, FileText, Frame, GitGraph, GitMerge, Glasses, Grid3x3, Hexagon, History, Image as ImageIcon, Images, LayoutPanelTop, Magnet, Map, MonitorPlay, Network, Palette, PanelsTopLeft, Pencil, Share2, Square, Table, Tags, Workflow } from 'lucide-react'
-import type { Canvas2dRendererId } from '@/lib/config'
-import { UI_COPY, UI_LABELS } from '@/lib/config'
+import { CANVAS_VIEW_RENDERER_OPTION_ICON, isAnimationApplicable } from './canvasViewRendererOptions'
+import { AlignCenter, Box, ChartGantt, Circle, CircleDot, Columns2, Cuboid, Diamond, FileText, Frame, GitGraph, GitMerge, Glasses, Grid3x3, Hexagon, History, Image as ImageIcon, LayoutPanelTop, Magnet, Map, Network, PanelsTopLeft, Pencil, Share2, Square, Table, Tags, Workflow } from 'lucide-react'
+import { UI_COPY, UI_LABELS, type Canvas2dRendererId } from '@/lib/config'
 import {
   CANVAS_2D_RENDERER_MENU_ORDER,
   getCanvas2dRendererMenuBadges,
@@ -60,53 +60,6 @@ import {
 import { isRichMediaPanelDisplayEnabled } from '@/lib/render/richMediaSsot'
 import { uiBooleanRowValue, uiCurrentChoiceRowIsSelected } from 'grph-shared/ui/selectedRowClasses'
 
-const isAnimationApplicable = (state: CanvasViewModelState) => {
-  if (
-    !(
-      state.frontmatterModeEnabled ||
-      state.multiDimTableModeEnabled ||
-      state.documentSemanticMode === 'document' ||
-      state.documentSemanticMode === 'keyword'
-    )
-  ) {
-    return false
-  }
-  return (
-    (state.canvasRenderMode === '3d' && state.canvas3dMode !== 'voxel') ||
-    (state.canvasRenderMode === '2d' && state.canvas2dRenderer === 'd3')
-  )
-}
-
-const CANVAS_VIEW_RENDERER_OPTION_ICON: Record<Canvas2dRendererId, CanvasViewRendererOption['Icon']> = {
-  d3: CircleDot,
-  dashboard: Grid3x3,
-  gallery: Images,
-  media: ImageIcon,
-  flowchart: Columns2,
-  multiDimTable: Table,
-  gitGraph: GitGraph,
-  gantt: ChartGantt,
-  flow: GitMerge,
-  animatic: MonitorPlay,
-  storyboard: PanelsTopLeft,
-  design: Palette,
-}
-
-const CANVAS_VIEW_RENDERER_OPTION_TITLE: Record<Canvas2dRendererId, string> = {
-  d3: UI_COPY.canvasViewRendererD3Title,
-  dashboard: UI_COPY.canvasViewRendererDashboardTitle,
-  gallery: UI_COPY.canvasViewRendererGalleryTitle,
-  media: UI_COPY.canvasViewRendererMediaTitle,
-  flowchart: UI_COPY.canvasViewRendererD3FlowchartTitle,
-  multiDimTable: UI_COPY.canvasViewRendererMultiDimTableTitle,
-  gitGraph: UI_COPY.canvasViewRendererGitGraphTitle,
-  gantt: UI_COPY.canvasViewRendererGanttTitle,
-  flow: UI_COPY.canvasViewRendererFlowTitle,
-  animatic: UI_COPY.canvasViewRendererAnimaticTitle,
-  storyboard: UI_COPY.canvasViewRendererStoryboardTitle,
-  design: UI_COPY.canvasViewRendererDesignTitle,
-}
-
 const CANVAS_VIEW_SURFACE_MODE_ICON: Record<CanvasSurfaceModeId, CanvasViewOption['Icon']> = {
   '2d': Columns2,
   '3d': Box,
@@ -114,6 +67,22 @@ const CANVAS_VIEW_SURFACE_MODE_ICON: Record<CanvasSurfaceModeId, CanvasViewOptio
   'geo-xr': Glasses,
   voxel: Cuboid,
   geospatial: Map,
+}
+const CANVAS_VIEW_RENDERER_OPTION_TITLE: Record<Canvas2dRendererId, string> = {
+  d3: UI_COPY.canvasViewRendererD3Title,
+  dashboard: UI_COPY.canvasViewRendererDashboardTitle,
+  gallery: UI_COPY.canvasViewRendererGalleryTitle,
+  media: UI_COPY.canvasViewRendererMediaTitle,
+  flowchart: UI_COPY.canvasViewRendererD3FlowchartTitle,
+  multiDimTable: UI_COPY.canvasViewRendererMultiDimTableTitle,
+  kanban: '2D Renderer: Kanban',
+  calendar: '2D Renderer: Calendar',
+  gitGraph: UI_COPY.canvasViewRendererGitGraphTitle,
+  gantt: UI_COPY.canvasViewRendererGanttTitle,
+  flow: UI_COPY.canvasViewRendererFlowTitle,
+  animatic: UI_COPY.canvasViewRendererAnimaticTitle,
+  storyboard: UI_COPY.canvasViewRendererStoryboardTitle,
+  design: UI_COPY.canvasViewRendererDesignTitle,
 }
 
 export const getCanvasViewRendererOptions = (): CanvasViewRendererOption[] =>
@@ -621,27 +590,4 @@ export const buildCanvasViewOptions = (
     },
   ]
 }
-
-export const getCanvasViewTriggerState = (
-  state: CanvasViewModelState,
-  rendererOptions: CanvasViewRendererOption[],
-): { id: CanvasViewOptionId; title: string; label: string } => {
-  if (state.geospatialEnabled && state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr') {
-    const spec = getCanvasSurfaceModeSpec('geo-xr')
-    return { id: 'surface:geo-xr', title: spec.title, label: spec.label }
-  }
-  if (state.geospatialEnabled) {
-    const spec = getCanvasSurfaceModeSpec('geospatial')
-    return { id: 'surface:geospatial', title: spec.title, label: spec.label }
-  }
-  if (state.canvasRenderMode === '3d') {
-    const spec = getCanvasSurfaceModeSpec(state.canvas3dMode === 'voxel' ? 'voxel' : state.canvas3dMode === 'xr' ? 'xr' : '3d')
-    return { id: `surface:${spec.id}` as CanvasViewOptionId, title: spec.title, label: spec.label }
-  }
-  const activeRenderer = rendererOptions.find(o => o.id === state.canvas2dRenderer) || rendererOptions[0]
-  return {
-    id: `renderer:${activeRenderer.id}` as CanvasViewOptionId,
-    title: activeRenderer.title,
-    label: activeRenderer.label,
-  }
-}
+export { getCanvasViewTriggerState } from './canvasViewRendererOptions'

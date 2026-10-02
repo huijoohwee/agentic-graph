@@ -1,7 +1,11 @@
+import { normalizeComposedSourcePath } from '@/features/source-files/composedSourceSelection'
+import { notifyDataViewState } from './workspaceDataViewStateEvents'
+import { coerceDataViewExtensions } from './workspaceDataViewExtensions'
+import { removeFilterColumn } from './workspaceDataViewFilterTree'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import { getMarkdownDataViewConfigStorageKey } from '@/lib/config'
-import { getLocalStorage, readJsonFromStorage, writeJsonToStorage } from '@/lib/persistence'
-import type { MarkdownDataView, MarkdownDataViewColumnKind } from '@/features/markdown/ui/markdownDataViewModel'
+import { getLocalStorage, writeJsonToStorage } from '@/lib/persistence'
+import type { MarkdownDataViewColumnKind } from '@/features/markdown/ui/markdownDataViewModel'
 import type { MarkdownDataViewColumnType } from '@/features/markdown/ui/markdownDataViewColumnType'
 import { coerceMarkdownDataViewColumnType } from '@/features/markdown/ui/markdownDataViewColumnType'
 import {
@@ -12,7 +16,7 @@ import {
 } from '@/lib/ui/dataViewDensity'
 import { MARKDOWN_DATA_VIEW_COPY } from '@/lib/config-copy/markdownDataViewCopy'
 
-export type WorkspaceDataViewLayout = 'kanban' | 'table'
+export type WorkspaceDataViewLayout = 'kanban' | 'table' | 'calendar'
 export type WorkspaceDataViewOrientation = 'rows' | 'columns'
 export type WorkspaceStructuredSourceValueColumnMode = 'type-specific' | 'type-generic'
 
@@ -23,7 +27,7 @@ export type WorkspaceDataViewFilterGroup = { id: string; rules: WorkspaceDataVie
 
 export type WorkspaceDataViewSortDirection = 'asc' | 'desc'
 
-export type WorkspaceDataViewSortRule = { id: string; columnId: string; direction: WorkspaceDataViewSortDirection }
+export type WorkspaceDataViewSortRule = { id: string; columnId: string; direction: WorkspaceDataViewSortDirection; enabled?: boolean }
 
 export type WorkspaceDataViewGraphColumnRole =
   | 'none'
@@ -35,7 +39,7 @@ export type WorkspaceDataViewGraphColumnRole =
   | 'successor'
 
 export type WorkspaceDataViewViewV2 = {
-  v: 2
+  v: 2 | 3
   id: string
   name: string
   layout: WorkspaceDataViewLayout
@@ -44,6 +48,13 @@ export type WorkspaceDataViewViewV2 = {
   columnTypesById: Record<string, MarkdownDataViewColumnType> | null
   filterGroups: WorkspaceDataViewFilterGroup[]
   sortRules: WorkspaceDataViewSortRule[]
+  filterTree?: import('./workspaceDataViewFilterTree').DataViewFilterGroup
+  sortSemantics?: 'legacy' | 'typed'
+  hiddenGroupIds?: string[]
+  hideEmptyGroups?: boolean
+  calendar?: { startColumnId: string | null; endColumnId: string | null; timeZone: string; month: string }
+  /** Read failures block persistence so unsupported or malformed bytes remain recoverable. */
+  recoveryError?: string
   orientation?: WorkspaceDataViewOrientation
   structuredSourceValueColumnMode?: WorkspaceStructuredSourceValueColumnMode
   rowHeightPreset?: DataViewRowHeightPreset
@@ -69,127 +80,8 @@ export type WorkspaceDataViewQueryState = {
   sortMode: 'none' | 'title_asc' | 'title_desc'
 }
 
-const normalizeSearch = (v: string): string => String(v || '').trim().toLowerCase()
-
-const splitMultiValues = (raw: string): string[] => {
-  return String(raw ?? '')
-    .split(',')
-    .map(x => String(x ?? '').replace(/\s+/g, ' ').trim())
-    .filter(Boolean)
-}
-
-const matchRule = (cell: string, kind: MarkdownDataViewColumnKind, op: WorkspaceDataViewFilterOp, needle: string): boolean => {
-  const n = normalizeSearch(needle)
-  if (!n) return true
-  const v = String(cell ?? '').trim()
-  const lower = v.toLowerCase()
-
-  if (op === 'equals') return lower === n
-  if (op === 'includes') {
-    if (kind !== 'multi-select') return lower.includes(n)
-    return splitMultiValues(v).some(x => x.toLowerCase() === n)
-  }
-  return lower.includes(n)
-}
-
-export function computeWorkspaceDataViewGroupOptions(args: { view: MarkdownDataView; groupByColumnId: string | null }): string[] {
-  const groupById = args.groupByColumnId ? String(args.groupByColumnId).trim() : ''
-  if (!groupById) return []
-  const groupIndex = args.view.columns.findIndex(c => c.id === groupById)
-  if (groupIndex < 0) return []
-  const col = args.view.columns[groupIndex]
-  const opts = Array.isArray(col.options) ? col.options.map(x => String(x || '').trim()).filter(Boolean) : []
-  if (opts.length) return opts
-  const set = new Set<string>()
-  for (const r of args.view.rows) {
-    const g = String(r.cells[groupIndex] ?? '').trim() || MARKDOWN_DATA_VIEW_COPY.ungroupedLabel
-    set.add(g)
-  }
-  return Array.from(set).sort((a, b) => a.localeCompare(b))
-}
-
-export function applyWorkspaceDataViewQuery(args: {
-  view: MarkdownDataView
-  viewConfig: WorkspaceDataViewConfig | null
-  state: WorkspaceDataViewQueryState
-}): MarkdownDataView {
-  const baseView = args.view
-  const q = normalizeSearch(args.state.searchQuery)
-  const filterGroups = args.state.visibleGroups
-  const sortMode = args.state.sortMode
-  const dataFilters: WorkspaceDataViewFilterGroup[] = args.viewConfig?.filterGroups || []
-  const configSortRule: WorkspaceDataViewSortRule | null = args.viewConfig?.sortRules?.[0] || null
-
-  const needsFilter = Boolean(q || filterGroups || dataFilters.some(g => g.rules.length))
-  const needsSort = !!configSortRule || sortMode !== 'none'
-  if (!needsFilter && !needsSort) return baseView
-
-  const titleIndex = baseView.columns.findIndex(c => c.id === baseView.titleColumnId)
-  const groupIndex = baseView.groupByColumnId ? baseView.columns.findIndex(c => c.id === baseView.groupByColumnId) : -1
-  const allowedGroups = filterGroups ? new Set(filterGroups.map(x => String(x || '').trim()).filter(Boolean)) : null
-
-  const columnIndexById = new Map<string, number>()
-  for (let i = 0; i < baseView.columns.length; i += 1) {
-    columnIndexById.set(baseView.columns[i].id, i)
-  }
-
-  const rowPassesDataFilters = (row: (typeof baseView.rows)[number]): boolean => {
-    if (!dataFilters.length) return true
-    let hasAnyRules = false
-    for (const g of dataFilters) {
-      if (!g.rules.length) continue
-      hasAnyRules = true
-      let ok = true
-      for (const r of g.rules) {
-        const idx = columnIndexById.get(r.columnId) ?? -1
-        if (idx < 0) continue
-        if (!matchRule(String(row.cells[idx] ?? ''), r.columnKind, r.op, r.value)) {
-          ok = false
-          break
-        }
-      }
-      if (ok) return true
-    }
-    return !hasAnyRules
-  }
-
-  let rows = baseView.rows
-  if (needsFilter) {
-    rows = rows.filter(r => {
-      if (allowedGroups && groupIndex >= 0) {
-        const g = String(r.cells[groupIndex] ?? '').trim() || MARKDOWN_DATA_VIEW_COPY.ungroupedLabel
-        if (!allowedGroups.has(g)) return false
-      }
-      if (!rowPassesDataFilters(r)) return false
-      if (!q) return true
-      if (titleIndex >= 0) {
-        const title = String(r.cells[titleIndex] ?? '')
-        if (title.toLowerCase().includes(q)) return true
-      }
-      for (let i = 0; i < baseView.columns.length; i += 1) {
-        if (i === titleIndex) continue
-        const v = String(r.cells[i] ?? '')
-        if (v && v.toLowerCase().includes(q)) return true
-      }
-      return false
-    })
-  }
-
-  if (needsSort) {
-    const sortColumnIndex = configSortRule ? (columnIndexById.get(configSortRule.columnId) ?? -1) : titleIndex
-    if (sortColumnIndex < 0) {
-      return rows === baseView.rows ? baseView : { ...baseView, rows }
-    }
-    const dir = configSortRule ? (configSortRule.direction === 'desc' ? -1 : 1) : (sortMode === 'title_desc' ? -1 : 1)
-    rows = [...rows].sort((a, b) => {
-      const ta = String(a.cells[sortColumnIndex] ?? '')
-      const tb = String(b.cells[sortColumnIndex] ?? '')
-      return dir * ta.localeCompare(tb)
-    })
-  }
-
-  return rows === baseView.rows ? baseView : { ...baseView, rows }
-}
+export { applyWorkspaceDataViewQuery } from './workspaceDataViewQuery'
+export { computeWorkspaceDataViewGroupOptions } from './workspaceDataViewLegacyQuery'
 
 export function defaultWorkspaceDataViewConfig(args: {
   title: string
@@ -199,9 +91,10 @@ export function defaultWorkspaceDataViewConfig(args: {
   return {
     ...DEFAULT_VIEW,
     id: 'v0',
-    v: 2,
+    v: 3,
+    sortSemantics: 'typed',
     name: String(args.title || '').trim() || DEFAULT_VIEW.name,
-    layout: args.layout === 'table' ? 'table' : 'kanban',
+    layout: args.layout,
     groupByColumnId: args.groupByColumnId ? String(args.groupByColumnId).trim() || null : null,
   }
 }
@@ -288,6 +181,8 @@ export function removeWorkspaceDataViewConfigColumn(args: {
     visibleColumnIds,
     columnTypesById,
     filterGroups,
+    filterTree: args.viewConfig.filterTree ? removeFilterColumn(args.viewConfig.filterTree, columnId) : undefined,
+    calendar: args.viewConfig.calendar ? { ...args.viewConfig.calendar, startColumnId: args.viewConfig.calendar.startColumnId === columnId ? null : args.viewConfig.calendar.startColumnId, endColumnId: args.viewConfig.calendar.endColumnId === columnId ? null : args.viewConfig.calendar.endColumnId } : undefined,
     sortRules,
     graphRolesByColumnId,
   }
@@ -321,7 +216,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 function normalizeWorkspaceDataViewLayout(v: unknown): WorkspaceDataViewLayout {
   const s = String(v || '').trim()
-  return s === 'table' ? 'table' : 'kanban'
+  return s === 'calendar' ? 'calendar' : s === 'table' ? 'table' : 'kanban'
 }
 
 function normalizeWorkspaceDataViewOrientation(v: unknown): WorkspaceDataViewOrientation {
@@ -370,7 +265,7 @@ function coerceSortRule(raw: unknown): WorkspaceDataViewSortRule | null {
   const columnId = String(raw.columnId || '').trim()
   if (!id || !columnId) return null
   const direction = normalizeSortDirection(raw.direction)
-  return { id, columnId, direction }
+  return { id, columnId, direction, ...(typeof raw.enabled === 'boolean' ? { enabled: raw.enabled } : {}) }
 }
 
 function coerceGraphRolesByColumnId(raw: unknown): Record<string, WorkspaceDataViewGraphColumnRole> {
@@ -398,7 +293,7 @@ function coerceGraphRolesByColumnId(raw: unknown): Record<string, WorkspaceDataV
 export function coerceWorkspaceDataViewConfig(raw: unknown): WorkspaceDataViewConfig | null {
   if (!isRecord(raw)) return null
 
-  if (raw.v === 2) {
+  if (raw.v === 2 || raw.v === 3) {
     const id = String(raw.id || '').trim()
     const name = String(raw.name || '').trim() || DEFAULT_VIEW.name
     const layout = normalizeWorkspaceDataViewLayout(raw.layout)
@@ -442,7 +337,8 @@ export function coerceWorkspaceDataViewConfig(raw: unknown): WorkspaceDataViewCo
 
     if (!id) return null
     return {
-      v: 2,
+      v: raw.v,
+      ...coerceDataViewExtensions(raw),
       id,
       name,
       layout,
@@ -468,13 +364,16 @@ function coerceWorkspaceDataViewState(raw: unknown, fallback: WorkspaceDataViewS
   if (isRecord(raw) && raw.sv === 1) {
     const activeViewId = String(raw.activeViewId || '').trim()
     const viewsRaw = Array.isArray(raw.views) ? raw.views : []
-    const views = viewsRaw.map(coerceWorkspaceDataViewConfig).filter((x): x is WorkspaceDataViewViewV2 => !!x)
+    const parsed = viewsRaw.map(coerceWorkspaceDataViewConfig)
+    if (parsed.some(view => !view)) throw new Error('Unsupported saved view. Original settings were preserved.')
+    const views = parsed as WorkspaceDataViewViewV2[]
     if (views.length > 0) {
       const resolvedActive = activeViewId && views.some(v => v.id === activeViewId) ? activeViewId : views[0]!.id
       return { sv: 1, activeViewId: resolvedActive, views }
     }
   }
 
+  if (raw != null) throw new Error('Invalid saved view state. Original settings were preserved.')
   return fallback
 }
 
@@ -511,7 +410,7 @@ export function duplicateWorkspaceDataViewInState(args: {
 
   const nextId = makeId()
   const nextName = `${String(source.name || 'View')} Copy`
-  const copy: WorkspaceDataViewViewV2 = { ...source, id: nextId, name: nextName }
+  const copy: WorkspaceDataViewViewV2 = { ...JSON.parse(JSON.stringify(source)), id: nextId, name: nextName }
   return { sv: 1, activeViewId: nextId, views: [...args.state.views, copy] }
 }
 
@@ -523,13 +422,14 @@ export function deleteWorkspaceDataViewFromState(args: {
   const id = String(args.viewId || '').trim()
   const remaining = args.state.views.filter(v => v.id !== id)
   if (remaining.length === args.state.views.length) return args.state
-  const nextActive = remaining[0]!.id
+  const nextActive = remaining.some(view => view.id === args.state.activeViewId) ? args.state.activeViewId : remaining[0]!.id
   return { sv: 1, activeViewId: nextActive, views: remaining }
 }
 
 export function buildWorkspaceDataViewScopeKey(args: { activeDocumentPath: string | null; tableId: string }): string {
-  const doc = String(args.activeDocumentPath || '').trim() || 'unknown-doc'
-  const tid = String(args.tableId || '').trim() || 'unknown-table'
+  const doc = normalizeComposedSourcePath(args.activeDocumentPath).replace(/^\//, '') || 'unknown-doc'
+  // End lines change when records are appended; the table start owns saved settings.
+  const tid = (String(args.tableId || '').trim() || 'unknown-table').replace(/^(md-block:\d+)-\d+$/, '$1')
   return `mdDataView:${doc}::${tid}`
 }
 
@@ -547,10 +447,29 @@ export function readWorkspaceDataViewStateWithMeta(args: {
   const hashed = hashStringToHex(scopeKey)
   const storageKey = getMarkdownDataViewConfigStorageKey(hashed)
   const storage = getLocalStorage()
-  const hasStoredValue = storage.getItem(storageKey) != null
+  const doc = normalizeComposedSourcePath(args.activeDocumentPath) || 'unknown-doc'
+  const documents = [...new Set([doc.replace(/^\//, ''), doc, String(args.activeDocumentPath || '').trim() || 'unknown-doc', `workspace:${doc}`])]
+  const table = String(args.tableId || '').trim() || 'unknown-table'
+  const tables = [...new Set([table.replace(/^(md-block:\d+)-\d+$/, '$1'), table])]
+  const keys = [...new Set([storageKey, ...documents.flatMap(path => tables.map(id => getMarkdownDataViewConfigStorageKey(hashStringToHex(`mdDataView:${path}::${id}`))))])]
+  let hasStoredValue = false
   const fallback = args.fallback ?? DEFAULT_STATE
-  const state = readJsonFromStorage(storage, storageKey, fallback, (raw) => coerceWorkspaceDataViewState(raw, fallback))
-  return { state, hasStoredValue }
+  try {
+    // A corrupt canonical value must fail closed, never fall through to an older alias.
+    const raw = [...keys.map(key => `${key}:v3`), ...keys].map(key => storage?.getItem(key)).find(value => value != null)
+    hasStoredValue = raw != null
+    const state = raw == null ? fallback : coerceWorkspaceDataViewState(JSON.parse(raw), fallback)
+    // Promote a validated path/range alias before source edits change the end line.
+    // Retain the legacy bytes so the previous build can still read its own namespace.
+    if (raw != null && storage && storage.getItem(`${storageKey}:v3`) == null) {
+      storage.setItem(`${storageKey}:v3`, raw)
+    }
+    return { state, hasStoredValue }
+  } catch (error) {
+    let safe = fallback
+    try { const backup = storage.getItem(`${storageKey}:v3:last-valid`); if (backup) safe = coerceWorkspaceDataViewState(JSON.parse(backup), fallback) } catch { /* Keep caller fallback; original bytes are untouched. */ }
+    return { state: { ...safe, views: safe.views.map(view => ({ ...view, recoveryError: String(error) })) }, hasStoredValue }
+  }
 }
 
 export function writeWorkspaceDataViewState(args: {
@@ -562,7 +481,18 @@ export function writeWorkspaceDataViewState(args: {
   const hashed = hashStringToHex(scopeKey)
   const storageKey = getMarkdownDataViewConfigStorageKey(hashed)
   const storage = getLocalStorage()
-  writeJsonToStorage(storage, storageKey, args.value)
+  if (!storage) throw new Error('Saved view storage is unavailable.')
+  if (args.value.views.some(view => view.recoveryError)) return
+  const value = { ...args.value, views: args.value.views.map(view => ({ ...view, v: 3 as const, sortSemantics: view.sortSemantics ?? 'legacy' as const })) }
+  coerceWorkspaceDataViewState(value, DEFAULT_STATE)
+  const key = `${storageKey}:v3`
+  const previous = storage.getItem(key)
+  if (previous) {
+    try { coerceWorkspaceDataViewState(JSON.parse(previous), DEFAULT_STATE) } catch { throw new Error('Stored settings changed or became invalid; reload to recover without overwriting them.') }
+    storage.setItem(`${key}:last-valid`, previous)
+  }
+  storage.setItem(key, JSON.stringify(value))
+  notifyDataViewState(scopeKey)
 }
 
 export function readWorkspaceDataViewConfig(args: {
@@ -570,7 +500,7 @@ export function readWorkspaceDataViewConfig(args: {
   tableId: string
   fallback?: WorkspaceDataViewConfig
 }): WorkspaceDataViewConfig {
-  const { state } = readWorkspaceDataViewStateWithMeta({ activeDocumentPath: args.activeDocumentPath, tableId: args.tableId })
+  const { state } = readWorkspaceDataViewStateWithMeta({ activeDocumentPath: args.activeDocumentPath, tableId: args.tableId, fallback: args.fallback ? { sv: 1, activeViewId: args.fallback.id, views: [args.fallback] } : undefined })
   const active = state.views.find(v => v.id === state.activeViewId) || state.views[0]
   return active || (args.fallback ?? DEFAULT_VIEW)
 }
@@ -581,13 +511,14 @@ export function writeWorkspaceDataViewConfig(args: {
   value: WorkspaceDataViewConfig
 }): void {
   const { state } = readWorkspaceDataViewStateWithMeta({ activeDocumentPath: args.activeDocumentPath, tableId: args.tableId })
-  const id = String(state.activeViewId || args.value.id || 'v0')
+  if (state.views.some(view => view.recoveryError) || args.value.recoveryError) return
+  const id = String(args.value.id || state.activeViewId || 'v0')
   const nextViews = state.views.map(v => (v.id === id ? { ...args.value, id } : v))
   const hasMatch = nextViews.some(v => v.id === id)
   const normalized = hasMatch ? nextViews : [{ ...args.value, id }, ...nextViews]
   writeWorkspaceDataViewState({
     activeDocumentPath: args.activeDocumentPath,
     tableId: args.tableId,
-    value: { sv: 1, activeViewId: id, views: normalized },
+    value: { sv: 1, activeViewId: state.activeViewId || id, views: normalized },
   })
 }
