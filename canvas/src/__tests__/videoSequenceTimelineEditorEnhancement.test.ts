@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { testTimelinePlayhead } from './timelinePlayhead.test'
 import { resolve } from 'node:path'
 import { buildVideoSequenceTimelineZoomTicks, resolveVideoSequenceTimelineAppendSpacePercent, resolveVideoSequenceTimelineContentZoom, resolveVideoSequenceTimelineFrameRate, resolveVideoSequenceTimelineScaleDurationSeconds, resolveVideoSequenceTimelineScaleMaxMinutes, resolveVideoSequenceTimelineWorkspaceLayout, resolveVideoSequenceTimelineZoomTickStepSeconds } from '@/components/timeline/videoSequenceTimelineZoom'
 import { resolveTimelineTransportGestureZoomStepCount, resolveTimelineTransportNextZoomIndex, resolveTimelineTransportZoom } from '@/components/timeline/timelineTransport'
@@ -10,6 +11,7 @@ function expectSourceIncludes(sourceText: string, tokens: readonly string[], mes
   for (const token of tokens) if (!sourceText.includes(token)) throw new Error(`${message}: ${token}`)
 }
 export function testVideoSequenceTimelineEditorEnhancementContracts() {
+  testTimelinePlayhead()
   const rulerText = readSource('components', 'timeline', 'VideoSequenceTimelineRuler.tsx')
   const rulerCssText = readSource('components', 'timeline', 'VideoSequenceTimelineRuler.css')
   const rulerTicksText = readSource('components', 'timeline', 'VideoSequenceTimelineRulerTicks.tsx')
@@ -22,7 +24,7 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
   const rulerGeometryText = readSource('components', 'timeline', 'videoSequenceTimelineRulerGeometry.ts')
   const mermaidTransportCssText = readSource('components', 'timeline', 'TimelineTransportControlsMermaidGantt.css')
   const laneCssText = readSource('components', 'timeline', 'TimelineTransportLane.css')
-  const transportCssText = ['TimelineTransportControls.css', 'TimelineTransportPlayer.css', 'TimelineTransportControlsMermaidGantt.css', 'TimelineTransportLane.css'].map(file => readSource('components', 'timeline', file)).join('\n')
+  const transportCssText = ['TimelineTransportControls.css', 'TimelinePlayhead.css', 'TimelineTransportPlayer.css', 'TimelineTransportControlsMermaidGantt.css', 'TimelineTransportLane.css'].map(file => readSource('components', 'timeline', file)).join('\n')
   const timelineTransportText = readSource('components', 'timeline', 'timelineTransport.ts')
   const videoSequenceToolButtonText = readSource('components', 'timeline', 'VideoSequenceTimelineToolButton.tsx')
   const transportText = readSource('components', 'timeline', 'TimelineTransportControls.tsx')
@@ -143,12 +145,7 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
     'cursor: ew-resize',
     'pointer-events: auto',
     'touch-action: none',
-    'z-index: 7',
-    'z-index: 8',
-    'top: -24px',
-    'top: 50%',
-    'transform: translate(-50%, -50%)',
-    '.timeline-video-sequence-ruler-playhead-marker',
+    'z-index: 20', 'top: 0', 'transform: translateX(-50%)', '.timeline-playhead-control.timeline-transport-playhead-marker',
     'padding-inline: 18px 12px',
     'border-bottom: var(--kg-surface-border)',
     'margin-top: 0',

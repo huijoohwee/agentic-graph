@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.3"
-prd_revision: "1.3.3"
-tad_revision: "1.3.3"
-adr_revision: "1.3.3"
-mvp_revision: "1.3.3"
-gtm_revision: "1.3.3"
+version: "1.3.4"
+prd_revision: "1.3.4"
+tad_revision: "1.3.4"
+adr_revision: "1.3.4"
+mvp_revision: "1.3.4"
+gtm_revision: "1.3.4"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,7 +31,7 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.3**. The user authorized implementation
+All five roles join **SEQUENCE-FLOW-001@1.3.4**. The user authorized implementation
 and live UI verification on 2026-10-02. Work extends the existing workspace through
 an admitted successor lane. Remote service invocation, production mirrors, deployment
 and payment remain separate effects with no new grant here.
@@ -271,7 +271,7 @@ result. Use `npm run ci:affected` for the implementation candidate.
 
 ### Topology diagram — reference implementation
 
-**D1** · class: topology · notation: Mermaid flowchart TB · version: 1.3.3.
+**D1** · class: topology · notation: Mermaid flowchart TB · version: 1.3.4.
 Primary document surface: existing D3 2D graph canvas; ingest: fenced source below.
 Caption: source and pure semantics stay on the user device; the shared state feeds
 three projections. Optional delivery serves assets across a closed release boundary.
@@ -300,7 +300,7 @@ flowchart TB
 
 | Diagram | Target / ingest | Projects | Nodes / edges / clusters | Proof |
 |---|---|---|---|---|
-| D1@1.3.3 | D3 2D / fenced Mermaid | Intended; parse-only proof pending | Expected 7 / 6 / 2 | Guideline canvas-render checker; actual result recorded below |
+| D1@1.3.4 | D3 2D / fenced Mermaid | Intended; parse-only proof pending | Expected 7 / 6 / 2 | Guideline canvas-render checker; actual result recorded below |
 
 Inventory: Source→C6, Parser→C2, State→existing C5 authority, Canvas→C3,
 Inspector→C4, Timeline→C5; Assets→existing delivery owner. Feature readiness is
@@ -364,7 +364,7 @@ failure models and provider evidence; it is outside scope. Deterministic local r
 is the FOSS alternative and chosen approach. Consequences: authored timing is visibly
 distinct from measured latency; unsupported branch semantics fail loudly. Recovery:
 disable the sequence adapter and retain source, transport and existing timelines.
-Implemented at 1.3.3: reuse the existing workflow/participant ruler and clip/mark
+Implemented at 1.3.4: reuse the existing workflow/participant ruler and clip/mark
 components; delete the duplicate step rail, card grid and separate scrub slider.
 One millisecond-to-minute adapter aligns clips and pointer scrubbing with the shared
 rounded display scale. Marks keep exact authored IDs and ordinals. Minimum axis width
@@ -375,7 +375,7 @@ Shared chrome now inherits the Main Toolbar compact-surface/control/radius token
 its root, including the ruler subtree. XR and sequence use the same time-axis bar and
 clip-control strip; feature CSS retains only span geometry and event/mark semantics.
 Remove the 1.5× height, XR inset-height/camera flavor, 20px stage selector, 44px desktop
-control override and unused two-row XR control CSS. Compact media rules exclude rails. At 1.3.3 one shared surface owns compact clips and time-axis bars; delete tinted compact clip/placeholder/image/regular-FBF flavors, label chips and divergent selected border widths. All ruler headers inherit one control-sized axis height; prevent wrapped scale fields covering the first lane. Lane selection and semantic marks remain data-driven, with no document/path branches. The shared TimelineTransportLane owner now owns the surface, caption and control-strip layout; remove those rules from the media/notation stylesheets. Captions and controls occupy separate flex cells with overflow inside the strip, retaining native selection and mark semantics. Scale fields never shrink into overlapping labels. No document/path branch chooses chrome.
+control override and unused two-row XR control CSS. Compact media rules exclude rails. At 1.3.4 one shared surface owns compact clips and time-axis bars; delete tinted compact clip/placeholder/image/regular-FBF flavors, label chips and divergent selected border widths. All ruler headers inherit one control-sized axis height; prevent wrapped scale fields covering the first lane. Lane selection and semantic marks remain data-driven, with no document/path branches. The shared TimelineTransportLane owner now owns the surface, caption and control-strip layout; remove those rules from the media/notation stylesheets. Captions and controls occupy separate flex cells with overflow inside the strip, retaining native selection and mark semantics. Scale fields never shrink into overlapping labels. No document/path branch chooses chrome. The shared playhead marker and line are now named button-backed horizontal sliders above ruler labels, compact controls and lane marks. Existing pointer capture/scrubbing owns drag; keyboard seek delegates to the existing selection/time callback. ARIA values expose seconds, frame-aware arrows and Home/End/Page bounds; no hidden or generic-div playhead decoration remains. One 26-line module replaces the two span affordances without growing the oversized ruler.
 
 ### A3 — Device-local core, existing invocation and design owners
 
@@ -479,11 +479,11 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.3. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.4. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 
-| Domain | Decision / source at 1.3.3 | Evidence or gap / accountable owner / next check |
+| Domain | Decision / source at 1.3.4 | Evidence or gap / accountable owner / next check |
 |---|---|---|
 | C01 | covered / PRD | Ticket + personas; economic pain unvalidated / product / timed pilot |
 | C02 | deferred / GTM | Segment/geography/market sizing absent; requires reachable prospects / product / before audience claim |
@@ -551,7 +551,7 @@ host boundaries; pure parser code is the small always-load delta required for in
 
 | I19 shared sizing owners | Shared root tokens reach playback and ruler siblings. Time-axis rails are transparent 61px geometry; bars and workflow/scene clips follow Main Toolbar height/radius. Both feature controls consume one shared strip. Unused XR two-row CSS and camera/sequence chrome variants are removed; runtime timing remains unchanged. Remove the shared ruler minimum height so focus scroll cannot obscure transport controls in a short BottomPanel. |
 | I20 actual affected assertions | Native registry runs execute enhanced BottomPanel, video sequence runtime surfaces, XR SHOOT, XR panel and motion-package assertions: 5/5 passed. XR fixture now contains explicit authored metadata with no initial camera marks; source assertions follow the shared owner and PanelSelect contract. Typecheck and changed-file hygiene pass. `/tmp/timeline-shared-chrome-five-tests.log`, `/tmp/timeline-shared-chrome-typecheck-final.log`, `/tmp/timeline-shared-chrome-hygiene.log`. XR package source assertions also follow the existing Media catalog mode owner. |
-| I21 current live proof | Preview 5190: WORKFLOW/Customer and SCENE/Wolf share 61px rows, neutral 1px/8px-corner bars at 38px desktop and 54px mobile, and 28px/44px controls. Caption/control bounds do not intersect for both controlled clips. At 390×844 page width stays 390. Sequence outcome change plus End/ArrowRight seeking pass; native SCENE keyboard selection passes; Wolf mark 2 seeks paused Frame 38 at 12fps. `/tmp/timeline-bar-layout-sequence-desktop.png`, `/tmp/timeline-bar-layout-xr-desktop.png` and mobile companions. |
+| I21 current live proof | Preview 5190: marker and line expose named slider roles, second-valued bounds and no aria-hidden wrapper. Hit testing returns the marker over ruler ticks and line over WORKFLOW/Customer/Web Shop bars. Both controls seek with keyboard; body drag seeks 2.999s and marker drag 5.309s through the existing transport. At 390×844 the marker target is 44×44px, line target width is 44px, page width stays 390 and foreground hits pass for workflow and three participants. `/tmp/timeline-playhead-desktop.png`, `/tmp/timeline-playhead-mobile.png`. Prior 1.3.3 neutral bar/row and XR checks remain bounded evidence. |
 | I22 retained CI diagnosis | PR #1491 Integration Gate 36985222394 failed in agent-mission browser readiness, not the build. Official failure artifact records a valid native unselected/empty authored workspace rejected by mandatory activePath. The helper now accepts empty roots only after bootstrap, idle seed synchronization and history readiness; selected roots still require their workspace source path. Exact successor 70a51779f mission browser smoke passed locally; its required Integration Gate remains pending. |
 
 
@@ -582,10 +582,10 @@ Rungs remain `undocumented`; bounded live checks do not establish the full runti
 
 | Finding Type | Severity | Rule anchor | Artifact reference | Evidence excerpt | Remediation |
 |---|---|---|---|---|---|
-| pain-point-not-validated | major | pain-point-to-feature-mapping#3 | PRD@1.3.3 | "difficulty and WTP unvalidated" | Locally reproducible timed pilot; record supported pain before implementation baseline |
-| unimplemented-guideline | major | time-to-value#3 | PRD@1.3.3 | "Clean first-run observation" | Locally reproducible first-run check after S1 |
-| market-size-single-method | major | venture-record-pitch-deck-business-plan--financial-model#6 | GTM@1.3.3 | "Market research remains a gap" | Specification change with two sourced sizing methods before audience use |
-| scenario-set-incomplete | major | venture-record-pitch-deck-business-plan--financial-model#5 | GTM@1.3.3 | "This is not a complete financial model" | Specification change joining reconciled scenarios and statements before financial claims |
+| pain-point-not-validated | major | pain-point-to-feature-mapping#3 | PRD@1.3.4 | "difficulty and WTP unvalidated" | Locally reproducible timed pilot; record supported pain before implementation baseline |
+| unimplemented-guideline | major | time-to-value#3 | PRD@1.3.4 | "Clean first-run observation" | Locally reproducible first-run check after S1 |
+| market-size-single-method | major | venture-record-pitch-deck-business-plan--financial-model#6 | GTM@1.3.4 | "Market research remains a gap" | Specification change with two sourced sizing methods before audience use |
+| scenario-set-incomplete | major | venture-record-pitch-deck-business-plan--financial-model#5 | GTM@1.3.4 | "This is not a complete financial model" | Specification change joining reconciled scenarios and statements before financial claims |
 
 Acceptance gap: disconnected reopen failed; remaining VCC/candidate gates are open.
 Shared native path ownership is resolved.
@@ -593,6 +593,6 @@ Tracked authoring majors: 4. Full authoring artifact-bearing-rule coverage has n
 alignment verdict is claimed. Diagram/canvas-domain checks prove only their selected
 structural contract; runtime, licensing, demand and delivery remain separate checks.
 
-Next: publish the timeline-bar-layout successor of PR #1496 (6cd5df09a). Two affected assertions, canvas typecheck and live desktop/mobile sequence/XR checks pass. Shared owner extraction removes the caption/control overlap and per-media ownership; no source-path branch or new parser, clock, data, dependency or external effect. Cap: 25 active minutes, eight files, 40 KiB patch; seven changed files. Required candidate CI determines handoff. Remaining VCC observations stay open.
+Next: publish the timeline-playhead successor of PR #1497 (e36fe8e5d). Two affected timeline checks, including slider semantics/frame steps/key bounds, canvas typecheck and live desktop/mobile interaction checks pass. Shared playhead owner replaces span decoration and raises its foreground hit surface; no source-path branch, new clock, dependency or external runtime effect. Cap: 20 active minutes, eight files, 30 KiB patch; seven changed files. Required candidate CI determines handoff. Remaining VCC observations stay open.
 Recheck every affected receipt on source drift. Preserve lane/source bytes if publication
 or lifecycle effects are blocked. Production remains behind its separate protected owner.

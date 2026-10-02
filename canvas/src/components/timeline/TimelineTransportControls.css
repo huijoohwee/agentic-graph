@@ -1,4 +1,5 @@
 @import './TimelineTransportPlayer.css';
+@import './TimelinePlayhead.css';
 
 .timeline-transport-chrome,
 .timeline-transport-shell {
@@ -225,36 +226,6 @@
   bottom: 20px;
   height: auto;
   border-left: 1px solid rgb(102 111 138 / 0.46);
-}
-.timeline-transport-playhead {
-  position: absolute;
-  top: -24px;
-  bottom: 0;
-  z-index: 7;
-  display: block;
-  transform: translateX(-50%);
-  border-left: 2px solid rgb(37 99 235 / 0.74);
-  cursor: ew-resize;
-  pointer-events: auto;
-  touch-action: none;
-}
-.timeline-transport-playhead-marker {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  z-index: 8;
-  width: 16px;
-  height: 16px;
-  transform: translate(-50%, -50%);
-  border: 2px solid rgb(255 255 255 / 1);
-  border-radius: 999px;
-  background: rgb(37 99 235 / 1);
-  box-shadow: 0 1px 4px rgb(15 23 42 / 0.26);
-  cursor: ew-resize;
-  pointer-events: auto;
-}
-.timeline-video-sequence-ruler-playhead-marker {
-  top: 50%;
 }
 .timeline-transport-track-clip {
   position: absolute;
