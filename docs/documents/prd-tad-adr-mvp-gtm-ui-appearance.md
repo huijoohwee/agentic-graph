@@ -131,6 +131,21 @@ feature or Production claim. Repair cap: four paths, 5 KB added source, 15 activ
 module, dependency, subscription or polling loop. Canonical authored inputs and Context admission
 remain separate unresolved closeout obligations.
 
+Release recovery repair (2026-10-02): PRD/MVP preserve passed browser evidence after an exact
+authorization-only stop, with candidate verification successful and every forward/rollback stage
+skipped. Run `36982685135` stopped because browser approval omitted the native terminal evidence;
+run `36987412129` then failed while restoring that passed ledger. Neither run deployed.
+TAD repairs the existing browser-history owner: authorization failure requires skipped preflight;
+preflight failure requires successful authorization. Both require exact completed jobs/steps and
+skipped effects. ADR forbids weakening authorization, deleting history, reusing different source
+trees or retrying mutations. Existing tests reject missing/duplicate steps, other failures and every
+non-skipped effect. Protected CI and exact source integration remain required. GTM adds no rollout
+claim: the human must run `production:authorize` for the fresh pending candidate and type its exact
+reply in an interactive terminal; browser approval alone cannot supply the required receipt.
+Cap: three paths, 8 KiB added source, 20 active minutes, zero new modules/dependencies. Production
+completion still requires the native terminal carrier and live readback; shared Context admission
+remains unresolved and authored-input recovery copies remain retained.
+
 Position this as consistent built-in controls across the local workspace. Do not claim measured
 conversion, paid value, exhaustive platform parity or a Production rollout. A useful demonstration
 shows the global setting changing mixed controls together without document edits. Roll back via
