@@ -29,8 +29,9 @@ export function testSelectedRowClassAuthorityForbidsLegacyDuplicateVariants() {
   if (uiSelectedRowStateClassName(false) !== '') {
     throw new Error('expected inactive rows to add no selected-row classes')
   }
-  if (uiSelectableRowClassName(true) !== UI_SELECTED_ROW_ACTIVE_CLASS_NAME) {
-    throw new Error('expected selected full rows to use the shared active authority')
+  const choiceStyle = `border ${UI_THEME_TOKENS.button.activeSoft}`
+  if (uiSelectableRowClassName(true) !== choiceStyle || uiSelectedRowStateClassName(true, 'choice') !== choiceStyle || uiSelectedRowStateClassName(false, 'choice') !== '') {
+    throw new Error('navigation/settings choices must retain their existing soft selection without a record accent')
   }
   if (uiSelectableRowClassName(false) !== UI_SELECTED_ROW_INACTIVE_CLASS_NAME || !UI_SELECTED_ROW_INACTIVE_CLASS_NAME.includes('border-transparent')) {
     throw new Error('expected neutral full rows to use the shared stable-border authority')
@@ -43,6 +44,11 @@ export function testSelectedRowClassAuthorityForbidsLegacyDuplicateVariants() {
   const packageJson = readFileSync(resolve(repositoryRoot, 'grph-shared/package.json'), 'utf8')
   if (!packageJson.includes('"./ui/selectedRowClasses"')) {
     throw new Error('expected grph-shared to publish the selected-row class authority')
+  }
+  const fileRowSource = readFileSync(resolve(repositoryRoot, 'canvas/src/features/markdown-workspace/MarkdownFileTreeRowButton.tsx'), 'utf8')
+  const editorSettingsSource = readFileSync(resolve(repositoryRoot, 'canvas/src/components/toolbar/EditorWorkspaceSelect.tsx'), 'utf8')
+  if (!fileRowSource.includes("uiSelectedRowStateClassName(isActive, 'choice')") || !editorSettingsSource.includes('uiSelectableRowClassName(workspaceAutosaveEnabled)')) {
+    throw new Error('file navigation and Autosave must use shared choice styling, not record selection')
   }
   const toolbarDropdownSource = readFileSync(resolve(repositoryRoot, 'canvas/src/components/toolbar/ToolbarDropdownSelect.tsx'), 'utf8')
   const rowValueSource = readFileSync(resolve(repositoryRoot, 'canvas/src/components/ui/SelectableRowValue.tsx'), 'utf8')
