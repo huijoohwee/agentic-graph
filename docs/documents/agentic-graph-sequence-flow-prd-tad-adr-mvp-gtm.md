@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.13"
-prd_revision: "1.3.13"
-tad_revision: "1.3.13"
-adr_revision: "1.3.13"
-mvp_revision: "1.3.13"
-gtm_revision: "1.3.13"
+version: "1.3.14"
+prd_revision: "1.3.14"
+tad_revision: "1.3.14"
+adr_revision: "1.3.14"
+mvp_revision: "1.3.14"
+gtm_revision: "1.3.14"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,7 +31,7 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.13**. The user authorized implementation
+All five roles join **SEQUENCE-FLOW-001@1.3.14**. The user authorized implementation
 and live UI verification on 2026-10-02. Work extends the existing workspace through
 an admitted successor lane. Remote service invocation, production mirrors, deployment
 and payment remain separate effects with no new grant here.
@@ -479,7 +479,7 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.13. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.14. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 
@@ -594,6 +594,6 @@ Tracked authoring majors: 4. Full authoring artifact-bearing-rule coverage has n
 alignment verdict is claimed. Diagram/canvas-domain checks prove only their selected
 structural contract; runtime, licensing, demand and delivery remain separate checks.
 
-Implemented at 1.3.13: the shared lane-label renderer exposes a full-label semantic button for every native lane with a selectable clip, using the same row-key-to-display-lane map and onSelectRowKey owner as clip selection. Clicking SCENE or WORKFLOW highlights its label and entire row. A lane with several clips retains its currently selected clip, otherwise selecting its first authored clip; empty lanes do not select a missing clip. Existing inserted object buttons retain their adapter and are not nested inside new controls. Shared label styling inherits typography, fills the label hit area and retains the generic blue border owner established at 1.3.12. Preview 5190 verifies pointer and Enter activation of WORKFLOW and SCENE, switching from The Wolf to SCENE with only the scene row selected. Review captures: /tmp/timeline-workflow-label-selection.png and /tmp/timeline-scene-label-selection.png. Twelve sequence/shared-label interaction cases, two XR/shared-routing contracts and typecheck pass; hygiene and whitespace are checked before publication. The interaction regression covers clip preservation, whole-row state, row transfer, empty lanes and single inserted callback delivery. Sprint cap: 15 active minutes, six paths and 30 KiB; five changed paths, no dependencies or spend. Shared ruler is 599 lines and stylesheet 584 lines. Native successor of PR #1508 at 057725c19d; full candidate CI and protected integration remain separate required receipts. Prior source-specific XR border suppression remains removed. Remaining VCC observations and production effects stay open.
+Implemented at 1.3.14: empty BottomPanel timelines use the existing shared transport, time ruler, playhead, lane labels, row renderer and context status. The media lane resolver no longer fabricates VIDEO, IMAGE, SCENE or EFFECT lanes when no renderable clips exist; the redundant display-lane fallback is removed. Empty and fully hidden authored timelines yield zero semantic/display lanes and a matching zero count. Authored clips still determine their semantic lanes, and multi-source append lanes remain tied to actual sources. PRD: remove conflicting empty layouts across source files. TAD/ADR: fix the shared data projection owner without file-path branches, replacement components or CSS variants. MVP: browser preview 5190 verifies zero labels, rows and clips for the Strybldr and SME care documents; both retain the same 0:00 transport, ruler and context status. Review captures: /tmp/timeline-empty-strybldr.png and /tmp/timeline-empty-sme-care.png. Focused semantic-lane, multi-source, shared-routing, surface-owner and empty-media-drop contracts plus typecheck validate the change; the surface contract now reads the extracted shared lane owner instead of expecting inline ruler markup. GTM: local preview evidence only, no full parity or production claim. Sprint cap: 15 active minutes, six paths and 30 KiB; four changed paths, no new modules, dependencies or spend. The resolver is 569 lines and expanded semantic test 523 lines; the pre-existing oversized surface contract does not grow. Native successor of PR #1509 at 8b59bbfb7335; full candidate CI and protected integration remain separate receipts. Prior 1.3.13 shared native lane buttons, selected-row borders, inserted object adapters and click/Enter behavior remain in place. Remaining VCC observations and production effects stay open.
 Recheck every affected receipt on source drift. Preserve lane/source bytes if publication
 or lifecycle effects are blocked. Production remains behind its separate protected owner.

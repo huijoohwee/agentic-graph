@@ -229,7 +229,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
   ].join('\n')
   const forbiddenExternalMediaToolkit = ['media', 'bunny'].join('')
   const rulerText = [
-    readSource('components', 'timeline', 'VideoSequenceTimelineRuler.tsx'),
+    readSource('components', 'timeline', 'VideoSequenceTimelineRuler.tsx'), readSource('components', 'timeline', 'VideoSequenceTimelineLanes.tsx'),
     readSource('components', 'timeline', 'videoSequenceClipThumbnailSelection.ts'),
     readSource('components', 'timeline', 'videoSequenceSourceThumbnailSet.ts'),
     readSource('components', 'timeline', 'VideoSequenceClipThumbnailStrip.tsx'),
@@ -354,7 +354,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     rulerText.includes('timeline-video-sequence-ruler-scope-header') ||
     rulerText.includes('<meter') ||
     !sequenceText.includes('VIDEO_SEQUENCE_LANE_HEIGHT_PX = 61') ||
-    !sequenceText.includes("VIDEO_SEQUENCE_BOTTOM_PANEL_DISABLED_LANE_IDS: readonly VideoSequenceTimelineLaneId[] = ['mask', 'grade']") || !sequenceText.includes("VIDEO_SEQUENCE_TIMELINE_EMPTY_LANE_IDS: readonly VideoSequenceTimelineLaneId[] = ['video', 'image', 'scene', 'effect']") ||
+    !sequenceText.includes("VIDEO_SEQUENCE_BOTTOM_PANEL_DISABLED_LANE_IDS: readonly VideoSequenceTimelineLaneId[] = ['mask', 'grade']") || sequenceText.includes('VIDEO_SEQUENCE_TIMELINE_EMPTY_LANE_IDS') ||
     !sequenceText.includes('disabledLaneIds?: readonly VideoSequenceTimelineLaneId[]') ||
     !sequenceText.includes('const disabledLaneIds = new Set(options.disabledLaneIds || [])') ||
     !sequenceText.includes('!disabledLaneIds.has(resolveVideoSequenceTimelineLane(span))') ||
@@ -367,7 +367,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     !rulerText.includes('resolveVisibleVideoSequenceTimelineDisplayLanes(taskSpans, projectionOptions)') ||
     !rulerText.includes('resolveRenderableVideoSequenceTimelineSpans(taskSpans, projectionOptions)') ||
     rulerText.includes("sourceCoverageMode: 'source-covered'") ||
-    (!rulerText.includes('timelineLanes.map(lane =>') || !rulerText.includes('return visibleLanes.flatMap(lane =>')) ||
+    (!rulerText.includes('<VideoSequenceTimelineLaneLabels lanes={timelineLanes}') || !rulerText.includes('<VideoSequenceTimelineLaneRows lanes={timelineLanes}') || !rulerText.includes('return visibleLanes.flatMap(lane =>')) ||
     !['resolveVideoSequenceTimelineDisplayLaneId(span, renderableSpans, projectionOptions)', 'visibleLaneIndexById.get(displayLaneId)', 'data-kg-video-sequence-display-lane', 'data-kg-video-sequence-display-lane-label', 'data-kg-video-sequence-lane-append'].every(token => rulerText.includes(token)) ||
     !['buildVideoSequenceTimelineCueSamples', 'buildVideoSequenceTimelineFrameSamples', 'buildVideoSequenceTimelineWaveformSamples', 'buildVideoSequenceClipMediaCache', 'const clipMediaByRowKey = React.useMemo', "const waveformSamples = lane === 'audio' && !verticalMarker", 'sourceAudioWaveformSamples', "sourceAudioWaveformSamples.length ? 'source' : 'synthetic'"].every(token => rulerText.includes(token)) ||
     !rulerText.includes('timeline-video-sequence-clip-timecode') ||
