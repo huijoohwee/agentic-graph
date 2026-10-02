@@ -1,4 +1,6 @@
 .timeline-transport-chrome--mermaid-gantt {
+  container-name: timeline-transport;
+  container-type: inline-size;
   --kg-video-sequence-lane-sidebar-width: 112px;
   position: relative;
   isolation: isolate;
@@ -15,6 +17,8 @@
   box-shadow: none;
   padding: 0;
 }
+
+
 
 .timeline-transport-chrome--mermaid-gantt .timeline-player {
   position: relative;
@@ -544,4 +548,17 @@
 .timeline-transport-chrome--mermaid-gantt .timeline-video-sequence-ruler-content .timeline-transport-playhead {
   color: var(--kg-canvas-accent, rgb(37 99 235 / 1));
   filter: drop-shadow(0 1px 1px rgb(15 23 42 / 0.16));
+}
+
+/* Available width, rather than source kind, owns the responsive transport row. */
+@container timeline-transport (max-width: 600px) {
+  .timeline-transport-chrome--mermaid-gantt .timeline-player {
+    flex-wrap: wrap;
+    height: auto;
+    padding-block: 4px;
+  }
+  .timeline-transport-chrome--mermaid-gantt .timeline-player-toolbar {
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
 }

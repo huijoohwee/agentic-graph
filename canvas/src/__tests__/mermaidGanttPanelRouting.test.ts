@@ -1040,7 +1040,7 @@ export async function testGanttPanelRoutingUsesSharedGitGraphMermaidUtilities() 
     !ganttTransportShellModelText.includes("'data-kg-video-sequence-media-duration-scale': args.hasMediaDurationScale ? '1' : undefined") ||
     !ganttTransportShellModelText.includes("timelineMode: 'empty' | 'source-backed' | 'workflow'") ||
     !ganttTransportShellModelText.includes("'data-kg-video-sequence-timeline': args.timelineMode") ||
-    !ganttTransportShellModelText.includes('showInlineProgress: false') ||
+    !ganttTransportShellModelText.includes('showInlineProgress: true') ||
     !ganttTransportShellModelText.includes('showRange: false') ||
     !ganttTransportShellText.includes('GanttTimelineTransportShell') ||
     !ganttTransportShellText.includes('TimelineTransportChrome') ||

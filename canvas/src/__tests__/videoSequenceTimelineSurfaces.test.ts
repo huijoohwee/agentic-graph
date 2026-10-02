@@ -651,7 +651,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     !transportShellModelText.includes("'data-kg-video-sequence-media-duration-scale': args.hasMediaDurationScale ? '1' : undefined") ||
     !transportShellModelText.includes("timelineMode: 'empty' | 'source-backed' | 'workflow'") ||
     !transportShellModelText.includes("'data-kg-video-sequence-timeline': args.timelineMode") ||
-    !transportShellModelText.includes('showInlineProgress: false') ||
+    !transportShellModelText.includes('showInlineProgress: true') ||
     !transportShellModelText.includes('showRange: false') ||
     !transportShellModelText.includes('step: 1') ||
     !transportShellText.includes('GanttTimelineTransportShell') ||
