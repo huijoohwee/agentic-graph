@@ -1,41 +1,29 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { MARKDOWN_DATA_VIEW_COPY } from '@/lib/config-copy/markdownDataViewCopy'
-import { cancelWorkspaceSyncTask, scheduleWorkspaceSyncTask } from '@/lib/async/workspaceSyncScheduler'
-import { WORKSPACE_SYNC_SCOPE_MARKDOWN_WORKSPACE_DATAVIEW_RUNTIME_PERSISTENCE } from '@/lib/async/workspaceSyncKeys'
-import { hashStringToHex } from '@/lib/hash/stringHash'
-import { defaultWorkspaceDataViewConfig, readWorkspaceDataViewConfig, writeWorkspaceDataViewConfig, type WorkspaceDataViewConfig } from './workspaceDataViewConfig'
+import { defaultWorkspaceDataViewConfig, buildWorkspaceDataViewScopeKey, readWorkspaceDataViewConfig, type WorkspaceDataViewConfig } from './workspaceDataViewConfig'
+import { useSavedWorkspaceDataView } from './useSavedWorkspaceDataView'
 import type { DataViewCandidate } from './markdownWorkspaceDataViewCandidates'
 import type { MarkdownWorkspaceDerivedViewerMode } from './MarkdownWorkspaceDerivedViewer'
 
-/** Source observations share table settings without persisting evidence or changing authored modes. */
 export function useWorkspaceDataViewConfig(selected: DataViewCandidate | null, activeDocumentPath: string | null | undefined,
   viewerMode: MarkdownWorkspaceDerivedViewerMode, ephemeral = false) {
-  const [viewConfig, setViewConfig] = React.useState<WorkspaceDataViewConfig | null>(null)
-  const tableId = selected?.id, groupByColumnId = selected?.view.groupByColumnId ?? null
-  React.useEffect(() => {
-    if (!tableId) { setViewConfig(null); return }
-    const fallback = defaultWorkspaceDataViewConfig({
-      title: viewerMode === 'kanban' ? MARKDOWN_DATA_VIEW_COPY.kanbanViewLabel : viewerMode === 'geospatial'
-        ? MARKDOWN_DATA_VIEW_COPY.geospatialViewLabel : MARKDOWN_DATA_VIEW_COPY.tableViewLabel,
-      layout: viewerMode === 'kanban' ? 'kanban' : 'table', groupByColumnId,
-    })
-    setViewConfig(ephemeral ? fallback : readWorkspaceDataViewConfig({ activeDocumentPath, tableId, fallback }))
-  }, [activeDocumentPath, viewerMode, tableId, groupByColumnId, ephemeral])
-  React.useEffect(() => {
-    if (ephemeral || !tableId || !viewConfig) return
-    const taskKey = `markdown-workspace:dataview:${tableId}`, value = viewConfig
-    scheduleWorkspaceSyncTask(taskKey, () => writeWorkspaceDataViewConfig({ activeDocumentPath, tableId, value }), 200, {
-      signature: hashStringToHex(JSON.stringify({ docPath: activeDocumentPath ?? null, tableId, value })),
-      scopeKey: WORKSPACE_SYNC_SCOPE_MARKDOWN_WORKSPACE_DATAVIEW_RUNTIME_PERSISTENCE,
-    })
-    return () => { cancelWorkspaceSyncTask(taskKey) }
-  }, [activeDocumentPath, tableId, viewConfig, ephemeral])
+  const layout = viewerMode === 'calendar' ? 'calendar' : viewerMode === 'kanban' ? 'kanban' : 'table'
+  const saved = useSavedWorkspaceDataView({ activeDocumentPath: activeDocumentPath ?? null, tableId: selected?.id ?? null, ephemeral,
+    fallback: defaultWorkspaceDataViewConfig({ title: layout === 'calendar' ? 'Calendar View' : layout === 'kanban' ? 'Kanban View' : 'Table View', layout, groupByColumnId: selected?.view.groupByColumnId ?? null }),
+  })
   const commitViewConfig = React.useCallback((next: WorkspaceDataViewConfig) => {
-    setViewConfig(next)
-    if (ephemeral) return
-    if (tableId) writeWorkspaceDataViewConfig({ activeDocumentPath, tableId, value: next })
-    if ((viewConfig?.graphEnabled === true) !== (next.graphEnabled === true)) useGraphStore.getState().setMultiDimTableModeEnabled(next.graphEnabled === true)
-  }, [activeDocumentPath, tableId, viewConfig?.graphEnabled, ephemeral])
-  return { viewConfig, setViewConfig, commitViewConfig }
+    saved.setViewConfig(next)
+    if (!ephemeral && (saved.viewConfig?.graphEnabled === true) !== (next.graphEnabled === true)) useGraphStore.getState().setMultiDimTableModeEnabled(next.graphEnabled === true)
+  }, [saved.setViewConfig, saved.viewConfig?.graphEnabled, ephemeral])
+  const appliedIntent = React.useRef('')
+  React.useEffect(() => {
+    if (!selected || !saved.viewConfig) return
+    const scope = { activeDocumentPath: activeDocumentPath ?? null, tableId: selected.id }
+    const intent = `${buildWorkspaceDataViewScopeKey(scope)}:${viewerMode}`
+    if (appliedIntent.current === intent) return
+    appliedIntent.current = intent
+    const current = ephemeral ? saved.viewConfig : readWorkspaceDataViewConfig({ ...scope, fallback: saved.viewConfig })
+    if (!current.recoveryError && current.layout !== layout) saved.setViewConfig({ ...current, layout })
+  }, [selected?.id, activeDocumentPath, viewerMode, layout, saved.viewConfig, saved.setViewConfig, ephemeral])
+  return { ...saved, commitViewConfig }
 }

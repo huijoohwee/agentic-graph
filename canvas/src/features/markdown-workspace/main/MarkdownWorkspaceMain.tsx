@@ -197,7 +197,7 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
       }
       if (next === 'multiDimTable') {
         store.setMultiDimTableModeEnabled(true)
-      } else if (next === 'table' || next === 'kanban') {
+      } else if (next === 'table' || next === 'kanban' || next === 'calendar') {
         store.setMultiDimTableModeEnabled(false)
       }
       if (next !== workspaceEditorMode) {

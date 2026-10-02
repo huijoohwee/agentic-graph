@@ -1,5 +1,9 @@
+import { WorkspaceDataViewSettingsGroupSection } from './WorkspaceDataViewSettingsGroupSection'
+import { WorkspaceDataViewSettingsCalendarSection } from './WorkspaceDataViewSettingsCalendarSection'
+import { WorkspaceDataViewSettingsLifecycle } from './WorkspaceDataViewSettingsLifecycle'
+import { filterRuleCount as countFilterRules } from './workspaceDataViewFilterTree'
 import React from 'react'
-import { ArrowLeftRight, ArrowUpDown, Filter, Globe2, LayoutGrid, RotateCcw, SlidersHorizontal, Table as TableIcon } from 'lucide-react'
+import { ArrowLeftRight, ArrowUpDown, CalendarDays, Filter, Globe2, LayoutGrid, RotateCcw, SlidersHorizontal, Table as TableIcon } from 'lucide-react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { MARKDOWN_DATA_VIEW_COPY } from '@/lib/config-copy/markdownDataViewCopy'
 import { WorkspaceDataViewSettingsPropertiesSection } from './WorkspaceDataViewSettingsPropertiesSection'
@@ -48,15 +52,12 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
 
   const shownCount = React.useMemo(() => {
     return props.viewConfig.visibleColumnIds
-      ? props.viewConfig.visibleColumnIds.length
-      : props.columns.length
-  }, [props.columns.length, props.viewConfig.visibleColumnIds])
+      ? props.viewConfig.visibleColumnIds.filter(id => id !== props.sourceView?.titleColumnId && props.columns.some(c => c.id === id)).length
+      : props.columns.filter(c => c.id !== props.sourceView?.titleColumnId).length
+  }, [props.columns, props.sourceView?.titleColumnId, props.viewConfig.visibleColumnIds])
 
-  const groupableColumns = React.useMemo(() => {
-    return props.columns
-  }, [props.columns])
   const currentSortRule = props.viewConfig.sortRules[0] || null
-  const filterRuleCount = props.viewConfig.filterGroups.reduce((count, group) => count + group.rules.length, 0)
+  const filterRuleCount = countFilterRules(props.viewConfig, props.sourceView)
   const groupByColumnName = props.columns.find(column => column.id === props.viewConfig.groupByColumnId)?.name || 'None'
   const sortColumnName = currentSortRule ? (props.columns.find(column => column.id === currentSortRule.columnId)?.name || currentSortRule.columnId) : 'None'
   const orientation = props.viewConfig.orientation === 'columns' ? 'columns' : 'rows'
@@ -228,6 +229,8 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
       headerClassName={['px-3 py-3 border-b', UI_THEME_TOKENS.panel.divider].join(' ')}
       bodyClassName="p-0"
     >
+      {props.viewConfig.recoveryError && <p role="alert">{props.viewConfig.recoveryError} Settings are read-only until recovered.</p>}
+      <fieldset disabled={!!props.viewConfig.recoveryError} className="min-w-0 border-0 p-0 m-0">
       <main className="kg-data-view-settings-layout flex h-full min-h-0 flex-col">
         <section className="min-w-0 flex-1 overflow-y-auto px-3 pb-3" aria-label="View settings panel">
           <section className={['mt-3 rounded border p-2', UI_THEME_TOKENS.panel.border].join(' ')} aria-label="View query workbench">
@@ -290,6 +293,8 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
             headerClassName={VIEW_SECTION_HEADER_SPACING_CLASS_NAME}
           >
             <section className="space-y-4" aria-label="Layout">
+              <WorkspaceDataViewSettingsLifecycle {...props} />
+              {props.viewerMode === 'calendar' && <WorkspaceDataViewSettingsCalendarSection {...props} />}
               <PanelField label="View name" variant="section">
                 <PanelTextInput
                   className="px-3 py-2 text-sm"
@@ -314,7 +319,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
                       key={mode}
                       active={(props.viewerMode || 'table') === mode}
                       label={getWorkspaceEditorModeLabel(mode)}
-                      icon={mode === 'kanban'
+                      icon={mode === 'calendar' ? <CalendarDays className="w-6 h-6" role="img" aria-label="Calendar" /> : mode === 'kanban'
                         ? <LayoutGrid className="w-6 h-6" aria-hidden="true" />
                         : <TableIcon className="w-6 h-6" aria-hidden="true" />}
                       onClick={() => {
@@ -323,7 +328,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
                           props.onChangeLayoutMode(mode)
                           return
                         }
-                        props.onChangeLayout(mode === 'kanban' ? 'kanban' : 'table')
+                        props.onChangeLayout(mode === 'calendar' ? 'calendar' : mode === 'kanban' ? 'kanban' : 'table')
                       }}
                     />
                   ))}
@@ -445,6 +450,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
           >
             <WorkspaceDataViewSettingsPropertiesSection
               canMutate={props.canMutate}
+              titleColumnId={props.sourceView?.titleColumnId}
               columns={props.columns}
               view={props.viewConfig}
               onChangeView={props.setViewConfig}
@@ -479,6 +485,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
             headerClassName={VIEW_SECTION_HEADER_SPACING_CLASS_NAME}
           >
             <WorkspaceDataViewSettingsSortSection
+              sourceView={props.sourceView}
               columns={props.columns}
               view={props.viewConfig}
               onChangeView={props.setViewConfig}
@@ -493,29 +500,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
             stickyHeader={false}
             headerClassName={VIEW_SECTION_HEADER_SPACING_CLASS_NAME}
           >
-            <section aria-label="Group" className="space-y-2">
-              <PanelField label="Group by" variant="section">
-                <PanelSelect
-                  className={[MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME, 'w-full text-left'].join(' ')}
-                  value={props.viewConfig.groupByColumnId || ''}
-                  onValueChange={selectedValueInput => {
-                    const nextGroupByColumnId = selectedValueInput || null
-                    if ((props.viewConfig.groupByColumnId || null) === nextGroupByColumnId) return
-                    props.setViewConfig({ ...props.viewConfig, groupByColumnId: nextGroupByColumnId })
-                  }}
-                >
-                  <option value="">None</option>
-                  {groupableColumns.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </PanelSelect>
-              </PanelField>
-              <section className={['text-xs', UI_THEME_TOKENS.text.secondary].join(' ')}>
-                Grouping is available for Select / Multi-select properties.
-              </section>
-            </section>
+            <WorkspaceDataViewSettingsGroupSection {...props} />
           </CollapsibleSection>
 
           <CollapsibleSection
@@ -531,7 +516,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
                 Reset view state
               </section>
               <section className={['text-xs', UI_THEME_TOKENS.text.secondary].join(' ')}>
-                Clears local search, grouping, filters, sorting, and view state overrides for the active data view.
+                Clears local search and temporary group and title-sort choices. Saved filters, sorts and source records stay available.
               </section>
               <button
                 type="button"
@@ -544,6 +529,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
           </CollapsibleSection>
         </section>
       </main>
+      </fieldset>
     </MainPanelSettingsPanelShell>
   )
 }

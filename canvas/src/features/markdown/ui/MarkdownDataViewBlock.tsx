@@ -1,3 +1,6 @@
+import { upsertDataViewColumnFilter } from '@/features/markdown-workspace/main/viewer/workspaceDataViewFilterTree'
+import { useSavedWorkspaceDataView } from '@/features/markdown-workspace/main/viewer/useSavedWorkspaceDataView'
+import { WorkspaceDataViewCalendarSurface } from '@/features/markdown-workspace/main/viewer/WorkspaceDataViewCalendarSurface'
 import React from 'react'
 import type { TokenWithLines } from './markdownPreviewLex'
 import type { RenderOpts } from './MarkdownRendererTypes'
@@ -61,7 +64,9 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
   const tableId = React.useMemo(() => `md-block:${startLine}-${endLine}`, [endLine, startLine])
   const activeDocumentPath = opts.activeDocumentPath ?? null
 
-  const [viewConfig, setViewConfig] = React.useState<WorkspaceDataViewConfig | null>(null)
+  const { viewConfig, setViewConfig } = useSavedWorkspaceDataView({ activeDocumentPath, tableId: view ? tableId : null,
+    fallback: defaultWorkspaceDataViewConfig({ title: UI_COPY.markdownDataViewTitleDefault, layout: view?.groupByColumnId ? 'kanban' : 'table', groupByColumnId: view?.groupByColumnId || null }),
+  })
   const [settingsPanel, setSettingsPanel] = React.useState<WorkspaceDataViewSettingsPanelKey>('properties')
   const [headerState, setHeaderState] = React.useState<WorkspaceDataViewHeaderState>(() => ({
     searchQuery: '',
@@ -69,51 +74,6 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
     sortMode: 'none' as 'none' | 'title_asc' | 'title_desc',
   }))
   const registrationId = React.useId()
-
-  React.useEffect(() => {
-    if (!view) {
-      setViewConfig(null)
-      return
-    }
-    const fallback = defaultWorkspaceDataViewConfig({
-      title: UI_COPY.markdownDataViewTitleDefault,
-      layout: view.groupByColumnId ? 'kanban' : 'table',
-      groupByColumnId: view.groupByColumnId || null,
-    })
-    const cfg = readWorkspaceDataViewConfig({ activeDocumentPath, tableId, fallback })
-    setViewConfig(cfg)
-  }, [activeDocumentPath, tableId, view])
-
-  const persistTimerRef = React.useRef<number | null>(null)
-  React.useEffect(() => {
-    if (!viewConfig) return
-    if (typeof window === 'undefined') return
-    if (persistTimerRef.current != null) {
-      window.clearTimeout(persistTimerRef.current)
-      persistTimerRef.current = null
-    }
-    persistTimerRef.current = window.setTimeout(() => {
-      persistTimerRef.current = null
-      writeWorkspaceDataViewConfig({ activeDocumentPath, tableId, value: viewConfig })
-    }, 200)
-    return () => {
-      if (persistTimerRef.current != null) {
-        window.clearTimeout(persistTimerRef.current)
-        persistTimerRef.current = null
-      }
-    }
-  }, [activeDocumentPath, tableId, viewConfig])
-
-  React.useEffect(() => {
-    if (!view) return
-    setViewConfig(prev => {
-      if (!prev) return prev
-      if (prev.layout === 'kanban' && !prev.groupByColumnId && !view.groupByColumnId) {
-        return { ...prev, layout: 'table' }
-      }
-      return prev
-    })
-  }, [view])
 
   const commitView = React.useCallback(
     (next: MarkdownDataView) => {
@@ -245,7 +205,7 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
 
   const handleHideColumnInView = React.useCallback(
     (columnId: string) => {
-      if (!view) return
+      if (!view || columnId === view.titleColumnId) return
       setViewConfig(prev => {
         if (!prev) return prev
         const allIds = view.columns.map(c => c.id)
@@ -262,18 +222,7 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
       const value = String(args.value ?? '').trim()
       setViewConfig(prev => {
         if (!prev) return prev
-        const makeId = () => {
-          if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
-          return `id_${Math.random().toString(16).slice(2)}_${Date.now()}`
-        }
-        const groups = prev.filterGroups.length ? prev.filterGroups : [{ id: 'g0', rules: [] }]
-        const first = groups[0]
-        const rest = groups.slice(1)
-        const remaining = first.rules.filter(r => r.columnId !== args.columnId)
-        const nextRules = value
-          ? [...remaining, { id: makeId(), columnId: args.columnId, columnKind: args.columnKind, op: args.op, value }]
-          : remaining
-        return { ...prev, filterGroups: [{ ...first, rules: nextRules }, ...rest] }
+        return upsertDataViewColumnFilter(prev, { ...args, value })
       })
     },
     [],
@@ -290,8 +239,7 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
 
   const effectiveGroupByColumnId = React.useMemo(() => {
     if (!view) return null
-    const preferred = viewConfig?.groupByColumnId || null
-    return preferred || view.groupByColumnId || null
+    return viewConfig ? viewConfig.groupByColumnId : view.groupByColumnId || null
   }, [view, viewConfig?.groupByColumnId])
 
   const baseView = React.useMemo((): MarkdownDataView | null => {
@@ -313,8 +261,9 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
   const hasViewConfig = !!viewConfig
   const viewLayout = viewConfig?.layout
   const graphEnabled = !!viewConfig?.graphEnabled
-  const viewerMode: 'kanban' | 'table' | 'multiDimTable' = React.useMemo(() => {
+  const viewerMode: 'kanban' | 'calendar' | 'table' | 'multiDimTable' = React.useMemo(() => {
     if (!hasViewConfig) return 'table'
+    if (viewLayout === 'calendar') return 'calendar'
     if (!(viewLayout === 'table' || !effectiveGroupByColumnId)) return 'kanban'
     return graphEnabled ? 'multiDimTable' : 'table'
   }, [effectiveGroupByColumnId, graphEnabled, hasViewConfig, viewLayout])
@@ -329,6 +278,8 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
       viewerLayout: viewConfig.layout,
       viewerMode,
       allowMultiDimLayout: true,
+      sourceView: view,
+      viewScope: { activeDocumentPath, tableId },
       columns: view.columns,
       groupByColumnId: effectiveGroupByColumnId,
       viewConfig,
@@ -340,11 +291,11 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
           return { ...prev, layout }
         })
       },
-      onChangeLayoutMode: (mode: 'table' | 'kanban' | 'multiDimTable') => {
+      onChangeLayoutMode: (mode: 'table' | 'kanban' | 'calendar' | 'multiDimTable') => {
         setViewConfig(prev => {
           if (!prev) return prev
           const nextGraphEnabled = mode === 'multiDimTable'
-          const nextLayout = mode === 'kanban' ? 'kanban' : 'table'
+          const nextLayout = mode === 'calendar' ? 'calendar' : mode === 'kanban' ? 'kanban' : 'table'
           if (prev.layout === nextLayout && !!prev.graphEnabled === nextGraphEnabled && prev.geospatialViewEnabled !== true) {
             return prev
           }
@@ -408,7 +359,7 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
           setViewConfig(prev => {
             if (!prev) return prev
             const nextGraphEnabled = mode === 'multiDimTable' || mode === 'geospatial'
-            const nextLayout = mode === 'kanban' ? 'kanban' : 'table'
+            const nextLayout = mode === 'calendar' ? 'calendar' : mode === 'kanban' ? 'kanban' : 'table'
             const nextGeospatialEnabled = mode === 'geospatial'
             if (
               prev.layout === nextLayout
@@ -437,10 +388,14 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
       />
 
       <section className={UI_THEME_TOKENS.panel.bg}>
-        {viewerMode === 'kanban' ? (
+        {viewerMode === 'calendar' ? (
+          <WorkspaceDataViewCalendarSurface view={displayedView} config={viewConfig} onChangeConfig={setViewConfig} canMutate={canMutate} onUpdateCell={handleUpdateCell} onNewRecord={handleNewRecord} />
+        ) : viewerMode === 'kanban' ? (
           <MarkdownDataViewKanbanView
             view={displayedView}
             visibleColumnIds={viewConfig.visibleColumnIds}
+            hiddenGroupIds={viewConfig.hiddenGroupIds}
+            hideEmptyGroups={viewConfig.hideEmptyGroups}
             canMutate={canMutate}
             onUpdateCell={handleUpdateCell}
             onReorderRows={handleReorderRows}

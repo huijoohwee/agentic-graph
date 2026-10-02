@@ -30,10 +30,13 @@ export type WorkspaceDataViewFloatingBinding = {
   viewerLayout: WorkspaceDataViewLayout
   viewerMode?: WorkspaceEditorMode
   allowMultiDimLayout?: boolean
+  sourceView?: import('@/features/markdown/ui/markdownDataViewModel').MarkdownDataView
+  viewScope?: { activeDocumentPath: string | null; tableId: string; ephemeral?: boolean }
   columns: readonly MarkdownDataViewColumn[]
   groupByColumnId: string | null
   viewConfig: WorkspaceDataViewConfig
   setViewConfig: (next: WorkspaceDataViewConfig) => void
+  onSelectSavedView?: (view: WorkspaceDataViewConfig) => void
   onChangeLayout: (layout: WorkspaceDataViewLayout) => void
   onChangeLayoutMode?: (mode: WorkspaceEditorMode) => void
   onSelectGeospatialView?: () => void
