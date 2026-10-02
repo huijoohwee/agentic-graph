@@ -324,7 +324,19 @@
   border-radius: 4px;
 }
 
-.timeline-video-sequence-clip-thumbnail-drag-affordance { position: absolute; inset-block-start: 2px; inset-inline-end: 2px; z-index: 3; width: 8px; height: 8px; border-radius: 999px; cursor: grab; touch-action: none; }
+.timeline-video-sequence-clip-thumbnail-seek {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: inherit;
+  touch-action: inherit;
+}
+
+.timeline-video-sequence-clip-thumbnail-drag-affordance { position: absolute; inset-block-start: 2px; inset-inline-end: 2px; z-index: 3; width: 20px; height: 20px; max-width: calc(100% - 4px); max-height: calc(100% - 4px); padding: 0; border: 1px solid rgb(255 255 255 / 0.72); border-radius: 3px; background: rgb(2 6 23 / 0.8); color: white; font-size: 14px; line-height: 1; cursor: grab; pointer-events: auto; touch-action: none; }
 .timeline-video-sequence-clip-thumbnail-drag-affordance:active { cursor: grabbing; }
 
 .timeline-video-sequence-clip-thumbnail-caption {
@@ -355,7 +367,7 @@
   top: calc(100% + 8px);
   left: 50%;
   z-index: 8;
-  display: block;
+  display: block; margin: 0;
   width: min(168px, 34vw);
   aspect-ratio: 16 / 9;
   overflow: hidden;
@@ -399,7 +411,7 @@
 }
 
 .timeline-video-sequence-clip-thumbnail:hover,
-.timeline-video-sequence-clip-thumbnail:focus-visible {
+.timeline-video-sequence-clip-thumbnail:focus-within {
   z-index: 7;
   box-shadow:
     inset 0 0 0 1px rgb(255 255 255 / 0.44),
@@ -407,7 +419,8 @@
     0 2px 8px rgb(15 23 42 / 0.28);
 }
 
-.timeline-video-sequence-clip-thumbnail:focus-visible {
+.timeline-video-sequence-clip-thumbnail-seek:focus-visible,
+.timeline-video-sequence-clip-thumbnail-drag-affordance:focus-visible {
   outline: 2px solid rgb(37 99 235 / 0.92);
   outline-offset: 1px;
 }
@@ -421,7 +434,7 @@
 }
 
 .timeline-video-sequence-clip-thumbnail:hover .timeline-video-sequence-clip-thumbnail-caption,
-.timeline-video-sequence-clip-thumbnail:focus-visible .timeline-video-sequence-clip-thumbnail-caption {
+.timeline-video-sequence-clip-thumbnail:focus-within .timeline-video-sequence-clip-thumbnail-caption {
   opacity: 1;
   transform: translateY(0);
 }

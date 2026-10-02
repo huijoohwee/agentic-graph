@@ -326,16 +326,13 @@
 }
 
 .timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--lane-audio):not(.timeline-transport-track-clip--lane-fbf) .timeline-video-sequence-clip-thumbnail-drag-affordance {
-  background:
-    repeating-linear-gradient(180deg, rgb(255 255 255 / 0.72) 0 1px, transparent 1px 3px),
-    rgb(2 6 23 / 0.28);
-  opacity: 0;
+  opacity: 0.92;
   cursor: grab;
   transition: opacity 120ms ease-out, background-color 120ms ease-out;
 }
 
 .timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--lane-audio):not(.timeline-transport-track-clip--lane-fbf) .timeline-video-sequence-clip-thumbnail:hover .timeline-video-sequence-clip-thumbnail-drag-affordance,
-.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--lane-audio):not(.timeline-transport-track-clip--lane-fbf) .timeline-video-sequence-clip-thumbnail:focus-visible .timeline-video-sequence-clip-thumbnail-drag-affordance {
+.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--lane-audio):not(.timeline-transport-track-clip--lane-fbf) .timeline-video-sequence-clip-thumbnail:focus-within .timeline-video-sequence-clip-thumbnail-drag-affordance {
   opacity: 1;
 }
 
@@ -381,7 +378,7 @@
 }
 
 .timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--lane-audio):not(.timeline-transport-track-clip--lane-fbf) .timeline-video-sequence-clip-thumbnail:hover,
-.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--lane-audio):not(.timeline-transport-track-clip--lane-fbf) .timeline-video-sequence-clip-thumbnail:focus-visible {
+.timeline-video-sequence-ruler-content .timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--lane-audio):not(.timeline-transport-track-clip--lane-fbf) .timeline-video-sequence-clip-thumbnail:focus-within {
   overflow: visible;
   box-shadow: none;
 }

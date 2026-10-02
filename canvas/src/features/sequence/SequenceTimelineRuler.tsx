@@ -19,7 +19,11 @@ export function SequenceTimelineRuler({ sequence, viewportRef, timelineZoom, sce
   sceneControls: React.ReactNode
 }) {
   const { model, events, duration, current, transport, selectEvent } = sequence
-  const [selectedRowKey, setSelectedRowKey] = React.useState('')
+  const [laneSelection, setLaneSelection] = React.useState({ documentKey: '', rowKey: '' })
+  const selectedRowKey = laneSelection.documentKey === model.key ? laneSelection.rowKey : ''
+  const setSelectedRowKey = React.useCallback((rowKey: string) => {
+    setLaneSelection({ documentKey: model.key, rowKey })
+  }, [model.key])
   const contentRef = React.useRef<HTMLElement>(null)
   const maxMinutes = duration / 60000
   const scaleMinutes = resolveVideoSequenceTimelineScaleMaxMinutes({ maxMinutes, mediaDurationSeconds: duration / 1000 })
@@ -35,19 +39,25 @@ export function SequenceTimelineRuler({ sequence, viewportRef, timelineZoom, sce
     setTransportPlaying: transport.setTransportPlaying,
     setTransportPlaybackPosition: value => transport.setTransportPlaybackPosition(value * 60000),
   })
-  const lanes: VideoSequenceTimelineInsertedLane[] = model.participants.map(participant => ({
+  const lanes: VideoSequenceTimelineInsertedLane[] = model.participants.map(participant => {
+    const selectRowKey = `sequence-participant:${participant.id}`
+    const selected = selectedRowKey ? selectedRowKey === selectRowKey : current?.from === participant.id || current?.to === participant.id
+    return {
     id: participant.id, insertAfterLaneId: 'workflow',
-    label: <span title={participant.label}>{participant.label}</span>,
-    selected: current?.from === participant.id || current?.to === participant.id,
+    label: <button type="button" className="timeline-video-sequence-lane-select" title={participant.label}
+      aria-label={`Select ${participant.label} timeline lane`} aria-pressed={selected}
+      onClick={() => setSelectedRowKey(selectRowKey)}>{participant.label}</button>,
+    selectRowKey, selected,
     content: <TimelineTransportTimeAxisClip laneStyle="video" className="sequence-participant-track"
-      aria-label={`${participant.label} sequence lane`} style={{ left: resolveVideoSequenceRulerInsetLeft(0), width: resolveVideoSequenceRulerInsetWidth(scaleMinutes ? maxMinutes / scaleMinutes * 100 : 0), minWidth: 0 }}>
-      <button className="timeline-transport-time-axis-bar sequence-participant-bar" aria-label={`Scrub ${participant.label} sequence lane`} data-kg-video-sequence-ruler-scrub-target="1" title="Drag to scrub the authored sequence"
-        onPointerDown={() => setSelectedRowKey('')}
+      aria-label={`${participant.label} sequence lane`} data-kg-video-sequence-ruler-scrub-row-key={selectRowKey}
+      style={{ left: resolveVideoSequenceRulerInsetLeft(0), width: resolveVideoSequenceRulerInsetWidth(scaleMinutes ? maxMinutes / scaleMinutes * 100 : 0), minWidth: 0 }}>
+      <button type="button" className="timeline-transport-time-axis-bar sequence-participant-bar" aria-label={`Scrub ${participant.label} sequence lane`} aria-pressed={selected} data-kg-video-sequence-ruler-scrub-target="1" title="Drag to scrub the authored sequence"
+        onPointerDown={() => setSelectedRowKey(selectRowKey)} onClick={() => setSelectedRowKey(selectRowKey)}
         onKeyDown={event => {
           const delta = event.key === 'ArrowRight' ? 1000 : event.key === 'ArrowLeft' ? -1000 : 0
           if (!delta && event.key !== 'Home' && event.key !== 'End') return
           event.preventDefault()
-          setSelectedRowKey('')
+          setSelectedRowKey(selectRowKey)
           transport.setTransportPlaying(false)
           transport.setTransportPlaybackPosition(event.key === 'Home' ? 0 : event.key === 'End' ? duration : Math.min(duration, Math.max(0, transport.playbackPosition + delta)))
         }}>
@@ -66,7 +76,8 @@ export function SequenceTimelineRuler({ sequence, viewportRef, timelineZoom, sce
         </TimelineTransportTimeAxisMark>
       ))}
     </TimelineTransportTimeAxisClip>,
-  }))
+    }
+  })
   return <section style={{ height: '100%', '--sequence-axis-min-width': `${Math.max(520, scaleMinutes * 60 * 52)}px` } as React.CSSProperties}><VideoSequenceTimelineRuler contentRef={contentRef} viewportRef={viewportRef}
     displayTicks={[]} dragPreview={null} draggingMode={null} draggingRowKey="" editable={false}
     maxMinutes={maxMinutes} mediaDurationSeconds={duration / 1000} playheadPercent={duration ? transport.playbackPosition / duration * 100 : 0}
