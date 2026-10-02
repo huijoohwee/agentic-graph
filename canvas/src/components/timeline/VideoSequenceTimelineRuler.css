@@ -75,7 +75,7 @@
   z-index: 1;
   height: var(--kg-video-sequence-lane-height, 61px);
   border-bottom: var(--kg-surface-border);
-  background: color-mix(in srgb, var(--kg-panel-bg, #fff) 97%, var(--kg-canvas-accent, #2563eb) 3%);
+  background: transparent;
 }
 
 .timeline-video-sequence-lane-label[data-kg-video-sequence-inserted-lane-selected="1"] {

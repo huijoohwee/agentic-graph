@@ -484,24 +484,13 @@
 }
 
 .timeline-transport-time-axis-bar {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 100%;
-  height: var(--kg-timeline-bar-height);
-  transform: translateY(-50%);
-  overflow: hidden;
-  border: var(--kg-surface-border);
-  border-radius: var(--island-radius);
-  background: var(--island-bg);
-  color: var(--kg-text-secondary);
-  padding-inline: var(--kg-toolbar-compact-pad-x);
+  position: absolute; top: 50%; left: 0; width: 100%;
+  transform: translateY(-50%); overflow: hidden;
   text-align: left;
   cursor: grab;
   touch-action: none;
   user-select: none;
 }
-.timeline-transport-time-axis-bar span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .6; }
 .timeline-transport-time-axis-bar:focus-visible { outline: 2px solid var(--kg-canvas-accent); outline-offset: -2px; }
 .timeline-transport-time-axis-bar[aria-pressed='true'] { border-color: var(--kg-canvas-accent); }
 .timeline-transport-clip-controls {
@@ -521,7 +510,6 @@
 }
 .timeline-transport-clip-controls > *, .timeline-transport-clip-controls label { flex-shrink: 0; white-space: nowrap; }
 .timeline-transport-clip-controls :is(button, input, select) { height: var(--kg-control-height); min-height: var(--kg-control-height); border-radius: var(--island-radius); }
-.timeline-transport-track-clip:has(> .timeline-transport-clip-controls) > .timeline-transport-track-clip-move { visibility: hidden; }
 
 .timeline-transport-chrome--mermaid-gantt .timeline-transport-ruler-layout {
   flex: 1 1 auto;
@@ -535,7 +523,7 @@
   border-top: 0;
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--kg-text-tertiary, #6b7280) 16%, transparent) 1px, transparent 1px) repeat-x 0 0 / 12.5% 100%,
-    linear-gradient(180deg, var(--kg-panel-bg, rgb(255 255 255 / 1)) 0, var(--kg-panel-bg, rgb(255 255 255 / 1)) 24px, color-mix(in srgb, var(--kg-panel-bg-hover, #f9fafb) 78%, var(--kg-panel-bg, #fff)) 24px, color-mix(in srgb, var(--kg-panel-bg-hover, #f9fafb) 86%, var(--kg-panel-bg, #fff)) 100%);
+    linear-gradient(180deg, var(--kg-panel-bg, rgb(255 255 255 / 1)) 0, var(--kg-panel-bg, rgb(255 255 255 / 1)) var(--kg-video-sequence-axis-height, 24px), color-mix(in srgb, var(--kg-panel-bg-hover, #f9fafb) 78%, var(--kg-panel-bg, #fff)) var(--kg-video-sequence-axis-height, 24px), color-mix(in srgb, var(--kg-panel-bg-hover, #f9fafb) 86%, var(--kg-panel-bg, #fff)) 100%);
   box-shadow: none;
 }
 
@@ -553,7 +541,7 @@
 .timeline-video-sequence-lane-sidebar {
   border-right: var(--kg-surface-border);
   background:
-    linear-gradient(180deg, var(--kg-panel-bg, #fff) 0, var(--kg-panel-bg, #fff) 24px, transparent 24px),
+    linear-gradient(180deg, var(--kg-panel-bg, #fff) 0, var(--kg-panel-bg, #fff) var(--kg-video-sequence-axis-height, 24px), transparent var(--kg-video-sequence-axis-height, 24px)),
     color-mix(in srgb, var(--kg-panel-bg-hover, #f9fafb) 62%, var(--kg-panel-bg, #fff));
   box-shadow: none;
 }
@@ -568,7 +556,7 @@
 
 .timeline-transport-chrome--mermaid-gantt .timeline-video-sequence-ruler-surface {
   background:
-    linear-gradient(180deg, var(--kg-panel-bg, #fff) 0, var(--kg-panel-bg, #fff) 24px, transparent 24px),
+    linear-gradient(180deg, var(--kg-panel-bg, #fff) 0, var(--kg-panel-bg, #fff) var(--kg-video-sequence-axis-height, 24px), transparent var(--kg-video-sequence-axis-height, 24px)),
     linear-gradient(180deg, color-mix(in srgb, var(--kg-panel-bg-hover, #f9fafb) 78%, var(--kg-panel-bg, #fff)), color-mix(in srgb, var(--kg-panel-bg-hover, #f9fafb) 88%, var(--kg-panel-bg, #fff)));
 }
 
