@@ -17,6 +17,15 @@ const OBJECT_URL_REVOKE_DELAY_MS = 2000
 const pendingObjectUrlRevokes = new Map<string, ReturnType<typeof setTimeout>>()
 const registryBySignature = new Map<string, RegisteredVideoSequenceSourceFile>()
 const registry = new Map<string, RegisteredVideoSequenceSourceFile>()
+const listeners = new Set<() => void>()
+let revision = 0
+let pendingPersistence: Promise<void> = Promise.resolve()
+
+export const readVideoSequenceSourceRevision = (): number => revision
+export function subscribeVideoSequenceSources(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => { listeners.delete(listener) }
+}
 
 const clean = (value: unknown): string => String(value || '').trim()
 
@@ -105,6 +114,23 @@ export function buildVideoSequenceSourceRegistryKeys(source: Pick<VideoSequenceT
 }
 
 export function registerVideoSequenceSourceFiles(files: readonly File[]): void {
+  registerRuntimeFiles(files)
+  const records = files.filter(file => inferCorpusMediaKind(file.name, file.type) === 'video').map(file => ({
+    id: buildVideoSequenceSourceFileSignature(file),
+    keys: buildVideoSequenceSourceRegistryKeys({ originalName: file.name, relativePath: readFileRelativePath(file), mimeHint: file.type, byteSize: file.size }),
+    blob: file,
+    name: file.name,
+    lastModified: file.lastModified,
+  }))
+  if (!records.length) return
+  pendingPersistence = pendingPersistence.then(async () => {
+    const { writeLocalMediaFiles } = await import('@/lib/storage/localMediaFileStore')
+    await writeLocalMediaFiles(records)
+  }).catch(error => { console.warn('Local video source could not be saved for reopening.', error) })
+}
+
+function registerRuntimeFiles(files: readonly File[]): void {
+  let changed = false
   for (const file of Array.from(files || [])) {
     if (inferCorpusMediaKind(file.name, file.type) !== 'video') continue
     const fileSignature = buildVideoSequenceSourceFileSignature(file)
@@ -131,15 +157,39 @@ export function registerVideoSequenceSourceFiles(files: readonly File[]): void {
     })
     clearPendingObjectUrlRevoke(objectUrl)
     registryBySignature.set(fileSignature, registered)
+    changed ||= !existing
     const revoked = new Set<string>()
     for (const key of keys) {
       const previous = registry.get(key)
+      changed ||= previous?.objectUrl !== objectUrl
       if (previous?.objectUrl && previous.objectUrl !== objectUrl && !revoked.has(previous.objectUrl)) {
         scheduleObjectUrlRevoke(previous.objectUrl)
         revoked.add(previous.objectUrl)
       }
       registry.set(key, registered)
     }
+  }
+  if (changed) {
+    revision += 1
+    Array.from(listeners).forEach(listener => listener())
+  }
+}
+
+export async function restoreVideoSequenceSourceFiles(sources: readonly VideoSequenceTimelineSource[]): Promise<void> {
+  const missing = sources.filter(source => !source.sourceUrl && !resolveVideoSequenceSourceRuntimeUrl(source))
+  if (!missing.length) return
+  await pendingPersistence
+  const { readLocalMediaFiles } = await import('@/lib/storage/localMediaFileStore')
+  const records = await readLocalMediaFiles(missing.flatMap(buildVideoSequenceSourceRegistryKeys))
+  for (const source of missing) {
+    // A new import can win while IndexedDB is being read. Never replace its live handle.
+    if (resolveVideoSequenceSourceRuntimeUrl(source)) continue
+    const keys = buildVideoSequenceSourceRegistryKeys(source)
+    const record = records.find(record => keys.some(key => record.keys.includes(key))
+      && (!source.byteSize || record.blob.size === source.byteSize)
+      && (!source.mimeHint || record.blob.type === source.mimeHint))
+    if (!record) continue
+    registerRuntimeFiles([new File([record.blob], record.name, { type: record.blob.type, lastModified: record.lastModified })])
   }
 }
 

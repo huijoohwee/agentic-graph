@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.15"
-prd_revision: "1.3.15"
-tad_revision: "1.3.15"
-adr_revision: "1.3.15"
-mvp_revision: "1.3.15"
-gtm_revision: "1.3.15"
+version: "1.3.16"
+prd_revision: "1.3.16"
+tad_revision: "1.3.16"
+adr_revision: "1.3.16"
+mvp_revision: "1.3.16"
+gtm_revision: "1.3.16"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,7 +31,7 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.15**. The user authorized implementation
+All five roles join **SEQUENCE-FLOW-001@1.3.16**. The user authorized implementation
 and live UI verification on 2026-10-02. Work extends the existing workspace through
 an admitted successor lane. Remote service invocation, production mirrors, deployment
 and payment remain separate effects with no new grant here.
@@ -479,7 +479,7 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.15. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.16. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 
@@ -594,6 +594,6 @@ Tracked authoring majors: 4. Full authoring artifact-bearing-rule coverage has n
 alignment verdict is claimed. Diagram/canvas-domain checks prove only their selected
 structural contract; runtime, licensing, demand and delivery remain separate checks.
 
-Implemented at 1.3.15: the shared ruler renders media scopes only while renderable authored clips exist. This removes the remaining synthetic scope strip from empty media timelines and fully hidden timelines, completing the 1.3.14 shared empty-lane cleanup without a file-specific branch or CSS variant. PRD: empty timelines share a neutral blank body. TAD/ADR: one renderable-spans condition at the existing shared ruler owner; no replacement module. MVP: live preview 5190 confirms zero rows and zero scope strips for the empty SME care document; an authored media sequence still renders two labels, two rows and two clips. The surface-owner contract checks the empty-scope guard, and typecheck passes. The Strybldr and SME care empty review captures remain /tmp/timeline-empty-strybldr.png and /tmp/timeline-empty-sme-care.png. GTM: local review evidence only; no production or broad parity claim. Follow-up cap: five active minutes, three paths and 8 KiB; no dependencies, modules or spend. Shared ruler stays 599 lines and the pre-existing oversized surface contract does not grow. Native successor of PR #1510 at e390428610f9. Prior 1.3.14 removes fabricated VIDEO/IMAGE/SCENE/EFFECT empty lanes and the redundant display-lane fallback; five focused contracts cover empty/hidden lane counts, authored semantics, multiple sources, shared routing/surfaces and empty-media-drop bootstrapping. Prior 1.3.13 shared label buttons, selected-row borders and inserted adapters remain in place. Candidate CI and protected integration require separate receipts; remaining VCC observations and production effects stay open.
+Implemented at 1.3.16: imported video bytes now persist in a lazily loaded device-local Dexie store and rehydrate the existing source registry when the Timeline reopens. PRD: local video frame strips retain their source across reloads; no file-specific lane, clip, style or thumbnail substitute. TAD/ADR: existing registry publishes stable revisions to refresh shared preview/export/thumbnail plans, serializes binary writes, checks restored size/MIME identity and preserves a concurrent live import. Reimporting a known file version also publishes one revision; listener snapshots prevent notification resubscription loops. The native reader clears metadata handlers before removing its source so teardown cannot reenter error cleanup. MVP: five direct behavior tests cover binary reopen, concurrent recovery, identity mismatch/live-import precedence, metadata teardown and version reimport/resubscription. Eleven existing frame/import/export/shared-surface contracts and canvas typecheck pass. A bounded isolated shared-transport DOM diagnostic settles after three renders; it does not prove native video decoding. Live preview 5190 verification remains blocked: fresh in-app previews still time out after the user closes tabs and reports a browser restart, so no restored-frame screenshot or reload receipt is claimed. GTM: local candidate only; production and broad parity remain unverified. Scope cap: six paths and 30 KiB, no added dependency or spend; one lazy binary-store module uses existing Dexie. Native successor of PR #1511 at 3187287d5dd1. Prior 1.3.15 shared empty-scope guard, 1.3.14 empty-lane cleanup and 1.3.13 label buttons/selected-row borders remain in place. Original imported video remains on disk; previously uncached imports need their original file reconnected once. Candidate CI and protected integration require separate receipts; visual frame/reload verification stays open.
 Recheck every affected receipt on source drift. Preserve lane/source bytes if publication
 or lifecycle effects are blocked. Production remains behind its separate protected owner.
