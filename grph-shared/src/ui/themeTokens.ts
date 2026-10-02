@@ -56,6 +56,9 @@ const NEUTRAL_BORDER_WIDTH_CLASS_NAME = 'border-[length:var(--kg-surface-border-
 
 const CONTROL_HEIGHT_CLASS_NAME = 'h-[var(--kg-control-height,28px)]'
 
+/** Paint counterpart of table.rowSelected for the virtualized canvas grid. */
+export const UI_ROW_SELECTION_PAINT = { accent: '#3b82f6', alpha: 0.22, accentWidthPx: 4 } as const
+
 export const UI_THEME_TOKENS = {
   border: {
     width: NEUTRAL_BORDER_WIDTH_CLASS_NAME,
@@ -133,8 +136,8 @@ export const UI_THEME_TOKENS = {
     textSecondary: 'text-[color:var(--kg-text-secondary)]',
     rowBg: 'bg-[var(--kg-panel-bg)]',
     rowBgAlt: 'bg-[var(--kg-panel-bg)]',
-    rowSelected: 'bg-blue-50 dark:bg-blue-900/20',
-    rowSelectedBorder: 'ring-1 ring-inset ring-blue-500 dark:ring-blue-400',
+    // Inset accent avoids layout shifts; first-cell paint keeps it above sticky table cells.
+    rowSelected: '!bg-[color-mix(in_srgb,#3b82f6_22%,var(--kg-panel-bg,white))] hover:!bg-[color-mix(in_srgb,#3b82f6_22%,var(--kg-panel-bg,white))] !shadow-[inset_4px_0_0_#3b82f6] [&>td:first-child]:!shadow-[inset_4px_0_0_#3b82f6] [&>th:first-child]:!shadow-[inset_4px_0_0_#3b82f6] [&>td]:!bg-inherit [&>th]:!bg-inherit',
     rowRelated: 'bg-blue-50/50 dark:bg-blue-900/10',
     rowOutside: 'bg-[var(--kg-panel-bg)]',
   },

@@ -145,7 +145,7 @@ export function GraphEditorOutlineTab() {
               return (
                 <section
                   key={sg.id}
-                  className={`rounded-lg border px-2 py-2 ${UI_THEME_TOKENS.input.border} ${isSelected ? 'ring-1 ring-blue-500/40' : ''}`}
+                  className={`rounded-lg border px-2 py-2 ${UI_THEME_TOKENS.input.border}`}
                 >
                   <section className="flex items-center justify-between gap-2">
                     <button
