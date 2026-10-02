@@ -593,6 +593,6 @@ Tracked authoring majors: 4. Full authoring artifact-bearing-rule coverage has n
 alignment verdict is claimed. Diagram/canvas-domain checks prove only their selected
 structural contract; runtime, licensing, demand and delivery remain separate checks.
 
-Next: native publication of the checked shared-chrome successor; required CI and remaining VCC observations then determine acceptance.
+Next: publish the discovery-budget successor of PR #1493 (cc0a01efb). Its smoke passed readiness but XR discovery exceeded 32 KiB by 19 bytes; shorten only selector metadata, then rerun exact-candidate smoke. Follow-up cap: ten active minutes, two files, 3 KiB patch; no changed schema, executor or limit. Required CI and remaining VCC observations determine acceptance.
 Recheck every affected receipt on source drift. Preserve lane/source bytes if publication
 or lifecycle effects are blocked. Production remains behind its separate protected owner.
