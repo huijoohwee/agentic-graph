@@ -524,7 +524,7 @@ its local `rowSelectionStyle.ts` helper is removed by this increment.
   wrong-item reopening and time to locate the current row. This consistency fix establishes no
   willingness-to-pay, revenue or production-readiness claim.
 
-Bound refreshed to 27 files, 50 KB diff and 50 active minutes plus required checks; zero paid
+Bound refreshed to 28 files, 55 KB diff and 50 active minutes plus required checks; zero paid
 resources. Reservation recovery preserved the authored patch while the native pending expansion
 was reconciled; no user edits were reverted. Canvas modules remain in their existing load paths.
 The source-wide guard, TypeScript and affected-owner checks plus browser evidence determine local
@@ -547,3 +547,8 @@ run was interrupted for this operator correction and supplies no final-candidate
 Correction verification: the focused authority and Calendar interaction checks pass. Live DOM
 inspection confirms Explorer, Autosave and Storage Sync use their original soft background/border
 and `box-shadow: none`; the user-facing settings retain their On values. No settings value was changed.
+
+The affected responsive-surface check exposed an outdated Kanban ownership assertion after the
+group projection extraction. Its source contract now targets `workspaceDataViewGroups.ts` and
+the view's existing delegation; group ordering behavior remains unchanged. Final acceptance
+requires rerunning the affected suite with this assertion repair and the restoration together.
