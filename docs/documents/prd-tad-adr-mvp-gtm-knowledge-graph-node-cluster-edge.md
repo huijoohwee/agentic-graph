@@ -2,12 +2,12 @@
 title: "Document nodes, relationships and evidence groups"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "kg-node-cluster-edge"
-version: "0.6.4"
-prd_revision: "0.6.4"
-tad_revision: "0.6.4"
-adr_revision: "0.6.4"
-mvp_revision: "0.6.4"
-gtm_revision: "0.6.4"
+version: "0.6.5"
+prd_revision: "0.6.5"
+tad_revision: "0.6.5"
+adr_revision: "0.6.5"
+mvp_revision: "0.6.5"
+gtm_revision: "0.6.5"
 date: "2026-10-02"
 lang: "en-US"
 owner: "Document graph product function"
@@ -19,7 +19,7 @@ universal_scope: false
 lifecycle_status: "implementation-validated"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/kanban-divider-local-hover"
+worktree_id: "agent/device-0232231d4a19/data-view-layouts"
 agent_id: "codex-document-graph-author"
 agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
@@ -35,7 +35,7 @@ source_docs:
 
 # Document nodes, relationships and evidence groups
 
-`kg-node-cluster-edge@0.6.3` joins PRD, TAD, ADR, MVP and GTM. It adds local passage inspection,
+`kg-node-cluster-edge@0.6.5` joins PRD, TAD, ADR, MVP and GTM. It adds local passage inspection,
 source-backed relationships and connected lexical groups to existing document analysis. The core,
 worker, panel component and revision-guarded graph layer are implemented and locally tested.
 The original implementation merged in PR #1450. This increment completes inspectable provenance: method,
@@ -46,7 +46,7 @@ from production deployment and business outcomes.
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
-| `kg-node-cluster-edge@0.6.3` | C: G1–G8 expose reusable owners; E1–E2 establish baseline limits. I: make passage relationships inspectable with local bounded work. D: implement F1–F5 with original-source evidence and publish only through native lifecycle. | R: Document graph product function · A: Extend native derivation and inspection · O: Reviewable code, tests and joined specification · check: V1–V5, E3–E8 and exact release receipt | 2026-10-01 |
+| `kg-node-cluster-edge@0.6.5` | C: G1–G8 expose reusable owners; E1–E2 establish baseline limits. I: make passage relationships inspectable with local bounded work. D: implement F1–F5 with original-source evidence and publish only through native lifecycle. | R: Document graph product function · A: Extend native derivation and inspection · O: Reviewable code, tests and joined specification · check: V1–V5, E3–E8 and exact release receipt | 2026-10-01 |
 
 ## Grounding — reference implementation
 
@@ -439,7 +439,7 @@ Capacity/response times are unknown. No supplier/hiring commitment is implied.
 
 ## Coverage and findings
 
-Coverage binds `kg-node-cluster-edge@0.6.3`; it records disposition, not VCC acceptance. Roles:
+Coverage binds `kg-node-cluster-edge@0.6.5`; it records disposition, not VCC acceptance. Roles:
 P = Product function, E = Engineering function, O = Product operator.
 
 | Domain | Disposition / artifact | Owner / next evidence |
@@ -587,3 +587,9 @@ and header/card hover reveals none. The query-workbench contract rejects broad r
 the mounted regression verifies independent semantic rows and graphic-part activation.
 GTM: improve scan density without losing discoverability; preserve inventory counts.
 Physical-device accessibility, paid adoption and production delivery need separate proof.
+
+## Workspace data-view successor — reference implementation
+
+The specification-first [workspace-data-views@1.0.0](./prd-tad-adr-mvp-gtm-workspace-data-views.md)
+owns the Table/Kanban/Calendar, query and settings increment. It grounds existing owners and gaps at
+`8b258a4a116cd7ef70718acd28307fc4a62af897`; no proposed view behavior is implemented by this update.
