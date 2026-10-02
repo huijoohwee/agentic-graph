@@ -5,6 +5,17 @@ import { waitForMissionAsync } from './mission-card-face.mjs'
 const SETTINGS_BODY_CONTROL = '#main-panel-settings-panel button[aria-label="Expand all sections"], #main-panel-settings-panel button[aria-label="Collapse all sections"]'
 const MAIN_PANEL_SHELL = '[data-kg-main-panel-shell="true"]'
 
+/** Retry only read-only module readiness across navigation; dispatch the effect exactly once. */
+export async function executeMissionEntry(page) {
+  const control = await page.waitForFunction(async () => import('/src/lib/canvas/canvasViewControlRuntime.ts'),
+    null, { timeout: 60000 })
+  try {
+    const result = await control.evaluate(runtime => runtime.executeCanvasViewControl({ optionId: 'agent-run:tree' }))
+    assert.equal(result.status, 'applied')
+    assert.equal(result.optionId, 'agent-run:tree')
+  } finally { await control.dispose() }
+}
+
 async function installEntryObservation(page) {
   await page.evaluate(() => {
     const startedAt = performance.now(), entries = []
@@ -105,9 +116,7 @@ export async function verifyMissionDashboardEntry(page, { baseUrl, authoredSnaps
       const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState()
       return [state.workspaceViewMode, state.workspaceCanvasPaneOpen]
     })
-    await page.evaluate(async () => {
-      (await import('/src/lib/canvas/canvasViewControlRuntime.ts')).executeCanvasViewControl({ optionId: 'agent-run:tree' })
-    })
+    await executeMissionEntry(page)
     await waitForMission()
     status = 'passed'
     return returnView
@@ -128,9 +137,7 @@ export async function verifyCanvasDashboardEntry(page, waitForMission) {
     const state = (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState()
     return [state.workspaceViewMode, state.workspaceCanvasPaneOpen]
   })
-  await page.evaluate(async () => {
-    (await import('/src/lib/canvas/canvasViewControlRuntime.ts')).executeCanvasViewControl({ optionId: 'agent-run:tree' })
-  })
+  await executeMissionEntry(page)
   if (waitForMission) await waitForMission()
   assert.equal(await page.locator('[data-renderer="dashboard"]').count(), 1)
   if (waitForMission) assert.equal(await page.locator('[aria-label="Agent runs"] table').count(), 1)

@@ -73,6 +73,14 @@ No new always-load module is added; CSS and existing token/runtime owners receiv
 - Release: affected checks and exact protected candidate evidence remain separate from localhost
   visual verification. Production deployment is not part of this source/UI change.
 
+CI acceptance repair (2026-10-02): the hosted Mission proof lost its page execution context while
+awaiting the Canvas control module. PRD/MVP retain all entry, authored-state, private-evidence and
+lifecycle assertions. TAD uses bounded read-only module readiness, then one synchronous control
+dispatch with an applied-result check and handle disposal. ADR forbids retrying an effect after
+navigation; dispatch errors still fail loudly. Two negative/positive tests cover that boundary;
+the full native browser proof and protected candidate checks remain required. GTM claims no new
+runtime feature or Production evidence. Repair cap: three paths, 5 KB, 15 active minutes.
+
 ## GTM and rollback
 
 Position this as consistent built-in controls across the local workspace. Do not claim measured
