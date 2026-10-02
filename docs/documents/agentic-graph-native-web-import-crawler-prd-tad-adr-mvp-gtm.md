@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Native Web Import Crawler — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-native-web-import-crawler-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.51"
-date: "2026-10-01"
+version: "0.2.53"
+date: "2026-10-03"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.native-web-import-crawler"
@@ -27,30 +27,30 @@ constraints:
   - "no proxy endpoint or credential in client options, manifests, Canvas documents, or logs"
 frontmatter_contract: "required"
 continuity_id: "PLAN-AGENTIC-GRAPH-NATIVE-WEB-IMPORT-CRAWLER-PRD-TAD-ADR-MVP-GTM"
-worktree_id: "device-0232231d4a19--import-inventory"
-agent_id: "codex-01a0940a"
+worktree_id: "device-0232231d4a19--youtube-import-freeze"
+agent_id: "codex-01a0fd1c"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "25794100ef1e17cfb5a9dc7f4c429a05a458b538"
-previous_document_version: "0.2.50"
-prd_revision: "0.2.51"
-tad_revision: "0.2.51"
-adr_revision: "0.2.51"
-mvp_revision: "0.2.51"
-gtm_revision: "0.2.51"
+reviewed_source_revision: "52642d62e6a975d58d3280425f2e7f16d864775c"
+previous_document_version: "0.2.52"
+prd_revision: "0.2.53"
+tad_revision: "0.2.53"
+adr_revision: "0.2.53"
+mvp_revision: "0.2.53"
+gtm_revision: "0.2.53"
 ---
 # Reference implementation: agentic-graph Native Web Import Crawler
-## 2026-10-01 Single-table import inventory — revision 0.2.51
+## 2026-10-03 Restore authored VIDEO timeline thumbnails — revision 0.2.53
 
-**PRD / acceptance.** One visible `_import-index.md` at each website host or local collection root retains every known discovered URL and selected file/folder input, including imported, not imported, pending, missing and failed-attempt details. The Markdown table is the single portable record set; the existing Viewer table and Kanban project those same rows, with no second JSON metadata block. Source, saved path, detail, input/output digests, checked-at milliseconds, check result, ETag and Last modified stay together. VCCs: migrate existing catalogs without losing receipts or outside notes; preserve captures and unknown discoveries; retain unsupported and failed inputs; repeat reconciliation writes nothing; preserve edited catalogs and filesystem access; recover label-only links; keep output-specific receipts correctly paired when one source has multiple saved documents.
+**PRD / acceptance.** `/fix #youtube-timeline-thumbnails @codex-01a0fd1c` restores thumbnails inside the VIDEO bar of the imported Gantt-Timeline transport. Render validated authored frame samples when native video thumbnails are unavailable; preserve native-thumbnail precedence and keep generic empty source scaffolds blank. Retain the prior import repair's full duration, transcript, eight graph nodes, unavailable-transcript status, 16 preview samples and explicit 500,000-byte generated-document guard. Bounded previews do not claim exhaustive frame coverage.
 
-**TAD / grounding.** Protected source `25794100ef1e17cfb5a9dc7f4c429a05a458b538` integrates the refresh repair through PR #1463, with green PR and merge-commit checks. Extend the existing `workspace-fs/importInventory.ts` portable codec; `importInventoryPersistence.ts`, WorkspaceFs, URL/file/folder import owners, source-index cache and generic Markdown data views remain its consumers. Version 2 parses table cells directly, derives validated receipt identity from Source, and emits one row per saved output or one unsaved row; the heading counts unique sources. Path-first URL labels retain their origin, and full saved-path labels preserve identity if links are flattened; earlier full-URL table labels remain readable. Numeric character references protect delimiters, special characters and edge spaces. Optional empty strings remain distinct from absent receipt fields. No new database, service, package, renderer or dependency is added.
+**TAD / grounding.** Native successor/readmit retains the current checkout at published predecessor `52642d62e6a975d58d3280425f2e7f16d864775c`. That predecessor's protected Integration Gate passed; source merge remains a separate effect. VIDEO already carries authored `kgframes_` samples, but the source-set resolver rejects generic source labels and the ruler consumes tokens only for FBF. Extend the existing source-set resolver and shared authored-frame converter on four disjoint paths; leave the concurrently reserved ruler unchanged. Reuse the existing lazy thumbnail strip and matching source-time windows. Preserve the predecessor's selection descriptors, managed saved-panel projection and one pending extraction per analysis panel.
 
-**ADR / boundaries.** Consolidate metadata into existing table columns rather than hiding a second record copy. Keep the version-1 renderer only as a read/migration validator for persisted catalogs, including their previously supported encoded-target and labels-only forms; all new writes use version 2. Existing conditional writes migrate once, preserve outside notes and reject altered managed content. Reuse the shared non-security string checksum to detect accidental table edits; it is not authentication or import authority. Receipt hashes and source ownership retain their existing authority. Unknown legacy fields fail visibly rather than disappear during migration. The table retains validators/digests and multiple outputs without a JSON block; browser storage remains only the active cache. Preserve stable host/collection paths, 480 KiB/5,000-source limits, serialized expected-text writes, missing outputs and zero-fetch reconciliation.
+**ADR / boundaries.** Decode authored VIDEO frame tokens through the existing thumbnail-source owner without generating synthetic FBF images for video. Prefer an exact native source match with actual thumbnails; otherwise retain pending source metadata, filter explicit or matching source windows before downsampling, and use at most 16 evenly distributed authored samples. Larger saved sets remain unchanged in storage. Preserve AUDIO, image, empty-placeholder and FBF behavior. Native START confirms disjoint reservations; no owner handoff or overlapping edit is required. No package, service, paid resource, source-specific branch or storage owner is added. The preview byte guard still does not claim atomicity for the existing source-import write.
 
-**MVP / evidence.** Twelve generic inventory regressions pass, including the real Explorer hook cases, complete receipts with multiple outputs, escaped source/path/detail fields, empty validators, stale-cell guards, version-1 migration with notes, labels-only recovery, restart restoration and settled no-op writes. Existing URL/file/folder, concurrent-write, size-limit, local-copy and grouped-media checks remain. All ten native affected partitions passed for the initial table codec, including rebuilt mobile/offline browser smoke; the final path-first readability change is revalidated before publication. Live task Dev Refresh and reload pass, and exact comparison with the preserved original confirms all 628 source records and five saved outputs remain. The Viewer has no separate Import metadata section; an existing local-file index exposes its digest and check columns in the same table. The restored website catalog shrank from 175,914 to 134,073 bytes (about 24%). Runtime input and screenshots remain private, with no site-specific product logic or repository fixture. Native folder-picker and cross-device parity remain unverified; these checks do not claim Production activation.
+**MVP / evidence.** Read-only diagnosis confirms valid provider tokens on VIDEO and FBF and a cached same-origin PNG; the watch page supplies no native media-file thumbnails. Two focused registered cases pass, exercising all eleven resolver regressions and actual ruler rendering; nine existing video pipeline, frame-analysis and import cases also pass. Coverage includes sixteen lazy provider images, real producer native-source IDs, empty/malformed tokens, eighty-sample legacy sets, trim filtering before downsampling, sparse trims and unchanged FBF. The reported saved import displays all sixteen loaded VIDEO images across 0:00–0:52 and retains them after reload at port 5190; a screenshot records the visible strip. Exact affected native validation is required before publication and its receipt is retained separately. Predecessor evidence remains twelve focused tests, ten native checks, about eleven-second import and 448 KB preview. Runtime URLs and captures stay outside tracked fixtures.
 
-**GTM / execution / rollback.** Pain: duplicated table/JSON records consume space and expose two representations for users to inspect. `/fix #import-index-table @codex` binds this continuity ID and all five roles at 0.2.51. Budget: 30 active minutes, at most eight existing files and 30 KB changed-source text; the current implementation touches the codec, its existing test file and this joined plan. Reuse the existing Viewer instead of adding UI or storage owners. Measure retained records, actual byte reduction and avoided writes; revenue and monetary savings remain unknown. Keep files below 600 lines and free/FOSS mobile/local/offline behavior. Next owner action: finish live verification and native affected checks, publish one protected candidate, and retain source/runtime evidence. Canonical Dev still awaits the user's choice about an unrelated preserved seed edit. Rollback must retain this version-2 reader for already migrated catalogs; reverting to a version-1-only reader requires an explicit preserved-data conversion, never an automatic overwrite.
+**GTM / execution / rollback.** Buyer pain is a blank video editing bar despite successful import; reuse the existing resolver and lazy strip before adding capability. Budget: ten-minute diagnosis, thirty-minute repair, six source/test files plus this joined plan, 40 KB changed source, no dependencies and files below 600 lines. Concurrent admission and external CI waits are recorded as dependencies with recheck conditions. All five roles advance together to 0.2.53. Publish the exact source handoff after local proof and affected checks; Dev runtime, protected integration and Production retain separate receipts. Revert only this successor to restore prior VIDEO thumbnail selection while preserving the import freeze repair, stored documents and unrelated canonical seeds. Free/FOSS mobile/local/offline remains the target; physical-device parity, revenue and Production activation are unverified.
 
 ## 2026-10-01 stable website import destinations
 
