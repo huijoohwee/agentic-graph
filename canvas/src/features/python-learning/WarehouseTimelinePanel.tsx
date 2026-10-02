@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { GanttTimelineTransportPanel } from '@/features/gitgraph/GanttTimelineTransportPanel'
-import type { GanttTimelineTransportCommandAdapter } from '@/features/gitgraph/ganttTimelineTransportCommandAdapter'
+import { READ_ONLY_GANTT_TIMELINE_COMMAND_ADAPTER } from '@/features/gitgraph/ganttTimelineTransportCommandAdapter'
 import { TimelineTransportTimeAxisClip } from '@/components/timeline/TimelineTransportControls'
 import { resolveVideoSequenceTimelineScaleDurationSeconds } from '@/components/timeline/videoSequenceTimelineZoom'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -9,18 +9,11 @@ import { useWarehouseInspection } from './useWarehouseInspection'
 import { WAREHOUSE_INSPECTION, WAREHOUSE_INSPECTION_FPS } from './warehouseCoverageRoutes'
 import { WarehouseInspectionFeed } from './WarehouseInspectionFeed'
 
-// Generated presentation lanes never write back into the learner's Python source.
-const readOnlyScenario: GanttTimelineTransportCommandAdapter = {
-  selectionFollowsPlayhead: false,
-  canEditTrack: () => false,
-  handleCommand: () => ({ status: 'rejected', reason: 'Warehouse inspection cues are a fixed simulation. Edit the Python lesson separately.' }),
-}
 const names: Record<string, string> = {
   'charging-truck': 'Mobile charging truck', drone001: 'Drone 001', drone002: 'Drone 002',
   door: 'Dock door', lid: 'Drone lid', camera: 'Camera frames', wifi: 'Wi-Fi delivery', yolo: 'Simulated detections',
 }
 const actionClass = `${UI_THEME_TOKENS.control.singleLine} ${UI_THEME_TOKENS.border.outline} rounded text-xs`
-const colors = ['#477fa1', '#008e8a', '#9a62b1', '#b07835', '#596baf', '#34765f']
 
 export function WarehouseTimelinePanel({ compact = true }: { compact?: boolean }) {
   const inspection = useWarehouseInspection()
@@ -65,19 +58,18 @@ export function WarehouseTimelinePanel({ compact = true }: { compact?: boolean }
     <section aria-label="Warehouse timeline and camera" className="grid min-h-0 min-w-0 flex-1 grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] items-start gap-2 overflow-auto">
     <section aria-label="Warehouse inspection tracks" className="min-w-0 overflow-hidden">
     <GanttTimelineTransportPanel code={code} compact={compact} clockActive editable={false}
-      commandAdapter={readOnlyScenario} mode="media" publishPlaybackRequest={false}
+      commandAdapter={READ_ONLY_GANTT_TIMELINE_COMMAND_ADAPTER} mode="media" publishPlaybackRequest={false}
       runtimeDocumentKey={documentKey} runtimeDurationSeconds={duration} runtimeFrameRate={WAREHOUSE_INSPECTION_FPS}
-      timelineInsertedLanes={laneGroups.map(([id, cues], index) => ({
+      timelineInsertedLanes={laneGroups.map(([id, cues]) => ({
         id: `warehouse:${id}`, insertAfterLaneId: 'scene', label: names[id] ?? id,
         content: <TimelineTransportTimeAxisClip laneStyle="video" aria-label={`${names[id] ?? id} inspection cues`}>
           <section aria-label={`${names[id] ?? id} cues`} className={`relative w-full ${UI_THEME_TOKENS.control.height}`}>
             {cues.map(cue => <button key={cue.id} type="button" title={`${cue.label} · ${cue.startSeconds.toFixed(1)}–${cue.endSeconds.toFixed(1)} s`}
               aria-label={`Seek ${cue.label}`} onClick={() => seek(cue.startSeconds)}
-              className={`absolute top-0 rounded text-left text-xs text-white ${UI_THEME_TOKENS.control.singleLine} ${UI_THEME_TOKENS.border.outline}`}
-              style={{ left: `${cue.startSeconds / scaleSeconds * 100}%`, width: `${Math.max(0.15, (cue.endSeconds - cue.startSeconds) / scaleSeconds * 100)}%`, background: colors[index % colors.length] }}>
-              {cue.label}
+              className="timeline-transport-time-axis-bar"
+              style={{ left: `${cue.startSeconds / scaleSeconds * 100}%`, width: `${Math.max(0.15, (cue.endSeconds - cue.startSeconds) / scaleSeconds * 100)}%` }}>
+              <span>{cue.label}</span>
             </button>)}
-            <hr role="separator" aria-orientation="vertical" aria-label="Warehouse playhead" className="absolute inset-y-0 m-0 h-full w-px border-0 bg-sky-500" style={{ left: `${seconds / scaleSeconds * 100}%` }} />
           </section>
         </TimelineTransportTimeAxisClip>,
       }))} />
