@@ -1,7 +1,6 @@
-import { UI_ICON_DEFAULTS } from '@/lib/ui/theme-tokens'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { SettingMeta } from './types'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { UI_ICON_DEFAULTS, UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { themeSettingsRegistry } from './themeSettings'
 import { LS_KEYS } from '@/lib/config'
 import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
