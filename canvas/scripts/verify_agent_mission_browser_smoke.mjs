@@ -1,3 +1,4 @@
+import { waitForAuthoredWorkspaceSource as waitForAuthoredSource } from './lib/mission-authored-state-readiness.mjs'
 import { selectMenuOption } from './lib/select-menu-option.mjs'
 import { configureMissionPage, verifyWorkspaceObservation } from './lib/verify-workspace-observation.mjs'
 import { showMissionFace, sourceText, waitForMissionAsync, openEditorWorkspace } from './lib/mission-card-face.mjs'
@@ -38,18 +39,7 @@ const waitForMissionExit = async () => {
   assert.equal(await page.evaluate(async () => (await import('/src/features/agent-ready/agentRunInspectionStore.ts')).readAgentRunWorkspace()), null)
   assert.equal(await selected.count(), 0, 'Leaving Mission must clear selected private evidence')
 }
-async function waitForAuthoredWorkspaceSource(timeout = 60000) { const deadline = Date.now() + timeout
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
-  await page.waitForFunction(async () => {
-    const { readSourceFilesBootstrapReady } = await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')
-    const sync = (await import('/src/lib/workspace/workspaceSeedSyncRuntime.ts')).readWorkspaceSeedSyncRuntimeSnapshot()
-    const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
-    const { useMarkdownExplorerStore } = await import('/src/features/markdown-explorer/store.ts')
-    const state = useGraphStore.getState(), path = useMarkdownExplorerStore.getState().activePath
-    return sync.activeTaskCount === 0 && readSourceFilesBootstrapReady() && state.historyIndex >= 0 && !!path
-      && state.sourceFiles[0]?.source?.path === `workspace:${path}`
-  }, null, { timeout: Math.max(1, deadline - Date.now()) })
-}
+const waitForAuthoredWorkspaceSource = timeout => waitForAuthoredSource(page, timeout)
 const openRunSource = (scope = mission) => showMissionFace(scope, true)
 const showEvidence = (scope = mission) => showMissionFace(scope, false)
 const waitText = async (locator, text) => {

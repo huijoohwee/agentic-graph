@@ -101,16 +101,20 @@ the separate source/Production evidence boundary. This repair is capped at three
 ## GTM and rollback
 
 Autonomous closeout repair (2026-10-02): PRD/MVP retain exact authored-state equality for Apex
-inspection, including selected sources and their order. The failed candidate `46812227446cf142547be4649c156fb25b9a5b8a`
-changed the selected Python source to a default demo while mounting the Explorer. TAD repairs the
-existing selection bootstrap: default starter selection applies only to an empty session selection;
-explicit custom validation inputs and canonical path reconciliation retain their owners. ADR rejects
-replacing a non-empty authored path merely because a remounted Explorer has a partial inventory.
-The regression checks both complete and partial inventories, and retains cold-start behavior.
-GTM adds no economic, adoption or Production claim. Cap: eight affected paths, 20 KB added source,
-45 active minutes, no dependency or service; provider waits require changed receipts rather than an ETA.
-Full native browser acceptance and protected Integration Gate remain required before source merge.
-The two modified canonical seed files remain authored recovery inputs for governed canonical sync.
+inspection, including selected sources and their order. Candidate `bee1cfb28ba6f21dd9a99fdbe7da5983ea185512`
+failed the complete native browser run while focused Apex passed. An earlier trace showed valid cold
+startup followed by deferred source reconciliation, before activation. TAD corrects the acceptance
+owner: the installed Playwright polls Promise objects as truthy, so an async readiness predicate did
+not wait for initialization. The native helper now preloads modules once and polls a synchronous
+boolean under the existing startup deadline, with no host polling loop. ADR retains exact equality,
+all source fields, and all lifecycle assertions; no production source writer is changed for this cause.
+The earlier empty-only selection bootstrap guard remains independently regression-covered; it did
+not resolve this acceptance failure. A browser regression holds each readiness prerequisite false
+before permitting the real predicate to settle. GTM adds no adoption or Production claim.
+Cap: eight affected paths, 20 KB added source, 45 active minutes, no dependency or service; provider
+waits require changed receipts rather than an ETA. Full native browser acceptance and protected
+Integration Gate remain required before source merge. Canonical seed edits remain authored recovery
+inputs; shared Context closeout is unresolved because native workspace admission lacks a trust anchor.
 
 Position this as consistent built-in controls across the local workspace. Do not claim measured
 conversion, paid value, exhaustive platform parity or a Production rollout. A useful demonstration
