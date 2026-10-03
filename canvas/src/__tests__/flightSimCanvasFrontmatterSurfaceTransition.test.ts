@@ -226,3 +226,42 @@ test('later explicit XR, Geo+XR and 2D requests still supersede retained passive
     }
   }
 })
+
+
+test('native document selection applies authored Geo ownership after exact editor publication', async () => {
+  const { restore } = initJsdomHarness()
+  const stateBefore = useGraphStore.getState()
+  const name = 'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'
+  const rawText = readFileSync(resolve(process.cwd(), '..', name), 'utf8')
+  try {
+    for (const publishedFirst of [false, true]) {
+      useGraphStore.getState().resetAll()
+      const store = useGraphStore.getState()
+      store.setMarkdownDocument('previous-flight.md', '# Previous Flight')
+      store.setCanvas3dMode('xr'); store.setCanvasRenderMode('3d')
+      setGeospatialModeEnabled(true)
+      if (publishedFirst) {
+        assert.equal(await store.setActiveMarkdownDocument({ name, text: rawText,
+          autoEnableFrontmatter: false, applyViewPreset: false }), true)
+        assert.equal(useGympgrphStore.getState().geospatialModeEnabled, true)
+      }
+      const applied = await store.setActiveMarkdownDocument({ name, text: rawText,
+        expectedCurrentDocumentName: 'previous-flight.md', expectedCurrentDocumentText: '# Previous Flight',
+        applyViewPreset: true, applyToGraph: true, forceApplyToGraph: true })
+      assert.equal(applied, true)
+      assert.equal(useGympgrphStore.getState().geospatialModeEnabled, false,
+        `authored selection must release Geo even when the editor published first: ${publishedFirst}`)
+      assert.equal(useGraphStore.getState().canvasRenderMode, '3d')
+      assert.equal(useGraphStore.getState().canvas3dMode, 'xr')
+      setGeospatialModeEnabled(true)
+      assert.equal(await store.setActiveMarkdownDocument({ name, text: rawText,
+        applyViewPreset: true, applyToGraph: true, forceApplyToGraph: true }), true)
+      assert.equal(useGympgrphStore.getState().geospatialModeEnabled, true,
+        'a later same-document refresh must preserve the manually selected Geo+XR surface')
+    }
+  } finally {
+    try { await waitForCanvasFrontmatterSurfaceTransition() } finally {
+      setGeospatialModeEnabled(false); useGraphStore.setState(stateBefore, true); restore()
+    }
+  }
+})

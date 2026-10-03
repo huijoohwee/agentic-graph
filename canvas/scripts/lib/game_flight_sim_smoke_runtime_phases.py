@@ -102,11 +102,10 @@ def verify_canvas_view_xr_to_geo_xr_handoff(page: Page) -> dict[str, Any]:
         trigger.click(timeout=30_000)
         surface = page.get_by_role("button", name="Surface Mode", exact=True)
         surface.wait_for(state="visible", timeout=30_000)
-        # XR is the active child, so the shared menu expands Surface Mode on
-        # its next frame. Clicking during that transition can collapse it.
-        expect(surface).to_have_attribute(
-            "aria-expanded", "true", timeout=30_000
-        )
+        # The active renderer can own automatic expansion; open Surface explicitly.
+        if surface.get_attribute("aria-expanded") == "false":
+            surface.click(timeout=30_000)
+        expect(surface).to_have_attribute("aria-expanded", "true", timeout=30_000)
         parent_expanded = surface.get_attribute("aria-expanded")
         geo_xr = page.get_by_role("button", name="Geo+XR Mode", exact=True)
         geo_xr.wait_for(state="visible", timeout=30_000)
