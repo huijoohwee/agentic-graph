@@ -1,13 +1,20 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import test from 'node:test'
+import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 import {
   createCanvasFrontmatterSurfaceTransitionQueue,
   requestCanvasFrontmatterGeospatialSurface,
   waitForActiveCanvasFrontmatterSurfaceTransition,
+  waitForCanvasFrontmatterSurfaceTransition,
 } from '@/features/parsers/canvasFrontmatterSurfaceTransition'
 import {
-  setGeospatialModeEnabled,
+  captureNativeGeospatialMapLibreLease, claimMapLibreMapLease,
+  LS_KEYS, NATIVE_GEOSPATIAL_MAPLIBRE_OWNER, setGeospatialModeEnabled, useGympgrphStore,
 } from 'gympgrph'
 
 const flushMicrotasks = () => new Promise<void>(resolve => setImmediate(resolve))
@@ -159,4 +166,63 @@ test('a settled failed frontmatter handoff does not poison a later Flight retry'
     /could not claim ownership/,
   )
   await waitForActiveCanvasFrontmatterSurfaceTransition()
+})
+
+test('authored Physics releases Geo while passive replays retain the pending owner and shared XR', async () => {
+  const { restore } = initJsdomHarness()
+  let releaseLease: (() => void) | null = null
+  const xrCanvas = document.createElement('canvas'), mapCanvas = document.createElement('canvas')
+  document.body.append(xrCanvas, mapCanvas)
+  try {
+    assert.equal(captureNativeGeospatialMapLibreLease(), null)
+    useGraphStore.getState().resetAll()
+    useGraphStore.getState().setCanvas3dMode('xr')
+    useGraphStore.getState().setCanvasRenderMode('3d')
+    setGeospatialModeEnabled(true)
+    let disposed = 0
+    releaseLease = claimMapLibreMapLease({ map: { getCanvas: () => mapCanvas }, root: null,
+      ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER, prepareForDisposal: () => true,
+      isPreparedForDisposal: () => true, dispose: () => { disposed += 1; mapCanvas.remove(); releaseLease?.() } })
+    const rawText = readFileSync(resolve(process.cwd(), '..', 'docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md'), 'utf8')
+    applyCanvasFrontmatterPreset({ rawText })
+    // Native compose/default and same-document replays can publish before the
+    // authored request has begun its asynchronous lease preparation.
+    applyCanvasFrontmatterPreset({ defaultCanvasRenderMode: '3d', defaultCanvas3dMode: '3d', preserveLiveSharedXrSurface: true })
+    applyCanvasFrontmatterPreset({ rawText, preserveLiveSharedXrSurface: true })
+    await waitForCanvasFrontmatterSurfaceTransition()
+    assert.equal(useGympgrphStore.getState().geospatialModeEnabled, false)
+    assert.equal(window.localStorage.getItem(LS_KEYS.geospatialOverlayEnabled), 'false')
+    assert.equal(disposed, 1)
+    assert.equal(captureNativeGeospatialMapLibreLease(), null)
+    assert.equal(useGraphStore.getState().canvasRenderMode, '3d')
+    assert.equal(useGraphStore.getState().canvas3dMode, 'xr')
+    assert.equal(xrCanvas.isConnected, true, 'the native Geo owner must release only its own Canvas')
+  } finally {
+    try { await waitForCanvasFrontmatterSurfaceTransition() } finally {
+      releaseLease?.(); setGeospatialModeEnabled(false); useGraphStore.getState().resetAll()
+      xrCanvas.remove(); mapCanvas.remove(); restore()
+    }
+  }
+})
+
+test('later explicit XR, Geo+XR and 2D requests still supersede retained passive replays', async () => {
+  const { restore } = initJsdomHarness()
+  try {
+    useGraphStore.getState().resetAll()
+    useGraphStore.getState().setCanvas3dMode('xr')
+    useGraphStore.getState().setCanvasRenderMode('3d')
+    setGeospatialModeEnabled(true)
+    for (const canvasSurfaceMode of ['xr', 'geo-xr', '2d'] as const) {
+      applyCanvasFrontmatterPreset({ preset: { canvasSurfaceMode }, preserveLiveSharedXrSurface: true })
+    }
+    await waitForCanvasFrontmatterSurfaceTransition()
+    assert.equal(useGympgrphStore.getState().geospatialModeEnabled, false)
+    assert.equal(window.localStorage.getItem(LS_KEYS.geospatialOverlayEnabled), 'false')
+    assert.equal(useGraphStore.getState().canvasRenderMode, '2d')
+    assert.notEqual(useGraphStore.getState().canvas3dMode, 'xr', 'stale XR callbacks must not reactivate the later explicit 2D owner')
+  } finally {
+    try { await waitForCanvasFrontmatterSurfaceTransition() } finally {
+      setGeospatialModeEnabled(false); useGraphStore.getState().resetAll(); restore()
+    }
+  }
 })
