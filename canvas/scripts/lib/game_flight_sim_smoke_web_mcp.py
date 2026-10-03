@@ -419,20 +419,25 @@ def verify_flight_exit(
             delete copy.revision
             return copy
           }
+          const baselineRoot = window.__kgFlightSimCanvas?.closest('[data-kg-xr-scene-media-drop="1"]')
           const readRestoredSurface = () => {
             const state = store.useGraphStore.getState()
             const canvases = Array.from(document.querySelectorAll('canvas'))
-            const rendererCanvases = canvases.filter(
-              canvas => String(canvas.dataset.engine || '').startsWith('three.js'),
-            )
-            const auxiliaryCanvases = canvases.filter(
-              canvas => !rendererCanvases.includes(canvas),
-            )
-            const roots = Array.from(document.querySelectorAll(
-              '[data-kg-xr-scene-media-drop="1"]',
-            ))
+            const rendererCanvases = canvases.filter(canvas => String(canvas.dataset.engine || '').startsWith('three.js'))
+            const auxiliaryCanvases = canvases.filter(canvas => !rendererCanvases.includes(canvas))
+            const roots = Array.from(document.querySelectorAll('[data-kg-xr-scene-media-drop="1"]'))
             const baseline = window.__kgFlightSimCanvas
+            const monaco = auxiliaryCanvases.filter(canvas => canvas.closest('.monaco-editor'))
+            const motion = auxiliaryCanvases.filter(canvas => canvas.closest('[data-kg-motion-control-preview="local-only"]'))
             return {
+              auxiliaryOwners: {
+                monaco: monaco.length, motion: motion.length,
+                mapLibre: canvases.filter(canvas => canvas.classList.contains('maplibregl-canvas')).length,
+                unknown: auxiliaryCanvases.filter(canvas => !monaco.includes(canvas) && !motion.includes(canvas)).length,
+              },
+              editor: { mode: state.workspaceViewMode, paneOpen: state.workspaceCanvasPaneOpen },
+              panelMinimized: state.floatingPanelMinimized,
+              baselineRootIdentityRetained: Boolean(baselineRoot?.isConnected && roots.length === 1 && roots[0] === baselineRoot),
               surface: {
                 canvasRenderMode: state.canvasRenderMode,
                 canvas3dMode: state.canvas3dMode,
@@ -440,18 +445,13 @@ def verify_flight_exit(
                 canvasRenderModeIsAuto: state.canvasRenderModeIsAuto,
                 floatingPanelOpen: state.floatingPanelOpen,
                 floatingPanelView: state.floatingPanelView,
-                geospatialModeEnabled:
-                  gympgrph.isGeospatialModeEnabled(),
-                mapLibreActive:
-                  gympgrph.readActiveMapLibreMap?.() != null,
-                timelinePlaying:
-                  state.timelineTransportPlaying === true,
+                geospatialModeEnabled: gympgrph.isGeospatialModeEnabled(),
+                mapLibreActive: gympgrph.readActiveMapLibreMap?.() != null,
+                timelinePlaying: state.timelineTransportPlaying === true,
               },
               physics: withoutRevision(physics.readXrPhysicsRuntime()),
               physicsFrame: physics.readXrPhysicsRuntimeFrame(),
-              camera: {
-                mode: camera.readXrNativeControllerCamera().mode,
-              },
+              camera: { mode: camera.readXrNativeControllerCamera().mode },
               controller: withoutRevision(controller.readXrNativeControllerDemo()),
               controllerFrame: controller.readSharedXrNativeControllerDemoFrame(),
               canvasCount: canvases.length,
@@ -477,15 +477,11 @@ def verify_flight_exit(
           })
           const exitElapsedMs = performance.now() - exitStartedAtMs
           const restoredSurface = readRestoredSurface()
-          const beforeInactive = JSON.stringify(
-            mcpRuntime.inspectLocalFlightSim(),
-          )
+          const beforeInactive = JSON.stringify(mcpRuntime.inspectLocalFlightSim())
           const inspectStartedAtMs = performance.now()
           const inactiveResult = await inspect.execute()
           const inspectElapsedMs = performance.now() - inspectStartedAtMs
-          const afterInactive = JSON.stringify(
-            mcpRuntime.inspectLocalFlightSim(),
-          )
+          const afterInactive = JSON.stringify(mcpRuntime.inspectLocalFlightSim())
           return {
             registered: true,
             beforeExit,
@@ -510,31 +506,22 @@ def verify_flight_exit(
     inactive_inspection = evidence["inactiveInspection"]
     post_exit = evidence["postExit"]
     before_exit = evidence["beforeExit"]
-    expected_physics = {
-        **before_exit["physics"],
-        "phase": prior_surface["physics"]["phase"],
-    }
-    expected_controller = {
-        **before_exit["controller"],
-        "phase": prior_surface["controller"]["phase"],
-    }
-    expected_controller_frame = {
-        **before_exit["controllerFrame"],
-        "phase": prior_surface["controllerFrame"]["phase"],
-    }
+    expected_physics = {**before_exit["physics"], "phase": prior_surface["physics"]["phase"]}
+    expected_controller = {**before_exit["controller"], "phase": prior_surface["controller"]["phase"]}
+    expected_controller_frame = {**before_exit["controllerFrame"], "phase": prior_surface["controllerFrame"]["phase"]}
+    expected_motion = int(prior_surface["floatingPanelOpen"] is True
+                          and prior_surface["floatingPanelView"] == "motionControl"
+                          and before_exit["panelMinimized"] is not True)
+    expected_monaco = before_exit["auxiliaryOwners"]["monaco"]
     expected_restoration = {
+        "auxiliaryOwners": {"monaco": expected_monaco, "motion": expected_motion, "mapLibre": 0, "unknown": 0},
+        "editor": before_exit["editor"], "panelMinimized": before_exit["panelMinimized"],
+        "baselineRootIdentityRetained": True,
         "surface": {
             key: prior_surface[key]
             for key in (
-                "canvasRenderMode",
-                "canvas3dMode",
-                "canvasRenderModeLastFree",
-                "canvasRenderModeIsAuto",
-                "floatingPanelOpen",
-                "floatingPanelView",
-                "geospatialModeEnabled",
-                "mapLibreActive",
-                "timelinePlaying",
+                "canvasRenderMode", "canvas3dMode", "canvasRenderModeLastFree", "canvasRenderModeIsAuto",
+                "floatingPanelOpen", "floatingPanelView", "geospatialModeEnabled", "mapLibreActive", "timelinePlaying",
             )
         },
         "physics": expected_physics,
@@ -542,9 +529,9 @@ def verify_flight_exit(
         "camera": before_exit["camera"],
         "controller": expected_controller,
         "controllerFrame": expected_controller_frame,
-        "canvasCount": prior_surface["canvasCount"],
+        "canvasCount": prior_surface["rendererCanvasCount"] + expected_monaco + expected_motion,
         "rendererCanvasCount": prior_surface["rendererCanvasCount"],
-        "auxiliaryCanvasCount": prior_surface["auxiliaryCanvasCount"],
+        "auxiliaryCanvasCount": expected_monaco + expected_motion,
         "auxiliaryCanvasesLocalOnly": True,
         "rootCount": prior_surface["rootCount"],
         "baselineCanvasIdentityRetained": True,

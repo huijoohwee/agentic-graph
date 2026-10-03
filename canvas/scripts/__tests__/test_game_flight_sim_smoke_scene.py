@@ -379,6 +379,7 @@ class FlightExitFixturePage(WebMcpRegistryFixturePage):
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { initJsdomHarness } from './src/tests/lib/jsdomHarness.ts';
+import { closeWorkspaceView } from './src/features/workspace-table/workspaceTableSsot.ts';
 const modules = {};
 for (const [folder, names] of Object.entries({ 'game-flight-sim': ['flightSimRuntime', 'flightSimMcpRuntime'],
   three: ['xrNativeControllerDemoRuntime', 'xrPhysicsRuntime', 'xrNativeControllerCameraRuntime'],
@@ -390,12 +391,15 @@ modules.gympgrphStore = await import('gympgrph');
 const { flightSimRuntime: runtime, xrNativeControllerDemoRuntime: controller, xrPhysicsRuntime: physics,
   graphStore: store, webMcpRuntime: discovery } = modules;
 const { expression, mode } = JSON.parse(fs.readFileSync(0, 'utf8'));
+const auxiliaries = mode.startsWith('aux-');
 const text = fs.readFileSync('../docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md', 'utf8');
 const name = '/imports/training.md';
 store.useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: text,
   sourceFiles: [{ id: 'training', name, text, enabled: true, status: 'parsed', parsedGraphRevision: 1,
     source: { kind: 'local', path: name } }], workspaceViewMode: 'canvas', canvasRenderMode: '3d',
-  canvas3dMode: '3d', floatingPanelOpen: false, timelineTransportPlaying: false });
+  canvas3dMode: '3d', floatingPanelOpen: auxiliaries, floatingPanelView: auxiliaries ? 'motionControl' : 'propsPanel',
+  floatingPanelMinimized: mode === 'aux-minimized', workspaceCanvasPaneOpen: auxiliaries,
+  ...(auxiliaries ? { workspaceViewMode: 'editor' } : {}), timelineTransportPlaying: false });
 controller.setSharedXrNativeControllerDemoTerrain('tropical-playground');
 controller.selectXrNativeControllerDemoMode('ball');
 controller.developAndRunXrNativeControllerDemo();
@@ -414,6 +418,43 @@ window.requestAnimationFrame = undefined;
 globalThis.HTMLCanvasElement = window.HTMLCanvasElement;
 Object.defineProperty(globalThis, 'navigator', { value: window.navigator, configurable: true });
 window.__kgFlightSimCanvas = document.querySelector('canvas');
+// Model editor disposal with DOM resources; JSDOM does not run the Monaco renderer.
+const editor = document.createElement('section'), preview = document.createElement('section');
+editor.className = 'monaco-editor'; editor.innerHTML = '<canvas></canvas>'.repeat(3);
+preview.dataset.kgMotionControlPreview = 'local-only'; preview.innerHTML = '<canvas></canvas>';
+const renderOwners = state => {
+  if (!auxiliaries) return;
+  if (state.workspaceViewMode === 'editor') document.body.append(editor); else editor.remove();
+  if (state.floatingPanelOpen && state.floatingPanelView === 'motionControl' && !state.floatingPanelMinimized) {
+    document.body.append(preview);
+  } else preview.remove();
+};
+renderOwners(store.useGraphStore.getState());
+const releaseOwners = store.useGraphStore.subscribe(renderOwners);
+Object.assign(prior, { canvasCount: document.querySelectorAll('canvas').length,
+  auxiliaryCanvasCount: document.querySelectorAll('canvas').length - 1 });
+if (auxiliaries && mode !== 'aux-open' && mode !== 'aux-monaco-lost') {
+  closeWorkspaceView(store.useGraphStore.getState());
+  assert.equal(editor.isConnected, false);
+  assert.equal(store.useGraphStore.getState().workspaceCanvasPaneOpen, false);
+}
+const corruptOwners = () => {
+  const canvas = () => document.createElement('canvas');
+  if (mode === 'aux-preview-missing') preview.remove();
+  if (mode === 'aux-preview-duplicate') preview.append(canvas());
+  if (mode === 'aux-monaco-added') document.body.append(editor);
+  if (mode === 'aux-monaco-lost') editor.remove();
+  if (mode === 'aux-foreign') document.body.append(canvas());
+  if (mode === 'aux-map') { const c = canvas(); c.className = 'maplibregl-canvas'; document.body.append(c); }
+  if (mode === 'aux-renderer-extra') document.body.append(window.__kgFlightSimCanvas.cloneNode());
+  if (mode === 'aux-renderer-replaced') window.__kgFlightSimCanvas.replaceWith(window.__kgFlightSimCanvas.cloneNode());
+  if (mode === 'aux-root-extra') document.body.append(window.__kgFlightSimCanvas.parentElement.cloneNode());
+  if (mode === 'aux-root-replaced') {
+    const root = window.__kgFlightSimCanvas.parentElement, replacement = root.cloneNode();
+    replacement.append(window.__kgFlightSimCanvas); root.replaceWith(replacement);
+  }
+  if (mode === 'aux-editor-state') store.useGraphStore.setState({ workspaceCanvasPaneOpen: true });
+};
 window.__kgFlightSimBrowserProof = { importModule: async key => modules[key] };
 store.useGraphStore.setState({ floatingPanelOpen: true, floatingPanelView: 'flightSim' });
 discovery.installAgenticGraphWebMcpRuntime();
@@ -422,15 +463,21 @@ assert.ok(context.tools.some(tool => tool.name.endsWith('control_local_flight_si
 if (mode !== 'exposed') {
   store.useGraphStore.setState({ floatingPanelView: 'camera' });
   store.useGraphStore.setState({ floatingPanelOpen: false });
-  assert.equal(document.documentElement.dataset.kgWebmcpScope, 'xr');
+  assert.equal(document.documentElement.dataset.kgWebmcpScope, store.useGraphStore.getState().workspaceViewMode === 'editor' ? 'editor' : 'xr');
   assert.ok(!context.tools.some(tool => tool.name.endsWith('control_local_flight_sim')));
 }
 let offset = 0;
 const now = performance.now.bind(performance);
 Object.defineProperty(performance, 'now', { value: () => now() + offset });
 const selector = context.tools.find(tool => tool.name === 'agentic-graph.select_local_tool_scope');
-if (mode === 'missing') context.tools = context.tools.filter(tool => tool !== selector);
-else if (mode !== 'closed' && mode !== 'exposed') context.tools = context.tools.map(tool => tool !== selector ? tool : {
+if (auxiliaries) {
+  await selector.execute({ scope: 'flightSim' });
+  context.tools = context.tools.map(item => !item.name.endsWith('control_local_flight_sim') ? item : {
+    ...item, execute: async value => { const result = await item.execute(value); corruptOwners(); return result; },
+  });
+}
+else if (mode === 'missing') context.tools = context.tools.filter(tool => tool !== selector);
+else if (!auxiliaries && mode !== 'closed' && mode !== 'exposed') context.tools = context.tools.map(tool => tool !== selector ? tool : {
   ...tool, execute: async input => {
     if (mode === 'reject') throw Error('scope rejected');
     if (mode === 'pending') return new Promise(() => {});
@@ -450,7 +497,7 @@ try {
     assert.equal(evidence.postExit.restoration.controller.phase, prior.controller.phase);
   }
   console.log(JSON.stringify({ prior, evidence }));
-} finally { discovery.resetAgenticGraphWebMcpRuntimeForTests(); restore(); }
+} finally { releaseOwners(); discovery.resetAgenticGraphWebMcpRuntimeForTests(); restore(); }
         """)
         self.prior.update(result["prior"])
         self.evidence = result["evidence"]
@@ -471,6 +518,22 @@ class FlightExitDiscoveryTest(unittest.TestCase):
                         with self.assertRaises(AssertionError):
                             verify_flight_exit(type("Page", (), {"evaluate": lambda _, expression: page.evidence})(), [], page.prior)
                         result["restoration"][owner][key] = saved
+
+    def test_auxiliary_counts_follow_native_editor_close_and_restored_panel(self):
+        for mode, monaco, motion in (("aux-closed", 0, 1), ("aux-open", 3, 1), ("aux-minimized", 0, 0)):
+            with self.subTest(mode=mode):
+                page = FlightExitFixturePage(mode)
+                _, _, result = verify_flight_exit(page, [], page.prior)
+                self.assertEqual(result["restoration"]["auxiliaryCanvasCount"], monaco + motion)
+                self.assertGreater(page.prior["canvasCount"], 1)
+
+    def test_missing_extra_foreign_and_replaced_canvas_owners_fail(self):
+        faults = ("preview-missing", "preview-duplicate", "monaco-added", "monaco-lost", "foreign", "map",
+                  "renderer-extra", "renderer-replaced", "root-extra", "root-replaced", "editor-state")
+        for fault in faults:
+            with self.subTest(fault=fault), self.assertRaisesRegex(AssertionError, "deeply restore Physics"):
+                page = FlightExitFixturePage("aux-" + fault)
+                verify_flight_exit(page, [], page.prior)
 
     def test_invalid_discovery_fails_before_exit(self):
         for mode in ("missing", "reject", "absent", "wrong-scope", "mutate", "late", "pending"):
