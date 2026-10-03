@@ -43,7 +43,7 @@ function InspectorWidgetPanel({ nodeById, ...props }: ComponentProps<typeof Widg
     node: props.node, nodeById, onPatchProperties: props.onPatchProperties,
     connectedValuesBySchemaPath: props.connectedValuesBySchemaPath,
   })
-  return <WidgetEditorPanel {...props} richMediaWidgetPreview={richMediaWidgetPreview} />
+  return <WidgetEditorPanel {...props} constrainToContainer richMediaWidgetPreview={richMediaWidgetPreview} />
 }
 
 const EMPTY_WIDGET_REGISTRY: WidgetRegistryEntry[] = []

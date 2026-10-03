@@ -44,6 +44,7 @@ export const WidgetEditorPanel = React.memo(function WidgetEditorPanel(args: {
   hideFields: boolean
   pinned: boolean
   showPinToggle?: boolean
+  constrainToContainer?: boolean
   uiPanelOpacity: number | null | undefined
   panelTextClass: string
   microLabelClass: string
@@ -163,6 +164,7 @@ export const WidgetEditorPanel = React.memo(function WidgetEditorPanel(args: {
   const editorSurfaceLabel = resolveWidgetEditorSurfaceLabel(editorSurfaceKind)
   const isRichMediaPanelWidget = String(node.type || '').trim() === FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID
   const showRichMediaPanelBody = isRichMediaPanelWidget && !hideFields && !minimized
+  const constrainRichMedia = showRichMediaPanelBody && args.constrainToContainer === true
   const richMediaPanelState = richMediaWidgetPreview?.richMediaPanelState || null
   const richMediaPreview = richMediaWidgetPreview?.richMediaPreview || null
   const richMediaPanelViewSize = richMediaWidgetPreview?.richMediaPanelViewSize || RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE
@@ -199,7 +201,10 @@ export const WidgetEditorPanel = React.memo(function WidgetEditorPanel(args: {
       style={{
         opacity: showRichMediaPanelBody ? 1 : (Number.isFinite(uiPanelOpacity) ? uiPanelOpacity : 1),
         width: showRichMediaPanelBody ? `${richMediaPanelViewSize.width}px` : undefined,
-        height: minimized ? undefined : (showRichMediaPanelBody ? `${richMediaPanelViewSize.height}px` : WIDGET_BASE_SIZE.height),
+        height: minimized || constrainRichMedia ? undefined : (showRichMediaPanelBody ? `${richMediaPanelViewSize.height}px` : WIDGET_BASE_SIZE.height),
+        maxWidth: constrainRichMedia ? '100%' : undefined,
+        minWidth: constrainRichMedia ? 0 : undefined,
+        aspectRatio: constrainRichMedia ? `${richMediaPanelViewSize.width} / ${richMediaPanelViewSize.height}` : undefined,
       }}
     >
       <StoryboardWidgetPanelChromeHeader
