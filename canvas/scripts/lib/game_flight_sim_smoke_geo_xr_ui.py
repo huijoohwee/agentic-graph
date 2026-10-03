@@ -40,7 +40,7 @@ def activate_geo_xr_from_toolbar(page: Page) -> dict[str, Any]:
     )
     floating_panel = page.locator(
         '[data-kg-floating-panel-root="true"]:visible'
-    )
+    ).filter(has=page.locator('[aria-label="Floating panel"]'))
     expect(floating_panel).to_have_count(1)
     camera_trigger = floating_panel.locator(
         '[data-kg-floating-panel-view-trigger="camera"]'
@@ -90,7 +90,7 @@ def activate_geo_xr_from_toolbar(page: Page) -> dict[str, Any]:
     _click_with_trusted_proof(page, geo_xr_option, "geoXrModeClicked")
     expect(mode_trigger).to_have_attribute(
         "aria-label",
-        "2D Mode: Geo+XR Mode",
+        "Canvas View Mode: Geo+XR Mode",
     )
     expect(geo_panel).to_be_visible(timeout=30_000)
     expect(camera_panel).not_to_be_visible(timeout=30_000)

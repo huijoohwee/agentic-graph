@@ -19,6 +19,10 @@ from lib.game_flight_sim_smoke_city_regional_poi import (  # noqa: E402
     require_city_regional_poi_teardown_contract,
 )
 from lib.game_flight_sim_smoke_bootstrap import BoundedEvaluationPage  # noqa: E402
+from lib.game_flight_sim_smoke_camera import _timeline_camera_probe  # noqa: E402
+from lib.game_flight_sim_smoke_mobile_surface import (  # noqa: E402
+    _close_mobile_touch_occluders, _wait_for_occluder_close,
+)
 from lib.game_flight_sim_smoke_ledger import BrowserVerificationLedger  # noqa: E402
 from lib.game_flight_sim_smoke_geo_xr_requirements import (  # noqa: E402
     authored_environment_checks, regional_environment_checks, unmet_view_requirements, wait_for_view,
@@ -316,6 +320,201 @@ class FlightAuthoredGeoSceneTest(unittest.TestCase):
             with self.assertRaisesRegex(AssertionError, "environment.regionalId"):
                 wait_for_view(page, **options, require_regional_scene=True)
         self.assertEqual(page.delay, 100)
+
+
+class CameraProbePage:
+    def __init__(self, *, camera_count=7, fail_setup=False, corrupt_restore=False):
+        self.state = {
+            "runtime": {"revision": 4, "dirty": False, "playheadSeconds": 1.25,
+                "selectedMark": {"kind": "camera", "markId": "authored-0"},
+                "plan": {"stageId": "authored-stage", "durationSeconds": 20,
+                    "cast": [{"actorId": "story:first"}, {"actorId": "story:second"}],
+                    "camera": [{"id": f"authored-{index}", "timeSeconds": index * 2,
+                        "settings": {"note": f"authored note {index}"}} for index in range(camera_count)]}},
+            "store": {"markdownDocumentName": "authored.md", "timelineTransportDocumentKey": "prior-key",
+                "timelineTransportPosition": 0.25, "timelineTransportPlaying": False,
+                "timelineTransportPlaybackRate": 2},
+            "removed": [], "restored": 0, "created": 0,
+        }
+        self.fail_setup = fail_setup
+        self.corrupt_restore = corrupt_restore
+
+    def evaluate(self, expression, arg=None):
+        result = JavaScriptEvaluationPage().evaluate("""async input => {
+            const state = input.state;
+            const copy = value => JSON.parse(JSON.stringify(value));
+            const nativeStore = {...state.store, setTimelineTransportState(value) {
+                for (const [key, item] of Object.entries(value)) {
+                    state.store['timelineTransport' + key[0].toUpperCase() + key.slice(1)] = item;
+                }
+            }};
+            const modules = {
+                graphStore: {useGraphStore: {getState: () => ({...nativeStore, ...state.store})}},
+                xrMotionReferenceTimeline: {xrMotionReferenceTimelineDocumentKey: name => 'xr:' + name},
+                xrCameraPlaybackControlsRuntime: {requestXrMotionReferenceCameraPlaybackReapply() {}},
+                xrMotionReferenceRuntime: {
+                    readXrMotionReferenceRuntime: () => copy(state.runtime),
+                    removeXrMotionReferenceCameraMark(id) {
+                        state.removed.push(id);
+                        state.runtime.plan.camera = state.runtime.plan.camera.filter(mark => mark.id !== id);
+                        state.runtime.dirty = true;
+                    },
+                    setXrMotionReferenceCameraMark(mark) {
+                        state.runtime.plan.camera.push({...mark, id: 'probe-' + state.created++});
+                        if (input.failSetup) throw new Error('partial setup failure');
+                    },
+                    setXrMotionReferencePlayhead(time) { state.runtime.playheadSeconds = time; },
+                    restoreXrMotionReferenceRuntimeSnapshot(previous) {
+                        state.runtime = {...copy(previous), revision: previous.revision + 9};
+                        state.restored++;
+                        if (input.corruptRestore) state.runtime.plan.camera[0].settings.note = 'corrupted';
+                    },
+                },
+            };
+            globalThis.window = {__kgFlightSimBrowserProof: {importModule: async name => modules[name]}};
+            try { return {value: await globalThis.eval('(' + input.expression + ')')(input.argument), state}; }
+            catch (error) { return {error: error.message, state}; }
+        }""", {"expression": expression, "argument": arg, "state": self.state,
+            "failSetup": self.fail_setup, "corruptRestore": self.corrupt_restore})
+        self.state = result["state"]
+        if result.get("error"):
+            raise RuntimeError(result["error"])
+        return result.get("value")
+
+
+class FlightAuthoredCameraProbeTest(unittest.TestCase):
+    def assert_restored(self, page, before):
+        runtime = {key: value for key, value in page.state["runtime"].items() if key != "revision"}
+        self.assertEqual(runtime, {key: value for key, value in before["runtime"].items() if key != "revision"})
+        self.assertEqual(page.state["store"], before["store"])
+        self.assertEqual(page.state["restored"], 1)
+
+    def test_probe_replaces_only_temporary_camera_set_and_restores_authored_state(self):
+        for camera_count in (0, 7):
+            with self.subTest(camera_count=camera_count):
+                page = CameraProbePage(camera_count=camera_count)
+                before = deepcopy(page.state)
+                with _timeline_camera_probe(page) as probe:
+                    self.assertEqual(probe["cameraMarks"], 2)
+                    self.assertEqual(page.state["removed"], [mark["id"] for mark in before["runtime"]["plan"]["camera"]])
+                    self.assertEqual(page.state["store"]["timelineTransportPlaying"], True)
+                    self.assertEqual(page.state["runtime"]["plan"]["stageId"], "authored-stage")
+                self.assert_restored(page, before)
+                self.assertEqual(probe["cleanedUp"]["runtime"]["plan"], before["runtime"]["plan"])
+
+    def test_partial_setup_and_later_proof_failures_both_restore_the_prior_scene(self):
+        for fail_setup in (True, False):
+            with self.subTest(fail_setup=fail_setup):
+                page = CameraProbePage(fail_setup=fail_setup)
+                before = deepcopy(page.state)
+                with self.assertRaisesRegex(RuntimeError, "partial setup failure|later proof failure"):
+                    with _timeline_camera_probe(page):
+                        raise RuntimeError("later proof failure")
+                self.assert_restored(page, before)
+
+    def test_cleanup_rejects_a_changed_authored_camera_setting(self):
+        page = CameraProbePage(corrupt_restore=True)
+        with self.assertRaisesRegex(AssertionError, "state was not restored"):
+            with _timeline_camera_probe(page):
+                pass
+
+
+class MobileOwnerPage:
+    def __init__(self, owners):
+        self.owners = list(owners)
+        self.closed = []
+        self.graph = {"floatingPanelOpen": "floating-panel" in owners,
+            "timelineEnabled": any(item in owners for item in ("timeline-panel", "bottom-surface")),
+            "bottomSurfaceCollapsed": "bottom-surface" not in owners}
+
+    def read(self):
+        return {"ownerKind": self.owners[0] if self.owners else None, "graphState": self.graph.copy(),
+            "controlPresent": True, "controlEnabled": True, "controlOwnsPoint": not self.owners,
+            "runtime": {"active": True, "runId": 7}}
+
+    def wait_for_timeout(self, delay):
+        raise AssertionError("a successful native close should already be observable")
+
+    def locator(self, selector):
+        if 'data-kg-strybldr-bottom-timeline-panel' in selector:
+            candidates = ["timeline-panel"]
+        elif 'data-kg-floating-panel-root' in selector:
+            candidates = ["floating-panel", "timeline-panel"]
+        else:
+            candidates = []
+        return MobileOwnerLocator(self, candidates)
+
+
+class MobileOwnerLocator:
+    def __init__(self, page, candidates):
+        self.page, self.candidates = page, candidates
+
+    @property
+    def first(self):
+        return MobileOwnerLocator(self.page, self.candidates[:1])
+
+    def filter(self, **options):
+        return MobileOwnerLocator(self.page, [item for item in self.candidates if item == "floating-panel"])
+
+    def locator(self, selector):
+        if selector != 'button[title="Close"]':
+            raise AssertionError(selector)
+        return self
+
+    def count(self):
+        return len(self.candidates)
+
+    def is_visible(self):
+        return True
+
+    def click(self, **options):
+        actual = self.page.owners[0]
+        expected = "timeline-panel" if actual == "bottom-surface" else actual
+        if self.candidates != [expected]:
+            raise AssertionError(f"closed another owner: {self.candidates}, top={actual}")
+        self.page.closed.append(actual)
+        if actual == "bottom-surface":
+            self.page.graph["bottomSurfaceCollapsed"] = True
+            self.page.owners[0] = "timeline-panel"
+        else:
+            self.page.graph["timelineEnabled" if actual == "timeline-panel" else "floatingPanelOpen"] = False
+            self.page.owners.pop(0)
+
+
+class FlightMobileOwnerTest(unittest.TestCase):
+    def test_each_shared_root_closes_the_hit_tested_owner_in_either_stacking_order(self):
+        for owners in (("timeline-panel", "floating-panel"), ("floating-panel", "timeline-panel"),
+                ("bottom-surface", "floating-panel")):
+            with self.subTest(owners=owners):
+                page = MobileOwnerPage(owners)
+                with patch("lib.game_flight_sim_smoke_mobile_surface._read_pitch_touch_surface", side_effect=lambda _: page.read()):
+                    result = _close_mobile_touch_occluders(page)
+                expected = ["bottom-surface", "timeline-panel", "floating-panel"] if owners[0] == "bottom-surface" else list(owners)
+                self.assertEqual(page.closed, expected)
+                self.assertTrue(result["final"]["controlOwnsPoint"])
+                self.assertEqual(result["final"]["runtime"]["runId"], 7)
+
+    def test_timeline_close_requires_its_own_state_even_when_tool_panel_is_closed(self):
+        page = MobileOwnerPage(())
+        page.graph["timelineEnabled"] = True
+        page.wait_for_timeout = lambda delay: None
+        with patch("lib.game_flight_sim_smoke_mobile_surface._read_pitch_touch_surface", side_effect=lambda _: page.read()):
+            with patch("lib.game_flight_sim_smoke_mobile_surface.time.monotonic", side_effect=(0, 0, 6)):
+                with self.assertRaisesRegex(AssertionError, "occluder did not close"):
+                    _wait_for_occluder_close(page, "timeline-panel", 7)
+
+    def test_native_hit_owner_distinguishes_timeline_content_from_tool_panel(self):
+        source = (SCRIPTS_ROOT / "lib/game_flight_sim_smoke_mobile_surface.py").read_text()
+        classifier = source.split("          const timelinePanelOwner =", 1)[1].split("          const owner =", 1)[0]
+        kind = source.split("            ownerKind:", 1)[1].split("            runtime:", 1)[0].strip().rstrip(',')
+        expression = """input => {
+            const state = input.state;
+            const workspaceOwner = null;
+            const floatingPanelOwner = {matches: () => input.timeline, querySelector: () => !input.timeline};
+        """ + "const timelinePanelOwner =" + classifier + "return (" + kind + ");}"
+        for timeline, collapsed, expected in ((False, False, "floating-panel"), (True, False, "bottom-surface"), (True, True, "timeline-panel")):
+            self.assertEqual(JavaScriptEvaluationPage().evaluate(expression,
+                {"timeline": timeline, "state": {"bottomSurfaceCollapsed": collapsed, "bottomSurfaceTab": "timeline"}}), expected)
 
 
 if __name__ == "__main__":

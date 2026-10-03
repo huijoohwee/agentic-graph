@@ -1,4 +1,5 @@
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
+import { isCanonicalWorkspaceSeedPath } from '@/features/workspace-fs/workspaceCanonicalSeedBundle'
 import {
   enqueueWorkspaceSourceTextTransaction,
   settleWorkspaceSourceTextTransactions,
@@ -22,7 +23,8 @@ export function enqueueWorkspaceSourceTextWrite(workspacePath: string, text: str
     text,
     write: async ({ path, text: nextText }) => {
       const fs = await getWorkspaceFs()
-      await fs.writeFileText(path, nextText)
+      // Bundled examples may be rehearsed locally; explicit source saves own host edits.
+      await fs.writeFileText(path, nextText, isCanonicalWorkspaceSeedPath(path) ? { mirrorToHost: false } : undefined)
     },
   }).then(result => result.accepted).catch(() => false)
 }
