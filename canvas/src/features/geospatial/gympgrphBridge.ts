@@ -39,6 +39,11 @@ export async function importGympgrph(): Promise<typeof import('gympgrph')> {
 }
 
 export async function preloadGeospatialMapRuntime(): Promise<void> {
+  if (
+    typeof window === 'undefined'
+    || typeof document === 'undefined'
+    || typeof window.requestAnimationFrame !== 'function'
+  ) return
   const module = await importGympgrph()
   await module.preloadMapLibreBasemapRuntime()
 }

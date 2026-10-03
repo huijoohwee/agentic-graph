@@ -1,6 +1,7 @@
 import React from 'react'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
+import { requestSharedXrSurfaceDeparture } from '@/lib/canvas/canvasSurfaceOwnershipRuntime'
 import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import { UI_TOAST_TTL_MS } from '@/lib/ui/toastTiming'
 import { WorkspaceModeSelect } from '@/features/markdown-workspace/WorkspaceModeSelect'
@@ -85,6 +86,15 @@ export function useMarkdownWorkspaceViewShell(args: {
   const selectPathAndActivate = React.useCallback(
     (path: WorkspacePath, activeTarget: WorkspacePath | null) => {
       const normalized = normalizeWorkspacePath(path)
+      if (activePath && activeTarget && normalizeWorkspacePath(activeTarget) !== normalizeWorkspacePath(activePath)) {
+        try {
+          // Release transient gameplay before source commits wait for its write fence.
+          requestSharedXrSurfaceDeparture()
+        } catch (error) {
+          applyMarkdownWorkspaceErrorStatus({ setStatusError, prefix: 'Source switch failed', error })
+          return
+        }
+      }
       setSelectionSource('editor')
       const applyActivePath = () => { if (activeTarget) setActivePathSafe(normalizeWorkspacePath(activeTarget)) }
       const pendingSelection = setSelectionPathSafe(normalized)
@@ -96,7 +106,7 @@ export function useMarkdownWorkspaceViewShell(args: {
       }
       applyActivePath()
     },
-    [setActivePathSafe, setSelectionPathSafe, setSelectionSource],
+    [activePath, setActivePathSafe, setSelectionPathSafe, setSelectionSource, setStatusError],
   )
 
   const onSelectFile = React.useCallback(
