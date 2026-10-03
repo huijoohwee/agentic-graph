@@ -1,4 +1,5 @@
 import React from 'react'
+import { TimelinePlayhead } from './TimelinePlayhead'
 import type { TimelineMediaReaderThumbnail } from './timelineMediaReader'
 import { buildTimelineAnimationState } from './timelineAnimationEngine'
 import { VideoSequenceFrameSampleRail } from './VideoSequenceFrameSampleRail'
@@ -379,7 +380,7 @@ export function VideoSequenceTimelineRuler({
         <section className="timeline-video-sequence-ruler-axis" aria-label="Timeline time ruler" data-kg-video-sequence-ruler-axis="1" onPointerDown={onRulerPointerDown}>
           <VideoSequenceTimelineRulerTicks displayTicks={timelineAxisTicks} />
           {timeRulerOverlay}
-          <span
+          <TimelinePlayhead maxMinutes={maxMinutes} positionMinutes={maxMinutes * playheadPercent / 100} frameRate={mediaFrameRate} onSeek={minutes => onSelectRowPosition(selectedRowKey, minutes)}
             className="timeline-transport-playhead-marker timeline-video-sequence-ruler-playhead-marker"
             style={{ left: resolveVideoSequenceRulerInsetLeft(timelineScaleMaxMinutes > 0 ? playheadPercent * (maxMinutes / timelineScaleMaxMinutes) : playheadPercent) }}
             data-kg-video-sequence-ruler-playhead-marker="1"
@@ -407,15 +408,14 @@ export function VideoSequenceTimelineRuler({
             strokeWidth="1.5"
           />
         </svg>
-        <span
+        <TimelinePlayhead maxMinutes={maxMinutes} positionMinutes={maxMinutes * playheadPercent / 100} frameRate={mediaFrameRate} onSeek={minutes => onSelectRowPosition(selectedRowKey, minutes)}
           className="timeline-transport-playhead"
           style={{ left: resolveVideoSequenceRulerInsetLeft(timelineScaleMaxMinutes > 0 ? playheadPercent * (maxMinutes / timelineScaleMaxMinutes) : playheadPercent) }}
           data-kg-gantt-timeline-playhead="1"
           data-kg-video-sequence-ruler-playhead="1"
           aria-label="Timeline playhead"
           onPointerDown={onRulerPointerDown}
-        >
-        </span>
+        />
         {timelineInsertedLanes.map(lane => {
           const laneIndex = visibleLaneIndexById.get(lane.id)
           if (laneIndex === undefined) return null

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   GANTT_TIMELINE_TRANSPORT_COMMAND_SCHEMA,
+  READ_ONLY_GANTT_TIMELINE_COMMAND_ADAPTER,
   isGanttTimelineDocumentClipEditAction,
   routeGanttTimelineTransportClipEdit,
   routeGanttTimelineTransportCommand,
@@ -119,9 +120,7 @@ test('rejected external timeline command preserves the Markdown document', () =>
   let mutationCalls = 0
 
   const result = routeGanttTimelineTransportCommand({
-    adapter: {
-      handleCommand: () => ({ reason: 'read-only runtime', status: 'rejected' }),
-    },
+    adapter: READ_ONLY_GANTT_TIMELINE_COMMAND_ADAPTER,
     command,
     markdownFallback: () => {
       mutationCalls += 1
@@ -132,7 +131,7 @@ test('rejected external timeline command preserves the Markdown document', () =>
   assert.equal(mutationCalls, 0)
   assert.deepEqual(result, {
     owner: 'external',
-    reason: 'read-only runtime',
+    reason: 'This timeline projects authored data. Edit it in its source editor.',
     status: 'rejected',
   })
 })
