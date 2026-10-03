@@ -14,6 +14,60 @@ FLIGHT_SIM_BROWSER_PROOF_BRIDGE_SCHEMA = (
 )
 
 
+STARTUP_PIPELINE_PROFILE_SCRIPT = """
+(() => {
+  const flag = '__AG_PIPELINE_PERF_ENABLED__';
+  let events = [], timer = null, startedAtMs = null, stoppedAtMs = null;
+  let hadFlag = false, priorFlag, closed = true, stopReason = 'not-started', starts = 0;
+  const close = (reason = 'finally') => {
+    if (closed) return;
+    closed = true; stoppedAtMs = performance.now(); stopReason = reason;
+    window.removeEventListener('kg-pipeline-perf', capture);
+    clearTimeout(timer); timer = null;
+    if (hadFlag) window[flag] = priorFlag; else delete window[flag];
+  };
+  const capture = event => {
+    const value = event.detail;
+    if (!closed && performance.now() - startedAtMs >= 10000) close('window-expired');
+    if (closed || !value || typeof value.name !== 'string'
+      || typeof value.stage !== 'string' || !Number.isFinite(value.durationMs)
+      || value.durationMs < 0 || !Number.isFinite(value.ts) || value.ts < 0) return;
+    events.push({name: value.name.slice(0, 128), stage: value.stage.slice(0, 128),
+      durationMs: value.durationMs, ts: value.ts});
+    if (events.length === 100) close('event-cap');
+  };
+  window.__kgFlightStartupProfile = {
+    start() {
+      close('restarted');
+      hadFlag = Object.prototype.hasOwnProperty.call(window, flag);
+      priorFlag = window[flag]; events = []; starts += 1;
+      startedAtMs = performance.now(); stoppedAtMs = null;
+      closed = false; stopReason = null; window[flag] = true;
+      window.addEventListener('kg-pipeline-perf', capture);
+      timer = setTimeout(() => close('window-expired'), 10000);
+    },
+    close,
+    read: () => ({kind: 'diagnostic-only', starts, startedAtMs, stoppedAtMs,
+      closed, stopReason, eventLimit: 100, windowMs: 10000,
+      events: events.map(event => ({...event}))}),
+  };
+})();
+"""
+
+
+def print_startup_pipeline_profile(page: Page) -> None:
+    try:
+        result = page.evaluate("""() => {
+          const profile = window.__kgFlightStartupProfile;
+          if (!profile) return {kind: 'diagnostic-only', unavailable: true};
+          profile.close(); const result = profile.read();
+          delete window.__kgFlightStartupProfile; return result;
+        }""")
+    except Exception as error:
+        result = {"kind": "diagnostic-only", "captureError": str(error)[:500]}
+    print("[flight-startup-pipeline-diagnostic] " + json.dumps(result, allow_nan=False))
+
+
 class BoundedEvaluationPage:
     """Delegate native Page operations; reject unfinished proof evaluations."""
 

@@ -489,7 +489,7 @@ def _read_source_activation_diagnostic(page: Page, observe: bool = False) -> dic
               sawActive = flight.active
             } catch (error) { events.push({diagnosticError: String(error).slice(0, 300)}); if (events.length > 20) events.shift() } }
             const observation = {events, startedAtMs: performance.now(), closed: false, capture, close: () => {if (observation.closed) return; observation.closed = true; unsubs.forEach(unsub => unsub()); timers.forEach(clearTimeout)}}
-            window.__kgFlightActivationObservation = observation; unsubs.push(runtime.subscribeFlightSimSnapshot(capture), ready.subscribeSourceFilesBootstrapReady(capture)); timers.push(setTimeout(observation.close, 6000)); capture()
+            window.__kgFlightActivationObservation = observation; window.__kgFlightStartupProfile?.start(); unsubs.push(runtime.subscribeFlightSimSnapshot(capture), ready.subscribeSourceFilesBootstrapReady(capture)); timers.push(setTimeout(observation.close, 6000)); capture()
           }
           if (!observe) { window.__kgFlightActivationObservation?.capture(); window.__kgFlightActivationObservation?.close() }
           const state = store.useGraphStore.getState()

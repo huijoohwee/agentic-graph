@@ -9,7 +9,11 @@ from urllib.parse import urlparse
 
 from playwright.sync_api import sync_playwright
 
-from lib.game_flight_sim_smoke_bootstrap import BoundedEvaluationPage
+from lib.game_flight_sim_smoke_bootstrap import (
+    BoundedEvaluationPage,
+    STARTUP_PIPELINE_PROFILE_SCRIPT,
+    print_startup_pipeline_profile,
+)
 from lib.game_flight_sim_smoke_deadlines import (
     GAMEPLAY_WEBSOCKET_PROBE_PATH,
 )
@@ -269,6 +273,9 @@ def main() -> None:
         context.route_web_socket("**/*", route_websocket)
 
         page = BoundedEvaluationPage(context.new_page())
+        startup_profile = os.environ.get("AG_GAME_FLIGHT_SIM_STARTUP_PROFILE") == "1"
+        if startup_profile:
+            page.add_init_script(STARTUP_PIPELINE_PROFILE_SCRIPT)
         # The Page observer supplies the WebSocket lifecycle event while the
         # pre-page context route owns the fail-closed connection boundary.
         page.on("websocket", record_websocket)
@@ -566,6 +573,8 @@ def main() -> None:
             print(f"Evidence: {EVIDENCE_PATH}")
             print(f"Screenshot: {SCREENSHOT_PATH}")
         finally:
+            if startup_profile:
+                print_startup_pipeline_profile(page)
             browser.close()
 
 
