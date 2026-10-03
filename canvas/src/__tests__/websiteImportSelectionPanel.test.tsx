@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client'
 import { initJsdomHarness, settleDiscovery, waitForImportCondition } from '@/tests/lib/importInventoryHarness'
 import { SourceFileWebsiteActions } from '@/features/source-files/SourceFileWebsiteActions'
 import WebsiteImportSelectionView from '@/features/source-files/WebsiteImportSelectionView'
-import { chooseWebsiteImportPages, finishWebsiteImportSelection, useWebsiteImportSelectionSession, visibleWebsiteSelectionPages, showMoreWebsiteSelectionPages, setWebsiteSelectionQuery, toggleWebsiteSelection, importWebsiteFromSourceFiles, confirmRestoredWebsiteSelection, importDiscoveredWebsitePage } from '@/features/source-files/websiteImportSelectionSession'
+import { chooseWebsiteImportPages, finishWebsiteImportSelection, useWebsiteImportSelectionSession, visibleWebsiteSelectionPages, showMoreWebsiteSelectionPages, setWebsiteSelectionQuery, toggleWebsiteSelection, importWebsiteFromSourceFiles, confirmRestoredWebsiteSelection, importDiscoveredWebsitePage, discoverWebsiteSelection } from '@/features/source-files/websiteImportSelectionSession'
 import { sourceFileWebsiteUrl, projectWebsiteImportTree } from '@/features/source-files/websiteImportTreeProjection'
 import { MarkdownWorkspaceSourceFilesList } from '@/features/markdown-workspace/MarkdownWorkspaceSourceFilesList'
 import { ExplorerSearchControl } from '@/features/markdown-workspace/ExplorerSearchControl'
@@ -479,9 +479,9 @@ test('retained discovery preserves retry selection after failure and rejects sta
 
 test('cancel retains saved and discovered rows through document switches and restart, ignoring late discovery', async () => {
   const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
-  let requests = 0, signal: AbortSignal | undefined, completeRefresh!: (response: Response) => void
+  let requests = 0, refreshing = false, signal: AbortSignal | undefined, completeRefresh!: (response: Response) => void
   globalThis.fetch = (async (_target, init) => {
-    if (++requests === 1) return new Response(JSON.stringify({ ok: true, pages: [sourceUrl, sourceUrl + 'new'].map(url => ({ url, path: new URL(url).pathname })), limited: false }))
+    requests++; if (!refreshing) return new Response(JSON.stringify({ ok: true, pages: [sourceUrl, sourceUrl + 'new'].map(url => ({ url, path: new URL(url).pathname })), limited: false }))
     signal = init?.signal as AbortSignal
     return new Promise<Response>(resolve => { completeRefresh = resolve })
   }) as typeof fetch
@@ -497,10 +497,10 @@ test('cancel retains saved and discovered rows through document switches and res
   }
   try {
     await act(async () => { pending = importWebsiteFromSourceFiles(sourceUrl, sourceEntry.path); root.render(<SourceFilesHarness />) })
-    await settleDiscovery()
+    await settleDiscovery(); await act(async () => { await discoverWebsiteSelection(sourceUrl) })
     await openFileActions(host)
     await act(async () => host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!.click())
-    await act(async () => document.querySelector<HTMLButtonElement>('button[aria-label="Refresh discovered pages"]')!.click())
+    const requestsBeforeRefresh = requests; await act(async () => { refreshing = true; document.querySelector<HTMLButtonElement>('button[aria-label="Refresh discovered pages"]')!.click() })
     await waitForImportCondition(() => !!signal)
     await act(async () => { document.querySelector<HTMLButtonElement>('button[aria-label="Cancel import selection"]')!.click(); await pending })
     assert.equal(signal?.aborted, true)
@@ -513,7 +513,7 @@ test('cancel retains saved and discovered rows through document switches and res
     root = createRoot(host)
     await act(async () => root.render(<SourceFilesHarness />))
     await assertInventory()
-    assert.equal(requests, 2, 'document switches and restart do not rediscover')
+    assert.equal(requests, requestsBeforeRefresh + 1, 'document switches and restart do not rediscover')
     assert.equal(imported, 0, 'cancel and restoration never trigger a crawl')
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); globalThis.fetch = previousFetch; restore() }
 })

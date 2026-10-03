@@ -4,6 +4,11 @@ import { buildVideoAgentFrameBoundingBoxes } from '@/features/video-agent/videoA
 import { projectVideoAgentFrameAnalysisSrcDoc } from '@/features/video-agent/videoAgentFrameAnalysisProjection'
 import { buildVideoAgentUrlImportMarkdown } from '@/features/markdown-workspace/workspaceImport/videoAgentUrlImport'
 import { loadGraphDataFromTextViaParser } from '@/features/parsers/loader'
+import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
+import { setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
+import { importWorkspaceUrl } from '@/features/markdown-workspace/workspaceImport/urlImport'
+import { readVideoSequenceSourceAnnotations } from '@/components/timeline/videoSequenceSourceAnnotations'
+import { formatMermaidGanttFrameSamplesToken } from '@/lib/mermaid/mermaidGanttFrameThumbnailToken'
 
 const sourceUrl = ['https://', 'youtu.be/', 'BudgetFrame01'].join('')
 
@@ -142,8 +147,64 @@ async function verifyImportDocumentBudget(): Promise<void> {
   assert(rejected, 'Oversized transcript produced a silently truncated preview instead of failing')
 }
 
+async function verifySavedImportUpgrade(): Promise<void> {
+  const url = ['https://youtu.be/', 'CacheVideo1'].join('')
+  const sourceText = '# Retained source transcript\n\nBeginning and ending remain visible.\n'
+  const transcriptJsonText = JSON.stringify({ video_id: 'CacheVideo1', source_url: url,
+    segments: [{ start: 0, duration: 52.375, text: 'Beginning and ending remain visible.' }] })
+  const current = buildVideoAgentUrlImportMarkdown({ sourceUrl: url, sourceText, sourceTranscriptJsonText: transcriptJsonText })
+  const missing = current.replace(/kgVideoSequenceAnnotations:\n[\s\S]*?(?=videoAgentRuntimeContract:)/, '')
+  const frameToken = formatMermaidGanttFrameSamplesToken(Array.from({ length: 17 }, (_, index) => ({
+    timestampSeconds: index, url: `/__video_frame?sample=${index}`,
+  })))
+  const stale = [current + 'x'.repeat(1_000_000), missing,
+    current.replace('schema: "source-annotations/v1"', 'schema: "invalid"'),
+    current + '漢'.repeat(Math.ceil((500_001 - new TextEncoder().encode(current).byteLength) / 3)),
+    current.replace(/(annotationTrackId: )[^\n]+/, '$1"missing_annotation"'),
+    current.replace(/(frameAnalysisNodeId: )[^\n]+/, '$1"missing_panel"'),
+    current.replace('kind: "video-agent-frame-analysis"', 'kind: "other-panel"'),
+    current.replaceAll(url, 'https://youtu.be/OtherVideo1'),
+    current.replace(/kgframes_[A-Za-z0-9_-]+/g, frameToken), '# Previously cached YouTube transcript without a VideoAgent preview']
+  assert(stale[3].length < 500_000 && new TextEncoder().encode(stale[3]).byteLength > 500_000, 'UTF8 budget fixture did not cross the byte-only boundary')
+  const oldPaths = stale.map((_, index) => `/docs_/20200101T00000${index}Z/old.video-agent.md`)
+  const currentPath = '/docs_/20260101T000001Z/current.video-agent.md'
+  const makeFs = (includeCurrent: boolean) => createMemoryWorkspaceFs({ initialEntries: [
+    ...oldPaths.map((path, index) => ({ path, parentPath: path.slice(0, path.lastIndexOf('/')), kind: 'file' as const,
+      name: 'old.video-agent.md', text: stale[index], updatedAtMs: 1 })),
+    ...(includeCurrent ? [{ path: currentPath, parentPath: '/docs_/20260101T000001Z', kind: 'file' as const,
+      name: 'current.video-agent.md', text: current, updatedAtMs: 2 }] : []),
+  ] })
+  for (const path of [...oldPaths, currentPath]) setWorkspaceEntrySource(path, { kind: 'url', url,
+    importState: { identity: `url:${url}`, outputDigest: '0'.repeat(64), checkedAt: 1, status: 'imported' } })
+  const existingFs = makeFs(true)
+  const reused = await importWorkspaceUrl({ fs: existingFs, urlRaw: url,
+    fetchUrlContent: async () => { throw new Error('eligible saved preview must not fetch') } })
+  assert(reused.createdPaths[0] === currentPath, 'Stale first match hid the later eligible saved preview')
+  assert((await existingFs.listEntries()).filter(entry => entry.kind === 'file').length === stale.length + 1, 'Saved preview reuse created or removed files')
+  for (let index = 0; index < oldPaths.length; index++) assert(await existingFs.readFileText(oldPaths[index]) === stale[index], 'Saved preview selection changed a historical source')
+
+  const freshFs = makeFs(false)
+  let fetches = 0
+  const fetchUrlContent = async () => {
+    fetches += 1
+    return { normalizedUrl: url, name: 'cache-source.md', text: sourceText, transcriptJsonText,
+      sourceMediaKind: 'video' as const, sourceMimeHint: 'text/markdown' }
+  }
+  const fresh = await importWorkspaceUrl({ fs: freshFs, urlRaw: url, fetchUrlContent, mirrorToHost: false })
+  const path = fresh.createdPaths[0], text = await freshFs.readFileText(path)
+  assert(fetches === 1 && !!text && !oldPaths.includes(path) && /^\/docs_\/\d{8}T\d{6}Z\//.test(path), 'Default import did not create a fresh timestamped preview')
+  assert(new TextEncoder().encode(text || '').byteLength < 500_000 && readVideoSequenceSourceAnnotations(text || '').length === 1, 'Fresh preview lacks bounded current source annotations')
+  assert((text || '').includes(sourceText.trim()), 'Fresh preview lost the retained transcript')
+  const parsed = await loadGraphDataFromTextViaParser('cache-preview.video-agent.md', text || '', { applyToStore: false })
+  assert(parsed?.graphData?.nodes.length === 8, 'Fresh cache upgrade lost VideoAgent panels')
+  const repeated = await importWorkspaceUrl({ fs: freshFs, urlRaw: url, fetchUrlContent })
+  assert(fetches === 1 && repeated.createdPaths[0] === path, 'Repeated default import fetched again or selected the stale source')
+  for (let index = 0; index < oldPaths.length; index++) assert(await freshFs.readFileText(oldPaths[index]) === stale[index], 'Fresh import overwrote an edited historical source')
+}
+
 export async function testVideoAgentImportResourceBudget(): Promise<void> {
   verifyFrameSampleLimits()
   verifyDeferredFrameImageRequests()
   await verifyImportDocumentBudget()
+  await verifySavedImportUpgrade()
 }
