@@ -1,9 +1,15 @@
 @import './TimelineTransportPlayer.css';
 
+.timeline-transport-chrome,
+.timeline-transport-shell {
+  --kg-main-toolbar-height: var(--kg-toolbar-compact-surface-height);
+  --kg-timeline-toolbar-button-size: var(--kg-control-height);
+  --kg-timeline-bar-height: var(--kg-main-toolbar-height);
+  --kg-video-sequence-lane-height: 61px;
+}
 .timeline-transport-shell {
   --kg-timeline-progress: 0%;
   min-width: 0;
-  --kg-main-toolbar-height: calc(var(--kg-control-height) + 10px); --kg-timeline-toolbar-button-size: var(--kg-control-height); --kg-timeline-bar-height: calc(var(--kg-main-toolbar-height) * 1.5); --kg-video-sequence-lane-height: 61px;
   width: 100%;
 }
 .timeline-transport-chrome {
