@@ -298,10 +298,10 @@ test('mounted Gantt YouTube source receives exact clock through its owned iframe
     assert.ok(Math.abs((await deliver(25)).timeMs - 15000) < 0.000001, 'composition 25s maps to the trimmed source 15s, including READY replay')
     const gap = await deliver(35, true)
     assert.equal(gap.playing, false); assert.equal(gap.sourcePlaybackGap, true)
-    assert.equal(host.querySelector<HTMLElement>('.timeline-transport-media-player-frame')!.style.opacity, '0')
+    assert.equal(host.querySelector<HTMLElement>('.timeline-transport-media-player-frame')!.style.visibility, 'hidden')
     const restored = await deliver(25, true)
     assert.ok(Math.abs(restored.timeMs - 15000) < 0.000001); assert.equal(restored.playing, true); assert.equal(restored.sourcePlaybackGap, false)
-    assert.equal(host.querySelector<HTMLElement>('.timeline-transport-media-player-frame')!.style.opacity, '')
+    assert.equal(host.querySelector<HTMLElement>('.timeline-transport-media-player-frame')!.style.visibility, '')
     await act(async () => useGraphStore.setState({ markdownDocumentName: 'foreign.md', timelineTransportDocumentKey: 'foreign.md' }))
     const foreign = { ...frame, documentKey: 'foreign.md', position: 25 / 60, timeMs: 25000, playing: true }
     await act(async () => { sync.publishRichMediaTimelineTransportFrame(foreign); outer.removeAttribute(sync.RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR); dom.window.dispatchEvent(new dom.window.MessageEvent('message', { data: { type: sync.RICH_MEDIA_TIMELINE_TRANSPORT_READY_MESSAGE }, source: outer.contentWindow })) })

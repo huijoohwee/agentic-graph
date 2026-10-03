@@ -105,7 +105,7 @@ export function GanttTimelineTransportMediaPlayer(args: {
       data-kg-video-sequence-media-player="1"
       data-kg-video-sequence-media-player-kind={args.model.kind}
     >
-      <section className="timeline-transport-media-player-frame" data-kg-video-sequence-playback-gap={iframeGap ? 'empty' : undefined} style={iframeGap ? { opacity: 0 } : undefined}>
+      <section className="timeline-transport-media-player-frame" data-kg-video-sequence-playback-gap={iframeGap ? 'empty' : undefined} style={iframeGap ? { visibility: 'hidden' } : undefined}>
         {sourcePlaybackSrcDoc ? <React.Suspense fallback={null}><RichMediaPanelLazy
           kind="iframe" title={args.model.title} url={args.model.url} openUrl={args.model.url}
           srcDoc={sourcePlaybackSrcDoc} sourcePlayback mapTimelineTransportFrame={mapTimelineTransportFrame} interactive
