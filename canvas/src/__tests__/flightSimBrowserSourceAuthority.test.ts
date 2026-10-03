@@ -364,6 +364,8 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.doesNotMatch(verifier, /request\.frame/)
   assert.match(verifier, /"serviceWorkerRequests": \[/)
   assert.match(verifier, /context\.route_web_socket\("\*\*\/\*", route_websocket\)/)
+  const pageCreationIndex = verifier.indexOf('page = BoundedEvaluationPage(context.new_page())')
+  assert.ok(pageCreationIndex >= 0)
   for (const prePageContextOwner of [
     'context.route("**/*", route_request)',
     'context.on("request", record_request)',
@@ -371,8 +373,8 @@ test('Flight browser proof activates only after applying the authored source', (
     'context.route_web_socket("**/*", route_websocket)',
   ]) {
     assert.ok(
-      verifier.indexOf(prePageContextOwner)
-        < verifier.indexOf('page = context.new_page()'),
+      verifier.indexOf(prePageContextOwner) >= 0
+        && verifier.indexOf(prePageContextOwner) < pageCreationIndex,
     )
   }
   assert.doesNotMatch(verifier, /page\.route_web_socket\(websocket_probe_url/)
