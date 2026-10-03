@@ -126,7 +126,7 @@ export function testDesignAgentVideoSourceContractsAvoidCopiedDesignEnginesAndFa
       throw new Error(`expected Design video panel to expose ${requiredPanelContract}`)
     }
   }
-  if (!bottomTimelineText.includes('Design video timeline bottom panel') || !bottomTimelineText.includes('data-kg-design-video-timeline-track')) {
+  if (!bottomTimelineText.includes('Design video timeline bottom panel') || !bottomTimelineText.includes('GanttTimelineTransportPanel') || bottomTimelineText.includes('absolute top-12')) {
     throw new Error('expected Design BottomPanel Timeline support to expose source-derived video tracks')
   }
   if (!canvasViewportText.includes("canvas2dRenderer === 'design'") || !canvasViewportText.includes("'designTimeline'")) {

@@ -260,7 +260,7 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
     !ganttTransportShellModelText.includes("ariaLabel: 'Scrub Gantt-timeline position'") ||
     !ganttTransportShellModelText.includes("chromeClassName: 'timeline-transport-chrome--mermaid-gantt p-2'") ||
     !ganttTransportShellModelText.includes("shellClassName: 'timeline-transport-shell--video-sequence'") ||
-    !ganttTransportShellModelText.includes('showInlineProgress: false') ||
+    !ganttTransportShellModelText.includes('showInlineProgress: true') ||
     !ganttTransportShellModelText.includes('showRange: false') ||
     !ganttTransportShellText.includes('GanttTimelineTransportShell') ||
     !ganttTransportShellText.includes('TimelineTransportChrome') ||
@@ -432,7 +432,7 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   if (
     !gitGraphFloatingPanelText.includes('data-kg-gitgraph-command-line') ||
     !gitGraphFloatingPanelText.includes("scrollIntoView({ block: 'center' })") ||
-    !gitGraphFloatingPanelText.includes('ring-2')
+    !gitGraphFloatingPanelText.includes('uiSelectedRowStateClassName')
   ) {
     throw new Error('expected GitGraph FloatingPanel rows to highlight and scroll to canvas-selected commands')
   }

@@ -28,6 +28,8 @@ const getTestMermaidApi = (): MermaidRuntimeApi | null => {
 
 let mermaidModulePromise: Promise<MermaidRuntimeApi> | null = null
 let lastStandardInitKey = ''
+let lastInitializedApi: MermaidRuntimeApi | null = null
+let renderQueue: Promise<unknown> = Promise.resolve()
 
 const mergeMermaidConfig = (config: MermaidInitConfig): MermaidInitConfig => {
   const next = { ...(config || {}) }
@@ -84,12 +86,10 @@ export const ensureStandardMermaidInitialized = async (config: MermaidInitConfig
   const mermaid = await loadMermaidRuntimeApi()
   const mergedConfig = mergeMermaidConfig(config)
   const key = JSON.stringify(mergedConfig)
-  if (key !== lastStandardInitKey) {
-    try {
-      mermaid.initialize({ startOnLoad: false, ...mergedConfig })
-    } finally {
-      lastStandardInitKey = key
-    }
+  if (key !== lastStandardInitKey || mermaid !== lastInitializedApi) {
+    mermaid.initialize({ startOnLoad: false, ...mergedConfig })
+    lastStandardInitKey = key
+    lastInitializedApi = mermaid
   }
   return mermaid
 }
@@ -99,12 +99,14 @@ export const ensureMermaidInitialized = async (config: MermaidInitConfig, code =
   return ensureStandardMermaidInitialized(config)
 }
 
-export const renderMermaidWithRuntime = async (args: {
+const renderMermaidInOrder = async (args: {
   renderId: string
   code: string
   config: MermaidInitConfig
   initStrategy?: MermaidRenderInitStrategy
+  signal?: AbortSignal
 }): Promise<MermaidRuntimeRenderResult> => {
+  if (args.signal?.aborted) throw new Error('Mermaid render superseded')
   const renderId = String(args.renderId || '').trim()
   const code = String(args.code || '')
   const config = args.config
@@ -112,6 +114,7 @@ export const renderMermaidWithRuntime = async (args: {
   const mermaid = initStrategy === 'standard'
     ? await ensureStandardMermaidInitialized(config)
     : await ensureMermaidInitialized(config, code)
+  if (args.signal?.aborted) throw new Error('Mermaid render superseded')
   cleanupMermaidRenderArtifacts(renderId)
   try {
     const out = await mermaid.render(renderId, code)
@@ -123,4 +126,12 @@ export const renderMermaidWithRuntime = async (args: {
   } finally {
     cleanupMermaidRenderArtifacts(renderId)
   }
+}
+
+/** Mermaid owns global configuration: initialize and render form one serialized operation. */
+export const renderMermaidWithRuntime = async (args: Parameters<typeof renderMermaidInOrder>[0]): Promise<MermaidRuntimeRenderResult> => {
+  const result = renderQueue.then(() => renderMermaidInOrder(args))
+  // A failed render must not poison subsequent documents.
+  renderQueue = result.catch(() => undefined)
+  return result
 }
