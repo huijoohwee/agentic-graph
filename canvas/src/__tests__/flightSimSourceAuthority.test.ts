@@ -19,8 +19,14 @@ import { getWorkspaceSeedFiles } from '@/features/workspace-fs/workspaceFs'
 import { FlightSimRunReadyDemoRuntime } from '@/features/canvas/FlightSimRunReadyDemoRuntime'
 import { readFlightSimSnapshot, resetFlightSimRuntimeForTests } from '@/features/game-flight-sim/flightSimRuntime'
 import { beginSourceFilesDocumentIntent, clearSourceFilesDocumentIntent, completeSourceFilesBootstrap, failSourceFilesDocumentIntent } from '@/features/source-files/sourceFilesBootstrapReadiness'
-import { buildActiveWorkspaceRuntimeSourceFilesSnapshot } from '@/features/source-files/sourceFilesRuntimeMaterialization'
+import { buildActiveWorkspaceRuntimeSourceFilesSnapshot, isMaterializedWorkspaceSourceProofCurrent, materializeActiveWorkspaceEntryIntoSourceFiles } from '@/features/source-files/sourceFilesRuntimeMaterialization'
 import { parseAndApplySourceFile } from '@/features/source-files/sourceFilesParseRuntime'
+import { ensureBuiltInParsersRegistered } from '@/features/parsers/ensure'
+import { listParsers, registerParser } from '@/features/parsers/registry'
+import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
+import { useMarkdownWorkspaceDocumentSwitchApply } from '@/lib/markdown-workspace-runtime/markdownWorkspaceDocumentSwitchApply'
+import { captureFlightSimTrainingSource } from '@/features/game-flight-sim/flightSimTrainingSource'
+import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import { resetGraphStoreForTests, useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForReactCondition, waitForTasks } from '@/tests/lib/reactRootHarness'
@@ -266,4 +272,82 @@ test('automatic Flight entry cancels a pending launch on source lifecycle or tex
     assert.match(readFlightSimSnapshot().runtimeError || '', /WebGL/)
     assert.equal(readFlightSimSnapshot().active, false)
   })
+})
+
+test('native editor publication converges with pending source reads and canonical parsing only for the exact selected source', { timeout: 30_000 }, async () => {
+  const { dom, restore } = initJsdomHarness()
+  const previous = useGraphStore.getState(), previousExplorer = useMarkdownExplorerStore.getState()
+  ensureBuiltInParsersRegistered()
+  const original = listParsers().find(parser => String(parser.id) === 'markdown')!
+  const path = `/${FLIGHT_SIM_DEMO_REPO_REL_PATH}`
+  const entry = { path: path as never, parentPath: '/docs/workspace-seeds' as never, kind: 'file' as const,
+    name: path.split('/').pop()!, text: seedSource, updatedAtMs: 1 }
+  try {
+    for (const stage of ['source-read', 'parser'] as const) for (const change of ['exact', 'text', 'selection'] as const) {
+      resetGraphStoreForTests()
+      const snapshot = buildActiveWorkspaceRuntimeSourceFilesSnapshot({ activePath: path as never,
+        existingSourceFiles: [], workspaceEntries: [entry], sourcesByPath: {} })
+      let release!: () => void, started!: () => void, count = 0, firstRead = true
+      const delay = new Promise<void>(resolve => { release = resolve })
+      const entered = new Promise<void>(resolve => { started = resolve })
+      registerParser({ ...original, parseAsync: async (name, text) => {
+        count += 1
+        if (stage === 'parser') { started(); await delay }
+        return original.parseAsync ? original.parseAsync(name, text) : original.parse(name, text)
+      } })
+      const fs: WorkspaceFs = { ensureSeed: async () => false, listEntries: async () => [],
+        readFileText: async () => { if (stage === 'source-read' && firstRead) { firstRead = false; started(); await delay }; return seedSource },
+        writeFileText: async () => undefined, createFile: async () => '/docs/tmp.md',
+        createFolder: async () => '/docs', deleteEntry: async () => undefined }
+      // Native editor and materializer share this publication action. Graph and
+      // renderer effects are outside this document/source ordering regression.
+      useGraphStore.setState({ sourceFiles: snapshot.runtimeSourceFiles, markdownDocumentName: 'before.md', markdownDocumentText: '# Before',
+        setActiveMarkdownDocument: async payload => {
+          useGraphStore.getState().setMarkdownDocument(payload.name, payload.text, { applyViewPreset: payload.applyViewPreset,
+            autoEnableFrontmatter: payload.autoEnableFrontmatter, forceRevision: payload.applyToGraph === true })
+          return true
+        } })
+      useMarkdownExplorerStore.getState().setActivePath(path as never)
+      let publish!: ReturnType<typeof useMarkdownWorkspaceDocumentSwitchApply>['applySelectedWorkspaceDocumentToCanvas']
+      function NativeDocumentSwitchOwner() {
+        publish = useMarkdownWorkspaceDocumentSwitchApply({ activePath: path as never, readPendingSwitchNextPath: () => path as never,
+          setActiveMarkdownDocument: useGraphStore.getState().setActiveMarkdownDocument }).applySelectedWorkspaceDocumentToCanvas
+        return null
+      }
+      const container = dom.window.document.createElement('main'); dom.window.document.body.append(container)
+      const root = createRoot(container)
+      let applying: ReturnType<typeof materializeActiveWorkspaceEntryIntoSourceFiles> | undefined
+      try {
+        await mountReactRoot(root, React.createElement(NativeDocumentSwitchOwner))
+        applying = materializeActiveWorkspaceEntryIntoSourceFiles({ activePathOverride: path as never, fs,
+          sourceFilesSnapshot: snapshot.runtimeSourceFiles, refreshActiveText: stage === 'source-read' })
+        // Attach a rejection observer before the deliberate asynchronous drift.
+        void applying.catch(() => undefined)
+        await entered
+        assert.equal(useGraphStore.getState().sourceFiles[0].status, stage === 'parser' ? 'loading' : 'idle')
+        const publishedText = change === 'text' ? `${seedSource}\n# Concurrent document edit` : seedSource
+        await act(async () => { assert.equal(await publish({ activeDocumentKey: path.slice(1), text: publishedText,
+          sourceUrl: null, updatedAtMs: 1, markdownDocumentName: 'before.md', markdownDocumentText: '# Before',
+          graphDataSource: null, canvas2dRenderer: 'flow' }), 'applied') })
+        if (change === 'selection') useMarkdownExplorerStore.getState().setActivePath('/docs/new-selection.md')
+        release()
+        if (change === 'exact') {
+          const proof = await applying
+          assert.ok(proof && isMaterializedWorkspaceSourceProofCurrent(proof))
+          assert.equal(count, 1)
+          assert.equal(useGraphStore.getState().sourceFiles[0].status, 'parsed')
+          assert.equal(useGraphStore.getState().markdownDocumentName, path.slice(1))
+          assert.equal(useGraphStore.getState().markdownDocumentText, seedSource)
+          const captured = captureFlightSimTrainingSource()
+          assert.equal(captured.sourceText, seedSource); assert.ok(captured.profile && captured.geographicReference)
+        } else {
+          await assert.rejects(applying, error => (error as { code?: string }).code === 'SOURCE_FILES_MATERIALIZATION_STALE')
+          assert.equal(useGraphStore.getState().markdownDocumentText, publishedText)
+          assert.equal(useMarkdownExplorerStore.getState().activePath, change === 'selection' ? '/docs/new-selection.md' : path)
+          assert.equal(useGraphStore.getState().sourceFiles[0].text, seedSource)
+          assert.equal(count, stage === 'parser' ? 1 : 0)
+        }
+      } finally { release(); await applying?.catch(() => undefined); await unmountReactRoot(root); container.remove() }
+    }
+  } finally { registerParser(original); useGraphStore.setState(previous, true); useMarkdownExplorerStore.setState(previousExplorer, true); restore() }
 })
