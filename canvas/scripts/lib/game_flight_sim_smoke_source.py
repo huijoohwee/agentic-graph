@@ -476,8 +476,8 @@ def _read_source_activation_diagnostic(page: Page) -> dict[str, Any]:
           const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
           const demos = await window.__kgFlightSimBrowserProof.importModule('workspaceRunReadyDemos')
           const state = store.useGraphStore.getState()
-          const normalize = value => String(value || '').replace(/^\/+/, '')
-            .replace(/^workspace\//, '').toLowerCase()
+          const normalize = value => String(value || '').replace(/^workspace:/, '')
+            .replace(/^\/+/, '').toLowerCase()
           const documentName = state.markdownDocumentName
           const documentText = state.markdownDocumentText
           const files = Array.isArray(state.sourceFiles) ? state.sourceFiles : []

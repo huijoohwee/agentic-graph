@@ -4,6 +4,7 @@ import {
   buildMaterializedWorkspaceActivePathKey,
   reapplyActiveWorkspaceMarkdownDocument,
   shouldProactivelyReapplyActiveWorkspaceMarkdownDocument,
+  isMaterializedWorkspaceSourceProofCurrent,
 } from '@/features/source-files/sourceFilesRuntimeMaterialization'
 import { resolveWorkspaceSourcePathKey } from '@/features/workspace-fs/syncToSourceFiles'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
@@ -17,6 +18,18 @@ import { captureFlightSimTrainingSource } from '@/features/game-flight-sim/fligh
 import { parseAndApplySourceFile } from '@/features/source-files/sourceFilesParseRuntime'
 import { listParsers, registerParser } from '@/features/parsers/registry'
 import { ensureBuiltInParsersRegistered } from '@/features/parsers/ensure'
+import { beginActivePathMaterializationSourceAuthority, completeActivePathMaterializationSourceAuthority,
+  failActivePathMaterializationSourceAuthority, createActivePathSourceAuthorityCoordinator,
+  materializeActivePathWithSourceAuthority, resolveActivePathMaterializationSourceAuthority } from '@/features/source-files/sourceFilesActivePathAuthority'
+import { clearSourceFilesDocumentIntent, completeSourceFilesBootstrap, readSourceFilesBootstrapSnapshot, subscribeSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
+
+async function expectStaleMaterialization(operation: Promise<unknown>): Promise<void> {
+  try { await operation } catch (error) {
+    if ((error as { code?: string }).code === 'SOURCE_FILES_MATERIALIZATION_STALE') return
+    throw error
+  }
+  throw new Error('stale materialization settled successfully')
+}
 
 const createMinimalFs = (textByPath: Record<string, string>): WorkspaceFs => ({
   ensureSeed: async () => false,
@@ -251,16 +264,18 @@ export async function testActiveWorkspaceRefreshPreservesConcurrentSourceChanges
       const added: SourceFile = { id: 'refresh-new', name: 'new.md', text: '# New', enabled: true, status: 'idle',
         source: { kind: 'local' as const, path: `workspace:${nextPath}` } }
       useGraphStore.setState({ sourceFiles: [old], markdownDocumentName: 'docs/old.md',
-        markdownDocumentText: '# Old', setActiveMarkdownDocument: async () => true })
+        markdownDocumentText: '# Old', setActiveMarkdownDocument: async payload => {
+          useGraphStore.setState({ markdownDocumentName: payload.name, markdownDocumentText: payload.text, markdownDocumentApplyViewPreset: true }); return true
+        } })
       useMarkdownExplorerStore.getState().setActivePath(oldPath as never)
       const snapshot = useGraphStore.getState().sourceFiles
       if (change === 'stale-queued') {
         const current = [old, added]
         useGraphStore.setState({ sourceFiles: current })
-        await materializeActiveWorkspaceEntryIntoSourceFiles({
+        await expectStaleMaterialization(materializeActiveWorkspaceEntryIntoSourceFiles({
           activePathOverride: oldPath as never, sourceFilesSnapshot: snapshot,
           fs: createMinimalFs({ [oldPath]: '# Stale refresh' }), refreshActiveText: true,
-        })
+        }))
         if (useGraphStore.getState().sourceFiles !== current) throw new Error('queued snapshot removed a newer source')
         continue
       }
@@ -286,7 +301,8 @@ export async function testActiveWorkspaceRefreshPreservesConcurrentSourceChanges
         useMarkdownExplorerStore.getState().setActivePath(nextPath as never)
       }
       finishRead('# Refreshed old text')
-      await pending
+      if (change === 'unchanged') await pending
+      else await expectStaleMaterialization(pending)
       if (change === 'unchanged') {
         if (useGraphStore.getState().sourceFiles[0]?.text !== '# Refreshed old text') {
           throw new Error('current active source did not refresh')
@@ -368,7 +384,8 @@ export async function testNativeMaterializationParseFencesConcurrentSelectionAnd
         workspaceEntries: [{ path: path as never, parentPath: '/docs' as never, kind: 'file', name: 'parse-fence.md', text, updatedAtMs: 1 }], sourcesByPath: {} })
       let applied = false, changed = false, joined: Promise<void> | undefined
       useGraphStore.setState({ sourceFiles: snapshot.runtimeSourceFiles, markdownDocumentName: 'before.md', markdownDocumentText: '# Before',
-        setActiveMarkdownDocument: async () => { applied = true; return true } })
+        setActiveMarkdownDocument: async payload => { applied = true;
+          useGraphStore.setState({ markdownDocumentName: payload.name, markdownDocumentText: payload.text, markdownDocumentApplyViewPreset: true }); return true } })
       useMarkdownExplorerStore.getState().setActivePath(path as never)
       const stop = useGraphStore.subscribe(state => {
         const file = state.sourceFiles.find(value => value.source?.path === `workspace:${path}`)
@@ -385,7 +402,9 @@ export async function testNativeMaterializationParseFencesConcurrentSelectionAnd
         })
       })
       try {
-        await materializeActiveWorkspaceEntryIntoSourceFiles({ activePathOverride: path as never, fs: createMinimalFs({ [path]: text }) })
+        const pending = materializeActiveWorkspaceEntryIntoSourceFiles({ activePathOverride: path as never, fs: createMinimalFs({ [path]: text }) })
+        if (change === 'join') await pending
+        else await expectStaleMaterialization(pending)
         await joined
         if (applied !== (change === 'join')) throw new Error(`native parse published a stale ${change} document`)
         const current = useGraphStore.getState()
@@ -411,7 +430,8 @@ export async function testNativeSourceParseSynchronousSubscriberJoinsOneExactJob
   const snapshot = buildActiveWorkspaceRuntimeSourceFilesSnapshot({ activePath: path as never,
     existingSourceFiles: [], workspaceEntries: [entry], sourcesByPath: {} })
   useGraphStore.setState({ sourceFiles: snapshot.runtimeSourceFiles, markdownDocumentName: 'before.md', markdownDocumentText: '# Before',
-    setActiveMarkdownDocument: async () => { applied = true; return true } })
+    setActiveMarkdownDocument: async payload => { applied = true;
+      useGraphStore.setState({ markdownDocumentName: payload.name, markdownDocumentText: payload.text, markdownDocumentApplyViewPreset: true }); return true } })
   useMarkdownExplorerStore.getState().setActivePath(path as never)
   const stop = useGraphStore.subscribe(state => {
     const file = state.sourceFiles[0]
@@ -426,4 +446,147 @@ export async function testNativeSourceParseSynchronousSubscriberJoinsOneExactJob
       throw new Error(`synchronous native parse reentry failed: count=${count}, status=${file.status}, revision=${file.parsedGraphRevision}`)
     }
   } finally { stop(); registerParser(original); useGraphStore.setState(previous, true); useMarkdownExplorerStore.setState(explorer, true) }
+}
+
+export async function testNativeLifecycleOnlyRetryWaitsForOneParserBeforeSourceAuthorityReady() {
+  const previous = useGraphStore.getState(), explorer = useMarkdownExplorerStore.getState()
+  ensureBuiltInParsersRegistered()
+  const original = listParsers().find(value => String(value.id) === 'markdown')!
+  const path = '/docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md'
+  const text = readFileSync(resolve(process.cwd(), '..', path.slice(1)), 'utf8')
+  const entry = { path: path as never, parentPath: '/docs/workspace-seeds' as never, kind: 'file' as const,
+    name: path.split('/').pop()!, text, updatedAtMs: 1 }
+  const snapshot = buildActiveWorkspaceRuntimeSourceFilesSnapshot({ activePath: path as never,
+    existingSourceFiles: [], workspaceEntries: [entry], sourcesByPath: {} })
+  let release!: () => void, started!: () => void, count = 0
+  const delay = new Promise<void>(resolve => { release = resolve }), entered = new Promise<void>(resolve => { started = resolve })
+  registerParser({ ...original, parseAsync: async (name, body) => { count += 1; started(); await delay;
+    return original.parseAsync ? original.parseAsync(name, body) : original.parse(name, body) } })
+  const request = { activePath: path, activePathKey: 'native-lifecycle-retry', ...resolveActivePathMaterializationSourceAuthority(path),
+    sourceFilesSnapshot: snapshot.runtimeSourceFiles, workspaceEntriesSnapshot: [{ ...entry, text: '# Stale retained entry' }] }
+  try {
+    useGraphStore.setState({ sourceFiles: snapshot.runtimeSourceFiles, markdownDocumentName: 'before.md', markdownDocumentText: '# Before',
+      setActiveMarkdownDocument: async payload => { useGraphStore.setState({ markdownDocumentName: payload.name,
+        markdownDocumentText: payload.text, markdownDocumentApplyViewPreset: true }); return true } })
+    useMarkdownExplorerStore.getState().setActivePath(path as never)
+    const parsing = parseAndApplySourceFile(snapshot.runtimeSourceFiles[0].id, { applyComposedGraph: false })
+    await entered
+    completeSourceFilesBootstrap(); beginActivePathMaterializationSourceAuthority(request)
+    const applying = materializeActivePathWithSourceAuthority(request, { fs: createMinimalFs({ [path]: text }),
+      activeWorkspaceEntriesSnapshot: request.workspaceEntriesSnapshot, sourcesByPath: {} })
+    const queued = { ...request }, coordinator = createActivePathSourceAuthorityCoordinator()
+    coordinator.begin(queued)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    if (count !== 1 || readSourceFilesBootstrapSnapshot().phase !== 'resolving'
+      || useGraphStore.getState().sourceFiles[0].status !== 'loading') throw new Error('native retry published ready before its one parser settled')
+    release(); await Promise.all([parsing, applying])
+    if (count !== 1 || readSourceFilesBootstrapSnapshot().phase !== 'ready') throw new Error('equivalent queued native request did not receive settled source proof')
+    const capture = captureFlightSimTrainingSource()
+    if (capture.sourceText !== text || !capture.profile || !capture.geographicReference) throw new Error('fresh native retry failed exact source capture')
+    const replay = { ...request, sourceFilesSnapshot: useGraphStore.getState().sourceFiles, workspaceEntriesSnapshot: [entry] }
+    beginActivePathMaterializationSourceAuthority(replay)
+    await materializeActivePathWithSourceAuthority(replay, { fs: createMinimalFs({ [path]: text }), activeWorkspaceEntriesSnapshot: [entry], sourcesByPath: {} })
+    if (readSourceFilesBootstrapSnapshot().documentIntentPhase !== 'ready' || count !== 1) throw new Error('valid matching-document no-op failed readiness')
+    const publication = { ...replay }; beginActivePathMaterializationSourceAuthority(publication)
+    let publicationChanged = false
+    const stopPublication = subscribeSourceFilesBootstrapReady(() => {
+      if (publicationChanged || readSourceFilesBootstrapSnapshot().phase !== 'ready') return
+      publicationChanged = true; useGraphStore.getState().setSourceFileStatus(snapshot.runtimeSourceFiles[0].id, 'loading')
+    })
+    try { await expectStaleMaterialization(materializeActivePathWithSourceAuthority(publication, {
+      fs: createMinimalFs({ [path]: text }), activeWorkspaceEntriesSnapshot: [entry], sourcesByPath: {} })) } finally { stopPublication() }
+    if (!publicationChanged || readSourceFilesBootstrapSnapshot().phase !== 'error'
+      || useGraphStore.getState().sourceFiles[0].status !== 'loading') throw new Error('ready publication source drift falsely settled successfully')
+    const old = { ...replay, activePathKey: 'old-content-key' }, newer = { ...replay, activePathKey: 'new-content-key' }
+    beginActivePathMaterializationSourceAuthority(old)
+    const incompatible = materializeActivePathWithSourceAuthority(old, { fs: createMinimalFs({ [path]: text }),
+      activeWorkspaceEntriesSnapshot: [entry], sourcesByPath: {} })
+    coordinator.begin(newer)
+    await expectStaleMaterialization(incompatible)
+    if (readSourceFilesBootstrapSnapshot().documentIntentPhase !== 'resolving') throw new Error('incompatible queued request received old proof')
+  } finally { release(); clearSourceFilesDocumentIntent(request.sourceAuthorityIntentKey); registerParser(original);
+    useGraphStore.setState(previous, true); useMarkdownExplorerStore.setState(explorer, true) }
+}
+
+export function testSourceAuthoritySupersededSamePathCannotCompleteFailOrClear() {
+  const fields = { activePath: '/docs/same.md', activePathKey: 'same-path', sourceFilesSnapshot: [], workspaceEntriesSnapshot: [],
+    sourceAuthorityIntentKey: '["workspace-active-path","/docs/same.md"]', ownsSourceAuthorityIntent: true }
+  const old = { ...fields }, current = { ...fields }, first = createActivePathSourceAuthorityCoordinator(), second = createActivePathSourceAuthorityCoordinator()
+  try {
+    completeSourceFilesBootstrap(); first.begin(old); second.begin(current)
+    completeActivePathMaterializationSourceAuthority(old); failActivePathMaterializationSourceAuthority(old, new Error('superseded')); first.clear()
+    if (readSourceFilesBootstrapSnapshot().documentIntentPhase !== 'resolving') throw new Error('old same-path authority changed newer resolving intent')
+    completeActivePathMaterializationSourceAuthority(current)
+    failActivePathMaterializationSourceAuthority(old, new Error('superseded')); completeActivePathMaterializationSourceAuthority(old); first.clear()
+    if (readSourceFilesBootstrapSnapshot().documentIntentPhase !== 'ready') throw new Error('old same-path authority changed newer ready intent')
+    second.clear()
+    if (readSourceFilesBootstrapSnapshot().documentIntentKey !== null) throw new Error('current coordinator failed to clear its own intent')
+    let reentered = false
+    const stop = subscribeSourceFilesBootstrapReady(() => {
+      if (reentered || readSourceFilesBootstrapSnapshot().documentIntentPhase !== 'resolving') return
+      reentered = true; first.begin({ ...fields, activePathKey: 'reentrant-newer' })
+    })
+    try { first.begin({ ...fields }); first.clear() } finally { stop() }
+    if (!reentered || readSourceFilesBootstrapSnapshot().documentIntentKey !== null) {
+      throw new Error('reentrant begin lost the newer coordinator clear ownership')
+    }
+  } finally { clearSourceFilesDocumentIntent(fields.sourceAuthorityIntentKey) }
+}
+
+export async function testMaterializationRetryRejectsIdentityContentAndLateLifecycleDrift() {
+  const previous = useGraphStore.getState(), explorer = useMarkdownExplorerStore.getState()
+  const path = '/docs/retry-fence.md', text = '# Native retry fence'
+  const entry = { path: path as never, parentPath: '/docs' as never, kind: 'file' as const, name: 'retry-fence.md', text, updatedAtMs: 1 }
+  const snapshot = buildActiveWorkspaceRuntimeSourceFilesSnapshot({ activePath: path as never,
+    existingSourceFiles: [], workspaceEntries: [entry], sourcesByPath: {} }).runtimeSourceFiles
+  const file = snapshot[0]
+  const changes: Partial<SourceFile>[] = [{ id: 'changed-id' }, { name: 'changed.md' }, { text: '# Newer text' },
+    { enabled: false }, { geoLayerEnabled: !file.geoLayerEnabled }, { source: { kind: 'url', url: 'https://example.test/source', path: file.source?.path } },
+    { source: { kind: 'local', path: 'workspace:/docs/other.md' } }, { source: { kind: 'local', path: file.source?.path, url: 'https://example.test/changed' } }]
+  try {
+    for (const change of changes) {
+      const current = [{ ...file, ...change }]
+      useGraphStore.setState({ sourceFiles: current, markdownDocumentName: 'before.md', markdownDocumentText: '# Before' })
+      useMarkdownExplorerStore.getState().setActivePath(path as never)
+      await expectStaleMaterialization(materializeActiveWorkspaceEntryIntoSourceFiles({ activePathOverride: path as never,
+        fs: createMinimalFs({ [path]: text }), sourceFilesSnapshot: snapshot, activeWorkspaceEntriesSnapshot: [entry] }))
+      if (useGraphStore.getState().sourceFiles !== current || useGraphStore.getState().markdownDocumentText !== '# Before') {
+        throw new Error(`retry replaced a changed source invariant: ${JSON.stringify(change)}`)
+      }
+    }
+    useGraphStore.setState({ sourceFiles: [{ ...file, status: 'loading' }], markdownDocumentName: 'before.md', markdownDocumentText: '# Before',
+      setActiveMarkdownDocument: async payload => {
+        useGraphStore.setState({ markdownDocumentName: payload.name, markdownDocumentText: payload.text, markdownDocumentApplyViewPreset: true })
+        useGraphStore.getState().setSourceFileStatus(file.id, 'loading'); return true
+      } })
+    const request = { activePath: path, activePathKey: 'late-retry', ...resolveActivePathMaterializationSourceAuthority(path),
+      sourceFilesSnapshot: snapshot, workspaceEntriesSnapshot: [entry] }
+    beginActivePathMaterializationSourceAuthority(request)
+    await expectStaleMaterialization(materializeActivePathWithSourceAuthority(request, { fs: createMinimalFs({ [path]: text }),
+      activeWorkspaceEntriesSnapshot: [entry], sourcesByPath: {} }))
+    if (readSourceFilesBootstrapSnapshot().documentIntentPhase !== 'resolving') throw new Error('late lifecycle drift falsely completed readiness')
+    clearSourceFilesDocumentIntent(request.sourceAuthorityIntentKey)
+    let applications = 0
+    useGraphStore.setState({ sourceFiles: snapshot, markdownDocumentName: 'docs/retry-fence.md', markdownDocumentText: text,
+      markdownDocumentApplyViewPreset: false, setActiveMarkdownDocument: async payload => {
+        applications += 1
+        useGraphStore.setState({ markdownDocumentName: payload.name, markdownDocumentText: payload.text, markdownDocumentApplyViewPreset: true })
+        useGraphStore.getState().setSourceFileStatus(file.id, 'loading'); return true
+      } })
+    await expectStaleMaterialization(materializeActiveWorkspaceEntryIntoSourceFiles({ activePathOverride: path as never,
+      fs: createMinimalFs({ [path]: text }), sourceFilesSnapshot: snapshot, activeWorkspaceEntriesSnapshot: [entry] }))
+    if (applications !== 1) throw new Error('materialization retried after its own document publication')
+    let reads = 0
+    useGraphStore.setState({ sourceFiles: [{ ...file, status: 'loading' }], markdownDocumentName: 'before.md', markdownDocumentText: '# Before',
+      setActiveMarkdownDocument: async payload => { useGraphStore.setState({ markdownDocumentName: payload.name,
+        markdownDocumentText: payload.text, markdownDocumentApplyViewPreset: true }); return true } })
+    const refreshed = '# New filesystem text'
+    const proof = await materializeActiveWorkspaceEntryIntoSourceFiles({ activePathOverride: path as never, sourceFilesSnapshot: snapshot,
+      refreshActiveText: true, fs: { ...createMinimalFs({ [path]: refreshed }), readFileText: async () => { reads += 1; return refreshed } } })
+    if (!reads || useGraphStore.getState().sourceFiles[0].text !== refreshed || !proof || !isMaterializedWorkspaceSourceProofCurrent(proof)) {
+      throw new Error('lifecycle retry dropped explicit active-text refresh or returned stale proof')
+    }
+    useGraphStore.getState().setSourceFileStatus(file.id, 'loading')
+    if (isMaterializedWorkspaceSourceProofCurrent(proof)) throw new Error('settled proof remained current after source lifecycle replacement')
+  } finally { useGraphStore.setState(previous, true); useMarkdownExplorerStore.setState(explorer, true) }
 }

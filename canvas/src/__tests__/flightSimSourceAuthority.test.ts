@@ -24,6 +24,7 @@ import { parseAndApplySourceFile } from '@/features/source-files/sourceFilesPars
 import { resetGraphStoreForTests, useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForReactCondition, waitForTasks } from '@/tests/lib/reactRootHarness'
+import * as nativeMaterializationRegressions from './sourceFilesRuntimeMaterialization.test'
 
 const repoRoot = resolve(process.cwd(), '..')
 const seedSource = readFileSync(
@@ -34,6 +35,12 @@ const physicsSeedSource = readFileSync(
   resolve(repoRoot, XR_PHYSICS_DEMO_REPO_REL_PATH),
   'utf8',
 )
+
+for (const [name, regression] of Object.entries(nativeMaterializationRegressions)) {
+  if (name.startsWith('test') && typeof regression === 'function') {
+    test(`native SourceFile producer: ${name}`, async () => { await regression() })
+  }
+}
 
 function source(relativePath: string): string {
   return readFileSync(resolve(repoRoot, relativePath), 'utf8')
