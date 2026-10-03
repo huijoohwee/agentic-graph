@@ -427,6 +427,7 @@ export const MAIN_PANEL_TAB_TYPE_ICON_BY_KEY = Object.fromEntries(
   ]),
 ) as Record<MainPanelTabKey, MainPanelTypeIconComponent>
 export type FloatingPanelTypeIconView =
+  | 'sequence'
   | 'propsPanel'
   | 'skillsCommands'
   | 'blockLibrary'
@@ -454,6 +455,7 @@ export type FloatingPanelTypeIconView =
   | 'eventModeling'
   | 'graphTraversal'
 export const FLOATING_PANEL_TYPE_ICON_KEY_BY_VIEW = {
+  sequence: 'floatingPanel.timeline',
   propsPanel: 'floatingPanel.propsPanel',
   skillsCommands: 'floatingPanel.skillsCommands',
   blockLibrary: 'floatingPanel.blockLibrary',
