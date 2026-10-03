@@ -10,6 +10,7 @@ import { flightSimAuthoredWorldUnitsToMeters } from './flightSimSpatialScale'
 import {
   projectFlightSimMissionPositionToGeospatial,
   type FlightSimGeospatialCoordinate,
+  type FlightSimGeographicReference,
 } from './flightSimGeospatialCoordinates'
 import type { FlightGeoEnvironmentProjection } from '@/lib/gympgrph/api'
 
@@ -84,6 +85,7 @@ export function projectFlightSimTimelineCameraToGeospatial(
   pose: CameraFramingPose,
   profile: FlightSimSpatialProfile,
   playheadSeconds: number,
+  reference: FlightSimGeographicReference,
 ): FlightSimGeospatialTimelineCamera {
   const position = Object.freeze(
     pose.position.map(flightSimAuthoredWorldUnitsToMeters),
@@ -106,6 +108,7 @@ export function projectFlightSimTimelineCameraToGeospatial(
     centerCoordinate: projectFlightSimMissionPositionToGeospatial(
       target,
       profile.spawn.position,
+      reference,
     ),
     pitchDegrees: clamp(
       90 - Math.atan2(verticalDistanceMeters, Math.max(0.001, horizontalDistanceMeters))
@@ -125,7 +128,9 @@ export function projectFlightSimToGeospatialOverlay(
   night: boolean,
   readyFrameRequestId: number | null = null,
   environment: FlightGeoEnvironmentProjection | null = null,
-): FlightSimGeospatialOverlay {
+  reference: FlightSimGeographicReference | null = null,
+): FlightSimGeospatialOverlay | null {
+  if (!reference) return null
   const guidance = projectFlightSimRouteGuidance(flight, profile)
   const fixedFollow = resolveFlightSimFollowTarget(flight, 1, camera.view)
   const cockpitClearance = Object.freeze({
@@ -146,6 +151,7 @@ export function projectFlightSimToGeospatialOverlay(
       coordinate: projectFlightSimMissionPositionToGeospatial(
         point.position,
         profile.spawn.position,
+        reference,
       ),
       altitudeMeters: point.position[1],
       kind: point.kind,
@@ -158,6 +164,7 @@ export function projectFlightSimToGeospatialOverlay(
         coordinate: projectFlightSimMissionPositionToGeospatial(
           guidance.objective.position,
           profile.spawn.position,
+          reference,
         ),
         distanceMeters: guidance.objective.distanceMeters,
         headingErrorDegrees: guidance.objective.headingErrorDegrees,
@@ -172,6 +179,7 @@ export function projectFlightSimToGeospatialOverlay(
       coordinate: projectFlightSimMissionPositionToGeospatial(
         flight.aircraft.position,
         profile.spawn.position,
+        reference,
       ),
       altitudeMeters: flight.aircraft.position[1],
       headingDegrees: guidance.aircraftHeadingDegrees,
@@ -180,6 +188,7 @@ export function projectFlightSimToGeospatialOverlay(
       centerCoordinate: projectFlightSimMissionPositionToGeospatial(
         centerPosition,
         profile.spawn.position,
+        reference,
       ),
       cockpitClearance,
       effectiveOwner: timeline ? 'timeline-playback' : camera.source,
@@ -200,6 +209,7 @@ export function projectFlightSimToGeospatialOverlay(
       flight.phase,
       flight.waypointIndex,
       profile.id,
+      JSON.stringify(reference),
       camera.source,
       camera.view,
       timeline?.playheadSeconds ?? 'operator',
