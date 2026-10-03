@@ -52,6 +52,7 @@ export function FlightSimRunReadyDemoRuntime() {
   const active = isFlightSimRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
   const [launchAttempt, setLaunchAttempt] = React.useState(0)
   const ownsDocumentLaunchRef = React.useRef(false)
+  const panelLaunchSourceRef = React.useRef<readonly [string | null, string | undefined] | null>(null)
   const launchGenerationRef = React.useRef(0)
   const launchSource = { markdownDocumentName, markdownDocumentText, sourceId: source?.id, sourceRevision: source?.parsedGraphRevision, sourceText: source?.text, sourceEnabled: source?.enabled, sourceStatus: source?.status }
   const launchSourceRef = React.useRef(launchSource)
@@ -80,6 +81,7 @@ export function FlightSimRunReadyDemoRuntime() {
       }
     }
     if (!active) {
+      panelLaunchSourceRef.current = null
       launchGenerationRef.current += 1
       if (launchAttempt !== 0) setLaunchAttempt(0)
       previousCanvasSurfaceRef.current = Object.freeze({
@@ -160,9 +162,13 @@ export function FlightSimRunReadyDemoRuntime() {
           )
           return null
         }
+        // Source refreshes re-admit Flight while retaining the latest panel intent.
+        const openPanel = panelLaunchSourceRef.current?.[0] !== markdownDocumentName
+          || panelLaunchSourceRef.current?.[1] !== source?.id
+        panelLaunchSourceRef.current = [markdownDocumentName, source?.id]
         return startFlightSim({
           geospatialComposite: true,
-          openPanel: true,
+          openPanel,
           previousCanvasSurface: previousCanvasSurfaceRef.current,
         })
       })

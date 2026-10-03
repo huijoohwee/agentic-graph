@@ -17,7 +17,7 @@ import {
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { getWorkspaceSeedFiles } from '@/features/workspace-fs/workspaceFs'
 import { FlightSimRunReadyDemoRuntime } from '@/features/canvas/FlightSimRunReadyDemoRuntime'
-import { readFlightSimSnapshot, resetFlightSimRuntimeForTests } from '@/features/game-flight-sim/flightSimRuntime'
+import { readFlightSimSnapshot, resetFlightSimRuntimeForTests, subscribeFlightSimSnapshot } from '@/features/game-flight-sim/flightSimRuntime'
 import { beginSourceFilesDocumentIntent, clearSourceFilesDocumentIntent, completeSourceFilesBootstrap, failSourceFilesDocumentIntent } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { buildActiveWorkspaceRuntimeSourceFilesSnapshot, isMaterializedWorkspaceSourceProofCurrent, materializeActiveWorkspaceEntryIntoSourceFiles } from '@/features/source-files/sourceFilesRuntimeMaterialization'
 import { parseAndApplySourceFile } from '@/features/source-files/sourceFilesParseRuntime'
@@ -26,6 +26,8 @@ import { listParsers, registerParser } from '@/features/parsers/registry'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { useMarkdownWorkspaceDocumentSwitchApply } from '@/lib/markdown-workspace-runtime/markdownWorkspaceDocumentSwitchApply'
 import { captureFlightSimTrainingSource } from '@/features/game-flight-sim/flightSimTrainingSource'
+import { controlLocalXrScene } from '@/features/three/xrSceneMcpRuntime'
+import { readXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import { resetGraphStoreForTests, useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
@@ -271,6 +273,40 @@ test('automatic Flight entry cancels a pending launch on source lifecycle or tex
     await waitForReactCondition(() => Boolean(readFlightSimSnapshot().runtimeError), { describe: () => 'replacement parsed source to launch' })
     assert.match(readFlightSimSnapshot().runtimeError || '', /WebGL/)
     assert.equal(readFlightSimSnapshot().active, false)
+  })
+})
+
+test('automatic Flight source refresh preserves the selected or closed panel', { timeout: 15_000 }, async () => {
+  await withAutomaticFlightSource(async ({ root, sourceId }) => {
+    // This ownership test uses the headless entry contract, without presenters.
+    Object.defineProperty(window, 'requestAnimationFrame', { value: undefined, configurable: true })
+    const renderer = document.createElement('canvas')
+    renderer.dataset.engine = 'three.js r170'
+    renderer.getContext = (() => ({ isContextLost: () => false })) as never
+    document.body.append(renderer)
+    await parseAndApplySourceFile(sourceId, { applyComposedGraph: false })
+    await useGraphStore.getState().setActiveMarkdownDocument({ name: `/${FLIGHT_SIM_DEMO_REPO_REL_PATH}`, text: seedSource, applyToGraph: true, forceApplyToGraph: true, applyViewPreset: false })
+    await mountReactRoot(root, React.createElement(FlightSimRunReadyDemoRuntime))
+    await waitForReactCondition(() => readFlightSimSnapshot().active, { describe: () => 'initial native Flight launch' })
+    assert.equal(useGraphStore.getState().floatingPanelView, 'flightSim')
+    assert.equal(useGraphStore.getState().floatingPanelOpen, true)
+    const originalStage = readXrMotionReferenceRuntime().plan.stageId
+    for (const open of [true, false]) {
+      let exited = false
+      const unsubscribe = subscribeFlightSimSnapshot(() => { if (!readFlightSimSnapshot().active) exited = true })
+      const sourceText = useGraphStore.getState().markdownDocumentText
+      try {
+        await act(async () => {
+          assert.equal(controlLocalXrScene({ action: 'stage', stageId: open ? 'singapore' : originalStage }).ok, true)
+          useGraphStore.getState().setFloatingPanelView('geo')
+          useGraphStore.getState().setFloatingPanelOpen(open)
+        })
+        assert.notEqual(useGraphStore.getState().markdownDocumentText, sourceText)
+        await waitForReactCondition(() => exited && readFlightSimSnapshot().active, { describe: () => 'native Flight source readmission' })
+      } finally { unsubscribe() }
+      assert.equal(useGraphStore.getState().floatingPanelView, 'geo')
+      assert.equal(useGraphStore.getState().floatingPanelOpen, open)
+    }
   })
 })
 
