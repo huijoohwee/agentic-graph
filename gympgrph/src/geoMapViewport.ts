@@ -14,10 +14,15 @@ type ViewportRect = Readonly<{
   width: number
 }>
 
+const VIEWPORT_OCCLUDER_ATTR = 'data-kg-workspace-visible-viewport-occluder'
+const BOTTOM_PANEL_CLASS = 'kg-canvas-bottom-panel'
+
 export const GEO_MAP_OCCLUDING_PANEL_SELECTOR = [
   '[aria-label="Markdown Workspace"]',
   '[aria-label="Floating panel"]',
   '[aria-label="Geospatial panel"]',
+  `[${VIEWPORT_OCCLUDER_ATTR}]`,
+  `.${BOTTOM_PANEL_CLASS}`,
 ].join(', ')
 
 const PANEL_CLEARANCE_PX = 16
@@ -91,6 +96,8 @@ export function observeGeoMapOcclusionChanges(
             record.type === 'attributes'
             && (
               record.attributeName === 'aria-label'
+              || record.attributeName === VIEWPORT_OCCLUDER_ATTR
+              || observedPanels.has(record.target as Element)
               || nodeContainsOccludingPanel(record.target)
             )
           )
@@ -109,6 +116,7 @@ export function observeGeoMapOcclusionChanges(
       'class',
       'hidden',
       'style',
+      VIEWPORT_OCCLUDER_ATTR,
     ],
     attributes: true,
     childList: true,
@@ -129,6 +137,10 @@ function overlaps(viewport: ViewportRect, candidate: ViewportRect): boolean {
     && candidate.bottom > viewport.top
 }
 
+const horizontalBasePadding = (width: number) => Math.max(16, Math.min(72, width * 0.08))
+const verticalBasePadding = (height: number) => Math.max(16, Math.min(88, height * 0.1))
+const bottomBasePadding = (height: number) => Math.max(verticalBasePadding(height), Math.min(112, height * 0.14))
+
 /** Reads workspace and floating-panel occlusion around the map aperture. */
 export function readGeoMapOcclusionPadding(
   viewport: HTMLElement | null,
@@ -141,12 +153,19 @@ export function readGeoMapOcclusionPadding(
   const horizontalCenter = viewportRect.left + viewportRect.width / 2
   let left = 0
   let right = 0
+  const verticalPanels: Array<{ rect: ViewportRect; edge: string }> = []
   for (const candidate of Array.from(
     ownerDocument.querySelectorAll(GEO_MAP_OCCLUDING_PANEL_SELECTOR),
   )) {
     if (candidate === viewport) continue
     const candidateRect = readVisibleRect(candidate)
     if (!candidateRect || !overlaps(viewportRect, candidateRect)) continue
+    const edge = candidate.classList.contains(BOTTOM_PANEL_CLASS)
+      ? 'bottom' : candidate.getAttribute(VIEWPORT_OCCLUDER_ATTR)
+    if (edge === 'top' || edge === 'bottom' || edge === 'vertical') {
+      verticalPanels.push({ rect: candidateRect, edge })
+      continue
+    }
     // Classifying by panel centre handles compact layouts where a panel crosses
     // the map centre while still covering one complete edge.
     const candidateCenter = candidateRect.left + candidateRect.width / 2
@@ -156,7 +175,26 @@ export function readGeoMapOcclusionPadding(
       right = Math.max(right, viewportRect.right - candidateRect.left + PANEL_CLEARANCE_PX)
     }
   }
-  return Object.freeze({ bottom: 0, left, right, top: 0 })
+  const base = horizontalBasePadding(viewportRect.width)
+  const apertureLeft = viewportRect.left + Math.max(base, left)
+  const apertureRight = viewportRect.right - Math.max(base, right)
+  const apertureCenter = (apertureLeft + apertureRight) / 2
+  let top = 0
+  let bottom = 0
+  for (const { rect, edge } of verticalPanels) {
+    if (apertureLeft >= apertureRight || rect.left >= apertureCenter || rect.right <= apertureCenter) continue
+    const atTop = edge === 'top' || (edge === 'vertical'
+      && rect.top + rect.height / 2 <= viewportRect.top + viewportRect.height / 2)
+    if (atTop) top = Math.max(top, rect.bottom - viewportRect.top + PANEL_CLEARANCE_PX)
+    else bottom = Math.max(bottom, viewportRect.bottom - rect.top + PANEL_CLEARANCE_PX)
+  }
+  // A fully covered viewport has no valid camera aperture; retain baseline padding.
+  if (Math.max(top, verticalBasePadding(viewportRect.height))
+    + Math.max(bottom, bottomBasePadding(viewportRect.height)) >= viewportRect.height) {
+    top = 0
+    bottom = 0
+  }
+  return Object.freeze({ bottom, left, right, top })
 }
 
 export function readGeoMapViewportPadding(
@@ -166,13 +204,12 @@ export function readGeoMapViewportPadding(
   const width = Math.max(1, Number(viewport?.clientWidth) || 1)
   const height = Math.max(1, Number(viewport?.clientHeight) || 1)
   const occlusion = readGeoMapOcclusionPadding(viewport || null)
-  const horizontalBase = Math.max(16, Math.min(72, width * 0.08))
-  const verticalBase = Math.max(16, Math.min(88, height * 0.1))
+  const horizontalBase = horizontalBasePadding(width)
   return Object.freeze({
-    bottom: Math.max(verticalBase, Math.min(112, height * 0.14)),
+    bottom: Math.max(bottomBasePadding(height), occlusion.bottom),
     left: Math.max(horizontalBase, occlusion.left),
     right: Math.max(horizontalBase, occlusion.right),
-    top: verticalBase,
+    top: Math.max(verticalBasePadding(height), occlusion.top),
   })
 }
 

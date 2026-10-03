@@ -49,6 +49,7 @@ shared_xr_scene:
   camera_owner: "canvas/src/features/three/useXrNativeControllerDemoCamera.ts"
   second_r3f_canvas_forbidden: true
 geo_flight_overlay:
+  geographic_reference: {anchor: [103.851959, 1.29027], presentationBounds: [[103.605, 1.158], [104.09, 1.48]]}
   activation: "selected authored environment plus source-authored Flight identity"
   renderer_owner: "native MapLibre Geo host"
   geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
@@ -72,7 +73,7 @@ native_flight_demo:
   deterministic_step: true
   fixed_step: "exactly 1/60 second (approximately 16.667 ms, 60 Hz)"
   max_catch_up_ticks_per_advance: 5
-  mission_meter_transform: "20 meters per authored Singapore scene unit"
+  mission_meter_transform: "20 meters per authored scene unit"
   spatial_profile_scale_id: "flight-meters-20"
   flight_model: "in-repo thrust/pitch/roll/yaw with bounded lift/drag/gravity approximation; no external physics engine"
   collision: "swept authored XR AABB slab catalog plus perimeter, ground, and ceiling; earliest hit with stable id tie-break; at least 0.001 meter separation; no mesh colliders or navmesh"
@@ -100,9 +101,9 @@ native_flight_demo:
     hud_cue: "objective label, rounded distance, and signed left/right heading error; per-tick cue is not a live region"
     runtime_network_calls: 0
     external_map_or_token_required: false
-  scene: "procedural Singapore waterfront terrain"
+  scene: "selected authored shared XR stage with demo-authored geographic reference"
   terrain:
-    default: "singapore"
+    default: "active authored plan, otherwise the shared XR source plan"
     selector: "FloatingPanel Media Terrain / Environment Kits; the Media Geo action stages the selected authored environment before opening FloatingPanel Geo"
     available: ["singapore", "tropical-playground", "neutral-volume", "street-grid", "loading-bay", "downtown", "residential-street", "supermarket", "movie-theater", "train-car", "backyard-pool", "aerial-sky"]
     geo_handoff: "successful stage selection opens the shared Geo panel and preserves its selected native MapLibre Classic/Modern view; rejected selection remains in Media"
@@ -127,6 +128,62 @@ native_flight_demo:
       throttle: "standard triggers"
     multi_device_conflict: "select the largest absolute value independently per axis"
   lifecycle: ["develop-and-run", "pause", "resume", "reset", "exit"]
+flight_training_profile:
+  schema: "flight-training-profile/v1"
+  defaultMissionId: "circuit-foundation"
+  failureWindow:
+    startTick: 180
+    endTickExclusive: 420
+  recoveryThrottleMinimum: 0.6
+  missions:
+    - id: "circuit-foundation"
+      label: "Circuit Foundation"
+      objective: "Fly the ordered waterfront circuit and stabilize the marked landing."
+      terrain: "Procedural waterfront"
+      night: false
+      targetSpeedMetersPerSecond: [8, 22]
+      defaultFailureId: "none"
+      systemsChecklist: ["Controls free", "Power set", "Route briefed"]
+    - id: "night-circuit"
+      label: "Night Circuit"
+      objective: "Hold the circuit by instruments and runway lighting with reduced visual range."
+      terrain: "Procedural waterfront at night"
+      night: true
+      targetSpeedMetersPerSecond: [9, 20]
+      defaultFailureId: "instrument-uncertainty"
+      systemsChecklist: ["Lights checked", "Instruments cross-checked", "Stable approach"]
+    - id: "systems-recovery"
+      label: "Systems Recovery"
+      objective: "Recognize a bounded power loss, retain control, and recover before landing."
+      terrain: "Procedural waterfront recovery area"
+      night: false
+      targetSpeedMetersPerSecond: [8, 18]
+      defaultFailureId: "engine-power-loss"
+      systemsChecklist: ["Aviate", "Diagnose power", "Recover and land"]
+  failures:
+    - id: "none"
+      label: "No injected failure"
+      effect: {kind: "none"}
+    - id: "engine-power-loss"
+      label: "Engine power loss"
+      coachingCue: "Power loss. Hold attitude, preserve airspeed, then restore power after the drill window."
+      effect: {kind: "throttle-limit", maxThrottle: 0.28, throttleDelta: -0.7}
+    - id: "instrument-uncertainty"
+      label: "Instrument uncertainty"
+      coachingCue: "Airspeed is unreliable. Cross-check pitch, power, and visual attitude."
+      effect: {kind: "airspeed-unreliable"}
+    - id: "control-bias"
+      label: "Control bias"
+      coachingCue: "Control bias detected. Counter gently and keep bank within the stable envelope."
+      effect: {kind: "input-bias", roll: 0.22, yaw: -0.14}
+  controlAliases:
+    mission-foundation: {kind: "mission", id: "circuit-foundation"}
+    mission-night: {kind: "mission", id: "night-circuit"}
+    mission-systems: {kind: "mission", id: "systems-recovery"}
+    failure-none: {kind: "failure", id: "none"}
+    failure-engine: {kind: "failure", id: "engine-power-loss"}
+    failure-instruments: {kind: "failure", id: "instrument-uncertainty"}
+    failure-controls: {kind: "failure", id: "control-bias"}
 flight_training:
   missions: ["circuit-foundation", "night-circuit", "systems-recovery"]
   mission_outcomes: ["route progress", "stable attitude", "energy envelope", "failure recovery", "terminal result"]
@@ -163,11 +220,11 @@ flight_sim:
     restart: "/flight.sim @canvas #flight operation=restart"
     throttle: "/flight.sim @canvas #flight operation=throttle throttle=0.75"
     mission_foundation: "/flight.sim @canvas #flight operation=mission-foundation"
-    mission_night: "/flight.sim @canvas #flight operation=mission-night"
+    mission_night: "/flight.sim @canvas #flight operation=mission missionId=night-circuit"
     mission_systems: "/flight.sim @canvas #flight operation=mission-systems"
     failure_none: "/flight.sim @canvas #flight operation=failure-none"
     failure_engine: "/flight.sim @canvas #flight operation=failure-engine"
-    failure_instruments: "/flight.sim @canvas #flight operation=failure-instruments"
+    failure_instruments: "/flight.sim @canvas #flight operation=failure failureId=instrument-uncertainty"
     failure_controls: "/flight.sim @canvas #flight operation=failure-controls"
     voice_on: "/flight.sim @canvas #flight operation=voice-on"
     voice_off: "/flight.sim @canvas #flight operation=voice-off"
@@ -220,7 +277,7 @@ mcp_control:
   control_tool: "agentic-graph.control_local_flight_sim"
   launch: "/flight.sim @canvas #flight operation=open"
   start: "/flight.sim @canvas #flight operation=start"
-  night_training: "/flight.sim @canvas #flight operation=mission-night"
+  night_training: "/flight.sim @canvas #flight operation=mission missionId=night-circuit"
   systems_failure: "/flight.sim @canvas #flight operation=failure-engine"
   voice_instructor: "/flight.sim @canvas #flight operation=voice-on"
   coach: "/flight.sim @canvas #flight operation=coach"
@@ -290,9 +347,62 @@ For pose control, open and start **Motion Control** from the active Flight panel
 
 Terminal results remain pending and never auto-save. **Save** is the only operation that persists validated gameplay Decisions through browser-local WorkspaceFs at `/game-flight-sim/mission-1-decisions.md`; explicit **Reset local save** is a separate recovery write of the canonical empty AGENTIC_OS document. Successful hydration preserves the validated active run identifier and ordered waypoint history, Start continues that run, and only Restart mints a fresh run. Malformed bytes remain intact and block Start and Restart until Reset succeeds.
 
-The mission uses the fixed `flight-meters-20` transform: one authored Singapore scene unit equals 20 mission meters. Deterministic mission positions are converted into Singapore-anchored geographic coordinates for MapLibre while the transparent runtime retains the local simulation scale. The simulation advances at exactly `1/60` second (approximately 16.667 ms, 60 Hz) and executes at most five catch-up ticks per advance. Capture exactly three waypoints in authored order and then the marked landing pad; all four objective radii are 50 m, and an out-of-order waypoint cannot advance progress.
+The mission uses the fixed `flight-meters-20` transform: one authored scene unit equals 20 mission meters. MapLibre projects mission positions through this demo’s geographic reference while the transparent runtime retains local simulation scale. The shared XR source supplies the initial stage; choose Singapore in Media Terrain / Environment Kits to rehearse the waterfront setting. The simulation advances at exactly `1/60` second (approximately 16.667 ms, 60 Hz) and executes at most five catch-up ticks per advance. Capture exactly three waypoints in authored order and then the marked landing pad; all four objective radii are 50 m, and an out-of-order waypoint cannot advance progress.
 
 Four meaningful systems run in stable transactional order: `InputIntegrationSystem`, `FlightModelSystem`, `CollisionResolverSystem`, and `ObjectiveSystem`. The Agentic ECS harness emits the one post-systems Cost_Log, and immutable render/HUD projection is captured only after the World commits. A failing system rolls back itself while retaining prior same-tick commits. Replay validates source, mission seed, input count/order/bytes, halts on the first divergence, and retains the last byte-equivalent committed World. Exit disposes the ECS World and unsaved in-memory mission state, restores the complete pre-document surface including Geo ownership, and does not acknowledge a prior non-Geo surface until MapLibre has released its active map and canvas for two committed frames.
+
+## Evidence rehearsal: instrument uncertainty and local debrief
+
+Use the existing night mission to practise judging the reliability of a displayed fact. This is a
+synthetic, browser-local training scenario. Aircraft state, route, night palette, failure and coaching
+come from the authored simulation; this exercise imports no observed flight, weather, schedule,
+airspace restriction or arrival prediction.
+
+1. Apply this source and inspect the active mission with
+   `agentic-graph.inspect_local_flight_sim`. If its phase is `ready` or `flying`, issue
+   `/flight.sim @canvas #flight operation=stop`; an already-stopped mission needs no Stop.
+2. While stopped, select `/flight.sim @canvas #flight operation=mission missionId=night-circuit`, then
+   `/flight.sim @canvas #flight operation=failure failureId=instrument-uncertainty`. Mission and failure selection are
+   rejected while `ready` or `flying`; unsupported commands produce an explicit diagnostic.
+3. Issue `/flight.sim @canvas #flight operation=restart` for a fresh mission at tick zero. Restart
+   returns `ready`; do not issue Start immediately afterward, because Start resumes a `stopped`
+   mission. Advance with the existing touch, keyboard or throttle controls.
+4. Inspect `flightSim.runId`, `flightSim.phase` and `flightSim.tick` alongside
+   `training.missionId`, `training.failureId`, `training.failureActive`,
+   `training.airspeedReliable`, `training.envelope` and `training.coachingCue`.
+   Instrument uncertainty is active from tick **180 inclusive to 420 exclusive**. Compare the
+   reliability/coaching labels before, during and after that interval; this drill changes the
+   deterministic reliability classification, not the provenance of the underlying simulation.
+5. Use the north-up inset and Chase/Cockpit/Survey views to relate route progress, attitude and
+   energy to the coaching cue. Stop pauses the current mission; Start resumes that same in-memory
+   tick/state. Restart creates a fresh run, so keep its observations separate.
+6. After a `completed` or `crashed` result, explicitly choose
+   `/flight.sim @canvas #flight operation=save`. Inspect `decisions.path` and reopen
+   `/game-flight-sim/mission-1-decisions.md` to read the local training outcome. Save is
+   terminal-only and never automatic; unsaved progress is discarded on Exit.
+
+| Observation | Source and interpretation |
+|---|---|
+| Position, velocity, ordered route and tick | Authored local simulation; not aircraft surveillance |
+| Night palette and instrument-uncertainty window | Selected deterministic training configuration |
+| Reliability label, envelope and coaching cue | Advisory game projections; inspect together rather than treating one number as truth |
+| Score, grade and saved debrief | Explicit terminal training Decision in local WorkspaceFs |
+| Actual flight, weather, schedule, restriction and ETA evidence | Not supplied by this rehearsal |
+
+The saved outcome records mission, failure, score, grade and route/stability/energy results. It does
+not contain an observed-flight source digest, signed provenance or hash chain. Code-level deterministic
+replay belongs to `flightSimReplay.ts` and its existing tests; the current UI/control grammar exposes
+no replay-trace export, arbitrary time-step, provenance or real-data import operation. This walkthrough
+adds no runtime operation or second renderer. Flight simulation remains local; the selected Geo
+provider's independent map transport and cached-asset availability determine basemap access.
+
+### Shared display and pacing controls
+
+Use **HUD overlays** to show or hide optional instruments and the course cue. **Navigation** independently shows or hides the existing north-up inset. The HUD and FloatingPanel immediately share the selected values; objective, errors, envelope warnings, camera, touch, and lifecycle controls remain available. Existing responsive inset behavior is preserved.
+
+Choose **Simulation speed** `0.5×`, `1×`, or `2×` to pace the rehearsal. Each physics tick still advances exactly `1 / 60` second; slower pacing gives more time to observe the same authored tick-window, and faster pacing reaches it sooner. Compare captures by equal tick counts and identical normalized inputs, rather than equal wall time. Display/rate settings are ephemeral and are not saved with Decisions.
+
+The presentation controls do not select a mission, location, failure, route, or source. The rehearsal above and the existing authored mission/scenario owners supply those details. Settings apply to any selected scenario through the same controls and clock. Training selection uses generic admitted-ID operations; this profile alone declares its compatibility aliases. No replay/export tool is introduced.
 
 ## Runtime-readiness gates
 

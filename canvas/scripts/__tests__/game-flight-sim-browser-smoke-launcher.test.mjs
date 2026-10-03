@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import net from 'node:net'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
@@ -46,6 +46,10 @@ test('Flight browser smoke loads compiled evidence only after the isolated build
 
   assert.ok(buildIndex >= 0)
   assert.ok(evidenceImportIndex > buildIndex)
+  assert.match(source, /game_flight_sim_smoke_watchdog\.py/)
+  assert.match(source, /'--timeout-seconds', '600'/)
+  assert.match(source, /'--startup-timeout-seconds', '60'/)
+  assert.match(source, /game-flight-sim-browser-smoke-run-\$\{runIndex\}\.partial\.json/)
 })
 
 test('Flight browser smoke normalizes detached Git identity without weakening named branches', () => {
@@ -110,6 +114,8 @@ test('Flight smoke launcher serves a real preview page without WebSockets', {
       baseUrlEnvName: 'AG_GAME_FLIGHT_SIM_PREVIEW_PREFLIGHT_BASE_URL',
       verifierCommand: 'python3',
       verifierArgs: [
+        'scripts/lib/game_flight_sim_smoke_watchdog.py',
+        '--timeout-seconds', '60', '--', 'python3',
         'scripts/__tests__/verify_game_flight_sim_preview_page.py',
       ],
       verifierFailureLabel: 'Game Flight Sim preview preflight',
@@ -121,5 +127,41 @@ test('Flight smoke launcher serves a real preview page without WebSockets', {
   } finally {
     process.chdir(priorWorkingDirectory)
     await rm(previewOutDir, { force: true, recursive: true })
+  }
+})
+
+test('Flight watchdog timeout still removes the owned store and preview server', {
+  timeout: 30_000,
+}, async () => {
+  const priorWorkingDirectory = process.cwd()
+  const port = await reserveLocalPort()
+  const fixture = await mkdtemp(join(tmpdir(), 'flight-watchdog-cleanup-'))
+  const marker = join(fixture, 'store.json')
+  await writeFile(join(fixture, 'index.html'), '<!doctype html><title>Owned preview</title>')
+  process.chdir(canvasRoot)
+  try {
+    await assert.rejects(runLocalViteBrowserSmoke({
+      logLabel: 'flight-watchdog-cleanup',
+      devServerPort: String(port),
+      baseUrlEnvName: 'FLIGHT_WATCHDOG_CLEANUP_BASE_URL',
+      verifierCommand: 'python3',
+      verifierArgs: [
+        'scripts/lib/game_flight_sim_smoke_watchdog.py', '--timeout-seconds', '0.4',
+        '--', process.execPath, '-e',
+        "require('fs').writeFileSync(process.argv[1], JSON.stringify({store:process.env.AGENTIC_OS_WORKSPACE_STORE_ROOT}));setInterval(()=>{},1000)",
+        marker,
+      ],
+      verifierFailureLabel: 'Bounded Flight cleanup',
+      devServerStartMode: 'vite-preview-runner',
+      existingServerPolicy: 'forbid',
+      previewOutDir: fixture,
+    }), /Bounded Flight cleanup exited with code 124/)
+    const { store } = JSON.parse(await readFile(marker, 'utf8'))
+    assert.match(store, /\.browser-smoke-store-/)
+    await assert.rejects(stat(store), { code: 'ENOENT' })
+    await assert.rejects(fetch(`http://localhost:${port}/`, { signal: AbortSignal.timeout(500) }))
+  } finally {
+    process.chdir(priorWorkingDirectory)
+    await rm(fixture, { force: true, recursive: true })
   }
 })

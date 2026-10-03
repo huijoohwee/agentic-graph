@@ -28,12 +28,12 @@ export function resolveGeoXrGameplayPresentationOwner(input: Readonly<{
 function publishFlightOverlay(input: Readonly<{
   clearFlightOverlay: () => void
   flight: FlightSimSnapshot
-  projectFlight: (flight: FlightSimSnapshot) => FlightSimGeospatialOverlay
+  projectFlight: (flight: FlightSimSnapshot) => FlightSimGeospatialOverlay | null
   setFlightOverlay: (overlay: FlightSimGeospatialOverlay) => void
 }>): GeoXrOverlayPublication {
   if (input.flight.active) {
-    input.setFlightOverlay(input.projectFlight(input.flight))
-    return 'flight'
+    const overlay = input.projectFlight(input.flight)
+    if (overlay) { input.setFlightOverlay(overlay); return 'flight' }
   }
   input.clearFlightOverlay()
   return 'clear'
@@ -44,7 +44,7 @@ export function publishGeoXrOverlayComposition(input: Readonly<{
   city: CitySimSnapshot
   flight: FlightSimSnapshot
   projectCityOverlay: (city: CitySimSnapshot) => CityGeoOverlaySnapshot
-  projectFlight: (flight: FlightSimSnapshot) => FlightSimGeospatialOverlay
+  projectFlight: (flight: FlightSimSnapshot) => FlightSimGeospatialOverlay | null
   store: GeoXrOverlayStoreModule
 }>): GeoXrOverlayPublication {
   const flightInput = {
