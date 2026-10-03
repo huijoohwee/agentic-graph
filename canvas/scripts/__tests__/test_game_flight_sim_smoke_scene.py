@@ -12,6 +12,7 @@ sys.path.insert(0, str(SCRIPTS_ROOT))
 from lib.game_flight_sim_smoke_scene import (  # noqa: E402
     LOCAL_AUXILIARY_CANVAS_SELECTORS, read_and_pin_authored_physics_baseline,
 )
+from lib.game_flight_sim_smoke_geo_xr_layout import read_geo_xr_layout_occlusion  # noqa: E402
 
 SOURCE_PATH = SCRIPTS_ROOT.parents[1] / "docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md"
 SOURCE_TEXT = SOURCE_PATH.read_text(encoding="utf-8")
@@ -201,6 +202,92 @@ class AuthoredPhysicsBaselineTest(unittest.TestCase):
         self.assertFalse(value["auxiliaryCanvasesLocalOnly"])
         self.assertIsNone(value["auxiliaryCanvasOwners"][0]["owner"])
         self.assertFalse(page.pinned)
+
+
+class MapPointerFixturePage:
+    def __init__(self, mode="gap"):
+        self.mode = mode
+        self.hits = []
+
+    def evaluate(self, expression):
+        completed = subprocess.run(
+            ["node", "--input-type=module", "-e", r"""
+import fs from 'node:fs';
+import {JSDOM} from 'jsdom';
+const input = JSON.parse(fs.readFileSync(0, 'utf8'));
+const dom = new JSDOM('<body></body>');
+const {document} = dom.window;
+const add = (tag, attrs, x, y, width, height, parent = document.body) => {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+  node.style.pointerEvents = 'auto'; parent.append(node);
+  node.getBoundingClientRect = () => ({left:x, top:y, right:x+width,
+    bottom:y+height, width, height});
+  return node;
+};
+const canvas = add('canvas', {class:'maplibregl-canvas'}, 0, 0, 1100, 962);
+const source = add('section', {'data-kg-workspace-visible-viewport-occluder':'left',
+  'aria-label':'Source Files content'}, 0, 0, 550, 962);
+const panel = add('aside', {'data-kg-floating-panel-root':'true'}, 746.40625, 8, 345.59375, 946);
+add('nav', {'aria-label':'Floating panel'}, 0, 0, 0, 0, panel);
+const timeline = add('aside', {'data-kg-strybldr-bottom-timeline-panel':'1'}, 562, 617.3047, 526, 336.6953);
+const hud = add('section', {'data-kg-flight-sim-hud':'1'}, 0, 0, 1100, 962);
+hud.style.pointerEvents = 'none';
+const navigation = add('aside', {class:'pointer-events-auto'}, 574.40625, 144, 160, 382, hud);
+const resize = add('hr', {}, 546, 0, 8, 962);
+const foreign = add('div', {}, 0, 0, 1100, 962);
+const blockers = [source, panel, timeline, navigation, resize];
+if (input.mode === 'covered') {
+  navigation.getBoundingClientRect = hud.getBoundingClientRect;
+}
+const hits = [];
+document.elementFromPoint = (x, y) => {
+  if (hits.length >= 64) throw Error('pointer probe exceeded 64 hit tests');
+  const hit = input.mode === 'foreign' ? foreign : blockers.find(node => {
+    const r = node.getBoundingClientRect();
+    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  }) || canvas;
+  hits.push({x, y, map:hit === canvas}); return hit;
+};
+globalThis.document = document; globalThis.window = dom.window;
+globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
+Object.assign(window, {innerWidth:1100, innerHeight:962});
+const map = {project: p => ({x:p[0], y:p[1]})};
+const modules = {
+  graphStore:{useGraphStore:{getState:()=>({floatingPanelView:'geo'})}},
+  gympgrphStore:{readActiveMapLibreMap:()=>map, useGympgrphStore:{getState:()=>({geospatialViewMode:'2d'})},
+    readFlightGeoOverlay:()=>({aircraft:{coordinate:[648,481]}, route:[{coordinate:[648,481]},{coordinate:[660,490]}]})},
+};
+window.__kgFlightSimBrowserProof = {importModule: async key => modules[key]};
+const value = await globalThis.eval('(' + input.expression + ')')();
+console.log(JSON.stringify({value, hits}));
+            """], input=json.dumps({"expression": expression, "mode": self.mode}),
+            cwd=SCRIPTS_ROOT.parent, text=True, capture_output=True, timeout=3, check=False,
+        )
+        if completed.returncode:
+            raise AssertionError(completed.stderr)
+        result = json.loads(completed.stdout)
+        self.hits = result["hits"]
+        return result["value"]
+
+
+class MapPointerApertureTest(unittest.TestCase):
+    def test_recorded_panels_and_hud_leave_a_native_map_hit(self):
+        page = MapPointerFixturePage()
+        value = read_geo_xr_layout_occlusion(page)
+        self.assertIsNotNone(value["mapPointerHit"])
+        self.assertTrue(page.hits[-1]["map"])
+        self.assertLessEqual(len(page.hits), 64)
+        self.assertEqual([item["kind"] for item in value["occluders"]], ["source-files", "floating-panel"])
+        self.assertTrue(value["aircraftUnoccluded"] and value["routeUnoccluded"])
+
+    def test_full_occlusion_and_foreign_hit_targets_fail_closed(self):
+        for mode in ("covered", "foreign"):
+            with self.subTest(mode=mode):
+                page = MapPointerFixturePage(mode)
+                self.assertIsNone(read_geo_xr_layout_occlusion(page)["mapPointerHit"])
+                self.assertFalse(any(hit["map"] for hit in page.hits))
+                self.assertLessEqual(len(page.hits), 64)
 
 
 if __name__ == "__main__":
