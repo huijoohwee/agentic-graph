@@ -144,7 +144,8 @@ test('mounted media owner replays queued pins only to its own ready iframe and f
   document.body.append(host); const root = createRoot(host), messages: sync.RichMediaTimelineTransportFrame[] = [], callbacks: (() => void)[] = []
   let model!: ReturnType<typeof useRichMediaPanelMediaState>
   function Harness() {
-    model = useRichMediaPanelMediaState({ overlayId: request.overlayId, title: 'Boxes', url: '', srcDoc: '<section>Boxes</section>' })
+    model = useRichMediaPanelMediaState({ overlayId: request.overlayId, title: 'Boxes', url: '', srcDoc: '<section>Boxes</section>', sourcePlayback: true,
+      mapTimelineTransportFrame: frame => { assert.equal(frame.targetOverlayId, undefined, 'local projection must never receive targeted annotation pins'); return { ...frame, sourcePlayback: true } } })
     return <section><iframe ref={model.inlineSrcDocFrameRef} title="Boxes" /><iframe ref={model.directVideoFallbackFrameRef} title="Fallback" /></section>
   }
   const w = env.dom.window, oldTimeout = w.setTimeout, oldClear = w.clearTimeout
@@ -156,7 +157,7 @@ test('mounted media owner replays queued pins only to its own ready iframe and f
     for (const frame of [model.inlineSrcDocFrameRef.current!, model.directVideoFallbackFrameRef.current!]) frame.contentWindow!.postMessage = (message: sync.RichMediaTimelineTransportFrame) => messages.push(message)
     const ready = (source: unknown) => w.dispatchEvent(new w.MessageEvent('message', { source: source as Window, data: { type: sync.RICH_MEDIA_TIMELINE_TRANSPORT_READY_MESSAGE } }))
     ready({}); assert.equal(messages.length, 0)
-    ready(model.inlineSrcDocFrameRef.current!.contentWindow); assert.equal(messages.at(-1)?.timeMs, 6173)
+    ready(model.inlineSrcDocFrameRef.current!.contentWindow); assert.equal(messages.at(-1)?.timeMs, 6173); assert.equal(messages.at(-1)?.sourcePlayback, false)
     const queuedGeneration = sync.resolveRichMediaTimelineTargetFrame(scope)!.targetRequestId
     await act(async () => root.render(null))
     assert.equal(sync.resolveRichMediaTimelineTargetFrame(scope)?.targetRequestId, queuedGeneration, 'closing Inspector alone preserves its existing queued pin')
@@ -252,11 +253,12 @@ test('mounted Gantt YouTube source receives exact clock through its owned iframe
     kind: readTimelineTransportMediaPreviewKind(item, url), maxMinutes: 1, playbackRate: 1, playing: false,
     positionMinutes: position, readerDurationSeconds: 60, source: item, title: 'Source player', url,
     setTransportPlaybackPosition: () => {}, setTransportPlaying: () => {} }
+  const render = () => root.render(React.createElement(React.Fragment, null,
+    React.createElement(GanttTimelineTransportMediaPlayer, { model }), React.createElement('aside', null,
+      React.createElement(RichMediaPanel, { title: 'Baseline', kind: 'iframe', url: '', srcDoc: '<main>Baseline</main>', frameMode: 'surface' }))))
   try {
     assert.equal(model.kind, 'iframe')
-    await act(async () => root.render(React.createElement(React.Fragment, null,
-      React.createElement(GanttTimelineTransportMediaPlayer, { model }), React.createElement('aside', null,
-        React.createElement(RichMediaPanel, { title: 'Baseline', kind: 'iframe', url: '', srcDoc: '<main>Baseline</main>', frameMode: 'surface' })))))
+    await act(async () => render())
     assert.equal(host.querySelector('video'), null)
     const ownedFrame = () => host.querySelector<HTMLIFrameElement>('[data-kg-video-sequence-media-player] iframe[srcdoc]')
     for (let attempt = 0; attempt < 20 && !ownedFrame(); attempt++) await act(async () => new Promise(resolve => setTimeout(resolve, 50)))
@@ -275,7 +277,67 @@ test('mounted Gantt YouTube source receives exact clock through its owned iframe
     assert.equal(Reflect.get(dom.window, sync.RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY).sourcePlayback, false)
     assert.equal(JSON.parse(host.querySelector('aside iframe')!.getAttribute(sync.RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR)!).sourcePlayback, false)
     assert.equal(model.url, url); assert.deepEqual(model.source, item)
+    model.readerDurationSeconds = 52; model.maxMinutes = 52 / 60
+    model.exportPlan = { durationMinutes: 52 / 60, filenameBase: 'trim', segments: [{
+      durationMinutes: 10 / 60, timelineStartMinutes: 20 / 60, timelineEndMinutes: 30 / 60,
+      sourceStartRatio: 10 / 52, sourceEndRatio: 20 / 52, source: item,
+      hasGrade: false, hasMask: false, label: 'Moved and trimmed', sourceLineIndex: 1,
+    }] }
+    const deliver = async (seconds: number, playing = false) => {
+      model.positionMinutes = seconds / 60; model.playing = playing
+      await act(async () => { useGraphStore.setState({ timelineTransportPosition: model.positionMinutes, timelineTransportPlaying: playing }); render() })
+      const clock = sync.buildRichMediaTimelineTransportFrame({ localDocumentKey: documentKey, transportDocumentKey: documentKey,
+        transportPlaybackRate: 1, transportPlaying: playing, transportPosition: model.positionMinutes, override: { sourcePlayback: false, timeMs: seconds * 1000 } })!
+      await act(async () => { sync.publishRichMediaTimelineTransportFrame(clock); outer.removeAttribute(sync.RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR); dom.window.dispatchEvent(new dom.window.MessageEvent('message', { data: { type: sync.RICH_MEDIA_TIMELINE_TRANSPORT_READY_MESSAGE }, source: outer.contentWindow })) })
+      const baseline = host.querySelector<HTMLIFrameElement>('aside iframe')!
+      await act(async () => { baseline.removeAttribute(sync.RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR); dom.window.dispatchEvent(new dom.window.MessageEvent('message', { data: { type: sync.RICH_MEDIA_TIMELINE_TRANSPORT_READY_MESSAGE }, source: baseline.contentWindow })) })
+      assert.equal(Reflect.get(dom.window, sync.RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY), clock)
+      assert.equal(JSON.parse(host.querySelector('aside iframe')!.getAttribute(sync.RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR)!).timeMs, seconds * 1000)
+      return JSON.parse(outer.getAttribute(sync.RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR)!) as sync.RichMediaTimelineTransportFrame
+    }
+    assert.ok(Math.abs((await deliver(25)).timeMs - 15000) < 0.000001, 'composition 25s maps to the trimmed source 15s, including READY replay')
+    const gap = await deliver(35, true)
+    assert.equal(gap.playing, false); assert.equal(gap.sourcePlaybackGap, true)
+    assert.equal(host.querySelector<HTMLElement>('.timeline-transport-media-player-frame')!.style.opacity, '0')
+    const restored = await deliver(25, true)
+    assert.ok(Math.abs(restored.timeMs - 15000) < 0.000001); assert.equal(restored.playing, true); assert.equal(restored.sourcePlaybackGap, false)
+    assert.equal(host.querySelector<HTMLElement>('.timeline-transport-media-player-frame')!.style.opacity, '')
+    await act(async () => useGraphStore.setState({ markdownDocumentName: 'foreign.md', timelineTransportDocumentKey: 'foreign.md' }))
+    const foreign = { ...frame, documentKey: 'foreign.md', position: 25 / 60, timeMs: 25000, playing: true }
+    await act(async () => { sync.publishRichMediaTimelineTransportFrame(foreign); outer.removeAttribute(sync.RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR); dom.window.dispatchEvent(new dom.window.MessageEvent('message', { data: { type: sync.RICH_MEDIA_TIMELINE_TRANSPORT_READY_MESSAGE }, source: outer.contentWindow })) })
+    assert.equal(outer.getAttribute(sync.RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR), null, 'a live foreign document cannot use the stale mounted source plan')
+    model.documentKey = 'foreign.md'
+    await act(async () => render())
+    await act(async () => dom.window.dispatchEvent(new dom.window.MessageEvent('message', { data: { type: sync.RICH_MEDIA_TIMELINE_TRANSPORT_READY_MESSAGE }, source: outer.contentWindow })))
+    assert.ok(Math.abs(JSON.parse(outer.getAttribute(sync.RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR)!).timeMs - 15000) < 0.000001, 'a matching new document model restores local mapping')
   } finally {
     await act(async () => root.unmount()); host.remove(); useGraphStore.setState(previousStore); restore()
   }
+})
+
+test('source iframe gap pauses without a seek and re-entry resets its seek anchor', () => {
+  const html = normalizeRichMediaPanelInlineSrcDoc({ srcDoc: '<section data-kg-video-agent-source-playback><iframe src="https://www.youtube-nocookie.com/embed/77FAnT935IE"></iframe></section>' })
+  const dom = new JSDOM(html, { runScripts: 'outside-only' }), w = dom.window
+  const commands: { func: string; args: number[] }[] = [], ticks: (() => void)[] = []
+  let raw = ''
+  Object.defineProperty(w, 'frameElement', { value: { getAttribute: () => raw } })
+  w.requestAnimationFrame = () => 1; w.cancelAnimationFrame = () => {}; w.setInterval = ((fn: () => void) => { ticks.push(fn); return 1 }) as typeof w.setInterval
+  w.document.querySelector('iframe')!.contentWindow!.postMessage = (value: string) => commands.push(JSON.parse(value))
+  try {
+    w.eval(w.document.getElementById('kg-rich-media-panel-srcdoc-timeline-transport')!.textContent!)
+    const frame = { type: sync.RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_MESSAGE, documentKey: 'source-player.md', position: 25 / 60,
+      timeMs: 15000, playing: false, playbackRate: 1, sourcePlayback: true, sourcePlaybackGap: false }
+    const deliver = (patch: Partial<sync.RichMediaTimelineTransportFrame>) => {
+      raw = JSON.stringify({ ...frame, ...patch }); ticks.find(fn => fn.name === 'readFrameElement')!()
+    }
+    deliver({}); commands.length = 0
+    deliver({ sourcePlaybackGap: true }); deliver({ sourcePlaybackGap: false })
+    assert.deepEqual(commands.filter(command => command.func === 'seekTo').map(command => command.args[0]), [15], 'gap-only signature changes must survive dedup and force re-entry seek')
+    deliver({ playing: true }); commands.length = 0
+    deliver({ timeMs: 35000, playing: false, sourcePlaybackGap: true })
+    assert.deepEqual(commands.map(command => command.func), ['pauseVideo'], 'gap emits no seek, rate or play command')
+    deliver({ timeMs: 36000, playing: false, sourcePlaybackGap: true }); assert.equal(commands.length, 1, 'repeated gaps stay paused without duplicate commands')
+    commands.length = 0; deliver({ playing: true })
+    assert.deepEqual(commands.map(command => command.func), ['seekTo', 'playVideo']); assert.equal(commands[0].args[0], 15)
+  } finally { dom.window.close() }
 })

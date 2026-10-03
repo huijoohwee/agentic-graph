@@ -349,8 +349,9 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
     frame: HTMLIFrameElement | null,
     payload: RichMediaTimelineTransportFrame,
   ) => {
-    if (!frame) return
-    payload = props.sourcePlayback === true && !payload.targetOverlayId ? { ...payload, sourcePlayback: true } : payload
+    const mapped = !frame ? null : props.sourcePlayback === true && !payload.targetOverlayId ? (props.mapTimelineTransportFrame ? props.mapTimelineTransportFrame(payload) : { ...payload, sourcePlayback: true }) : payload
+    if (!frame || !mapped) return
+    payload = mapped
     try {
       const serialized = JSON.stringify(payload)
       frame.setAttribute(RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR, serialized)
@@ -367,7 +368,7 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
     } catch {
       void 0
     }
-  }, [props.sourcePlayback])
+  }, [props.sourcePlayback, props.mapTimelineTransportFrame])
   const syncInlineSrcDocTheme = React.useCallback(() => {
     const payload = { type: RICH_MEDIA_PANEL_SRCDOC_THEME_MESSAGE, theme: resolvedThemeMode }
     try {

@@ -23,6 +23,7 @@ export type RichMediaTimelineTransportFrame = {
   playing: boolean
   playbackRate: number
   sourcePlayback: boolean
+  sourcePlaybackGap?: boolean
   frameSampleUrl?: string
   targetOverlayId?: string
   targetSourceUrl?: string

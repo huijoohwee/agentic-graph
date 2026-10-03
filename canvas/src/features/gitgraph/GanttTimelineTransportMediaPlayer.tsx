@@ -7,7 +7,8 @@ import {
   type TimelineTransportPlaybackRate,
   type TimelineTransportSnapshotReader,
 } from '@/components/timeline/timelineTransport'
-import { useTimelineVideoPreviewSyncController } from '@/components/timeline/timelinePreviewSync'
+import { resolveTimelineVideoPreviewDurationSeconds, resolveTimelineVideoPreviewTargetSeconds, useTimelineVideoPreviewSyncController } from '@/components/timeline/timelinePreviewSync'
+import { type RichMediaTimelineTransportFrame } from '@/lib/render/richMediaTimelineSync'
 import { type VideoSequenceTimelineSource } from '@/components/timeline/videoSequenceTimeline'
 import { CardMediaPreview } from '@/lib/cards/CardMediaPreview'
 import { type CardMediaKind } from '@/lib/cards/cardMediaPreviewUtils'
@@ -51,6 +52,18 @@ export function GanttTimelineTransportMediaPlayer(args: {
   const sourcePlaybackSrcDoc = React.useMemo(() => args.model.kind === 'iframe'
     ? buildVideoAgentSourcePlaybackPanelSrcDoc({ sourcePlaybackUrl: buildVideoAgentSourcePlaybackUrl(args.model.url), sourceUrl: args.model.url })
     : '', [args.model.kind, args.model.url])
+  const sourceDurationSeconds = resolveTimelineVideoPreviewDurationSeconds({ nativeDurationSeconds: args.model.source?.durationSeconds || 0, readerDurationSeconds: args.model.readerDurationSeconds })
+  const resolveSourceSeconds = React.useCallback((positionMinutes: number) => resolveTimelineVideoPreviewTargetSeconds({
+    exportPlan: args.model.exportPlan, maxPosition: args.model.maxMinutes, positionMinutes,
+    source: args.model.source, sourceDurationSeconds,
+  }), [args.model.exportPlan, args.model.maxMinutes, args.model.source, sourceDurationSeconds])
+  const mapTimelineTransportFrame = React.useCallback((frame: RichMediaTimelineTransportFrame): RichMediaTimelineTransportFrame | null => {
+    if (frame.documentKey !== args.model.documentKey) return null
+    const seconds = resolveSourceSeconds(frame.position)
+    return { ...frame, timeMs: seconds == null ? frame.timeMs : seconds * 1000,
+      playing: seconds != null && frame.playing, sourcePlayback: true, sourcePlaybackGap: seconds == null }
+  }, [resolveSourceSeconds, args.model.documentKey])
+  const iframeGap = args.model.kind === 'iframe' && resolveSourceSeconds(args.model.positionMinutes) == null
   const snapshotRef = React.useRef({
     documentKey: args.model.documentKey,
     position: args.model.positionMinutes,
@@ -92,10 +105,10 @@ export function GanttTimelineTransportMediaPlayer(args: {
       data-kg-video-sequence-media-player="1"
       data-kg-video-sequence-media-player-kind={args.model.kind}
     >
-      <section className="timeline-transport-media-player-frame">
+      <section className="timeline-transport-media-player-frame" data-kg-video-sequence-playback-gap={iframeGap ? 'empty' : undefined} style={iframeGap ? { opacity: 0 } : undefined}>
         {sourcePlaybackSrcDoc ? <React.Suspense fallback={null}><RichMediaPanelLazy
           kind="iframe" title={args.model.title} url={args.model.url} openUrl={args.model.url}
-          srcDoc={sourcePlaybackSrcDoc} sourcePlayback interactive
+          srcDoc={sourcePlaybackSrcDoc} sourcePlayback mapTimelineTransportFrame={mapTimelineTransportFrame} interactive
           frameMode="surface" placementOwner="parent" panelChrome="none" scrollOwner="media"
           style={{ width: '100%', height: '100%' }}
         /></React.Suspense> : <CardMediaPreview
