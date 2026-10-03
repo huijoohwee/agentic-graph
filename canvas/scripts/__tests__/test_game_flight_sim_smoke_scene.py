@@ -13,6 +13,7 @@ from lib.game_flight_sim_smoke_scene import (  # noqa: E402
     LOCAL_AUXILIARY_CANVAS_SELECTORS, read_and_pin_authored_physics_baseline,
 )
 from lib.game_flight_sim_smoke_geo_xr_layout import read_geo_xr_layout_occlusion  # noqa: E402
+from lib.game_flight_sim_smoke_web_mcp import verify_flight_web_mcp  # noqa: E402
 
 SOURCE_PATH = SCRIPTS_ROOT.parents[1] / "docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md"
 SOURCE_TEXT = SOURCE_PATH.read_text(encoding="utf-8")
@@ -288,6 +289,81 @@ class MapPointerApertureTest(unittest.TestCase):
                 self.assertIsNone(read_geo_xr_layout_occlusion(page)["mapPointerHit"])
                 self.assertFalse(any(hit["map"] for hit in page.hits))
                 self.assertLessEqual(len(page.hits), 64)
+
+
+class WebMcpRegistryFixturePage:
+    def __init__(self, mode="native"):
+        self.mode = mode
+
+    def evaluate(self, expression, arg):
+        completed = subprocess.run(
+            ["node", "--import", "tsx", "--import", "./scripts/source-authority-test-bootstrap.mjs",
+             "--input-type=module", "-e", r"""
+import fs from 'node:fs';
+import { createWebMcpToolRegistry, WebMcpToolInputValidationError } from './src/features/agent-ready/webMcpToolRegistry.ts';
+import { buildAgenticGraphAgentReadyToolContracts } from './src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs';
+import * as webMcp from './src/features/agent-ready/flightSimWebMcpTools.ts';
+import * as nativeMcp from './src/features/game-flight-sim/flightSimMcpRuntime.ts';
+const input = JSON.parse(fs.readFileSync(0, 'utf8'));
+const contracts = buildAgenticGraphAgentReadyToolContracts({ includeBrowserOnlyTools: true });
+let revision = 0, elapsedOffset = 0;
+const now = performance.now.bind(performance);
+Object.defineProperty(performance, 'now', { value: () => now() + elapsedOffset });
+const inspect = () => ({ ...nativeMcp.inspectLocalFlightSim(), fixtureRevision: revision });
+const builders = webMcp.buildFlightSimWebMcpToolBuilders(
+  name => contracts.find(contract => contract.name === name),
+  { inspect: () => { const snapshot = inspect(); return {
+    ...snapshot, flightSim: { ...snapshot.flightSim, active: true, phase: 'ready' },
+  }; } },
+);
+const registry = createWebMcpToolRegistry(Object.values(builders).map(build => build()));
+const tools = registry.tools.map(tool => ({ ...tool, execute: async value => {
+  const mixed = value?.invocation && value?.operation;
+  if (input.mode === 'other-diagnostic' && value?.invocation === '@canvas #flight operation=start') {
+    throw new WebMcpToolInputValidationError(tool.name, 'unexpected schema rejection', []);
+  }
+  if (mixed && input.mode === 'accepted') return { ok: true };
+  try { return await tool.execute(value); } catch (error) {
+    if (!mixed) throw error;
+    if (input.mode === 'wrong-error') throw new Error('unexpected rejection');
+    if (input.mode === 'wrong-tool') throw new WebMcpToolInputValidationError('foreign.tool', error.message, []);
+    if (input.mode === 'state-change') revision += 1;
+    if (input.mode === 'slow-rejection') elapsedOffset += 2001;
+    throw error;
+  }
+} }));
+Object.defineProperty(globalThis, 'navigator', { value: { modelContext: { tools } }, configurable: true });
+globalThis.window = { __kgFlightSimBrowserProof: { importModule: async key => {
+  if (key === 'flightSimMcpRuntime') return { ...nativeMcp, inspectLocalFlightSim: inspect };
+  if (key === 'flightSimWebMcpTools') return webMcp;
+  throw Error('unexpected module ' + key);
+} } };
+console.log(JSON.stringify(await globalThis.eval('(' + input.expression + ')')(input.arg)));
+            """], input=json.dumps({"expression": expression, "arg": arg, "mode": self.mode}),
+            cwd=SCRIPTS_ROOT.parent, text=True, capture_output=True, timeout=10, check=False,
+        )
+        if completed.returncode:
+            raise RuntimeError(completed.stderr)
+        return json.loads(completed.stdout)
+
+
+class FlightWebMcpRegistryTest(unittest.TestCase):
+    def test_actual_registry_rejects_mixed_fields_and_retains_all_native_diagnostics(self):
+        evidence = verify_flight_web_mcp(WebMcpRegistryFixturePage(), {"phase": "ready"})
+        self.assertEqual(len(evidence["diagnostics"]), 15)
+        mixed = next(item for item in evidence["diagnostics"] if item["operation"] == "mixed-native-structured")
+        self.assertEqual(mixed["schemaRejection"], {
+            "name": "WebMcpToolInputValidationError",
+            "toolName": "agentic-graph.control_local_flight_sim",
+        })
+        self.assertTrue(mixed["stateUnchanged"] and mixed["withinDeadline"])
+        self.assertEqual(len(evidence["timeoutDiagnostics"]), 2)
+        self.assertEqual(len(evidence["calls"]), 18)
+
+    def test_acceptance_wrong_errors_state_mutation_and_late_rejection_fail(self):
+        for mode in ("accepted", "wrong-error", "wrong-tool", "state-change", "slow-rejection", "other-diagnostic"):
+            with self.subTest(mode=mode), self.assertRaises((AssertionError, RuntimeError)):
+                verify_flight_web_mcp(WebMcpRegistryFixturePage(mode), {"phase": "ready"})
 
 
 if __name__ == "__main__":
