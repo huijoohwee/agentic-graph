@@ -25,7 +25,7 @@ import {
   selectFlightSimTrainingMission,
   readFlightSimTrainingScenario,
 } from './flightSimTrainingScenario'
-import { captureFlightSimTrainingSource, admitCapturedFlightSimTrainingSource, resolveAuthoredFlightSimTrainingSelection, type FlightSimTrainingSourceCapture } from './flightSimTrainingSource'
+import { captureFlightSimTrainingSource, admitCapturedFlightSimTrainingSource, isFlightSimTrainingSourceCurrent, resolveAuthoredFlightSimTrainingSelection, type FlightSimTrainingSourceCapture } from './flightSimTrainingSource'
 import {
   FLIGHT_SIM_INVOCATION_BINDINGS,
   FLIGHT_SIM_INVOCATION_COMMANDS,
@@ -437,7 +437,6 @@ const runtimeFailureMessage = (
 const isFlightSimControlCurrent = (
   fence?: FlightSimControlExecutionFence,
 ): boolean => !fence || (!fence.signal.aborted && fence.isCurrent())
-
 export async function controlLocalFlightSim(
   input: unknown,
   fence?: FlightSimControlExecutionFence,
@@ -535,10 +534,11 @@ export async function controlLocalFlightSim(
     if (before.active && before.phase !== 'stopped') return controlResult(false, 'Training selection requires a stopped or inactive Flight Sim.', control.operation)
     if (!isFlightSimControlCurrent(fence)) return cancelled()
     try {
-      admitCapturedFlightSimTrainingSource(control.trainingSource!, before.phase, () => isFlightSimControlCurrent(fence))
-      if (!isFlightSimControlCurrent(fence)) return cancelled()
-      if (control.operation === 'mission') selectFlightSimTrainingMission(control.missionId!)
-      else selectFlightSimTrainingFailure(control.failureId!)
+      const current = () => isFlightSimControlCurrent(fence) && isFlightSimTrainingSourceCurrent(control.trainingSource!)
+      admitCapturedFlightSimTrainingSource(control.trainingSource!, before.phase, current)
+      if (!current()) return cancelled()
+      if (control.operation === 'mission') selectFlightSimTrainingMission(control.missionId!, current)
+      else selectFlightSimTrainingFailure(control.failureId!, current)
       return controlResult(true, `Flight training ${control.operation} selected: ${control.missionId || control.failureId}.`, control.operation)
     } catch (error) { return controlResult(false, error instanceof Error ? error.message : String(error), control.operation) }
   }

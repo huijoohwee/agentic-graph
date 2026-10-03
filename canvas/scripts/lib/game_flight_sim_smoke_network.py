@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+import hashlib
+import json
+import re
+from typing import Any, TypedDict
 from urllib.parse import parse_qsl, unquote, urlparse
 
 
@@ -15,6 +18,189 @@ PROOF_LOCAL_BLOCKED_PATH_PREFIXES = (
 )
 PROOF_LOCAL_WORKSPACE_LIST_PATH = "/__agentic_os_fs_list"
 GEO_PROVIDER_PROXY_PATH = "/__grabmaps_proxy"
+AUTHORING_MIRROR_PATH = "/__agentic_os_fs_reveal"
+AUTHORING_MIRROR_MAX_BYTES = 500_000
+
+
+class AuthoringMirrorRequest(TypedDict):
+    workspacePath: str
+    text: str
+    sha256: str
+    bytes: int
+
+
+class AuthoringMirrorReceipt(TypedDict):
+    workspacePath: str
+    sha256: str
+    status: int
+    contentType: str
+    result: Any
+
+
+def _unique_json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate authoring mirror field")
+        result[key] = value
+    return result
+
+
+def _is_managed_inventory(text: str, workspace_path: str) -> bool:
+    """Validate the existing portable v2 index wire format, not a new writer."""
+    match = re.fullmatch(r"<!-- workspace-import-index:v2 checksum=([a-f0-9]{8}) -->\n(.+)<!-- /workspace-import-index -->\n", text, re.S)
+    if not match:
+        return False
+    checksum, body = match.groups()
+    encoded = body.encode("utf-16-le")
+    digest = 0x811C9DC5
+    for index in range(0, len(encoded), 2):
+        digest = ((digest ^ int.from_bytes(encoded[index:index + 2], "little")) * 0x01000193) & 0xFFFFFFFF
+    if f"{digest:08x}" != checksum:
+        return False
+    lines = body.splitlines()
+    if len(lines) < 8 or lines[0] != "# Import index" or any(lines[index] for index in (1, 3, 5)):
+        return False
+    summary = re.fullmatch(r"(\d+) known sources · (\d+) imported · (\d+) not fully imported", lines[2])
+    columns = ["Source", "Status", "Saved documents", "Detail", "Input digest", "Output digest", "Checked at (ms)", "Check result", "ETag", "Last modified"]
+    if (not summary or not lines[4].startswith("All known discoveries and selected inputs are retained here.")
+        or len(lines[4]) > 384 or [part.strip() for part in re.split(r"(?<!\\)\|", lines[6])[1:-1]] != columns
+        or [part.strip() for part in re.split(r"(?<!\\)\|", lines[7])[1:-1]] != ["---"] * 10):
+        return False
+    statuses = {}
+    for line in lines[8:]:
+        cells = [part.strip() for part in re.split(r"(?<!\\)\|", line)]
+        if len(cells) != 12 or cells[0] or cells[-1]:
+            return False
+        row = cells[1:-1]
+        link = re.fullmatch(r"\[.+\]\(<(https?://[^<>\s]+)>\)", row[0])
+        if not link or row[1] not in {"imported", "not imported", "pending", "missing"}:
+            return False
+        source = urlparse(link.group(1))
+        host = re.sub(r"[^a-zA-Z0-9._-]", "-", source.netloc)
+        host = re.sub(r"-+", "-", host).strip("-.")[:64]
+        if (source.username or source.password or source.fragment
+            or not source.netloc or workspace_path != f"/websites/{host}/_import-index.md"
+            or (link.group(1) in statuses and statuses[link.group(1)] != row[1])
+            or any(value and not re.fullmatch(r"[a-f0-9]{64}", value) for value in row[4:6])
+            or (row[6] and not re.fullmatch(r"\d+(?:\.\d+)?", row[6]))
+            or row[7] not in {"", "imported", "unchanged"}
+            or len(row[3]) > 24_576
+            or (row[2] and not re.fullmatch(r"\[.+\]\(</[^<>\s]+>\)", row[2]))):
+            return False
+        statuses[link.group(1)] = row[1]
+    known, imported, incomplete = map(int, summary.groups())
+    return known == len(statuses) and imported == sum(status == "imported" for status in statuses.values()) and known == imported + incomplete
+
+
+def read_proof_authoring_mirror_request(
+    request: Any,
+    local_origin: str,
+    expected_output_root: Path,
+    *,
+    bootstrap_open: bool,
+) -> AuthoringMirrorRequest | None:
+    """Only the native bootstrap inventory mirror may write in this proof."""
+    try:
+        parsed = urlparse(str(request.url))
+    except ValueError:
+        return None
+    headers = {str(key).lower(): str(value) for key, value in request.headers.items()}
+    raw = request.post_data
+    if (
+        not bootstrap_open or str(request.method) != "POST"
+        or parsed.scheme not in {"http", "https"}
+        or parsed.netloc != local_origin or parsed.path != AUTHORING_MIRROR_PATH
+        or parsed.params or parsed.query or parsed.fragment
+        or getattr(request, "service_worker", None) is not None
+        or headers.get("content-type", "").split(";")[0].strip().lower() != "application/json"
+        or headers.get("origin") != f"{parsed.scheme}://{local_origin}"
+        or headers.get("sec-fetch-site") not in {"same-origin", "none"}
+        or not isinstance(raw, str)
+    ):
+        return None
+    try:
+        if len(raw.encode("utf-8")) > AUTHORING_MIRROR_MAX_BYTES:
+            return None
+        body = json.loads(raw, object_pairs_hook=_unique_json_object)
+    except (TypeError, ValueError, UnicodeError):
+        return None
+    if (not isinstance(body, dict)
+        or set(body) != {"saveOnly", "kind", "outputRoot", "snapshot"}
+        or body["saveOnly"] is not True or body["kind"] != "file"
+        or body["outputRoot"] != str(expected_output_root)):
+        return None
+    snapshot = body["snapshot"]
+    if not isinstance(snapshot, dict) or set(snapshot) != {"workspacePath", "text"}:
+        return None
+    workspace_path, text = snapshot["workspacePath"], snapshot["text"]
+    if (not isinstance(workspace_path, str)
+        or not re.fullmatch(r"/websites/[A-Za-z0-9_][A-Za-z0-9._-]{0,63}/_import-index\.md", workspace_path)
+        or workspace_path.split("/")[2].endswith((".", "-"))
+        or re.match(r"^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)", workspace_path.split("/")[2], re.I)
+        or not isinstance(text, str)):
+        return None
+    try:
+        data = text.encode("utf-8")
+        if not _is_managed_inventory(text, workspace_path):
+            return None
+    except (UnicodeError, ValueError):
+        return None
+    return {"workspacePath": workspace_path, "text": text,
+            "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
+
+
+def assert_authoring_mirror_fixture(store_root: Path, repository_root: Path) -> None:
+    """The existing launcher owns one fresh sibling store and removes it."""
+    if (not store_root.is_absolute() or not store_root.is_dir()
+        or store_root.is_symlink() or store_root.parent != repository_root.parent
+        or not store_root.name.startswith(".browser-smoke-store-")):
+        raise AssertionError("native website mirror requires the owned isolated browser store")
+
+
+def assert_authoring_mirror_ownership(
+    *,
+    requests: list[AuthoringMirrorRequest],
+    receipts: list[AuthoringMirrorReceipt],
+    store_root: Path,
+    repository_root: Path,
+    native_workspace_texts: dict[str, Any],
+) -> dict[str, Any]:
+    assert_authoring_mirror_fixture(store_root, repository_root)
+    if not requests:
+        raise AssertionError("native authoring fixture produced no website mirror receipt")
+    expected = [(item["workspacePath"], item["sha256"]) for item in requests]
+    received = [(item["workspacePath"], item["sha256"]) for item in receipts]
+    if sorted(expected) != sorted(received):
+        raise AssertionError("native website mirror requires one HTTP receipt per admitted request")
+    for receipt in receipts:
+        target = store_root / receipt["workspacePath"].lstrip("/")
+        result = receipt["result"]
+        if (receipt["status"] != 200
+            or receipt["contentType"].split(";")[0].strip().lower() != "application/json"
+            or not isinstance(result, dict) or set(result) != {"ok", "path", "message"}
+            or result["ok"] is not True or result["path"] != str(target)
+            or result["message"] != "Saved website document"):
+            raise AssertionError("native website mirror has an invalid HTTP save receipt")
+    latest = {item["workspacePath"]: item for item in requests}
+    files = []
+    for workspace_path, item in latest.items():
+        if native_workspace_texts.get(workspace_path) != item["text"]:
+            raise AssertionError("native website mirror differs from its WorkspaceFs source bytes")
+        target = store_root / workspace_path.lstrip("/")
+        try:
+            resolved = target.resolve(strict=True)
+        except OSError as error:
+            raise AssertionError("native website mirror physical receipt is missing") from error
+        if (resolved != target or not resolved.is_relative_to(store_root)
+            or not resolved.is_file() or resolved.read_bytes() != item["text"].encode("utf-8")):
+            raise AssertionError("native website mirror physical receipt differs from admitted bytes")
+        files.append({"workspacePath": workspace_path, "path": str(resolved),
+                      "sha256": item["sha256"], "bytes": item["bytes"], "workspaceByteIdentical": True})
+    return {"owner": "native website inventory authoring", "phase": "bootstrap",
+            "storeRoot": str(store_root), "requestCount": len(requests),
+            "receiptCount": len(receipts), "files": files,
+            "gameplayWritesAllowed": False, "fileManagerAllowed": False}
 PROOF_LOCAL_STATIC_EXACT_PATHS = {
     "/",
     "/index.html",

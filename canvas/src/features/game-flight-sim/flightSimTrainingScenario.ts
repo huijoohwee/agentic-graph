@@ -37,6 +37,23 @@ function publish(
   for (const listener of [...listeners]) listener()
   return scenario
 }
+function publishAdmitted(
+  patch: Partial<Omit<FlightSimTrainingScenarioSnapshot, 'revision'>>,
+  isCurrent?: () => boolean,
+  publicationName = 'profile',
+): FlightSimTrainingScenarioSnapshot {
+  const previous = scenario
+  try {
+    if (isCurrent && !isCurrent()) throw new Error(`Flight training admission is no longer current before ${publicationName} publication.`)
+    const next = publish(patch)
+    if (isCurrent && !isCurrent()) throw new Error(`Flight training admission is no longer current during ${publicationName} publication.`)
+    return next
+  } catch (error) {
+    scenario = previous
+    for (const listener of [...listeners]) { try { listener() } catch { /* retain the admission failure */ } }
+    throw error
+  }
+}
 export function readFlightSimTrainingScenario(): FlightSimTrainingScenarioSnapshot {
   return scenario
 }
@@ -58,18 +75,7 @@ export function admitFlightSimTrainingProfile(
     throw new Error('Flight training source changed during an active run; stop before admitting another profile.')
   }
   const mission = profile?.missions.find(item => item.id === profile.defaultMissionId)
-  const previous = scenario
-  try {
-    if (isCurrent && !isCurrent()) throw new Error('Flight training admission is no longer current before profile publication.')
-    const next = publish({ profile, geographicReference, sourceKey, missionId: mission?.id || '', failureId: mission?.defaultFailureId || '' })
-    if (isCurrent && !isCurrent()) throw new Error('Flight training admission is no longer current during profile publication.')
-    return next
-  } catch (error) {
-    scenario = previous
-    for (const listener of [...listeners]) { try { listener() } catch { /* retain the admission failure */ } }
-    throw error
-  }
-
+  return publishAdmitted({ profile, geographicReference, sourceKey, missionId: mission?.id || '', failureId: mission?.defaultFailureId || '' }, isCurrent)
 }
 /** A retained run may resume only with the selection and source that governed it. */
 export function assertFlightSimTrainingRunBinding(runId: number): void {
@@ -91,16 +97,16 @@ export function resolveFlightSimTrainingMission(
 export function resolveFlightSimTrainingFailure(): FlightSimTrainingFailure | null {
   return scenario.profile?.failures.find(item => item.id === scenario.failureId) || null
 }
-export function selectFlightSimTrainingMission(missionId: string): FlightSimTrainingScenarioSnapshot {
+export function selectFlightSimTrainingMission(missionId: string, isCurrent?: () => boolean): FlightSimTrainingScenarioSnapshot {
   const mission = resolveFlightSimTrainingMission(missionId)
   if (!mission) throw new Error(`Flight training mission is unavailable or unsupported: ${missionId}`)
-  return publish({ missionId: mission.id, failureId: mission.defaultFailureId })
+  return publishAdmitted({ missionId: mission.id, failureId: mission.defaultFailureId }, isCurrent, 'selection')
 }
-export function selectFlightSimTrainingFailure(failureId: string): FlightSimTrainingScenarioSnapshot {
+export function selectFlightSimTrainingFailure(failureId: string, isCurrent?: () => boolean): FlightSimTrainingScenarioSnapshot {
   if (!scenario.profile?.failures.some(item => item.id === failureId)) {
     throw new Error(`Flight training failure is unavailable or unsupported: ${failureId}`)
   }
-  return publish({ failureId })
+  return publishAdmitted({ failureId }, isCurrent, 'selection')
 }
 export function setFlightSimTrainingVoiceEnabled(voiceEnabled: boolean): FlightSimTrainingScenarioSnapshot {
   return publish({ voiceEnabled: Boolean(voiceEnabled) })

@@ -17,8 +17,11 @@ from lib.game_flight_sim_smoke_ledger import (
     REQUIRED_BROWSER_VERIFICATION_NAMES,
 )
 from lib.game_flight_sim_smoke_network import (
+    assert_authoring_mirror_fixture,
+    assert_authoring_mirror_ownership,
     assert_transport_ownership,
     assert_workspace_seed_list_authority,
+    read_proof_authoring_mirror_request,
     request_is_geo_provider_read,
     request_is_proof_local_read,
     summarize_websocket_attempts,
@@ -124,6 +127,13 @@ def main() -> None:
     target_url = f"{BASE_URL}/?kgFlightSimBrowserProof=1"
     websocket_probe_url = build_websocket_probe_url(BASE_URL)
     local_origin = urlparse(BASE_URL).netloc
+    repository_root = Path(__file__).resolve().parents[2]
+    expected_mirror_root = repository_root / "docs_"
+    owned_store_root = Path(os.environ.get("AGENTIC_OS_WORKSPACE_STORE_ROOT", ""))
+    assert_authoring_mirror_fixture(owned_store_root, repository_root)
+    authoring_bootstrap_open = True
+    authoring_mirror_requests = []
+    authoring_mirror_receipts = []
     requests: list[dict[str, str]] = []
     blocked_requests: list[dict[str, str]] = []
     fs_list_requests: list[dict[str, Any]] = []
@@ -152,6 +162,14 @@ def main() -> None:
             ):
                 route.continue_()
                 return
+            mirror = read_proof_authoring_mirror_request(
+                request, local_origin, expected_mirror_root,
+                bootstrap_open=authoring_bootstrap_open,
+            )
+            if mirror is not None:
+                authoring_mirror_requests.append(mirror)
+                route.continue_()
+                return
             blocked_requests.append(request_record(request))
             route.abort("blockedbyclient")
 
@@ -174,6 +192,24 @@ def main() -> None:
             )
 
         def record_response(response: Any) -> None:
+            mirror = read_proof_authoring_mirror_request(
+                response.request, local_origin, expected_mirror_root,
+                bootstrap_open=True,
+            )
+            if mirror is not None and any(
+                item["workspacePath"] == mirror["workspacePath"]
+                and item["sha256"] == mirror["sha256"]
+                for item in authoring_mirror_requests
+            ):
+                try:
+                    result = response.json()
+                except Exception:
+                    result = None
+                authoring_mirror_receipts.append({
+                    "workspacePath": mirror["workspacePath"], "sha256": mirror["sha256"],
+                    "status": response.status, "contentType": response.headers.get("content-type", ""),
+                    "result": result,
+                })
             if response.status < 400:
                 return
             failed_responses.append(
@@ -185,6 +221,8 @@ def main() -> None:
             )
 
         def reset_observed_errors() -> None:
+            nonlocal authoring_bootstrap_open
+            authoring_bootstrap_open = False
             requests.clear()
             blocked_requests.clear()
             console_errors.clear()
@@ -309,6 +347,23 @@ def main() -> None:
             ledger.verify(
                 "workspace seed authority",
                 verify_workspace_seed_authority,
+            )
+            authoring_mirror_proof = ledger.verify(
+                "native website authoring mirror ownership",
+                lambda: assert_authoring_mirror_ownership(
+                    requests=authoring_mirror_requests,
+                    receipts=authoring_mirror_receipts,
+                    store_root=owned_store_root,
+                    repository_root=repository_root,
+                    native_workspace_texts=page.evaluate(
+                        """async paths => {
+                          const module = await window.__kgFlightSimBrowserProof.importModule('workspaceFs')
+                          const fs = await module.getWorkspaceFs()
+                          return Object.fromEntries(await Promise.all(paths.map(async path => [path, await fs.readFileText(path)])))
+                        }""",
+                        list({item["workspacePath"] for item in authoring_mirror_requests}),
+                    ),
+                ),
             )
             ledger.verify(
                 "browser error surface",
@@ -468,6 +523,7 @@ def main() -> None:
                 "requests": requests,
                 "localRuntimeRequestPaths": local_runtime_paths,
                 "workspaceSeedListRequests": fs_list_requests,
+                "authoringMirrorProof": authoring_mirror_proof,
                 "consoleErrors": console_errors,
                 "pageErrors": page_errors,
                 "failedResponses": failed_responses,

@@ -357,6 +357,63 @@ test('a control fence cancelled by a subscriber rolls back profile admission and
 })
 
 
+test('already-admitted mission and failure selections roll back cancellation, drift, and subscriber errors', async () => {
+  resetFlightSimRuntimeForTests()
+  const previous = useGraphStore.getState()
+  const name = '/imports/selection-race.md'
+  const setSource = () => useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: seedSource, sourceFiles: [{ id: 'selection-source', name, text: seedSource, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: name } }] } as never)
+  try {
+    setSource()
+    admitCapturedFlightSimTrainingSource(captureFlightSimTrainingSource(), 'stopped')
+    flightSimDefaultRuntime.open(true)
+    await startFlightSim()
+    flightSimDefaultRuntime.stop()
+    assert.ok(readFlightSimTrainingScenario().runBinding)
+    for (const operation of ['mission', 'failure'] as const) {
+      for (const fault of ['abort', 'drift', 'throw'] as const) {
+        setSource()
+        const before = readFlightSimTrainingScenario()
+        const controller = new AbortController()
+        const notifications: unknown[] = []
+        const unsubscribe = subscribeFlightSimTrainingScenario(() => {
+          const current = readFlightSimTrainingScenario()
+          notifications.push(current)
+          if (current === before) return
+          if (fault === 'abort') controller.abort()
+          else if (fault === 'throw') throw new Error('selection subscriber failed')
+          else useGraphStore.setState(state => ({ sourceFiles: state.sourceFiles.map(file => ({ ...file, parsedGraphRevision: 2 })) }))
+        })
+        try {
+          const input = operation === 'mission' ? { operation, missionId: profile.missions[1].id } : { operation, failureId: profile.failures[1].id }
+          const result = await controlLocalFlightSim(input, { signal: controller.signal, generation: 1, isCurrent: () => !controller.signal.aborted })
+          assert.equal(result.ok, false)
+          assert.match(result.message, fault === 'throw' ? /selection subscriber failed/ : /no longer current during selection publication/)
+          assert.equal(readFlightSimTrainingScenario(), before)
+          assert.equal(readFlightSimTrainingScenario().runBinding, before.runBinding)
+          assert.equal(readFlightSimTrainingScenario().geographicReference, before.geographicReference)
+          assert.equal(readFlightSimTrainingScenario().sourceKey, before.sourceKey)
+          assert.equal(readFlightSimTrainingScenario().revision, before.revision)
+          assert.equal(notifications.length, 2)
+          assert.equal(notifications[1], before)
+        } finally { unsubscribe() }
+      }
+    }
+    setSource()
+    let notifications = 0
+    const unsubscribe = subscribeFlightSimTrainingScenario(() => { notifications += 1 })
+    try {
+      selectFlightSimTrainingMission(profile.missions[1].id)
+      selectFlightSimTrainingFailure(profile.failures[2].id)
+      assert.equal(notifications, 2, 'ordinary selection without an execution guard publishes once per change')
+      assert.equal(readFlightSimTrainingScenario().missionId, profile.missions[1].id)
+      assert.equal(readFlightSimTrainingScenario().failureId, profile.failures[2].id)
+    } finally { unsubscribe() }
+  } finally {
+    resetFlightSimRuntimeForTests()
+    useGraphStore.setState({ markdownDocumentName: previous.markdownDocumentName, markdownDocumentText: previous.markdownDocumentText, sourceFiles: previous.sourceFiles })
+  }
+})
+
 test('terminal controls retain the governing profile and selection until explicit Restart', async () => {
   const previous = useGraphStore.getState()
   const name = '/imports/terminal-profile.md'
