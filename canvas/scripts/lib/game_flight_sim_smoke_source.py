@@ -469,6 +469,48 @@ def _apply_exact_authored_source(
     return {"bootstrap": bootstrap, **result}
 
 
+def _read_source_activation_diagnostic(page: Page) -> dict[str, Any]:
+    return page.evaluate(
+        """
+        async () => {
+          const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
+          const demos = await window.__kgFlightSimBrowserProof.importModule('workspaceRunReadyDemos')
+          const state = store.useGraphStore.getState()
+          const normalize = value => String(value || '').replace(/^\/+/, '')
+            .replace(/^workspace\//, '').toLowerCase()
+          const documentName = state.markdownDocumentName
+          const documentText = state.markdownDocumentText
+          const files = Array.isArray(state.sourceFiles) ? state.sourceFiles : []
+          const matches = files.filter(file =>
+            normalize(file?.source?.path) === normalize(documentName)
+            || normalize(file?.name) === normalize(documentName))
+          return {
+            documentName, documentTextLength: String(documentText || '').length,
+            active: demos.isFlightSimRunReadyDemoActive(documentName, documentText),
+            activation: demos.diagnoseWorkspaceRunReadyDemoActivation(documentName, documentText),
+            sourceFileCount: files.length, matchingSourceFileCount: matches.length,
+            sources: matches.slice(0, 3).map(file => ({
+              id: file.id, name: file.name, source: file.source,
+              enabled: file.enabled, status: file.status,
+              error: String(file.error || '').slice(0, 500),
+              textLength: String(file.text || '').length,
+              textMatchesActiveDocument: file.text === documentText,
+              parsedParserId: file.parsedParserId || null,
+              parsedTextHash: file.parsedTextHash || null,
+              parsedGraphRevision: file.parsedGraphRevision ?? null,
+              parsedGraphNodes: file.parsedGraphData?.nodes?.length ?? null,
+              parsedGraphEdges: file.parsedGraphData?.edges?.length ?? null,
+            })),
+            toasts: (state.uiToasts || []).filter(toast =>
+              /flight/i.test(`${toast.id} ${toast.message}`)).slice(-3)
+              .map(toast => ({id: toast.id, kind: toast.kind,
+                message: String(toast.message || '').slice(0, 500)})),
+          }
+        }
+        """
+    )
+
+
 def apply_and_verify_exact_authored_source(
     page: Page,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -485,14 +527,19 @@ def apply_and_verify_exact_authored_source(
         expected_source_text.encode("utf-8")
     ).hexdigest()
 
-    selection_round_trip = verify_source_file_button_round_trip(
-        page,
-        expected_source_text,
-        flight_basename=SOURCE_BASENAME,
-        physics_basename=PHYSICS_SOURCE_BASENAME,
-        poll=_poll,
-        read_source_identity=_read_source_identity,
-    )
+    try:
+        selection_round_trip = verify_source_file_button_round_trip(
+            page, expected_source_text,
+            flight_basename=SOURCE_BASENAME,
+            physics_basename=PHYSICS_SOURCE_BASENAME,
+            poll=_poll, read_source_identity=_read_source_identity,
+        )
+    except Exception as error:
+        try:
+            diagnostic = _read_source_activation_diagnostic(page)
+        except Exception as diagnostic_error:
+            diagnostic = {"diagnosticError": str(diagnostic_error)[:500]}
+        raise AssertionError(f"{error}; native source diagnostic: {diagnostic}") from error
     selection_surface_transition = close_source_files_selection_surface(page)
     application = _apply_exact_authored_source(page, expected_source_text)
     application["selectionRoundTrip"] = selection_round_trip
