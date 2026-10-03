@@ -1,9 +1,11 @@
-import { CalendarDays, LayoutGrid, ChartGantt, CircleDot, Columns2, GitGraph, GitMerge, Grid3x3, Image as ImageIcon, Images, MonitorPlay, Palette, PanelsTopLeft, Table } from 'lucide-react'
+import { ListOrdered, CalendarDays, LayoutGrid, ChartGantt, CircleDot, Columns2, GitGraph, GitMerge, Grid3x3, Image as ImageIcon, Images, MonitorPlay, Palette, PanelsTopLeft, Table } from 'lucide-react'
 import type { Canvas2dRendererId } from '@/lib/config'
 import { getCanvasSurfaceModeSpec } from '@/lib/canvas/canvas3dMode'
 import type { CanvasViewRendererOption, CanvasViewModelState, CanvasViewOptionId } from './canvasViewTypes'
 
 export const CANVAS_VIEW_RENDERER_OPTION_ICON: Record<Canvas2dRendererId, CanvasViewRendererOption['Icon']> = {
+  sequence: ListOrdered,
+  sequenceMermaid: ListOrdered,
   d3: CircleDot,
   dashboard: Grid3x3,
   gallery: Images,

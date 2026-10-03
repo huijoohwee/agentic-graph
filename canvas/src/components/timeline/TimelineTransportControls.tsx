@@ -9,6 +9,7 @@ import {
 } from './timelineTransport'
 import './TimelineTransportControls.css'
 import './TimelineTransportControlsMermaidGantt.css'
+import './TimelineTransportLane.css'
 
 export type TimelineTransportControlsProps = {
   ariaLabel: string
@@ -121,7 +122,6 @@ export function TimelineTransportTimeAxisClip({
         className,
       )}
       aria-label={rootProps['aria-label'] || 'Timeline time-axis control lane'}
-      data-kg-timeline-clip-compact="1"
       data-kg-timeline-time-axis-clip={laneStyle}
     >
       <section className="timeline-transport-inline-clip-content timeline-transport-time-axis-clip-content">
@@ -131,15 +131,47 @@ export function TimelineTransportTimeAxisClip({
   )
 }
 
+const timeAxisMarkHandlers = new WeakMap<HTMLElement, TimelineTransportTimeAxisMarkProps>()
+
+function nearestTimeAxisMark(root: HTMLElement, clientX: number): HTMLElement {
+  let nearest = root
+  let distance = Infinity
+  for (const sibling of Array.from(root.parentElement?.children || [])) {
+    if (!(sibling instanceof HTMLElement) || !timeAxisMarkHandlers.has(sibling)) continue
+    const bounds = sibling.getBoundingClientRect()
+    const next = Math.abs(clientX - bounds.left - bounds.width / 2)
+    if (next < distance) { nearest = sibling; distance = next }
+  }
+  return nearest
+}
+
 export function TimelineTransportTimeAxisMark({
   children,
   className,
   laneStyle,
   ...rootProps
 }: TimelineTransportTimeAxisMarkProps) {
+  const markRef = React.useRef<HTMLElement>(null)
+  React.useLayoutEffect(() => {
+    const mark = markRef.current
+    if (!mark) return
+    timeAxisMarkHandlers.set(mark, { children, laneStyle, ...rootProps })
+    return () => { timeAxisMarkHandlers.delete(mark) }
+  })
   return (
     <article
       {...rootProps}
+      ref={markRef}
+      onPointerDown={event => {
+        const mark = nearestTimeAxisMark(event.currentTarget, event.clientX)
+        mark.focus({ preventScroll: true })
+        timeAxisMarkHandlers.get(mark)?.onPointerDown?.(event)
+      }}
+      onClick={event => {
+        const mark = event.detail === 0 ? event.currentTarget : nearestTimeAxisMark(event.currentTarget, event.clientX)
+        mark.focus({ preventScroll: true })
+        timeAxisMarkHandlers.get(mark)?.onClick?.(event)
+      }}
       className={cn(
         'timeline-transport-track-clip',
         `timeline-transport-track-clip--lane-${laneStyle}`,
@@ -317,7 +349,8 @@ export function TimelineTransportChrome(props: TimelineTransportChromeProps) {
     titleLabel,
     ...transportProps
   } = props
-  const rootClassName = cn('timeline-transport-chrome', chromeClassName)
+  const { panelTextClass } = usePanelTypography()
+  const rootClassName = cn('timeline-transport-chrome', chromeClassName, panelTextClass)
   const rulerRootClassName = cn('timeline-transport-ruler', rulerClassName)
   const inlineHeaderAside = !titleLabel && !subtitleLabel ? headerAside : null
   const headerAsideContent = inlineHeaderAside ? null : headerAside
