@@ -49,6 +49,7 @@ shared_xr_scene:
   camera_owner: "canvas/src/features/three/useXrNativeControllerDemoCamera.ts"
   second_r3f_canvas_forbidden: true
 geo_flight_overlay:
+  geographic_reference: {anchor: [103.851959, 1.29027], presentationBounds: [[103.605, 1.158], [104.09, 1.48]]}
   activation: "selected authored environment plus source-authored Flight identity"
   renderer_owner: "native MapLibre Geo host"
   geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
@@ -127,6 +128,62 @@ native_flight_demo:
       throttle: "standard triggers"
     multi_device_conflict: "select the largest absolute value independently per axis"
   lifecycle: ["develop-and-run", "pause", "resume", "reset", "exit"]
+flight_training_profile:
+  schema: "flight-training-profile/v1"
+  defaultMissionId: "circuit-foundation"
+  failureWindow:
+    startTick: 180
+    endTickExclusive: 420
+  recoveryThrottleMinimum: 0.6
+  missions:
+    - id: "circuit-foundation"
+      label: "Circuit Foundation"
+      objective: "Fly the ordered waterfront circuit and stabilize the marked landing."
+      terrain: "Procedural waterfront"
+      night: false
+      targetSpeedMetersPerSecond: [8, 22]
+      defaultFailureId: "none"
+      systemsChecklist: ["Controls free", "Power set", "Route briefed"]
+    - id: "night-circuit"
+      label: "Night Circuit"
+      objective: "Hold the circuit by instruments and runway lighting with reduced visual range."
+      terrain: "Procedural waterfront at night"
+      night: true
+      targetSpeedMetersPerSecond: [9, 20]
+      defaultFailureId: "instrument-uncertainty"
+      systemsChecklist: ["Lights checked", "Instruments cross-checked", "Stable approach"]
+    - id: "systems-recovery"
+      label: "Systems Recovery"
+      objective: "Recognize a bounded power loss, retain control, and recover before landing."
+      terrain: "Procedural waterfront recovery area"
+      night: false
+      targetSpeedMetersPerSecond: [8, 18]
+      defaultFailureId: "engine-power-loss"
+      systemsChecklist: ["Aviate", "Diagnose power", "Recover and land"]
+  failures:
+    - id: "none"
+      label: "No injected failure"
+      effect: {kind: "none"}
+    - id: "engine-power-loss"
+      label: "Engine power loss"
+      coachingCue: "Power loss. Hold attitude, preserve airspeed, then restore power after the drill window."
+      effect: {kind: "throttle-limit", maxThrottle: 0.28, throttleDelta: -0.7}
+    - id: "instrument-uncertainty"
+      label: "Instrument uncertainty"
+      coachingCue: "Airspeed is unreliable. Cross-check pitch, power, and visual attitude."
+      effect: {kind: "airspeed-unreliable"}
+    - id: "control-bias"
+      label: "Control bias"
+      coachingCue: "Control bias detected. Counter gently and keep bank within the stable envelope."
+      effect: {kind: "input-bias", roll: 0.22, yaw: -0.14}
+  controlAliases:
+    mission-foundation: {kind: "mission", id: "circuit-foundation"}
+    mission-night: {kind: "mission", id: "night-circuit"}
+    mission-systems: {kind: "mission", id: "systems-recovery"}
+    failure-none: {kind: "failure", id: "none"}
+    failure-engine: {kind: "failure", id: "engine-power-loss"}
+    failure-instruments: {kind: "failure", id: "instrument-uncertainty"}
+    failure-controls: {kind: "failure", id: "control-bias"}
 flight_training:
   missions: ["circuit-foundation", "night-circuit", "systems-recovery"]
   mission_outcomes: ["route progress", "stable attitude", "energy envelope", "failure recovery", "terminal result"]
@@ -163,11 +220,11 @@ flight_sim:
     restart: "/flight.sim @canvas #flight operation=restart"
     throttle: "/flight.sim @canvas #flight operation=throttle throttle=0.75"
     mission_foundation: "/flight.sim @canvas #flight operation=mission-foundation"
-    mission_night: "/flight.sim @canvas #flight operation=mission-night"
+    mission_night: "/flight.sim @canvas #flight operation=mission missionId=night-circuit"
     mission_systems: "/flight.sim @canvas #flight operation=mission-systems"
     failure_none: "/flight.sim @canvas #flight operation=failure-none"
     failure_engine: "/flight.sim @canvas #flight operation=failure-engine"
-    failure_instruments: "/flight.sim @canvas #flight operation=failure-instruments"
+    failure_instruments: "/flight.sim @canvas #flight operation=failure failureId=instrument-uncertainty"
     failure_controls: "/flight.sim @canvas #flight operation=failure-controls"
     voice_on: "/flight.sim @canvas #flight operation=voice-on"
     voice_off: "/flight.sim @canvas #flight operation=voice-off"
@@ -220,7 +277,7 @@ mcp_control:
   control_tool: "agentic-graph.control_local_flight_sim"
   launch: "/flight.sim @canvas #flight operation=open"
   start: "/flight.sim @canvas #flight operation=start"
-  night_training: "/flight.sim @canvas #flight operation=mission-night"
+  night_training: "/flight.sim @canvas #flight operation=mission missionId=night-circuit"
   systems_failure: "/flight.sim @canvas #flight operation=failure-engine"
   voice_instructor: "/flight.sim @canvas #flight operation=voice-on"
   coach: "/flight.sim @canvas #flight operation=coach"
@@ -304,8 +361,8 @@ airspace restriction or arrival prediction.
 1. Apply this source and inspect the active mission with
    `agentic-graph.inspect_local_flight_sim`. If its phase is `ready` or `flying`, issue
    `/flight.sim @canvas #flight operation=stop`; an already-stopped mission needs no Stop.
-2. While stopped, select `/flight.sim @canvas #flight operation=mission-night`, then
-   `/flight.sim @canvas #flight operation=failure-instruments`. Mission and failure selection are
+2. While stopped, select `/flight.sim @canvas #flight operation=mission missionId=night-circuit`, then
+   `/flight.sim @canvas #flight operation=failure failureId=instrument-uncertainty`. Mission and failure selection are
    rejected while `ready` or `flying`; unsupported commands produce an explicit diagnostic.
 3. Issue `/flight.sim @canvas #flight operation=restart` for a fresh mission at tick zero. Restart
    returns `ready`; do not issue Start immediately afterward, because Start resumes a `stopped`
@@ -345,7 +402,7 @@ Use **HUD overlays** to show or hide optional instruments and the course cue. **
 
 Choose **Simulation speed** `0.5×`, `1×`, or `2×` to pace the rehearsal. Each physics tick still advances exactly `1 / 60` second; slower pacing gives more time to observe the same authored tick-window, and faster pacing reaches it sooner. Compare captures by equal tick counts and identical normalized inputs, rather than equal wall time. Display/rate settings are ephemeral and are not saved with Decisions.
 
-The runtime controls do not select a mission, location, failure, route, or source. The rehearsal above and the existing authored mission/scenario owners supply those details. Settings apply to any selected scenario through the same controls and clock; no new invocation or replay/export tool is introduced.
+The presentation controls do not select a mission, location, failure, route, or source. The rehearsal above and the existing authored mission/scenario owners supply those details. Settings apply to any selected scenario through the same controls and clock. Training selection uses generic admitted-ID operations; this profile alone declares its compatibility aliases. No replay/export tool is introduced.
 
 ## Runtime-readiness gates
 

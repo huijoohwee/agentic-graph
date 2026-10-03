@@ -20,6 +20,7 @@ export {
   mapHasExactRegionalPoiSource,
   regionalPoiFeatureCollection,
   SINGAPORE_FLIGHT_GEO_REFERENCE,
+  projectLocalMetersToGeospatial,
   projectSingaporeLocalMeters,
   projectSingaporeLocalRectangle,
   readActiveMapLibreMap,

@@ -62,6 +62,7 @@ import {
   subscribeFlightSimSnapshot,
 } from './flightSimRuntime'
 import { FlightSimTrainingSurfaceProjection } from './FlightSimTrainingSurfaceProjection'
+import { readFlightSimTrainingScenario } from './flightSimTrainingScenario'
 import {
   readFlightSimTrainingSnapshot,
   subscribeFlightSimTrainingSnapshot,
@@ -344,7 +345,9 @@ export function FlightSimFloatingPanelView() {
             className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}
             data-kg-flight-sim-geography-boundary="not-rendered"
           >
-            The local XR stage is aligned to Singapore’s Flight anchor; it is not a Singapore geographic boundary.
+            {readFlightSimTrainingScenario().geographicReference
+              ? 'The local scene uses the authored geographic anchor and presentation bounds.'
+              : 'Geographic projection unavailable. The local simulation has no authored geographic anchor.'}
           </p>
           <p
             className={cn(

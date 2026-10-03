@@ -35,40 +35,22 @@ test('Flight browser proof activates only after applying the authored source', (
     touchVerifier,
     verifier,
   } = readFlightSimBrowserAuthoritySources(repoRoot)
-  assert.match(
-    runner,
-    /delete process\.env\.VITE_AGENTIC_OS_RUN_READY_DEMO/,
-  )
-  assert.doesNotMatch(
-    runner,
-    /VITE_AGENTIC_OS_RUN_READY_DEMO\s*\|\|=\s*['"]flight-sim['"]/,
-  )
-  assert.doesNotMatch(
-    runner,
-    /VITE_TEST_VALIDATION_SOURCE_FILE_REL_PATH\s*=/,
-  )
+  assert.match(runner, /delete process\.env\.VITE_AGENTIC_OS_RUN_READY_DEMO/)
+  assert.doesNotMatch(runner, /VITE_AGENTIC_OS_RUN_READY_DEMO\s*\|\|=\s*['"]flight-sim['"]/)
+  assert.doesNotMatch(runner, /VITE_TEST_VALIDATION_SOURCE_FILE_REL_PATH\s*=/)
   assert.match(runner, /const runCount = 2/)
   assert.match(runner, /existingServerPolicy: 'forbid'/)
   assert.match(runner, /buildExactProductionPreview\(candidate\)/)
   assert.match(runner, /AG_SKIP_DOCS_UPDATE: '1'/)
   assert.match(runner, /VITE_BASE_PATH: '\/'/)
-  assert.match(
-    runner,
-    /VITE_AGENTIC_OS_FLIGHT_SIM_BROWSER_PROOF: '1'/,
-  )
+  assert.match(runner, /VITE_AGENTIC_OS_FLIGHT_SIM_BROWSER_PROOF: '1'/)
   assert.match(runner, /indexSource\.includes\('\/@vite\/client'\)/)
   assert.match(runner, /devServerStartMode: 'vite-preview-runner'/)
   assert.match(runner, /productionBuild,/)
   assert.match(evidenceValidator, /agentic-graph-flight-sim-browser-run\/v5/)
   assert.match(runner, /agentic-graph-flight-sim-browser-proof\/v5/)
-  assert.match(
-    verifier,
-    /target_url = f"\{BASE_URL\}\/\?kgFlightSimBrowserProof=1"/,
-  )
-  assert.match(
-    verifier,
-    /json\.dumps\(evidence, indent=2, allow_nan=False\)/,
-  )
+  assert.match(verifier, /target_url = f"\{BASE_URL\}\/\?kgFlightSimBrowserProof=1"/)
+  assert.match(verifier, /json\.dumps\(evidence, indent=2, allow_nan=False\)/)
   for (const removedContradictoryRendererField of [
     'mapLibreOwnsVisualProjection',
     'r3fFlightVisualsSuppressed',
@@ -82,43 +64,16 @@ test('Flight browser proof activates only after applying the authored source', (
       new RegExp(removedContradictoryRendererField),
     )
   }
-  assert.match(
-    mainEntry,
-    /VITE_AGENTIC_OS_FLIGHT_SIM_BROWSER_PROOF === '1'/,
-  )
-  assert.match(
-    mainEntry,
-    /\.get\('kgFlightSimBrowserProof'\) === '1'/,
-  )
-  assert.match(
-    mainEntry,
-    /import\('@\/features\/testing\/flightSimBrowserProofBridge'\)/,
-  )
-  assert.match(
-    browserBootstrap,
-    /agentic-graph-flight-sim-browser-proof-bridge\/v1/,
-  )
-  assert.match(
-    browserBootstrap,
-    /window\.__kgFlightSimBrowserProof\?\.schema/,
-  )
-  assert.match(
-    browserBootstrap,
-    /arg=FLIGHT_SIM_BROWSER_PROOF_BRIDGE_SCHEMA/,
-  )
-  assert.match(
-    browserProofBridge,
-    /Unknown Flight browser proof module/,
-  )
-  assert.match(
-    browserProofBridge,
-    /flightSimRuntime: \(\) => import\('@\/features\/game-flight-sim\/flightSimRuntime'\)/,
-  )
+  assert.match(mainEntry, /VITE_AGENTIC_OS_FLIGHT_SIM_BROWSER_PROOF === '1'/)
+  assert.match(mainEntry, /\.get\('kgFlightSimBrowserProof'\) === '1'/)
+  assert.match(mainEntry, /import\('@\/features\/testing\/flightSimBrowserProofBridge'\)/)
+  assert.match(browserBootstrap, /agentic-graph-flight-sim-browser-proof-bridge\/v1/)
+  assert.match(browserBootstrap, /window\.__kgFlightSimBrowserProof\?\.schema/)
+  assert.match(browserBootstrap, /arg=FLIGHT_SIM_BROWSER_PROOF_BRIDGE_SCHEMA/)
+  assert.match(browserProofBridge, /Unknown Flight browser proof module/)
+  assert.match(browserProofBridge, /flightSimRuntime: \(\) => import\('@\/features\/game-flight-sim\/flightSimRuntime'\)/)
   assert.match(browserProofBridge, /gympgrphStore: \(\) => import\('@\/lib\/gympgrph\/api'\)/)
-  assert.match(
-    gympgrphApi,
-    /REGIONAL_POI_LAYER_IDS[\s\S]*cityGeoPresentationStateEntries[\s\S]*mapHasExactCityGeoPresentation[\s\S]*mapHasExactRegionalPoiProfile[\s\S]*readCityGeoOverlay[\s\S]*readGeoMapViewportPadding/,
-  )
+  assert.match(gympgrphApi, /REGIONAL_POI_LAYER_IDS[\s\S]*cityGeoPresentationStateEntries[\s\S]*mapHasExactCityGeoPresentation[\s\S]*mapHasExactRegionalPoiProfile[\s\S]*readCityGeoOverlay[\s\S]*readGeoMapViewportPadding/)
   assert.match(sourceSelection, /get_by_role\(\s*["']button["']/)
   assert.match(sourceSelection, /name=["']Workspace View["'],\s*exact=True/)
   assert.match(sourceSelection, /name=["']Editor Workspace["'],\s*exact=True/)
@@ -141,22 +96,10 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(sourceSelection, /canvas === window\.__kgFlightSimCanvas/)
   assert.match(sourceSelection, /isXrPhysicsRunReadyDemoActive/)
   assert.match(sourceSelection, /flightHudCount/)
-  assert.match(
-    sourceSelection,
-    /\[aria-label="Workspace editor overlay shell"\]/,
-  )
-  assert.match(
-    sourceSelection,
-    /button\[title="Close"\]/,
-  )
-  assert.match(
-    sourceSelection,
-    /close_button\.first\.click\(timeout=5_000\)/,
-  )
-  assert.doesNotMatch(
-    sourceSelection,
-    /setWorkspaceViewState\(|setWorkspaceCanvasPaneOpen\(/,
-  )
+  assert.match(sourceSelection, /\[aria-label="Workspace editor overlay shell"\]/)
+  assert.match(sourceSelection, /button\[title="Close"\]/)
+  assert.match(sourceSelection, /close_button\.first\.click\(timeout=5_000\)/)
+  assert.doesNotMatch(sourceSelection, /setWorkspaceViewState\(|setWorkspaceCanvasPaneOpen\(/)
   assert.ok(
     sourceVerifier.indexOf(
       'selection_round_trip = verify_source_file_button_round_trip(',
@@ -196,52 +139,22 @@ test('Flight browser proof activates only after applying the authored source', (
     /\bNaN\b/,
     'browser evidence diagnostics must remain valid JSON when a measurement is unavailable',
   )
-  assert.match(
-    geoXrVerifier,
-    /layout_occlusion = read_geo_xr_layout_occlusion\(page\)/,
-  )
-  assert.match(
-    geoXrVerifier,
-    /view\["mapPointerHit"\] = layout_occlusion\.get\("mapPointerHit"\)/,
-  )
+  assert.match(geoXrVerifier, /layout_occlusion = read_geo_xr_layout_occlusion\(page\)/)
+  assert.match(geoXrVerifier, /view\["mapPointerHit"\] = layout_occlusion\.get\("mapPointerHit"\)/)
   assert.doesNotMatch(geoXrVerifier, /const candidates = \[/)
   assertFlightSimBrowserSingaporePoiSourceAuthority({
     evidenceValidator,
     geoXrLayoutVerifier,
     geoXrRequirementsVerifier,
   })
-  assert.match(
-    geoXrLayoutVerifier,
-    /flight_panel\.locator\(\s*'\[data-kg-flight-sim-open="1"\]'/,
-  )
-  assert.match(
-    geoXrLayoutVerifier,
-    /open_button\.click\(timeout=30_000\)/,
-  )
-  assert.match(
-    geoXrLayoutVerifier,
-    /flight\.readFlightSimSnapshot\(\)\.active/,
-  )
-  assert.match(
-    geoXrPresentationVerifier,
-    /def restore_flight_sim_panel\(page: Page\) -> None:/,
-  )
-  assert.match(
-    geoXrPresentationVerifier,
-    /state\.setFloatingPanelView\('flightSim'\)/,
-  )
-  assert.match(
-    geoXrPresentationVerifier,
-    /\[data-kg-flight-sim-floating-panel="1"\]'.*wait_for\(/s,
-  )
-  assert.match(
-    geoXrPresentationVerifier,
-    /def verify_flight_geo_xr_city_handoff\(/,
-  )
-  assert.match(
-    geoXrPresentationVerifier,
-    /regional_poi = require_city_regional_poi_contract\(page\)/,
-  )
+  assert.match(geoXrLayoutVerifier, /flight_panel\.locator\(\s*'\[data-kg-flight-sim-open="1"\]'/)
+  assert.match(geoXrLayoutVerifier, /open_button\.click\(timeout=30_000\)/)
+  assert.match(geoXrLayoutVerifier, /flight\.readFlightSimSnapshot\(\)\.active/)
+  assert.match(geoXrPresentationVerifier, /def restore_flight_sim_panel\(page: Page\) -> None:/)
+  assert.match(geoXrPresentationVerifier, /state\.setFloatingPanelView\('flightSim'\)/)
+  assert.match(geoXrPresentationVerifier, /\[data-kg-flight-sim-floating-panel="1"\]'.*wait_for\(/s)
+  assert.match(geoXrPresentationVerifier, /def verify_flight_geo_xr_city_handoff\(/)
+  assert.match(geoXrPresentationVerifier, /regional_poi = require_city_regional_poi_contract\(page\)/)
   for (const regionalPoiProofRequirement of [
     'REGIONAL_POI_SOURCE_ID',
     'REGIONAL_POI_LAYER_IDS',
@@ -265,34 +178,13 @@ test('Flight browser proof activates only after applying the authored source', (
     )
   }
   assert.doesNotMatch(cityRegionalPoiVerifier, /renderedPois/)
-  assert.match(
-    citySemanticMediaVerifier,
-    /surface\?\.tagName \|\| ''/,
-  )
-  assert.match(
-    citySemanticMediaVerifier,
-    /surface\?\.getAttribute\('aria-label'\) \|\| ''/,
-  )
-  assert.match(
-    citySemanticMediaVerifier,
-    /data-kg-rich-media-selectable-surface/,
-  )
-  assert.match(
-    citySemanticMediaVerifier,
-    /surface\?\.hasAttribute\('aria-hidden'\) === true/,
-  )
-  assert.match(
-    citySemanticMediaVerifier,
-    /const mapCanvasScope = surface \|\| document[\s\S]*mapCanvasScope\.querySelectorAll\('canvas\.maplibregl-canvas'\)/,
-  )
-  assert.match(
-    citySemanticMediaVerifier,
-    /document\.elementFromPoint\(/,
-  )
-  assert.match(
-    citySemanticMediaVerifier,
-    /centerHit === mapCanvas[\s\S]*mapInteractiveRoot\?\.contains\(centerHit\)/,
-  )
+  assert.match(citySemanticMediaVerifier, /surface\?\.tagName \|\| ''/)
+  assert.match(citySemanticMediaVerifier, /surface\?\.getAttribute\('aria-label'\) \|\| ''/)
+  assert.match(citySemanticMediaVerifier, /data-kg-rich-media-selectable-surface/)
+  assert.match(citySemanticMediaVerifier, /surface\?\.hasAttribute\('aria-hidden'\) === true/)
+  assert.match(citySemanticMediaVerifier, /const mapCanvasScope = surface \|\| document[\s\S]*mapCanvasScope\.querySelectorAll\('canvas\.maplibregl-canvas'\)/)
+  assert.match(citySemanticMediaVerifier, /document\.elementFromPoint\(/)
+  assert.match(citySemanticMediaVerifier, /centerHit === mapCanvas[\s\S]*mapInteractiveRoot\?\.contains\(centerHit\)/)
   for (const cityProofRequirement of [
     'CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME',
     'FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME',
@@ -339,28 +231,16 @@ test('Flight browser proof activates only after applying the authored source', (
       `expected City handoff browser proof requirement: ${cityProofRequirement}`,
     )
   }
-  assert.match(
-    geoXrPresentationVerifier,
-    /value\.get\("sourceKinds"\) == \[\]/,
-  )
+  assert.match(geoXrPresentationVerifier, /value\.get\("sourceKinds"\) == \[\]/)
   const cityEvidenceValidator = evidenceValidator.slice(
     evidenceValidator.indexOf(
       'export function hasExactCityMapLibreSurfaceEvidence',
     ),
     evidenceValidator.indexOf('function hasExactCityHandoffEvidence'),
   )
-  assert.match(
-    cityEvidenceValidator,
-    /JSON\.stringify\(city\?\.sourceKinds\) === '\[\]'/,
-  )
-  assert.doesNotMatch(
-    geoXrPresentationVerifier,
-    /data-kg-city-sim-open="1"/,
-  )
-  assert.doesNotMatch(
-    geoXrPresentationVerifier,
-    /data-kg-flight-sim-open="1"/,
-  )
+  assert.match(cityEvidenceValidator, /JSON\.stringify\(city\?\.sourceKinds\) === '\[\]'/)
+  assert.doesNotMatch(geoXrPresentationVerifier, /data-kg-city-sim-open="1"/)
+  assert.doesNotMatch(geoXrPresentationVerifier, /data-kg-flight-sim-open="1"/)
   const selectGeoViewIndex = geoXrPresentationVerifier.indexOf(
     'select_geo_xr_view(page, button_label)',
   )
@@ -421,10 +301,7 @@ test('Flight browser proof activates only after applying the authored source', (
       /^\s{2}([A-Za-z][A-Za-z0-9]*): \(\) => import\(/gm,
     ),
   ].map(match => match[1])
-  assert.deepEqual(
-    [...requestedBrowserModuleKeys].sort(),
-    bridgeModuleKeys.sort(),
-  )
+  assert.deepEqual([...requestedBrowserModuleKeys].sort(), bridgeModuleKeys.sort())
   for (const browserVerifierPath of [
     'game_flight_sim_smoke_camera.py',
     'game_flight_sim_smoke_camera_tracking.py',
@@ -458,36 +335,15 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(runner, /AG_GAME_FLIGHT_SIM_EXPECTED_HEAD/)
   assert.match(runner, /AG_GAME_FLIGHT_SIM_EXPECTED_SOURCE_SHA256/)
   assert.match(runner, /freshServerPerRun: true/)
-  assert.match(
-    evidenceValidator,
-    /candidate\?\.runtimeRevision !== candidateHead/,
-  )
-  assert.match(
-    evidenceValidator,
-    /candidate\?\.runtimeBranch !== candidateBranch/,
-  )
-  assert.match(
-    evidenceValidator,
-    /source\?\.authoredSeedSha256 !== sourceSha256/,
-  )
-  assert.match(
-    evidenceValidator,
-    /source\?\.workspaceSourceSha256 !== sourceSha256/,
-  )
-  assert.match(
-    evidenceValidator,
-    /inputProof\?\.touchInteraction\?\.runId[\s\S]*missionProof\?\.runId/,
-  )
+  assert.match(evidenceValidator, /candidate\?\.runtimeRevision !== candidateHead/)
+  assert.match(evidenceValidator, /candidate\?\.runtimeBranch !== candidateBranch/)
+  assert.match(evidenceValidator, /source\?\.authoredSeedSha256 !== sourceSha256/)
+  assert.match(evidenceValidator, /source\?\.workspaceSourceSha256 !== sourceSha256/)
+  assert.match(evidenceValidator, /inputProof\?\.touchInteraction\?\.runId[\s\S]*missionProof\?\.runId/)
   assert.match(evidenceValidator, /missionProof\?\.phase !== 'completed'/)
   assert.match(evidenceValidator, /missionProof\?\.transitions\?\.length !== 3/)
-  assert.match(
-    evidenceValidator,
-    /gameplayNetworkBlock:\s*\{[\s\S]*?source: 'flight-runtime-network-guard'/,
-  )
-  assert.match(
-    deadlineVerifier,
-    /runtime\.rejectFlightSimGameplayNetworkAttempt\(/,
-  )
+  assert.match(evidenceValidator, /gameplayNetworkBlock:\s*\{[\s\S]*?source: 'flight-runtime-network-guard'/)
+  assert.match(deadlineVerifier, /runtime\.rejectFlightSimGameplayNetworkAttempt\(/)
   assert.match(deadlineVerifier, /networkExecutorInvoked = true/)
   assert.match(deadlineVerifier, /websocketExecutorInvoked = true/)
   assert.doesNotMatch(deadlineVerifier, /await window\.fetch\(attemptPath\)/)
@@ -528,73 +384,28 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(touchVerifier, /pointer_down\.get\("isTrusted"\) is not True/)
   assert.match(missionVerifier, /accelerated-public-production-runtime/)
   assert.match(missionVerifier, /snapshot\.tick !== prior\.tick \+ 1/)
-  assert.match(
-    cameraTrackingVerifier,
-    /document\.elementFromPoint\(x, y\) === canvas/,
-  )
-  assert.match(
-    cameraTrackingVerifier,
-    /get_by_label\("Capture flight pointer", exact=True\)/,
-  )
-  assert.match(
-    cameraTrackingVerifier,
-    /value\.get\("viewMode"\) in \{"3d", "3d-modern"\}/,
-  )
-  assert.match(
-    cameraTrackingVerifier,
-    /expected_pitch = preset\["pitch"\] if mode_3d else 0/,
-  )
-  assert.match(
-    cameraVerifier,
-    /map_interaction = verify_map_pointer_drag\(page\)/,
-  )
+  assert.match(cameraTrackingVerifier, /document\.elementFromPoint\(x, y\) === canvas/)
+  assert.match(cameraTrackingVerifier, /get_by_label\("Capture flight pointer", exact=True\)/)
+  assert.match(cameraTrackingVerifier, /value\.get\("viewMode"\) in \{"3d", "3d-modern"\}/)
+  assert.match(cameraTrackingVerifier, /expected_pitch = preset\["pitch"\] if mode_3d else 0/)
+  assert.match(cameraVerifier, /map_interaction = verify_map_pointer_drag\(page\)/)
   assert.match(cameraTrackingVerifier, /hit_tested_map_canvas_point\(page\)/)
   assert.match(cameraTrackingVerifier, /page\.mouse\.down\(\)/)
   assert.doesNotMatch(cameraVerifier, /canvas\.bounding_box\(\)/)
-  assert.doesNotMatch(
-    cameraTrackingVerifier,
-    /canvas\.click\(\s*force=True/,
-  )
-  assert.match(
-    touchSurfaceVerifier,
-    /MOBILE_TOUCH_OCCLUDER_CLOSE_LIMIT = 3/,
-  )
-  assert.match(
-    touchSurfaceVerifier,
-    /\[aria-label="Workspace editor overlay shell"\]/,
-  )
-  assert.match(
-    touchSurfaceVerifier,
-    /main\[aria-label="Markdown Editor and Viewer"\]/,
-  )
-  assert.match(
-    touchSurfaceVerifier,
-    /\[data-kg-floating-panel-root="true"\]/,
-  )
+  assert.doesNotMatch(cameraTrackingVerifier, /canvas\.click\(\s*force=True/)
+  assert.match(touchSurfaceVerifier, /MOBILE_TOUCH_OCCLUDER_CLOSE_LIMIT = 3/)
+  assert.match(touchSurfaceVerifier, /\[aria-label="Workspace editor overlay shell"\]/)
+  assert.match(touchSurfaceVerifier, /main\[aria-label="Markdown Editor and Viewer"\]/)
+  assert.match(touchSurfaceVerifier, /\[data-kg-floating-panel-root="true"\]/)
   assert.match(touchSurfaceVerifier, /button\[title="Close"\]/)
   assert.match(touchSurfaceVerifier, /close_button\.first\.click\(timeout=5_000\)/)
-  assert.match(
-    touchSurfaceVerifier,
-    /const topHit = document\.elementFromPoint\(center\.x, center\.y\)/,
-  )
-  assert.match(
-    touchSurfaceVerifier,
-    /topHit === control \|\| Boolean\(topHit && control\.contains\(topHit\)\)/,
-  )
+  assert.match(touchSurfaceVerifier, /const topHit = document\.elementFromPoint\(center\.x, center\.y\)/)
+  assert.match(touchSurfaceVerifier, /topHit === control \|\| Boolean\(topHit && control\.contains\(topHit\)\)/)
   assert.doesNotMatch(touchSurfaceVerifier, /elementsFromPoint/)
   assert.doesNotMatch(touchSurfaceVerifier, /\.click\(\s*force=True/)
-  assert.doesNotMatch(
-    touchSurfaceVerifier,
-    /setFloatingPanelOpen\(false\)|setWorkspaceViewState\(/,
-  )
-  assert.doesNotMatch(
-    touchVerifier,
-    /dispatchEvent\(new (?:PointerEvent|TouchEvent|MouseEvent)/,
-  )
-  assert.match(
-    touchVerifier,
-    /\[data-kg-three-canvas-owner="1"\]/,
-  )
+  assert.doesNotMatch(touchSurfaceVerifier, /setFloatingPanelOpen\(false\)|setWorkspaceViewState\(/)
+  assert.doesNotMatch(touchVerifier, /dispatchEvent\(new (?:PointerEvent|TouchEvent|MouseEvent)/)
+  assert.match(touchVerifier, /\[data-kg-three-canvas-owner="1"\]/)
   assert.ok(
     touchVerifier.indexOf('"Emulation.setTouchEmulationEnabled"')
       < touchVerifier.indexOf('box = control.bounding_box()'),
@@ -604,24 +415,12 @@ test('Flight browser proof activates only after applying the authored source', (
       < touchVerifier.indexOf('"Input.dispatchTouchEvent"'),
   )
   assert.match(sceneVerifier, /expected_landing_state = \(/)
-  assert.match(
-    sceneVerifier,
-    /map_overlay\.get\("landingStates"\)/,
-  )
+  assert.match(sceneVerifier, /map_overlay\.get\("landingStates"\)/)
   assert.match(sceneVerifier, /mission_phase == "completed"/)
-  assert.match(
-    sceneVerifier,
-    /map_overlay\.get\("pendingWaypointCount"\)/,
-  )
-  assert.match(
-    sceneVerifier,
-    /if flight_visual_names:/,
-  )
+  assert.match(sceneVerifier, /map_overlay\.get\("pendingWaypointCount"\)/)
+  assert.match(sceneVerifier, /if flight_visual_names:/)
   assert.doesNotMatch(sceneVerifier, /AIRPLANE_NODE_COUNTS/)
-  assert.match(
-    serverOwner,
-    /refusing responsive pre-existing server/,
-  )
+  assert.match(serverOwner, /refusing responsive pre-existing server/)
   assert.match(serverOwner, /Unsupported devServerStartMode/)
   assert.match(serverOwner, /devServerStartMode === 'vite-preview-runner'/)
   assert.match(serverOwner, /\['--outDir', previewOutDir\]/)
@@ -630,20 +429,14 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(launcherRegression, /devServerStartMode: 'vite-preview-runner'/)
   assert.match(launcherRegression, /previewOutDir,/)
   assert.match(launcherRegression, /kgFlightSimPreactivationReady = '1'/)
-  assert.match(
-    previewPageVerifier,
-    /context\.route_web_socket\("\*\*\/\*", block_websocket\)/,
-  )
+  assert.match(previewPageVerifier, /context\.route_web_socket\("\*\*\/\*", block_websocket\)/)
   assert.ok(
     previewPageVerifier.indexOf(
       'context.route_web_socket("**/*", block_websocket)',
     ) < previewPageVerifier.indexOf('page = context.new_page()'),
   )
   assert.doesNotMatch(previewPageVerifier, /\.connect_to_server\(/)
-  assert.match(
-    previewPageVerifier,
-    /data-kg-flight-sim-hud="1"/,
-  )
+  assert.match(previewPageVerifier, /data-kg-flight-sim-hud="1"/)
   for (const proofField of [
     'runtimeRevision',
     'FIRST_PLAYABLE_FRAME_LIMIT_MS',
@@ -673,26 +466,11 @@ test('Flight browser proof activates only after applying the authored source', (
     runtimePhases.indexOf('"runtime deadline contracts"')
       < runtimePhases.indexOf('"first playable frame"'),
   )
-  assert.match(
-    runtimePhases,
-    /"first playable frame"[\s\S]*depends_on=\("runtime deadline contracts",\)/,
-  )
-  assert.match(
-    runtimePhases,
-    /value\.get\("visualProjection"\) == ""/,
-  )
-  assert.match(
-    missionVerifier,
-    /const currentRunDecisions = snapshot\.pendingDecisions\.filter\([\s\S]*item => item\.payload\?\.runId === snapshot\.runId/,
-  )
-  assert.match(
-    missionVerifier,
-    /const waypointDecisions = currentRunDecisions\.filter/,
-  )
-  assert.match(
-    missionVerifier,
-    /const terminalDecisions = currentRunDecisions\.filter/,
-  )
+  assert.match(runtimePhases, /"first playable frame"[\s\S]*depends_on=\("runtime deadline contracts",\)/)
+  assert.match(runtimePhases, /value\.get\("visualProjection"\) == ""/)
+  assert.match(missionVerifier, /const currentRunDecisions = snapshot\.pendingDecisions\.filter\([\s\S]*item => item\.payload\?\.runId === snapshot\.runId/)
+  assert.match(missionVerifier, /const waypointDecisions = currentRunDecisions\.filter/)
+  assert.match(missionVerifier, /const terminalDecisions = currentRunDecisions\.filter/)
   assert.match(missionVerifier, /snapshot\.runId !== prior\.runId/)
   assert.match(missionVerifier, /snapshot\.runId !== expectedRunId/)
 })

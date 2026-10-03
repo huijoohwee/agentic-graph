@@ -184,7 +184,7 @@ def run_flight_runtime_verifications(
         runtime_identity = page.evaluate(
             """
             async () => {
-              const identity = await window.__kgFlightSimBrowserProof.importModule('agentic-graph-runtime-identity')
+              const identity = await window.__kgFlightSimBrowserProof.importModule('agenticGraphRuntimeIdentity')
               return identity.getAgenticGraphRuntimeIdentity()
             }
             """

@@ -51,6 +51,11 @@ test('Flight panel and HUD share display and pace controls without mutating flig
     ))
     const initialFlight = readFlightSimSnapshot()
     assert.equal(initialFlight.phase, 'ready')
+    const unavailableMission = container.querySelector<HTMLSelectElement>('[data-kg-flight-training-mission-select]')
+    assert.equal(unavailableMission?.disabled, true)
+    assert.match(unavailableMission?.textContent || '', /Training unavailable/)
+    assert.equal(container.querySelector('[aria-label="Flight training outcomes"]'), null)
+    assert.equal(container.querySelector('[data-kg-flight-training-score]'), null)
     assert.equal(container.querySelectorAll('[data-kg-flight-sim-navigation]').length, 2)
     assert.ok(container.querySelector('[aria-label="Flight HUD instruments"]'))
     for (const surface of ['hud', 'panel'] as const) {

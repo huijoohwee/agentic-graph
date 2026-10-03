@@ -218,7 +218,7 @@ export function FlightSimHud() {
       data-kg-flight-sim-envelope-severity={training.envelope.severity}
       data-kg-flight-sim-control-authority={training.envelope.controlAuthority.toFixed(4)}
       data-kg-flight-sim-airspeed-reliable={training.airspeedReliable ? '1' : '0'}
-      data-kg-flight-sim-target-speed={training.envelope.targetSpeedMetersPerSecond.join(':')}
+      data-kg-flight-sim-target-speed={training.envelope.targetSpeedMetersPerSecond?.join(':')}
       data-kg-flight-sim-night={training.night ? '1' : '0'}
       data-kg-flight-sim-camera-view={camera.view}
       data-kg-flight-sim-overlays-visible={presentation.overlaysVisible ? '1' : '0'}
@@ -278,7 +278,7 @@ export function FlightSimHud() {
           <p className="text-xs font-bold uppercase tracking-normal">{training.envelope.label}</p>
           <p className="mt-0.5 text-xs opacity-90">{training.envelope.recoveryCue}</p>
           <p className="mt-1 text-xs font-semibold opacity-80">
-            Target {training.envelope.targetSpeedMetersPerSecond[0]}–{training.envelope.targetSpeedMetersPerSecond[1]} m/s
+            {training.envelope.targetSpeedMetersPerSecond ? `Target ${training.envelope.targetSpeedMetersPerSecond[0]}–${training.envelope.targetSpeedMetersPerSecond[1]} m/s` : 'Training target unavailable'}
             {' · '}Control {Math.round(training.envelope.controlAuthority * 100)}%
           </p>
         </section>
