@@ -7,7 +7,10 @@ from typing import Any, Callable
 from playwright.sync_api import Page, expect
 
 from lib.game_flight_sim_smoke_camera import verify_flight_camera_runtime
-from lib.game_flight_sim_smoke_deadlines import verify_flight_deadline_contracts
+from lib.game_flight_sim_smoke_deadlines import (
+    _read_ready_frame_debug,
+    verify_flight_deadline_contracts,
+)
 from lib.game_flight_sim_smoke_geo_xr import (
     prepare_canvas_view_standalone_flight_xr,
     wait_for_canvas_view_geo_xr_handoff,
@@ -93,7 +96,7 @@ def verify_canvas_view_xr_to_geo_xr_handoff(page: Page) -> dict[str, Any]:
     )
     try:
         trigger = page.get_by_role(
-            "button", name="2D Mode: XR Mode", exact=True
+            "button", name="Canvas View Mode: XR Mode", exact=True
         )
         trigger.wait_for(state="visible", timeout=30_000)
         trigger.click(timeout=30_000)
@@ -111,7 +114,7 @@ def verify_canvas_view_xr_to_geo_xr_handoff(page: Page) -> dict[str, Any]:
             raise AssertionError("Geo+XR Mode was disabled in the real menu")
         geo_xr.click(timeout=30_000)
         page.get_by_role(
-            "button", name="2D Mode: Geo+XR Mode", exact=True
+            "button", name="Canvas View Mode: Geo+XR Mode", exact=True
         ).wait_for(state="visible", timeout=30_000)
         handoff = wait_for_canvas_view_geo_xr_handoff(page, source_case)
     finally:
@@ -177,10 +180,21 @@ def run_flight_runtime_verifications(
         wait_for_flight_hud_activation(page)
         hud = page.locator('[data-kg-flight-sim-hud="1"]').first
         expect(hud).to_be_visible(timeout=5_000)
-        page.wait_for_selector(
-            'canvas[data-kg-flight-sim-first-frame="1"]',
-            timeout=120_000,
-        )
+        def read_frame_debug() -> dict[str, Any]:
+            try:
+                native = _read_ready_frame_debug(page)
+                native["firstFrameProof"] = page.evaluate("() => { const proof = window.__kgFlightSimFirstFrameProof; return proof ? Object.fromEntries(['startedAtMs', 'firstFrameAtMs', 'preExisting', 'firstFrameClassName', 'firstFrameSurface'].map(key => [key, typeof proof[key] === 'string' ? proof[key].slice(0, 160) : proof[key] ?? null])) : null }")
+                return native
+            except Exception as error:
+                return {"diagnosticError": str(error)[:500]}
+        before_first_frame = read_frame_debug()
+        try:
+            page.wait_for_selector(
+                'canvas[data-kg-flight-sim-first-frame="1"]',
+                timeout=120_000,
+            )
+        except Exception as error:
+            raise AssertionError(f"{error}; native ready-frame diagnostic: before={before_first_frame}, after={read_frame_debug()}") from error
         runtime_identity = page.evaluate(
             """
             async () => {
