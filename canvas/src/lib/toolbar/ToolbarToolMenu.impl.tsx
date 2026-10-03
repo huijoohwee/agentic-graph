@@ -1,6 +1,6 @@
 import React from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, ListOrdered } from 'lucide-react'
 import { setMediaCatalogMode } from '@/features/command-menu/mediaCatalogModeRuntime'
 import { useOrchestratorPanelState } from '@/features/panels/hooks/useOrchestratorPanelState'
 import { GRAPH_TRAVERSAL_FLOATING_PANEL_EVENT } from '@/features/panels/utils/useMainPanelRect'
@@ -86,14 +86,16 @@ const FlowchartFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgr
 const GitGraphFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/GitGraphFloatingPanelView').then(mod => ({ default: mod.GitGraphFloatingPanelView })))
 const GanttFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/GanttFloatingPanelView').then(mod => ({ default: mod.GanttFloatingPanelView })))
 const TimelineFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/TimelineFloatingPanelView').then(mod => ({ default: mod.TimelineFloatingPanelView })))
+const SequenceInspectorLazy = React.lazy(() => import('@/features/sequence/SequenceInspector').then(mod => ({ default: mod.SequenceInspector })))
 const ArchitectureFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/ArchitectureFloatingPanelView').then(mod => ({ default: mod.ArchitectureFloatingPanelView })))
 const EventModelingFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/EventModelingFloatingPanelView').then(mod => ({ default: mod.EventModelingFloatingPanelView })))
 
 const FloatingPreviewPanelLazy = React.lazy(() => import('@/features/panels/views/FloatingPreviewPanel'))
 
-const FLOATING_PANEL_FULL_HEIGHT_VIEWS = new Set<FloatingPanelView>(['preview', 'skillsCommands', 'blockLibrary', 'promptPresets', 'view', 'animation', 'motionControl', 'gameMode', 'flightSim', 'cityBuilder', 'camera', 'chat', 'console', 'geo', 'storyboardWidget', 'flowchart', 'gitGraph', 'gantt', 'timeline', 'architecture', 'eventModeling'])
+const FLOATING_PANEL_FULL_HEIGHT_VIEWS = new Set<FloatingPanelView>(['preview', 'skillsCommands', 'blockLibrary', 'promptPresets', 'view', 'animation', 'motionControl', 'gameMode', 'flightSim', 'cityBuilder', 'camera', 'chat', 'console', 'geo', 'storyboardWidget', 'flowchart', 'gitGraph', 'gantt', 'timeline', 'architecture', 'eventModeling', 'sequence'])
 
 const FLOATING_PANEL_PRIMARY_VIEW_BUTTON_SPECS: FloatingPanelViewButtonSpec[] = [
+  { view: 'sequence', title: 'Sequence Diagram', icon: ListOrdered },
   { view: 'propsPanel', title: UI_LABELS.propsPanel, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.propsPanel },
   { view: 'skillsCommands', title: UI_LABELS.skillsCommands, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.skillsCommands },
   { view: 'blockLibrary', title: UI_LABELS.blockLibrary, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.blockLibrary },
@@ -481,6 +483,7 @@ export function ToolbarToolMenu({
           <section className={floatingPanelBodyClassName} aria-label={UI_LABELS.floatingPanel}>
             <PanelFormDensityProvider value={panelFormDensity}>
             {floatingPanelView === 'propsPanel' && <FloatingPropsPanel />}
+            {floatingPanelView === 'sequence' && <React.Suspense fallback={<p>Opening sequence…</p>}><SequenceInspectorLazy /></React.Suspense>}
             {floatingPanelView === 'skillsCommands' && <FloatingPanelSkillsCommandsView />}
             {floatingPanelView === 'blockLibrary' && <React.Suspense fallback={<p role="status">Loading Block library…</p>}><FloatingPanelBlockLibraryLazy /></React.Suspense>}
             {floatingPanelView === 'promptPresets' && <FloatingPanelPromptPresetsView />}

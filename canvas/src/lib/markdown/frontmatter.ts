@@ -227,6 +227,7 @@ export function readBottomSurfaceTabPreset(value: unknown): BottomSurfaceTab | u
 
 export function readFloatingPanelViewPreset(value: unknown): FloatingPanelView | undefined {
   const raw = String(value || '').trim()
+  if (raw === 'sequence') return raw
   if (
     raw === 'propsPanel' ||
     raw === 'skillsCommands' ||
