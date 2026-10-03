@@ -31,6 +31,9 @@ test('Flight HUD yields default floating-panel space without lowering touch cont
   assert.match(source, /z-\[230\]/)
   assert.doesNotMatch(source, /z-\[80\]/)
   assert.equal((source.match(/sm:right-\[var\(--kg-flight-sim-panel-clearance\)\]/g) || []).length, 3)
+  const navigation = source.match(/<aside\s+[\s\S]*?aria-label="Flight navigation HUD"[\s\S]*?>/)?.[0]
+  assert.ok(navigation)
+  assert.match(navigation, /data-kg-workspace-visible-viewport-occluder="vertical"/)
 })
 
 test('Flight HUD announces only objective transitions as one polite status', () => {
@@ -49,7 +52,7 @@ test('Flight HUD announces only objective transitions as one polite status', () 
   assert.match(objectiveStatus, /\{projection\.objective\}/)
 
   const courseDirector = source.match(
-    /<p\s+className="mt-1 text-\[11px\] font-semibold text-amber-200"[\s\S]*?<\/p>/,
+    /<p\b(?:(?!<\/p>)[\s\S])*?data-kg-flight-sim-course-director="hud"[\s\S]*?<\/p>/,
   )?.[0]
   assert.ok(courseDirector)
   assert.match(

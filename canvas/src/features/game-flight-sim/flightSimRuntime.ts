@@ -34,6 +34,8 @@ import {
 } from './flightSimDefaultRuntime'
 import { flightSimRuntimeErrorMessage, type FlightSimPresenterKind } from './flightSimRuntimeState'
 import { readFlightSimXrSpatialProfile } from './flightSimSpatialProfile'
+import { captureFlightSimTrainingSource, admitCapturedFlightSimTrainingSource, assertCapturedFlightSimTrainingSource } from './flightSimTrainingSource'
+import { assertFlightSimTrainingRunBinding, bindFlightSimTrainingRun } from './flightSimTrainingScenario'
 import type { FlightSimStageRuntimeController } from './flightSimStageRuntimeController'
 import {
   beginFlightSimStagePreparation,
@@ -118,7 +120,6 @@ export const subscribeFlightSimHudSnapshot = (listener: Listener): (() => void) 
 export function subscribeFlightSimPresentation(kind: FlightSimPresenterKind, listener: Listener): () => void {
   return defaultRuntime.subscribePresenter(kind, listener)
 }
-
 export function isFlightSimHydrationPending(): boolean {
   return readFlightSimHydrationPending()
 }
@@ -133,11 +134,9 @@ const flightSimStageRuntimeController: FlightSimStageRuntimeController =
     stop: () => stopFlightSim(),
     subscribe: listener => subscribeFlightSimPresentation('surface', listener),
   })
-
 export function readFlightSimStageRuntimeController(): FlightSimStageRuntimeController {
   return flightSimStageRuntimeController
 }
-
 function restoreSurfaceOwnership(
   previous: FlightSimPreviousCanvasSurface | null,
   restorePreviousSurface: boolean,
@@ -168,19 +167,16 @@ function restoreSurfaceOwnership(
   }
   return failures
 }
-
 function restoreWorkspaceSeedSyncOwnership(): void {
   const release = releaseFlightSimWorkspaceSeedSyncSuspension
   releaseFlightSimWorkspaceSeedSyncSuspension = null
   release?.()
 }
-
 function restoreDurableChatStreamTransportOwnership(): void {
   const release = releaseFlightSimDurableChatStreamTransportSuspension
   releaseFlightSimDurableChatStreamTransportSuspension = null
   release?.()
 }
-
 async function failFlightSimSurfaceEntry(
   error: unknown,
   entering: boolean,
@@ -203,7 +199,6 @@ async function failFlightSimSurfaceEntry(
   reportFlightSimSurfaceEntryFailure(message)
   return defaultRuntime.fail(message)
 }
-
 async function abortFlightSimSurfaceEntry(
   hydrationFinished: boolean,
   hydrationToken: number,
@@ -237,7 +232,6 @@ async function abortFlightSimSurfaceEntry(
   }
   return defaultRuntime.read()
 }
-
 async function performFlightSimSurfaceOpen(
   options: FlightSimSurfaceOpenOptions,
   expectedGeneration: number,
@@ -246,10 +240,13 @@ async function performFlightSimSurfaceOpen(
     return defaultRuntime.read()
   }
   throwIfFlightSimOperationAborted(options.signal)
+  const entering = !defaultRuntime.read().active
+  let trainingSource: ReturnType<typeof captureFlightSimTrainingSource>
+  try { trainingSource = captureFlightSimTrainingSource() } catch (error) { return failFlightSimSurfaceEntry(error, entering) }
+  if (options.geospatialComposite && !trainingSource.geographicReference) return failFlightSimSurfaceEntry('Flight Geo+XR requires an authored geographic reference; the local kernel remains available without geography.', entering)
   const hydrationToken = beginFlightSimHydration()
   const releaseGeospatialBootstrapRequest =
     options.geospatialComposite ? acquireFlightSimGeospatialBootstrapRequest() : null
-  const entering = !defaultRuntime.read().active
   if (entering) {
     previousCanvasSurface = previousCanvasSurface
       ?? options.previousCanvasSurface
@@ -293,6 +290,7 @@ async function performFlightSimSurfaceOpen(
         entering,
       )
     }
+    assertCapturedFlightSimTrainingSource(trainingSource, defaultRuntime.read().phase)
     const nextProfile = readFlightSimXrSpatialProfile()
     const profileChanged =
       defaultRuntime.profile().sourceKey !== nextProfile.sourceKey
@@ -343,7 +341,9 @@ async function performFlightSimSurfaceOpen(
     ) {
       stagePreparationRequestId = beginFlightSimStagePreparation()
     }
+    admitCapturedFlightSimTrainingSource(trainingSource, entering ? 'stopped' : defaultRuntime.read().phase, () => isFlightSimSurfaceOpenCurrent(expectedGeneration) && !options.signal?.aborted)
     const opened = defaultRuntime.open(true)
+    bindFlightSimTrainingRun(opened)
     suspendAuthoredRuntime()
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
     if (stagePreparationRequestId !== null) {
@@ -381,7 +381,6 @@ async function performFlightSimSurfaceOpen(
     locallyAcquiredSeedSyncRelease?.()
   }
 }
-
 export function openFlightSimSurface(
   options: FlightSimSurfaceOpenOptions = {},
 ): Promise<FlightSimSnapshot> {
@@ -407,7 +406,6 @@ export function openFlightSimSurface(
   })
   return opening
 }
-
 export function startFlightSim(): FlightSimSnapshot
 export function startFlightSim(options: FlightSimSurfaceOpenOptions): Promise<FlightSimSnapshot>
 export function startFlightSim(
@@ -427,16 +425,15 @@ export function startFlightSim(
       || 'Flight Sim Decisions are unreadable; reset the local save before starting.',
     )
   }
+  try { assertFlightSimTrainingRunBinding(defaultRuntime.read().runId); assertCapturedFlightSimTrainingSource(captureFlightSimTrainingSource(), 'ready') } catch (error) { return defaultRuntime.fail(error) }
   return startFlightSimWithReadyFrame(
-    () => defaultRuntime.start(),
+    () => { const started = defaultRuntime.start(); bindFlightSimTrainingRun(started); return started },
     defaultRuntime.read(),
   )
 }
-
 export function stopFlightSim(): FlightSimSnapshot {
   return defaultRuntime.stop()
 }
-
 export function restartFlightSim(): FlightSimSnapshot {
   if (readFlightSimHydrationPending()) {
     return defaultRuntime.fail('Flight Sim Decisions are still loading; wait before restarting.')
@@ -447,7 +444,9 @@ export function restartFlightSim(): FlightSimSnapshot {
       || 'Flight Sim Decisions are unreadable; reset the local save before restarting.',
     )
   }
-  return startFlightSimWithReadyFrame(() => defaultRuntime.restart())
+  if (!defaultRuntime.read().active) return defaultRuntime.restart()
+  try { admitCapturedFlightSimTrainingSource(captureFlightSimTrainingSource(), 'stopped') } catch (error) { return defaultRuntime.fail(error) }
+  return startFlightSimWithReadyFrame(() => { const restarted = defaultRuntime.restart(); bindFlightSimTrainingRun(restarted); return restarted })
 }
 
 export function setFlightSimInput(patch: FlightSimInputPatch): FlightSimSnapshot {

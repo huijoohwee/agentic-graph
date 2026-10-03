@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
+import { validateFlightSimGeographicReference } from '@/features/game-flight-sim/flightSimGeospatialCoordinates'
 import assert from 'node:assert/strict'
 import type { CitySimSnapshot } from '@/features/game-city-sim/citySimRuntimeState'
 import {
@@ -24,6 +27,10 @@ import {
   type GeoXrOverlayStoreModule,
 } from '@/features/geospatial/geoXrFlightOverlayComposition'
 import { readAuthoritativeCitySimSource } from './citySimAuthoritativeSource'
+
+const geographicReference = validateFlightSimGeographicReference(
+  (parseMarkdownFrontmatter(splitMarkdownLines(readFileSync('../docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md', 'utf8'))).meta.geo_flight_overlay as { geographic_reference: unknown }).geographic_reference,
+)!
 
 function activeCitySnapshot(): CitySimSnapshot {
   const source = readAuthoritativeCitySimSource()
@@ -52,7 +59,7 @@ export function testCityFlightGeoOverlayCompositionIsDeterministic() {
   const environment = projectXrEnvironmentToFlightGeo({
     stageId: 'singapore',
     subjects: [],
-  })
+  }, geographicReference)
   const city = activeCitySnapshot()
   const inactiveCity = Object.freeze({ ...city, active: false })
   const inactiveFlight = createIdleFlightSimSnapshot(profile, false, true)
@@ -84,6 +91,7 @@ export function testCityFlightGeoOverlayCompositionIsDeterministic() {
       false,
       readyFrameBefore,
       environment,
+      geographicReference,
     )
   }
   const store: GeoXrOverlayStoreModule = {
@@ -152,6 +160,9 @@ export function testCityFlightGeoOverlayCompositionIsDeterministic() {
       flightActive: false,
       flightBootstrapRequested: false,
     }), null)
+    assert.equal(publishGeoXrOverlayComposition({ city: inactiveCity, flight: activeFlight,
+      projectCityOverlay, projectFlight: () => null, store }), 'clear')
+    assert.deepEqual(events.splice(0), ['city:hard-clear', 'flight:clear'])
   } finally {
     resetFlightSimDeadlineRuntimeForTests()
   }

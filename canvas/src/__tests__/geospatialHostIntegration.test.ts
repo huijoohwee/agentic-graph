@@ -2,7 +2,6 @@ import path from 'node:path'
 import assert from 'node:assert/strict'
 import { resolveCanvasSurfaceOwnership } from '@/lib/canvas/canvasSurfaceOwnershipRuntime'
 import { buildStoryboardWidgetInsertionPlacement } from '@/lib/storyboardWidget/widgetInsertionPlacement'
-
 import { readUtf8 } from './geospatialHostIntegrationTestUtils'
 
 export const testGeospatialOverlayHostNotGatedBySidebar = () => {
@@ -426,12 +425,12 @@ export const testGeospatialOverlayHostOverlaysSvgFallbackWhenMapLibreMountsBlank
   if (!hookText.includes("map.on?.('sourcedata'")) {
     throw new Error('Expected MapLibre basemap hook to listen for source tile activity before declaring mounted basemaps blank')
   }
-  if (!hookText.includes("await import('maplibre-gl/dist/maplibre-gl.js')")) {
-    throw new Error('Expected MapLibre basemap hook to load the browser dist build so vector-tile workers are available')
-  }
-  if (hookText.includes("await import('maplibre-gl')")) {
-    throw new Error('Expected MapLibre basemap hook to avoid the source entrypoint with an empty default worker URL')
-  }
+  assert.ok(hookText.includes("import('maplibre-gl')"), 'MapLibre must load the supported public package export')
+  const workerImport = "import('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url')"
+  assert.ok(hookText.includes(workerImport) && hookText.includes('Promise.all(['), 'Runtime and supported worker asset must load lazily together')
+  assert.ok(hookText.includes("typeof runtime.setWorkerUrl !== 'function'") && hookText.includes("typeof workerUrl !== 'string'"), 'Missing worker binding must fail loudly')
+  assert.ok(hookText.indexOf('runtime.setWorkerUrl(workerUrl)') > hookText.indexOf(workerImport) && hookText.indexOf('runtime.setWorkerUrl(workerUrl)') < hookText.indexOf('return runtime'), 'Worker URL must bind before cached runtime/prewarm access')
+  assert.ok(!hookText.replace(workerImport, '').includes("import('maplibre-gl/dist/"), 'Only the supported worker distribution subpath may load')
   if (!hookText.includes('BASEMAP_SOURCE_ACTIVITY_GRACE_MS')) {
     throw new Error('Expected MapLibre basemap hook to keep active tile sources out of premature blank fallback')
   }
