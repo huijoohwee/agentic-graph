@@ -42,7 +42,7 @@ test('ready publication reserves native MapLibre before ordinary React followers
     hud,
     /useSyncExternalStore\(\s*subscribeFlightSimHudSnapshot,/,
   )
-  assert.doesNotMatch(hud, /subscribeFlightSimPresentation/)
+  assert.doesNotMatch(hud, /\bsubscribeFlightSimPresentation\b/)
 
   const coordinator = deadline.indexOf(
     'export function coordinateFlightSimReadyPublication',

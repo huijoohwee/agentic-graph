@@ -15,18 +15,10 @@ def _diagnostic_case(
     *,
     field: str | None = None,
     token: str | None = None,
-    structured_operation: str | None = None,
 ) -> dict[str, Any]:
     return {
         "operation": operation,
-        "input": {
-            "invocation": invocation,
-            **(
-                {"operation": structured_operation}
-                if structured_operation is not None
-                else {}
-            ),
-        },
+        "input": {"invocation": invocation},
         "expected": {
             "errorCode": error_code,
             "message": message,
@@ -107,13 +99,14 @@ STRICT_INVOCATION_CASES = [
         "Flight Sim invocation fields must use one non-empty key=value pair.",
         token="operation",
     ),
-    _diagnostic_case(
-        "mixed-native-structured",
-        "/flight.sim @canvas #flight operation=start",
-        "FLIGHT_SIM_CONTROL_MIXED_INPUT",
-        "Flight Sim control forbids mixing native invocation and structured fields.",
-        field="operation", structured_operation="start",
-    ),
+    {
+        "operation": "mixed-native-structured",
+        "input": {"invocation": "/flight.sim @canvas #flight operation=start", "operation": "start"},
+        "expected": {"schemaRejection": {
+            "name": "WebMcpToolInputValidationError",
+            "toolName": "agentic-graph.control_local_flight_sim",
+        }},
+    },
     _diagnostic_case(
         "forbidden-throttle-pair",
         "/flight.sim @canvas #flight operation=start throttle=0.5",
@@ -200,12 +193,17 @@ def verify_flight_web_mcp(
             return { flightTools, registered: false }
           }
           const deadlineMs = webMcpRuntime.FLIGHT_SIM_WEB_MCP_DEADLINE_MS
-          const call = async (tool, input, operation) => {
+          const call = async (tool, input, operation, expectedSchemaRejection) => {
             const before = JSON.stringify(mcpRuntime.inspectLocalFlightSim())
             const startedAtMs = performance.now()
-            const result = input === undefined
-              ? await tool.execute()
-              : await tool.execute(input)
+            let result, schemaRejection = null
+            try {
+              result = input === undefined ? await tool.execute() : await tool.execute(input)
+            } catch (error) {
+              if (!expectedSchemaRejection || error?.name !== expectedSchemaRejection.name
+                || error?.toolName !== expectedSchemaRejection.toolName) throw error
+              schemaRejection = { name: error.name, toolName: error.toolName }
+            }
             const elapsedMs = performance.now() - startedAtMs
             const after = JSON.stringify(mcpRuntime.inspectLocalFlightSim())
             return {
@@ -213,7 +211,8 @@ def verify_flight_web_mcp(
               elapsedMs,
               deadlineMs,
               withinDeadline: elapsedMs <= deadlineMs,
-              ok: result?.ok !== false,
+              ok: schemaRejection ? false : result?.ok !== false,
+              schemaRejection,
               errorCode: result?.errorCode || null,
               message: result?.message || '',
               field: result?.field || null,
@@ -229,6 +228,7 @@ def verify_flight_web_mcp(
               control,
               item.input,
               item.operation,
+              item.expected.schemaRejection,
             )
             diagnostics.push({
               ...observed,
@@ -355,6 +355,8 @@ def verify_flight_web_mcp(
                 else {}
             ),
         }
+        if "schemaRejection" in expected_diagnostic:
+            actual_diagnostic = {"schemaRejection": diagnostic.get("schemaRejection")}
         if (
             diagnostic.get("ok") is not False
             or diagnostic.get("stateUnchanged") is not True

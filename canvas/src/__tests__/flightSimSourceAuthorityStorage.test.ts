@@ -120,8 +120,9 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
   assert.ok(resumedDeferredClear > resumedActiveCheck)
   assert.match(
     workspaceExplorer,
-    /const refreshOnce[\s\S]*const finishSeedSyncTask = beginWorkspaceSeedSyncTask\(\)[\s\S]*workspaceRefreshDeferredRef\.current = true/,
+    /const refreshOnce[\s\S]*const finishSeedSyncTask = runtime\.readOnly \? null : beginWorkspaceSeedSyncTask\(\)[\s\S]*workspaceRefreshDeferredRef\.current = !runtime\.readOnly/,
   )
+  assert.match(workspaceExplorer, /if \(!finishSeedSyncTask\) \{[\s\S]*readWorkspaceExplorerReadOnlySnapshot\(/)
   assert.match(
     workspaceExplorer,
     /if \(!args\.active \|\| !workspaceRefreshDeferredRef\.current\) return[\s\S]*refresh\(\{ silent: true \}\)/,
@@ -145,7 +146,8 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
   assert.ok(acquireSyncSuspension < activateSurface)
   assert.ok(activateSurface < suspendRuntime)
   assert.doesNotMatch(runtime, /installFlightSimGameplayNetworkFence/)
-  const exitSurface = runtime.indexOf('export function exitFlightSimSurface')
+  assert.match(runtime, /export function exitFlightSimSurface[\s\S]*const next = performFlightSimSurfaceExit\(options\)/)
+  const exitSurface = runtime.indexOf('function performFlightSimSurfaceExit')
   const restorePreviousSurface = runtime.indexOf(
     '...restoreSurfaceOwnership(',
     exitSurface,
@@ -173,4 +175,3 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
     /openController\.controller\.abort\(new FlightSimSurfaceOpenSettledError\(\)\)/,
   )
 })
-
