@@ -312,6 +312,30 @@ function hasMaterializedActivePathDrifted(
   )
 }
 
+async function parseActiveWorkspaceSourceBeforeDocumentApply(activePath: WorkspacePath, explorerActivePathAtStart: WorkspacePath | null): Promise<boolean> {
+  const before = useGraphStore.getState()
+  const sourcePath = resolveWorkspaceSourcePathKey(activePath)
+  const file = before.sourceFiles.find(value => String(value.source?.path || '') === sourcePath)
+  if (!file || !file.enabled || !String(file.text || '').trim()) return true
+  const { parseAndApplySourceFile } = await import('@/features/source-files/sourceFilesParseRuntime')
+  const changedDocument = () => {
+    const current = useGraphStore.getState()
+    return current.markdownDocumentName !== before.markdownDocumentName || current.markdownDocumentText !== before.markdownDocumentText
+      || hasMaterializedActivePathDrifted(activePath, explorerActivePathAtStart)
+  }
+  if (changedDocument() || useGraphStore.getState().sourceFiles !== before.sourceFiles) return false
+  await parseAndApplySourceFile(file.id, { applyComposedGraph: false })
+  const current = useGraphStore.getState()
+  const latest = current.sourceFiles.find(value => value.id === file.id)
+  if (changedDocument() || current.sourceFiles.length !== before.sourceFiles.length
+    || before.sourceFiles.some(value => value.id !== file.id && !current.sourceFiles.includes(value))
+    || !latest || !latest.enabled || latest.name !== file.name || latest.text !== file.text
+    || String(latest.source?.path || '') !== sourcePath) return false
+  // Unsupported documents still own their readable text; the native record retains its loud parse error.
+  if (latest.status !== 'parsed' && latest.status !== 'error') throw new Error(`Active SourceFile ${file.name} parsing did not complete.`)
+  return true
+}
+
 type GraphOwningActiveWorkspaceSourceFilesArgs = {
   activePath: WorkspacePath
   fs: WorkspaceFs
@@ -421,6 +445,7 @@ export async function materializeActiveWorkspaceEntryIntoSourceFiles(args?: {
           activeSourcePath,
         }))
       }
+      if (!await parseActiveWorkspaceSourceBeforeDocumentApply(activePath, explorerActivePathAtStart)) return
       await reapplyActiveWorkspaceMarkdownDocument({
         activePathOverride: activePath,
         fs: args?.fs,
@@ -451,6 +476,7 @@ export async function materializeActiveWorkspaceEntryIntoSourceFiles(args?: {
     if (runtimeSnapshot.runtimeSourceFiles !== existing) {
       store.setSourceFiles(runtimeSnapshot.runtimeSourceFiles)
     }
+    if (!await parseActiveWorkspaceSourceBeforeDocumentApply(activePath, explorerActivePathAtStart)) return
     await reapplyActiveWorkspaceMarkdownDocument({
       activePathOverride: activePath,
       fs,

@@ -12,6 +12,7 @@ import threading
 import time
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 from lib.game_flight_sim_smoke_watchdog import read_partial_evidence, supervise, _processes
 from verify_game_flight_sim_browser_smoke import DeferredAuthoringMirrorReceipts, local_chromium_executable
@@ -19,6 +20,48 @@ from playwright.sync_api import sync_playwright
 
 
 class FlightVerifierWatchdogTests(unittest.TestCase):
+    def test_cleanup_inventory_failure_after_exit_retains_actual_checkpoint(self):
+        with tempfile.TemporaryDirectory() as directory:
+            checkpoint = Path(directory) / 'proof.partial.json'
+            command = f"import pathlib; pathlib.Path({str(checkpoint)!r}).write_text('{{\"activeVerification\":\"native\"}}')"
+            with patch('lib.game_flight_sim_smoke_watchdog._stop_owned', side_effect=subprocess.TimeoutExpired(['ps'], 2)):
+                report = supervise([sys.executable, '-c', command], 5, checkpoint)
+            self.assertEqual((report['status'], report['exitCode']), ('cleanup-failed', 125))
+            self.assertIsNone(report['cleanupSurvivors'])
+            self.assertEqual(report['partialEvidence']['value']['activeVerification'], 'native')
+
+    def test_transient_process_inventory_timeout_retries_real_inventory(self):
+        run = subprocess.run
+        calls = []
+
+        def delayed_inventory(*args, **kwargs):
+            calls.append(args[0])
+            if len(calls) <= 2:
+                raise subprocess.TimeoutExpired(args[0], 2)
+            return run(*args, **kwargs)
+
+        with patch('lib.game_flight_sim_smoke_watchdog.subprocess.run', delayed_inventory):
+            report = supervise([sys.executable, '-c', 'import time; time.sleep(0.1)'], 5, None)
+        self.assertEqual((report['status'], report['exitCode']), ('exited', 0))
+        self.assertGreaterEqual(len(calls), 3)
+        self.assertEqual(report['cleanupSurvivors'], [])
+
+    def test_unavailable_inventory_reports_unverified_cleanup_and_stops_only_child(self):
+        foreign = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])
+        try:
+            error = subprocess.TimeoutExpired(['ps'], 2)
+            with patch('lib.game_flight_sim_smoke_watchdog.subprocess.run', side_effect=error):
+                report = supervise([sys.executable, '-c', 'import time; time.sleep(30)'], 5, None)
+            self.assertEqual((report['status'], report['exitCode']), ('cleanup-failed', 125))
+            self.assertIn('supervisorError', report)
+            self.assertIn('cleanupError', report)
+            self.assertIsNone(report['cleanupSurvivors'])
+            self.assertNotIn(report['verifierPid'], _processes())
+            self.assertIsNone(foreign.poll())
+        finally:
+            foreign.terminate()
+            foreign.wait(timeout=3)
+
     def test_normal_success_and_failure_remain_distinct_from_timeout(self):
         for code in (0, 7):
             report = supervise([sys.executable, "-c", f"raise SystemExit({code})"], 5, None)

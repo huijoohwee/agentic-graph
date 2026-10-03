@@ -14,10 +14,18 @@ from typing import Any
 
 
 def _processes() -> dict[int, tuple[int, str, str]]:
-    result = subprocess.run(
-        ["ps", "-axo", "pid=,ppid=,stat=,lstart=,comm="],
-        check=True, capture_output=True, text=True, timeout=2,
-    )
+    # A busy host can exceed one inventory deadline. Retry within a fixed six
+    # second budget; never substitute an empty inventory or signal stale PIDs.
+    for attempt in range(3):
+        try:
+            result = subprocess.run(
+                ["ps", "-axo", "pid=,ppid=,stat=,lstart=,comm="],
+                check=True, capture_output=True, text=True, timeout=2,
+            )
+            break
+        except subprocess.TimeoutExpired:
+            if attempt == 2:
+                raise
     records = {}
     for line in result.stdout.splitlines():
         parts = line.strip().split(maxsplit=8)
@@ -135,6 +143,7 @@ def supervise(command: list[str], timeout_seconds: float, partial_path: Path | N
                 for number in (signal.SIGTERM, signal.SIGINT)}
     status, exit_code = "exited", None
     survivors = []
+    supervisor_error, cleanup_error = None, None
     try:
         deadline = time.monotonic() + timeout_seconds
         startup_deadline = (time.monotonic() + startup_timeout_seconds
@@ -162,9 +171,26 @@ def supervise(command: list[str], timeout_seconds: float, partial_path: Path | N
                 _capture_owned(child.pid, owned)
         if exit_code is None:
             exit_code = child.returncode if child.returncode >= 0 else 128 - child.returncode
+    except (OSError, subprocess.SubprocessError, ValueError) as error:
+        status, exit_code = "supervision-failed", 126
+        supervisor_error = str(error)
     finally:
         try:
             survivors = _stop_owned(child, owned)
+        except (OSError, subprocess.SubprocessError, ValueError) as error:
+            cleanup_error = str(error)
+            # Popen retains this unreaped child identity. If inventory is
+            # unavailable, stop that child only; descendant cleanup is unproven.
+            if child.poll() is None:
+                child.terminate()
+                try:
+                    child.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    child.kill()
+                    try:
+                        child.wait(timeout=2)
+                    except subprocess.TimeoutExpired as error:
+                        cleanup_error += f"; child reaping failed: {error}"
         finally:
             for number, handler in previous.items():
                 signal.signal(number, handler)
@@ -173,10 +199,17 @@ def supervise(command: list[str], timeout_seconds: float, partial_path: Path | N
               "startupTimeoutSeconds": startup_timeout_seconds,
               "verifierPid": child.pid, "ownedProcessCount": len(owned),
               "cleanupSurvivors": survivors}
-    if status in {"timeout", "startup-timeout"}:
+    if supervisor_error:
+        report["supervisorError"] = supervisor_error
+    if status != "exited":
         report["partialEvidence"] = read_partial_evidence(partial_path)
-    if survivors:
+    if cleanup_error:
+        report.update(status="cleanup-failed", exitCode=125, cleanupError=cleanup_error,
+                      cleanupSurvivors=None, cleanupUnverifiedPids=sorted(owned))
+    elif survivors:
         report.update(status="cleanup-failed", exitCode=125)
+    if report["status"] == "cleanup-failed":
+        report["partialEvidence"] = read_partial_evidence(partial_path)
     return report
 
 
