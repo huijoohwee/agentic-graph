@@ -1,4 +1,6 @@
 .timeline-transport-chrome--mermaid-gantt {
+  container-name: timeline-transport;
+  container-type: inline-size;
   --kg-video-sequence-lane-sidebar-width: 112px;
   position: relative;
   isolation: isolate;
@@ -15,6 +17,8 @@
   box-shadow: none;
   padding: 0;
 }
+
+
 
 .timeline-transport-chrome--mermaid-gantt .timeline-player {
   position: relative;
@@ -409,12 +413,12 @@
   display: flex;
   width: max-content;
   min-width: 100%;
-  height: 34px;
+  height: var(--kg-timeline-bar-height);
   align-items: center;
   gap: 6px;
   overflow: hidden;
   border-color: color-mix(in srgb, var(--kg-timeline-inline-clip-accent) 34%, var(--kg-border, #cbd5e1) 66%);
-  border-radius: 6px;
+  border-radius: var(--island-radius);
   background:
     linear-gradient(180deg, rgb(255 255 255 / 0.56), transparent 52%),
     color-mix(in srgb, var(--kg-timeline-inline-clip-accent) 6%, var(--kg-panel-bg-hover, #f9fafb));
@@ -462,17 +466,25 @@
 }
 
 .timeline-transport-chrome--mermaid-gantt .timeline-transport-time-axis-clip {
+  position: absolute;
   width: 100%;
-  min-width: 100%;
-  height: var(--kg-xr-timeline-marks-height, 52px);
-  overflow: hidden;
+  min-width: 0;
+  height: var(--kg-video-sequence-lane-height);
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   padding: 0;
 }
 
+.timeline-transport-chrome--mermaid-gantt .timeline-transport-time-axis-clip::before { display: none; }
 .timeline-transport-chrome--mermaid-gantt .timeline-transport-time-axis-clip-content {
+  position: absolute;
+  inset: 0;
+  display: block;
   min-width: 0;
-  align-self: stretch;
-  overflow: hidden;
+  width: 100%;
+  overflow: visible;
 }
 
 .timeline-transport-chrome--mermaid-gantt .timeline-transport-ruler-layout {
@@ -483,11 +495,11 @@
 
 .timeline-transport-chrome--mermaid-gantt .timeline-transport-ruler--video-sequence {
   height: 100%;
-  min-height: calc(76px + (var(--kg-video-sequence-lane-count, 4) * var(--kg-video-sequence-lane-height)));
+  min-height: 0;
   border-top: 0;
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--kg-text-tertiary, #6b7280) 16%, transparent) 1px, transparent 1px) repeat-x 0 0 / 12.5% 100%,
-    linear-gradient(180deg, var(--kg-panel-bg, rgb(255 255 255 / 1)) 0, var(--kg-panel-bg, rgb(255 255 255 / 1)) 24px, color-mix(in srgb, var(--kg-panel-bg-hover, #f9fafb) 78%, var(--kg-panel-bg, #fff)) 24px, color-mix(in srgb, var(--kg-panel-bg-hover, #f9fafb) 86%, var(--kg-panel-bg, #fff)) 100%);
+    linear-gradient(180deg, var(--kg-panel-bg, rgb(255 255 255 / 1)) 0, var(--kg-panel-bg, rgb(255 255 255 / 1)) var(--kg-video-sequence-axis-height, 24px), color-mix(in srgb, var(--kg-panel-bg-hover, #f9fafb) 78%, var(--kg-panel-bg, #fff)) var(--kg-video-sequence-axis-height, 24px), color-mix(in srgb, var(--kg-panel-bg-hover, #f9fafb) 86%, var(--kg-panel-bg, #fff)) 100%);
   box-shadow: none;
 }
 
@@ -505,7 +517,7 @@
 .timeline-video-sequence-lane-sidebar {
   border-right: var(--kg-surface-border);
   background:
-    linear-gradient(180deg, var(--kg-panel-bg, #fff) 0, var(--kg-panel-bg, #fff) 24px, transparent 24px),
+    linear-gradient(180deg, var(--kg-panel-bg, #fff) 0, var(--kg-panel-bg, #fff) var(--kg-video-sequence-axis-height, 24px), transparent var(--kg-video-sequence-axis-height, 24px)),
     color-mix(in srgb, var(--kg-panel-bg-hover, #f9fafb) 62%, var(--kg-panel-bg, #fff));
   box-shadow: none;
 }
@@ -517,10 +529,12 @@
   font-weight: 700;
   letter-spacing: normal;
 }
+.timeline-video-sequence-lane-label :is(button, b, small, span) { font: inherit; text-transform: inherit; }
+.timeline-transport-clip-controls > output { font: inherit; line-height: var(--kg-text-xs-line); color: inherit; opacity: .6; }
 
 .timeline-transport-chrome--mermaid-gantt .timeline-video-sequence-ruler-surface {
   background:
-    linear-gradient(180deg, var(--kg-panel-bg, #fff) 0, var(--kg-panel-bg, #fff) 24px, transparent 24px),
+    linear-gradient(180deg, var(--kg-panel-bg, #fff) 0, var(--kg-panel-bg, #fff) var(--kg-video-sequence-axis-height, 24px), transparent var(--kg-video-sequence-axis-height, 24px)),
     linear-gradient(180deg, color-mix(in srgb, var(--kg-panel-bg-hover, #f9fafb) 78%, var(--kg-panel-bg, #fff)), color-mix(in srgb, var(--kg-panel-bg-hover, #f9fafb) 88%, var(--kg-panel-bg, #fff)));
 }
 
@@ -536,4 +550,17 @@
 .timeline-transport-chrome--mermaid-gantt .timeline-video-sequence-ruler-content .timeline-transport-playhead {
   color: var(--kg-canvas-accent, rgb(37 99 235 / 1));
   filter: drop-shadow(0 1px 1px rgb(15 23 42 / 0.16));
+}
+
+/* Available width, rather than source kind, owns the responsive transport row. */
+@container timeline-transport (max-width: 600px) {
+  .timeline-transport-chrome--mermaid-gantt .timeline-player {
+    flex-wrap: wrap;
+    height: auto;
+    padding-block: 4px;
+  }
+  .timeline-transport-chrome--mermaid-gantt .timeline-player-toolbar {
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
 }
