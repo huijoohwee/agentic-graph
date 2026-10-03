@@ -38,6 +38,7 @@ import { ZoomModeSelect } from '@/components/toolbar/ZoomModeSelect';
 import { useMediaQuery } from '@/lib/ui/useMediaQuery'
 import { HistoryUndoRedoControls } from '@/features/history/HistoryUndoRedoControls'
 import { toolbarActionAffordance } from '@/lib/toolbar/toolbarActionAffordance'
+import { MainPanelLayer, MainPanelLoadingFallback } from '@/features/panels/ui/MainPanelFrame'
 import {
   registerToolbarActionControlHandler,
   type ToolbarActionId,
@@ -291,10 +292,10 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         <Settings className={iconSizeClass} strokeWidth={iconStrokeWidth} />
       </IconButton>
       {isMainPanelOpen && (
-        <section
+        <MainPanelLayer
           data-kg-main-panel-shell="true"
           data-kg-main-panel-requested-tab={mainPanelRequestedTab}
-          className={`${effectiveMainPanelPinned ? 'fixed inset-0 z-[2000]' : 'fixed inset-0 z-[80]'} ${(isNarrowViewport || effectiveMainPanelPinned) ? 'pointer-events-auto' : 'pointer-events-none'}`}
+          className={`fixed inset-0 ${(isNarrowViewport || effectiveMainPanelPinned) ? 'pointer-events-auto' : 'pointer-events-none'}`}
         >
           {isNarrowViewport ? (
             <>
@@ -310,7 +311,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
                 ref={mainPanelCardRef}
                 className={UI_RESPONSIVE_MAIN_PANEL_MOBILE_SHEET_CLASSNAME}
               >
-                <React.Suspense fallback={null}>
+                <React.Suspense fallback={<MainPanelLoadingFallback onClose={() => setIsMainPanelOpen(false)} />}>
                   <MainPanelLazy
                     onClose={() => setIsMainPanelOpen(false)}
                     requestedTab={mainPanelRequestedTab}
@@ -344,7 +345,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
                 transform: 'translate(-50%, -50%)',
               }}
             >
-              <React.Suspense fallback={null}>
+              <React.Suspense fallback={<MainPanelLoadingFallback onClose={() => setIsMainPanelOpen(false)} />}>
                 <MainPanelLazy
                   onClose={() => setIsMainPanelOpen(false)}
                   onHeaderDragStart={!effectiveMainPanelPinned ? handleMainPanelHeaderDragStart : undefined}
@@ -363,7 +364,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
               </React.Suspense>
             </section>
           )}
-        </section>
+        </MainPanelLayer>
       )}
 
       <IconButton className="App-toolbar__btn" title={UI_LABELS.history} onClick={actions.handleOpenHistory} {...toolbarActionAffordance('history:open')} showTooltip>

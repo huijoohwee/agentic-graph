@@ -67,7 +67,9 @@ try {
   await page.waitForFunction(() => [...document.querySelectorAll('textarea')].some(editor => editor.value.trim().length > 0), undefined, { timeout: 60000 })
   // Exercise the actual Source Files owner before the separate offline lesson proof.
   await page.setViewportSize({ width: 1280, height: 900 })
-  await dismissVisibleFloatingPanel(page)
+  const startupFloatingPanel = page.locator('[data-kg-floating-panel-root="true"]:not([data-kg-strybldr-bottom-timeline-panel])').first()
+  await startupFloatingPanel.waitFor({ state: 'visible' })
+  assert.equal(await dismissVisibleFloatingPanel(page, startupFloatingPanel), true, 'Expected startup floating panel must close through its rendered control')
   for (const name of ['docs', 'python-lessons']) {
     await page.getByRole('button', { name: `Folder ${name}`, exact: true }).waitFor()
     const disclosure = page.getByRole('button', { name: `Expand folder ${name}`, exact: true })

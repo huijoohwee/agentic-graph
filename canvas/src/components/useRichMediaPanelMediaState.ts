@@ -28,7 +28,11 @@ import {
 } from '@/components/timeline/videoSequenceTimeline'
 import type { WorkspaceViewMode } from '@/hooks/store/types'
 import {
-  buildRichMediaTimelineTransportFrame,
+  buildRichMediaTimelineTransportFrame, resolvePublishedRichMediaTimelineTransportFrame, RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY,
+  clearRichMediaTimelineTargetFrame,
+  resolveRichMediaTimelineTargetFrame,
+  resolveRichMediaTimelineTargetSourceUrl,
+  subscribeRichMediaTimelineTargetFrame,
   publishRichMediaTimelineTransportFrame,
   RICH_MEDIA_TIMELINE_TRANSPORT_EVENT,
   RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR,
@@ -96,9 +100,11 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
   const inlineSrcDocMessageTargetRef = React.useRef<MessageEventSource | null>(null)
   const inlineSrcDocTimelineDeliveryNowRef = React.useRef(0)
   const inlineSrcDocTimelineFrameBurstTimeoutsRef = React.useRef<number[]>([])
+  const inlineSrcDocTimelineBurstGenerationRef = React.useRef(0)
   const directMediaElementRef = React.useRef<HTMLMediaElement | null>(null)
   const [directMediaElement, setDirectMediaElement] = React.useState<HTMLMediaElement | null>(null)
   const title = String(props.title || '').trim() || 'Media node'
+  const ownerDocumentKey = useGraphStore(store => cleanTimelinePreviewDocumentKey(store.markdownDocumentName))
   const panelChrome = props.panelChrome === 'storyboardWidget' ? 'storyboardWidget' : 'none'
   const headerControlsActive = props.widgetToolbarActive !== false
   const declaredScrollOwner = props.scrollOwner === 'panel' ? 'panel' : 'media'
@@ -187,7 +193,8 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
     srcDoc: effectiveInlineSrcDoc,
     title,
     scrollOwner,
-  }), [effectiveInlineSrcDoc, scrollOwner, title])
+    timelineOwner: { documentKey: ownerDocumentKey, overlayId: String(props.overlayId || '') },
+  }), [effectiveInlineSrcDoc, ownerDocumentKey, props.overlayId, scrollOwner, title])
   const playableRawUrl = React.useMemo(() => resolveRichMediaPlayableUrl({
     fallbackSrcDocAvailable: kind === 'video' && !!normalizedInlineSrcDoc,
     url: rawUrl,
@@ -315,27 +322,36 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
   const timelineDocumentKey = React.useMemo(() => cleanTimelinePreviewDocumentKey(markdownDocumentName), [markdownDocumentName])
   const resolveTimelineTransportFrame = React.useCallback((override?: Partial<TimelineTransportPlaybackRequestDetail>) => {
     if (!normalizedInlineSrcDoc) return null
-    return buildRichMediaTimelineTransportFrame({
+    const live = useGraphStore.getState()
+    const documentKey = cleanTimelinePreviewDocumentKey(live.markdownDocumentName)
+    if (documentKey !== timelineDocumentKey) return null
+    const target = resolveRichMediaTimelineTargetFrame({
+      documentKey, overlayId: String(props.overlayId || ''), sourceUrl: resolveRichMediaTimelineTargetSourceUrl({
+        graphData: live.graphData, overlayId: String(props.overlayId || ''), srcDoc: effectiveInlineSrcDoc,
+      }), playing: live.timelineTransportPlaying, position: live.timelineTransportPosition, playbackRate: live.timelineTransportPlaybackRate,
+    })
+    if (timelineDurationUnits > 0 && typeof override?.timeMs !== 'number') return target || resolvePublishedRichMediaTimelineTransportFrame(
+      typeof window === 'undefined' ? null : Reflect.get(window, RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY),
+      { documentKey: timelineDocumentKey, transportDocumentKey: live.timelineTransportDocumentKey, position: live.timelineTransportPosition,
+        playing: live.timelineTransportPlaying, playbackRate: live.timelineTransportPlaybackRate },
+    )
+    return target || buildRichMediaTimelineTransportFrame({
       localDocumentKey: timelineDocumentKey,
-      transportDocumentKey: timelineTransportDocumentKey,
-      transportPlaybackRate: timelineTransportPlaybackRate,
-      transportPlaying: timelineTransportPlaying,
-      transportPosition: timelineTransportPosition,
+      transportDocumentKey: live.timelineTransportDocumentKey,
+      transportPlaybackRate: live.timelineTransportPlaybackRate,
+      transportPlaying: live.timelineTransportPlaying,
+      transportPosition: live.timelineTransportPosition,
       override,
     })
-  }, [
-    normalizedInlineSrcDoc,
-    timelineDocumentKey,
-    timelineTransportDocumentKey,
-    timelineTransportPlaybackRate,
-    timelineTransportPlaying,
-    timelineTransportPosition,
-  ])
+  }, [effectiveInlineSrcDoc, normalizedInlineSrcDoc, props.overlayId, timelineDocumentKey, timelineDurationUnits])
+  React.useEffect(() => { resolveTimelineTransportFrame() }, [resolveTimelineTransportFrame, timelineTransportPlaying, timelineTransportPosition, graphDataRevision])
   const deliverTimelineFrameToSrcDocPreview = React.useCallback((
     frame: HTMLIFrameElement | null,
     payload: RichMediaTimelineTransportFrame,
   ) => {
-    if (!frame) return
+    const mapped = !frame ? null : props.sourcePlayback === true && !payload.targetOverlayId ? (props.mapTimelineTransportFrame ? props.mapTimelineTransportFrame(payload) : { ...payload, sourcePlayback: true }) : payload
+    if (!frame || !mapped) return
+    payload = mapped
     try {
       const serialized = JSON.stringify(payload)
       frame.setAttribute(RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR, serialized)
@@ -343,7 +359,7 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
       void 0
     }
     try {
-      inlineSrcDocMessageTargetRef.current?.postMessage(payload, { targetOrigin: '*' })
+      if (inlineSrcDocMessageTargetRef.current === frame.contentWindow) inlineSrcDocMessageTargetRef.current?.postMessage(payload, { targetOrigin: '*' })
     } catch {
       void 0
     }
@@ -352,11 +368,11 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
     } catch {
       void 0
     }
-  }, [])
+  }, [props.sourcePlayback, props.mapTimelineTransportFrame])
   const syncInlineSrcDocTheme = React.useCallback(() => {
     const payload = { type: RICH_MEDIA_PANEL_SRCDOC_THEME_MESSAGE, theme: resolvedThemeMode }
     try {
-      inlineSrcDocMessageTargetRef.current?.postMessage(payload, { targetOrigin: '*' })
+      if ([inlineSrcDocFrameRef.current, directVideoFallbackFrameRef.current].some(frame => frame?.contentWindow === inlineSrcDocMessageTargetRef.current)) inlineSrcDocMessageTargetRef.current?.postMessage(payload, { targetOrigin: '*' })
     } catch {
       void 0
     }
@@ -372,37 +388,39 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
     if (!normalizedInlineSrcDoc) return
     syncInlineSrcDocTheme()
   }, [normalizedInlineSrcDoc, syncInlineSrcDocTheme])
-  const postTimelineFrameToSrcDocPreview = React.useCallback((
-    frame: HTMLIFrameElement | null,
-    override?: Partial<TimelineTransportPlaybackRequestDetail>,
-  ) => {
+  const postInlineSrcDocTimelineFrame = React.useCallback((override?: Partial<TimelineTransportPlaybackRequestDetail>) => {
     const payload = resolveTimelineTransportFrame(override)
     if (!payload) return
-    publishRichMediaTimelineTransportFrame(payload)
-    deliverTimelineFrameToSrcDocPreview(frame, payload)
-  }, [deliverTimelineFrameToSrcDocPreview, resolveTimelineTransportFrame])
-  const postInlineSrcDocTimelineFrame = React.useCallback((override?: Partial<TimelineTransportPlaybackRequestDetail>) => {
-    postTimelineFrameToSrcDocPreview(inlineSrcDocFrameRef.current, override)
-    postTimelineFrameToSrcDocPreview(directVideoFallbackFrameRef.current, override)
-  }, [postTimelineFrameToSrcDocPreview])
+    if (!payload.targetOverlayId && timelineDurationUnits <= 0) publishRichMediaTimelineTransportFrame(payload)
+    for (const frame of [inlineSrcDocFrameRef.current, directVideoFallbackFrameRef.current]) deliverTimelineFrameToSrcDocPreview(frame, payload)
+  }, [deliverTimelineFrameToSrcDocPreview, resolveTimelineTransportFrame, timelineDurationUnits])
   const clearInlineSrcDocTimelineFrameBurst = React.useCallback(() => {
+    inlineSrcDocTimelineBurstGenerationRef.current += 1
     inlineSrcDocTimelineFrameBurstTimeoutsRef.current.forEach(timeoutId => window.clearTimeout(timeoutId))
     inlineSrcDocTimelineFrameBurstTimeoutsRef.current = []
   }, [])
   const scheduleInlineSrcDocTimelineFrameBurst = React.useCallback((override?: Partial<TimelineTransportPlaybackRequestDetail>) => {
     if (typeof window === 'undefined') return
     clearInlineSrcDocTimelineFrameBurst()
+    const generation = inlineSrcDocTimelineBurstGenerationRef.current
+    const live = useGraphStore.getState()
+    const scope = [live.markdownDocumentName, live.timelineTransportPosition, live.timelineTransportPlaying].join('|')
     postInlineSrcDocTimelineFrame(override)
     inlineSrcDocTimelineFrameBurstTimeoutsRef.current = [50, 150, 350, 750, 1200].map(delayMs => (
-      window.setTimeout(() => postInlineSrcDocTimelineFrame(override), delayMs)
+      window.setTimeout(() => {
+        const state = useGraphStore.getState()
+        if (generation === inlineSrcDocTimelineBurstGenerationRef.current && scope === [state.markdownDocumentName, state.timelineTransportPosition, state.timelineTransportPlaying].join('|')) postInlineSrcDocTimelineFrame(override)
+      }, delayMs)
     ))
   }, [clearInlineSrcDocTimelineFrameBurst, postInlineSrcDocTimelineFrame])
   React.useEffect(() => () => clearInlineSrcDocTimelineFrameBurst(), [clearInlineSrcDocTimelineFrameBurst])
+  React.useEffect(() => subscribeRichMediaTimelineTargetFrame(() => scheduleInlineSrcDocTimelineFrameBurst()), [scheduleInlineSrcDocTimelineFrameBurst])
   React.useEffect(() => {
     if (typeof window === 'undefined') return
     const handleTimelineFrame = (event: Event) => {
       const payload = (event as CustomEvent<RichMediaTimelineTransportFrame>).detail
-      if (!payload || payload.type !== 'agentic-graph:timeline-transport-frame') return
+      if (!payload || payload.type !== 'agentic-graph:timeline-transport-frame' || payload.targetOverlayId) return
+      if (payload.documentKey !== timelineDocumentKey) return
       if (payload.playing) {
         const now = typeof performance !== 'undefined' && typeof performance.now === 'function'
           ? performance.now()
@@ -410,23 +428,26 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
         if (now - inlineSrcDocTimelineDeliveryNowRef.current < 70) return
         inlineSrcDocTimelineDeliveryNowRef.current = now
       }
-      deliverTimelineFrameToSrcDocPreview(inlineSrcDocFrameRef.current, payload)
-      deliverTimelineFrameToSrcDocPreview(directVideoFallbackFrameRef.current, payload)
+      const next = resolveTimelineTransportFrame() || payload
+      deliverTimelineFrameToSrcDocPreview(inlineSrcDocFrameRef.current, next.targetOverlayId ? next : payload)
+      deliverTimelineFrameToSrcDocPreview(directVideoFallbackFrameRef.current, next.targetOverlayId ? next : payload)
     }
     window.addEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, handleTimelineFrame)
     return () => window.removeEventListener(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, handleTimelineFrame)
-  }, [deliverTimelineFrameToSrcDocPreview])
+  }, [deliverTimelineFrameToSrcDocPreview, resolveTimelineTransportFrame, timelineDocumentKey])
   React.useEffect(() => {
     if (typeof window === 'undefined') return
     const handleSrcDocReady = (event: MessageEvent) => {
       const payload = event.data as { type?: unknown } | null
       if (!payload || payload.type !== RICH_MEDIA_TIMELINE_TRANSPORT_READY_MESSAGE) return
+      if (!event.source || ![inlineSrcDocFrameRef.current, directVideoFallbackFrameRef.current].some(frame => frame?.contentWindow === event.source)) return
       inlineSrcDocMessageTargetRef.current = event.source
       syncInlineSrcDocTheme()
+      postInlineSrcDocTimelineFrame()
     }
     window.addEventListener('message', handleSrcDocReady)
     return () => window.removeEventListener('message', handleSrcDocReady)
-  }, [syncInlineSrcDocTheme])
+  }, [postInlineSrcDocTimelineFrame, syncInlineSrcDocTheme])
   const handleDirectMediaElement = React.useCallback((element: HTMLMediaElement | null) => {
     directMediaElementRef.current = element
     setDirectMediaElement(previous => (previous === element ? previous : element))
@@ -506,6 +527,7 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
     const handlePlaybackRequest = (event: Event) => {
       const detail = (event as CustomEvent<TimelineTransportPlaybackRequestDetail>).detail
       if (!detail || cleanTimelinePreviewDocumentKey(detail.documentKey) !== timelineDocumentKey) return
+      clearRichMediaTimelineTargetFrame(timelineDocumentKey)
       if (detail.playing) postInlineSrcDocTimelineFrame(detail)
       else scheduleInlineSrcDocTimelineFrameBurst(detail)
       if (directMediaElementRef.current) syncDirectMediaElementToTimeline(directMediaElementRef.current, detail)

@@ -5,7 +5,6 @@ import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensu
 import { runWorkspaceFsChangedBatch, suppressNextWorkspaceFsChangedEvent } from '@/features/workspace-fs/workspaceFsEvents'
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { activateDesignEditorSurface } from '@/features/design/designEditorLaunchState'
 import { bulkSetWorkspaceEntrySources, setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import { writeWorkspaceFileAndSync } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.io'
@@ -116,13 +115,6 @@ export function useWorkspaceImportActions(args: {
         await hydratePendingImportedPaths(fs, result.createdPaths)
       }
       const createdPath = await pickFirstCreatedFilePathForImportFocus(fs, result.createdPaths)
-      if (args.applyToGraph && createdPath) {
-        try {
-          useMarkdownExplorerStore.getState().setActivePath(createdPath as WorkspacePath)
-        } catch {
-          void 0
-        }
-      }
       const refreshed = await refresh()
       await applyWorkspaceImportToCanvasBestEffort({
         fs,

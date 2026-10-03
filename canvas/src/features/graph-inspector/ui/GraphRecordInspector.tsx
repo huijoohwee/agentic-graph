@@ -1,6 +1,6 @@
 import { CanvasEditableKeyTypeValueRow } from '@/features/panels/ui/CanvasEditableKeyTypeValueRow'
 import { MainPanelTypeIcon, resolveMainPanelKtvTypeIconKey } from '@/features/panels/ui/mainPanelHelpIconLibrary'
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ElementType } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ComponentProps, type ElementType } from 'react'
 import type { GraphRecordColumnDoc } from '@/lib/graph-record-db'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { SELECTION_INSPECTOR_EMPTY_TEXT } from '@/lib/config'
@@ -14,6 +14,8 @@ import type { WorkspacePath } from '@/features/workspace-fs/types'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { parseWebpageFrontmatterMeta, upsertWebpageFrontmatterMeta, type WebpageViewMode } from '@/lib/markdown/frontmatter'
 import { WidgetEditorPanel } from '@/components/StoryboardWidget/WidgetEditorPanel'
+import { useRichMediaWidgetPreview } from '@/components/StoryboardWidget/useRichMediaWidgetPreview'
+import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
 import { computeFlowConnectedValuesBySchemaPath, type FlowConnectedValuesBySchemaPath } from '@/lib/storyboardWidget/flowDataflow'
 import {
   isWidgetCandidateNode,
@@ -34,6 +36,15 @@ import {
 } from '@/features/graph-inspector/ui/graphInspectorResponsiveMetrics'
 
 const NodeImpactInspector = lazy(() => import('./NodeImpactInspector'))
+
+function InspectorWidgetPanel({ nodeById, ...props }: ComponentProps<typeof WidgetEditorPanel> & { nodeById?: ReadonlyMap<string, GraphNode> }) {
+  const richMediaWidgetPreview = useRichMediaWidgetPreview({
+    enabled: props.node.type === FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID && !props.minimized && !props.hideFields,
+    node: props.node, nodeById, onPatchProperties: props.onPatchProperties,
+    connectedValuesBySchemaPath: props.connectedValuesBySchemaPath,
+  })
+  return <WidgetEditorPanel {...props} constrainToContainer richMediaWidgetPreview={richMediaWidgetPreview} />
+}
 
 const EMPTY_WIDGET_REGISTRY: WidgetRegistryEntry[] = []
 const EMPTY_STRING_ARRAY: string[] = []
@@ -338,6 +349,12 @@ export function GraphRecordInspector({
   const headerKind = row ? row.tableId : 'selection'
   const headerLabel = row ? row.rowId : SELECTION_INSPECTOR_EMPTY_TEXT
   const headerDisplayLabel = readMarkdownSigilDisplayText(headerLabel)
+  const impactInspector = (
+    <Suspense fallback={<p className="px-3 py-2 text-xs">Loading graph inspection…</p>}>
+      <NodeImpactInspector nodeId={row?.tableId === 'nodes' ? row.rowId : null} />
+    </Suspense>
+  )
+
   const RootTag: ElementType = scrollMode === 'internal' ? 'section' : 'div'
   const TitleTag: ElementType = scrollMode === 'internal' ? 'section' : 'div'
   const FieldsTag: ElementType = scrollMode === 'internal' ? 'section' : 'div'
@@ -404,18 +421,17 @@ export function GraphRecordInspector({
         className={scrollMode === 'internal' ? `${UI_RESPONSIVE_VIEWPORT_SCROLL_PANEL_CLASSNAME} flex-1 min-h-0` : undefined}
         aria-label="Record fields"
       >
-        <Suspense fallback={<p className="px-3 py-2 text-xs">Loading graph inspection…</p>}>
-          <NodeImpactInspector nodeId={row?.tableId === 'nodes' ? row.rowId : null} />
-        </Suspense>
+        {isEmpty ? impactInspector : null}
         {isEmpty ? (
           <p className={cn('px-3 py-2', microLabelClass, UI_THEME_TOKENS.text.tertiary)}>{SELECTION_INSPECTOR_EMPTY_TEXT}</p>
         ) : (
           <>
             {row?.tableId === 'nodes' && node && showWidget ? (
               <section className="px-3 py-2" aria-label="Widget">
-                <WidgetEditorPanel
+                <InspectorWidgetPanel
                   active={true}
                   node={node}
+                  nodeById={graphNodeById || undefined}
                   registryEntry={registryEntry}
                   registryEntries={effectiveWidgetRegistry}
                   minimized={panelMinimized}
@@ -500,6 +516,7 @@ export function GraphRecordInspector({
                 </section>
               </section>
             ) : null}
+          {impactInspector}
           <section aria-label="Record properties">
             {ordered.map(col => {
               const value = (row.data || {})[col.columnId]
