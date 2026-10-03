@@ -30,14 +30,11 @@ from lib.game_flight_sim_smoke_geo_xr_requirements import (  # noqa: E402
     authored_environment_checks, regional_environment_checks, unmet_view_requirements, wait_for_view,
 )
 
-
 class JavaScriptEvaluationPage:
     """Execute the actual adapter JavaScript without a second browser gate."""
-
     def __init__(self) -> None:
         self.last_argument = None
         self.native_attribute = object()
-
     def evaluate(self, expression, arg=None):
         self.last_argument = arg
         completed = subprocess.run(
@@ -59,7 +56,6 @@ class JavaScriptEvaluationPage:
             raise RuntimeError(completed.stderr.strip())
         return json.loads(completed.stdout).get("value")
 
-
 class FlightBoundedEvaluationTest(unittest.TestCase):
     def test_function_argument_and_result_are_preserved(self) -> None:
         native = JavaScriptEvaluationPage()
@@ -76,7 +72,6 @@ class FlightBoundedEvaluationTest(unittest.TestCase):
                 })
                 self.assertIs(native.last_argument, argument)
         self.assertIs(page.native_attribute, native.native_attribute)
-
     def test_nonfunction_values_promises_and_statements_are_preserved(self) -> None:
         page = BoundedEvaluationPage(JavaScriptEvaluationPage())
         for expression, expected in (
@@ -88,7 +83,6 @@ class FlightBoundedEvaluationTest(unittest.TestCase):
         ):
             with self.subTest(expression=expression):
                 self.assertEqual(page.evaluate(expression), expected)
-
     def test_native_rejection_and_runtime_syntax_error_are_not_replaced(self) -> None:
         page = BoundedEvaluationPage(JavaScriptEvaluationPage())
         for expression, message in (
@@ -98,7 +92,6 @@ class FlightBoundedEvaluationTest(unittest.TestCase):
             with self.subTest(expression=expression):
                 with self.assertRaisesRegex(RuntimeError, message):
                     page.evaluate(expression)
-
     def test_unfinished_function_and_nonfunction_promises_reject(self) -> None:
         page = BoundedEvaluationPage(JavaScriptEvaluationPage(), timeout_ms=25)
         for expression in (
@@ -113,13 +106,11 @@ class FlightBoundedEvaluationTest(unittest.TestCase):
                 ):
                     page.evaluate(expression)
                 self.assertLess(time.monotonic() - started, 1)
-
     def test_cannot_disable_or_extend_production_deadline(self) -> None:
         for timeout in (0, -1, 30_001, True, 1.5):
             with self.subTest(timeout=timeout):
                 with self.assertRaises(ValueError):
                     BoundedEvaluationPage(JavaScriptEvaluationPage(), timeout_ms=timeout)
-
 
 class FlightPartialLedgerTest(unittest.TestCase):
     def test_checkpoint_exposes_in_flight_and_completed_real_phase(self) -> None:
@@ -127,14 +118,12 @@ class FlightPartialLedgerTest(unittest.TestCase):
             path = Path(directory) / "proof.partial.json"
             output = io.StringIO()
             ledger = BrowserVerificationLedger(checkpoint_path=path)
-
             def check():
                 self.assertEqual(json.loads(path.read_text()), {
                     "activeVerification": "real operation",
                     "verificationLedger": [],
                 })
                 return {"real": "result"}
-
             with redirect_stdout(output):
                 self.assertEqual(ledger.verify("real operation", check), {"real": "result"})
             self.assertEqual(json.loads(path.read_text()), {
@@ -144,15 +133,12 @@ class FlightPartialLedgerTest(unittest.TestCase):
             self.assertIn("phase-start] real operation", output.getvalue())
             self.assertIn("phase-passed] real operation", output.getvalue())
             self.assertFalse(path.with_name(path.name + ".tmp").exists())
-
     def test_failure_and_dependencies_remain_failed_and_skipped(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "proof.partial.json"
             ledger = BrowserVerificationLedger(checkpoint_path=path)
-
             def fail():
                 raise TimeoutError("actual evaluate deadline")
-
             with patch("builtins.print") as printed:
                 self.assertIsNone(ledger.verify("source", fail))
                 self.assertIsNone(ledger.verify(
@@ -170,7 +156,6 @@ class FlightPartialLedgerTest(unittest.TestCase):
             ])
             with self.assertRaisesRegex(AssertionError, "FAILED source"):
                 ledger.assert_success(expected_names=("source", "dependent"))
-
 
 class FlightGeoXrCityDisposalAuditTest(unittest.TestCase):
     def test_city_selection_settles_before_close_and_survives_it(self):
@@ -204,7 +189,6 @@ class FlightGeoXrCityDisposalAuditTest(unittest.TestCase):
 
             def wait_for_timeout(self, delay):
                 pass
-
         with patch(
             "lib.game_flight_sim_smoke_city_regional_poi.time.monotonic",
             side_effect=(0, 0, 31),
@@ -236,7 +220,6 @@ class FlightGeoXrCityDisposalAuditTest(unittest.TestCase):
                     self.observe({**absent, **mutation})
         with self.assertRaisesRegex(AssertionError, "survived teardown"):
             self.observe({})
-
 
 class FlightAuthoredGeoSceneTest(unittest.TestCase):
     def view(self):
@@ -347,7 +330,6 @@ class FlightAuthoredGeoSceneTest(unittest.TestCase):
                 wait_for_view(page, **options, require_regional_scene=True)
         self.assertEqual(page.delay, 100)
 
-
 class CameraProbePage:
     def __init__(self, *, camera_count=7, fail_setup=False, corrupt_restore=False):
         self.state = {
@@ -364,7 +346,6 @@ class CameraProbePage:
         }
         self.fail_setup = fail_setup
         self.corrupt_restore = corrupt_restore
-
     def evaluate(self, expression, arg=None):
         result = JavaScriptEvaluationPage().evaluate("""async input => {
             const state = input.state;
@@ -407,14 +388,12 @@ class CameraProbePage:
             raise RuntimeError(result["error"])
         return result.get("value")
 
-
 class FlightAuthoredCameraProbeTest(unittest.TestCase):
     def assert_restored(self, page, before):
         runtime = {key: value for key, value in page.state["runtime"].items() if key != "revision"}
         self.assertEqual(runtime, {key: value for key, value in before["runtime"].items() if key != "revision"})
         self.assertEqual(page.state["store"], before["store"])
         self.assertEqual(page.state["restored"], 1)
-
     def test_probe_replaces_only_temporary_camera_set_and_restores_authored_state(self):
         for camera_count in (0, 7):
             with self.subTest(camera_count=camera_count):
@@ -427,7 +406,6 @@ class FlightAuthoredCameraProbeTest(unittest.TestCase):
                     self.assertEqual(page.state["runtime"]["plan"]["stageId"], "authored-stage")
                 self.assert_restored(page, before)
                 self.assertEqual(probe["cleanedUp"]["runtime"]["plan"], before["runtime"]["plan"])
-
     def test_partial_setup_and_later_proof_failures_both_restore_the_prior_scene(self):
         for fail_setup in (True, False):
             with self.subTest(fail_setup=fail_setup):
@@ -437,30 +415,48 @@ class FlightAuthoredCameraProbeTest(unittest.TestCase):
                     with _timeline_camera_probe(page):
                         raise RuntimeError("later proof failure")
                 self.assert_restored(page, before)
-
     def test_cleanup_rejects_a_changed_authored_camera_setting(self):
         page = CameraProbePage(corrupt_restore=True)
         with self.assertRaisesRegex(AssertionError, "state was not restored"):
             with _timeline_camera_probe(page):
                 pass
 
-
 class MobileOwnerPage:
-    def __init__(self, owners):
+    header_buttons = None
+    def __init__(self, owners, *, missing=False, duplicate=False, cancel_after_close=False):
+        if MobileOwnerPage.header_buttons is None:
+            rendered = subprocess.run(
+                ["node", "--import", "tsx", "--input-type=module", "-e", """
+                    import React from 'react';
+                    import {renderToStaticMarkup} from 'react-dom/server';
+                    import {JSDOM} from 'jsdom';
+                    import {register} from 'node:module';
+                    // SSR checks native button markup; CSS has no server module representation.
+                    register('data:text/javascript,' + encodeURIComponent("export async function load(url,context,next){return url.endsWith('.css')?{format:'module',source:'export default {}',shortCircuit:true}:next(url,context)}"));
+                    const {default:HeaderActions} = await import('./src/features/panels/ui/HeaderActions.tsx');
+                    const html = renderToStaticMarkup(React.createElement(HeaderActions, {onClose() {}}));
+                    const document = new JSDOM(html).window.document;
+                    console.log(JSON.stringify([...document.querySelectorAll('button')].map(button => ({
+                        title: button.getAttribute('title'), name: button.getAttribute('aria-label'),
+                    }))));
+                """], cwd=SCRIPTS_ROOT.parent, capture_output=True, text=True, timeout=10, check=False,
+            )
+            if rendered.returncode:
+                raise RuntimeError(rendered.stderr)
+            MobileOwnerPage.header_buttons = json.loads(rendered.stdout)
+        self.buttons = [] if missing else MobileOwnerPage.header_buttons * (2 if duplicate else 1)
+        self.cancel_after_close = cancel_after_close
         self.owners = list(owners)
         self.closed = []
         self.graph = {"floatingPanelOpen": "floating-panel" in owners,
             "timelineEnabled": any(item in owners for item in ("timeline-panel", "bottom-surface")),
             "bottomSurfaceCollapsed": "bottom-surface" not in owners}
-
     def read(self):
         return {"ownerKind": self.owners[0] if self.owners else None, "graphState": self.graph.copy(),
             "controlPresent": True, "controlEnabled": True, "controlOwnsPoint": not self.owners,
-            "runtime": {"active": True, "runId": 7}}
-
+            "runtime": {"active": not (self.cancel_after_close and self.closed), "runId": 7}}
     def wait_for_timeout(self, delay):
         raise AssertionError("a successful native close should already be observable")
-
     def locator(self, selector):
         if 'data-kg-strybldr-bottom-timeline-panel' in selector:
             candidates = ["timeline-panel"]
@@ -470,30 +466,28 @@ class MobileOwnerPage:
             candidates = []
         return MobileOwnerLocator(self, candidates)
 
-
 class MobileOwnerLocator:
-    def __init__(self, page, candidates):
-        self.page, self.candidates = page, candidates
-
+    def __init__(self, page, candidates, buttons=None):
+        self.page, self.candidates, self.buttons = page, candidates, buttons
     @property
     def first(self):
-        return MobileOwnerLocator(self.page, self.candidates[:1])
-
+        return MobileOwnerLocator(self.page, self.candidates[:1], self.buttons[:1] if self.buttons is not None else None)
     def filter(self, **options):
         return MobileOwnerLocator(self.page, [item for item in self.candidates if item == "floating-panel"])
-
     def locator(self, selector):
         if selector != 'button[title="Close"]':
             raise AssertionError(selector)
-        return self
-
+        return MobileOwnerLocator(self.page, self.candidates, [button for button in self.page.buttons if button["title"] == "Close"])
+    def get_by_role(self, role, *, name, exact):
+        if (role, name, exact) != ("button", "Close", True):
+            raise AssertionError((role, name, exact))
+        return MobileOwnerLocator(self.page, self.candidates, [button for button in self.page.buttons if button["name"] == name])
     def count(self):
-        return len(self.candidates)
-
+        return len(self.candidates) * len(self.buttons if self.buttons is not None else [None])
     def is_visible(self):
         return True
-
     def click(self, **options):
+        assert options == {"timeout": 5_000}, options
         actual = self.page.owners[0]
         expected = "timeline-panel" if actual == "bottom-surface" else actual
         if self.candidates != [expected]:
@@ -505,7 +499,6 @@ class MobileOwnerLocator:
         else:
             self.page.graph["timelineEnabled" if actual == "timeline-panel" else "floatingPanelOpen"] = False
             self.page.owners.pop(0)
-
 
 class FlightMobileOwnerTest(unittest.TestCase):
     def test_each_shared_root_closes_the_hit_tested_owner_in_either_stacking_order(self):
@@ -519,6 +512,16 @@ class FlightMobileOwnerTest(unittest.TestCase):
                 self.assertEqual(page.closed, expected)
                 self.assertTrue(result["final"]["controlOwnsPoint"])
                 self.assertEqual(result["final"]["runtime"]["runId"], 7)
+
+    def test_missing_duplicate_close_and_cancelled_flight_fail_closed(self):
+        for options in ({"missing": True}, {"duplicate": True}, {"cancel_after_close": True}):
+            with self.subTest(options=options):
+                page = MobileOwnerPage(("floating-panel",), **options)
+                page.wait_for_timeout = lambda delay: None
+                with patch("lib.game_flight_sim_smoke_mobile_surface._read_pitch_touch_surface", side_effect=lambda _: page.read()), patch(
+                    "lib.game_flight_sim_smoke_mobile_surface.time.monotonic", side_effect=(0, 0, 6),
+                ), self.assertRaisesRegex(AssertionError, "no exact Close action|occluder did not close"):
+                    _close_mobile_touch_occluders(page)
 
     def test_timeline_close_requires_its_own_state_even_when_tool_panel_is_closed(self):
         page = MobileOwnerPage(())
@@ -541,7 +544,6 @@ class FlightMobileOwnerTest(unittest.TestCase):
         for timeline, collapsed, expected in ((False, False, "floating-panel"), (True, False, "bottom-surface"), (True, True, "timeline-panel")):
             self.assertEqual(JavaScriptEvaluationPage().evaluate(expression,
                 {"timeline": timeline, "state": {"bottomSurfaceCollapsed": collapsed, "bottomSurfaceTab": "timeline"}}), expected)
-
 
 class FlightNativeToolbarTriggerTest(unittest.TestCase):
     def test_proof_resolves_the_real_canvas_view_accessible_trigger(self):
@@ -576,7 +578,6 @@ class FlightNativeToolbarTriggerTest(unittest.TestCase):
             matches = [button for button in buttons if button["label"] == name and button["popup"] == "menu"]
             self.assertEqual(len(matches), 1)
             return matches[0]
-
         toolbar.get_by_role.side_effect = native_button
         class NativeTriggerReached(Exception):
             pass
@@ -585,13 +586,11 @@ class FlightNativeToolbarTriggerTest(unittest.TestCase):
             if key == "modeTriggerClicked":
                 self.assertIn(locator, buttons)
                 raise NativeTriggerReached()
-
         with patch("lib.game_flight_sim_smoke_geo_xr_ui.expect"), patch(
             "lib.game_flight_sim_smoke_geo_xr_ui._click_with_trusted_proof", side_effect=trusted_click,
         ), self.assertRaises(NativeTriggerReached):
             activate_geo_xr_from_toolbar(page)
         page.get_by_role.assert_called_once_with("navigation", name="Main Toolbar", exact=True)
-
 
 if __name__ == "__main__":
     unittest.main()

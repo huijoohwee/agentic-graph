@@ -205,10 +205,10 @@ def _close_mobile_touch_occluders(page: Page) -> dict[str, Any]:
             owner = page.locator(
                 '[data-kg-floating-panel-root="true"]'
             ).filter(has=page.locator('[aria-label="Floating panel views"]'))
-            close_button = owner.locator('button[title="Close"]')
+            close_button = owner.get_by_role("button", name="Close", exact=True)
         elif owner_kind in ("timeline-panel", "bottom-surface"):
             owner = page.locator('[data-kg-strybldr-bottom-timeline-panel="1"]')
-            close_button = owner.locator('button[title="Close"]')
+            close_button = owner.get_by_role("button", name="Close", exact=True)
         else:
             raise AssertionError(
                 f"mobile Pitch Up center had an unsupported topmost owner: "
