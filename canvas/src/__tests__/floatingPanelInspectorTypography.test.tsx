@@ -131,7 +131,7 @@ export async function testInspectorTypographyUsesUiSettings() {
     const playback = { id: 'source-playback', label: 'Source Playback', type: FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID,
       properties: { outputSrcDoc: '<!doctype html><html><body><p>source-playback-content</p></body></html>' } }
     await act(async () => {
-      api.setGraphData({ nodes: [playback, analysis], edges: [] })
+      api.setGraphData({ type: 'Graph', nodes: [playback, analysis], edges: [] })
       api.selectNodesExpanded({ nodeIds: [analysis.id], activeNodeId: analysis.id, edgeIds: [], groupIds: [] })
       root.render(React.createElement(GraphRecordInspector, {
         columns, row: { tableId: 'nodes', rowId: analysis.id, order: 1, data: analysis },
