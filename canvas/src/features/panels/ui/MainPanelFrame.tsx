@@ -4,6 +4,15 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import MainPanelContainer from './MainPanelContainer'
 import TabHeader, { type TabIconComponent } from './TabHeader'
+import HeaderActions from './HeaderActions'
+
+export function MainPanelLoadingFallback({ onClose }: { onClose: () => void }) {
+  return (
+    <MainPanelFrame ariaLabel="Main panel loading" rightSlot={<HeaderActions onClose={onClose} />}>
+      <p role="status" data-kg-main-panel-loading="1" className="p-3">Loading panel…</p>
+    </MainPanelFrame>
+  )
+}
 
 interface MainPanelFrameProps {
   ariaLabel: string

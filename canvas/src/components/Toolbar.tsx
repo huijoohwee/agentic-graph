@@ -38,6 +38,7 @@ import { ZoomModeSelect } from '@/components/toolbar/ZoomModeSelect';
 import { useMediaQuery } from '@/lib/ui/useMediaQuery'
 import { HistoryUndoRedoControls } from '@/features/history/HistoryUndoRedoControls'
 import { toolbarActionAffordance } from '@/lib/toolbar/toolbarActionAffordance'
+import { MainPanelLoadingFallback } from '@/features/panels/ui/MainPanelFrame'
 import {
   registerToolbarActionControlHandler,
   type ToolbarActionId,
@@ -310,7 +311,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
                 ref={mainPanelCardRef}
                 className={UI_RESPONSIVE_MAIN_PANEL_MOBILE_SHEET_CLASSNAME}
               >
-                <React.Suspense fallback={null}>
+                <React.Suspense fallback={<MainPanelLoadingFallback onClose={() => setIsMainPanelOpen(false)} />}>
                   <MainPanelLazy
                     onClose={() => setIsMainPanelOpen(false)}
                     requestedTab={mainPanelRequestedTab}
@@ -344,7 +345,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
                 transform: 'translate(-50%, -50%)',
               }}
             >
-              <React.Suspense fallback={null}>
+              <React.Suspense fallback={<MainPanelLoadingFallback onClose={() => setIsMainPanelOpen(false)} />}>
                 <MainPanelLazy
                   onClose={() => setIsMainPanelOpen(false)}
                   onHeaderDragStart={!effectiveMainPanelPinned ? handleMainPanelHeaderDragStart : undefined}
