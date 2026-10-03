@@ -17,6 +17,7 @@ import {
   projectFlightSimToGeospatialOverlay,
 } from '@/features/game-flight-sim/flightSimGeospatialProjection'
 import { projectXrEnvironmentToFlightGeo } from '@/features/game-flight-sim/flightSimGeoEnvironmentProjection'
+import { readFlightSimTrainingScenario } from '@/features/game-flight-sim/flightSimTrainingScenario'
 import {
   readFlightSimCameraSnapshot,
   subscribeFlightSimCamera,
@@ -86,8 +87,11 @@ export function useGeoXrOverlayPublisher(options: Readonly<{
               flight,
               projectCityOverlay: projectCitySimToGeospatialOverlay,
               projectFlight: flightSnapshot => {
+                const reference = readFlightSimTrainingScenario().geographicReference
+                if (!reference) return null
                 const environment = projectXrEnvironmentToFlightGeo(
                   motionRuntime.plan,
+                  reference,
                 )
                 const spatialProfile = readFlightSimSpatialProfile()
                 const timelinePose = useGraphStore.getState().timelineTransportPlaying
@@ -108,6 +112,7 @@ export function useGeoXrOverlayPublisher(options: Readonly<{
                           timelinePose,
                           spatialProfile,
                           motionRuntime.playheadSeconds,
+                          reference,
                         )
                       : null,
                     view: readFlightSimCameraSnapshot().view,
@@ -115,6 +120,7 @@ export function useGeoXrOverlayPublisher(options: Readonly<{
                   readFlightSimTrainingSnapshot().night,
                   readCurrentFlightSimReadyFrameRequestId(),
                   environment,
+                  reference,
                 )
               },
               store: module,
