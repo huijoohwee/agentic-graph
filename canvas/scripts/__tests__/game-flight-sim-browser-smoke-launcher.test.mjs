@@ -11,6 +11,7 @@ import {
   resolveGameFlightSimBrowserPaths,
 } from '../lib/game-flight-sim-browser-paths.mjs'
 import { runLocalViteBrowserSmoke } from '../lib/run-local-vite-browser-smoke.mjs'
+import { hasExactAuthoredEnvironmentSubjectEvidence } from '../lib/game-flight-sim-browser-evidence-validation.mjs'
 
 const canvasRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
@@ -163,5 +164,55 @@ test('Flight watchdog timeout still removes the owned store and preview server',
   } finally {
     process.chdir(priorWorkingDirectory)
     await rm(fixture, { force: true, recursive: true })
+  }
+})
+
+function authoredSubjectEvidence() {
+  return {
+    authoredEnvironmentSubjects: [{ id: 'xr-subject:sailboat:1' }, { id: 'canopy' }],
+    environmentSubjectIds: ['canopy', 'xr-subject:sailboat:1'],
+    renderedEnvironmentSubjectIds: ['xr-subject:sailboat:1'],
+    selectedEnvironmentSubjectsExact: true,
+    environmentSourceExactlyMatchesOverlay: true,
+  }
+}
+
+test('authored Flight environment accepts exact arbitrary IDs and visible authored subsets', () => {
+  const view = authoredSubjectEvidence()
+  assert.equal(hasExactAuthoredEnvironmentSubjectEvidence(view), true)
+  view.renderedEnvironmentSubjectIds = ['canopy', 'xr-subject:sailboat:1']
+  assert.equal(hasExactAuthoredEnvironmentSubjectEvidence(view), true)
+  view.authoredEnvironmentSubjects = [{ id: 'neutral:α' }]
+  view.environmentSubjectIds = ['neutral:α']
+  view.renderedEnvironmentSubjectIds = ['neutral:α']
+  assert.equal(hasExactAuthoredEnvironmentSubjectEvidence(view), true)
+})
+
+test('authored Flight environment rejects incomplete, duplicate, foreign and malformed identity evidence', () => {
+  const cases = [
+    ['no authored records', { authoredEnvironmentSubjects: undefined }],
+    ['empty authored records', { authoredEnvironmentSubjects: [] }],
+    ['malformed authored record', { authoredEnvironmentSubjects: [null] }],
+    ['array authored record', { authoredEnvironmentSubjects: [[]] }],
+    ['duplicate authored IDs', { authoredEnvironmentSubjects: [{ id: 'canopy' }, { id: 'canopy' }] }],
+    ['blank authored ID', { authoredEnvironmentSubjects: [{ id: ' ' }] }],
+    ['nonstring authored ID', { authoredEnvironmentSubjects: [{ id: 7 }] }],
+    ['absent source', { environmentSubjectIds: undefined }],
+    ['missing source subject', { environmentSubjectIds: ['canopy'] }],
+    ['extra source subject', { environmentSubjectIds: ['canopy', 'xr-subject:sailboat:1', 'extra'] }],
+    ['duplicate source ID', { environmentSubjectIds: ['canopy', 'canopy'] }],
+    ['blank source ID', { environmentSubjectIds: ['canopy', ''] }],
+    ['nonstring source ID', { environmentSubjectIds: ['canopy', 7] }],
+    ['empty rendered IDs', { renderedEnvironmentSubjectIds: [] }],
+    ['absent rendered IDs', { renderedEnvironmentSubjectIds: undefined }],
+    ['foreign vehicle-looking ID', { renderedEnvironmentSubjectIds: ['vehicle-unrelated'] }],
+    ['duplicate rendered ID', { renderedEnvironmentSubjectIds: ['canopy', 'canopy'] }],
+    ['blank rendered ID', { renderedEnvironmentSubjectIds: [' '] }],
+    ['nonstring rendered ID', { renderedEnvironmentSubjectIds: [7] }],
+    ['inexact authored geometry', { selectedEnvironmentSubjectsExact: false }],
+    ['inexact source projection', { environmentSourceExactlyMatchesOverlay: false }],
+  ]
+  for (const [label, changed] of cases) {
+    assert.equal(hasExactAuthoredEnvironmentSubjectEvidence({ ...authoredSubjectEvidence(), ...changed }), false, label)
   }
 })
