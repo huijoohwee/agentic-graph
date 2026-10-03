@@ -114,20 +114,19 @@ let mapLibreRuntimePromise: Promise<any> | null = null
 
 const loadMapLibreRuntime = (): Promise<any> => {
   if (!mapLibreRuntimePromise) {
-    mapLibreRuntimePromise = (async () =>
-      await import('maplibre-gl'))()
-      .catch(error => {
-        mapLibreRuntimePromise = null
-        throw error
-      })
+    mapLibreRuntimePromise = Promise.all([
+      import('maplibre-gl'), import('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'),
+    ]).then(([runtime, { default: workerUrl }]) => {
+      if (typeof runtime.setWorkerUrl !== 'function' || typeof workerUrl !== 'string' || !/^(?:\.?\.?\/|https?:\/\/|blob:)/.test(workerUrl)) throw new Error('MapLibre requires its public worker setter and a bundled worker URL.')
+      runtime.setWorkerUrl(workerUrl)
+      return runtime
+    }).catch(error => { mapLibreRuntimePromise = null; throw error })
   }
   return mapLibreRuntimePromise
 }
-
 export async function preloadMapLibreBasemapRuntime(): Promise<void> {
   await loadMapLibreRuntime()
 }
-
 export function readActiveMapLibreMap(): any | null {
   return readActiveNativeGeospatialMapLibreMap()
 }
