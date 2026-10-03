@@ -9,6 +9,7 @@ import {
   FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME,
   FLIGHT_SIM_RUN_READY_DEMO_ID,
   XR_PHYSICS_DEMO_REPO_REL_PATH,
+  XR_PHYSICS_RUN_READY_DEMO_ID,
   resolveWorkspaceRunReadyDemoIdForDocument,
   resolveWorkspaceRunReadyDemoSeed,
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
@@ -31,6 +32,7 @@ import {
   controlLocalXrScene,
 } from '@/features/three/xrSceneMcpRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { completeSourceFilesBootstrap } from '@/features/source-files/sourceFilesBootstrapReadiness'
 
 const repoRoot = resolve(process.cwd(), '..')
 const seedSource = readFileSync(
@@ -74,7 +76,7 @@ test('Flight Sim activation is source-authored and path conflicts fail closed', 
   assert.equal(conflict.ok, false)
   if (conflict.ok === false) {
     assert.equal(conflict.errorCode, 'RUN_READY_IDENTITY_CONFLICT')
-    assert.match(conflict.message, /xr-physics/)
+    assert.ok(conflict.message.includes(XR_PHYSICS_RUN_READY_DEMO_ID))
     assert.match(conflict.message, /flight-sim/)
   }
   const unregistered = diagnoseWorkspaceRunReadyDemoActivation(
@@ -139,6 +141,7 @@ test('Flight Sim source declares the canonical Geo+XR composition', () => {
     second_r3f_canvas_forbidden: true,
   })
   assert.deepEqual(meta.geo_flight_overlay, {
+    geographic_reference: { anchor: [103.851959, 1.29027], presentationBounds: [[103.605, 1.158], [104.09, 1.48]] },
     activation: 'selected authored environment plus source-authored Flight identity',
     renderer_owner: 'native MapLibre Geo host',
     geo_policy_owner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
@@ -178,11 +181,10 @@ test('Flight resolves subjects from its declared Physics authority without a cop
   if (!resolved.ok) return
   assert.equal(resolved.authority, 'physics-source')
   const plan = readXrMotionReferencePlan(resolved.persistedValue)
-  assert.equal(plan.stageId, 'singapore')
-  assert.deepEqual(
-    plan.subjects.map(subject => subject.assetId),
-    ['vehicle-helicopter', 'vehicle-sedan'],
-  )
+  const authoredPlan = readXrMotionReferencePlan(frontmatter(physicsSeedSource).kgXrMotionReference)
+  assert.equal(plan.stageId, authoredPlan.stageId)
+  assert.deepEqual(plan.subjects, authoredPlan.subjects)
+  assert.deepEqual(plan.cast, authoredPlan.cast)
 
   const explicitEmptyPlan = {
     schema: 'agentic-graph-xr-motion-reference/v1',
@@ -266,13 +268,29 @@ test('Flight resolves subjects from its declared Physics authority without a cop
     assert.equal(result.ok, false)
   }
 
+  const mutations: Array<(plan: any) => void> = [
+    value => { value.unknownField = true },
+    value => { value.appearance.lightIntensity = NaN },
+    value => { value.subjects[0].position = [999, 0, 0] },
+    value => { value.subjects[0].scale = 999 },
+    value => { value.cast[0].marks[1].timeSeconds = value.cast[0].marks[0].timeSeconds },
+    value => { value.camera[0].settings.focalLengthMm = 999 },
+    value => { value.camera[0].settings.unknownField = true },
+    value => { value.cast[0].label = 42 },
+  ]
+  for (const mutate of mutations) {
+    const malformed = structuredClone(physicsPlan)
+    mutate(malformed)
+    assert.equal(resolveFlightSimSharedXrMotionReferenceSource({ activeDocumentText: seedSource, currentPersistedValue: malformed, physicsSourceText: physicsSeedSource }).ok, false)
+  }
+
   const wrongPhysicsSchema =
     resolveFlightSimSharedXrMotionReferenceSource({
       activeDocumentText: seedSource,
       currentPersistedValue: undefined,
       physicsSourceText: physicsSeedSource.replace(
-        'schema: "agentic-graph-xr-motion-reference/v1"',
-        'schema: "wrong/v9"',
+        /schema:\s*"?agentic-graph-xr-motion-reference\/v1"?/,
+        'schema: wrong/v9',
       ),
     })
   assert.equal(wrongPhysicsSchema.ok, false)
@@ -315,6 +333,7 @@ test('Flight resolves subjects from its declared Physics authority without a cop
 
 test('canonical XR controls preserve the verified Flight Physics subjects', async () => {
   const previous = useGraphStore.getState()
+  completeSourceFilesBootstrap()
   useGraphStore.setState({
     graphData: {
       type: 'Graph',
@@ -357,20 +376,9 @@ test('canonical XR controls preserve the verified Flight Physics subjects', asyn
     )
 
     assert.equal(await hydrateFlightSimSharedXrSceneSource(), true)
-    const expectedAssetIds = [
-      'vehicle-helicopter',
-      'vehicle-sedan',
-    ]
-    const expectedGraphActorIds = [
-      'flight_demo_entry',
-      'flight_aircraft',
-      'flight_runtime_gate',
-    ]
-    const expectedCastActorIds = [
-      ...expectedGraphActorIds,
-      ...readXrMotionReferenceRuntime().plan.subjects
-        .map(subject => subject.id),
-    ]
+    const authoredPlan = readXrMotionReferencePlan(frontmatter(physicsSeedSource).kgXrMotionReference)
+    const expectedAssetIds = authoredPlan.subjects.map(subject => subject.assetId)
+    const expectedCastActorIds = authoredPlan.cast.map(track => track.actorId)
     assert.deepEqual(
       readXrMotionReferenceRuntime().plan.subjects
         .map(subject => subject.assetId),
@@ -426,7 +434,7 @@ test('canonical XR controls preserve the verified Flight Physics subjects', asyn
     )
     const stageResult = controlLocalXrScene({
       action: 'stage',
-      stageId: 'singapore',
+      stageId: authoredPlan.stageId,
     })
     assert.equal(stageResult.ok, true)
     assert.match(stageResult.message, /already staged/i)

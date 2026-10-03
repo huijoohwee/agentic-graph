@@ -23,9 +23,9 @@ import {
 import {
   selectFlightSimTrainingFailure,
   selectFlightSimTrainingMission,
-  type FlightSimTrainingFailureId,
-  type FlightSimTrainingMissionId,
+  readFlightSimTrainingScenario,
 } from './flightSimTrainingScenario'
+import { captureFlightSimTrainingSource, admitCapturedFlightSimTrainingSource, isFlightSimTrainingSourceCurrent, resolveAuthoredFlightSimTrainingSelection, type FlightSimTrainingSourceCapture } from './flightSimTrainingSource'
 import {
   FLIGHT_SIM_INVOCATION_BINDINGS,
   FLIGHT_SIM_INVOCATION_COMMANDS,
@@ -34,48 +34,34 @@ import {
   FLIGHT_SIM_CONTROL_OPERATIONS,
   FLIGHT_SIM_WEB_MCP_TOOL_IDS,
 } from './flightSimMcpContract.mjs'
-
-export type FlightSimOperation =
-  | 'open'
-  | 'start'
-  | 'stop'
-  | 'restart'
-  | 'throttle'
-  | 'mission-foundation'
-  | 'mission-night'
-  | 'mission-systems'
-  | 'failure-none'
-  | 'failure-engine'
-  | 'failure-instruments'
-  | 'failure-controls'
-  | 'voice-on'
-  | 'voice-off'
-  | 'coach'
-  | 'save'
-  | 'exit'
-
+export type FlightSimOperation = string
 export type FlightSimControlInput = Readonly<{
   invocation?: string
   operation?: FlightSimOperation
   throttle?: number
+  missionId?: string
+  failureId?: string
 }>
-
 export type FlightSimControlExecutionFence = Readonly<{
   signal: AbortSignal
   generation: number
   isCurrent: () => boolean
 }>
-
 export type NormalizedFlightSimControl = Readonly<{
   invocation: string
   operation: FlightSimOperation
   throttle?: number
+  missionId?: string
+  failureId?: string
+  trainingSource?: FlightSimTrainingSourceCapture
 }>
-
 export type FlightSimControlErrorCode =
   | 'FLIGHT_SIM_CONTROL_INVALID_INPUT'
   | 'FLIGHT_SIM_CONTROL_MIXED_INPUT'
   | 'FLIGHT_SIM_CONTROL_INVALID_THROTTLE'
+  | 'FLIGHT_SIM_CONTROL_INVALID_SELECTION'
+  | 'FLIGHT_SIM_CONTROL_TRAINING_UNAVAILABLE'
+  | 'FLIGHT_SIM_CONTROL_TRAINING_SOURCE_INVALID'
   | 'FLIGHT_SIM_CONTROL_UNSUPPORTED_OPERATION'
   | 'FLIGHT_SIM_INVOCATION_MISSING_COMMAND'
   | 'FLIGHT_SIM_INVOCATION_COMMAND_MISMATCH'
@@ -86,7 +72,6 @@ export type FlightSimControlErrorCode =
   | 'FLIGHT_SIM_INVOCATION_DUPLICATE_KEY'
   | 'FLIGHT_SIM_INVOCATION_UNKNOWN_KEY'
   | 'FLIGHT_SIM_INVOCATION_MALFORMED_PAIR'
-
 export type FlightSimControlDiagnostic =
   | Readonly<{ ok: true; value: NormalizedFlightSimControl }>
   | Readonly<{
@@ -96,9 +81,7 @@ export type FlightSimControlDiagnostic =
     field?: string
     token?: string
   }>
-
 type FlightSimControlFailure = Extract<FlightSimControlDiagnostic, { ok: false }>
-
 const FLIGHT_SIM_OPERATION_SET = new Set<string>(FLIGHT_SIM_CONTROL_OPERATIONS)
 const FLIGHT_SIM_INVOCATION_PREFIX = [
   FLIGHT_SIM_INVOCATION_COMMANDS.control,
@@ -107,9 +90,12 @@ const FLIGHT_SIM_INVOCATION_PREFIX = [
 ].join(' ')
 const NATIVE_THROTTLE_PATTERN = /^(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$/
 
-const isFlightSimOperation = (value: unknown): value is FlightSimOperation => (
-  typeof value === 'string' && FLIGHT_SIM_OPERATION_SET.has(value)
-)
+const isFlightSimOperation = (value: unknown): value is FlightSimOperation => {
+  if (typeof value !== 'string') return false
+  if (FLIGHT_SIM_OPERATION_SET.has(value)) return true
+  if (!/^[a-z][a-z0-9-]{0,95}$/.test(value)) return false
+  try { return resolveAuthoredFlightSimTrainingSelection(value) !== null } catch { return false }
+}
 
 const isThrottle = (value: unknown): value is number => (
   typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1
@@ -128,10 +114,16 @@ const diagnosticSuccess = (
 export function buildFlightSimInvocation(
   operation: FlightSimOperation,
   throttle?: number,
+  selectionId?: string,
 ): string {
   if (!isFlightSimOperation(operation)) {
     throw new TypeError(`Unsupported Flight Sim operation: ${String(operation)}`)
   }
+  if (operation === 'mission' || operation === 'failure') {
+    if (!selectionId || !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$/.test(selectionId) || throttle !== undefined) throw new TypeError('Flight training selection requires one bounded identifier and forbids throttle.')
+    return `${FLIGHT_SIM_INVOCATION_PREFIX} operation=${operation} ${operation}Id=${selectionId}`
+  }
+  if (selectionId !== undefined) throw new TypeError('Flight training identifier is forbidden for this operation.')
   if (operation === 'throttle') {
     if (!isThrottle(throttle)) {
       throw new TypeError('Flight Sim throttle requires a finite value from 0 through 1.')
@@ -142,6 +134,30 @@ export function buildFlightSimInvocation(
     throw new TypeError(`Flight Sim operation=${operation} forbids a throttle value.`)
   }
   return `${FLIGHT_SIM_INVOCATION_PREFIX} operation=${operation}`
+}
+
+function diagnoseTrainingSelection(operation: string, invocation: string, fields: Readonly<Record<string, unknown>>): FlightSimControlDiagnostic | null {
+  const generic = operation === 'mission' || operation === 'failure'
+  if (!generic && FLIGHT_SIM_OPERATION_SET.has(operation)) {
+    return fields.missionId !== undefined || fields.failureId !== undefined
+      ? diagnosticFailure('FLIGHT_SIM_CONTROL_INVALID_SELECTION', 'Training selection fields are forbidden for this operation.', { field: 'operation' }) : null
+  }
+  try {
+    const capture = captureFlightSimTrainingSource()
+    if (!capture.profile) return diagnosticFailure('FLIGHT_SIM_CONTROL_TRAINING_UNAVAILABLE', 'Flight training selection requires an authored profile on the active SourceFile.', { field: 'operation' })
+    const alias = generic ? null : capture.profile.controlAliases[operation]
+    const kind = generic ? operation as 'mission' | 'failure' : alias?.kind
+    if (!kind) return diagnosticFailure('FLIGHT_SIM_CONTROL_UNSUPPORTED_OPERATION', `Flight Sim operation ${operation} is unsupported.`, { field: 'operation' })
+    const selectedId = alias?.id ?? fields[`${kind}Id`]
+    if (fields.throttle !== undefined || fields[kind === 'mission' ? 'failureId' : 'missionId'] !== undefined || (alias && (fields.missionId !== undefined || fields.failureId !== undefined))) {
+      return diagnosticFailure('FLIGHT_SIM_CONTROL_INVALID_SELECTION', 'Flight training selection accepts exactly its admitted identifier.', { field: `${kind}Id` })
+    }
+    const catalog = kind === 'mission' ? capture.profile.missions : capture.profile.failures
+    if (typeof selectedId !== 'string' || !catalog.some(item => item.id === selectedId)) return diagnosticFailure('FLIGHT_SIM_CONTROL_INVALID_SELECTION', `Flight training ${kind} identifier is unavailable or unsupported.`, { field: `${kind}Id` })
+    return diagnosticSuccess({ invocation, operation: kind, [`${kind}Id`]: selectedId, trainingSource: capture })
+  } catch (error) {
+    return diagnosticFailure('FLIGHT_SIM_CONTROL_TRAINING_SOURCE_INVALID', error instanceof Error ? error.message : String(error), { field: 'operation' })
+  }
 }
 
 const parseNativeThrottle = (value: string | undefined): number | null => {
@@ -245,7 +261,7 @@ export function diagnoseFlightSimInvocation(value: unknown): FlightSimControlDia
       )
     }
     const key = token.slice(0, separator)
-    if (key !== 'operation' && key !== 'throttle') {
+    if (!['operation', 'throttle', 'missionId', 'failureId'].includes(key)) {
       return diagnosticFailure(
         'FLIGHT_SIM_INVOCATION_UNKNOWN_KEY',
         `Flight Sim invocation does not support key ${key}.`,
@@ -270,6 +286,8 @@ export function diagnoseFlightSimInvocation(value: unknown): FlightSimControlDia
       { field: 'operation', token: operation || 'operation' },
     )
   }
+  const selection = diagnoseTrainingSelection(operation, invocation, pairs)
+  if (selection) return selection
   if (operation !== 'throttle') {
     return Object.hasOwn(pairs, 'throttle')
       ? diagnosticFailure(
@@ -316,7 +334,7 @@ export function diagnoseFlightSimControl(input: unknown): FlightSimControlDiagno
     }
     return diagnoseFlightSimInvocation(record.invocation)
   }
-  const unknownKey = keys.find(key => key !== 'operation' && key !== 'throttle')
+  const unknownKey = keys.find(key => !['operation', 'throttle', 'missionId', 'failureId'].includes(key))
   if (unknownKey) {
     return diagnosticFailure(
       'FLIGHT_SIM_INVOCATION_UNKNOWN_KEY',
@@ -331,6 +349,8 @@ export function diagnoseFlightSimControl(input: unknown): FlightSimControlDiagno
       { field: 'operation', token: String(record.operation || 'operation') },
     )
   }
+  const selection = diagnoseTrainingSelection(record.operation, '', record)
+  if (selection) return selection
   if (record.operation === 'throttle') {
     if (keys.length !== 2 || !Object.hasOwn(record, 'throttle') || !isThrottle(record.throttle)) {
       return diagnosticFailure(
@@ -350,12 +370,15 @@ export function diagnoseFlightSimControl(input: unknown): FlightSimControlDiagno
     )
 }
 
-const buildInvocationGrammar = (): Record<FlightSimOperation, string> => Object.fromEntries(
-  FLIGHT_SIM_CONTROL_OPERATIONS.map(operation => [
-    operation,
-    buildFlightSimInvocation(operation as FlightSimOperation, operation === 'throttle' ? 0.5 : undefined),
-  ]),
-) as Record<FlightSimOperation, string>
+const buildInvocationGrammar = (): Record<string, string> => {
+  const profile = readFlightSimTrainingScenario().profile
+  const operations = [...FLIGHT_SIM_CONTROL_OPERATIONS, ...Object.keys(profile?.controlAliases || {})]
+  return Object.fromEntries(operations.flatMap(operation => {
+    const selectionId = operation === 'mission' ? profile?.missions[0]?.id : operation === 'failure' ? profile?.failures[0]?.id : undefined
+    if ((operation === 'mission' || operation === 'failure') && !selectionId) return []
+    return [[operation, buildFlightSimInvocation(operation, operation === 'throttle' ? 0.5 : undefined, selectionId)]]
+  }))
+}
 
 export function inspectLocalFlightSim() {
   const flightSim = readFlightSimSnapshot()
@@ -414,7 +437,6 @@ const runtimeFailureMessage = (
 const isFlightSimControlCurrent = (
   fence?: FlightSimControlExecutionFence,
 ): boolean => !fence || (!fence.signal.aborted && fence.isCurrent())
-
 export async function controlLocalFlightSim(
   input: unknown,
   fence?: FlightSimControlExecutionFence,
@@ -508,41 +530,19 @@ export async function controlLocalFlightSim(
       control.operation,
     )
   }
-  const missionSelection: Partial<Record<FlightSimOperation, FlightSimTrainingMissionId>> = {
-    'mission-foundation': 'circuit-foundation',
-    'mission-night': 'night-circuit',
-    'mission-systems': 'systems-recovery',
+  if (control.operation === 'mission' || control.operation === 'failure') {
+    if (before.active && before.phase !== 'stopped') return controlResult(false, 'Training selection requires a stopped or inactive Flight Sim.', control.operation)
+    if (!isFlightSimControlCurrent(fence)) return cancelled()
+    try {
+      const current = () => isFlightSimControlCurrent(fence) && isFlightSimTrainingSourceCurrent(control.trainingSource!)
+      admitCapturedFlightSimTrainingSource(control.trainingSource!, before.phase, current)
+      if (!current()) return cancelled()
+      if (control.operation === 'mission') selectFlightSimTrainingMission(control.missionId!, current)
+      else selectFlightSimTrainingFailure(control.failureId!, current)
+      return controlResult(true, `Flight training ${control.operation} selected: ${control.missionId || control.failureId}.`, control.operation)
+    } catch (error) { return controlResult(false, error instanceof Error ? error.message : String(error), control.operation) }
   }
-  const selectedMission = missionSelection[control.operation]
-  if (selectedMission) {
-    if (before.phase === 'ready' || before.phase === 'flying') {
-      return controlResult(
-        false,
-        'Training mission selection requires a stopped or inactive Flight Sim.',
-        control.operation,
-      )
-    }
-    selectFlightSimTrainingMission(selectedMission)
-    return controlResult(true, `Flight training mission selected: ${selectedMission}.`, control.operation)
-  }
-  const failureSelection: Partial<Record<FlightSimOperation, FlightSimTrainingFailureId>> = {
-    'failure-none': 'none',
-    'failure-engine': 'engine-power-loss',
-    'failure-instruments': 'instrument-uncertainty',
-    'failure-controls': 'control-bias',
-  }
-  const selectedFailure = failureSelection[control.operation]
-  if (selectedFailure) {
-    if (before.phase === 'ready' || before.phase === 'flying') {
-      return controlResult(
-        false,
-        'Practice failure selection requires a stopped or inactive Flight Sim.',
-        control.operation,
-      )
-    }
-    selectFlightSimTrainingFailure(selectedFailure)
-    return controlResult(true, `Flight training failure selected: ${selectedFailure}.`, control.operation)
-  }
+  if (['voice-on', 'voice-off', 'coach'].includes(control.operation) && !readFlightSimTrainingSnapshot().available) return controlResult(false, 'Flight training is unavailable without an admitted authored profile.', control.operation)
   if (control.operation === 'voice-on' || control.operation === 'voice-off') {
     const enabled = control.operation === 'voice-on'
     const spoken = enableFlightSimVoiceInstructor(enabled)

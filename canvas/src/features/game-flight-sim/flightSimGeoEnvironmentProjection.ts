@@ -1,10 +1,10 @@
 import {
-  SINGAPORE_FLIGHT_GEO_REFERENCE,
-  projectSingaporeLocalMeters,
+  projectLocalMetersToGeospatial,
   type FlightGeoEnvironmentProjection,
   type FlightGeoEnvironmentSurface,
   type GeospatialCoordinate,
 } from '@/lib/gympgrph/api'
+import type { FlightSimGeographicReference } from './flightSimGeospatialCoordinates'
 import type {
   XrMotionReferencePlan,
   XrMotionReferenceSubject,
@@ -34,13 +34,15 @@ const TONE_COLORS: Readonly<Record<XrGreyBoxStructure['tone'], string>> =
 /**
  * XR environment stages, structures, and subjects use local metres. Regional
  * POI surfaces already carry geographic rings and real-metre heights, so they
- * bypass this local projection entirely.
+ * bypass this local projection entirely. Authors must choose a stage compatible
+ * with the reference; relocating local geometry never relocates those POIs.
  */
 function projectEnvironmentLocalMetersToGeospatial(
   xMeters: number,
   zMeters: number,
+  reference: FlightSimGeographicReference,
 ): GeospatialCoordinate {
-  return projectSingaporeLocalMeters(xMeters, -zMeters)
+  return projectLocalMetersToGeospatial(xMeters, -zMeters, reference.anchor)
 }
 
 function projectLocalRectangle(input: Readonly<{
@@ -49,7 +51,7 @@ function projectLocalRectangle(input: Readonly<{
   depthMeters: number
   rotationDegrees?: number
   widthMeters: number
-}>): readonly GeospatialCoordinate[] {
+}>, reference: FlightSimGeographicReference): readonly GeospatialCoordinate[] {
   const rotationRadians = (input.rotationDegrees || 0) * Math.PI / 180
   const cosine = Math.cos(rotationRadians)
   const sine = Math.sin(rotationRadians)
@@ -64,13 +66,14 @@ function projectLocalRectangle(input: Readonly<{
   const ring = corners.map(([offsetX, offsetZ]) => {
     const x = input.centerX + offsetX * cosine + offsetZ * sine
     const z = input.centerZ - offsetX * sine + offsetZ * cosine
-    return projectEnvironmentLocalMetersToGeospatial(x, z)
+    return projectEnvironmentLocalMetersToGeospatial(x, z, reference)
   })
   return Object.freeze([...ring, ring[0]])
 }
 
 function projectStructure(
   structure: XrGreyBoxStructure,
+  reference: FlightSimGeographicReference,
 ): FlightGeoEnvironmentSurface {
   const baseHeightMeters = Math.max(
     0,
@@ -97,7 +100,7 @@ function projectStructure(
         centerZ: structure.position[2],
         depthMeters: structure.size[2],
         widthMeters: structure.size[0],
-      }),
+      }, reference),
     ]),
   })
 }
@@ -135,6 +138,7 @@ function projectRegionalPoiSurface(
 
 function projectSubject(
   subject: XrMotionReferenceSubject,
+  reference: FlightSimGeographicReference,
 ): FlightGeoEnvironmentSurface {
   const asset = resolveXrSceneLibraryAsset(subject.assetId)
   const scale = Number.isFinite(subject.scale) && subject.scale > 0
@@ -162,13 +166,14 @@ function projectSubject(
         depthMeters,
         rotationDegrees: subject.rotationYDegrees,
         widthMeters,
-      }),
+      }, reference),
     ]),
   })
 }
 
 export function projectXrEnvironmentToFlightGeo(
   plan: Pick<XrMotionReferencePlan, 'stageId' | 'subjects'>,
+  reference: FlightSimGeographicReference,
 ): FlightGeoEnvironmentProjection {
   const stage = resolveXrMotionReferenceStage(plan.stageId)
   const stageFootprint = projectLocalRectangle({
@@ -176,7 +181,7 @@ export function projectXrEnvironmentToFlightGeo(
     centerZ: 0,
     depthMeters: stage.sizeMeters[1],
     widthMeters: stage.sizeMeters[0],
-  })
+  }, reference)
   const footprintSurface: FlightGeoEnvironmentSurface = Object.freeze({
     baseHeightMeters: 0,
     color: '#0f766e',
@@ -205,17 +210,18 @@ export function projectXrEnvironmentToFlightGeo(
   ))
   const surfaces = Object.freeze([
     footprintSurface,
-    ...localStructures.map(projectStructure),
+    ...localStructures.map(structure => projectStructure(structure, reference)),
     ...regionalPoiSurfaces,
-    ...plan.subjects.map(projectSubject),
+    ...plan.subjects.map(subject => projectSubject(subject, reference)),
   ])
   return Object.freeze({
-    anchor: projectSingaporeLocalMeters(0, 0),
+    anchor: reference.anchor,
     id: stage.id,
     label: stage.label,
-    presentationBounds: SINGAPORE_FLIGHT_GEO_REFERENCE.presentationBounds,
+    presentationBounds: reference.presentationBounds,
     revision: [
       stage.id,
+      JSON.stringify(reference),
       profile?.id || '',
       profile?.revision || '',
       ...surfaces.map(surface => [

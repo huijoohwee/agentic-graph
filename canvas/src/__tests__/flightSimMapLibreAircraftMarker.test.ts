@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
+import { validateFlightSimGeographicReference } from '@/features/game-flight-sim/flightSimGeospatialCoordinates'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
@@ -16,6 +19,10 @@ import {
 import type { FlightSimSpatialProfile } from '../features/game-flight-sim/flightSimModel'
 import type { SpatialVector } from '../features/physics/spatialPhysicsTypes'
 import { flightOverlay } from './helpers/flightSimMapLibreFixtures'
+
+const geographicReference = validateFlightSimGeographicReference(
+  (parseMarkdownFrontmatter(splitMarkdownLines(readFileSync('../docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md', 'utf8'))).meta.geo_flight_overlay as { geographic_reference: unknown }).geographic_reference,
+)!
 
 type LayerDefinition = Readonly<{
   filter?: unknown
@@ -336,6 +343,7 @@ test('the authored stopped Flight snapshot projects to the exact Float32 tick-ze
     profile,
     { source: 'fixed-follow', view: 'chase' },
     false,
+    null, null, geographicReference,
   )
   const ready = projectFlightSimToGeospatialOverlay(
     readyFlight,
@@ -343,8 +351,9 @@ test('the authored stopped Flight snapshot projects to the exact Float32 tick-ze
     { source: 'fixed-follow', view: 'chase' },
     false,
     7,
+    null, geographicReference,
   )
-
+  assert.ok(stopped && ready)
   assert.deepEqual(stopped.aircraft.coordinate, ready.aircraft.coordinate)
   assert.deepEqual(stopped.camera.centerCoordinate, ready.camera.centerCoordinate)
   assert.deepEqual(

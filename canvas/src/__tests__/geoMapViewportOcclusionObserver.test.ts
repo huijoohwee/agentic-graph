@@ -14,7 +14,9 @@ test('Geo map viewport remeasures late-mounted workspace occlusion', async () =>
   const dom = new JSDOM('<main><section id="map"></section></main>')
   const mapContainer = dom.window.document.querySelector('#map') as HTMLElement
   const observed = new Set<Element>()
+  let resized = () => {}
   class ResizeObserverStub {
+    constructor(notify: () => void) { resized = notify }
     observe(element: Element) {
       observed.add(element)
     }
@@ -57,7 +59,6 @@ test('Geo map viewport remeasures late-mounted workspace occlusion', async () =>
       readGeoMapViewportPadding(map),
       { bottom: 112, left: 44, right: 44, top: 88 },
     )
-
     const panel = dom.window.document.createElement('aside')
     const panelWrapper = dom.window.document.createElement('div')
     panel.setAttribute('aria-label', 'Floating panel')
@@ -102,8 +103,56 @@ test('Geo map viewport remeasures late-mounted workspace occlusion', async () =>
       readGeoMapViewportPadding(map),
       { bottom: 112, left: 44, right: 44, top: 88 },
     )
+    const control = dom.window.document.createElement('aside')
+    let top = 144
+    control.getBoundingClientRect = () => ({ left: 747, right: 847, top, bottom: top + 200, width: 100, height: 200 } as DOMRect)
+    dom.window.document.body.append(control)
+    await flushMutations(dom.window)
+    const before = changes
+    control.setAttribute('data-kg-workspace-visible-viewport-occluder', 'vertical')
+    await flushMutations(dom.window)
+    assert.equal(changes, before + 1)
+    assert.ok(observed.has(control))
+    assert.equal(readGeoMapViewportPadding(map).top, 360)
+    top = 650; resized()
+    assert.equal(readGeoMapViewportPadding(map).bottom, 328)
+    control.removeAttribute('data-kg-workspace-visible-viewport-occluder')
+    await flushMutations(dom.window)
+    assert.ok(!observed.has(control))
+    assert.equal(readGeoMapViewportPadding(map).bottom, 112)
+    control.className = 'kg-canvas-bottom-panel'
+    await flushMutations(dom.window)
+    assert.ok(observed.has(control))
+    control.className = ''
+    await flushMutations(dom.window)
+    assert.ok(!observed.has(control), 'removing the recognized class releases the observer')
+    control.className = 'kg-canvas-bottom-panel'
+    await flushMutations(dom.window)
+    control.remove()
+    await flushMutations(dom.window)
+    assert.ok(!observed.has(control))
+    assert.equal(readGeoMapViewportPadding(map).bottom, 112)
+
   } finally {
     stopObserving()
     dom.window.close()
   }
+})
+
+test('generic vertical occlusion handles mobile placement and ignores unusable rectangles', () => {
+  const dom = new JSDOM('<main></main><aside data-kg-workspace-visible-viewport-occluder="vertical"></aside>')
+  try {
+    const [viewport, control] = Array.from(dom.window.document.body.children) as HTMLElement[]
+    Object.defineProperties(viewport, { clientWidth: { value: 375 }, clientHeight: { value: 812 } })
+    viewport.getBoundingClientRect = () => ({ left: 0, top: 0, right: 375, bottom: 812, width: 375, height: 812 } as DOMRect)
+    const map = { getContainer: () => viewport }
+    const baseline = { left: 30, right: 30, top: 81.2, bottom: 112 }
+    for (const [left, top, width, height, bottom] of [
+      [120, 500, 135, 200, 328], [300, 500, 50, 200, 112], [120, 900, 135, 200, 112],
+      [120, 500, 0, 200, 112], [0, 0, 375, 812, 112],
+    ]) {
+      control.getBoundingClientRect = () => ({ left, top, width, height, right: left + width, bottom: top + height } as DOMRect)
+      assert.deepEqual(readGeoMapViewportPadding(map), { ...baseline, bottom })
+    }
+  } finally { dom.window.close() }
 })
