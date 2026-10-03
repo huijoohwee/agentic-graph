@@ -229,7 +229,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
   ].join('\n')
   const forbiddenExternalMediaToolkit = ['media', 'bunny'].join('')
   const rulerText = [
-    readSource('components', 'timeline', 'VideoSequenceTimelineRuler.tsx'),
+    readSource('components', 'timeline', 'VideoSequenceTimelineRuler.tsx'), readSource('components', 'timeline', 'VideoSequenceTimelineLanes.tsx'),
     readSource('components', 'timeline', 'videoSequenceClipThumbnailSelection.ts'),
     readSource('components', 'timeline', 'videoSequenceSourceThumbnailSet.ts'),
     readSource('components', 'timeline', 'VideoSequenceClipThumbnailStrip.tsx'),
@@ -302,7 +302,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     controlsText.includes('onPointerDown={onPlaybackPointerDown}') ||
     !controlsCssText.includes('.timeline-player-progress::-webkit-progress-value') ||
     !controlsCssText.includes('.timeline-transport-chrome--mermaid-gantt .timeline-player-progress') ||
-    !controlsCssText.includes('min-height: calc(76px + (var(--kg-video-sequence-lane-count, 4) * var(--kg-video-sequence-lane-height)))') ||
+    !controlsCssText.includes('min-height: 0') ||
     !controlsCssText.includes('line-height: var(--kg-video-sequence-lane-height)') ||
     controlsCssText.includes('.timeline-transport-ruler-layout:has(.timeline-transport-ruler-aside)') ||
     controlsCssText.includes('.timeline-transport-ruler-below') ||
@@ -354,7 +354,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     rulerText.includes('timeline-video-sequence-ruler-scope-header') ||
     rulerText.includes('<meter') ||
     !sequenceText.includes('VIDEO_SEQUENCE_LANE_HEIGHT_PX = 61') ||
-    !sequenceText.includes("VIDEO_SEQUENCE_BOTTOM_PANEL_DISABLED_LANE_IDS: readonly VideoSequenceTimelineLaneId[] = ['mask', 'grade']") || !sequenceText.includes("VIDEO_SEQUENCE_TIMELINE_EMPTY_LANE_IDS: readonly VideoSequenceTimelineLaneId[] = ['video', 'image', 'scene', 'effect']") ||
+    !sequenceText.includes("VIDEO_SEQUENCE_BOTTOM_PANEL_DISABLED_LANE_IDS: readonly VideoSequenceTimelineLaneId[] = ['mask', 'grade']") || sequenceText.includes('VIDEO_SEQUENCE_TIMELINE_EMPTY_LANE_IDS') ||
     !sequenceText.includes('disabledLaneIds?: readonly VideoSequenceTimelineLaneId[]') ||
     !sequenceText.includes('const disabledLaneIds = new Set(options.disabledLaneIds || [])') ||
     !sequenceText.includes('!disabledLaneIds.has(resolveVideoSequenceTimelineLane(span))') ||
@@ -367,7 +367,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     !rulerText.includes('resolveVisibleVideoSequenceTimelineDisplayLanes(taskSpans, projectionOptions)') ||
     !rulerText.includes('resolveRenderableVideoSequenceTimelineSpans(taskSpans, projectionOptions)') ||
     rulerText.includes("sourceCoverageMode: 'source-covered'") ||
-    (!rulerText.includes('timelineLanes.map(lane =>') || !rulerText.includes('return visibleLanes.flatMap(lane =>')) ||
+    (!rulerText.includes('<VideoSequenceTimelineLaneLabels lanes={timelineLanes}') || !rulerText.includes('<VideoSequenceTimelineLaneRows lanes={timelineLanes}') || !rulerText.includes('return visibleLanes.flatMap(lane =>')) ||
     !['resolveVideoSequenceTimelineDisplayLaneId(span, renderableSpans, projectionOptions)', 'visibleLaneIndexById.get(displayLaneId)', 'data-kg-video-sequence-display-lane', 'data-kg-video-sequence-display-lane-label', 'data-kg-video-sequence-lane-append'].every(token => rulerText.includes(token)) ||
     !['buildVideoSequenceTimelineCueSamples', 'buildVideoSequenceTimelineFrameSamples', 'buildVideoSequenceTimelineWaveformSamples', 'buildVideoSequenceClipMediaCache', 'const clipMediaByRowKey = React.useMemo', "const waveformSamples = lane === 'audio' && !verticalMarker", 'sourceAudioWaveformSamples', "sourceAudioWaveformSamples.length ? 'source' : 'synthetic'"].every(token => rulerText.includes(token)) ||
     !rulerText.includes('timeline-video-sequence-clip-timecode') ||
@@ -397,7 +397,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     !rulerCssText.includes('@media (prefers-reduced-motion: reduce)') ||
     rulerCssText.includes('.timeline-video-sequence-grade-strip') ||
     rulerCssText.includes('.timeline-video-sequence-ruler-scope-header') ||
-    !['grid-column: 1 / -1', 'contain: layout paint style', 'height: var(--kg-timeline-bar-height, calc(var(--kg-main-toolbar-height, 38px) * 1.5))', 'top: calc((var(--kg-video-sequence-lane-count, 13) * var(--kg-video-sequence-lane-height, 61px)) + 2px)'].every(token => rulerCssText.includes(token)) ||
+    !['grid-column: 1 / -1', 'contain: layout paint style', 'height: var(--kg-timeline-bar-height, var(--kg-toolbar-compact-surface-height))', 'top: calc((var(--kg-video-sequence-lane-count, 13) * var(--kg-video-sequence-lane-height, 61px)) + 2px)'].every(token => rulerCssText.includes(token)) ||
     !rulerCssText.includes('grid-template-columns: repeat(6, minmax(5.5rem, 1fr))') ||
     !rulerCssText.includes('.timeline-video-sequence-ruler-scope-bar') ||
     rulerCssText.includes('.timeline-video-sequence-slot-grid') ||
@@ -651,7 +651,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     !transportShellModelText.includes("'data-kg-video-sequence-media-duration-scale': args.hasMediaDurationScale ? '1' : undefined") ||
     !transportShellModelText.includes("timelineMode: 'empty' | 'source-backed' | 'workflow'") ||
     !transportShellModelText.includes("'data-kg-video-sequence-timeline': args.timelineMode") ||
-    !transportShellModelText.includes('showInlineProgress: false') ||
+    !transportShellModelText.includes('showInlineProgress: true') ||
     !transportShellModelText.includes('showRange: false') ||
     !transportShellModelText.includes('step: 1') ||
     !transportShellText.includes('GanttTimelineTransportShell') ||

@@ -8,7 +8,7 @@ const readUtf8 = (absPath: string): string => {
 export const testPanelHeaderUsesAriaTablist = () => {
   const root = process.cwd()
   const tabHeaderPath = path.resolve(root, 'src', 'features', 'panels', 'ui', 'TabHeader.tsx')
-  const text = readUtf8(tabHeaderPath)
+  const text = readUtf8(tabHeaderPath) + readUtf8(path.resolve(root, 'src/features/panels/ui/PanelViewTabs.tsx'))
   if (!text.includes('role="tablist"') && !text.includes("role='tablist'")) {
     throw new Error('Expected TabHeader to render a tablist role')
   }
@@ -39,7 +39,7 @@ export const testPanelShellUsesResponsiveRowScrolling = () => {
   const responsiveElementClassesPath = path.resolve(root, 'src', 'lib', 'ui', 'responsiveElementClasses.ts')
   const toolbarStylesPath = path.resolve(root, 'src', 'features', 'toolbar', 'ui', 'toolbarStyles.ts')
 
-  const tabHeader = readUtf8(tabHeaderPath)
+  const tabHeader = readUtf8(tabHeaderPath) + readUtf8(path.resolve(root, 'src/features/panels/ui/PanelViewTabs.tsx'))
   if (!tabHeader.includes('uiToolbarRowScrollClassName') || !tabHeader.includes('uiToolbarRowScrollJustifyEndClassName')) {
     throw new Error('Expected TabHeader shell to use the toolbar row-scroll SSOT')
   }
@@ -589,8 +589,8 @@ export const testResponsiveMenusAndDataViewSurfacesStayBounded = () => {
     throw new Error('Expected compact toolbar dropdowns to reuse the shared compact width owner')
   }
   const narrowToolbarDropdowns = [
-    readUtf8(toolbarToolMenuPath),
     readUtf8(designFloatingPanelPath),
+    // FloatingPanel tabs now use PanelViewTabs instead of a dropdown.
   ]
   const storyboardWidgetSpecificationTab = readUtf8(storyboardWidgetSpecificationTabPath)
   const slimToolbarDropdowns = [
@@ -1482,7 +1482,7 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
   const helpCloudflareMediaSectionPath = path.resolve(root, 'src', 'features', 'panels', 'views', 'HelpCloudflareMediaSection.tsx')
   const launcherPath = path.resolve(root, 'src', 'features', 'toolbar', 'ToolbarMenuLauncher.tsx')
   const typesPath = path.resolve(root, 'src', 'features', 'toolbar', 'ToolbarToolMenuTypes.ts')
-  const text = readUtf8(filePath), xrSceneViewsText = readUtf8(xrSceneViewsPath)
+  const text = readUtf8(filePath) + readUtf8(path.resolve(root, 'src/features/toolbar/FloatingPanelViewTabs.tsx')), xrSceneViewsText = readUtf8(xrSceneViewsPath)
   const iconLibraryText = readUtf8(iconLibraryPath)
   const floatingPanelTypesText = readUtf8(floatingPanelTypesPath)
   const uiSliceInitialStateText = readUtf8(uiSliceInitialStatePath)
@@ -1799,10 +1799,10 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
   if (
     !commandCatalogPanelText.includes('data-kg-command-menu-media-thumbnail')
     || !commandCatalogPanelText.includes('mediaListThumbnailFrameClassName')
-    || !commandCatalogPanelText.includes('rounded border')
-    || !commandCatalogPanelText.includes('UI_THEME_TOKENS.panel.border')
-    || !commandCatalogPanelText.includes('UI_THEME_TOKENS.input.bg')
-    || !commandCatalogPanelText.includes('shadow-sm')
+    || !floatingPanelCatalogLayoutText.includes('rounded border')
+    || !floatingPanelCatalogLayoutText.includes('UI_THEME_TOKENS.panel.border')
+    || !floatingPanelCatalogLayoutText.includes('UI_THEME_TOKENS.input.bg')
+    || !floatingPanelCatalogLayoutText.includes('shadow-none')
   ) {
     throw new Error('Expected FloatingPanel Media thumbnails to use the shared tokenized proportional thumbnail frame')
   }

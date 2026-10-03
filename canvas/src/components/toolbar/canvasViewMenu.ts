@@ -69,6 +69,8 @@ const CANVAS_VIEW_SURFACE_MODE_ICON: Record<CanvasSurfaceModeId, CanvasViewOptio
   geospatial: Map,
 }
 const CANVAS_VIEW_RENDERER_OPTION_TITLE: Record<Canvas2dRendererId, string> = {
+  sequence: '2D Renderer: Sequence Diagram',
+  sequenceMermaid: '2D Renderer: Sequence Diagram (Mermaid)',
   d3: UI_COPY.canvasViewRendererD3Title,
   dashboard: UI_COPY.canvasViewRendererDashboardTitle,
   gallery: UI_COPY.canvasViewRendererGalleryTitle,
