@@ -20,7 +20,7 @@ export function GanttTimelineTransportSurface(args: GanttTimelineTransportSurfac
       <GanttTimelineTransportShell
         chromeModel={args.model.chromeModel}
         mediaPlayerModel={args.model.mediaPlayerModel}
-        renderClipOverlay={args.renderClipOverlay}
+        renderClipOverlay={clip => <>{args.renderClipOverlay?.(clip)}{args.model.renderAnnotationOverlay?.(clip)}</>}
         rulerModel={args.model.rulerModel}
         shellModel={args.model.shellModel}
         supplementalLanes={args.supplementalLanes}

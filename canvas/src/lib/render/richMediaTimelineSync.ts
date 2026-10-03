@@ -1,4 +1,6 @@
 import type { GraphData } from '@/lib/graph/types'
+import { readNodeProperties } from '@/lib/graph/nodeProperties'
+import { readNodeFieldString } from '@/lib/canvas/graph-elements/mediaSpecNodeFields'
 import { buildMermaidGanttTimelineModel } from '@/lib/mermaid/mermaidGanttBarInteraction'
 import {
   readFrontmatterMermaidDiagramCodes,
@@ -21,6 +23,73 @@ export type RichMediaTimelineTransportFrame = {
   playing: boolean
   playbackRate: number
   sourcePlayback: boolean
+  frameSampleUrl?: string
+  targetOverlayId?: string
+  targetSourceUrl?: string
+  targetRequestId?: number
+}
+
+export type RichMediaTimelineTargetRequest = {
+  documentKey: string; overlayId: string; sourceUrl: string
+  sourceTimestampMs: number; position: number; frameSampleUrl: string
+}
+export type RichMediaTimelineTargetScope = {
+  documentKey: string; overlayId: string; sourceUrl: string
+  playing: boolean; position: number; playbackRate: number
+}
+
+/** A local paused pin; it never enters the shared frame or BroadcastChannel. */
+export function createRichMediaTimelineTargetController() {
+  let pin: (RichMediaTimelineTargetRequest & { requestId: number }) | null = null
+  let generation = 0
+  const listeners = new Set<() => void>()
+  const clear = (documentKey?: string) => { if (!documentKey || pin?.documentKey === documentKey) pin = null }
+  return {
+    request(request: RichMediaTimelineTargetRequest): number | null {
+      const next = { ...request, documentKey: request.documentKey.trim(), overlayId: request.overlayId.trim(), sourceUrl: request.sourceUrl.trim(), frameSampleUrl: request.frameSampleUrl.trim() }
+      if (!next.documentKey || !next.overlayId || !next.sourceUrl || !next.frameSampleUrl
+        || !Number.isFinite(next.sourceTimestampMs) || next.sourceTimestampMs < 0
+        || !Number.isFinite(next.position) || next.position < 0) return null
+      pin = { ...next, requestId: ++generation }
+      for (const listener of [...listeners]) listener()
+      return generation
+    },
+    clear,
+    observeTransportScope(scope: Pick<RichMediaTimelineTargetScope, 'documentKey' | 'playing' | 'position'>) {
+      if (pin && (pin.documentKey !== scope.documentKey.trim() || scope.playing || pin.position !== scope.position)) clear(pin.documentKey)
+    },
+    subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener) } },
+    resolve(scope: RichMediaTimelineTargetScope): RichMediaTimelineTransportFrame | null {
+      if (!pin) return null
+      if (pin.overlayId !== scope.overlayId) return null
+      if (scope.playing || pin.documentKey !== scope.documentKey || pin.position !== scope.position) { clear(); return null }
+      if (pin.sourceUrl !== scope.sourceUrl) { clear(); return null }
+      return {
+        type: RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_MESSAGE, documentKey: pin.documentKey,
+        position: pin.position, timeMs: pin.sourceTimestampMs, playing: false,
+        playbackRate: scope.playbackRate, sourcePlayback: false, frameSampleUrl: pin.frameSampleUrl,
+        targetOverlayId: pin.overlayId, targetSourceUrl: pin.sourceUrl, targetRequestId: pin.requestId,
+      }
+    },
+  }
+}
+const richMediaTimelineTargetController = createRichMediaTimelineTargetController()
+export const requestRichMediaTimelineTargetFrame = richMediaTimelineTargetController.request
+export const clearRichMediaTimelineTargetFrame = richMediaTimelineTargetController.clear
+export const observeRichMediaTimelineTargetScope = richMediaTimelineTargetController.observeTransportScope
+export const subscribeRichMediaTimelineTargetFrame = richMediaTimelineTargetController.subscribe
+export const resolveRichMediaTimelineTargetFrame = richMediaTimelineTargetController.resolve
+
+/** Exact source ownership from the current typed node, or its projected frame URL. */
+export function resolveRichMediaTimelineTargetSourceUrl(args: { graphData?: GraphData | null; overlayId: string; srcDoc: string }): string {
+  const node = args.graphData?.nodes.find(entry => String(entry.id) === args.overlayId)
+  if (node) {
+    const properties = readNodeProperties(node)
+    if (readNodeFieldString(node, properties, 'kind') === 'video-agent-frame-analysis') return readNodeFieldString(node, properties, 'sourceUrl')
+  }
+  if (!args.srcDoc.includes('data-kg-video-agent-frame-analysis=')) return ''
+  const match = /([^"'\s>]*\/__video_frame\?[^"'\s>]*)/i.exec(args.srcDoc)
+  try { return match ? new URL(match[1].replace(/&amp;/g, '&'), 'http://localhost').searchParams.get('url') || '' : '' } catch { return '' }
 }
 
 /** Local-only boundary control; never stored or sent across BroadcastChannel. */
@@ -80,6 +149,7 @@ export function buildRichMediaTimelineTransportFrame(args: {
     position?: unknown
     sourcePlayback?: unknown
     timeMs?: unknown
+    frameSampleUrl?: unknown
   }
 }): RichMediaTimelineTransportFrame | null {
   const overrideDocumentKey = cleanTimelineTransportKey(args.override?.documentKey)
@@ -110,6 +180,8 @@ export function buildRichMediaTimelineTransportFrame(args: {
     playing: typeof args.override?.playing === 'boolean' ? args.override.playing : args.transportPlaying,
     playbackRate,
     sourcePlayback: args.override?.sourcePlayback !== false,
+    ...(typeof args.override?.frameSampleUrl === 'string' && args.override.frameSampleUrl.trim()
+      ? { frameSampleUrl: args.override.frameSampleUrl.trim() } : {}),
   }
 }
 
@@ -117,6 +189,7 @@ export function publishRichMediaTimelineTransportFrame(payload: RichMediaTimelin
   phase: 'start' | 'end'; control: RichMediaTimelineClockAcknowledgement
 }): void {
   if (typeof window === 'undefined') return
+  if (payload.targetOverlayId) return
   try {
     ;(window as unknown as Record<string, unknown>)[RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY] = payload
     window.dispatchEvent(new CustomEvent(RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, { detail: acknowledgement

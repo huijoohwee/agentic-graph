@@ -146,7 +146,8 @@ function buildRichMediaPanelSrcDocThemeScript(): string {
   ].join('')
 }
 
-function buildRichMediaPanelSrcDocTimelineTransportScript(): string {
+type RichMediaTimelineOwner = { documentKey: string; overlayId: string }
+function buildRichMediaPanelSrcDocTimelineTransportScript(owner?: RichMediaTimelineOwner): string {
   return [
     `<script id="${RICH_MEDIA_PANEL_SRCDOC_TIMELINE_SCRIPT_ID}">`,
     '(function(){',
@@ -157,6 +158,7 @@ function buildRichMediaPanelSrcDocTimelineTransportScript(): string {
     `var channelName=${JSON.stringify(RICH_MEDIA_TIMELINE_TRANSPORT_BROADCAST_CHANNEL)};`,
     `var frameAttr=${JSON.stringify(RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR)};`,
     `var parentFrameKey=${JSON.stringify(RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY)};`,
+    `var owner=${JSON.stringify(owner || null).replace(/</g, '\\u003c')};var targetPin=null,lastTargetRequestId=0;`,
     'var raf=0,pending=null,retry=0,nativeLoopActive=false,nativeLoopBaseTimeMs=0,nativeLoopBaseNowMs=0,nativeLoopRate=1;',
     'var lastParentFrameSignature="";',
     'var sourcePlaybackState=typeof WeakMap==="function"?new WeakMap():null;',
@@ -164,7 +166,7 @@ function buildRichMediaPanelSrcDocTimelineTransportScript(): string {
     'function nowMs(){return performance&&typeof performance.now==="function"?performance.now():Date.now();}',
     'function dispatchFrame(timeMs){',
     'try{window.__AGENTIC_OS_RENDER_TIME_MS__=timeMs;}catch(e){}',
-    'try{window.dispatchEvent(new CustomEvent("agentic-graph:render-frame",{detail:{timeMs:timeMs,seconds:timeMs/1000}}));}catch(e){}',
+    'try{window.dispatchEvent(new CustomEvent("agentic-graph:render-frame",{detail:{timeMs:timeMs,seconds:timeMs/1000,frameSampleUrl:pending&&pending.frameSampleUrl||undefined}}));}catch(e){}',
     '}',
     'function sourcePlaybackFrames(){return Array.prototype.slice.call(document.querySelectorAll("[data-kg-video-agent-source-playback] iframe"));}',
     'function isYouTubeFrame(frame){var src=String(frame&&frame.getAttribute("src")||"");return /youtube(?:-nocookie)?\\.com\\/embed\\//i.test(src);}',
@@ -239,28 +241,30 @@ function buildRichMediaPanelSrcDocTimelineTransportScript(): string {
     '}',
     'raf=requestAnimationFrame(tick);',
     '}',
-    'function receivePayload(payload){',
+    'function receivePayload(payload){var local=arguments[1]===true;',
     'if(!payload||typeof payload!=="object"||payload.type!==messageType)return;',
+    'if(owner&&owner.documentKey&&payload.documentKey!==owner.documentKey)return;',
+    'if(payload.targetOverlayId){if(!local||!owner||payload.targetOverlayId!==owner.overlayId||!payload.targetSourceUrl||!payload.frameSampleUrl||payload.playing||!(payload.targetRequestId>=lastTargetRequestId))return;lastTargetRequestId=payload.targetRequestId;targetPin=payload;}else if(targetPin){if(!local)return;targetPin=null;}',
     'if(window.__AGENTIC_OS_TIMELINE_TRANSPORT_NATIVE_LOOP__)return;',
     'pending=payload;',
     'applyPending();',
     '}',
     'window.addEventListener("message",function(event){',
-    'receivePayload(event&&event.data);',
+    'if(event.source===window.parent)receivePayload(event&&event.data,true);',
     '});',
     'try{if(typeof BroadcastChannel==="function"){var channel=new BroadcastChannel(channelName);channel.onmessage=function(event){receivePayload(event&&event.data);};}}catch(e){}',
     'function readParentFrame(){',
     'try{var parentWindow=window.parent;if(!parentWindow||parentWindow===window)return;var payload=parentWindow[parentFrameKey];',
     'if(!payload||typeof payload!=="object"||payload.type!==messageType)return;',
-    'var signature=[payload.documentKey,payload.timeMs,payload.playing,payload.playbackRate,payload.sourcePlayback].join("|");',
+    'var signature=[payload.documentKey,payload.timeMs,payload.playing,payload.playbackRate,payload.sourcePlayback,payload.targetRequestId,payload.frameSampleUrl].join("|");',
     'if(signature===lastParentFrameSignature)return;lastParentFrameSignature=signature;receivePayload(payload);}catch(e){}',
     '}',
     'try{setInterval(readParentFrame,80);readParentFrame();}catch(e){}',
     'var lastFrameElementSignature="";',
     'function receiveSerializedFrame(raw){',
     'if(!raw)return;try{var payload=JSON.parse(String(raw));if(!payload||typeof payload!=="object"||payload.type!==messageType)return;',
-    'var signature=[payload.documentKey,payload.timeMs,payload.playing,payload.playbackRate,payload.sourcePlayback].join("|");',
-    'if(signature===lastFrameElementSignature)return;lastFrameElementSignature=signature;receivePayload(payload);}catch(e){}',
+    'var signature=[payload.documentKey,payload.timeMs,payload.playing,payload.playbackRate,payload.sourcePlayback,payload.targetRequestId,payload.frameSampleUrl].join("|");',
+    'if(signature===lastFrameElementSignature)return;lastFrameElementSignature=signature;receivePayload(payload,true);}catch(e){}',
     '}',
     'function readFrameElement(){try{var element=window.frameElement;if(element&&element.getAttribute)receiveSerializedFrame(element.getAttribute(frameAttr));}catch(e){}}',
     'try{setInterval(readFrameElement,80);readFrameElement();}catch(e){}',
@@ -286,6 +290,7 @@ function injectStyleIntoDocument(args: {
   title: string
   style: string
   scrollOwner: RichMediaPanelSrcDocScrollOwner
+  timelineOwner?: RichMediaTimelineOwner
 }): string {
   const markedSrcDoc = markHtmlElement(args.srcDoc)
   const existingResetStylePattern = new RegExp(`<style\\b(?=[^>]*\\bid=["']${RICH_MEDIA_PANEL_SRCDOC_STYLE_ID}["'])[^>]*>[\\s\\S]*?<\\/style>`, 'i')
@@ -294,7 +299,7 @@ function injectStyleIntoDocument(args: {
   const existingThemeScriptPattern = new RegExp(`<script\\b(?=[^>]*\\bid=["']${RICH_MEDIA_PANEL_SRCDOC_THEME_SCRIPT_ID}["'])[^>]*>[\\s\\S]*?<\\/script>`, 'i')
   const script = `${buildRichMediaPanelSrcDocThemeScript()}${buildRichMediaPanelSrcDocResizeScript({
     preserveDocumentOverflow: args.scrollOwner === 'media',
-  })}${buildRichMediaPanelSrcDocTimelineTransportScript()}`
+  })}${buildRichMediaPanelSrcDocTimelineTransportScript(args.timelineOwner)}`
   const srcDoc = markedSrcDoc
     .replace(existingResetStylePattern, '')
     .replace(existingResizeScriptPattern, '')
@@ -326,6 +331,7 @@ export function normalizeRichMediaPanelInlineSrcDoc(args: {
   srcDoc: unknown
   title?: unknown
   scrollOwner?: RichMediaPanelSrcDocScrollOwner
+  timelineOwner?: RichMediaTimelineOwner
 }): string {
   const srcDoc = typeof args.srcDoc === 'string' ? args.srcDoc.trim() : ''
   if (!srcDoc) return ''
@@ -338,7 +344,7 @@ export function normalizeRichMediaPanelInlineSrcDoc(args: {
         ? 'media'
         : 'panel')
   const srcDocHash = hashStringToHexCached('rich-media-panel-srcdoc', semanticSrcDoc)
-  const cacheKey = hashSignatureParts(['rich-media-panel-srcdoc', title, scrollOwner, semanticSrcDoc.length, srcDocHash])
+  const cacheKey = hashSignatureParts(['rich-media-panel-srcdoc', title, scrollOwner, semanticSrcDoc.length, srcDocHash, args.timelineOwner?.documentKey || '', args.timelineOwner?.overlayId || ''])
   const cached = richMediaPanelSrcDocCache.get(cacheKey)
   if (cached) return cached
   const normalized = injectStyleIntoDocument({
@@ -346,6 +352,7 @@ export function normalizeRichMediaPanelInlineSrcDoc(args: {
     title,
     style: buildRichMediaPanelSrcDocResetStyle(scrollOwner),
     scrollOwner,
+    timelineOwner: args.timelineOwner,
   })
   richMediaPanelSrcDocCache.set(cacheKey, normalized)
   return normalized
