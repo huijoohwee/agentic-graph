@@ -46,7 +46,7 @@ export function XrTimelineSceneStageControls({
 }) {
   return (
     <section
-      className="xr-camera-motion-mark-selection-controls xr-camera-motion-mark-selection-controls--lane xr-timeline-scene-stage-control xr-timeline-scene-stage-control--selected"
+      className="timeline-transport-clip-controls xr-timeline-scene-stage-control"
       style={sceneEditorStyle}
       aria-label="XR scene stage selector"
       data-kg-xr-motion-stage-field="scene-clip"
@@ -66,15 +66,15 @@ export function XrTimelineSceneStageControls({
       >
         {beatLabel}
       </output>
-      <button type="button" className="App-toolbar__btn min-h-11 px-2 text-xs" style={{ minWidth: 44, flexShrink: 0 }} disabled={saveDisabled} aria-busy={savingScene} onClick={savePlan} data-kg-xr-motion-save="1">
+      <button type="button" className="App-toolbar__btn px-2 text-xs" style={{ flexShrink: 0 }} disabled={saveDisabled} aria-busy={savingScene} onClick={savePlan} data-kg-xr-motion-save="1">
         {savingScene ? 'Saving…' : 'Save'}
       </button>
-      <button type="button" className="App-toolbar__btn min-h-11 px-2 text-xs" style={{ minWidth: 44, flexShrink: 0 }} disabled={!graphReady} onClick={exportPackage} data-kg-xr-motion-export="1">
+      <button type="button" className="App-toolbar__btn px-2 text-xs" style={{ flexShrink: 0 }} disabled={!graphReady} onClick={exportPackage} data-kg-xr-motion-export="1">
         Export
       </button>
       <label className="xr-timeline-control-field" data-kg-xr-timeline-playhead-control="scene-clip">
         <PanelTextInput
-          className="min-h-11 w-16 px-1 py-0 text-xs"
+          className="w-16 px-1 py-0 text-xs"
           type="number"
           min={0}
           max={durationSeconds}
@@ -87,7 +87,6 @@ export function XrTimelineSceneStageControls({
       </label>
       <PanelSelect
         className="xr-timeline-scene-stage-select"
-        style={{ minHeight: 44 }}
         aria-label="XR scene stage"
         value={stageId}
         onValueChange={selectedValueInput => applyStage(selectedValueInput)}

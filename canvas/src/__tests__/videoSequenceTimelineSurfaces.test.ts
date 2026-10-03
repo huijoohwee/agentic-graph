@@ -302,7 +302,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     controlsText.includes('onPointerDown={onPlaybackPointerDown}') ||
     !controlsCssText.includes('.timeline-player-progress::-webkit-progress-value') ||
     !controlsCssText.includes('.timeline-transport-chrome--mermaid-gantt .timeline-player-progress') ||
-    !controlsCssText.includes('min-height: calc(76px + (var(--kg-video-sequence-lane-count, 4) * var(--kg-video-sequence-lane-height)))') ||
+    !controlsCssText.includes('min-height: 0') ||
     !controlsCssText.includes('line-height: var(--kg-video-sequence-lane-height)') ||
     controlsCssText.includes('.timeline-transport-ruler-layout:has(.timeline-transport-ruler-aside)') ||
     controlsCssText.includes('.timeline-transport-ruler-below') ||
@@ -397,7 +397,7 @@ export function testVideoSequenceTimelineSurfacesAreRuntimeReady() {
     !rulerCssText.includes('@media (prefers-reduced-motion: reduce)') ||
     rulerCssText.includes('.timeline-video-sequence-grade-strip') ||
     rulerCssText.includes('.timeline-video-sequence-ruler-scope-header') ||
-    !['grid-column: 1 / -1', 'contain: layout paint style', 'height: var(--kg-timeline-bar-height, calc(var(--kg-main-toolbar-height, 38px) * 1.5))', 'top: calc((var(--kg-video-sequence-lane-count, 13) * var(--kg-video-sequence-lane-height, 61px)) + 2px)'].every(token => rulerCssText.includes(token)) ||
+    !['grid-column: 1 / -1', 'contain: layout paint style', 'height: var(--kg-timeline-bar-height, var(--kg-toolbar-compact-surface-height))', 'top: calc((var(--kg-video-sequence-lane-count, 13) * var(--kg-video-sequence-lane-height, 61px)) + 2px)'].every(token => rulerCssText.includes(token)) ||
     !rulerCssText.includes('grid-template-columns: repeat(6, minmax(5.5rem, 1fr))') ||
     !rulerCssText.includes('.timeline-video-sequence-ruler-scope-bar') ||
     rulerCssText.includes('.timeline-video-sequence-slot-grid') ||

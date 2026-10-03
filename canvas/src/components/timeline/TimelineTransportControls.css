@@ -1,9 +1,15 @@
 @import './TimelineTransportPlayer.css';
 
+.timeline-transport-chrome,
+.timeline-transport-shell {
+  --kg-main-toolbar-height: var(--kg-toolbar-compact-surface-height);
+  --kg-timeline-toolbar-button-size: var(--kg-control-height);
+  --kg-timeline-bar-height: var(--kg-main-toolbar-height);
+  --kg-video-sequence-lane-height: 61px;
+}
 .timeline-transport-shell {
   --kg-timeline-progress: 0%;
   min-width: 0;
-  --kg-main-toolbar-height: calc(var(--kg-control-height) + 10px); --kg-timeline-toolbar-button-size: var(--kg-control-height); --kg-timeline-bar-height: calc(var(--kg-main-toolbar-height) * 1.5); --kg-video-sequence-lane-height: 61px;
   width: 100%;
 }
 .timeline-transport-chrome {
@@ -443,8 +449,8 @@
   min-width: 100%;
   min-height: inherit;
   background:
-    linear-gradient(90deg, rgb(148 163 184 / 0.12) 1px, transparent 1px) repeat-x 0 24px / 25% calc(100% - 24px),
-    linear-gradient(180deg, rgb(255 255 255 / 1) 0, rgb(255 255 255 / 1) 24px, rgb(248 250 252 / 1) 24px, rgb(248 250 252 / 1) 100%);
+    linear-gradient(90deg, rgb(148 163 184 / 0.12) 1px, transparent 1px) repeat-x 0 var(--kg-video-sequence-axis-height, 24px) / 25% calc(100% - var(--kg-video-sequence-axis-height, 24px)),
+    linear-gradient(180deg, rgb(255 255 255 / 1) 0, rgb(255 255 255 / 1) var(--kg-video-sequence-axis-height, 24px), rgb(248 250 252 / 1) var(--kg-video-sequence-axis-height, 24px), rgb(248 250 252 / 1) 100%);
 }
 .timeline-video-sequence-ruler-axis {
   position: sticky;
@@ -452,7 +458,7 @@
   left: 0;
   right: 0;
   z-index: 2;
-  height: 24px;
+  height: var(--kg-video-sequence-axis-height, 24px);
   border-bottom: var(--kg-surface-border);
   background: rgb(255 255 255 / 0.96);
   contain: layout paint;
@@ -473,13 +479,13 @@
   overflow: hidden;
   border-right: var(--kg-surface-border);
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 1) 0, rgb(255 255 255 / 1) 24px, rgb(248 250 252 / 0.96) 24px, rgb(248 250 252 / 0.96) 100%);
+    linear-gradient(180deg, rgb(255 255 255 / 1) 0, rgb(255 255 255 / 1) var(--kg-video-sequence-axis-height, 24px), rgb(248 250 252 / 0.96) var(--kg-video-sequence-axis-height, 24px), rgb(248 250 252 / 0.96) 100%);
 }
 .timeline-video-sequence-lane-sidebar-scroll {
   display: grid;
   align-content: start;
   gap: 0;
-  padding-top: 24px;
+  padding-top: var(--kg-video-sequence-axis-height, 24px);
   transform: translateY(calc(var(--kg-video-sequence-sidebar-scroll-top, 0px) * -1));
   will-change: transform;
 }
