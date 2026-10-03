@@ -278,6 +278,10 @@ export function CardMediaPreview({
   onReady?: () => void
   onError?: () => void
 }) {
+  const handleVideoElement = React.useCallback((element: HTMLVideoElement | null) => {
+    onVideoElement?.(element)
+    onMediaElement?.(element)
+  }, [onVideoElement, onMediaElement])
   const mediaUrl = normalizeCardMediaUrl(url)
   const mediaSrcDoc = typeof srcDoc === 'string' ? srcDoc.trim() : ''
   const fallbackHref = normalizeCardMediaUrl(href)
@@ -384,10 +388,7 @@ export function CardMediaPreview({
         playsInline
         preload="metadata"
         draggable={false}
-        ref={element => {
-          onVideoElement?.(element)
-          onMediaElement?.(element)
-        }}
+        ref={handleVideoElement}
         onLoadedMetadata={() => onReady?.()}
         onLoadedData={() => onReady?.()}
         onCanPlay={() => onReady?.()}

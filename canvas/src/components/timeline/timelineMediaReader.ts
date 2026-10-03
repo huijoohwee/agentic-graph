@@ -513,7 +513,8 @@ export function useTimelineMediaReaderSummaries(args: {
   active: boolean
   urls: readonly string[]
 }): Readonly<Record<string, TimelineMediaReaderSummary>> {
-  const urls = React.useMemo(() => Array.from(new Set(args.urls.map(clean).filter(Boolean))).sort(), [args.urls])
+  const urlsKey = JSON.stringify(Array.from(new Set(args.urls.map(clean).filter(Boolean))).sort())
+  const urls = React.useMemo<string[]>(() => JSON.parse(urlsKey), [urlsKey])
   const [summaries, setSummaries] = React.useState<Readonly<Record<string, TimelineMediaReaderSummary>>>({})
 
   React.useEffect(() => {

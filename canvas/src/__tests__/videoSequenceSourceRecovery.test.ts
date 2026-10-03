@@ -12,7 +12,7 @@ import {
   subscribeVideoSequenceSources,
 } from '@/components/timeline/videoSequenceSourceRegistry'
 import type { VideoSequenceTimelineSource } from '@/components/timeline/videoSequenceTimeline'
-import { loadTimelineMediaReaderSummary } from '@/components/timeline/timelineMediaReader'
+import { loadTimelineMediaReaderSummary, useTimelineMediaReaderSummaries, type TimelineMediaReaderSummary } from '@/components/timeline/timelineMediaReader'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { JSDOM } from 'jsdom'
@@ -400,6 +400,71 @@ test('mounted preview routes YouTube pages through the owned iframe and preserve
     for (const [key, descriptor] of previous) {
       if (descriptor) Object.defineProperty(globalThis, key, descriptor)
       else Reflect.deleteProperty(globalThis, key)
+    }
+  }
+})
+
+
+test('media reader URL sets settle across recreated arrays and still follow changes and deactivation', async () => {
+  const dom = new JSDOM('<main id="reader"></main>', { url: 'http://127.0.0.1/' })
+  const previous = new Map(['window', 'document', 'fetch', 'IS_REACT_ACT_ENVIRONMENT'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
+  Object.defineProperties(globalThis, {
+    window: { configurable: true, value: dom.window }, document: { configurable: true, value: dom.window.document },
+    IS_REACT_ACT_ENVIRONMENT: { configurable: true, value: true },
+  })
+  const reads: string[] = []
+  Object.defineProperty(globalThis, 'fetch', { configurable: true, value: async (input: string) => {
+    reads.push(String(input)); return new Response('', { status: 404 })
+  } })
+  const createElement = dom.window.document.createElement.bind(dom.window.document)
+  Object.defineProperty(dom.window.document, 'createElement', { configurable: true, value: (name: string, options?: ElementCreationOptions) => {
+    if (name !== 'video' && name !== 'audio') return createElement(name, options)
+    const probe = {
+      src: '', duration: 1, videoWidth: 0, videoHeight: 0,
+      onloadedmetadata: null as null | (() => void), onerror: null as null | (() => void),
+      canPlayType: () => 'probably', removeAttribute: () => { probe.src = '' },
+      load: () => { if (probe.src) queueMicrotask(() => probe.onloadedmetadata?.()) },
+    }
+    return probe
+  } })
+  const snapshots: Readonly<Record<string, TimelineMediaReaderSummary>>[] = []
+  function Reader(props: { active: boolean, urls: string[] }) {
+    assert.ok(snapshots.length < 32, 'equivalent URL arrays must not cause an unbounded state-update loop')
+    const summaries = useTimelineMediaReaderSummaries({ active: props.active, urls: [...props.urls] })
+    snapshots.push(summaries)
+    return React.createElement('output', null, Object.keys(summaries).join(','))
+  }
+  const root = createRoot(dom.window.document.getElementById('reader')!)
+  const a = 'blob:reader-url-set-a', b = 'blob:reader-url-set-b', c = 'blob:reader-url-set-c'
+  const render = async (active: boolean, urls: string[]) => {
+    await act(async () => { root.render(React.createElement(Reader, { active, urls })) })
+    return snapshots[snapshots.length - 1]
+  }
+  try {
+    const ready = await render(true, [b, ` ${a} `, a, ''])
+    assert.deepEqual(Object.keys(ready), [a, b])
+    assert.equal(ready[a].status, 'ready'); assert.equal(ready[b].status, 'ready')
+    assert.deepEqual(reads.sort(), [a, b], 'one local metadata read per distinct normalized source')
+    const settledRenders = snapshots.length
+    const equivalent = await render(true, [a, b, b, '  '])
+    assert.equal(equivalent, ready, 'equivalent reallocated sets keep the settled summary object')
+    assert.equal(snapshots.length, settledRenders + 1, 'an explicit parent rerender must not schedule extra loading/ready renders')
+    const changed = await render(true, [c, a])
+    assert.deepEqual(Object.keys(changed), [a, c]); assert.equal(changed[c].status, 'ready')
+    assert.deepEqual(reads.sort(), [a, b, c], 'a genuinely new URL is read once, while existing sources stay cached')
+    const inactive = await render(false, [a, c])
+    assert.deepEqual(inactive, {})
+    assert.equal(await render(false, [c, a, c]), inactive, 'an equivalent inactive set also stays settled')
+    assert.deepEqual(Object.keys(await render(true, [c])), [c], 'reactivation still publishes the requested cached source')
+    assert.deepEqual(reads.sort(), [a, b, c], 'reactivation uses the existing cache')
+  } finally {
+    try { await act(async () => { root.unmount() }) } finally {
+      try { dom.window.close() } finally {
+        for (const [key, descriptor] of previous) {
+          if (descriptor) Object.defineProperty(globalThis, key, descriptor)
+          else Reflect.deleteProperty(globalThis, key)
+        }
+      }
     }
   }
 })
