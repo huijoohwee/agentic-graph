@@ -134,6 +134,7 @@ export type {
 } from 'grph-shared/geospatial/regionalPoiGeo'
 export {
   SINGAPORE_FLIGHT_GEO_REFERENCE,
+  projectLocalMetersToGeospatial,
   projectSingaporeLocalMeters,
   projectSingaporeLocalRectangle,
 } from 'grph-shared/geospatial/singaporeFlightGeo'

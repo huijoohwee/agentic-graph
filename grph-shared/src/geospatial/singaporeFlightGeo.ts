@@ -49,20 +49,40 @@ const assertFiniteDistance = (value: number, label: string): void => {
   }
 }
 
+export function projectLocalMetersToGeospatial(
+  eastMeters: number,
+  northMeters: number,
+  anchor: GeospatialCoordinate,
+): GeospatialCoordinate {
+  assertFiniteDistance(eastMeters, 'eastMeters')
+  assertFiniteDistance(northMeters, 'northMeters')
+  if (!Array.isArray(anchor) || anchor.length !== 2
+    || !Number.isFinite(anchor[0]) || Math.abs(anchor[0]) > 180
+    || !Number.isFinite(anchor[1]) || Math.abs(anchor[1]) >= 90) {
+    throw new RangeError('anchor must be a finite [longitude, latitude] away from the poles')
+  }
+  const latitudeRadians = anchor[1] * Math.PI / 180
+  if (Math.abs(Math.cos(latitudeRadians)) <= Number.EPSILON) {
+    throw new RangeError('anchor longitude scale is numerically degenerate')
+  }
+  const metersPerLongitudeDegree =
+    METERS_PER_LATITUDE_DEGREE * Math.cos(latitudeRadians)
+  const longitude = anchor[0] + eastMeters / metersPerLongitudeDegree
+  const latitude = anchor[1] + northMeters / METERS_PER_LATITUDE_DEGREE
+  if (!Number.isFinite(longitude) || Math.abs(longitude) > 180
+    || !Number.isFinite(latitude) || Math.abs(latitude) >= 90) {
+    throw new RangeError('local projection exceeds finite geographic coordinate bounds')
+  }
+  return Object.freeze([longitude, latitude])
+}
+
+/** Compatibility entry for existing regional host consumers. */
 export function projectSingaporeLocalMeters(
   eastMeters: number,
   northMeters: number,
   anchor: GeospatialCoordinate = SINGAPORE_FLIGHT_GEO_ANCHOR,
 ): GeospatialCoordinate {
-  assertFiniteDistance(eastMeters, 'eastMeters')
-  assertFiniteDistance(northMeters, 'northMeters')
-  const latitudeRadians = anchor[1] * Math.PI / 180
-  const metersPerLongitudeDegree =
-    METERS_PER_LATITUDE_DEGREE * Math.cos(latitudeRadians)
-  return Object.freeze([
-    anchor[0] + eastMeters / metersPerLongitudeDegree,
-    anchor[1] + northMeters / METERS_PER_LATITUDE_DEGREE,
-  ])
+  return projectLocalMetersToGeospatial(eastMeters, northMeters, anchor)
 }
 
 export function projectSingaporeLocalRectangle(
