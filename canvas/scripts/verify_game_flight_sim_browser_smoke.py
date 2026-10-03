@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 from playwright.sync_api import sync_playwright
 
+from lib.game_flight_sim_smoke_bootstrap import BoundedEvaluationPage
 from lib.game_flight_sim_smoke_deadlines import (
     GAMEPLAY_WEBSOCKET_PROBE_PATH,
 )
@@ -100,6 +101,44 @@ def build_websocket_probe_url(base_url: str) -> str:
     ).geturl()
 
 
+class DeferredAuthoringMirrorReceipts:
+    """Retain real HTTP responses; decode bodies outside transport callbacks."""
+    def __init__(self) -> None:
+        self.requests: dict[Any, dict[str, Any]] = {}
+        self.responses: list[Any] = []
+        self.finished: set[Any] = set()
+
+    def admit(self, request: Any, mirror: dict[str, Any]) -> None:
+        self.requests[request] = mirror
+
+    def record_response(self, response: Any) -> None:
+        if response.request in self.requests:
+            self.responses.append(response)
+
+    def record_finished(self, request: Any) -> None:
+        if request in self.requests:
+            self.finished.add(request)
+
+    def decode(self, *, bootstrap_closed: bool) -> list[dict[str, Any]]:
+        if not bootstrap_closed:
+            raise AssertionError("native authoring bootstrap phase did not close")
+        receipts = []
+        for response in self.responses:
+            if response.request not in self.finished:
+                raise AssertionError("native authoring HTTP response did not finish")
+            mirror = self.requests[response.request]
+            try:
+                result = response.json()
+            except Exception:
+                result = None
+            receipts.append({
+                "workspacePath": mirror["workspacePath"], "sha256": mirror["sha256"],
+                "status": response.status, "contentType": response.headers.get("content-type", ""),
+                "result": result,
+            })
+        return receipts
+
+
 def main() -> None:
     if RUN_INDEX < 1 or RUN_INDEX > RUN_COUNT:
         raise AssertionError(
@@ -133,7 +172,7 @@ def main() -> None:
     assert_authoring_mirror_fixture(owned_store_root, repository_root)
     authoring_bootstrap_open = True
     authoring_mirror_requests = []
-    authoring_mirror_receipts = []
+    authoring_mirror_receipts = DeferredAuthoringMirrorReceipts()
     requests: list[dict[str, str]] = []
     blocked_requests: list[dict[str, str]] = []
     fs_list_requests: list[dict[str, Any]] = []
@@ -168,6 +207,7 @@ def main() -> None:
             )
             if mirror is not None:
                 authoring_mirror_requests.append(mirror)
+                authoring_mirror_receipts.admit(request, mirror)
                 route.continue_()
                 return
             blocked_requests.append(request_record(request))
@@ -192,24 +232,7 @@ def main() -> None:
             )
 
         def record_response(response: Any) -> None:
-            mirror = read_proof_authoring_mirror_request(
-                response.request, local_origin, expected_mirror_root,
-                bootstrap_open=True,
-            )
-            if mirror is not None and any(
-                item["workspacePath"] == mirror["workspacePath"]
-                and item["sha256"] == mirror["sha256"]
-                for item in authoring_mirror_requests
-            ):
-                try:
-                    result = response.json()
-                except Exception:
-                    result = None
-                authoring_mirror_receipts.append({
-                    "workspacePath": mirror["workspacePath"], "sha256": mirror["sha256"],
-                    "status": response.status, "contentType": response.headers.get("content-type", ""),
-                    "result": result,
-                })
+            authoring_mirror_receipts.record_response(response)
             if response.status < 400:
                 return
             failed_responses.append(
@@ -237,11 +260,12 @@ def main() -> None:
         context.route("**/*", route_request)
         context.on("request", record_request)
         context.on("response", record_response)
+        context.on("requestfinished", authoring_mirror_receipts.record_finished)
         # Routed sockets do not reach the server unless the handler calls
         # connect_to_server(), which this proof never does.
         context.route_web_socket("**/*", route_websocket)
 
-        page = context.new_page()
+        page = BoundedEvaluationPage(context.new_page())
         # The Page observer supplies the WebSocket lifecycle event while the
         # pre-page context route owns the fail-closed connection boundary.
         page.on("websocket", record_websocket)
@@ -253,7 +277,9 @@ def main() -> None:
         )
         page.on("pageerror", lambda error: page_errors.append(str(error)))
         try:
-            ledger = BrowserVerificationLedger()
+            ledger = BrowserVerificationLedger(
+                checkpoint_path=OUTPUT_DIR / f"{OUTPUT_STEM}.partial.json"
+            )
             state = run_flight_runtime_verifications(
                 page,
                 expected_branch=EXPECTED_BRANCH,
@@ -352,7 +378,7 @@ def main() -> None:
                 "native website authoring mirror ownership",
                 lambda: assert_authoring_mirror_ownership(
                     requests=authoring_mirror_requests,
-                    receipts=authoring_mirror_receipts,
+                    receipts=authoring_mirror_receipts.decode(bootstrap_closed=not authoring_bootstrap_open),
                     store_root=owned_store_root,
                     repository_root=repository_root,
                     native_workspace_texts=page.evaluate(
