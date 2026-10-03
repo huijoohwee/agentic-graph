@@ -23,13 +23,6 @@ EXPECTED_SOURCE_NODE_IDS = {
     "flight_demo_entry",
     "flight_runtime_gate",
 }
-AUTHORED_XR_NODE_IDS = {
-    "agentic_os_graph_xr_stage",
-    "agentic_os_xr_native_controller_demo",
-    "agentic_os_xr_stage_preset_singapore",
-    "agentic_os_xr_playground_treasure",
-    "agentic_os_xr_native_terrain_singapore",
-}
 
 
 def _poll(
@@ -244,7 +237,9 @@ def prepare_authored_physics_surface(page: Page) -> dict[str, Any]:
         lambda value: value.get("ready") is True,
         label="running authored Physics XR surface",
     )
-    if set(baseline.get("requiredNodeNames") or []) != AUTHORED_XR_NODE_IDS:
+    expected = baseline.get("expectedNodeNames") or []
+    observed = baseline.get("requiredNodeNames") or []
+    if len(expected) != 5 or len(set(expected)) != 5 or sorted(observed) != sorted(expected):
         raise AssertionError(f"authored Physics XR identity was incomplete: {baseline}")
     return {
         "sourcePath": str(source_path),

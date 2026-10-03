@@ -189,7 +189,7 @@ def main() -> None:
             executable_path=local_chromium_executable(),
             args=["--enable-webgl", "--use-angle=swiftshader"],
         )
-        context = browser.new_context(viewport={"width": 1100, "height": 962})
+        context = browser.new_context(viewport={"width": 1100, "height": 962}, service_workers="block")
 
         def route_websocket(websocket_route: Any) -> None:
             websocket_route_hits.append(str(websocket_route.url))
@@ -201,16 +201,19 @@ def main() -> None:
             ):
                 route.continue_()
                 return
+            authoring_diagnostic: dict[str, Any] = {}
             mirror = read_proof_authoring_mirror_request(
                 request, local_origin, expected_mirror_root,
                 bootstrap_open=authoring_bootstrap_open,
+                owned_store_root=owned_store_root, repository_root=repository_root,
+                diagnostics=authoring_diagnostic,
             )
             if mirror is not None:
                 authoring_mirror_requests.append(mirror)
                 authoring_mirror_receipts.admit(request, mirror)
                 route.continue_()
                 return
-            blocked_requests.append(request_record(request))
+            blocked_requests.append({**request_record(request), **({"authoringDiagnostic": authoring_diagnostic} if authoring_diagnostic else {})})
             route.abort("blockedbyclient")
 
         def record_websocket(websocket: Any) -> None:

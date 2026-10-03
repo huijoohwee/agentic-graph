@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import hashlib
 import json
+import os
 import re
 from typing import Any, TypedDict
 from urllib.parse import parse_qsl, unquote, urlparse
@@ -99,14 +100,54 @@ def read_proof_authoring_mirror_request(
     expected_output_root: Path,
     *,
     bootstrap_open: bool,
+    owned_store_root: Path | None = None,
+    repository_root: Path | None = None,
+    diagnostics: dict[str, Any] | None = None,
 ) -> AuthoringMirrorRequest | None:
     """Only the native bootstrap inventory mirror may write in this proof."""
+    def reject(reason: str) -> None:
+        if diagnostics is not None:
+            diagnostics["reason"] = reason
+        return None
+
     try:
         parsed = urlparse(str(request.url))
     except ValueError:
         return None
-    headers = {str(key).lower(): str(value) for key, value in request.headers.items()}
+    if parsed.netloc != local_origin or parsed.path != AUTHORING_MIRROR_PATH:
+        return None
+    if not bootstrap_open or str(request.method) != "POST":
+        return reject("bootstrap-method-contract")
+    try:
+        headers = {str(key).lower(): str(value) for key, value in request.all_headers().items()}
+    except Exception:
+        return reject("transport-headers")
+    owned_store_valid = False
+    if (owned_store_root is not None and repository_root is not None
+        and os.environ.get("AGENTIC_OS_WORKSPACE_STORE_ROOT") == str(owned_store_root)):
+        try:
+            assert_authoring_mirror_fixture(owned_store_root, repository_root)
+            owned_store_valid = True
+        except AssertionError:
+            pass
+    try:
+        frame = request.frame
+        frame_url = urlparse(str(frame.url))
+        main_frame_matches = (frame.parent_frame is None and frame_url.scheme == parsed.scheme
+                              and frame_url.netloc == local_origin and frame_url.path in {"/", "/index.html"}
+                              and not frame_url.params and not frame_url.fragment
+                              and parse_qsl(frame_url.query, keep_blank_values=True) == [("kgFlightSimBrowserProof", "1")])
+    except Exception:
+        main_frame_matches = False
+    fetch_site = headers.get("sec-fetch-site")
+    fetch_site_allowed = fetch_site == "same-origin" or (fetch_site is None and main_frame_matches and owned_store_valid)
     raw = request.post_data
+    if diagnostics is not None:
+        diagnostics.update(bootstrapOpen=bootstrap_open, isPost=str(request.method) == "POST",
+                           jsonContentType=headers.get("content-type", "").split(";")[0].strip().lower() == "application/json",
+                           originMatches=headers.get("origin") == f"{parsed.scheme}://{local_origin}",
+                           fetchSitePresent=fetch_site is not None, fetchSiteAllowed=fetch_site_allowed,
+                           mainFrameMatches=main_frame_matches, ownedStoreValid=owned_store_valid)
     if (
         not bootstrap_open or str(request.method) != "POST"
         or parsed.scheme not in {"http", "https"}
@@ -115,37 +156,50 @@ def read_proof_authoring_mirror_request(
         or getattr(request, "service_worker", None) is not None
         or headers.get("content-type", "").split(";")[0].strip().lower() != "application/json"
         or headers.get("origin") != f"{parsed.scheme}://{local_origin}"
-        or headers.get("sec-fetch-site") not in {"same-origin", "none"}
+        or not fetch_site_allowed
         or not isinstance(raw, str)
     ):
-        return None
+        return reject("transport-contract")
     try:
-        if len(raw.encode("utf-8")) > AUTHORING_MIRROR_MAX_BYTES:
-            return None
+        raw_bytes = len(raw.encode("utf-8"))
+        if diagnostics is not None:
+            diagnostics["requestBytes"] = raw_bytes
+        if raw_bytes > AUTHORING_MIRROR_MAX_BYTES:
+            return reject("request-size")
         body = json.loads(raw, object_pairs_hook=_unique_json_object)
     except (TypeError, ValueError, UnicodeError):
-        return None
+        return reject("request-json")
+    if diagnostics is not None and isinstance(body, dict):
+        diagnostics.update(knownBodyFields=sorted(set(body) & {"saveOnly", "kind", "outputRoot", "snapshot"}),
+                           unknownBodyFieldCount=len(set(body) - {"saveOnly", "kind", "outputRoot", "snapshot"}),
+                           outputRootPresent="outputRoot" in body,
+                           explicitOutputRootMatches=body.get("outputRoot") == str(expected_output_root))
     if (not isinstance(body, dict)
-        or set(body) != {"saveOnly", "kind", "outputRoot", "snapshot"}
+        or set(body) not in ({"saveOnly", "kind", "outputRoot", "snapshot"}, {"saveOnly", "kind", "snapshot"})
         or body["saveOnly"] is not True or body["kind"] != "file"
-        or body["outputRoot"] != str(expected_output_root)):
-        return None
+        or ("outputRoot" in body and body["outputRoot"] != str(expected_output_root))):
+        return reject("body-contract")
+    if "outputRoot" not in body:
+        if not owned_store_valid:
+            return reject("owned-store-contract")
     snapshot = body["snapshot"]
     if not isinstance(snapshot, dict) or set(snapshot) != {"workspacePath", "text"}:
-        return None
+        return reject("snapshot-contract")
     workspace_path, text = snapshot["workspacePath"], snapshot["text"]
     if (not isinstance(workspace_path, str)
         or not re.fullmatch(r"/websites/[A-Za-z0-9_][A-Za-z0-9._-]{0,63}/_import-index\.md", workspace_path)
         or workspace_path.split("/")[2].endswith((".", "-"))
         or re.match(r"^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)", workspace_path.split("/")[2], re.I)
         or not isinstance(text, str)):
-        return None
+        return reject("workspace-path-contract")
     try:
         data = text.encode("utf-8")
+        if diagnostics is not None:
+            diagnostics["textBytes"] = len(data)
         if not _is_managed_inventory(text, workspace_path):
-            return None
+            return reject("managed-inventory-contract")
     except (UnicodeError, ValueError):
-        return None
+        return reject("managed-inventory-contract")
     return {"workspacePath": workspace_path, "text": text,
             "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
 
