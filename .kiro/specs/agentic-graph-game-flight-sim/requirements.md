@@ -400,3 +400,16 @@ External references inform conceptual principles only. Maintainers attest that t
 2. IF a Flight gameplay operation explicitly attempts transport through the bounded gameplay-call seam, THEN THE Flight runtime SHALL synchronously reject it through the existing local blocked-operation error before invoking the supplied executor.
 3. WHILE Flight is active, THE independent Geo runtime SHALL retain ownership of its established MapLibre provider transport, and Flight SHALL NOT replace global browser transport functions or classify Geo style and tile requests as gameplay requests.
 4. WHEN Motion Control starts while Flight is active, THE existing LiteRT runtime SHALL load its checked-in local assets and SHALL contribute normalized pose input through the shared input owner without becoming a gameplay-network, renderer, camera, flight-policy, or external-dependency owner.
+
+### Requirement 28: Shared scenario-independent presentation and pacing
+
+**User Story:** As a player, I want shared display and simulation-speed controls, so that I can rehearse any authored scenario at a useful pace without changing its deterministic physics.
+
+#### Acceptance Criteria
+
+1. THE HUD and FloatingPanel SHALL consume one browser-local immutable presentation settings snapshot, with HUD overlays and Navigation enabled and Simulation speed at `1×` by default; supported rates SHALL be exactly `0.5×`, `1×`, and `2×`.
+2. WHEN either surface changes a setting, THEN both surfaces SHALL immediately project the same value with accessible pressed-state controls; invalid settings SHALL fail synchronously and atomically without changing the snapshot.
+3. WHEN HUD overlays are disabled, THEN only optional telemetry and the course cue SHALL hide; the objective, runtime/save errors, envelope warning, touch controls, camera controls, and lifecycle actions SHALL remain available. Navigation SHALL independently govern the existing north-up insets and SHALL NOT change MapLibre layer or camera ownership.
+4. WHEN Simulation speed changes, THEN the clock SHALL change only the wall-clock interval between serialized ticks; every physics step SHALL remain exactly `1 / 60` second. Identical normalized inputs for identical tick counts SHALL produce identical ECS captures at every supported rate.
+5. THE clock SHALL retain at most one in-flight step, coalesce requests, replace stale scheduled wakes after a rate change, and prevent queued work after disposal.
+6. THE settings SHALL remain ephemeral, with no Decisions persistence, new command grammar, new tool, transport, dependency, or mission/scenario/location literals. Scenario identifiers, failure windows, route content, and rehearsal instructions SHALL remain in their existing authored demo/scenario owners.

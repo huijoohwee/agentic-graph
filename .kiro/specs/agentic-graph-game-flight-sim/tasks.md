@@ -96,4 +96,11 @@ Implement one browser-local, deterministic Flight Sim mission on the composed ag
 
 ## Proof Boundary
 
+- [x] 12. Add shared scenario-independent presentation and simulation pacing (Requirement 28).
+  - [x] Use one validated ephemeral settings owner and accessible shared HUD/FloatingPanel controls.
+  - [x] Keep critical objective/error/envelope/lifecycle controls visible and existing map/camera owners unchanged.
+  - [x] Preserve fixed-step physics; test rate changes, backpressure, disposal, and equal-input/equal-tick ECS captures.
+  - [x] Keep scenario-specific rehearsal content in the existing demo; add no runtime mission or location policy.
+  - [ ] Renew exact-candidate aggregate and two serial browser receipts; source checks alone do not complete Task 11.
+
 Checked implementation tasks describe source present in the repository. The final unchecked task is intentionally separate: no exact-HEAD browser, protected integration, production, or deployment claim follows from source completion alone.

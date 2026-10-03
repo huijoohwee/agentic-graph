@@ -426,11 +426,11 @@ export const testGeospatialOverlayHostOverlaysSvgFallbackWhenMapLibreMountsBlank
   if (!hookText.includes("map.on?.('sourcedata'")) {
     throw new Error('Expected MapLibre basemap hook to listen for source tile activity before declaring mounted basemaps blank')
   }
-  if (!hookText.includes("await import('maplibre-gl/dist/maplibre-gl.js')")) {
-    throw new Error('Expected MapLibre basemap hook to load the browser dist build so vector-tile workers are available')
+  if (!hookText.includes("await import('maplibre-gl')")) {
+    throw new Error('Expected MapLibre basemap hook to load the supported package export with its worker distribution')
   }
-  if (hookText.includes("await import('maplibre-gl')")) {
-    throw new Error('Expected MapLibre basemap hook to avoid the source entrypoint with an empty default worker URL')
+  if (hookText.includes("import('maplibre-gl/dist/")) {
+    throw new Error('Expected MapLibre basemap hook to avoid unsupported distribution subpaths')
   }
   if (!hookText.includes('BASEMAP_SOURCE_ACTIVITY_GRACE_MS')) {
     throw new Error('Expected MapLibre basemap hook to keep active tile sources out of premature blank fallback')

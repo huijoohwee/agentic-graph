@@ -3,8 +3,8 @@ title: "agentic-graph Game Flight Sim PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-game-flight-sim-prd-tad"
 author: "airvio / joohwee"
 date: "2026-09-22"
-updated: "2026-09-22"
-version: "1.5.2"
+updated: "2026-10-03"
+version: "1.5.3"
 status: "runtime-ready"
 runtime_claim: "local-runtime-ready"
 evidence_status: "exact-head source and browser proof required at every handoff"
@@ -61,17 +61,17 @@ local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-0232231d4a19--offline-learning-plan"
-agent_id: "codex-offline-learning-plan"
+worktree_id: "device-0232231d4a19--flight-sim-evidence-walkthrough"
+agent_id: "codex-flight-sim-evidence-walkthrough"
 guideline_revision: "2.7.0"
 guideline_source: "$GITHUB_ROOT/huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "1.5.1"
-prd_revision: "1.5.2"
-tad_revision: "1.5.2"
-adr_revision: "1.5.2"
-mvp_revision: "1.5.2"
-gtm_revision: "1.5.2"
+previous_document_version: "1.5.2"
+prd_revision: "1.5.3"
+tad_revision: "1.5.3"
+adr_revision: "1.5.3"
+mvp_revision: "1.5.3"
+gtm_revision: "1.5.3"
 ---
 
 # agentic-graph Game Flight Sim PRD-TAD-ADR-MVP-GTM
@@ -438,7 +438,7 @@ This module is local-runtime-ready; every review candidate must re-establish tha
 
 ## Planning revision — reference implementation
 
-All five roles below consume `PLAN-AGENTIC-GRAPH-GAME-FLIGHT-SIM-PRD-TAD-ADR-MVP-GTM@1.5.2`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The historical review used guideline v2.7.0; the new proposal below records its current authoring input separately. The shared maturity rubric loads on demand.
+All five roles below consume `PLAN-AGENTIC-GRAPH-GAME-FLIGHT-SIM-PRD-TAD-ADR-MVP-GTM@1.5.3`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The historical review used guideline v2.7.0; the new proposal below records its current authoring input separately. The shared maturity rubric loads on demand.
 
 | Role | Owning content at this revision |
 |---|---|
@@ -465,7 +465,7 @@ Experience observations, current VCC execution and buyer/payment evidence are un
 
 ## Offline learning proposal - reference implementation
 
-**Scope and authority.** PRD, TAD, ADR, MVP and GTM below join this document's `1.5.2` revision.
+**Scope and authority.** PRD, TAD, ADR, MVP and GTM below join this document's `1.5.3` revision.
 This proposal records the earlier structured-control alternative. The separately authored offline Python learning specification now requires Python execution; this alternative does not satisfy that requirement and does not authorize a competing evaluator. Its L01–L05 criteria remain historical proposal evidence, not implemented acceptance. Accepted Kiro requirements stay unchanged. Any future Flight-specific implementation must update `.kiro/specs/agentic-graph-game-flight-sim/{requirements,design,tasks}.md`
 at its normative owner before implementation, and this derived document together.
 Do not modify the shared XR workbench while another active lane owns it.
@@ -553,3 +553,23 @@ is zero; development cost and savings are unmeasured.
 
 **Handoff:** document checks prove no runtime or release outcome; each effect retains its receipt.
 Future Flight acceptance must name its exact normative revision. Python learning implementation follows its separate specification and source owners; this historical proposal grants no language or full-offline-scenery decision.
+
+## Shared presentation and rehearsal increment — reference implementation
+
+PRD, TAD, ADR, MVP and GTM consume revision `1.5.3`; normative authority remains Requirement 28 in the repository-tracked Kiro package. Authoring input: PRD/TAD/ADR/MVP/GTM guideline `3.4.0` at `82835ac37d524643faa6b9703cb077ea9474ab15`; this bounded increment does not claim a full retrospective guideline audit.
+
+**PRD:** one player rehearses the existing authored instrument-uncertainty scenario and chooses how much optional instrumentation to display and how quickly fixed ticks arrive. Acceptance: both native surfaces synchronize HUD overlays, Navigation and `0.5×`/`1×`/`2×`; critical objective/error/envelope/lifecycle controls remain available; equal inputs at equal ticks produce equal captures. This increment is synthetic training; buyer pain and observed aviation evidence remain unvalidated.
+
+**TAD:** one ephemeral immutable settings owner feeds one shared accessible React control component and the retained serialized clock. No new service, provider, transport, tool, persistence owner or package is introduced. The new runtime code has no mission, location, route, failure-window or demo-file assumptions; the existing seed and scenario owners carry those details. Existing renderer and camera ownership remain authoritative.
+
+**ADR-P01:** choose wall-clock pacing with fixed `1 / 60` physics rather than scaling physics delta or altering replay content. This preserves equal-input/equal-tick determinism; wall-time input sampling can differ between rates, so comparisons must align tick-indexed inputs. Requests coalesce behind one in-flight tick, obsolete wakes are replaced, and disposal cancels pending scheduling. Settings reset in memory and do not enter Decisions.
+
+**MVP:** enhance the existing seed with a stopped-state mission/failure selection, explicit restart, bounded failure window, reliability inspection and terminal local debrief. HUD and FloatingPanel controls share values; optional instrument/course-cue visibility and existing north-up inset visibility are independent. Existing phone inset responsiveness is preserved. The walkthrough introduces no arbitrary replay/export command or real-data ingestion.
+
+**GTM:** first validate a guided practice session using completion, setting comprehension and debrief usefulness. A paid workshop remains a discovery hypothesis; no demand, revenue, savings or outreach outcome is established. Runtime increment uses existing local assets and zero paid dependencies.
+
+**Budget and verification:** three new source/test modules plus one shared UI test, no new package; new product modules remain below 600 lines and 500 kB each. Focused settings/clock/ECS checks passed 25/25; shared-consumer UI/native-entry checks passed 6/6 and geospatial source checks passed 2/2. Existing loader now uses the installed renderer's public package export; the cue check uses its stable identity. The existing 1,322-line loader owner did not grow; splitting that owner is outside this increment. Exact committed-candidate aggregate and two serial browser receipts remain separate from these source observations; this document renews no release or deployment evidence.
+
+| Continuity | CID | RAO | Date |
+|---|---|---|---|
+| `PLAN-AGENTIC-GRAPH-GAME-FLIGHT-SIM-PRD-TAD-ADR-MVP-GTM@1.5.3` | C: Existing admitted Flight owners and user-authorized dual document/runtime scope. · I: Rehearse authored uncertainty with scenario-independent controls. · D: Add shared visibility and fixed-tick pacing; keep scenario content in demo owners. | R: Engineer · A: Engineer implements Requirement 28 in the admitted native lane. · O: One bounded increment and joined demo/specification. · check: affected tests plus clean-candidate aggregate and serial browser receipts | 2026-10-03 |

@@ -294,6 +294,59 @@ The mission uses the fixed `flight-meters-20` transform: one authored Singapore 
 
 Four meaningful systems run in stable transactional order: `InputIntegrationSystem`, `FlightModelSystem`, `CollisionResolverSystem`, and `ObjectiveSystem`. The Agentic ECS harness emits the one post-systems Cost_Log, and immutable render/HUD projection is captured only after the World commits. A failing system rolls back itself while retaining prior same-tick commits. Replay validates source, mission seed, input count/order/bytes, halts on the first divergence, and retains the last byte-equivalent committed World. Exit disposes the ECS World and unsaved in-memory mission state, restores the complete pre-document surface including Geo ownership, and does not acknowledge a prior non-Geo surface until MapLibre has released its active map and canvas for two committed frames.
 
+## Evidence rehearsal: instrument uncertainty and local debrief
+
+Use the existing night mission to practise judging the reliability of a displayed fact. This is a
+synthetic, browser-local training scenario. Aircraft state, route, night palette, failure and coaching
+come from the authored simulation; this exercise imports no observed flight, weather, schedule,
+airspace restriction or arrival prediction.
+
+1. Apply this source and inspect the active mission with
+   `agentic-graph.inspect_local_flight_sim`. If its phase is `ready` or `flying`, issue
+   `/flight.sim @canvas #flight operation=stop`; an already-stopped mission needs no Stop.
+2. While stopped, select `/flight.sim @canvas #flight operation=mission-night`, then
+   `/flight.sim @canvas #flight operation=failure-instruments`. Mission and failure selection are
+   rejected while `ready` or `flying`; unsupported commands produce an explicit diagnostic.
+3. Issue `/flight.sim @canvas #flight operation=restart` for a fresh mission at tick zero. Restart
+   returns `ready`; do not issue Start immediately afterward, because Start resumes a `stopped`
+   mission. Advance with the existing touch, keyboard or throttle controls.
+4. Inspect `flightSim.runId`, `flightSim.phase` and `flightSim.tick` alongside
+   `training.missionId`, `training.failureId`, `training.failureActive`,
+   `training.airspeedReliable`, `training.envelope` and `training.coachingCue`.
+   Instrument uncertainty is active from tick **180 inclusive to 420 exclusive**. Compare the
+   reliability/coaching labels before, during and after that interval; this drill changes the
+   deterministic reliability classification, not the provenance of the underlying simulation.
+5. Use the north-up inset and Chase/Cockpit/Survey views to relate route progress, attitude and
+   energy to the coaching cue. Stop pauses the current mission; Start resumes that same in-memory
+   tick/state. Restart creates a fresh run, so keep its observations separate.
+6. After a `completed` or `crashed` result, explicitly choose
+   `/flight.sim @canvas #flight operation=save`. Inspect `decisions.path` and reopen
+   `/game-flight-sim/mission-1-decisions.md` to read the local training outcome. Save is
+   terminal-only and never automatic; unsaved progress is discarded on Exit.
+
+| Observation | Source and interpretation |
+|---|---|
+| Position, velocity, ordered route and tick | Authored local simulation; not aircraft surveillance |
+| Night palette and instrument-uncertainty window | Selected deterministic training configuration |
+| Reliability label, envelope and coaching cue | Advisory game projections; inspect together rather than treating one number as truth |
+| Score, grade and saved debrief | Explicit terminal training Decision in local WorkspaceFs |
+| Actual flight, weather, schedule, restriction and ETA evidence | Not supplied by this rehearsal |
+
+The saved outcome records mission, failure, score, grade and route/stability/energy results. It does
+not contain an observed-flight source digest, signed provenance or hash chain. Code-level deterministic
+replay belongs to `flightSimReplay.ts` and its existing tests; the current UI/control grammar exposes
+no replay-trace export, arbitrary time-step, provenance or real-data import operation. This walkthrough
+adds no runtime operation or second renderer. Flight simulation remains local; the selected Geo
+provider's independent map transport and cached-asset availability determine basemap access.
+
+### Shared display and pacing controls
+
+Use **HUD overlays** to show or hide optional instruments and the course cue. **Navigation** independently shows or hides the existing north-up inset. The HUD and FloatingPanel immediately share the selected values; objective, errors, envelope warnings, camera, touch, and lifecycle controls remain available. Existing responsive inset behavior is preserved.
+
+Choose **Simulation speed** `0.5×`, `1×`, or `2×` to pace the rehearsal. Each physics tick still advances exactly `1 / 60` second; slower pacing gives more time to observe the same authored tick-window, and faster pacing reaches it sooner. Compare captures by equal tick counts and identical normalized inputs, rather than equal wall time. Display/rate settings are ephemeral and are not saved with Decisions.
+
+The runtime controls do not select a mission, location, failure, route, or source. The rehearsal above and the existing authored mission/scenario owners supply those details. Settings apply to any selected scenario through the same controls and clock; no new invocation or replay/export tool is introduced.
+
 ## Runtime-readiness gates
 
 - [x] Source identity is `flight-sim`, independent of import path, with conflict rejection.

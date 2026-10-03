@@ -43,6 +43,11 @@ import {
   type FlightSimOperation,
 } from './flightSimMcpRuntime'
 import { FlightSimNavigationInset } from './FlightSimNavigationInset'
+import { FlightSimPresentationControls } from './FlightSimPresentationControls'
+import {
+  readFlightSimPresentationSettings,
+  subscribeFlightSimPresentationSettings,
+} from './flightSimPresentationSettings'
 import {
   FLIGHT_SIM_CAMERA_VIEW_OPTIONS,
   readFlightSimCameraSnapshot,
@@ -125,6 +130,11 @@ export function FlightSimFloatingPanelView() {
     subscribeFlightSimCamera,
     readFlightSimCameraSnapshot,
     readFlightSimCameraSnapshot,
+  )
+  const presentation = React.useSyncExternalStore(
+    subscribeFlightSimPresentationSettings,
+    readFlightSimPresentationSettings,
+    readFlightSimPresentationSettings,
   )
   const pushUiToast = useGraphStore(state => state.pushUiToast)
   const spatialProfile = readFlightSimSpatialProfile()
@@ -303,7 +313,8 @@ export function FlightSimFloatingPanelView() {
               </button>
             ))}
           </div>
-          <FlightSimNavigationInset flight={flight} />
+          <FlightSimPresentationControls surface="panel" buttonClassName="App-toolbar__btn" />
+          {presentation.navigationVisible ? <FlightSimNavigationInset flight={flight} /> : null}
           <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Press C to cycle views · north-up route is derived from the authored local mission only.
           </p>

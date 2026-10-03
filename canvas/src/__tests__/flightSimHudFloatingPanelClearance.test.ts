@@ -49,7 +49,7 @@ test('Flight HUD announces only objective transitions as one polite status', () 
   assert.match(objectiveStatus, /\{projection\.objective\}/)
 
   const courseDirector = source.match(
-    /<p\s+className="mt-1 text-\[11px\] font-semibold text-amber-200"[\s\S]*?<\/p>/,
+    /<p\b(?:(?!<\/p>)[\s\S])*?data-kg-flight-sim-course-director="hud"[\s\S]*?<\/p>/,
   )?.[0]
   assert.ok(courseDirector)
   assert.match(

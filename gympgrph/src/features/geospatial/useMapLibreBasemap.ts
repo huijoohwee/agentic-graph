@@ -115,7 +115,7 @@ let mapLibreRuntimePromise: Promise<any> | null = null
 const loadMapLibreRuntime = (): Promise<any> => {
   if (!mapLibreRuntimePromise) {
     mapLibreRuntimePromise = (async () =>
-      await import('maplibre-gl/dist/maplibre-gl.js'))()
+      await import('maplibre-gl'))()
       .catch(error => {
         mapLibreRuntimePromise = null
         throw error
