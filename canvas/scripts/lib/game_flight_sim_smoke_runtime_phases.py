@@ -7,10 +7,8 @@ from typing import Any, Callable
 from playwright.sync_api import Page, expect
 
 from lib.game_flight_sim_smoke_camera import verify_flight_camera_runtime
-from lib.game_flight_sim_smoke_deadlines import (
-    _read_ready_frame_debug,
-    verify_flight_deadline_contracts,
-)
+from lib.game_flight_sim_smoke_deadlines import _read_ready_frame_debug
+from lib.game_flight_sim_smoke_deadlines import verify_flight_deadline_contracts
 from lib.game_flight_sim_smoke_geo_xr import (
     prepare_canvas_view_standalone_flight_xr,
     wait_for_canvas_view_geo_xr_handoff,
