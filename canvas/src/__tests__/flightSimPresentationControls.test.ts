@@ -85,9 +85,8 @@ test('Flight panel and HUD share display and pace controls without mutating flig
     assert.strictEqual(readFlightSimSnapshot(), initialFlight)
 
     await act(async () => { flightSimDefaultRuntime.fail(new Error('Local presentation test error')) })
-    assert.ok(Array.from(container.querySelectorAll('[role="alert"]')).some(
-      alert => alert.textContent?.includes('Local presentation test error'),
-    ))
+    assert.ok(container.querySelector('[role="alert"]')?.textContent
+      ?.includes('Local presentation test error'))
     assert.ok(container.querySelector('[aria-label="Touch flight controls"]'))
     assert.ok(control('hud', '[data-kg-flight-sim-overlays-toggle]'))
   } finally {
