@@ -18,6 +18,13 @@ import {
 import { getWorkspaceSeedFiles } from '@/features/workspace-fs/workspaceFs'
 import { FlightSimRunReadyDemoRuntime } from '@/features/canvas/FlightSimRunReadyDemoRuntime'
 import { readFlightSimSnapshot, resetFlightSimRuntimeForTests, subscribeFlightSimSnapshot } from '@/features/game-flight-sim/flightSimRuntime'
+import { activateXrSceneSurface, readXrSceneGameplayModeRegistry, registerXrSceneGameplayMode } from '@/features/three/xrSceneSurfaceRuntime'
+import { enqueueWorkspaceSourceTextTransaction } from '@/features/workspace-fs/workspaceSourceTextTransaction'
+import { settleWorkspaceSourceTextWrites } from '@/hooks/store/graph-data-slice/workspaceSourceTextWriteQueue'
+import { readWorkspaceSeedSyncRuntimeSnapshot } from '@/lib/workspace/workspaceSeedSyncRuntime'
+import { useMarkdownWorkspaceSave } from '@/lib/markdown-workspace-runtime/useMarkdownWorkspaceSave'
+import { useMarkdownWorkspaceViewShell } from '@/lib/markdown-workspace-runtime/useMarkdownWorkspaceViewShell'
+import { isGeospatialModeEnabled } from '@/lib/gympgrph/api'
 import { beginSourceFilesDocumentIntent, clearSourceFilesDocumentIntent, completeSourceFilesBootstrap, failSourceFilesDocumentIntent } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { buildActiveWorkspaceRuntimeSourceFilesSnapshot, isMaterializedWorkspaceSourceProofCurrent, materializeActiveWorkspaceEntryIntoSourceFiles } from '@/features/source-files/sourceFilesRuntimeMaterialization'
 import { parseAndApplySourceFile } from '@/features/source-files/sourceFilesParseRuntime'
@@ -276,16 +283,19 @@ test('automatic Flight entry cancels a pending launch on source lifecycle or tex
   })
 })
 
+async function prepareHeadlessFlightSource(sourceId: string) {
+  Object.defineProperty(window, 'requestAnimationFrame', { value: undefined, configurable: true })
+  const renderer = document.createElement('canvas')
+  renderer.dataset.engine = 'three.js r170'
+  renderer.getContext = (() => ({ isContextLost: () => false })) as never
+  document.body.append(renderer)
+  await parseAndApplySourceFile(sourceId, { applyComposedGraph: false })
+  await useGraphStore.getState().setActiveMarkdownDocument({ name: `/${FLIGHT_SIM_DEMO_REPO_REL_PATH}`, text: seedSource, applyToGraph: true, forceApplyToGraph: true, applyViewPreset: false })
+}
+
 test('automatic Flight source refresh preserves the selected or closed panel', { timeout: 15_000 }, async () => {
   await withAutomaticFlightSource(async ({ root, sourceId }) => {
-    // This ownership test uses the headless entry contract, without presenters.
-    Object.defineProperty(window, 'requestAnimationFrame', { value: undefined, configurable: true })
-    const renderer = document.createElement('canvas')
-    renderer.dataset.engine = 'three.js r170'
-    renderer.getContext = (() => ({ isContextLost: () => false })) as never
-    document.body.append(renderer)
-    await parseAndApplySourceFile(sourceId, { applyComposedGraph: false })
-    await useGraphStore.getState().setActiveMarkdownDocument({ name: `/${FLIGHT_SIM_DEMO_REPO_REL_PATH}`, text: seedSource, applyToGraph: true, forceApplyToGraph: true, applyViewPreset: false })
+    await prepareHeadlessFlightSource(sourceId)
     await mountReactRoot(root, React.createElement(FlightSimRunReadyDemoRuntime))
     await waitForReactCondition(() => readFlightSimSnapshot().active, { describe: () => 'initial native Flight launch' })
     assert.equal(useGraphStore.getState().floatingPanelView, 'flightSim')
@@ -306,6 +316,107 @@ test('automatic Flight source refresh preserves the selected or closed panel', {
       } finally { unsubscribe() }
       assert.equal(useGraphStore.getState().floatingPanelView, 'geo')
       assert.equal(useGraphStore.getState().floatingPanelOpen, open)
+    }
+  })
+})
+
+test('explicit document departure releases Flight before its source commit and retains the shared Geo surface', { timeout: 15_000 }, async () => {
+  await withAutomaticFlightSource(async ({ root, sourceId }) => {
+    await prepareHeadlessFlightSource(sourceId)
+    const noop = () => {}
+    const path = `/${FLIGHT_SIM_DEMO_REPO_REL_PATH}`
+    let storedText = '# Before authored scene edit', activePath = path, selectedPath = path, status = ''
+    let selectFile!: (path: string) => void, selectFolder!: (path: string) => void
+    let selection: Promise<boolean> | undefined
+    const fs: WorkspaceFs = { ensureSeed: async () => false, listEntries: async () => [],
+      readFileText: async () => storedText, writeFileText: async (_path, text) => { storedText = text },
+      createFile: async () => '/unused.md', createFolder: async () => '/', deleteEntry: async () => {} }
+    const lastLoadedRef = { current: { path, text: storedText, observedWorkspaceText: storedText, observedWorkspaceFs: fs } }
+    const setStatusError = (message: string) => { status = message }
+    function Editor() {
+      const text = useGraphStore(state => state.markdownDocumentText)
+      const [currentPath, setCurrentPath] = React.useState(path)
+      const save = useMarkdownWorkspaceSave({ active: true, viewerInlineEditActive: false,
+        activePath: currentPath, activeEntryKind: 'file', activeText: text, activeTextRef: { current: text },
+        debouncedText: text, activeDocumentKey: currentPath, activeDocumentSourceUrl: null,
+        getFs: async () => fs, lastLoadedRef, patchWorkspaceEntryInlineText: noop,
+        setActiveMarkdownDocument: useGraphStore.getState().setActiveMarkdownDocument,
+        setGraphRagWorkflowJsonText: noop, setActiveTextProgrammatic: noop, refresh: async () => {},
+        setActivePathSafe: noop, setSelectionPathSafe: noop, userEditedActiveTextRef: { current: false },
+        setStatusError, setStatusProgress: noop, setStatusWithAutoClear: noop })
+      const shell = useMarkdownWorkspaceViewShell({ entries: [], sourcesByPath: {}, folderModeContract: 'sitemap',
+        setFolderModeContract: noop, activePath: currentPath, selectionPath: selectedPath, selectionEntryKind: 'file',
+        setActivePathSafe: next => { activePath = next; setCurrentPath(next) },
+        setSelectionPathSafe: next => {
+          if (next === selectedPath) return
+          selection = (async () => {
+            if (!await save.commitActiveTextBeforeSelection()) return false
+            await settleWorkspaceSourceTextWrites()
+            selectedPath = next
+            return true
+          })()
+          return selection
+        },
+        setSelectionSource: noop, setExpandedPaths: noop, resolveFolderContractDocPath: value => value,
+        pickFolderContractTargetPath: () => null, revealLineInEditor: noop, setStatusError, setStatusWithAutoClear: noop })
+      selectFile = shell.onSelectFile
+      selectFolder = shell.onSelectFolder
+      return React.createElement(FlightSimRunReadyDemoRuntime)
+    }
+    await mountReactRoot(root, React.createElement(Editor))
+    await waitForReactCondition(() => readFlightSimSnapshot().active, { describe: () => 'native Flight owner before source switch' })
+    const text = useGraphStore.getState().markdownDocumentText
+    const revision = () => useGraphStore.getState().sourceFiles.find(file => file.id === sourceId)?.parsedGraphRevision
+    const parsedRevision = revision()
+    lastLoadedRef.current.text = text
+    await act(async () => { selectFile(path); selectFolder('/empty'); await selection })
+    assert.equal(readFlightSimSnapshot().active, true, 'same document and folder-only selection retain gameplay')
+    assert.equal(readWorkspaceSeedSyncRuntimeSnapshot().suspensionCount, 1)
+    lastLoadedRef.current.text = storedText
+    let releaseWrite!: () => void, writeEntered = false
+    const barrier = new Promise<void>(resolve => { releaseWrite = resolve })
+    const queued = enqueueWorkspaceSourceTextTransaction({ path, text, write: async () => {
+      writeEntered = true
+      await barrier
+      await fs.writeFileText(path, text)
+    } })
+    let unregister: (() => void) | undefined, rejectExit = true
+    try {
+      await act(async () => { selectFile('/destination.md'); await waitForTasks(2) })
+      assert.equal(readFlightSimSnapshot().active, false, 'release Flight before its save')
+      assert.equal(readWorkspaceSeedSyncRuntimeSnapshot().suspensionCount, 0)
+      assert.equal(writeEntered, true)
+      assert.equal(activePath, path, 'commit still fences selection')
+      releaseWrite()
+      await act(async () => { assert.equal(await selection, true); await waitForTasks(2) })
+      assert.equal((await queued).accepted, true)
+      assert.equal(activePath, '/destination.md')
+      assert.equal(storedText, text)
+      assert.equal(lastLoadedRef.current.text, text)
+      assert.equal(revision(), parsedRevision)
+      assert.equal(readFlightSimSnapshot().active, false, 'save must not relaunch gameplay')
+      assert.equal(readWorkspaceSeedSyncRuntimeSnapshot().suspensionCount, 0)
+      const state = useGraphStore.getState()
+      assert.deepEqual([isGeospatialModeEnabled(), state.canvasRenderMode, state.canvas3dMode], [true, '3d', 'xr'])
+      assert.equal(status, '')
+      unregister = registerXrSceneGameplayMode('cityBuilder', { identity: 'departure-test', worldSchema: 'test.departure/v1',
+        persistence: { continuity: 'none', lease: 'none' }, surface: { overlayKind: 'xr-scene-gameplay' },
+        adaptInput: () => ({}), createOverlay: () => ({ overlayId: 'departure-test', overlayKind: 'xr-scene-gameplay' }),
+        exit: () => { if (rejectExit) throw new Error('injected departure failure') } })
+      assert.equal(activateXrSceneSurface({ gameplaySurface: 'cityBuilder' }), true)
+      const previousSelection = selection
+      await act(async () => { selectFile('/another.md'); await waitForTasks() })
+      assert.equal(selection, previousSelection, 'failed departure cannot commit')
+      assert.equal(activePath, '/destination.md')
+      assert.equal(readXrSceneGameplayModeRegistry().activeIdentity, 'departure-test')
+      assert.equal(status, 'Source switch failed: The active mode did not release the scene surface.')
+    } finally {
+      rejectExit = false
+      unregister?.()
+      releaseWrite()
+      resetFlightSimRuntimeForTests()
+      await queued
+      await selection
     }
   })
 })
