@@ -1,11 +1,14 @@
 import argparse
 import json
+import math
 import os
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 from shutil import which
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 
 def _json_error(message: str) -> int:
@@ -13,11 +16,13 @@ def _json_error(message: str) -> int:
     return 0
 
 
-def _normalize_time_seconds(value: Any) -> int:
+def _normalize_time_seconds(value: Any) -> float:
     raw = float(str(value if value is not None else "").strip())
+    if not math.isfinite(raw):
+        raise ValueError("Invalid frame timestamp")
     if raw < 0:
         return 0
-    return int(raw)
+    return round(raw, 3)
 
 
 def _normalize_format(value: Any) -> str:
@@ -25,15 +30,61 @@ def _normalize_format(value: Any) -> str:
     return "jpg" if raw in {"jpg", "jpeg"} else "png"
 
 
-def _run_cmd(args: List[str], *, cwd: Optional[str], timeout_s: int) -> Tuple[int, str, str]:
-    res = subprocess.run(
-        args,
-        cwd=cwd,
-        capture_output=True,
-        text=True,
-        timeout=max(1, int(timeout_s or 1)),
-    )
-    return int(res.returncode or 0), str(res.stdout or ""), str(res.stderr or "")
+def _downloaded_input_bytes(directory: str) -> int:
+    total = 0
+    with os.scandir(directory) as entries:
+        for entry in entries:
+            try:
+                if entry.name.startswith("source.") and entry.is_file(follow_symlinks=False):
+                    total += entry.stat().st_size
+            except FileNotFoundError:
+                pass  # yt-dlp can rename a completed partial file between checks.
+    return total
+
+
+def _run_cmd(args: List[str], *, cwd: Optional[str], timeout_s: int,
+             output_limit_directory: Optional[str] = None,
+             max_output_bytes: Optional[int] = None) -> Tuple[int, str, str]:
+    # Drain pipes continuously while keeping diagnostics and input downloads bounded.
+    deadline = time.monotonic() + max(1, int(timeout_s or 1))
+    buffers = [bytearray(), bytearray()]
+    process = subprocess.Popen(args, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    def drain(pipe: Any, buffer: bytearray) -> None:
+        try:
+            while True:
+                chunk = pipe.read(4096)
+                if not chunk:
+                    break
+                buffer.extend(chunk)
+                if len(buffer) > 65_536:
+                    del buffer[:-65_536]
+        finally:
+            pipe.close()
+
+    readers = [threading.Thread(target=drain, args=(pipe, buffer), daemon=True)
+               for pipe, buffer in zip((process.stdout, process.stderr), buffers)]
+    for reader in readers:
+        reader.start()
+    try:
+        while process.poll() is None:
+            if output_limit_directory and max_output_bytes is not None:
+                if _downloaded_input_bytes(output_limit_directory) > max_output_bytes:
+                    raise RuntimeError("Video frame fallback input exceeds the configured byte limit")
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired(args, timeout_s)
+            try:
+                process.wait(timeout=min(0.05, remaining))
+            except subprocess.TimeoutExpired:
+                pass
+    finally:
+        if process.poll() is None:
+            process.kill()
+        process.wait()
+        for reader in readers:
+            reader.join(timeout=1)
+    return int(process.returncode or 0), *(bytes(buffer).decode("utf-8", errors="replace") for buffer in buffers)
 
 
 def _yt_dlp_cmd() -> List[str]:
@@ -204,12 +255,17 @@ def _ffmpeg_headers_args(headers: Dict[str, str]) -> List[str]:
     return out
 
 
-def _download_video_for_frame(url: str, *, output_dir: str, timeout_s: int) -> str:
+def _download_limit_bytes() -> int:
     max_mib = 96
     try:
         max_mib = max(8, min(512, int(os.environ.get("AG_VIDEO_FRAME_DOWNLOAD_MAX_MIB", "96") or "96")))
     except Exception:
         max_mib = 96
+    return max_mib * 2 ** 20
+
+
+def _download_video_for_frame(url: str, *, output_dir: str, timeout_s: int) -> str:
+    max_bytes = _download_limit_bytes()
     output_template = os.path.join(output_dir, "source.%(ext)s")
     cmd = [
         *_yt_dlp_cmd(),
@@ -220,12 +276,15 @@ def _download_video_for_frame(url: str, *, output_dir: str, timeout_s: int) -> s
         "-f",
         "bv*[height<=480][ext=mp4]/bv*[height<=480]/best[height<=480]/worst",
         "--max-filesize",
-        f"{max_mib}M",
+        f"{max_bytes // 2 ** 20}M",
         "-o",
         output_template,
         str(url),
     ]
-    code, stdout, stderr = _run_cmd(cmd, cwd=None, timeout_s=timeout_s)
+    code, stdout, stderr = _run_cmd(cmd, cwd=None, timeout_s=timeout_s,
+                                  output_limit_directory=output_dir, max_output_bytes=max_bytes)
+    if _downloaded_input_bytes(output_dir) > max_bytes:
+        raise RuntimeError("Video frame fallback input exceeds the configured byte limit")
     if code != 0:
         detail = (stderr or stdout or "").strip()
         raise RuntimeError(detail or f"yt-dlp temporary download failed with exit code {code}")
@@ -236,7 +295,11 @@ def _download_video_for_frame(url: str, *, output_dir: str, timeout_s: int) -> s
     ]
     candidates.sort(key=lambda item: os.path.getsize(item), reverse=True)
     for candidate in candidates:
-        if os.path.getsize(candidate) > 0:
+        size = os.path.getsize(candidate)
+        if size > max_bytes:
+            os.remove(candidate)
+            raise RuntimeError("Video frame fallback input exceeds the configured byte limit")
+        if size > 0:
             return candidate
     raise RuntimeError("yt-dlp temporary download produced no video file")
 
@@ -246,8 +309,8 @@ def _run_ffmpeg_frame_extract(
     ffmpeg: str,
     input_url: str,
     headers: Dict[str, str],
-    pre_seek_s: int,
-    accurate_offset_s: int,
+    pre_seek_s: float,
+    accurate_offset_s: float,
     output_path: str,
     timeout_s: int,
     cwd: str,
@@ -270,7 +333,10 @@ def _run_ffmpeg_frame_extract(
     return _run_cmd(cmd, cwd=cwd, timeout_s=timeout_s)
 
 
-def _extract_frame(args: argparse.Namespace) -> Dict[str, Any]:
+def _extract_frame(args: argparse.Namespace, *,
+                   prepared_source: Optional[Callable[[], Tuple[str, Dict[str, str]]]] = None,
+                   fallback_source: Optional[Callable[[], str]] = None,
+                   temp_root: Optional[str] = None) -> Dict[str, Any]:
     url = str(args.url or "").strip()
     output_path = os.path.abspath(str(args.output or "").strip())
     if not url:
@@ -294,13 +360,13 @@ def _extract_frame(args: argparse.Namespace) -> Dict[str, Any]:
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     stream_timeout_s = max(5, min(timeout_s, max(10, timeout_s // 2)))
-    stream_url, stream_headers = _pick_stream(url, timeout_s=stream_timeout_s)
+    stream_url, stream_headers = prepared_source() if prepared_source else _pick_stream(url, timeout_s=stream_timeout_s)
     ffmpeg = _ffmpeg_cmd()
 
     pre_seek_s = max(0, time_s - 2)
     accurate_offset_s = max(0, time_s - pre_seek_s)
 
-    with tempfile.TemporaryDirectory(prefix="kg-video-frame-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="kg-video-frame-", dir=temp_root) as tmp:
         tmp_out = os.path.join(tmp, f"frame.{fmt}")
         code, stdout, stderr = _run_ffmpeg_frame_extract(
             ffmpeg=ffmpeg,
@@ -313,7 +379,7 @@ def _extract_frame(args: argparse.Namespace) -> Dict[str, Any]:
             cwd=tmp,
         )
         if code != 0 and stream_url.startswith(("http://", "https://")):
-            local_video = _download_video_for_frame(url, output_dir=tmp, timeout_s=timeout_s)
+            local_video = fallback_source() if fallback_source else _download_video_for_frame(url, output_dir=tmp, timeout_s=timeout_s)
             code, stdout, stderr = _run_ffmpeg_frame_extract(
                 ffmpeg=ffmpeg,
                 input_url=local_video,

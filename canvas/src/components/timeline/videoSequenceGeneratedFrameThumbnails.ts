@@ -101,7 +101,9 @@ const buildGeneratedFrameThumbnailSvg = (args: {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${GENERATED_FRAME_THUMBNAIL_WIDTH}" height="${GENERATED_FRAME_THUMBNAIL_HEIGHT}" viewBox="0 0 ${GENERATED_FRAME_THUMBNAIL_WIDTH} ${GENERATED_FRAME_THUMBNAIL_HEIGHT}" role="img" aria-label="${escapeXml(title)}"><title>${escapeXml(title)}</title><desc>${escapeXml(sourceDescription)}</desc><metadata>{"kind":"generated-frame-thumbnail","source":"frame-by-frame","timestampSeconds":${Number(args.timestampSeconds.toFixed(6))}}</metadata><defs><linearGradient id="kgFrameBg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#123456"/><stop offset="0.55" stop-color="#0b1220"/><stop offset="1" stop-color="#0f766e"/></linearGradient></defs><rect width="160" height="90" rx="8" fill="url(#kgFrameBg)"/><rect x="34" y="16" width="88" height="50" rx="5" fill="none" stroke="#5eead4" stroke-width="1.6" opacity="0.8"/><rect x="${boxX}" y="${boxY}" width="${boxWidth}" height="${boxHeight}" rx="4" fill="#fbbf24" fill-opacity="0.12" stroke="#fbbf24" stroke-width="2"/><text x="8" y="15" fill="#5eead4" font-family="${UI_FONT_MONO}" font-size="12" font-weight="800">FBF</text><text x="8" y="82" fill="#f8fafc" font-family="${UI_FONT_MONO}" font-size="12" font-weight="800">${escapeXml(formatSeconds(args.timestampSeconds))}</text><text x="45" y="82" fill="#cbd5e1" font-family="${UI_FONT_MONO}" font-size="12">${escapeXml(args.label)}</text></svg>`
 }
 
-export const buildVideoSequenceGeneratedFrameThumbnails = (args: {
+export const buildVideoSequenceAuthoredFrameThumbnails = (args: {
+  maxSampleCount?: number
+  restrictToSourceWindow?: boolean
   sourceWindow: VideoSequenceGeneratedFrameWindow | null
   span: MermaidGanttTimelineTaskSpan
 }): readonly TimelineMediaReaderThumbnail[] => {
@@ -110,19 +112,45 @@ export const buildVideoSequenceGeneratedFrameThumbnails = (args: {
     sourceStartSeconds: args.span.startMinutes,
   }
   if (args.span.durationMinutes <= 0) return []
-  const sourceFrameSamples = readMermaidGanttFrameSamples(args.span.raw)
+  const isWithinSourceWindow = (timestampSeconds: number): boolean => !args.restrictToSourceWindow || (
+    timestampSeconds >= Math.min(sourceWindow.sourceStartSeconds, sourceWindow.sourceEndSeconds) - 0.05 &&
+    timestampSeconds <= Math.max(sourceWindow.sourceStartSeconds, sourceWindow.sourceEndSeconds) + 0.05
+  )
+  const sourceFrameSamples = readMermaidGanttFrameSamples(args.span.raw).filter(sample => isWithinSourceWindow(sample.timestampSeconds))
   if (sourceFrameSamples.length) {
-    return sourceFrameSamples.map(sample => buildSourceFrameThumbnail({
+    const maxSampleCount = typeof args.maxSampleCount === 'number' && Number.isFinite(args.maxSampleCount)
+      ? Math.max(1, Math.floor(args.maxSampleCount)) : sourceFrameSamples.length
+    const orderedSamples = args.maxSampleCount == null ? sourceFrameSamples : [...sourceFrameSamples].sort((left, right) => left.timestampSeconds - right.timestampSeconds)
+    const samples = orderedSamples.length <= maxSampleCount ? orderedSamples : Array.from({ length: maxSampleCount }, (_, index) => (
+      orderedSamples[Math.round(index * (orderedSamples.length - 1) / Math.max(1, maxSampleCount - 1))]!
+    ))
+    return samples.map(sample => buildSourceFrameThumbnail({
       timestampSeconds: sample.timestampSeconds,
       url: sample.url,
     }))
   }
   const frameThumbnailUrl = readMermaidGanttFrameThumbnailUrl(args.span.raw)
   if (frameThumbnailUrl) {
+    const timestampSeconds = resolveGeneratedFrameTimestamp(args.span, sourceWindow, 0, 1)
+    if (!isWithinSourceWindow(timestampSeconds)) return []
     return [buildSourceFrameThumbnail({
-      timestampSeconds: resolveGeneratedFrameTimestamp(args.span, sourceWindow, 0, 1),
+      timestampSeconds,
       url: frameThumbnailUrl,
     })]
+  }
+  return []
+}
+
+export const buildVideoSequenceGeneratedFrameThumbnails = (args: {
+  sourceWindow: VideoSequenceGeneratedFrameWindow | null
+  span: MermaidGanttTimelineTaskSpan
+}): readonly TimelineMediaReaderThumbnail[] => {
+  if (args.span.durationMinutes <= 0) return []
+  const authoredThumbnails = buildVideoSequenceAuthoredFrameThumbnails(args)
+  if (authoredThumbnails.length) return authoredThumbnails
+  const sourceWindow = args.sourceWindow || {
+    sourceEndSeconds: args.span.endMinutes,
+    sourceStartSeconds: args.span.startMinutes,
   }
   const count = resolveGeneratedFrameThumbnailCount(args.span)
   const label = cleanFrameLabel(args.span)
