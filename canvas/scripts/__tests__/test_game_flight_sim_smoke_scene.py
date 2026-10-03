@@ -13,7 +13,7 @@ from lib.game_flight_sim_smoke_scene import (  # noqa: E402
     LOCAL_AUXILIARY_CANVAS_SELECTORS, read_and_pin_authored_physics_baseline,
 )
 from lib.game_flight_sim_smoke_geo_xr_layout import read_geo_xr_layout_occlusion  # noqa: E402
-from lib.game_flight_sim_smoke_web_mcp import verify_flight_web_mcp  # noqa: E402
+from lib.game_flight_sim_smoke_web_mcp import verify_flight_web_mcp, verify_flight_exit  # noqa: E402
 
 SOURCE_PATH = SCRIPTS_ROOT.parents[1] / "docs/workspace-seeds/agentic-graph-ar-vr-xr-runtime-readiness-demo.md"
 SOURCE_TEXT = SOURCE_PATH.read_text(encoding="utf-8")
@@ -296,9 +296,7 @@ class WebMcpRegistryFixturePage:
         self.mode = mode
 
     def evaluate(self, expression, arg):
-        completed = subprocess.run(
-            ["node", "--import", "tsx", "--import", "./scripts/source-authority-test-bootstrap.mjs",
-             "--input-type=module", "-e", r"""
+        return self.run_js(expression, arg, r"""
 import fs from 'node:fs';
 import { createWebMcpToolRegistry, WebMcpToolInputValidationError } from './src/features/agent-ready/webMcpToolRegistry.ts';
 import { buildAgenticGraphAgentReadyToolContracts } from './src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs';
@@ -339,7 +337,13 @@ globalThis.window = { __kgFlightSimBrowserProof: { importModule: async key => {
   throw Error('unexpected module ' + key);
 } } };
 console.log(JSON.stringify(await globalThis.eval('(' + input.expression + ')')(input.arg)));
-            """], input=json.dumps({"expression": expression, "arg": arg, "mode": self.mode}),
+        """)
+
+    def run_js(self, expression, arg, script):
+        completed = subprocess.run(
+            ["node", "--import", "tsx", "--import", "./scripts/source-authority-test-bootstrap.mjs",
+             "--input-type=module", "-e", script],
+            input=json.dumps({"expression": expression, "arg": arg, "mode": self.mode}),
             cwd=SCRIPTS_ROOT.parent, text=True, capture_output=True, timeout=10, check=False,
         )
         if completed.returncode:
@@ -364,6 +368,117 @@ class FlightWebMcpRegistryTest(unittest.TestCase):
         for mode in ("accepted", "wrong-error", "wrong-tool", "state-change", "slow-rejection", "other-diagnostic"):
             with self.subTest(mode=mode), self.assertRaises((AssertionError, RuntimeError)):
                 verify_flight_web_mcp(WebMcpRegistryFixturePage(mode), {"phase": "ready"})
+
+
+class FlightExitFixturePage(WebMcpRegistryFixturePage):
+    def __init__(self, mode="closed"):
+        self.mode, self.prior = mode, {}
+
+    def evaluate(self, expression):
+        result = self.run_js(expression, None, r"""
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import { initJsdomHarness } from './src/tests/lib/jsdomHarness.ts';
+const modules = {};
+for (const [folder, names] of Object.entries({ 'game-flight-sim': ['flightSimRuntime', 'flightSimMcpRuntime'],
+  three: ['xrNativeControllerDemoRuntime', 'xrPhysicsRuntime', 'xrNativeControllerCameraRuntime'],
+  'agent-ready': ['webMcpRuntime'] })) {
+  for (const name of names) modules[name] = await import(`./src/features/${folder}/${name}.ts`);
+}
+modules.graphStore = await import('./src/hooks/useGraphStore.ts');
+modules.gympgrphStore = await import('gympgrph');
+const { flightSimRuntime: runtime, xrNativeControllerDemoRuntime: controller, xrPhysicsRuntime: physics,
+  graphStore: store, webMcpRuntime: discovery } = modules;
+const { expression, mode } = JSON.parse(fs.readFileSync(0, 'utf8'));
+const text = fs.readFileSync('../docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md', 'utf8');
+const name = '/imports/training.md';
+store.useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: text,
+  sourceFiles: [{ id: 'training', name, text, enabled: true, status: 'parsed', parsedGraphRevision: 1,
+    source: { kind: 'local', path: name } }], workspaceViewMode: 'canvas', canvasRenderMode: '3d',
+  canvas3dMode: '3d', floatingPanelOpen: false, timelineTransportPlaying: false });
+controller.setSharedXrNativeControllerDemoTerrain('tropical-playground');
+controller.selectXrNativeControllerDemoMode('ball');
+controller.developAndRunXrNativeControllerDemo();
+physics.pauseXrPhysicsRuntime();
+const prior = { ...store.useGraphStore.getState(), physics: physics.readXrPhysicsRuntime(),
+  controller: controller.readXrNativeControllerDemo(), controllerFrame: controller.readSharedXrNativeControllerDemoFrame(),
+  geospatialModeEnabled: false, mapLibreActive: false, timelinePlaying: false,
+  canvasCount: 1, rendererCanvasCount: 1, auxiliaryCanvasCount: 0, rootCount: 1 };
+assert.equal((await runtime.openFlightSimSurface({ openPanel: false, webglSupported: true,
+  workspace: { readFileText: async () => null } })).active, true);
+controller.setSharedXrNativeControllerDemoTerrain('singapore');
+controller.selectXrNativeControllerDemoMode('rocket');
+controller.pauseXrNativeControllerDemo();
+const { restore } = initJsdomHarness('<div data-kg-xr-scene-media-drop="1"><canvas data-engine="three.js"></canvas></div>');
+window.requestAnimationFrame = undefined;
+globalThis.HTMLCanvasElement = window.HTMLCanvasElement;
+Object.defineProperty(globalThis, 'navigator', { value: window.navigator, configurable: true });
+window.__kgFlightSimCanvas = document.querySelector('canvas');
+window.__kgFlightSimBrowserProof = { importModule: async key => modules[key] };
+store.useGraphStore.setState({ floatingPanelOpen: true, floatingPanelView: 'flightSim' });
+discovery.installAgenticGraphWebMcpRuntime();
+const context = navigator.modelContext;
+assert.ok(context.tools.some(tool => tool.name.endsWith('control_local_flight_sim')));
+if (mode !== 'exposed') {
+  store.useGraphStore.setState({ floatingPanelView: 'camera' });
+  store.useGraphStore.setState({ floatingPanelOpen: false });
+  assert.equal(document.documentElement.dataset.kgWebmcpScope, 'xr');
+  assert.ok(!context.tools.some(tool => tool.name.endsWith('control_local_flight_sim')));
+}
+let offset = 0;
+const now = performance.now.bind(performance);
+Object.defineProperty(performance, 'now', { value: () => now() + offset });
+const selector = context.tools.find(tool => tool.name === 'agentic-graph.select_local_tool_scope');
+if (mode === 'missing') context.tools = context.tools.filter(tool => tool !== selector);
+else if (mode !== 'closed' && mode !== 'exposed') context.tools = context.tools.map(tool => tool !== selector ? tool : {
+  ...tool, execute: async input => {
+    if (mode === 'reject') throw Error('scope rejected');
+    if (mode === 'pending') return new Promise(() => {});
+    if (mode === 'absent') return { scope: 'flightSim' };
+    const result = await tool.execute(input);
+    if (mode === 'wrong-scope') return { ...result, scope: 'xr' };
+    if (mode === 'mutate') runtime.exitFlightSimSurface();
+    if (mode === 'late') offset += 2001;
+    return result;
+  },
+});
+try {
+  const evidence = await globalThis.eval('(' + expression + ')')();
+  if (evidence.registered) {
+    assert.equal(evidence.postExit.restoration.controller.terrainId, 'singapore');
+    assert.equal(evidence.postExit.restoration.controller.mode, 'rocket');
+    assert.equal(evidence.postExit.restoration.controller.phase, prior.controller.phase);
+  }
+  console.log(JSON.stringify({ prior, evidence }));
+} finally { discovery.resetAgenticGraphWebMcpRuntimeForTests(); restore(); }
+        """)
+        self.prior.update(result["prior"])
+        self.evidence = result["evidence"]
+        return self.evidence
+
+
+class FlightExitDiscoveryTest(unittest.TestCase):
+    def test_native_closed_panel_rediscovery_and_authored_controller_restoration(self):
+        for mode in ("closed", "exposed"):
+            with self.subTest(mode=mode):
+                page, calls = FlightExitFixturePage(mode), []
+                _, _, result = verify_flight_exit(page, calls, page.prior)
+                self.assertEqual(len(calls), 2)
+                for owner in ("controller", "controllerFrame"):
+                    for key in ("mode", "terrainId", "phase"):
+                        saved = result["restoration"][owner][key]
+                        result["restoration"][owner][key] = "wrong"
+                        with self.assertRaises(AssertionError):
+                            verify_flight_exit(type("Page", (), {"evaluate": lambda _, expression: page.evidence})(), [], page.prior)
+                        result["restoration"][owner][key] = saved
+
+    def test_invalid_discovery_fails_before_exit(self):
+        for mode in ("missing", "reject", "absent", "wrong-scope", "mutate", "late", "pending"):
+            with self.subTest(mode=mode), self.assertRaisesRegex(
+                (AssertionError, RuntimeError), "Flight Exit scope|Flight WebMCP tools disappeared|scope rejected",
+            ):
+                page = FlightExitFixturePage(mode)
+                verify_flight_exit(page, [], page.prior)
 
 
 if __name__ == "__main__":

@@ -387,16 +387,28 @@ def verify_flight_exit(
     evidence = page.evaluate(
         """
         async () => {
-          const tools = Array.from(navigator.modelContext?.tools || [])
-          const control = tools.find(
-            tool => tool.name === 'agentic-graph.control_local_flight_sim',
-          )
-          const inspect = tools.find(
-            tool => tool.name === 'agentic-graph.inspect_local_flight_sim',
-          )
+          const mcpRuntime = await window.__kgFlightSimBrowserProof.importModule('flightSimMcpRuntime')
+          let tools = Array.from(navigator.modelContext?.tools || [])
+          if (!['control', 'inspect'].every(kind => tools.some(tool => tool.name === `agentic-graph.${kind}_local_flight_sim`))) {
+            const selector = tools.find(tool => tool.name === 'agentic-graph.select_local_tool_scope')
+            if (!selector) throw Error('Flight Exit scope selector is unavailable')
+            const before = JSON.stringify(mcpRuntime.inspectLocalFlightSim())
+            const started = performance.now()
+            let timer, selected
+            try {
+              selected = await Promise.race([
+                selector.execute({ scope: 'flightSim' }),
+                new Promise((_, reject) => { timer = setTimeout(() => reject(Error('Flight Exit scope deadline exceeded')), 2000) }),
+              ])
+            } finally { clearTimeout(timer) }
+            if (selected?.scope !== 'flightSim' || performance.now() - started > 2000
+              || before !== JSON.stringify(mcpRuntime.inspectLocalFlightSim())) throw Error('Flight Exit scope selection violated its contract')
+            tools = Array.from(navigator.modelContext?.tools || [])
+          }
+          const control = tools.find(tool => tool.name === 'agentic-graph.control_local_flight_sim')
+          const inspect = tools.find(tool => tool.name === 'agentic-graph.inspect_local_flight_sim')
           if (!control || !inspect) return { registered: false }
           const runtime = await window.__kgFlightSimBrowserProof.importModule('flightSimRuntime')
-          const mcpRuntime = await window.__kgFlightSimBrowserProof.importModule('flightSimMcpRuntime')
           const physics = await window.__kgFlightSimBrowserProof.importModule('xrPhysicsRuntime')
           const camera = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerCameraRuntime')
           const controller = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerDemoRuntime')
@@ -440,11 +452,8 @@ def verify_flight_exit(
               camera: {
                 mode: camera.readXrNativeControllerCamera().mode,
               },
-              controller: withoutRevision(
-                controller.readXrNativeControllerDemo(),
-              ),
-              controllerFrame:
-                controller.readSharedXrNativeControllerDemoFrame(),
+              controller: withoutRevision(controller.readXrNativeControllerDemo()),
+              controllerFrame: controller.readSharedXrNativeControllerDemoFrame(),
               canvasCount: canvases.length,
               rendererCanvasCount: rendererCanvases.length,
               auxiliaryCanvasCount: auxiliaryCanvases.length,
@@ -507,17 +516,11 @@ def verify_flight_exit(
     }
     expected_controller = {
         **before_exit["controller"],
-        **{
-            key: prior_surface["controller"][key]
-            for key in ("phase", "mode", "terrainId")
-        },
+        "phase": prior_surface["controller"]["phase"],
     }
     expected_controller_frame = {
         **before_exit["controllerFrame"],
-        **{
-            key: prior_surface["controllerFrame"][key]
-            for key in ("phase", "mode", "terrainId")
-        },
+        "phase": prior_surface["controllerFrame"]["phase"],
     }
     expected_restoration = {
         "surface": {
