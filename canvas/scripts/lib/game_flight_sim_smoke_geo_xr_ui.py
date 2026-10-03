@@ -60,8 +60,8 @@ def activate_geo_xr_from_toolbar(page: Page) -> dict[str, Any]:
         name="Main Toolbar",
         exact=True,
     )
-    mode_trigger = toolbar.locator(
-        '[data-kg-toolbar-dropdown-trigger="canvas-view-mode"]'
+    mode_trigger = toolbar.get_by_role(
+        "button", name="Canvas View Mode: Geo+XR Mode", exact=True
     )
     expect(mode_trigger).to_have_count(1)
     _click_with_trusted_proof(page, mode_trigger, "modeTriggerClicked")

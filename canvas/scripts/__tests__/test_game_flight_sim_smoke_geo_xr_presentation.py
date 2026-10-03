@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 from copy import deepcopy
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -10,7 +11,7 @@ import time
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_ROOT))
@@ -20,6 +21,7 @@ from lib.game_flight_sim_smoke_city_regional_poi import (  # noqa: E402
 )
 from lib.game_flight_sim_smoke_bootstrap import BoundedEvaluationPage  # noqa: E402
 from lib.game_flight_sim_smoke_camera import _timeline_camera_probe  # noqa: E402
+from lib.game_flight_sim_smoke_geo_xr_ui import activate_geo_xr_from_toolbar  # noqa: E402
 from lib.game_flight_sim_smoke_mobile_surface import (  # noqa: E402
     _close_mobile_touch_occluders, _wait_for_occluder_close,
 )
@@ -515,6 +517,56 @@ class FlightMobileOwnerTest(unittest.TestCase):
         for timeline, collapsed, expected in ((False, False, "floating-panel"), (True, False, "bottom-surface"), (True, True, "timeline-panel")):
             self.assertEqual(JavaScriptEvaluationPage().evaluate(expression,
                 {"timeline": timeline, "state": {"bottomSurfaceCollapsed": collapsed, "bottomSurfaceTab": "timeline"}}), expected)
+
+
+class FlightNativeToolbarTriggerTest(unittest.TestCase):
+    def test_proof_resolves_the_real_canvas_view_accessible_trigger(self):
+        rendered = subprocess.run(
+            ["node", "--import", "tsx", "--input-type=module", "-e", """
+                import React from 'react';
+                import {renderToStaticMarkup} from 'react-dom/server';
+                import {JSDOM} from 'jsdom';
+                const {useGraphStore} = await import('./src/hooks/useGraphStore.ts');
+                const {Canvas2dRendererSelect} = await import('./src/components/toolbar/Canvas2dRendererSelect.tsx');
+                Object.assign(useGraphStore.getInitialState(), {canvasRenderMode: '3d', canvas3dMode: 'xr'});
+                const html = renderToStaticMarkup(React.createElement(Canvas2dRendererSelect, {
+                    iconSizeClass: 'size-4', iconStrokeWidth: 1, ensureBaselineUnlocked: () => true,
+                    geospatialEnabled: true, onOpenGeospatialMode() {}, onActivateGeoXrMode() {}, onExitGeospatialMode() {},
+                }));
+                const document = new JSDOM(html).window.document;
+                console.log(JSON.stringify([...document.querySelectorAll('button')].map(button => ({
+                    label: button.getAttribute('aria-label'), popup: button.getAttribute('aria-haspopup'),
+                    trigger: button.getAttribute('data-kg-toolbar-dropdown-trigger'),
+                }))));
+            """], cwd=SCRIPTS_ROOT.parent,
+            env={**os.environ, "TSX_TSCONFIG_PATH": str(SCRIPTS_ROOT.parent / "tsconfig.json")},
+            capture_output=True, text=True, timeout=10, check=True,
+        )
+        buttons = json.loads(rendered.stdout)
+        page, toolbar = Mock(), Mock()
+        page.get_by_role.return_value = toolbar
+        toolbar.locator.side_effect = AssertionError("the native trigger has no synthetic data hook")
+
+        def native_button(role, *, name, exact):
+            self.assertEqual((role, exact), ("button", True))
+            matches = [button for button in buttons if button["label"] == name and button["popup"] == "menu"]
+            self.assertEqual(len(matches), 1)
+            return matches[0]
+
+        toolbar.get_by_role.side_effect = native_button
+        class NativeTriggerReached(Exception):
+            pass
+
+        def trusted_click(_page, locator, key):
+            if key == "modeTriggerClicked":
+                self.assertIn(locator, buttons)
+                raise NativeTriggerReached()
+
+        with patch("lib.game_flight_sim_smoke_geo_xr_ui.expect"), patch(
+            "lib.game_flight_sim_smoke_geo_xr_ui._click_with_trusted_proof", side_effect=trusted_click,
+        ), self.assertRaises(NativeTriggerReached):
+            activate_geo_xr_from_toolbar(page)
+        page.get_by_role.assert_called_once_with("navigation", name="Main Toolbar", exact=True)
 
 
 if __name__ == "__main__":
