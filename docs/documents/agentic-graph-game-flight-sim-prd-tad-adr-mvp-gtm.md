@@ -63,9 +63,9 @@ lane: "authoring"
 universal_scope: false
 worktree_id: "device-0232231d4a19--flight-sim-evidence-walkthrough"
 agent_id: "codex-flight-sim-evidence-walkthrough"
-guideline_revision: "2.7.0"
+guideline_revision: "3.4.0"
 guideline_source: "$GITHUB_ROOT/huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+reviewed_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
 previous_document_version: "1.5.2"
 prd_revision: "1.5.3"
 tad_revision: "1.5.3"
@@ -570,7 +570,7 @@ PRD, TAD, ADR, MVP and GTM consume revision `1.5.3`; normative authority remains
 
 **GTM:** first validate a guided practice session using completion, setting comprehension and debrief usefulness. A paid workshop remains a discovery hypothesis; no demand, revenue, savings or outreach outcome is established. Runtime increment uses existing local assets and zero paid dependencies.
 
-**Budget and verification:** four new product modules with a combined 25 KiB cap, bounded test/doc changes and no new package; new product modules remain below 600 lines and 500 kB each. Focused settings/clock/ECS checks passed 25/25; final profile/geography/control/source checks passed 59/59 plus 2/2 composition/environment checks, including source/cancellation rollback, absent/invalid profiles and references, alternate IDs/locations, paused/terminal run binding and unchanged resume. Existing loader now uses the installed renderer's public package export; the cue check uses its stable identity. The existing 1,322-line loader owner did not grow; splitting that owner is outside this increment. Exact committed-candidate aggregate and two serial browser receipts remain separate from these source observations; this document renews no release or deployment evidence.
+**Budget and verification:** four new product modules with a combined 25 KiB cap, bounded test/doc changes and no new package; new product modules remain below 600 lines and 500 kB each. Focused settings/clock/ECS checks passed 25/25; final profile/geography/control/source checks passed 59/59 plus 2/2 composition/environment checks, including source/cancellation rollback, absent/invalid profiles and references, alternate IDs/locations, paused/terminal run binding and unchanged resume. Existing loader now uses the installed renderer's public package export; the cue check uses its stable identity. Portable source readiness now validates optional workspace projections and authored catalog policy; Geo+XR fixtures author their reference, and shared XR consumers handle an absent training profile. The existing 1,322-line loader owner did not grow; splitting that owner is outside this increment. Exact committed-candidate aggregate and two serial browser receipts remain separate from these source observations; this document renews no release or deployment evidence.
 
 | Continuity | CID | RAO | Date |
 |---|---|---|---|

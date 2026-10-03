@@ -8,6 +8,7 @@ import {
   waitForFlightSimSurfaceRestoration,
 } from '@/features/game-flight-sim/flightSimRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { resetFlightSimTrainingScenarioForTests } from '@/features/game-flight-sim/flightSimTrainingScenario'
 import {
   isGeospatialModeEnabled,
   setGeospatialModeEnabled,
@@ -37,6 +38,11 @@ test('Flight Sim headless entry preserves the visible Geo panel', async () => {
 test('Geo+XR entry reasserts and restores the native Geo owner', async () => {
   setGeospatialModeEnabled(false)
   resetFlightSimRuntimeForTests()
+  resetFlightSimTrainingScenarioForTests()
+  const previous = useGraphStore.getState()
+  const documentName = '/imports/panel-geographic-reference.md'
+  const documentText = '---\ngeo_flight_overlay:\n  geographic_reference: { "anchor": [0, 0], "presentationBounds": [[-1, -1], [1, 1]] }\n---\n# Panel geographic fixture\n'
+  useGraphStore.setState({ markdownDocumentName: documentName, markdownDocumentText: documentText, sourceFiles: [{ id: 'panel-geography', name: documentName, text: documentText, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: documentName } }] } as never)
   try {
     const opened = await openFlightSimSurface({
       geospatialComposite: true,
@@ -57,5 +63,7 @@ test('Geo+XR entry reasserts and restores the native Geo owner', async () => {
     }
     setGeospatialModeEnabled(false)
     resetFlightSimRuntimeForTests()
+    resetFlightSimTrainingScenarioForTests()
+    useGraphStore.setState({ markdownDocumentName: previous.markdownDocumentName, markdownDocumentText: previous.markdownDocumentText, sourceFiles: previous.sourceFiles })
   }
 })

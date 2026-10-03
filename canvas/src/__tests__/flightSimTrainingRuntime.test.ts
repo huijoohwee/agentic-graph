@@ -174,7 +174,7 @@ test('terminal training produces one admitted scored debrief Decision', () => {
 })
 
 test('profile validator rejects malformed authored data without publishing any state', () => {
-  const withoutAliases = structuredClone(seedProfile)
+  const withoutAliases = structuredClone(seedProfile) as Record<string, unknown>
   delete withoutAliases.controlAliases
   const optionalAliases = validateFlightSimTrainingProfile(withoutAliases).controlAliases
   assert.deepEqual(Object.keys(optionalAliases), [])
