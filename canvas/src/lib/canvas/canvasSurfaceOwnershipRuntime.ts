@@ -95,10 +95,14 @@ export function registerSharedXrDepartureHandler(handler: () => void): () => voi
   }
 }
 
+export function requestSharedXrSurfaceDeparture(): void {
+  handleSharedXrDeparture?.()
+}
+
 export function notifyCanvasSurfaceStateChanged(state: CanvasSurfaceState): void {
   if (transitionTransactionDepth > 0) return
   if (state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr') return
-  handleSharedXrDeparture?.()
+  requestSharedXrSurfaceDeparture()
 }
 
 export function runCanvasSurfaceOwnershipTransaction<T>(operation: () => T): T {

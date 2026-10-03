@@ -8,7 +8,9 @@ import {
   diagnoseWorkspaceRunReadyDemoActivation,
   FLIGHT_SIM_DEMO_REPO_REL_PATH,
   FLIGHT_SIM_RUN_READY_DEMO_ID,
+  WORKSPACE_RUN_READY_DEMO_SEEDS,
   XR_PHYSICS_DEMO_REPO_REL_PATH,
+  XR_PHYSICS_RUN_READY_DEMO_ID,
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
 
 const flightSeedSource = readFileSync(
@@ -21,7 +23,8 @@ test('Feature: agentic-graph-game-flight-sim, Property 40 - Source-authored acti
   fc.assert(
     fc.property(
       fc.stringMatching(/^[a-z][a-z0-9-]{0,23}$/)
-        .filter(value => !['flight-sim', 'city-sim', 'xr-physics', 'care-agent', 'risk-copilot'].includes(value)),
+        .filter(value => value !== 'xr-physics'
+          && !WORKSPACE_RUN_READY_DEMO_SEEDS.some(seed => seed.id === value)),
       fc.stringMatching(/^[a-z][a-z0-9-]{0,23}\.md$/),
       (unregisteredId, importedBasename) => {
         const importedPath = `/imports/${importedBasename}`
@@ -43,7 +46,7 @@ test('Feature: agentic-graph-game-flight-sim, Property 40 - Source-authored acti
         assert.equal(conflict.ok, false)
         if (conflict.ok === false) {
           assert.equal(conflict.errorCode, 'RUN_READY_IDENTITY_CONFLICT')
-          assert.match(conflict.message, /xr-physics/)
+          assert.match(conflict.message, new RegExp(XR_PHYSICS_RUN_READY_DEMO_ID))
           assert.match(conflict.message, /flight-sim/)
         }
 

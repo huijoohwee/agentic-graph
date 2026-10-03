@@ -149,7 +149,9 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       }
     }
   }, [
+    options.active,
     options.map,
+    options.mapLibreRuntimeEnabled,
     options.rootRef,
     restoreMapPadding,
   ])
@@ -184,9 +186,9 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     const map = options.map
     let pendingCameraFrame = 0
     let gate: FlightOverlayPresentationGate | null = null
-    const disposeGate = () => {
+    const disposeGate = (clearCanvas = true) => {
       gate?.cancel()
-      gate?.clearCanvas()
+      if (clearCanvas) gate?.clearCanvas()
       gate?.resetPresented()
       gate?.dispose()
       gate = null
@@ -355,7 +357,9 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       map?.off?.('load', scheduleFinalApply)
       map?.off?.('resize', scheduleFinalApply)
       stopObservingOcclusion()
-      disposeGate()
+      // Graph/style effect restarts retain proof earned by this same canvas.
+      // Map/activation ownership cleanup and stopped/inactive apply clear it.
+      disposeGate(false)
       transitionPresentationOwner(null)
       if (pendingCameraFrame && typeof window !== 'undefined') {
         window.cancelAnimationFrame(pendingCameraFrame)
