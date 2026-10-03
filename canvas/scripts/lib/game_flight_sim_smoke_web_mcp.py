@@ -15,18 +15,10 @@ def _diagnostic_case(
     *,
     field: str | None = None,
     token: str | None = None,
-    structured_operation: str | None = None,
 ) -> dict[str, Any]:
     return {
         "operation": operation,
-        "input": {
-            "invocation": invocation,
-            **(
-                {"operation": structured_operation}
-                if structured_operation is not None
-                else {}
-            ),
-        },
+        "input": {"invocation": invocation},
         "expected": {
             "errorCode": error_code,
             "message": message,
@@ -107,13 +99,14 @@ STRICT_INVOCATION_CASES = [
         "Flight Sim invocation fields must use one non-empty key=value pair.",
         token="operation",
     ),
-    _diagnostic_case(
-        "mixed-native-structured",
-        "/flight.sim @canvas #flight operation=start",
-        "FLIGHT_SIM_CONTROL_MIXED_INPUT",
-        "Flight Sim control forbids mixing native invocation and structured fields.",
-        field="operation", structured_operation="start",
-    ),
+    {
+        "operation": "mixed-native-structured",
+        "input": {"invocation": "/flight.sim @canvas #flight operation=start", "operation": "start"},
+        "expected": {"schemaRejection": {
+            "name": "WebMcpToolInputValidationError",
+            "toolName": "agentic-graph.control_local_flight_sim",
+        }},
+    },
     _diagnostic_case(
         "forbidden-throttle-pair",
         "/flight.sim @canvas #flight operation=start throttle=0.5",
@@ -200,12 +193,17 @@ def verify_flight_web_mcp(
             return { flightTools, registered: false }
           }
           const deadlineMs = webMcpRuntime.FLIGHT_SIM_WEB_MCP_DEADLINE_MS
-          const call = async (tool, input, operation) => {
+          const call = async (tool, input, operation, expectedSchemaRejection) => {
             const before = JSON.stringify(mcpRuntime.inspectLocalFlightSim())
             const startedAtMs = performance.now()
-            const result = input === undefined
-              ? await tool.execute()
-              : await tool.execute(input)
+            let result, schemaRejection = null
+            try {
+              result = input === undefined ? await tool.execute() : await tool.execute(input)
+            } catch (error) {
+              if (!expectedSchemaRejection || error?.name !== expectedSchemaRejection.name
+                || error?.toolName !== expectedSchemaRejection.toolName) throw error
+              schemaRejection = { name: error.name, toolName: error.toolName }
+            }
             const elapsedMs = performance.now() - startedAtMs
             const after = JSON.stringify(mcpRuntime.inspectLocalFlightSim())
             return {
@@ -213,7 +211,8 @@ def verify_flight_web_mcp(
               elapsedMs,
               deadlineMs,
               withinDeadline: elapsedMs <= deadlineMs,
-              ok: result?.ok !== false,
+              ok: schemaRejection ? false : result?.ok !== false,
+              schemaRejection,
               errorCode: result?.errorCode || null,
               message: result?.message || '',
               field: result?.field || null,
@@ -229,6 +228,7 @@ def verify_flight_web_mcp(
               control,
               item.input,
               item.operation,
+              item.expected.schemaRejection,
             )
             diagnostics.push({
               ...observed,
@@ -355,6 +355,8 @@ def verify_flight_web_mcp(
                 else {}
             ),
         }
+        if "schemaRejection" in expected_diagnostic:
+            actual_diagnostic = {"schemaRejection": diagnostic.get("schemaRejection")}
         if (
             diagnostic.get("ok") is not False
             or diagnostic.get("stateUnchanged") is not True
@@ -385,16 +387,28 @@ def verify_flight_exit(
     evidence = page.evaluate(
         """
         async () => {
-          const tools = Array.from(navigator.modelContext?.tools || [])
-          const control = tools.find(
-            tool => tool.name === 'agentic-graph.control_local_flight_sim',
-          )
-          const inspect = tools.find(
-            tool => tool.name === 'agentic-graph.inspect_local_flight_sim',
-          )
+          const mcpRuntime = await window.__kgFlightSimBrowserProof.importModule('flightSimMcpRuntime')
+          let tools = Array.from(navigator.modelContext?.tools || [])
+          if (!['control', 'inspect'].every(kind => tools.some(tool => tool.name === `agentic-graph.${kind}_local_flight_sim`))) {
+            const selector = tools.find(tool => tool.name === 'agentic-graph.select_local_tool_scope')
+            if (!selector) throw Error('Flight Exit scope selector is unavailable')
+            const before = JSON.stringify(mcpRuntime.inspectLocalFlightSim())
+            const started = performance.now()
+            let timer, selected
+            try {
+              selected = await Promise.race([
+                selector.execute({ scope: 'flightSim' }),
+                new Promise((_, reject) => { timer = setTimeout(() => reject(Error('Flight Exit scope deadline exceeded')), 2000) }),
+              ])
+            } finally { clearTimeout(timer) }
+            if (selected?.scope !== 'flightSim' || performance.now() - started > 2000
+              || before !== JSON.stringify(mcpRuntime.inspectLocalFlightSim())) throw Error('Flight Exit scope selection violated its contract')
+            tools = Array.from(navigator.modelContext?.tools || [])
+          }
+          const control = tools.find(tool => tool.name === 'agentic-graph.control_local_flight_sim')
+          const inspect = tools.find(tool => tool.name === 'agentic-graph.inspect_local_flight_sim')
           if (!control || !inspect) return { registered: false }
           const runtime = await window.__kgFlightSimBrowserProof.importModule('flightSimRuntime')
-          const mcpRuntime = await window.__kgFlightSimBrowserProof.importModule('flightSimMcpRuntime')
           const physics = await window.__kgFlightSimBrowserProof.importModule('xrPhysicsRuntime')
           const camera = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerCameraRuntime')
           const controller = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerDemoRuntime')
@@ -405,20 +419,25 @@ def verify_flight_exit(
             delete copy.revision
             return copy
           }
+          const baselineRoot = window.__kgFlightSimCanvas?.closest('[data-kg-xr-scene-media-drop="1"]')
           const readRestoredSurface = () => {
             const state = store.useGraphStore.getState()
             const canvases = Array.from(document.querySelectorAll('canvas'))
-            const rendererCanvases = canvases.filter(
-              canvas => String(canvas.dataset.engine || '').startsWith('three.js'),
-            )
-            const auxiliaryCanvases = canvases.filter(
-              canvas => !rendererCanvases.includes(canvas),
-            )
-            const roots = Array.from(document.querySelectorAll(
-              '[data-kg-xr-scene-media-drop="1"]',
-            ))
+            const rendererCanvases = canvases.filter(canvas => String(canvas.dataset.engine || '').startsWith('three.js'))
+            const auxiliaryCanvases = canvases.filter(canvas => !rendererCanvases.includes(canvas))
+            const roots = Array.from(document.querySelectorAll('[data-kg-xr-scene-media-drop="1"]'))
             const baseline = window.__kgFlightSimCanvas
+            const monaco = auxiliaryCanvases.filter(canvas => canvas.closest('.monaco-editor'))
+            const motion = auxiliaryCanvases.filter(canvas => canvas.closest('[data-kg-motion-control-preview="local-only"]'))
             return {
+              auxiliaryOwners: {
+                monaco: monaco.length, motion: motion.length,
+                mapLibre: canvases.filter(canvas => canvas.classList.contains('maplibregl-canvas')).length,
+                unknown: auxiliaryCanvases.filter(canvas => !monaco.includes(canvas) && !motion.includes(canvas)).length,
+              },
+              editor: { mode: state.workspaceViewMode, paneOpen: state.workspaceCanvasPaneOpen },
+              panelMinimized: state.floatingPanelMinimized,
+              baselineRootIdentityRetained: Boolean(baselineRoot?.isConnected && roots.length === 1 && roots[0] === baselineRoot),
               surface: {
                 canvasRenderMode: state.canvasRenderMode,
                 canvas3dMode: state.canvas3dMode,
@@ -426,23 +445,15 @@ def verify_flight_exit(
                 canvasRenderModeIsAuto: state.canvasRenderModeIsAuto,
                 floatingPanelOpen: state.floatingPanelOpen,
                 floatingPanelView: state.floatingPanelView,
-                geospatialModeEnabled:
-                  gympgrph.isGeospatialModeEnabled(),
-                mapLibreActive:
-                  gympgrph.readActiveMapLibreMap?.() != null,
-                timelinePlaying:
-                  state.timelineTransportPlaying === true,
+                geospatialModeEnabled: gympgrph.isGeospatialModeEnabled(),
+                mapLibreActive: gympgrph.readActiveMapLibreMap?.() != null,
+                timelinePlaying: state.timelineTransportPlaying === true,
               },
               physics: withoutRevision(physics.readXrPhysicsRuntime()),
               physicsFrame: physics.readXrPhysicsRuntimeFrame(),
-              camera: {
-                mode: camera.readXrNativeControllerCamera().mode,
-              },
-              controller: withoutRevision(
-                controller.readXrNativeControllerDemo(),
-              ),
-              controllerFrame:
-                controller.readSharedXrNativeControllerDemoFrame(),
+              camera: { mode: camera.readXrNativeControllerCamera().mode },
+              controller: withoutRevision(controller.readXrNativeControllerDemo()),
+              controllerFrame: controller.readSharedXrNativeControllerDemoFrame(),
               canvasCount: canvases.length,
               rendererCanvasCount: rendererCanvases.length,
               auxiliaryCanvasCount: auxiliaryCanvases.length,
@@ -466,15 +477,11 @@ def verify_flight_exit(
           })
           const exitElapsedMs = performance.now() - exitStartedAtMs
           const restoredSurface = readRestoredSurface()
-          const beforeInactive = JSON.stringify(
-            mcpRuntime.inspectLocalFlightSim(),
-          )
+          const beforeInactive = JSON.stringify(mcpRuntime.inspectLocalFlightSim())
           const inspectStartedAtMs = performance.now()
           const inactiveResult = await inspect.execute()
           const inspectElapsedMs = performance.now() - inspectStartedAtMs
-          const afterInactive = JSON.stringify(
-            mcpRuntime.inspectLocalFlightSim(),
-          )
+          const afterInactive = JSON.stringify(mcpRuntime.inspectLocalFlightSim())
           return {
             registered: true,
             beforeExit,
@@ -499,37 +506,22 @@ def verify_flight_exit(
     inactive_inspection = evidence["inactiveInspection"]
     post_exit = evidence["postExit"]
     before_exit = evidence["beforeExit"]
-    expected_physics = {
-        **before_exit["physics"],
-        "phase": prior_surface["physics"]["phase"],
-    }
-    expected_controller = {
-        **before_exit["controller"],
-        **{
-            key: prior_surface["controller"][key]
-            for key in ("phase", "mode", "terrainId")
-        },
-    }
-    expected_controller_frame = {
-        **before_exit["controllerFrame"],
-        **{
-            key: prior_surface["controllerFrame"][key]
-            for key in ("phase", "mode", "terrainId")
-        },
-    }
+    expected_physics = {**before_exit["physics"], "phase": prior_surface["physics"]["phase"]}
+    expected_controller = {**before_exit["controller"], "phase": prior_surface["controller"]["phase"]}
+    expected_controller_frame = {**before_exit["controllerFrame"], "phase": prior_surface["controllerFrame"]["phase"]}
+    expected_motion = int(prior_surface["floatingPanelOpen"] is True
+                          and prior_surface["floatingPanelView"] == "motionControl"
+                          and before_exit["panelMinimized"] is not True)
+    expected_monaco = before_exit["auxiliaryOwners"]["monaco"]
     expected_restoration = {
+        "auxiliaryOwners": {"monaco": expected_monaco, "motion": expected_motion, "mapLibre": 0, "unknown": 0},
+        "editor": before_exit["editor"], "panelMinimized": before_exit["panelMinimized"],
+        "baselineRootIdentityRetained": True,
         "surface": {
             key: prior_surface[key]
             for key in (
-                "canvasRenderMode",
-                "canvas3dMode",
-                "canvasRenderModeLastFree",
-                "canvasRenderModeIsAuto",
-                "floatingPanelOpen",
-                "floatingPanelView",
-                "geospatialModeEnabled",
-                "mapLibreActive",
-                "timelinePlaying",
+                "canvasRenderMode", "canvas3dMode", "canvasRenderModeLastFree", "canvasRenderModeIsAuto",
+                "floatingPanelOpen", "floatingPanelView", "geospatialModeEnabled", "mapLibreActive", "timelinePlaying",
             )
         },
         "physics": expected_physics,
@@ -537,9 +529,9 @@ def verify_flight_exit(
         "camera": before_exit["camera"],
         "controller": expected_controller,
         "controllerFrame": expected_controller_frame,
-        "canvasCount": prior_surface["canvasCount"],
+        "canvasCount": prior_surface["rendererCanvasCount"] + expected_monaco + expected_motion,
         "rendererCanvasCount": prior_surface["rendererCanvasCount"],
-        "auxiliaryCanvasCount": prior_surface["auxiliaryCanvasCount"],
+        "auxiliaryCanvasCount": expected_monaco + expected_motion,
         "auxiliaryCanvasesLocalOnly": True,
         "rootCount": prior_surface["rootCount"],
         "baselineCanvasIdentityRetained": True,

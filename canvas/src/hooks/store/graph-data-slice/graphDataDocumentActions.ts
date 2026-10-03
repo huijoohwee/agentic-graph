@@ -269,7 +269,9 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
       if (!currentDocumentMatchesExpectation && !incomingDocumentIsCurrent) return false
     }
     const didSwitchActiveDocument = previousState.markdownDocumentName !== name
-    const preserveLiveSharedXrSurface = !didSwitchActiveDocument && readPreserveLiveSharedXrSurface(previousState)
+    // Editor publication can precede the selected document's first preset apply.
+    const preserveLiveSharedXrSurface = !didSwitchActiveDocument
+      && previousState.markdownDocumentApplyViewPreset !== false && readPreserveLiveSharedXrSurface(previousState)
     const canonicalText = typeof args?.canonicalMarkdownText === 'string'
       ? args.canonicalMarkdownText
       : previousState.markdownDocumentName === name
