@@ -19,21 +19,31 @@ SOURCE_SHA256 = hashlib.sha256(SOURCE_TEXT.encode()).hexdigest()
 
 JAVASCRIPT_FIXTURE = r"""
 import fs from 'node:fs';
-import { createRequire } from 'node:module';
-const require = createRequire(process.cwd() + '/package.json');
-const { load } = require('js-yaml');
+import { tryParseMarkdownFrontmatterFlowGraph } from './src/features/parsers/markdownFrontmatterFlowGraph.ts';
+import { resolveXrMotionReferencePersistedValue } from './src/features/three/xrMotionReferencePersistedValue.ts';
+import { readXrMotionReferencePlan, serializeXrMotionReferencePlan, xrMotionReferenceSceneKey } from './src/features/three/xrMotionReferenceModel.ts';
+import { hydrateXrMotionReferenceRuntime } from './src/features/three/xrMotionReferenceRuntime.ts';
+import { resolveXrMotionReferenceStage } from './src/features/three/xrSceneLibrary.ts';
 const input = JSON.parse(fs.readFileSync(0, 'utf8'));
 const options = input.options;
 const sourceText = input.source;
-const meta = load(sourceText.match(/^---\r?\n([\s\S]*?)\r?\n---/)[1]);
-const original = meta.kgXrMotionReference;
-const stageId = original.stageId;
 const documentName = 'agentic-graph-ar-vr-xr-runtime-readiness-demo.md';
-const persisted = JSON.stringify(original);
-const motion = {
-  plan: original, dirty: Boolean(options.dirty),
-  sourceSignature: JSON.stringify({ persistedValue: persisted }),
-};
+const graphData = tryParseMarkdownFrontmatterFlowGraph(documentName, sourceText)?.graphData;
+if (!graphData) throw Error('actual authored seed must parse through native graph owner');
+const meta = graphData.metadata.frontmatterMeta;
+const persisted = resolveXrMotionReferencePersistedValue(graphData.metadata);
+const original = readXrMotionReferencePlan(persisted, graphData.nodes);
+const stageId = serializeXrMotionReferencePlan(original).stageId;
+graphData.metadata.source = `markdown:${documentName}`;
+const nativeMotion = hydrateXrMotionReferenceRuntime({
+  sceneKey: xrMotionReferenceSceneKey(documentName, graphData), nodes: graphData.nodes, persistedValue: persisted,
+});
+const motion = { ...nativeMotion, dirty: Boolean(options.dirty) };
+if (options.topLevelPersisted) graphData.metadata.kgXrMotionReference = persisted;
+if (options.metadataDrift) graphData.metadata.frontmatterMeta.kgXrMotionReference = { ...persisted, stageId: 'singapore' };
+if (options.shadowMetadata) graphData.metadata.kgXrMotionReference = { ...persisted, stageId: 'singapore' };
+if (options.malformedEnvelope) graphData.metadata.kgXrMotionReference = { plan: persisted };
+if (options.missingPersisted) delete graphData.metadata.frontmatterMeta.kgXrMotionReference;
 const names = [
   'agentic_os_graph_xr_stage', 'agentic_os_xr_native_controller_demo',
   'agentic_os_xr_playground_treasure',
@@ -65,13 +75,13 @@ const state = {
   canvasRenderMode: meta.kgCanvasRenderMode,
   // The native xr-v2 startup owner activates xr after applying the authored 3d preset.
   canvas3dMode: options.modeDrift ? '3d' : 'xr',
-  graphData: { metadata: {
+  graphData: { ...graphData, metadata: { ...graphData.metadata,
     source: options.foreignSource ? 'markdown:foreign.md' : `markdown:${documentName}`,
-    kgXrMotionReference: options.metadataDrift ? JSON.stringify({ ...original, stageId: 'singapore' }) : persisted,
     canvasWorkspacePreset: { canvasSurfaceMode: options.surfaceDrift ? 'xr' : meta.kgCanvasSurfaceMode },
   } },
   captureThreeGltfSnapshot: async () => ({ text: async () => {
     if (options.driftDuringCapture) state.markdownDocumentText += '\nchanged during capture';
+    if (options.metadataDuringCapture) state.graphData.metadata.frontmatterMeta.kgXrMotionReference = { ...persisted, stageId: 'singapore' };
     return JSON.stringify({ nodes });
   } }),
 };
@@ -95,7 +105,7 @@ const modules = {
     XR_NATIVE_CONTROLLER_CAMERA_DEFAULT_MODE: 'fixed-follow',
   },
   xrMotionReferenceRuntime: { readXrMotionReferenceRuntime: () => motion },
-  xrSceneLibrary: { resolveXrMotionReferenceStage: id => ({ id }) },
+  xrSceneLibrary: { resolveXrMotionReferenceStage },
 };
 globalThis.window = { __kgFlightSimBrowserProof: { importModule: async key => {
   if (!modules[key]) throw Error('unexpected module ' + key);
@@ -113,10 +123,10 @@ class SceneFixturePage:
 
     def evaluate(self, expression, arg=None):
         completed = subprocess.run(
-            ["node", "--input-type=module", "-e", JAVASCRIPT_FIXTURE],
+            ["node", "--import", "tsx", "--input-type=module", "-e", JAVASCRIPT_FIXTURE],
             input=json.dumps({"expression": expression, "arg": arg,
                               "source": SOURCE_TEXT, "options": self.options}),
-            text=True, capture_output=True, timeout=3, check=False,
+            text=True, capture_output=True, timeout=8, check=False,
         )
         if completed.returncode:
             raise AssertionError(completed.stderr)
@@ -134,6 +144,8 @@ class AuthoredPhysicsBaselineTest(unittest.TestCase):
         self.assertTrue(value["sourceBound"])
         self.assertEqual(value["sourceSha256"], SOURCE_SHA256)
         self.assertEqual(value["declaredStageId"], "tropical-playground")
+        self.assertEqual(value["persistedLocation"], "metadata.frontmatterMeta")
+        self.assertEqual(value["persistedSchema"], "agentic-graph-xr-motion-reference/v1")
         self.assertEqual(value["surfaceMode"], "3d")
         self.assertEqual(value["canvas3dMode"], "xr")
         self.assertEqual(value["declaredModes"], {"render": "3d", "canvas3d": "3d", "surface": "3d"})
@@ -157,11 +169,22 @@ class AuthoredPhysicsBaselineTest(unittest.TestCase):
         for key in (
             "foreignSource", "sourceDrift", "metadataDrift", "modeDrift",
             "surfaceDrift", "controllerDrift", "cameraDrift", "dirty", "driftDuringCapture",
+            "shadowMetadata", "missingPersisted", "malformedEnvelope", "metadataDuringCapture",
         ):
             with self.subTest(key=key):
                 page = SceneFixturePage(**{key: True})
-                self.assertFalse(read_and_pin_authored_physics_baseline(page, SOURCE_SHA256)["ready"])
+                value = read_and_pin_authored_physics_baseline(page, SOURCE_SHA256)
+                self.assertIs(value["ready"], False)
+                if key in ("metadataDrift", "shadowMetadata", "missingPersisted", "malformedEnvelope"):
+                    self.assertIs(value["sourceBound"], False)
                 self.assertFalse(page.pinned)
+
+    def test_native_top_level_persisted_value_compatibility_preserves_precedence(self):
+        page = SceneFixturePage(topLevelPersisted=True)
+        value = read_and_pin_authored_physics_baseline(page, SOURCE_SHA256)
+        self.assertIs(value["ready"], True)
+        self.assertIs(value["sourceBound"], True)
+        self.assertEqual(value["persistedLocation"], "metadata")
 
     def test_known_native_local_preview_owners_are_attributed(self):
         page = SceneFixturePage(auxiliaryOwners=list(LOCAL_AUXILIARY_CANVAS_SELECTORS))

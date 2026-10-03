@@ -29,12 +29,13 @@ def read_and_pin_authored_physics_baseline(
           const motion = await window.__kgFlightSimBrowserProof.importModule('xrMotionReferenceRuntime')
           const library = await window.__kgFlightSimBrowserProof.importModule('xrSceneLibrary')
           const state = store.useGraphStore.getState()
-          const metadata = state.graphData?.metadata || {}
-          const persisted = metadata.kgXrMotionReference
-          let authoredPlan = persisted
-          if (typeof persisted === 'string') {
-            try { authoredPlan = JSON.parse(persisted) } catch { authoredPlan = null }
-          }
+          const asRecord = value => value && typeof value === 'object' && !Array.isArray(value) ? value : null
+          // Contract-only mirror of resolveXrMotionReferencePersistedValue, used by the native runtime bridge.
+          const persistedValue = metadata => metadata?.kgXrMotionReference !== undefined
+            ? metadata.kgXrMotionReference : asRecord(metadata?.frontmatterMeta)?.kgXrMotionReference
+          const metadata = asRecord(state.graphData?.metadata) || {}
+          const persisted = persistedValue(metadata)
+          const authoredPlan = asRecord(persisted)
           const motionRuntime = motion.readXrMotionReferenceRuntime()
           const declaredStageId = String(authoredPlan?.stageId || '')
           const stage = library.resolveXrMotionReferenceStage(declaredStageId)
@@ -45,12 +46,12 @@ def read_and_pin_authored_physics_baseline(
           const declaredMode = key => frontmatter.match(new RegExp(`^${key}:\\s*([^\\r\\n]+)`, 'm'))?.[1]?.trim().replace(/^['"]|['"]$/g, '') || ''
           let signature = null
           try { signature = JSON.parse(motionRuntime.sourceSignature) } catch {}
-          const sourceBound = sourceSha256 === expectedSourceSha256
+          const sourceBound = Boolean(sourceSha256 === expectedSourceSha256
             && metadata.source === `markdown:${state.markdownDocumentName}`
             && declaredStageId && stage.id === declaredStageId
             && motionRuntime.plan.stageId === declaredStageId
             && motionRuntime.dirty === false
-            && JSON.stringify(signature?.persistedValue) === JSON.stringify(persisted)
+            && JSON.stringify(signature?.persistedValue) === JSON.stringify(persisted))
           const blob = await state.captureThreeGltfSnapshot()
           if (!blob) return { ready: false }
           const gltf = JSON.parse(await blob.text())
@@ -134,9 +135,10 @@ def read_and_pin_authored_physics_baseline(
           const requiredNodeNames = identityNodeNames.filter(
             name => namedNodeCounts[name] === 1,
           )
-          const ready = roots.length === 1
+          const ready = Boolean(roots.length === 1
             && sourceBound
             && store.useGraphStore.getState().markdownDocumentText === sourceText
+            && JSON.stringify(persistedValue(store.useGraphStore.getState().graphData?.metadata)) === JSON.stringify(persisted)
             && motion.readXrMotionReferenceRuntime().sourceSignature === motionRuntime.sourceSignature
             && rootCanvases.length === 1
             && rendererCanvases.length === 1
@@ -158,7 +160,7 @@ def read_and_pin_authored_physics_baseline(
             && nativeController.terrainId === declaredStageId
             && nativeController.followCamera === true
             && ['stopped', 'playing', 'paused'].includes(physicsRuntime.phase)
-            && physicsRuntime.world?.schema === 'agentic-graph-xr-physics-world/v1'
+            && physicsRuntime.world?.schema === 'agentic-graph-xr-physics-world/v1')
           if (ready) {
             window.__kgFlightSimCanvas = canvas
             window.__kgFlightSimBaselineSceneIdentity = {
@@ -187,6 +189,8 @@ def read_and_pin_authored_physics_baseline(
             sourceBound,
             sourceSha256,
             declaredStageId,
+            persistedLocation: metadata.kgXrMotionReference !== undefined ? 'metadata' : 'metadata.frontmatterMeta',
+            persistedSchema: authoredPlan?.schema || '',
             expectedNodeNames: identityNodeNames,
             namedNodeCounts,
             canvasIdentityCaptured:
