@@ -674,7 +674,7 @@ export const buildMarkdownJsonLd = (name: string, markdownText: string): Record<
         diagramKind: diagram.kind,
       })
 
-      if (diagram.kind === 'flowchart') {
+      if (diagram.kind === 'flowchart' || diagram.kind === 'sequence') {
         const parserCtx: MermaidParserContext = {
           gid,
           docId,
@@ -765,7 +765,7 @@ export const buildMarkdownJsonLd = (name: string, markdownText: string): Record<
           diagramKind: diagram.kind,
         })
 
-        if (diagram.kind === 'flowchart') {
+        if (diagram.kind === 'flowchart' || diagram.kind === 'sequence') {
           const parserCtx: MermaidParserContext = {
             gid,
             docId,

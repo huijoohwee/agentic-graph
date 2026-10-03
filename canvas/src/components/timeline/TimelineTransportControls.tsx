@@ -9,6 +9,7 @@ import {
 } from './timelineTransport'
 import './TimelineTransportControls.css'
 import './TimelineTransportControlsMermaidGantt.css'
+import './TimelineTransportLane.css'
 
 export type TimelineTransportControlsProps = {
   ariaLabel: string
@@ -121,7 +122,6 @@ export function TimelineTransportTimeAxisClip({
         className,
       )}
       aria-label={rootProps['aria-label'] || 'Timeline time-axis control lane'}
-      data-kg-timeline-clip-compact="1"
       data-kg-timeline-time-axis-clip={laneStyle}
     >
       <section className="timeline-transport-inline-clip-content timeline-transport-time-axis-clip-content">
@@ -317,7 +317,8 @@ export function TimelineTransportChrome(props: TimelineTransportChromeProps) {
     titleLabel,
     ...transportProps
   } = props
-  const rootClassName = cn('timeline-transport-chrome', chromeClassName)
+  const { panelTextClass } = usePanelTypography()
+  const rootClassName = cn('timeline-transport-chrome', chromeClassName, panelTextClass)
   const rulerRootClassName = cn('timeline-transport-ruler', rulerClassName)
   const inlineHeaderAside = !titleLabel && !subtitleLabel ? headerAside : null
   const headerAsideContent = inlineHeaderAside ? null : headerAside

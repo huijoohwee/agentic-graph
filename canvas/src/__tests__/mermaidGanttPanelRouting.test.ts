@@ -486,7 +486,7 @@ export async function testGanttPanelRoutingUsesSharedGitGraphMermaidUtilities() 
     !configRenderText.includes("registryLabel: 'Animatic'") ||
     !configRenderText.includes('isGanttCanvas2dRenderer') ||
     !uiCopyText.includes('2D Renderer: Gantt-timeline') ||
-    !canvasViewMenuText.includes('gantt: ChartGantt') ||
+    !readSource('components', 'toolbar', 'canvasViewRendererOptions.ts').includes('gantt: ChartGantt') ||
     !canvasViewMenuText.includes('canvasViewRendererGanttTitle') ||
     !canvasViewportText.includes('MermaidGanttCanvasLazy') ||
     !canvasViewportText.includes("active2dSurface === 'gantt'") ||
@@ -1040,7 +1040,7 @@ export async function testGanttPanelRoutingUsesSharedGitGraphMermaidUtilities() 
     !ganttTransportShellModelText.includes("'data-kg-video-sequence-media-duration-scale': args.hasMediaDurationScale ? '1' : undefined") ||
     !ganttTransportShellModelText.includes("timelineMode: 'empty' | 'source-backed' | 'workflow'") ||
     !ganttTransportShellModelText.includes("'data-kg-video-sequence-timeline': args.timelineMode") ||
-    !ganttTransportShellModelText.includes('showInlineProgress: false') ||
+    !ganttTransportShellModelText.includes('showInlineProgress: true') ||
     !ganttTransportShellModelText.includes('showRange: false') ||
     !ganttTransportShellText.includes('GanttTimelineTransportShell') ||
     !ganttTransportShellText.includes('TimelineTransportChrome') ||
