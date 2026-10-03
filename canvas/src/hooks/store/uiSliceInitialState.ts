@@ -99,6 +99,7 @@ export const createUiInitialState = (
         || view === 'storyboardWidget' || view === 'flowchart'
         || view === 'gitGraph'
         || view === 'gantt'
+        || view === 'sequence'
         || view === 'timeline'
         || view === 'architecture'
         || view === 'eventModeling'
