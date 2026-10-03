@@ -153,6 +153,8 @@ async function verifySavedImportUpgrade(): Promise<void> {
   const transcriptJsonText = JSON.stringify({ video_id: 'CacheVideo1', source_url: url,
     segments: [{ start: 0, duration: 52.375, text: 'Beginning and ending remain visible.' }] })
   const current = buildVideoAgentUrlImportMarkdown({ sourceUrl: url, sourceText, sourceTranscriptJsonText: transcriptJsonText })
+  const frameSrcDoc = current.match(/    - id: "video_agent_frame_analysis_panel"[\s\S]*?(\n        srcDoc: \|-\n(?:          [^\n]*\n)+)/)?.[1] || ''
+  assert(frameSrcDoc.includes('data-kg-video-agent-frame-analysis="1"'), 'Frame content fault fixture did not find the owned panel srcDoc')
   const missing = current.replace(/kgVideoSequenceAnnotations:\n[\s\S]*?(?=videoAgentRuntimeContract:)/, '')
   const frameToken = formatMermaidGanttFrameSamplesToken(Array.from({ length: 17 }, (_, index) => ({
     timestampSeconds: index, url: `/__video_frame?sample=${index}`,
@@ -164,7 +166,9 @@ async function verifySavedImportUpgrade(): Promise<void> {
     current.replace(/(frameAnalysisNodeId: )[^\n]+/, '$1"missing_panel"'),
     current.replace('kind: "video-agent-frame-analysis"', 'kind: "other-panel"'),
     current.replaceAll(url, 'https://youtu.be/OtherVideo1'),
-    current.replace(/kgframes_[A-Za-z0-9_-]+/g, frameToken), '# Previously cached YouTube transcript without a VideoAgent preview']
+    current.replace(/kgframes_[A-Za-z0-9_-]+/g, frameToken), '# Previously cached YouTube transcript without a VideoAgent preview',
+    current.replace(frameSrcDoc, ''), current.replace(frameSrcDoc, '\n        srcDoc: "<main>Unusable frame preview</main>"\n'),
+    current.replace(frameSrcDoc, frameSrcDoc.replace(/<script>[\s\S]*?<\/script>/g, ''))]
   assert(stale[3].length < 500_000 && new TextEncoder().encode(stale[3]).byteLength > 500_000, 'UTF8 budget fixture did not cross the byte-only boundary')
   const oldPaths = stale.map((_, index) => `/docs_/20200101T00000${index}Z/old.video-agent.md`)
   const currentPath = '/docs_/20260101T000001Z/current.video-agent.md'

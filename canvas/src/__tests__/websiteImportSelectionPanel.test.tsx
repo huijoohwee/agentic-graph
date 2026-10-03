@@ -481,9 +481,9 @@ test('cancel retains saved and discovered rows through document switches and res
   const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   let requests = 0, refreshing = false, signal: AbortSignal | undefined, completeRefresh!: (response: Response) => void
   globalThis.fetch = (async (_target, init) => {
+    assert.equal(String(_target), '/__website_import/discover'); assert.equal(init?.method, 'POST'); assert.deepEqual(JSON.parse(String(init?.body)), { rootUrl: sourceUrl, url: sourceUrl }); assert.ok(init?.signal && !init.signal.aborted)
     requests++; if (!refreshing) return new Response(JSON.stringify({ ok: true, pages: [sourceUrl, sourceUrl + 'new'].map(url => ({ url, path: new URL(url).pathname })), limited: false }))
-    signal = init?.signal as AbortSignal
-    return new Promise<Response>(resolve => { completeRefresh = resolve })
+    assert.equal(signal, undefined); signal = init!.signal as AbortSignal; return new Promise<Response>(resolve => { completeRefresh = resolve })
   }) as typeof fetch
   const host = document.createElement('section')
   let root = createRoot(host), pending!: Promise<unknown>, imported = 0

@@ -175,3 +175,63 @@ test('mounted media owner replays queued pins only to its own ready iframe and f
     assert.equal(messages.at(-1)?.timeMs, 3000); assert.equal(messages.at(-1)?.frameSampleUrl, undefined)
   } finally { w.setTimeout = oldTimeout; w.clearTimeout = oldClear; sync.clearRichMediaTimelineTargetFrame(); await act(async () => root.unmount()); store.setState(initial); host.remove(); env.restore() }
 })
+
+test('Gantt followers retain calibrated time and playback ownership across READY and queued retries', async () => {
+  const position = 0.5976664375
+  const args = { localDocumentKey: 'doc', transportDocumentKey: 'doc', transportPosition: position,
+    transportPlaying: false, transportPlaybackRate: 1 }
+  const clock = sync.buildRichMediaTimelineTransportFrame({ ...args, override: { timeMs: 35860, sourcePlayback: false } })!
+  const clockScope = { documentKey: 'doc', transportDocumentKey: 'doc', position, playing: false, playbackRate: 1 }
+  assert.deepEqual(sync.resolvePublishedRichMediaTimelineTransportFrame(clock, clockScope), clock)
+  for (const changed of [{ documentKey: 'foreign' }, { position: 0 }, { playing: true }, { playbackRate: 2 }])
+    assert.equal(sync.resolvePublishedRichMediaTimelineTransportFrame(clock, { ...clockScope, ...changed }), null)
+  assert.equal(sync.resolvePublishedRichMediaTimelineTransportFrame({ ...clock, sourcePlayback: true }, clockScope), null)
+  assert.equal(sync.resolvePublishedRichMediaTimelineTransportFrame({ ...clock, targetOverlayId: 'analysis' }, clockScope), null)
+  assert.equal(sync.buildRichMediaTimelineTransportFrame({ ...args, transportPosition: 20 })?.timeMs, 20000, 'generic units remain seconds')
+  const { useGraphStore: store } = await import('../hooks/useGraphStore')
+  const { useRichMediaPanelMediaState } = await import('../components/useRichMediaPanelMediaState')
+  const { buildVideoAgentUrlImportMarkdown } = await import('../features/markdown-workspace/workspaceImport/videoAgentUrlImport')
+  const { loadGraphDataFromTextViaParser } = await import('../features/parsers/loader')
+  const documentText = buildVideoAgentUrlImportMarkdown({ sourceUrl: request.sourceUrl, sourceText: '# Source\n',
+    sourceTranscriptJsonText: JSON.stringify({ segments: [{ start: 0, duration: 60, text: 'Source' }] }) })
+  const parsed = await loadGraphDataFromTextViaParser('clock.video-agent.md', documentText, { applyToStore: false })
+  assert.ok(sync.resolveRichMediaTimelineDurationUnits(parsed?.graphData) > 0, 'the current producer supplies actual Gantt units')
+  const env = initJsdomHarness(), initial = store.getState(), host = document.createElement('section')
+  document.body.append(host); const root = createRoot(host), messages: sync.RichMediaTimelineTransportFrame[] = [], callbacks: (() => void)[] = []
+  let model!: ReturnType<typeof useRichMediaPanelMediaState>, overlayId = 'source-panel', published = 0
+  function Harness() {
+    model = useRichMediaPanelMediaState({ overlayId, title: 'Source', url: '', srcDoc: '<section>Source</section>' })
+    return <iframe ref={model.inlineSrcDocFrameRef} title="Source" />
+  }
+  const w = env.dom.window, oldTimeout = w.setTimeout, oldClear = w.clearTimeout
+  const ready = () => w.dispatchEvent(new w.MessageEvent('message', { source: model.inlineSrcDocFrameRef.current!.contentWindow,
+    data: { type: sync.RICH_MEDIA_TIMELINE_TRANSPORT_READY_MESSAGE } }))
+  const capture = () => { model.inlineSrcDocFrameRef.current!.contentWindow!.postMessage = (message: sync.RichMediaTimelineTransportFrame) => {
+    if (message.type === sync.RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_MESSAGE) messages.push(message)
+  } }
+  try {
+    store.setState({ markdownDocumentName: 'doc', timelineTransportDocumentKey: 'doc', timelineTransportPosition: position,
+      timelineTransportPlaying: false, timelineTransportPlaybackRate: 1, graphData: { ...parsed!.graphData!, nodes: [...parsed!.graphData!.nodes,
+        { id: 'analysis', label: 'Boxes', type: 'RichMediaPanel', properties: { kind: 'video-agent-frame-analysis', sourceUrl: request.sourceUrl } },
+      ] } })
+    Reflect.deleteProperty(w, sync.RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY)
+    w.setTimeout = ((fn: () => void) => { callbacks.push(fn); return callbacks.length }) as typeof w.setTimeout; w.clearTimeout = () => {}
+    w.addEventListener(sync.RICH_MEDIA_TIMELINE_TRANSPORT_EVENT, () => { published++ })
+    await act(async () => root.render(<Harness />)); capture(); ready()
+    assert.equal(messages.length, 0, 'a Gantt follower waits rather than inventing a milliseconds conversion')
+    sync.publishRichMediaTimelineTransportFrame(clock)
+    assert.equal(messages.at(-1)?.timeMs, 35860)
+    ready(); model.scheduleInlineSrcDocTimelineFrameBurst(); callbacks.splice(0).forEach(fn => fn())
+    assert.ok(messages.length > 2); assert.ok(messages.every(frame => frame.timeMs === 35860 && frame.sourcePlayback === false))
+    assert.equal(published, 1, 'READY and retries cannot republish a follower frame as a clock owner')
+    assert.equal(Reflect.get(w, sync.RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY), clock)
+    overlayId = 'analysis'; sync.requestRichMediaTimelineTargetFrame({ ...request, position })
+    await act(async () => root.render(<Harness />)); capture(); ready()
+    assert.equal(messages.at(-1)?.timeMs, 6173, 'trimmed-source annotation time takes priority over composition time')
+    assert.equal(messages.at(-1)?.frameSampleUrl, request.frameSampleUrl)
+    const stale = callbacks.slice()
+    await act(async () => store.setState({ markdownDocumentName: 'other', timelineTransportDocumentKey: 'other' }))
+    const count = messages.length; stale.forEach(fn => fn()); ready()
+    assert.equal(messages.length, count, 'foreign document and old delayed retries cannot replay the prior clock')
+  } finally { w.setTimeout = oldTimeout; w.clearTimeout = oldClear; sync.clearRichMediaTimelineTargetFrame(); await act(async () => root.unmount()); store.setState(initial); host.remove(); env.restore() }
+})

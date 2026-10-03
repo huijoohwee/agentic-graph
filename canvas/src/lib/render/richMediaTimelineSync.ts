@@ -136,6 +136,26 @@ export function publishRichMediaTimelineClockStart(payload: RichMediaTimelineTra
 
 const cleanTimelineTransportKey = (value: unknown): string => String(value || '').trim()
 
+/** Gantt followers replay their clock owner's calibrated frame; they do not infer its units. */
+export function resolvePublishedRichMediaTimelineTransportFrame(frame: unknown, scope: {
+  documentKey: string; transportDocumentKey: string; position: number; playing: boolean; playbackRate: number
+}): RichMediaTimelineTransportFrame | null {
+  if (!frame || typeof frame !== 'object') return null
+  const value = frame as Partial<RichMediaTimelineTransportFrame>
+  const documentKey = cleanTimelineTransportKey(scope.documentKey)
+  const transportKey = cleanTimelineTransportKey(scope.transportDocumentKey)
+  if (!documentKey || transportKey && transportKey !== documentKey
+    || value.type !== RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_MESSAGE || value.documentKey !== documentKey
+    || value.targetOverlayId || value.sourcePlayback !== false
+    || !Number.isFinite(scope.position) || scope.position < 0 || value.position !== scope.position
+    || value.playing !== scope.playing || value.playbackRate !== scope.playbackRate
+    || !Number.isFinite(scope.playbackRate) || scope.playbackRate <= 0
+    || typeof value.timeMs !== 'number' || !Number.isFinite(value.timeMs) || value.timeMs < 0) return null
+  return { type: RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_MESSAGE, documentKey,
+    position: scope.position, playing: scope.playing, playbackRate: scope.playbackRate,
+    timeMs: value.timeMs, sourcePlayback: false }
+}
+
 export function buildRichMediaTimelineTransportFrame(args: {
   localDocumentKey: string
   transportDocumentKey: string

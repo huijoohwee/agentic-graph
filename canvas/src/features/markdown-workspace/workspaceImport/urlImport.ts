@@ -46,10 +46,11 @@ async function acceptsSavedVideoAgentImport(saved: SavedUrlImport, requestedUrl:
   if (new TextEncoder().encodeInto(saved.text, new Uint8Array(500_000)).read !== saved.text.length) return false
   const [{ readVideoSequenceSourceAnnotations, resolveVideoSequenceSourceAnnotations },
     { readVideoSequenceTimelineModelFromMarkdown }, { parseMarkdownFrontmatter, splitMarkdownLines },
-    { isPlainObject }, { buildMermaidGanttTimelineModel }, { readMermaidGanttFrameSamples }] = await Promise.all([
+    { isPlainObject }, { buildMermaidGanttTimelineModel }, { readMermaidGanttFrameSamples }, { getNodeMediaSpec }] = await Promise.all([
     import('@/components/timeline/videoSequenceSourceAnnotations'), import('@/components/timeline/videoSequenceTimeline'),
     import('@/lib/markdown'), import('@/lib/graph/value'), import('@/lib/mermaid/mermaidGanttTimelineModel'),
     import('@/lib/mermaid/mermaidGanttFrameThumbnailToken'),
+    import('@/lib/canvas/graph-elements/mediaSpec'),
   ])
   const parsed = parseMarkdownFrontmatter(splitMarkdownLines(saved.text), { maxNodes: 12000, maxDepth: 32 })
   const diagrams = isPlainObject(parsed.meta.flow_diagrams) ? parsed.meta.flow_diagrams.value : null
@@ -67,13 +68,22 @@ async function acceptsSavedVideoAgentImport(saved: SavedUrlImport, requestedUrl:
   return groups.length > 0 && groups.length === associations.length && groups.every(group => {
     const targets = nodes.filter(node => isPlainObject(node) && node.id === group.association.frameAnalysisNodeId)
     const source = sources.find(item => item.id === group.association.sourceId)
-    return group.samples.length > 0 && readMermaidGanttFrameSamples(group.annotationSpan.raw).length <= 16
+    if (!(group.samples.length > 0 && readMermaidGanttFrameSamples(group.annotationSpan.raw).length <= 16
       && !!source && workspaceImportSourceUrlsMatch(source.sourceUrl, requestedUrl)
       && targets.length === 1 && isPlainObject(targets[0].properties)
       && targets[0].type === 'RichMediaPanel' && targets[0].properties.kind === 'video-agent-frame-analysis'
       && targets[0].properties['flow:widgetFormId'] === 'richMediaPanel'
       && typeof targets[0].properties.sourceUrl === 'string'
-      && workspaceImportSourceUrlsMatch(targets[0].properties.sourceUrl, requestedUrl)
+      && workspaceImportSourceUrlsMatch(targets[0].properties.sourceUrl, requestedUrl))) return false
+    const media = getNodeMediaSpec(targets[0] as Parameters<typeof getNodeMediaSpec>[0])
+    const html = media?.kind === 'iframe' ? media.srcDoc || '' : ''
+    return /<section\b[^>]*data-kg-video-agent-frame-analysis="1"[^>]*data-kg-video-agent-frame-analysis-exact-samples="1"/.test(html)
+      && /<img\b[^>]*data-kg-video-agent-frame-src="[^"]+"/.test(html)
+      && /<section\b[^>]*data-kg-video-agent-frame-box-layer="1"/.test(html)
+      && /<mark\b[^>]*data-kg-video-agent-detection-index=/.test(html)
+      && Array.from(html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)).some(script =>
+        script[1].includes('var frames=[') && script[1].includes('function updateFrameImage(')
+        && script[1].includes("'agentic-graph:render-frame'"))
   })
 }
 
