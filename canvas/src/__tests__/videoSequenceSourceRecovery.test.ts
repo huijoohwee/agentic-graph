@@ -17,6 +17,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { JSDOM } from 'jsdom'
 import { useTimelinePreviewMediaSession, type TimelinePreviewMediaSession } from '@/components/timeline/useTimelinePreviewMediaSession'
+import { useTimelinePreviewCollection, type TimelinePreviewCollection } from '@/components/timeline/useTimelinePreviewCollection'
 
 Dexie.dependencies.indexedDB = indexedDB
 Dexie.dependencies.IDBKeyRange = IDBKeyRange
@@ -320,6 +321,83 @@ test('mounted MainPanel restores local bytes and refreshes plans without documen
     assert.equal(dom.window.document.querySelector('output')?.textContent, reimported.items[0].src)
   } finally {
     unsubscribe(); clearTimeout(timeout)
+    await act(async () => { root.unmount() })
+    dom.window.close()
+    for (const [key, descriptor] of previous) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor)
+      else Reflect.deleteProperty(globalThis, key)
+    }
+  }
+})
+
+test('mounted preview routes provider pages through the owned iframe and preserves native sources', async () => {
+  const cases = [
+    ['watch', 'https://www.youtube.com/watch?v=77FAnT935IE', 'video/mp4', 'iframe'],
+    ['share', 'https://youtu.be/77FAnT935IE?t=3', 'video/mp4', 'iframe'],
+    ['embed', 'https://www.youtube-nocookie.com/embed/77FAnT935IE', 'video/mp4', 'iframe'],
+    ['vimeo', 'https://vimeo.com/123456789', 'video/mp4', 'iframe'],
+    ['mp4', 'https://media.example.test/source.mp4', 'video/mp4', 'video'],
+    ['audio', 'https://media.example.test/source.mp3', 'audio/mpeg', 'audio'],
+    ['image', 'https://media.example.test/source.png', 'image/png', 'image'],
+  ] as const
+  const metadata = { displayWidth: 0, displayHeight: 0, durationSeconds: 0, frameRate: 0 }
+  const sources: VideoSequenceTimelineSource[] = cases.map(([id, sourceUrl, mimeHint]) => ({ ...source(`${id}.mp4`), ...metadata, id, sourceUrl, mimeHint, importMode: 'url' }))
+  const localFile = new File(['blob'], 'provider-routing-local.mp4', { type: 'video/mp4' })
+  registerVideoSequenceSourceFiles([localFile])
+  const local = { ...source(localFile.name), ...metadata, id: 'local', originalName: cases[0][1] }
+  sources.push(local)
+  const localUrl = resolveVideoSequenceSourceRuntimeUrl(local)
+  assert.match(localUrl, /^blob:/)
+  const markdownText = ['---', 'kgVideoSequenceTimeline: true', `kgVideoSequenceSources: ${JSON.stringify(sources)}`,
+    'flow_diagrams:', '  video_sequence:', '    type: mermaid_gantt', '    value: |-',
+    '      gantt', '        dateFormat HH:mm', '        section Video',
+    ...sources.map(item => `        ${item.id} : ${item.id}, kgsrc_0_1, kgpos_0, 0.0167m`), '---'].join('\n')
+  const dom = new JSDOM('<main id="routing"></main>', { url: 'http://127.0.0.1:5190/' })
+  const previous = new Map(['window', 'document', 'IS_REACT_ACT_ENVIRONMENT'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
+  Object.defineProperties(globalThis, {
+    window: { configurable: true, value: dom.window }, document: { configurable: true, value: dom.window.document },
+    IS_REACT_ACT_ENVIRONMENT: { configurable: true, value: true },
+  })
+  const snapshots: TimelinePreviewCollection[] = []
+  function Preview() {
+    const collection = useTimelinePreviewCollection({ inventoryItems: [], markdownDocumentName: 'routing.md', markdownText })
+    snapshots.push(collection)
+    return React.createElement('output', null, collection.items.map(item => item.kind).join(','))
+  }
+  const root = createRoot(dom.window.document.getElementById('routing')!)
+  try {
+    await act(async () => { root.render(React.createElement(Preview)) })
+    const result = snapshots[snapshots.length - 1]
+    assert.equal(result.items.length, sources.length)
+    assert.ok(result.exportPlan?.segments.length)
+    assert.ok(result.previewPlan?.segments.length)
+    for (const [index, [id, url, , kind]] of cases.entries()) {
+      const item = result.items[index]
+      assert.equal(item.kind, kind, id)
+      assert.equal(item.src, url, id)
+      assert.equal(item.openUrl, url, id)
+      assert.deepEqual(item.videoSequenceSource, sources[index], id)
+      if (kind !== 'iframe') { assert.equal(item.srcDoc, undefined, id); continue }
+      const panel = dom.window.document.createElement('template')
+      panel.innerHTML = item.srcDoc || ''
+      assert.equal(panel.content.querySelector('video'), null, id)
+      const iframe = panel.content.querySelector('[data-kg-video-agent-source-playback] iframe')
+      assert.ok(iframe, id)
+      const embed = new URL(iframe.getAttribute('src')!)
+      assert.equal(panel.content.querySelector('footer a')?.getAttribute('href'), url, id)
+      if (id === 'vimeo') assert.equal(embed.href, 'https://player.vimeo.com/video/123456789')
+      else {
+        assert.equal(embed.pathname, '/embed/77FAnT935IE')
+        assert.equal(embed.searchParams.get('enablejsapi'), '1')
+        assert.equal(embed.searchParams.get('origin'), dom.window.location.origin)
+      }
+    }
+    const native = result.items[result.items.length - 1]
+    assert.equal(native.kind, 'video', 'provider-like provenance must not reclassify a resolved Blob')
+    assert.equal(native.src, localUrl)
+    assert.equal(native.srcDoc, undefined)
+    assert.deepEqual(native.videoSequenceSource, local)
+  } finally {
     await act(async () => { root.unmount() })
     dom.window.close()
     for (const [key, descriptor] of previous) {

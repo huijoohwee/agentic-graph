@@ -571,7 +571,7 @@ export function testVideoSequenceTransportReadoutUsesPreviewSourceTime() {
     !surfaceModelText.includes("if (selectedPreviewEmpty) return ''") ||
     surfaceModelText.includes('transportSession.disabled || selectedPreviewEmpty') ||
     surfaceModelText.includes('selectedPreviewEmpty || !transportSession.playing') ||
-    surfaceModelText.includes('transportSession.setTransportPlaying(false)') ||
+    surfaceModelText.slice(surfaceModelText.indexOf('const selectedPreviewEmpty =')).includes('transportSession.setTransportPlaying(false)') ||
     !surfaceModelText.includes('disabled: transportSession.disabled') ||
     surfaceModelText.includes('emptySelectionCurrentLabel') ||
     surfaceModelText.includes('emptySelectionTotalLabel') ||

@@ -1,4 +1,8 @@
 import React from 'react'
+import { getYouTubeId, getVimeoId } from 'grph-shared/rich-media/providers'
+import { resolveIframeEmbed } from 'grph-shared/rich-media/iframe'
+import { buildVideoAgentSourcePlaybackUrl } from '@/features/video-agent/videoAgentSourcePlayback'
+import { buildVideoAgentSourcePlaybackPanelSrcDoc } from '@/features/markdown-workspace/workspaceImport/videoAgentImportPanels'
 import { buildMermaidGanttTimelineModel } from '@/lib/mermaid/mermaidGanttBarInteraction'
 import {
   readYamlFrontmatterMermaidDiagramCodes,
@@ -21,12 +25,13 @@ import {
 } from './videoSequenceSourceRegistry'
 
 export type TimelinePreviewMediaSourceItem = {
-  kind: 'image' | 'video' | 'audio'
+  kind: 'image' | 'video' | 'audio' | 'iframe'
   key: string
   label: string
   openUrl: string
   source: VideoSequenceTimelineSource
   src: string
+  srcDoc?: string
 }
 
 export type TimelinePreviewMediaSession = {
@@ -107,13 +112,21 @@ export function useTimelinePreviewMediaSession(args: {
     const items = sources.flatMap((source): TimelinePreviewMediaSourceItem[] => {
       const src = resolveTimelinePlanSourceUrl(source)
       if (!src) return []
+      const kind = readTimelinePreviewMediaSourceKind(source)
+      const youtube = kind === 'video' && !!getYouTubeId(src)
+      const provider = youtube || (kind === 'video' && !!getVimeoId(src))
+      const openUrl = readVideoSequenceSourcePlayableUrl(source) || src
       return [{
         key: `video-sequence:${src}`,
-        kind: readTimelinePreviewMediaSourceKind(source),
+        kind: provider ? 'iframe' : kind,
         label: readTimelinePreviewMediaSourceLabel(source),
-        openUrl: readVideoSequenceSourcePlayableUrl(source) || src,
+        openUrl,
         source,
         src,
+        srcDoc: provider ? buildVideoAgentSourcePlaybackPanelSrcDoc({
+          sourcePlaybackUrl: youtube ? buildVideoAgentSourcePlaybackUrl(src) : resolveIframeEmbed({ url: src }).iframeSrc,
+          sourceUrl: openUrl,
+        }) : undefined,
       }]
     })
     return {
