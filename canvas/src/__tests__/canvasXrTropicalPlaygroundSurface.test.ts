@@ -164,7 +164,8 @@ export async function testLiveXrSurfaceSurvivesTropicalStageAnd3dHostReplay() {
       || !frontmatter.includes('preserveLiveSharedXrSurface')
       || !frontmatter.includes('retainLiveSharedXrSurface')
       || !frontmatter.includes('incomingLeavesSharedXrSurface')
-      || !frontmatter.includes('if (!(retainLiveSharedXrSurface && !sharedXrSurfaceRouted))')
+      || !frontmatter.includes('if (!retainPassiveGeospatialSurface)')
+      || !frontmatter.includes('? () => false : beginCanvasFrontmatterSurfaceRequest()')
       || !composedImport.includes('preserveLiveSharedXrSurface')
       || !documentActions.includes('preserveLiveSharedXrSurface')
       || !documentActions.includes('readPreserveLiveSharedXrSurface')) {

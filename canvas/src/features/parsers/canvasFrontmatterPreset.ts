@@ -199,7 +199,27 @@ export function applyCanvasFrontmatterPreset(args: {
     defaultCanvasRenderMode: args.defaultCanvasRenderMode,
     defaultCanvas3dMode: args.defaultCanvas3dMode,
   })
-  const isCurrentSurfaceRequest = beginCanvasFrontmatterSurfaceRequest()
+  const geospatialModeEnabled = surfacePreset.geospatialModeEnabled
+  const canvasRenderMode = surfacePreset.canvasRenderMode
+  const canvas3dMode = surfacePreset.canvas3dMode
+  const xrScenePanelView = XR_SCENE_FLOATING_PANEL_VIEWS.find(view => view === preset?.floatingPanelView)
+  const sharedXrSurfaceRequested = canvasRenderMode === '3d' && canvas3dMode === 'xr'
+  const effectiveCanvasRenderMode = canvasRenderMode ?? store.canvasRenderMode
+  const effectiveCanvas3dMode = canvas3dMode ?? store.canvas3dMode
+  const sharedXrPanelRequested = Boolean(xrScenePanelView)
+    && effectiveCanvasRenderMode === '3d'
+    && effectiveCanvas3dMode === 'xr'
+  const sharedXrSurfaceRouted = sharedXrSurfaceRequested || sharedXrPanelRequested
+  const liveSharedXrSurface = useGraphStore.getState().canvasRenderMode === '3d'
+    && useGraphStore.getState().canvas3dMode === 'xr'
+  const incomingLeavesSharedXrSurface = canvasRenderMode === '2d' || canvas3dMode === 'voxel'
+  const retainLiveSharedXrSurface = liveSharedXrSurface
+    && !incomingLeavesSharedXrSurface
+    && (args.preserveLiveSharedXrSurface === true || canvas3dMode !== 'xr')
+  const retainPassiveGeospatialSurface = retainLiveSharedXrSurface
+    && args.preserveLiveSharedXrSurface === true && !sharedXrSurfaceRouted
+  const isCurrentSurfaceRequest = retainPassiveGeospatialSurface
+    ? () => false : beginCanvasFrontmatterSurfaceRequest()
   const documentStructureBaselineLock =
     preset?.documentStructureBaselineLock ?? args.defaultDocumentStructureBaselineLock
   const videoSequenceTimelineEnabled = preset?.videoSequenceTimelineEnabled === true
@@ -247,17 +267,6 @@ export function applyCanvasFrontmatterPreset(args: {
     changed = true
   }
 
-  const geospatialModeEnabled = surfacePreset.geospatialModeEnabled
-  const canvasRenderMode = surfacePreset.canvasRenderMode
-  const canvas3dMode = surfacePreset.canvas3dMode
-  const xrScenePanelView = XR_SCENE_FLOATING_PANEL_VIEWS.find(view => view === preset?.floatingPanelView)
-  const sharedXrSurfaceRequested = canvasRenderMode === '3d' && canvas3dMode === 'xr'
-  const effectiveCanvasRenderMode = canvasRenderMode ?? store.canvasRenderMode
-  const effectiveCanvas3dMode = canvas3dMode ?? store.canvas3dMode
-  const sharedXrPanelRequested = Boolean(xrScenePanelView)
-    && effectiveCanvasRenderMode === '3d'
-    && effectiveCanvas3dMode === 'xr'
-  const sharedXrSurfaceRouted = sharedXrSurfaceRequested || sharedXrPanelRequested
   const activateSharedXrSurface = (): boolean => {
     const before = useGraphStore.getState()
     const activated = activateXrSceneSurface({
@@ -284,14 +293,8 @@ export function applyCanvasFrontmatterPreset(args: {
     )) changed = true
     return activated
   }
-  const liveSharedXrSurface = useGraphStore.getState().canvasRenderMode === '3d'
-    && useGraphStore.getState().canvas3dMode === 'xr'
-  const incomingLeavesSharedXrSurface = canvasRenderMode === '2d' || canvas3dMode === 'voxel'
-  const retainLiveSharedXrSurface = liveSharedXrSurface
-    && !incomingLeavesSharedXrSurface
-    && (args.preserveLiveSharedXrSurface === true || canvas3dMode !== 'xr')
   if (typeof geospatialModeEnabled === 'boolean') {
-    if (!(retainLiveSharedXrSurface && !sharedXrSurfaceRouted)) {
+    if (!retainPassiveGeospatialSurface) {
       void requestCanvasFrontmatterGeospatialSurface(
         geospatialModeEnabled,
         {

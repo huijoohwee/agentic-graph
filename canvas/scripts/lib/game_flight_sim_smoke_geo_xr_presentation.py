@@ -463,7 +463,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
                 expected_provider_host=provider_host,
                 expected_view=view_mode,
                 expected_projection=projection,
-                expected_style_url=style_url,
+                expected_style_url=style_url, require_regional_scene=True,
             )
             restore_flight_sim_panel(page)
             observed = _wait_for_view(
@@ -471,7 +471,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
                 expected_provider_host=provider_host,
                 expected_view=view_mode,
                 expected_projection=projection,
-                expected_style_url=style_url,
+                expected_style_url=style_url, require_regional_scene=True,
                 require_visual_layout=True,
             )
             exact_contract = {
