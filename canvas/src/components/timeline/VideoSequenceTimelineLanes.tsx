@@ -10,6 +10,7 @@ export type VideoSequenceTimelineInsertedLane = {
   content: React.ReactNode | ((args: VideoSequenceTimelineInsertedLaneRenderArgs) => React.ReactNode)
   id: string
   insertAfterLaneId: string
+  dragLaneId?: string
   label: React.ReactNode
   selectRowKey?: string
   selected?: boolean
@@ -75,6 +76,7 @@ export function VideoSequenceTimelineLaneRows({ lanes, selectedDisplayLaneId, se
       aria-current={insertedSelected ? 'true' : undefined}
       style={{ top: `${laneIndex * VIDEO_SEQUENCE_LANE_HEIGHT_PX}px` }}
       data-kg-video-sequence-display-lane-row={lane.id}
+      data-kg-video-sequence-drag-lane-id={inserted ? lane.dragLaneId || lane.id : lane.id}
       data-kg-video-sequence-lane-selected={insertedSelected ? '1' : undefined}
       data-kg-video-sequence-inserted-lane-content={inserted ? lane.id : undefined}
       data-kg-video-sequence-inserted-lane-selected={inserted && insertedSelected ? '1' : undefined}

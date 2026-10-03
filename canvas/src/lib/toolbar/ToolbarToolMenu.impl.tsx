@@ -18,7 +18,7 @@ import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { usePinnedLs } from '@/lib/ui/panelPinned'
 import { uiToolbarRowScrollClassName, uiToolbarRowScrollJustifyBetweenClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { cn } from '@/lib/utils'
-import { Z_INDEX_FLOATING_PANEL_DEFAULT } from '@/lib/ui/zIndex'
+import { resolveFloatingPanelZIndex } from '@/lib/ui/zIndex'
 import {
   FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS,
   resolveFloatingPanelWidthCss,
@@ -226,9 +226,7 @@ export function ToolbarToolMenu({
     setManagedHeaderActions(actions)
   }, [])
   const floatingPanelRootStyle = React.useMemo(() => {
-    const safeZ = Number.isFinite(floatingPanelZIndex) ? Math.max(1, Math.floor(floatingPanelZIndex)) : Z_INDEX_FLOATING_PANEL_DEFAULT
-    if (floatingPanelPinned) return { zIndex: Math.max(safeZ, 1000) }
-    return { zIndex: Math.max(safeZ, workspaceEditorOverlayOpen ? 420 : 90) }
+    return { zIndex: resolveFloatingPanelZIndex(floatingPanelZIndex, floatingPanelPinned, workspaceEditorOverlayOpen) }
   }, [floatingPanelPinned, floatingPanelZIndex, workspaceEditorOverlayOpen])
 
   const floatingPanelSizeStyle = React.useMemo(() => {

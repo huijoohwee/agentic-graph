@@ -1,10 +1,23 @@
 import React from 'react'
+import { createPortal } from 'react-dom'
+import { resolveMainPanelZIndex } from '@/lib/ui/zIndex'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import MainPanelContainer from './MainPanelContainer'
 import TabHeader, { type TabIconComponent } from './TabHeader'
 import HeaderActions from './HeaderActions'
+
+export function MainPanelLayer({ style, ...props }: React.ComponentPropsWithoutRef<'section'>) {
+  const floatingPanelZIndex = useGraphStore(s => s.floatingPanelZIndex)
+  const layer = <section
+    {...props}
+    data-kg-canvas-pointer-ignore="1"
+    data-kg-canvas-wheel-ignore="1"
+    style={{ ...style, zIndex: resolveMainPanelZIndex(floatingPanelZIndex) }}
+  />
+  return typeof document !== 'undefined' && document.body ? createPortal(layer, document.body) : layer
+}
 
 export function MainPanelLoadingFallback({ onClose }: { onClose: () => void }) {
   return (

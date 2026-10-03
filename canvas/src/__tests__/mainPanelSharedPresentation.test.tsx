@@ -12,14 +12,17 @@ import { MainPanelField } from '@/features/panels/ui/MainPanelField'
 import { MainPanelIconButton } from '@/features/panels/ui/MainPanelIconButton'
 import { buildMainPanelFieldHelp, type MainPanelFieldHelp } from '@/features/panels/ui/mainPanelRowHelp'
 import { getMainPanelTypeIconMeta } from '@/features/panels/ui/mainPanelHelpIconLibrary'
-import { MainPanelLoadingFallback } from '@/features/panels/ui/MainPanelFrame'
+import { MainPanelLayer, MainPanelLoadingFallback } from '@/features/panels/ui/MainPanelFrame'
 
 export async function testMainPanelPendingLoadCanCloseWithoutLateReopen() {
   const { dom, restore } = initJsdomHarness()
   // This keyboard contract needs native focus, rather than the harness's body-only getter.
   delete (dom.window.document as unknown as { activeElement?: Element }).activeElement
   const host = document.createElement('section'); document.body.append(host)
-  const root = createRoot(host)
+  const root = createRoot(host), previousZ = useGraphStore.getState().floatingPanelZIndex
+  host.style.cssText = 'position:relative;z-index:240'
+  const floating = document.createElement('section'); document.body.append(floating)
+  floating.style.cssText = 'position:fixed;z-index:5000'
   let release!: (module: { default: () => React.ReactElement }) => void
   const pending = new Promise<{ default: () => React.ReactElement }>(resolve => { release = resolve })
   const LazyPanel = React.lazy(() => pending)
@@ -28,33 +31,50 @@ export async function testMainPanelPendingLoadCanCloseWithoutLateReopen() {
     const [open, setOpen] = React.useState(true)
     return <>
       <button onClick={() => activations++}>Workspace action</button>
-      {open && <React.Suspense fallback={<MainPanelLoadingFallback onClose={() => setOpen(false)} />}>
-        <LazyPanel />
-      </React.Suspense>}
+      {open && <MainPanelLayer data-kg-main-panel-shell="true" className="fixed inset-0 pointer-events-none">
+        <React.Suspense fallback={<MainPanelLoadingFallback onClose={() => setOpen(false)} />}>
+          <LazyPanel />
+        </React.Suspense>
+      </MainPanelLayer>}
     </>
   }
   try {
+    useGraphStore.setState({ floatingPanelZIndex: 5000 })
     await act(async () => root.render(<PendingPanel />))
-    assert.equal(host.querySelector('[role="status"]')?.textContent, 'Loading panel…')
-    assert(host.querySelector('aside[aria-label="Main panel loading"]'), 'loading uses the shared panel frame')
-    const close = host.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!
+    const layer = document.querySelector<HTMLElement>('[data-kg-main-panel-shell]')!
+    assert.ok(Object.is(layer.parentElement, document.body), 'Main escapes the Canvas stacking ancestor')
+    assert.ok(Object.is(host.querySelector('[data-kg-main-panel-shell]'), null), 'Main is a body portal')
+    assert.equal(layer.getAttribute('data-kg-canvas-pointer-ignore'), '1')
+    assert.equal(layer.getAttribute('data-kg-canvas-wheel-ignore'), '1')
+    assert(Number(layer.style.zIndex) > Number(floating.style.zIndex), 'Main is above default Floating')
+    for (const [configuredZ, floatingZ] of [[40, 1000], [100000, 100000]]) {
+      floating.style.zIndex = String(floatingZ)
+      await act(async () => useGraphStore.setState({ floatingPanelZIndex: configuredZ }))
+      assert(Number(layer.style.zIndex) > Number(floating.style.zIndex), 'Main stays above pinned Floating across configured bounds')
+    }
+    assert.equal(layer.querySelector('[role="status"]')?.textContent, 'Loading panel…')
+    assert(layer.querySelector('aside[aria-label="Main panel loading"]'), 'loading uses the shared panel frame')
+    const close = layer.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!
     assert(close && !close.disabled, 'a pending panel has a native Close control')
     await act(async () => close.focus())
     assert.ok(Object.is(document.activeElement, close), 'Close remains reachable by keyboard focus')
     await act(async () => close.click())
-    assert.ok(Object.is(host.querySelector('[data-kg-main-panel-loading]'), null), 'Close dismisses the loading status')
+    assert.ok(Object.is(document.querySelector('[data-kg-main-panel-loading]'), null), 'Close dismisses the loading status')
     await act(async () => {
       release({ default: () => <p data-ready="1">Loaded panel</p> })
       await pending
     })
-    assert.ok(Object.is(host.querySelector('[data-ready]'), null), 'late completion cannot reopen a dismissed panel')
-    assert.ok(Object.is(host.querySelector('aside'), null), 'the loading frame stays dismissed')
+    assert.ok(Object.is(document.querySelector('[data-ready]'), null), 'late completion cannot reopen a dismissed panel')
+    assert.ok(Object.is(document.querySelector('aside'), null), 'the loading frame stays dismissed')
     await act(async () => host.querySelector<HTMLButtonElement>('button')!.click())
     assert.equal(activations, 1, 'workspace controls remain usable after dismissal')
+    assert.ok(Object.is(document.querySelector('[data-kg-main-panel-shell]'), null), 'Close removes the portal shell')
+    assert.ok(Object.is(floating.parentElement, document.body), 'dismissing Main preserves Floating')
   } finally {
     release({ default: () => <p>Released</p> })
     await act(async () => root.unmount())
-    host.remove(); restore()
+    useGraphStore.setState({ floatingPanelZIndex: previousZ })
+    floating.remove(); host.remove(); restore()
   }
 }
 

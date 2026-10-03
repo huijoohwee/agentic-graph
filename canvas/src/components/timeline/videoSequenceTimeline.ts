@@ -567,3 +567,26 @@ export function buildVideoSequenceTimelineToolStatus(args: {
     effect: true,
   }
 }
+
+export function buildVideoSequenceTimelineLaneOrder<T extends { id: string }, I extends { id: string; insertAfterLaneId: string }>(lanes: readonly T[], inserted: readonly I[]): readonly (T | I)[] {
+  if (!inserted.length) return lanes
+  const byAnchor = new Map<string, I[]>()
+  for (const item of inserted) {
+    const rows = byAnchor.get(item.insertAfterLaneId) || []
+    rows.push(item); byAnchor.set(item.insertAfterLaneId, rows)
+  }
+  return lanes.flatMap(lane => [lane, ...(byAnchor.get(lane.id) || [])] as (T | I)[])
+}
+export function resolveVideoSequenceTimelineInsertedLaneOffset(lanes: readonly { id: string; dragLaneId?: string; selectRowKey?: string }[], anchorId: string, rowKey: string): number {
+  const anchor = lanes.findIndex(lane => lane.id === anchorId)
+  const inserted = lanes.findIndex(lane => lane.dragLaneId === anchorId && lane.selectRowKey === rowKey)
+  return Math.max(1, inserted - anchor) * VIDEO_SEQUENCE_LANE_HEIGHT_PX
+}
+export function resolveVideoSequenceTimelineDragLaneDelta(ids: readonly string[], origin: number, deltaY: number): number {
+  const delta = Math.trunc(deltaY / VIDEO_SEQUENCE_LANE_HEIGHT_PX)
+  if (!Number.isFinite(delta) || origin < 0 || origin >= ids.length) return 0
+  const order = [...new Set(ids)]
+  if (order.length === ids.length) return delta
+  const requested = origin + delta, target = Math.max(0, Math.min(ids.length - 1, requested))
+  return order.indexOf(ids[target]) - order.indexOf(ids[origin]) + requested - target
+}

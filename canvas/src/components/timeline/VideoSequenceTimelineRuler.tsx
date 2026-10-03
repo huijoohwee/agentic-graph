@@ -20,7 +20,7 @@ import { useVideoSequenceTimelineMediaDropTarget } from './useVideoSequenceTimel
 import { buildVideoSequenceTimelineZoomTicks, resolveVideoSequenceTimelineAppendSpacePercent, resolveVideoSequenceTimelineContentZoom, resolveVideoSequenceTimelineScaleMaxMinutes, resolveVideoSequenceTimelineWorkspaceLayout } from './videoSequenceTimelineZoom'
 import {
   VIDEO_SEQUENCE_BOTTOM_PANEL_DISABLED_LANE_IDS, VIDEO_SEQUENCE_LANE_HEIGHT_PX, VIDEO_SEQUENCE_TIMELINE_LANES,
-  buildVideoSequenceTimelineCueSamples, buildVideoSequenceTimelineFrameSamples, buildVideoSequenceTimelineWaveformSamples,
+  buildVideoSequenceTimelineLaneOrder, resolveVideoSequenceTimelineInsertedLaneOffset, buildVideoSequenceTimelineCueSamples, buildVideoSequenceTimelineFrameSamples, buildVideoSequenceTimelineWaveformSamples,
   formatVideoSequenceTimelineSecondsOffset, isCompactSourceMediaSpan, resolveRenderableVideoSequenceTimelineSpans,
   resolveVideoSequenceTimelineDisplayLaneId, resolveVideoSequenceTimelineMediaSeconds, resolveVideoSequenceTimelineLane,
   resolveVisibleVideoSequenceTimelineDisplayLanes, shouldRenderVideoSequenceTimelineSpan,
@@ -175,7 +175,7 @@ export function VideoSequenceTimelineRuler({
   editable = true, canEditTrack, maxMinutes,
   mediaDurationSeconds = 0, mediaFrameRate = 0, playheadPercent,
   projectionMode = 'media', selectedRowKey,
-  sourceThumbnails = [], sourceThumbnailWindows = [], sourceThumbnailSets = [], scopes = [], renderClipOverlay,
+  sourceThumbnails = [], sourceThumbnailWindows = [], sourceThumbnailSets = [], scopes = [], renderClipOverlay, renderLaneOverlay,
   taskSpans, timeAxisControls, timeRulerOverlay, timelineInsertedLanes = [], timelineZoom,
   disabledLaneIds = VIDEO_SEQUENCE_BOTTOM_PANEL_DISABLED_LANE_IDS,
   onRulerPointerDown, onSelectRowKey, onSelectRowPosition, onDropMedia, onTrackPointerStart,
@@ -197,6 +197,7 @@ export function VideoSequenceTimelineRuler({
   sourceThumbnailSets?: readonly VideoSequenceTimelineSourceThumbnailSet[]
   scopes?: readonly VideoSequenceTimelineScope[]
   renderClipOverlay?: VideoSequenceTimelineClipOverlayRenderer
+  renderLaneOverlay?: VideoSequenceTimelineClipOverlayRenderer
   taskSpans: readonly MermaidGanttTimelineTaskSpan[]; timeAxisControls?: React.ReactNode; timeRulerOverlay?: React.ReactNode; timelineInsertedLanes?: readonly VideoSequenceTimelineInsertedLane[]; timelineZoom: number
   disabledLaneIds?: VideoSequenceTimelineProjectionOptions['disabledLaneIds']
   onRulerPointerDown: (event: React.PointerEvent<HTMLElement>) => void
@@ -216,16 +217,7 @@ export function VideoSequenceTimelineRuler({
       ? (taskSpans.some(shouldRenderVideoSequenceTimelineSpan) ? WORKFLOW_TIMELINE_DISPLAY_LANES : [])
       : resolveVisibleVideoSequenceTimelineDisplayLanes(taskSpans, projectionOptions)
   ), [projectionOptions, taskSpans, workflowProjection])
-  const timelineLanes = React.useMemo(() => {
-    if (!timelineInsertedLanes.length) return visibleLanes
-    const insertedByAnchor = new Map<string, VideoSequenceTimelineInsertedLane[]>()
-    for (const lane of timelineInsertedLanes) {
-      const anchored = insertedByAnchor.get(lane.insertAfterLaneId) || []
-      anchored.push(lane)
-      insertedByAnchor.set(lane.insertAfterLaneId, anchored)
-    }
-    return visibleLanes.flatMap(lane => [lane, ...(insertedByAnchor.get(lane.id) || [])])
-  }, [timelineInsertedLanes, visibleLanes])
+  const timelineLanes = React.useMemo(() => buildVideoSequenceTimelineLaneOrder(visibleLanes, timelineInsertedLanes), [timelineInsertedLanes, visibleLanes])
   const renderableSpans = React.useMemo(() => (
     workflowProjection
       ? taskSpans.filter(shouldRenderVideoSequenceTimelineSpan)
@@ -410,8 +402,9 @@ export function VideoSequenceTimelineRuler({
             span,
             verticalMarker,
           }) || null
+          const laneOverlay = renderLaneOverlay?.({ compact: compactTimelineBar, displayLaneId, lane, selected, span, verticalMarker })
           return (
-            <article
+            <React.Fragment key={`span:${span.rowKey}`}><article
               key={`span:${span.rowKey}`}
               className={`timeline-transport-track-clip timeline-transport-track-clip--lane-${lane} ${verticalMarker ? 'timeline-transport-track-clip--milestone' : ''} ${selected ? 'timeline-transport-track-clip--selected' : ''} ${dragging ? 'timeline-transport-track-clip--dragging' : ''}`}
               style={{
@@ -559,6 +552,8 @@ export function VideoSequenceTimelineRuler({
                 {activeResizeMode === 'resize-end' ? <span className="timeline-video-sequence-trim-guide">{VIDEO_SEQUENCE_RESIZE_MODE_LABELS[activeResizeMode]}</span> : null}
               </button> : null}
             </article>
+            {laneOverlay ? <section className="timeline-video-sequence-source-annotation-placement" style={{ left: resolveVideoSequenceRulerInsetLeft(leftPercent), top: `${laneIndex * VIDEO_SEQUENCE_LANE_HEIGHT_PX}px`, width: resolveVideoSequenceRulerInsetWidth(Math.min(100 - leftPercent, widthPercent)), '--kg-annotation-row-offset': `${resolveVideoSequenceTimelineInsertedLaneOffset(timelineLanes, displayLaneId, span.rowKey)}px` } as React.CSSProperties}>{laneOverlay}</section> : null}
+            </React.Fragment>
           )
         })}
         {renderableSpans.length && scopes.length ? (

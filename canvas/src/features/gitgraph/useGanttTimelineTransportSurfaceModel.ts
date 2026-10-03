@@ -26,7 +26,7 @@ import {
   isCompactSourceMediaSpan,
   readVideoSequenceTimelineModelFromMarkdown,
   resolveVideoSequenceTimelineLane,
-  resolveVisibleVideoSequenceTimelineLaneCount,
+  resolveVisibleVideoSequenceTimelineLaneCount, resolveVideoSequenceTimelineDisplayLaneId,
   type VideoSequenceTimelineSource,
 } from '@/components/timeline/videoSequenceTimeline'
 import { resolveVideoSequenceTimelineScaleMaxMinutes } from '@/components/timeline/videoSequenceTimelineZoom'
@@ -43,6 +43,7 @@ export type GanttTimelineTransportSurfaceModel = {
   rulerModel: GanttTimelineTransportRulerModel
   shellModel: GanttTimelineTransportShellModel
   renderAnnotationOverlay?: VideoSequenceTimelineClipOverlayRenderer
+  annotationLanes?: readonly VideoSequenceTimelineInsertedLane[]
 }
 
 type TimelineTransportThumbnailSourceItem = {
@@ -150,6 +151,20 @@ export function useGanttTimelineTransportSurfaceModel(args: {
     const foldedSelection = annotationGroups.find(group => group.annotationSpan.rowKey === transportSession.selectedRowKey)
     if (foldedSelection) handleSelectedRowKeyChange(foldedSelection.videoSpan.rowKey)
   }, [annotationGroups, handleSelectedRowKeyChange, transportSession.selectedRowKey])
+  const [expandedAnnotations, setExpandedAnnotations] = React.useState<{ documentKey: string; ids: string[] }>({ documentKey: '', ids: [] })
+  const expandedIds = expandedAnnotations.documentKey === transportSession.documentKey ? expandedAnnotations.ids : []
+  React.useEffect(() => {
+    const valid = new Set(annotationGroups.map(group => group.association.videoTrackId))
+    setExpandedAnnotations(previous => {
+      const ids = previous.documentKey === transportSession.documentKey ? previous.ids.filter(id => valid.has(id)) : []
+      return previous.documentKey === transportSession.documentKey && ids.length === previous.ids.length ? previous : { documentKey: transportSession.documentKey, ids }
+    })
+  }, [annotationGroups, transportSession.documentKey])
+  const annotationLanes = React.useMemo<VideoSequenceTimelineInsertedLane[]>(() => annotationGroups.filter(group => expandedIds.includes(group.association.videoTrackId)).map(group => {
+    const anchor = resolveVideoSequenceTimelineDisplayLaneId(group.videoSpan, presentedSpans, { disabledLaneIds })
+    return { id: `source-annotations:${group.association.videoTrackId}`, insertAfterLaneId: anchor, dragLaneId: anchor,
+      label: 'Annotations', selectRowKey: group.videoSpan.rowKey, content: null }
+  }), [annotationGroups, disabledLaneIds, expandedIds, presentedSpans])
   const [selectedAnnotation, setSelectedAnnotation] = React.useState<{ rowKey: string; timestampSeconds: number } | null>(null)
   React.useEffect(() => setSelectedAnnotation(null), [transportSession.documentKey, transportSession.playing])
   const renderAnnotationOverlay = React.useCallback<VideoSequenceTimelineClipOverlayRenderer>(({ span }) => {
@@ -157,6 +172,12 @@ export function useGanttTimelineTransportSurfaceModel(args: {
     if (!group) return null
     return React.createElement(VideoSequenceSourceAnnotationLayer, {
       samples: group.samples,
+      open: expandedIds.includes(group.association.videoTrackId),
+      onOpenChange: open => setExpandedAnnotations(previous => {
+        const ids = previous.documentKey === transportSession.documentKey ? previous.ids : []
+        const id = group.association.videoTrackId
+        return { documentKey: transportSession.documentKey, ids: open ? [...new Set([...ids, id])] : ids.filter(item => item !== id) }
+      }),
       selectedTimeSeconds: selectedAnnotation?.rowKey === span.rowKey ? selectedAnnotation.timestampSeconds : undefined,
       onSelect: sample => {
         const position = resolveVideoSequenceAnnotationTimelinePosition(group, sample.timestampSeconds)
@@ -177,7 +198,7 @@ export function useGanttTimelineTransportSurfaceModel(args: {
         emitMainPanelOpen({ tab: 'workflowManager', workflowManagerTab: 'graph', workflowManagerEntryLabel: 'Inspector' })
       },
     })
-  }, [annotationGroups, annotationSources, handleSelectedRowKeyChange, selectedAnnotation, transportSession])
+  }, [annotationGroups, annotationSources, expandedIds, handleSelectedRowKeyChange, selectedAnnotation, transportSession])
   const compactSourceTimeline = React.useMemo(() => (
     !workflowMode
     && transportSession.timelineModel.taskSpans.length > 0
@@ -515,6 +536,6 @@ export function useGanttTimelineTransportSurfaceModel(args: {
     mediaPlayerModel,
     rulerModel,
     shellModel,
-    renderAnnotationOverlay,
+    renderAnnotationOverlay, annotationLanes,
   }
 }

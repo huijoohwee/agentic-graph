@@ -341,3 +341,23 @@ test('source iframe gap pauses without a seek and re-entry resets its seek ancho
     assert.deepEqual(commands.map(command => command.func), ['seekTo', 'playVideo']); assert.equal(commands[0].args[0], 15)
   } finally { dom.window.close() }
 })
+
+test('controlled source disclosure observes native toggles and preserves exact sample selection', async () => {
+  const { restore } = initJsdomHarness(), host = document.createElement('section')
+  document.body.append(host); const root = createRoot(host), toggles: boolean[] = [], selected: number[] = []
+  function Harness() {
+    const [open, setOpen] = React.useState(false)
+    return <VideoSequenceSourceAnnotationLayer samples={[{ timestampSeconds: 35.86, url: '/frame?time=35.86' }]}
+      open={open} onOpenChange={value => { toggles.push(value); setOpen(value) }} onSelect={sample => selected.push(sample.timestampSeconds)} />
+  }
+  try {
+    await act(async () => root.render(<Harness />))
+    const disclosure = host.querySelector('details')!
+    await act(async () => { disclosure.open = true; await new Promise(resolve => setTimeout(resolve, 10)) })
+    assert.equal(disclosure.open, true); assert.equal(toggles.at(-1), true)
+    await act(async () => host.querySelector<HTMLButtonElement>('button')!.click())
+    assert.deepEqual(selected, [35.86]); assert.equal(host.querySelectorAll('details, summary, ol').length, 3)
+    await act(async () => { disclosure.open = false; await new Promise(resolve => setTimeout(resolve, 10)) })
+    assert.equal(disclosure.open, false); assert.equal(toggles.at(-1), false)
+  } finally { await act(async () => root.unmount()); host.remove(); restore() }
+})

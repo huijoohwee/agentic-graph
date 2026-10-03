@@ -2,13 +2,16 @@ import React from 'react'
 import type { TimelineMediaReaderThumbnail } from './timelineMediaReader'
 import type { MermaidGanttTimelineTaskSpan } from '@/lib/mermaid/mermaidGanttBarInteraction'
 
-export function VideoSequenceSourceAnnotationLayer({ samples, onSelect, selectedTimeSeconds }: {
+export function VideoSequenceSourceAnnotationLayer({ samples, onSelect, selectedTimeSeconds, open, onOpenChange }: {
   samples: readonly { timestampSeconds: number; url: string }[]
   onSelect: (sample: { timestampSeconds: number; url: string }) => void
   selectedTimeSeconds?: number
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
   return (
-    <details className="timeline-video-sequence-source-annotations" data-kg-source-annotation-layer="1">
+    <details className="timeline-video-sequence-source-annotations" data-kg-source-annotation-layer="1" open={open}
+      onToggle={event => onOpenChange?.(event.currentTarget.open)}>
       <summary>Annotations ({samples.length})</summary>
       <ol aria-label="Source frame annotations">
         {samples.map(sample => (
