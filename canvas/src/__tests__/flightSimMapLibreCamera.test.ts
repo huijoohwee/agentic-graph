@@ -9,9 +9,22 @@ import {
 import { readGeoMapViewportPadding } from 'gympgrph/testkit/geoMapViewport'
 import { flightOverlay } from './helpers/flightSimMapLibreFixtures'
 
-test('Flight camera preserves 2D north-up and 3D oblique mode ownership', () => {
+test('Flight camera forwards the measured HUD and panel aperture in all four views', t => {
+  const dom = new JSDOM('<main id="map"></main><aside aria-label="Markdown Workspace"></aside><aside aria-label="Floating panel"></aside><aside data-kg-workspace-visible-viewport-occluder="vertical"></aside><aside class="kg-canvas-bottom-panel"></aside>')
+  t.after(() => dom.window.close())
+  const rects = [[0, 0, 1100, 962], [0, 0, 550, 962], [747.40625, 8, 344.59375, 946],
+    [574.40625, 144, 160, 382], [562, 617.3047, 526, 336.6953]]
+  Array.from(dom.window.document.body.children).forEach((element, index) => {
+    const [left, top, width, height] = rects[index]
+    element.getBoundingClientRect = () => ({ left, top, width, height, right: left + width, bottom: top + height } as DOMRect)
+  })
+  const viewport = dom.window.document.querySelector('#map') as HTMLElement
+  Object.defineProperties(viewport, { clientWidth: { value: 1100 }, clientHeight: { value: 962 } })
+  const padding = readGeoMapViewportPadding({ getContainer: () => viewport })
+  assert.deepEqual(padding, { top: 542, right: 368.59375, bottom: 360.6953, left: 566 })
+  const centerY = (962 + padding.top - padding.bottom) / 2
+  assert.ok(centerY - 7.11 > 526 && centerY + 12.2 < 617.3047, 'authored footprint and subject clear the recorded HUD and Timeline')
   const calls: Record<string, unknown>[] = []
-  const padding = { top: 24, right: 412, bottom: 48, left: 652 }
   const map = {
     jumpTo: (camera: Record<string, unknown>) => calls.push(camera),
   }

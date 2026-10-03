@@ -288,6 +288,7 @@ export function FlightSimHud() {
         <aside
           className={`pointer-events-auto absolute bottom-32 right-3 grid w-32 gap-1 sm:bottom-auto sm:top-36 sm:w-40 ${floatingPanelOpen ? 'sm:right-[var(--kg-flight-sim-panel-clearance)]' : ''}`}
           aria-label="Flight navigation HUD"
+          data-kg-workspace-visible-viewport-occluder="vertical"
         >
           {presentation.navigationVisible ? <FlightSimNavigationInset className="hidden sm:grid" flight={flight} /> : null}
           <button

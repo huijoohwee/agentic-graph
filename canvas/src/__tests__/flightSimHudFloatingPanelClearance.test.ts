@@ -31,6 +31,9 @@ test('Flight HUD yields default floating-panel space without lowering touch cont
   assert.match(source, /z-\[230\]/)
   assert.doesNotMatch(source, /z-\[80\]/)
   assert.equal((source.match(/sm:right-\[var\(--kg-flight-sim-panel-clearance\)\]/g) || []).length, 3)
+  const navigation = source.match(/<aside\s+[\s\S]*?aria-label="Flight navigation HUD"[\s\S]*?>/)?.[0]
+  assert.ok(navigation)
+  assert.match(navigation, /data-kg-workspace-visible-viewport-occluder="vertical"/)
 })
 
 test('Flight HUD announces only objective transitions as one polite status', () => {
