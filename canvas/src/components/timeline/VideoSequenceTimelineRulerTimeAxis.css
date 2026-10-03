@@ -1,4 +1,5 @@
 .timeline-transport-ruler--video-sequence {
+  --kg-video-sequence-axis-height: max(24px, var(--kg-control-height, 28px));
   overflow: hidden;
 }
 
@@ -16,14 +17,18 @@
   inset: 0 0 auto;
   z-index: 2;
   display: flex;
-  height: 24px;
+  height: var(--kg-video-sequence-axis-height);
   min-width: 0;
+  overflow: hidden;
   align-items: center;
   padding-inline: 8px;
   border-bottom: 1px solid rgb(226 232 240 / 1);
   background: rgb(255 255 255 / 0.96);
   pointer-events: auto;
 }
+
+.timeline-video-sequence-time-axis-controls > * { max-width: 100%; min-width: 0; flex-wrap: nowrap; overflow-x: auto; align-items: center; }
+.timeline-video-sequence-time-axis-controls > * > * { flex-shrink: 0; }
 
 .timeline-transport-ruler--video-sequence .timeline-video-sequence-ruler-append-space {
   flex: 0 0 auto;
@@ -36,7 +41,7 @@
 
 .timeline-transport-ruler--video-sequence .timeline-transport-ruler-tick {
   top: 0;
-  height: 24px;
+  height: var(--kg-video-sequence-axis-height);
   justify-content: flex-start;
   gap: 0;
   padding-bottom: 0;

@@ -15,14 +15,12 @@
 
 .xr-camera-motion-retime-lane-label b {
   overflow: hidden;
-  font-size: var(--kg-text-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .xr-camera-motion-retime-lane-label small {
   color: var(--kg-text-tertiary, #64748b);
-  font-size: var(--kg-text-xs);
 }
 
 .xr-shot-target-lane-label {
@@ -44,30 +42,7 @@
   background: #f8fafc;
 }
 
-.timeline-transport-chrome--mermaid-gantt .xr-camera-motion-retime-time-axis-rail.timeline-transport-time-axis-clip {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  min-width: 100%;
-  height: 100%;
-  min-height: 100%;
-  overflow: hidden;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
-}
-
-.timeline-transport-chrome--mermaid-gantt .xr-camera-motion-retime-time-axis-rail .timeline-transport-time-axis-clip-content {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: auto;
-  min-width: 0;
-  height: auto;
-  align-self: auto;
-}
+.timeline-transport-chrome--mermaid-gantt .xr-camera-motion-retime-time-axis-rail.timeline-transport-time-axis-clip { inset: 0; }
 
 .timeline-transport-chrome--mermaid-gantt .xr-camera-motion-retime-time-axis-rail .timeline-transport-time-axis-clip-content::before {
   position: absolute;
@@ -102,43 +77,13 @@
   inset: 0;
 }
 
+/* XR span geometry uses the shared toolbar-sized time-axis bar. */
 .xr-shot-target-timeline-bar {
-  position: absolute;
-  top: 5px;
   width: var(--kg-xr-scene-span-width, calc(100% - 28px));
-  bottom: 5px;
   left: 14px;
   z-index: 0;
-  overflow: hidden;
-  border: 2px solid color-mix(in srgb, var(--kg-xr-shot-target-color, #64748b) 58%, transparent);
-  border-radius: 5px;
-  background: color-mix(in srgb, var(--kg-xr-shot-target-color, #64748b) 13%, transparent);
-  color: color-mix(in srgb, var(--kg-xr-shot-target-color, #64748b) 86%, var(--kg-text-primary, #0f172a));
-  cursor: grab;
-  padding: 0 8px;
-  text-align: left;
-  touch-action: none;
-  user-select: none;
 }
-
-.xr-shot-target-timeline-bar[data-kg-xr-timeline-lane-dragging="1"] {
-  cursor: grabbing;
-}
-
-.xr-shot-target-timeline-bar span {
-  display: block;
-  overflow: hidden;
-  font-size: var(--kg-text-xs);
-  font-weight: 700;
-  opacity: 0.72;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.xr-shot-target-timeline-bar--camera {
-  background: color-mix(in srgb, var(--kg-panel-bg, #fff) 38%, var(--kg-xr-shot-target-color, #64748b) 10%);
-  color: var(--kg-text-secondary, #475569);
-}
+.xr-shot-target-timeline-bar[data-kg-xr-timeline-lane-dragging="1"] { cursor: grabbing; }
 
 .xr-shot-target-timeline-lane > .xr-camera-motion-retime-lane {
   z-index: 1;
@@ -148,41 +93,6 @@
 .xr-shot-target-timeline-lane > .xr-camera-motion-retime-lane .timeline-transport-time-axis-mark,
 .xr-shot-target-timeline-lane > .xr-camera-motion-retime-lane .xr-camera-motion-mark-selection-controls {
   pointer-events: auto;
-}
-
-.xr-timeline-control-lane {
-  position: absolute;
-  inset: 3px 8px;
-  display: grid;
-  min-width: 0;
-  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 3px;
-  overflow: hidden;
-  pointer-events: auto;
-}
-
-.xr-timeline-control-row {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 5px;
-  overflow: hidden;
-}
-
-.xr-timeline-control-target {
-  min-width: 96px;
-  max-width: 172px;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 34%, transparent);
-  border-radius: 5px;
-  background: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 10%, var(--kg-panel-bg, #fff));
-  color: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 82%, var(--kg-text-primary, #0f172a));
-  font-size: var(--kg-text-xs);
-  font-weight: 800;
-  line-height: 18px;
-  padding-inline: 6px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .xr-timeline-control-field {
@@ -198,19 +108,9 @@
   --kg-xr-mark-editor-translate-x: 12px;
 }
 
-.xr-timeline-scene-stage-control.xr-camera-motion-mark-selection-controls--lane {
-  right: auto;
-  bottom: auto;
-  width: min(500px, calc(100% - 28px));
-  min-width: 0;
-  max-width: calc(100% - 28px);
-}
-
 .xr-timeline-scene-selection-label {
   flex: 0 0 auto;
   max-width: 148px;
-  color: color-mix(in srgb, var(--kg-canvas-accent, #2563eb) 82%, var(--kg-text-primary, #0f172a));
-  font-weight: 800;
 }
 
 .timeline-video-sequence-ruler-content [data-kg-gantt-timeline-track-row-key*="xr_stage_scene"] .xr-camera-motion-retime-lane--scene {
@@ -241,7 +141,6 @@
 
 .xr-timeline-scene-stage-select {
   width: clamp(92px, 14vw, 156px);
-  height: 20px;
   font-size: var(--kg-text-xs);
   font-weight: 700;
 }
