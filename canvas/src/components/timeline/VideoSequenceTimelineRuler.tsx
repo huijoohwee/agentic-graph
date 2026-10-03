@@ -1,4 +1,5 @@
 import React from 'react'
+import { useContainerDims } from '@/hooks/useContainerDims'
 import { TimelinePlayhead } from './TimelinePlayhead'
 import { VideoSequenceTimelineLaneLabels, VideoSequenceTimelineLaneRows, type VideoSequenceTimelineInsertedLane } from './VideoSequenceTimelineLanes'
 export { buildVideoSequenceLaneSidebarStyle, type VideoSequenceTimelineInsertedLaneRenderArgs, type VideoSequenceTimelineInsertedLane } from './VideoSequenceTimelineLanes'
@@ -168,9 +169,7 @@ function resolveActiveVideoSequenceResizeMode(args: {
   if (args.previewSpan.durationMinutes !== args.span.durationMinutes) return 'resize-end'
   return null
 }
-export function resolveVideoSequenceRulerMinHeight(laneCount = VIDEO_SEQUENCE_TIMELINE_LANES.length): number {
-  return VIDEO_SEQUENCE_LANE_TOP_OFFSET_PX + (laneCount * VIDEO_SEQUENCE_LANE_HEIGHT_PX) + VIDEO_SEQUENCE_RULER_FOOTER_PX
-}
+export function resolveVideoSequenceRulerMinHeight(laneCount = VIDEO_SEQUENCE_TIMELINE_LANES.length): number { return VIDEO_SEQUENCE_LANE_TOP_OFFSET_PX + (laneCount * VIDEO_SEQUENCE_LANE_HEIGHT_PX) + VIDEO_SEQUENCE_RULER_FOOTER_PX }
 export function VideoSequenceTimelineRuler({
   contentRef, viewportRef, displayTicks, dragPreview, draggingMode, draggingRowKey,
   editable = true, canEditTrack, maxMinutes,
@@ -209,6 +208,7 @@ export function VideoSequenceTimelineRuler({
   const mediaDropRef = React.useRef<HTMLElement | null>(null)
   const rulerScrollRef = React.useRef<HTMLElement | null>(null)
   const laneSidebarScrollRef = React.useRef<HTMLElement | null>(null)
+  const rulerDims = useContainerDims(viewportRef)
   const workflowProjection = projectionMode === 'workflow'
   const projectionOptions = React.useMemo<VideoSequenceTimelineProjectionOptions>(() => ({ disabledLaneIds }), [disabledLaneIds])
   const visibleLanes = React.useMemo(() => (
@@ -246,7 +246,7 @@ export function VideoSequenceTimelineRuler({
     workflowProjection ? false : onDropMedia(payload, positionMinutes)
   ), [onDropMedia, workflowProjection])
   const mediaDropTargetProps = useVideoSequenceTimelineMediaDropTarget({ contentRef, maxMinutes: timelineScaleMaxMinutes, onDropMedia: handleDropMedia, targetRef: mediaDropRef })
-  const timelineAxisTicks = React.useMemo(() => buildVideoSequenceTimelineZoomTicks({ displayTicks, frameRate: mediaFrameRate, maxMinutes: timelineScaleMaxMinutes, mediaDurationSeconds, timelineZoom }), [displayTicks, mediaDurationSeconds, mediaFrameRate, timelineScaleMaxMinutes, timelineZoom])
+  const timelineAxisTicks = React.useMemo(() => buildVideoSequenceTimelineZoomTicks({ displayTicks, frameRate: mediaFrameRate, maxMinutes: timelineScaleMaxMinutes, mediaDurationSeconds, rulerWidthPx: rulerDims.width, timelineZoom }), [displayTicks, mediaDurationSeconds, mediaFrameRate, rulerDims.width, timelineScaleMaxMinutes, timelineZoom])
   const timelineContentZoom = React.useMemo(() => resolveVideoSequenceTimelineContentZoom({ frameRate: mediaFrameRate, mediaDurationSeconds, timelineZoom }), [mediaDurationSeconds, mediaFrameRate, timelineZoom])
   const appendSpacePercent = React.useMemo(() => resolveVideoSequenceTimelineAppendSpacePercent(timelineZoom), [timelineZoom])
   const workspaceLayout = React.useMemo(() => resolveVideoSequenceTimelineWorkspaceLayout({ appendSpacePercent, timelineContentZoom }), [appendSpacePercent, timelineContentZoom])
