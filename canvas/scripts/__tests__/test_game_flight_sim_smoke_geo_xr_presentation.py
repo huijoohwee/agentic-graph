@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+from copy import deepcopy
 import json
 import subprocess
 import sys
@@ -19,6 +20,9 @@ from lib.game_flight_sim_smoke_city_regional_poi import (  # noqa: E402
 )
 from lib.game_flight_sim_smoke_bootstrap import BoundedEvaluationPage  # noqa: E402
 from lib.game_flight_sim_smoke_ledger import BrowserVerificationLedger  # noqa: E402
+from lib.game_flight_sim_smoke_geo_xr_requirements import (  # noqa: E402
+    authored_environment_checks, regional_environment_checks, unmet_view_requirements, wait_for_view,
+)
 
 
 class JavaScriptEvaluationPage:
@@ -202,6 +206,116 @@ class FlightGeoXrCityDisposalAuditTest(unittest.TestCase):
                     self.observe({**absent, **mutation})
         with self.assertRaisesRegex(AssertionError, "survived teardown"):
             self.observe({})
+
+
+class FlightAuthoredGeoSceneTest(unittest.TestCase):
+    def view(self):
+        return {
+            **{key: True for key in ("flightActive", "hudVisible", "geospatialEnabled",
+                "geospatialPreferenceEnabled", "rendererPointerTransparent", "rendererSurfaceVisible",
+                "flightLayersReady", "flightLayersTopmost", "aircraftImagesReady", "environmentLayersReady",
+                "selectedEnvironmentSubjectsExact", "environmentSourceExactlyMatchesOverlay",
+                "routeInViewport", "aircraftInViewport")},
+            **{key: 1 for key in ("mapLibreCanvasCount", "visibleMapLibreCanvasCount", "geoXrSurfaceCount",
+                "threeCanvasOwnerCount", "threeCanvasActiveCount", "objectiveGuideFeatureCount")},
+            "threeCanvasInactiveCount": 0, "viewMode": "3d", "projection": "mercator",
+            "styleUrl": "https://fixture.test/style.json", "styleFingerprint": "fixture.test",
+            "aircraftLayerType": "symbol", "aircraftGeometryType": "Point", "aircraftImagePixelWidth": 40,
+            "environmentId": "tropical-playground", "environmentPresentationBounds": [[103, 1], [104, 2]],
+            "environmentSourceFeatures": 3, "environmentPoiIds": [], "renderedEnvironmentPoiIds": [],
+            "authoredEnvironmentStage": {"id": "tropical-playground", "resolvedId": "tropical-playground",
+                "sizeMeters": [28, 26], "surfaceCount": 3, "poiIds": []},
+            "authoredEnvironmentSubjects": [{"id": "xr-subject:house:1"}, {"id": "xr-subject:sailboat:1"}],
+            "environmentSubjectIds": ["xr-subject:house:1", "xr-subject:sailboat:1"],
+            "renderedEnvironmentSubjectIds": ["xr-subject:sailboat:1"],
+            "environmentSurfaceMeters": [{"id": "tropical-playground:footprint", "baseHeightMeters": 0,
+                "heightMeters": 0.08, "widthMeters": 28, "depthMeters": 26, "viewportBounded": True}],
+            "renderedEnvironmentKinds": ["stage-footprint", "subject"], "flightSourceFeatures": 9,
+            "renderedKinds": ["aircraft", "objective-guide", "route", "route-point"],
+            "routeScreenSpan": {"x": 110, "y": 115}, "pitch": 45, "mapPointerHit": {"x": 200, "y": 300},
+        }
+
+    def requirements(self, view, **options):
+        return unmet_view_requirements(view, expected_provider_host="fixture.test", expected_view="3d",
+            expected_projection="mercator", expected_style_url="https://fixture.test/style.json",
+            require_visual_layout=False, **options)
+
+    def test_current_authored_nonregional_scene_passes_without_regional_assets(self):
+        self.assertEqual(self.requirements(self.view()), [])
+        self.assertIn("environment.regionalId", self.requirements(self.view(), require_regional_scene=True))
+
+    def test_wrong_authored_identity_dimensions_sources_and_viewport_fail(self):
+        for mutation, expected in (
+            ({"environmentId": "singapore"}, "environmentId"),
+            ({"authoredEnvironmentStage": {}}, "environmentId"),
+            ({"environmentPresentationBounds": [[104, 2], [103, 1]]}, "environmentPresentationBounds"),
+            ({"environmentSourceFeatures": 2}, "environmentSourceFeatures"),
+            ({"environmentSubjectIds": ["unrelated"]}, "environment.authoredSubjectIds"),
+            ({"renderedEnvironmentSubjectIds": ["vehicle-unrelated"]}, "renderedEnvironmentSubjectIds"),
+            ({"renderedEnvironmentSubjectIds": []}, "renderedEnvironmentSubjectIds"),
+            ({"environmentPoiIds": ["invented-poi"]}, "environment.authoredPoiIds"),
+            ({"renderedEnvironmentPoiIds": ["invented-poi"]}, "environment.renderedAuthoredPoiSubset"),
+            ({"selectedEnvironmentSubjectsExact": False}, "environment.selectedSubjectsDirectMeters"),
+            ({"environmentSourceExactlyMatchesOverlay": False}, "environment.sourcePassThrough"),
+        ):
+            with self.subTest(mutation=mutation):
+                self.assertIn(expected, self.requirements({**self.view(), **mutation}))
+        for mutation in ({"widthMeters": 32}, {"heightMeters": 1}, {"viewportBounded": False}):
+            view = self.view(); view["environmentSurfaceMeters"][0].update(mutation)
+            self.assertIn("environment.stageFootprintAuthoredMeters", self.requirements(view))
+
+    def test_explicit_regional_case_keeps_bounds_stage_and_real_poi_dimensions(self):
+        view = self.view()
+        view.update(environmentId="singapore", environmentPresentationBounds=[[103.605, 1.158], [104.09, 1.48]],
+            environmentSourceFeatures=12, environmentPoiIds=["marina-bay-sands"], renderedEnvironmentPoiIds=[])
+        view["environmentSurfaceMeters"] = [
+            {"id": "singapore:footprint", "baseHeightMeters": 0, "heightMeters": 0.08,
+             "widthMeters": 32, "depthMeters": 24, "viewportBounded": True},
+            {"id": "marina-bay-sands:tower-2", "baseHeightMeters": 0, "heightMeters": 193,
+             "widthMeters": 71.82, "depthMeters": 76.45},
+        ]
+        self.assertTrue(all(regional_environment_checks(view).values()))
+        for mutation, expected in (
+            ({"environmentId": "tropical-playground"}, "environment.regionalId"),
+            ({"environmentPresentationBounds": [[103, 1], [104, 2]]}, "environment.regionalPresentationBounds"),
+            ({"environmentSourceFeatures": 9}, "environment.regionalSourceFeatures"),
+            ({"environmentPoiIds": []}, "environment.majorPoiIds"),
+            ({"renderedEnvironmentPoiIds": ["unknown"]}, "environment.renderedMajorPoiSubset"),
+        ):
+            with self.subTest(mutation=mutation):
+                self.assertFalse(regional_environment_checks({**view, **mutation})[expected])
+        for index, expected in ((0, "environment.regionalStageFootprintAuthoredMeters"), (1, "environment.majorPoiGeographicMeters")):
+            changed = deepcopy(view); changed["environmentSurfaceMeters"][index]["heightMeters"] += 1
+            self.assertFalse(regional_environment_checks(changed)[expected])
+
+    def test_native_reader_handles_empty_regional_profile_and_repeated_map_tiles(self):
+        source = (SCRIPTS_ROOT / "lib/game_flight_sim_smoke_geo_xr.py").read_text()
+        stage_reader = source.split("          const authoredStage =", 1)[1].split("          const blob =", 1)[0]
+        ids_reader = source.split("            renderedEnvironmentSubjectIds:", 1)[1].split("            renderedKinds,", 1)[0]
+        observed = JavaScriptEvaluationPage().evaluate("""() => {
+            const motionRuntime = {plan: {stageId: 'authored-stage', subjects: []}};
+            const sceneLibrary = {resolveXrMotionReferenceStage: () => ({
+                id: 'authored-stage', sizeMeters: [7, 5], regionalPoiProfile: {surfaces: []},
+                structures: [{kind: 'poi', poiId: 'excluded-local-poi'}, {kind: 'structure'}]})};
+            const renderedEnvironment = ['story:boat', 'story:boat'].map(id => ({
+                properties: {kgSurfaceKind: 'subject', kgSurfaceId: id}}));
+        """ + "const authoredStage =" + stage_reader + "return {authoredEnvironmentStage, renderedEnvironmentSubjectIds:" + ids_reader + "};}")
+        self.assertEqual(observed["authoredEnvironmentStage"]["surfaceCount"], 2)
+        self.assertEqual(observed["authoredEnvironmentStage"]["poiIds"], [])
+        self.assertEqual(observed["renderedEnvironmentSubjectIds"], ["story:boat"])
+
+    def test_regional_wait_rejects_a_valid_generic_scene_without_changing_deadline(self):
+        class Page:
+            def wait_for_timeout(self, delay):
+                self.delay = delay
+        page = Page()
+        options = dict(read_view=lambda _: self.view(), expected_provider_host="fixture.test", expected_view="3d",
+            expected_projection="mercator", expected_style_url="https://fixture.test/style.json")
+        self.assertEqual(wait_for_view(page, **options), self.view())
+        with patch("lib.game_flight_sim_smoke_geo_xr_requirements.time.monotonic", side_effect=(0, 0, 31)):
+            with self.assertRaisesRegex(AssertionError, "environment.regionalId"):
+                wait_for_view(page, **options, require_regional_scene=True)
+        self.assertEqual(page.delay, 100)
 
 
 if __name__ == "__main__":

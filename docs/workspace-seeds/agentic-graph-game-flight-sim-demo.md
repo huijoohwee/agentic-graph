@@ -73,7 +73,7 @@ native_flight_demo:
   deterministic_step: true
   fixed_step: "exactly 1/60 second (approximately 16.667 ms, 60 Hz)"
   max_catch_up_ticks_per_advance: 5
-  mission_meter_transform: "20 meters per authored Singapore scene unit"
+  mission_meter_transform: "20 meters per authored scene unit"
   spatial_profile_scale_id: "flight-meters-20"
   flight_model: "in-repo thrust/pitch/roll/yaw with bounded lift/drag/gravity approximation; no external physics engine"
   collision: "swept authored XR AABB slab catalog plus perimeter, ground, and ceiling; earliest hit with stable id tie-break; at least 0.001 meter separation; no mesh colliders or navmesh"
@@ -101,9 +101,9 @@ native_flight_demo:
     hud_cue: "objective label, rounded distance, and signed left/right heading error; per-tick cue is not a live region"
     runtime_network_calls: 0
     external_map_or_token_required: false
-  scene: "procedural Singapore waterfront terrain"
+  scene: "selected authored shared XR stage with demo-authored geographic reference"
   terrain:
-    default: "singapore"
+    default: "active authored plan, otherwise the shared XR source plan"
     selector: "FloatingPanel Media Terrain / Environment Kits; the Media Geo action stages the selected authored environment before opening FloatingPanel Geo"
     available: ["singapore", "tropical-playground", "neutral-volume", "street-grid", "loading-bay", "downtown", "residential-street", "supermarket", "movie-theater", "train-car", "backyard-pool", "aerial-sky"]
     geo_handoff: "successful stage selection opens the shared Geo panel and preserves its selected native MapLibre Classic/Modern view; rejected selection remains in Media"
@@ -347,7 +347,7 @@ For pose control, open and start **Motion Control** from the active Flight panel
 
 Terminal results remain pending and never auto-save. **Save** is the only operation that persists validated gameplay Decisions through browser-local WorkspaceFs at `/game-flight-sim/mission-1-decisions.md`; explicit **Reset local save** is a separate recovery write of the canonical empty AGENTIC_OS document. Successful hydration preserves the validated active run identifier and ordered waypoint history, Start continues that run, and only Restart mints a fresh run. Malformed bytes remain intact and block Start and Restart until Reset succeeds.
 
-The mission uses the fixed `flight-meters-20` transform: one authored Singapore scene unit equals 20 mission meters. Deterministic mission positions are converted into Singapore-anchored geographic coordinates for MapLibre while the transparent runtime retains the local simulation scale. The simulation advances at exactly `1/60` second (approximately 16.667 ms, 60 Hz) and executes at most five catch-up ticks per advance. Capture exactly three waypoints in authored order and then the marked landing pad; all four objective radii are 50 m, and an out-of-order waypoint cannot advance progress.
+The mission uses the fixed `flight-meters-20` transform: one authored scene unit equals 20 mission meters. MapLibre projects mission positions through this demo’s geographic reference while the transparent runtime retains local simulation scale. The shared XR source supplies the initial stage; choose Singapore in Media Terrain / Environment Kits to rehearse the waterfront setting. The simulation advances at exactly `1/60` second (approximately 16.667 ms, 60 Hz) and executes at most five catch-up ticks per advance. Capture exactly three waypoints in authored order and then the marked landing pad; all four objective radii are 50 m, and an out-of-order waypoint cannot advance progress.
 
 Four meaningful systems run in stable transactional order: `InputIntegrationSystem`, `FlightModelSystem`, `CollisionResolverSystem`, and `ObjectiveSystem`. The Agentic ECS harness emits the one post-systems Cost_Log, and immutable render/HUD projection is captured only after the World commits. A failing system rolls back itself while retaining prior same-tick commits. Replay validates source, mission seed, input count/order/bytes, halts on the first divergence, and retains the last byte-equivalent committed World. Exit disposes the ECS World and unsaved in-memory mission state, restores the complete pre-document surface including Geo ownership, and does not acknowledge a prior non-Geo surface until MapLibre has released its active map and canvas for two committed frames.
 

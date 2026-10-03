@@ -475,22 +475,22 @@ def _read_source_activation_diagnostic(page: Page, observe: bool = False) -> dic
         async observe => {
           const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
           const demos = await window.__kgFlightSimBrowserProof.importModule('workspaceRunReadyDemos')
-          const [runtime, ready, geo] = await Promise.all(['flightSimRuntime', 'sourceFilesBootstrapReadiness', 'gympgrphStore'].map(key => window.__kgFlightSimBrowserProof.importModule(key)))
-          if (observe && !window.__kgFlightActivationObservation) {
+          const [runtime, ready, geo, deadlines] = await Promise.all(['flightSimRuntime', 'sourceFilesBootstrapReadiness', 'gympgrphStore', 'flightSimDeadlineRuntime'].map(key => window.__kgFlightSimBrowserProof.importModule(key)))
+          if (observe && (!window.__kgFlightActivationObservation || window.__kgFlightActivationObservation.closed)) {
             const events = [], timers = []; let sawActive = false; const unsubs = []
-            const capture = () => { try { const flight = runtime.readFlightSimSnapshot(); if (!flight.active && !sawActive && !flight.runtimeError) return
-              const map = geo.readActiveMapLibreMap(), style = map?.getStyle(), hud = document.querySelector('[data-kg-flight-sim-hud="1"]')
+            const capture = (sampleMap = false) => { try { if (observation.closed) return; if (events.length >= 20) { observation.close(); return }; const flight = runtime.readFlightSimSnapshot()
+              const map = sampleMap === true ? geo.readActiveMapLibreMap() : null, style = map?.getStyle(), hud = document.querySelector('[data-kg-flight-sim-hud="1"]')
               const root = map?.getContainer()?.parentElement, overlay = geo.readFlightGeoOverlay(), bootstrap = ready.readSourceFilesBootstrapSnapshot()
               const sources = Object.keys(style?.sources || {}).filter(id => /flight/i.test(id)).slice(0, 4).map(id => { const source = map.getSource(id); const data = source?.serialize?.().data; return {id, loaded: source?.loaded?.(), featureCount: data?.features?.length ?? null} })
-              events.push({at: Math.round(performance.now()), flight: {active: flight.active, phase: flight.phase, revision: flight.revision, error: String(flight.runtimeError || '').slice(0, 400)}, bootstrap: {phase: bootstrap.phase, intentPhase: bootstrap.documentIntentPhase, intentKey: String(bootstrap.documentIntentKey || '').slice(0, 256)}, hudRevision: hud?.getAttribute('data-kg-flight-sim-revision') ?? null, overlay: overlay ? {active: overlay.active, phase: overlay.phase, profileId: overlay.profileId, revision: String(overlay.revision).slice(0, 160), routeCount: overlay.route.length} : null, sources, styleMetadata: Object.fromEntries(Object.entries(style?.metadata || {}).slice(0, 8).map(([key, value]) => [key, String(value).slice(0, 128)])), camera: map ? {center: map.getCenter().toArray(), bearing: map.getBearing(), pitch: map.getPitch(), zoom: map.getZoom()} : null, styleLoaded: map?.isStyleLoaded(), mapData: Object.fromEntries(Object.entries(root?.dataset || {}).filter(([key]) => /flight|bootstrap/i.test(key)).slice(0, 24).map(([key, value]) => [key, String(value).slice(0, 160)]))})
+              events.push({at: Math.round(performance.now()), deadlines: deadlines.readFlightSimDeadlineSnapshot(), flight: {active: flight.active, phase: flight.phase, revision: flight.revision, error: String(flight.runtimeError || '').slice(0, 400)}, bootstrap: {phase: bootstrap.phase, intentPhase: bootstrap.documentIntentPhase, intentKey: String(bootstrap.documentIntentKey || '').slice(0, 256)}, hudRevision: hud?.getAttribute('data-kg-flight-sim-revision') ?? null, overlay: overlay ? {active: overlay.active, phase: overlay.phase, profileId: overlay.profileId, revision: String(overlay.revision).slice(0, 160), routeCount: overlay.route.length} : null, sources, styleMetadata: Object.fromEntries(Object.entries(style?.metadata || {}).slice(0, 8).map(([key, value]) => [key, String(value).slice(0, 128)])), camera: map ? {center: map.getCenter().toArray(), bearing: map.getBearing(), pitch: map.getPitch(), zoom: map.getZoom()} : null, styleLoaded: map?.isStyleLoaded(), mapData: Object.fromEntries(Object.entries(root?.dataset || {}).filter(([key]) => /flight|bootstrap/i.test(key)).slice(0, 24).map(([key, value]) => [key, String(value).slice(0, 160)]))})
               if (events.length > 20) events.shift()
-              if (flight.active && !sawActive && timers.length < 8) for (const ms of [100, 500, 1500, 2500]) timers.push(setTimeout(capture, ms))
+              if (flight.active && !sawActive && timers.length < 8) for (const ms of [100, 500, 1500, 2500]) timers.push(setTimeout(() => capture(true), ms))
               sawActive = flight.active
             } catch (error) { events.push({diagnosticError: String(error).slice(0, 300)}); if (events.length > 20) events.shift() } }
-            window.__kgFlightActivationObservation = {events, close: () => {unsubs.forEach(unsub => unsub()); timers.forEach(clearTimeout)}}
-            unsubs.push(runtime.subscribeFlightSimSnapshot(capture), ready.subscribeSourceFilesBootstrapReady(capture))
+            const observation = {events, startedAtMs: performance.now(), closed: false, capture, close: () => {if (observation.closed) return; observation.closed = true; unsubs.forEach(unsub => unsub()); timers.forEach(clearTimeout)}}
+            window.__kgFlightActivationObservation = observation; unsubs.push(runtime.subscribeFlightSimSnapshot(capture), ready.subscribeSourceFilesBootstrapReady(capture)); timers.push(setTimeout(observation.close, 6000)); capture()
           }
-          if (!observe) window.__kgFlightActivationObservation?.close()
+          if (!observe) { window.__kgFlightActivationObservation?.capture(); window.__kgFlightActivationObservation?.close() }
           const state = store.useGraphStore.getState()
           const normalize = value => String(value || '').replace(/^workspace:/, '')
             .replace(/^\/+/, '').toLowerCase()
@@ -501,7 +501,7 @@ def _read_source_activation_diagnostic(page: Page, observe: bool = False) -> dic
             normalize(file?.source?.path) === normalize(documentName)
             || normalize(file?.name) === normalize(documentName))
           return {
-            activationObservation: window.__kgFlightActivationObservation?.events || [],
+            activationObservation: window.__kgFlightActivationObservation?.events || [], observationStartedAtMs: window.__kgFlightActivationObservation?.startedAtMs ?? null, observationTruncated: window.__kgFlightActivationObservation?.events.length >= 20, deadlines: deadlines.readFlightSimDeadlineSnapshot(),
             documentName, documentTextLength: String(documentText || '').length,
             active: demos.isFlightSimRunReadyDemoActive(documentName, documentText),
             activation: demos.diagnoseWorkspaceRunReadyDemoActivation(documentName, documentText),
@@ -558,6 +558,7 @@ def apply_and_verify_exact_authored_source(
         raise AssertionError(f"{error}; native source diagnostic: {diagnostic}") from error
     selection_round_trip["activationObservation"] = _read_source_activation_diagnostic(page)
     selection_surface_transition = close_source_files_selection_surface(page)
+    _read_source_activation_diagnostic(page, observe=True)
     application = _apply_exact_authored_source(page, expected_source_text)
     application["selectionRoundTrip"] = selection_round_trip
     application["selectionSurfaceTransition"] = selection_surface_transition

@@ -41,6 +41,7 @@ from lib.game_flight_sim_smoke_scene import (
     read_flight_scene,
 )
 from lib.game_flight_sim_smoke_source import (
+    _read_source_activation_diagnostic,
     apply_and_verify_exact_authored_source,
     prepare_authored_physics_surface,
 )
@@ -167,7 +168,6 @@ def run_flight_runtime_verifications(
     websocket_probe_route_hits: list[str],
 ) -> dict[str, Any]:
     state: dict[str, Any] = {}
-
     def source_apply() -> dict[str, Any]:
         prepare_stable_candidate_page(page, target_url)
         prepare_source_files_selection_surface(page)
@@ -179,9 +179,9 @@ def run_flight_runtime_verifications(
         wait_for_flight_hud_activation(page)
         hud = page.locator('[data-kg-flight-sim-hud="1"]').first
         expect(hud).to_be_visible(timeout=5_000)
-        def read_frame_debug() -> dict[str, Any]:
+        def read_frame_debug(close_activation: bool = False) -> dict[str, Any]:
             try:
-                native = _read_ready_frame_debug(page)
+                native = _read_ready_frame_debug(page) | ({"timedActivation": _read_source_activation_diagnostic(page)} if close_activation else {})
                 native["firstFrameProof"] = page.evaluate("() => { const proof = window.__kgFlightSimFirstFrameProof; return proof ? Object.fromEntries(['startedAtMs', 'firstFrameAtMs', 'preExisting', 'firstFrameClassName', 'firstFrameSurface'].map(key => [key, typeof proof[key] === 'string' ? proof[key].slice(0, 160) : proof[key] ?? null])) : null }")
                 return native
             except Exception as error:
@@ -193,7 +193,8 @@ def run_flight_runtime_verifications(
                 timeout=120_000,
             )
         except Exception as error:
-            raise AssertionError(f"{error}; native ready-frame diagnostic: before={before_first_frame}, after={read_frame_debug()}") from error
+            raise AssertionError(f"{error}; native ready-frame diagnostic: before={before_first_frame}, after={read_frame_debug(True)}") from error
+        source_application["timedActivation"] = read_frame_debug(True)
         runtime_identity = page.evaluate(
             """
             async () => {
@@ -259,7 +260,7 @@ def run_flight_runtime_verifications(
         ):
             raise AssertionError(
                 "Flight first playable frame was not newly produced within "
-                f"the source-apply deadline: {proof}"
+                f"the source-apply deadline: {proof}; timed activation={state['source']['sourceApplication'].get('timedActivation')}"
             )
         initial, ready_held = verify_initial_ready_hold(page)
         initial_airspeed = aircraft_airspeed(initial)
