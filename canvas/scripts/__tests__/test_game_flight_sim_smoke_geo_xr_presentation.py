@@ -173,6 +173,30 @@ class FlightPartialLedgerTest(unittest.TestCase):
 
 
 class FlightGeoXrCityDisposalAuditTest(unittest.TestCase):
+    def test_city_selection_settles_before_close_and_survives_it(self):
+        from lib import game_flight_sim_smoke_geo_xr_presentation as owner
+        for ready, visible in ((True, True), (False, True), (True, False)):
+            page, events = Mock(), []
+            page.evaluate.return_value = {"city": "city.md", "flight": "flight.md"}
+            panel = page.locator.return_value.first
+            panel.is_visible.return_value = visible
+            def settle(**options):
+                self.assertEqual(options, {"state": "visible", "timeout": 30_000})
+                if not ready: raise TimeoutError("selection pending")
+                events.append("settled")
+            panel.wait_for.side_effect = settle
+            def close(_page):
+                self.assertEqual(events, ["settled"], "Close cancelled pending selection")
+                events.append("closed")
+            close_call = Mock(side_effect=close)
+            error, message = (TimeoutError, "selection pending") if not ready else ((AssertionError, "City panel.*Close") if not visible else (RuntimeError, "native contract"))
+            with patch.multiple(owner, _install_city_map_retention_audit=Mock(),
+                _read_view=Mock(return_value=dict.fromkeys(("flightActive", "hudVisible", "geospatialEnabled", "geospatialPreferenceEnabled"), True)),
+                close_source_files_selection_surface=close_call, _wait_for_browser_contract=Mock(side_effect=RuntimeError("native contract"))):
+                with self.assertRaisesRegex(error, message):
+                    owner.verify_flight_geo_xr_city_handoff(page, expected_provider_host="local", expected_view="3d", expected_projection="mercator", expected_style_url="local")
+            self.assertEqual(close_call.call_count, int(ready))
+
     def observe(self, value):
         class TeardownPage:
             def evaluate(self, expression):
