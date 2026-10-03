@@ -1,6 +1,5 @@
 import React from 'react'
-import { getYouTubeId, getVimeoId } from 'grph-shared/rich-media/providers'
-import { resolveIframeEmbed } from 'grph-shared/rich-media/iframe'
+import { getYouTubeId } from 'grph-shared/rich-media/providers'
 import { buildVideoAgentSourcePlaybackUrl } from '@/features/video-agent/videoAgentSourcePlayback'
 import { buildVideoAgentSourcePlaybackPanelSrcDoc } from '@/features/markdown-workspace/workspaceImport/videoAgentImportPanels'
 import { buildMermaidGanttTimelineModel } from '@/lib/mermaid/mermaidGanttBarInteraction'
@@ -114,17 +113,16 @@ export function useTimelinePreviewMediaSession(args: {
       if (!src) return []
       const kind = readTimelinePreviewMediaSourceKind(source)
       const youtube = kind === 'video' && !!getYouTubeId(src)
-      const provider = youtube || (kind === 'video' && !!getVimeoId(src))
       const openUrl = readVideoSequenceSourcePlayableUrl(source) || src
       return [{
         key: `video-sequence:${src}`,
-        kind: provider ? 'iframe' : kind,
+        kind: youtube ? 'iframe' : kind,
         label: readTimelinePreviewMediaSourceLabel(source),
         openUrl,
         source,
         src,
-        srcDoc: provider ? buildVideoAgentSourcePlaybackPanelSrcDoc({
-          sourcePlaybackUrl: youtube ? buildVideoAgentSourcePlaybackUrl(src) : resolveIframeEmbed({ url: src }).iframeSrc,
+        srcDoc: youtube ? buildVideoAgentSourcePlaybackPanelSrcDoc({
+          sourcePlaybackUrl: buildVideoAgentSourcePlaybackUrl(src),
           sourceUrl: openUrl,
         }) : undefined,
       }]

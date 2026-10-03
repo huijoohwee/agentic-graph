@@ -1,4 +1,7 @@
 import React from 'react'
+import { getYouTubeId } from 'grph-shared/rich-media/providers'
+import { buildVideoAgentSourcePlaybackUrl } from '@/features/video-agent/videoAgentSourcePlayback'
+import { buildVideoAgentSourcePlaybackPanelSrcDoc } from '@/features/markdown-workspace/workspaceImport/videoAgentImportPanels'
 import { type VideoSequenceExportPlan } from '@/components/timeline/timelinePlanSync'
 import {
   type TimelineTransportPlaybackRate,
@@ -8,6 +11,21 @@ import { useTimelineVideoPreviewSyncController } from '@/components/timeline/tim
 import { type VideoSequenceTimelineSource } from '@/components/timeline/videoSequenceTimeline'
 import { CardMediaPreview } from '@/lib/cards/CardMediaPreview'
 import { type CardMediaKind } from '@/lib/cards/cardMediaPreviewUtils'
+
+const RichMediaPanelLazy = React.lazy(() => import('@/components/RichMediaPanel'))
+
+export const readTimelineTransportMediaPreviewKind = (source: VideoSequenceTimelineSource | null, fallbackUrl: string): CardMediaKind => {
+  const signature = [
+    source?.mimeHint,
+    source?.originalName,
+    source?.relativePath,
+    source?.sourceUrl,
+    fallbackUrl,
+  ].join(' ').toLowerCase()
+  if (/\bimage\b|\.avif\b|\.gif\b|\.jpe?g\b|\.png\b|\.svg\b|\.webp\b/.test(signature)) return 'image'
+  if (/\baudio\b|\.aac\b|\.aiff?\b|\.flac\b|\.m4a\b|\.mp3\b|\.oga\b|\.ogg\b|\.opus\b|\.wav\b/.test(signature)) return 'audio'
+  return getYouTubeId(fallbackUrl) ? 'iframe' : 'video'
+}
 
 export type GanttTimelineTransportMediaPlayerModel = {
   active: boolean
@@ -30,6 +48,9 @@ export function GanttTimelineTransportMediaPlayer(args: {
   model: GanttTimelineTransportMediaPlayerModel
 }) {
   const videoRef = React.useRef<HTMLMediaElement | null>(null)
+  const sourcePlaybackSrcDoc = React.useMemo(() => args.model.kind === 'iframe'
+    ? buildVideoAgentSourcePlaybackPanelSrcDoc({ sourcePlaybackUrl: buildVideoAgentSourcePlaybackUrl(args.model.url), sourceUrl: args.model.url })
+    : '', [args.model.kind, args.model.url])
   const snapshotRef = React.useRef({
     documentKey: args.model.documentKey,
     position: args.model.positionMinutes,
@@ -72,7 +93,12 @@ export function GanttTimelineTransportMediaPlayer(args: {
       data-kg-video-sequence-media-player-kind={args.model.kind}
     >
       <section className="timeline-transport-media-player-frame">
-        <CardMediaPreview
+        {sourcePlaybackSrcDoc ? <React.Suspense fallback={null}><RichMediaPanelLazy
+          kind="iframe" title={args.model.title} url={args.model.url} openUrl={args.model.url}
+          srcDoc={sourcePlaybackSrcDoc} sourcePlayback interactive
+          frameMode="surface" placementOwner="parent" panelChrome="none" scrollOwner="media"
+          style={{ width: '100%', height: '100%' }}
+        /></React.Suspense> : <CardMediaPreview
           kind={args.model.kind}
           url={args.model.url}
           title={args.model.title}
@@ -89,7 +115,7 @@ export function GanttTimelineTransportMediaPlayer(args: {
           onMediaElement={element => {
             if (element instanceof HTMLMediaElement) videoRef.current = element
           }}
-        />
+        />}
       </section>
     </section>
   )

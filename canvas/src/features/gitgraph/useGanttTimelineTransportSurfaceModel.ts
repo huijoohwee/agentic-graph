@@ -21,7 +21,6 @@ import {
 } from './useGanttTimelineTransportShellModel'
 import type { GanttTimelineTransportChromeModel } from './useGanttTimelineTransportChromeModel'
 import { useGanttTimelineDisplayModel } from './useGanttTimelineDisplayModel'
-import { type CardMediaKind } from '@/lib/cards/cardMediaPreviewUtils'
 import {
   VIDEO_SEQUENCE_BOTTOM_PANEL_DISABLED_LANE_IDS,
   isCompactSourceMediaSpan,
@@ -33,7 +32,7 @@ import {
 import { resolveVideoSequenceTimelineScaleMaxMinutes } from '@/components/timeline/videoSequenceTimelineZoom'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { type GanttTimelineTransportAudioPlaybackBridgeModel } from './GanttTimelineTransportAudioPlaybackBridge'
-import { type GanttTimelineTransportMediaPlayerModel } from './GanttTimelineTransportMediaPlayer'
+import { readTimelineTransportMediaPreviewKind, type GanttTimelineTransportMediaPlayerModel } from './GanttTimelineTransportMediaPlayer'
 import type { GanttTimelineTransportMode } from './ganttTimelineTransportMode'
 import type { GanttTimelineTransportCommandAdapter } from './ganttTimelineTransportCommandAdapter'
 
@@ -78,19 +77,6 @@ const readTimelineTransportThumbnailSourceKind = (source: VideoSequenceTimelineS
     source.sourceUrl,
   ].join(' ').toLowerCase()
   return /\bimage\b|\.avif\b|\.gif\b|\.jpe?g\b|\.png\b|\.svg\b|\.webp\b/.test(signature) ? 'image' : 'video'
-}
-
-const readTimelineTransportMediaPreviewKind = (source: VideoSequenceTimelineSource | null, fallbackUrl: string): CardMediaKind => {
-  const signature = [
-    source?.mimeHint,
-    source?.originalName,
-    source?.relativePath,
-    source?.sourceUrl,
-    fallbackUrl,
-  ].join(' ').toLowerCase()
-  if (/\bimage\b|\.avif\b|\.gif\b|\.jpe?g\b|\.png\b|\.svg\b|\.webp\b/.test(signature)) return 'image'
-  if (/\baudio\b|\.aac\b|\.aiff?\b|\.flac\b|\.m4a\b|\.mp3\b|\.oga\b|\.ogg\b|\.opus\b|\.wav\b/.test(signature)) return 'audio'
-  return 'video'
 }
 
 const collectTimelineTransportThumbnailSourceItems = (plans: readonly (ReturnType<typeof useGanttTimelineTransportSession>['exportPlan'])[]): TimelineTransportThumbnailSourceItem[] => {

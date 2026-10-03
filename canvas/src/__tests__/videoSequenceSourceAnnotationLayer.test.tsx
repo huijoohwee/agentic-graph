@@ -235,3 +235,47 @@ test('Gantt followers retain calibrated time and playback ownership across READY
     assert.equal(messages.length, count, 'foreign document and old delayed retries cannot replay the prior clock')
   } finally { w.setTimeout = oldTimeout; w.clearTimeout = oldClear; sync.clearRichMediaTimelineTargetFrame(); await act(async () => root.unmount()); store.setState(initial); host.remove(); env.restore() }
 })
+
+test('mounted Gantt YouTube source receives exact clock through its owned iframe', async () => {
+  const { GanttTimelineTransportMediaPlayer, readTimelineTransportMediaPreviewKind } = await import('../features/gitgraph/GanttTimelineTransportMediaPlayer')
+  const { default: RichMediaPanel } = await import('../components/RichMediaPanel')
+  const { useGraphStore } = await import('../hooks/useGraphStore')
+  const { dom, restore } = initJsdomHarness(), previousStore = useGraphStore.getState()
+  const url = 'https://www.youtube.com/watch?v=77FAnT935IE', documentKey = 'source-player.md', position = 35.86 / 60
+  useGraphStore.setState({ markdownDocumentName: documentKey, timelineTransportDocumentKey: documentKey,
+    timelineTransportPosition: position, timelineTransportPlaying: false, timelineTransportPlaybackRate: 1,
+    graphData: { type: 'graph', nodes: [], edges: [], metadata: { frontmatterMeta: { mermaid: 'gantt\n  Source : clip, 00:00, 1m' } } } })
+  const host = dom.window.document.createElement('section'), root = createRoot(host)
+  dom.window.document.body.append(host)
+  const item: import('../components/timeline/videoSequenceTimeline').VideoSequenceTimelineSource = { id: 'source-player.mp4', originalName: 'source-player.mp4', relativePath: 'source-player.mp4', workspacePath: '', sourceUrl: url, mimeHint: 'video/mp4', byteSize: 4, importMode: 'url' }
+  const model: import('../features/gitgraph/GanttTimelineTransportMediaPlayer').GanttTimelineTransportMediaPlayerModel = { active: true, documentKey, exportPlan: null,
+    kind: readTimelineTransportMediaPreviewKind(item, url), maxMinutes: 1, playbackRate: 1, playing: false,
+    positionMinutes: position, readerDurationSeconds: 60, source: item, title: 'Source player', url,
+    setTransportPlaybackPosition: () => {}, setTransportPlaying: () => {} }
+  try {
+    assert.equal(model.kind, 'iframe')
+    await act(async () => root.render(React.createElement(React.Fragment, null,
+      React.createElement(GanttTimelineTransportMediaPlayer, { model }), React.createElement('aside', null,
+        React.createElement(RichMediaPanel, { title: 'Baseline', kind: 'iframe', url: '', srcDoc: '<main>Baseline</main>', frameMode: 'surface' })))))
+    assert.equal(host.querySelector('video'), null)
+    const ownedFrame = () => host.querySelector<HTMLIFrameElement>('[data-kg-video-sequence-media-player] iframe[srcdoc]')
+    for (let attempt = 0; attempt < 20 && !ownedFrame(); attempt++) await act(async () => new Promise(resolve => setTimeout(resolve, 50)))
+    const outer = ownedFrame()
+    assert.ok(outer, 'the actual source player must mount within the bounded lazy readiness wait')
+    const content = dom.window.document.createElement('template'); content.innerHTML = outer.srcdoc
+    const embed = new URL(content.content.querySelector('[data-kg-video-agent-source-playback] iframe')!.getAttribute('src')!)
+    assert.equal(embed.hostname, 'www.youtube-nocookie.com'); assert.equal(embed.pathname, '/embed/77FAnT935IE')
+    assert.equal(embed.searchParams.get('enablejsapi'), '1'); assert.equal(embed.searchParams.get('origin'), dom.window.location.origin)
+    assert.equal(content.content.querySelector('footer a')?.getAttribute('href'), url)
+    const frame = sync.buildRichMediaTimelineTransportFrame({ localDocumentKey: documentKey, transportDocumentKey: documentKey,
+      transportPlaybackRate: 1, transportPlaying: false, transportPosition: position, override: { sourcePlayback: false, timeMs: 35860 } })!
+    await act(async () => { sync.publishRichMediaTimelineTransportFrame(frame); outer.removeAttribute(sync.RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR); dom.window.dispatchEvent(new dom.window.MessageEvent('message', { data: { type: sync.RICH_MEDIA_TIMELINE_TRANSPORT_READY_MESSAGE }, source: outer.contentWindow })) })
+    const delivered = JSON.parse(outer.getAttribute(sync.RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR)!)
+    assert.equal(delivered.timeMs, 35860); assert.equal(delivered.sourcePlayback, true)
+    assert.equal(Reflect.get(dom.window, sync.RICH_MEDIA_TIMELINE_TRANSPORT_PARENT_FRAME_KEY).sourcePlayback, false)
+    assert.equal(JSON.parse(host.querySelector('aside iframe')!.getAttribute(sync.RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR)!).sourcePlayback, false)
+    assert.equal(model.url, url); assert.deepEqual(model.source, item)
+  } finally {
+    await act(async () => root.unmount()); host.remove(); useGraphStore.setState(previousStore); restore()
+  }
+})

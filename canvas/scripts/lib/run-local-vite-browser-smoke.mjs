@@ -184,6 +184,7 @@ export async function runLocalViteBrowserSmoke({
     } else {
       console.log(`[${logLabel}] reusing existing dev server at ${devServerUrl}`)
     }
+    console.log(`[${logLabel}] ready-wait begin ${devServerUrl}`)
     await Promise.race([
       waitForServerReady(devServerUrl, 120000),
       ...(devServer
@@ -192,6 +193,7 @@ export async function runLocalViteBrowserSmoke({
         })]
         : []),
     ])
+    console.log(`[${logLabel}] ${reuseExistingServer ? 'reused' : 'owned'} URL ready ${devServerUrl}`)
 
     await new Promise((resolvePromise, reject) => {
       const smoke = spawn(verifierCommand, verifierArgs, {
@@ -202,6 +204,7 @@ export async function runLocalViteBrowserSmoke({
           [baseUrlEnvName]: devServerBaseUrl,
         },
       })
+      smoke.once('spawn', () => console.log(`[${logLabel}] verifier spawned pid=${smoke.pid}`))
       smoke.once('exit', code => {
         if (code === 0) {
           resolvePromise()

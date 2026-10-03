@@ -330,12 +330,11 @@ test('mounted MainPanel restores local bytes and refreshes plans without documen
   }
 })
 
-test('mounted preview routes provider pages through the owned iframe and preserves native sources', async () => {
+test('mounted preview routes YouTube pages through the owned iframe and preserves native sources', async () => {
   const cases = [
     ['watch', 'https://www.youtube.com/watch?v=77FAnT935IE', 'video/mp4', 'iframe'],
     ['share', 'https://youtu.be/77FAnT935IE?t=3', 'video/mp4', 'iframe'],
     ['embed', 'https://www.youtube-nocookie.com/embed/77FAnT935IE', 'video/mp4', 'iframe'],
-    ['vimeo', 'https://vimeo.com/123456789', 'video/mp4', 'iframe'],
     ['mp4', 'https://media.example.test/source.mp4', 'video/mp4', 'video'],
     ['audio', 'https://media.example.test/source.mp3', 'audio/mpeg', 'audio'],
     ['image', 'https://media.example.test/source.png', 'image/png', 'image'],
@@ -385,12 +384,10 @@ test('mounted preview routes provider pages through the owned iframe and preserv
       assert.ok(iframe, id)
       const embed = new URL(iframe.getAttribute('src')!)
       assert.equal(panel.content.querySelector('footer a')?.getAttribute('href'), url, id)
-      if (id === 'vimeo') assert.equal(embed.href, 'https://player.vimeo.com/video/123456789')
-      else {
-        assert.equal(embed.pathname, '/embed/77FAnT935IE')
-        assert.equal(embed.searchParams.get('enablejsapi'), '1')
-        assert.equal(embed.searchParams.get('origin'), dom.window.location.origin)
-      }
+      assert.equal(embed.hostname, 'www.youtube-nocookie.com', id)
+      assert.equal(embed.pathname, '/embed/77FAnT935IE')
+      assert.equal(embed.searchParams.get('enablejsapi'), '1')
+      assert.equal(embed.searchParams.get('origin'), dom.window.location.origin)
     }
     const native = result.items[result.items.length - 1]
     assert.equal(native.kind, 'video', 'provider-like provenance must not reclassify a resolved Blob')

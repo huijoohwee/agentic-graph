@@ -350,6 +350,7 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
     payload: RichMediaTimelineTransportFrame,
   ) => {
     if (!frame) return
+    payload = props.sourcePlayback === true && !payload.targetOverlayId ? { ...payload, sourcePlayback: true } : payload
     try {
       const serialized = JSON.stringify(payload)
       frame.setAttribute(RICH_MEDIA_TIMELINE_TRANSPORT_FRAME_ATTR, serialized)
@@ -366,7 +367,7 @@ export function useRichMediaPanelMediaState(props: RichMediaPanelProps): RichMed
     } catch {
       void 0
     }
-  }, [])
+  }, [props.sourcePlayback])
   const syncInlineSrcDocTheme = React.useCallback(() => {
     const payload = { type: RICH_MEDIA_PANEL_SRCDOC_THEME_MESSAGE, theme: resolvedThemeMode }
     try {

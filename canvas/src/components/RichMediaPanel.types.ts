@@ -11,6 +11,7 @@ export type RichMediaPanelProps = {
   title: string
   url: string
   srcDoc?: string
+  sourcePlayback?: boolean
   openUrl?: string
   kind?: RichMediaKind
   renderMode?: ImageToThreeJsRenderMode

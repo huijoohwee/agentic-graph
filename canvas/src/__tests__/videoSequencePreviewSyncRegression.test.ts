@@ -553,6 +553,7 @@ export function testVideoSequenceTransportReadoutUsesPreviewSourceTime() {
   })
   const displayModelText = readSource('features', 'gitgraph', 'useGanttTimelineDisplayModel.ts')
   const surfaceModelText = readSource('features', 'gitgraph', 'useGanttTimelineTransportSurfaceModel.ts')
+  const annotationSelectionPause = "      onSelect: sample => {\n        const position = resolveVideoSequenceAnnotationTimelinePosition(group, sample.timestampSeconds)\n        const source = annotationSources.find(item => item.id === group.association.sourceId)\n        const sourceUrl = source ? resolveTimelinePlanSourceUrl(source) : ''\n        const state = useGraphStore.getState()\n        if (position === null || !sourceUrl || !state.graphData?.nodes.some(node => node.id === group.association.frameAnalysisNodeId)) return\n        transportSession.setTransportPlaying(false)\n        transportSession.setTransportPlaybackPosition(position)"
   const timelinePlanSyncText = readSource('components', 'timeline', 'timelinePlanSync.ts')
   const previewSessionText = readSource('features', 'gitgraph', 'useGanttTimelineTransportPreviewSession.ts')
   const transportSessionText = readSource('features', 'gitgraph', 'useGanttTimelineTransportSession.ts')
@@ -571,7 +572,7 @@ export function testVideoSequenceTransportReadoutUsesPreviewSourceTime() {
     !surfaceModelText.includes("if (selectedPreviewEmpty) return ''") ||
     surfaceModelText.includes('transportSession.disabled || selectedPreviewEmpty') ||
     surfaceModelText.includes('selectedPreviewEmpty || !transportSession.playing') ||
-    surfaceModelText.slice(surfaceModelText.indexOf('const selectedPreviewEmpty =')).includes('transportSession.setTransportPlaying(false)') ||
+    (!surfaceModelText.includes(annotationSelectionPause) || surfaceModelText.replace(annotationSelectionPause, '').includes('transportSession.setTransportPlaying(false)')) ||
     !surfaceModelText.includes('disabled: transportSession.disabled') ||
     surfaceModelText.includes('emptySelectionCurrentLabel') ||
     surfaceModelText.includes('emptySelectionTotalLabel') ||
