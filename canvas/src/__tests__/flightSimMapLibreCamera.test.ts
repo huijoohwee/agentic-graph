@@ -14,7 +14,7 @@ test('Flight camera forwards the measured HUD and panel aperture in all four vie
   t.after(() => dom.window.close())
   const rects = [[0, 0, 1100, 962], [0, 0, 550, 962], [747.40625, 8, 344.59375, 946],
     [574.40625, 144, 160, 382], [562, 617.3047, 526, 336.6953]]
-  Array.from(dom.window.document.body.children).forEach((element, index) => {
+  ;(Array.from(dom.window.document.body.children) as HTMLElement[]).forEach((element, index) => {
     const [left, top, width, height] = rects[index]
     element.getBoundingClientRect = () => ({ left, top, width, height, right: left + width, bottom: top + height } as DOMRect)
   })
