@@ -16,6 +16,7 @@ import {
 import { writeWorkspaceFileTextEnsuringFile } from '@/features/chat/chatWorkspaceFsWrite'
 import { ensureWorkspaceDocsMirrorFolder, upsertWorkspaceDocsMirrorText } from '@/features/workspace-fs/workspaceSeedProvider'
 import { buildMermaidGanttCodeFromNeutralTimelinePayload } from '@/lib/mermaid/mermaidDiagramCode'
+import { buildMermaidGanttTimelineModel } from '@/lib/mermaid/mermaidGanttBarInteraction'
 import { getYouTubeId } from 'grph-shared/rich-media/providers'
 import { joinWorkspacePath, normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
@@ -171,6 +172,13 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
   const mergedVisualDatasetJson = jsonBlock(pipeline.datasetRuntime.mergedVisualDataset)
   const zoneCountingJson = jsonBlock(pipeline.datasetRuntime.zoneCounting)
   const ganttCode = buildMermaidGanttCodeFromNeutralTimelinePayload(renderData)
+  const sourceVideoTrack = pipeline.timelineTracks.find(track => track.source === 'source-video')
+  const annotationTrack = pipeline.timelineTracks.find(track => track.source === 'frame-bounding-boxes')
+  const emittedSpans = buildMermaidGanttTimelineModel(ganttCode).taskSpans
+  const annotationSpan = annotationTrack && emittedSpans.find(span => (
+    span.raw.slice(span.raw.indexOf(':') + 1).split(',').some(token => token.trim() === annotationTrack.id)
+  ))
+  if (!sourceVideoTrack || !annotationTrack || !annotationSpan) throw new Error('Video import annotation source linkage is missing')
   const flowchartCode = buildVideoAgentProcessFlowchartCode(pipeline.stages)
   const youtubeId = getYouTubeId(sourceUrl)
 
@@ -193,10 +201,20 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
     '    originalName: "Video agent source"',
     `    sourceUrl: ${yamlQuote(sourceUrl)}`,
     '    importMode: "url"',
-    `    durationSeconds: ${Math.max(1, Math.round(renderSpec.durationMs / 1000))}`,
+    `    durationSeconds: ${Math.max(1, renderSpec.durationMs / 1000)}`,
     `    frameRate: ${renderSpec.fps}`,
     `    displayWidth: ${renderSpec.width}`,
     `    displayHeight: ${renderSpec.height}`,
+    'kgVideoSequenceAnnotations:',
+    '  - schema: "source-annotations/v1"',
+    `    videoTrackId: ${yamlQuote(sourceVideoTrack.id)}`,
+    `    annotationTrackId: ${yamlQuote(annotationTrack.id)}`,
+    '    sourceId: "video_agent_source"',
+    `    frameAnalysisNodeId: ${yamlQuote(FRAME_ANALYSIS_PANEL_NODE_ID)}`,
+    `    annotationStartMinutes: ${annotationSpan.startMinutes}`,
+    `    annotationDurationMinutes: ${annotationSpan.durationMinutes}`,
+    '    sourceStartSeconds: 0',
+    `    sourceEndSeconds: ${renderSpec.durationMs / 1000}`,
     'videoAgentRuntimeContract:',
     `  schema: ${yamlQuote(VIDEO_AGENT_SCHEMA_VERSION)}`,
     '  sourceUrls:',
