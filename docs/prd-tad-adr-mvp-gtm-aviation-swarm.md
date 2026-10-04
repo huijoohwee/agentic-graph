@@ -33,7 +33,7 @@ source_docs:
 
 `aviation-swarm@0.4.1` hardens the eligible Must workflows of the existing aviation evidence capability:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
-Neither operational exposure assessment nor flight-cost calculation is currently implemented.
+Operational exposure and flight-cost calculation remain unimplemented.
 
 **agentic-graph** owns implementation and documentation. This reference implementation
 consumes [aviation-evidence-layer@0.4.2](aviation-evidence/prd-tad-adr-mvp-gtm.md); it does not replace that
@@ -331,7 +331,7 @@ distance-only output; neither a quote nor a commitment follows from a scenario.
 The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md](workspace-seeds/agentic-graph-game-flight-sim-demo.md).
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
 One admitted checkout; exact-path readmissions own scope. New files <600 lines, oversized owners
-shrink, plan ≤40 KiB, zero new packages/spend. Geo repair: seven files/one module. Verification: ≤15 active minutes, one doc/1 KiB, no new modules; refresh on drift. Protected review waits for status change, not an ETA. Preview proof is not deployment.
+shrink, plan ≤40 KiB, zero new packages/spend. Offline repair: ≤20 active minutes, six files/10 KiB, one runtime module; refresh on drift. Protected review waits for status change, not an ETA. Preview proof is not deployment.
 Private artifacts below: `/Users/huijoohwee/Documents/GitHub/.workspace/.artifacts/aviation-swarm-readiness/`.
 
 | Evidence | Check / recorded result | Scope and limit |
@@ -342,7 +342,7 @@ Private artifacts below: `/Users/huijoohwee/Documents/GitHub/.workspace/.artifac
 | ER4 | 160831d build: 1,648 JS; max 495,688 B; zero ESM cycles/unresolved imports; initial 37 files/3,429,534 B (−68,143 B). `candidate-160831d-bundle-proof.json` binds source/tree/manifest | Pre-alignment proof; inherited whole-host 150 kB fails; scope decision pending |
 | ER5 | Build 5 installed 1,758 files/29.4 MiB; offline reopen and 185 facts passed. Evidence-load window: exactly two same-origin fixture/lazy-JS requests, both service-worker served | No external request in that complete action capture; full reopen capture truncated, so no whole-host zero-network claim |
 | ER6 | Build 5 at 390×844: offline UTC step and repeated route result pass; collapsed context and independent scrolling retained. Prior Enter disclosure passes | 200% zoom, full accessibility and physical-device acceptance remain |
-| ER7 | Independent code review found no blocker in evidence/mobile/import/Geo/XR changes; cancellation/late-body/stale-result checks pass | Affected diff review only |
+| ER7 | Prior affected review passed. New `sw.ts` puts verified-pack reads before precache hits; three regressions and worker typecheck pass | Built eviction/corruption proof and affected CI pending |
 | ER8 | Import regression 1/1 and 14 related checks passed (`import-checks.log`). Dev and build 5 offline native bridge reached preparing→selecting→refreshing→applying→synchronizing→opening→`Imported 1; corpus source units 1` (`offline-import.json`) | Pending-toast acceptance gap closed on this candidate; original cause unproved. Job fences prevent stale continuation/duplicate Launch fallback, not rollback of dispatched lower-owner effects |
 | ER9 | Six Geo checks pass (`geo-package-lazy-regression-v2.log`). Built 160831d: zero SVG requests/mounts during activation; blocked SVG stays local, reload recovers (`geo-primary-built-160831d.json`, `geo-recovery-built-160831d.json`) | Actual browser proof; test selection restored to MapLibre |
 | ER10 | XR tests 2/2: five unrelated writes and five Flight advances each changed commits 5→0; motion and required updates remain. Build 6 retains the same connected WebGL canvas through History open/close, zero removals (`xr-canvas-stability.json`) | Independent review; render counts are test measurements, canvas retention is actual UI proof |
@@ -495,7 +495,7 @@ SVG, XR surface projections and bounded bundles. Build 5 offline native import e
 Geo startup/selection and bounded browser-tool parity pass. XR tests confirm 5→0 unrelated commits
 without freezing motion. Whole AS1/AS2/AS5 and production delivery remain unaccepted.
 
-Engineering aligned the protected bootstrap fix; rerun affected CI/mobile acceptance.
+Engineering aligned the bootstrap fix; verify precache admission, then affected CI/mobile acceptance.
 Retain save/reimport proof; verify 200% zoom/accessibility. Physical iPhone is SKIP/KIV, not passed.
 Real-label and diagram/guideline acceptance remain separate gaps. Recheck on source,
 input/profile drift. Native publication precedes protected integration; PR 1547 review is an external

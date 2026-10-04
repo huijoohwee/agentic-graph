@@ -21,6 +21,7 @@ import {
   SERVICE_WORKER_REVISION_RESPONSE,
 } from '../../canvas/viteServiceWorkerRevisionAuthority.mjs'
 import { isBuiltJavaScriptPath, resolveBuiltChunkBudget } from '../hygiene-built-chunk-budget.mjs'
+import './vite-service-worker-owner.test.mjs'
 
 const SOURCE_REVISION = '0123456789abcdef0123456789abcdef01234567'
 

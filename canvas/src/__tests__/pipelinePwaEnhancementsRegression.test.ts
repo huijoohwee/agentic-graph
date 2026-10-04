@@ -32,10 +32,13 @@ export function testLoaderPerfFinalizesFallbackAndEarlyReturns() {
 export function testPwaShellPrecachesHashedAssetsAndCachesLocalJson() {
   const filePath = path.resolve(process.cwd(), 'vite.config.ts')
   const text = readUtf8(filePath)
+  const worker = readUtf8(path.resolve(process.cwd(), 'sw.ts'))
+  const policy = readUtf8(path.resolve(process.cwd(), 'vitePwaRuntimeCachePolicy.ts'))
   if (!text.includes("assets/**/*.{js,css,woff,woff2,ttf}")) {
     throw new Error('Expected PWA precache glob to include all hashed asset chunks, not only entry bundles')
   }
-  if (text.includes("globPatterns: ['index.html'") || !text.includes('navigateFallback: null')) {
+  if (text.includes("globPatterns: ['index.html'") || !text.includes("strategies: 'injectManifest'")
+    || /NavigationRoute|createHandlerBoundToURL/.test(worker)) {
     throw new Error('Expected production HTTP to remain the sole HTML owner without a stale service-worker navigation fallback')
   }
   if (!text.includes("registerType: 'autoUpdate'")) {
@@ -45,22 +48,22 @@ export function testPwaShellPrecachesHashedAssetsAndCachesLocalJson() {
   if (/addEventListener\(['"](?:install|activate)['"]/.test(chatWorkerText)) {
     throw new Error('Expected the imported chat worker to leave install and activate ownership to VitePWA')
   }
-  if (!text.includes("globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js']")) {
+  if (!text.includes("globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js'")) {
     throw new Error('Expected PWA precache to keep oversized Monaco and Mermaid bundles on runtime cache only')
   }
-  if (!text.includes("request.destination === 'worker'")) {
+  if (!policy.includes("request.destination === 'worker'")) {
     throw new Error('Expected PWA runtime cache to include worker assets for lazy parser/editor surfaces')
   }
-  if (!text.includes('agentic-graph-service-worker-revision.js?revision=${runtimeIdentity.sourceRevision}')) {
+  if (!worker.includes('agentic-graph-service-worker-revision.js?revision=${__AGENTIC_OS_SOURCE_REVISION__}')) {
     throw new Error('Expected the generated PWA service worker to revision-bind its active-worker authority import')
   }
-  if (!text.includes('agentic-graph-chat-stream-sw.js?revision=${runtimeIdentity.sourceRevision}')) {
+  if (!worker.includes('agentic-graph-chat-stream-sw.js?revision=${__AGENTIC_OS_SOURCE_REVISION__}')) {
     throw new Error('Expected the generated PWA service worker to revision-bind its durable chat runtime import')
   }
   if (!chatWorkerText.includes("RUNTIME_SCHEMA = 'agentic-graph-chat-stream-worker/v2'")) {
     throw new Error('Expected the durable chat worker to attest the lifecycle-clean runtime schema')
   }
-  if (!text.includes("url.pathname.endsWith('.json')")) {
+  if (!policy.includes("url.pathname.endsWith('.json')")) {
     throw new Error('Expected PWA runtime cache to include same-origin JSON data payloads')
   }
   if (!text.includes("url: './?openEditorWorkspace=1'")) {

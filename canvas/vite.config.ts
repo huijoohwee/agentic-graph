@@ -49,7 +49,7 @@ import { loadChatProxyServerManagedEnv, resolveViteRuntimeIdentity } from './vit
 import { resolveWorkspaceInitializationDocsRoot } from './viteWorkspaceInitializationDocsRoot'
 import { resolveWorkspaceInitializationWorkspaceSeedsReadRoot } from './viteWorkspaceSeedsReadRoot'
 import { forwardChatProxyUpstreamHead, forwardChatProxyUpstreamResponse } from './viteChatProxyResponse'; import { createProbeTreeMcpBridgePlugin } from './viteProbeTreeMcpBridge'
-import { createDurableRunBridgePlugin } from './viteDurableRunBridge.mjs'; import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createAgentGraphBridgePlugin } from './viteAgentGraphBridge'; import { resolveAgenticGraphStorageDevProxyTarget, resolveStorageDevProxyOrigin } from './viteStorageProxyEnv'; import { buildPwaRuntimeCachingRules } from './vitePwaRuntimeCachePolicy'
+import { createDurableRunBridgePlugin } from './viteDurableRunBridge.mjs'; import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createAgentGraphBridgePlugin } from './viteAgentGraphBridge'; import { resolveAgenticGraphStorageDevProxyTarget, resolveStorageDevProxyOrigin } from './viteStorageProxyEnv'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..'), workspaceRoot = path.resolve(repoRoot, '..')
 const siblingDocsRoot = path.resolve(workspaceRoot, 'huijoohwee', 'docs'); loadChatProxyServerManagedEnv({ repoRoot, canvasRoot: __dirname }); const runtimeIdentity = resolveViteRuntimeIdentity(repoRoot)
@@ -6500,7 +6500,7 @@ export default defineConfig(({ command, mode }) => {
     react(),
     inlineHtmlStylesheetAssetsPlugin(), createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision), createPythonLearningOfflinePlugin(runtimeIdentity.sourceRevision, offlinePublicAssets),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'autoUpdate', strategies: 'injectManifest', srcDir: '.', filename: 'sw.ts',
       injectRegister: null,
       devOptions: { enabled: false },
       manifest: {
@@ -6564,13 +6564,10 @@ export default defineConfig(({ command, mode }) => {
           },
         },
       },
-      workbox: {
+      injectManifest: {
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, additionalManifestEntries: offlinePrecacheEntries(offlinePublicAssets),
-        navigateFallback: null,
-        importScripts: [`agentic-graph-service-worker-revision.js?revision=${runtimeIdentity.sourceRevision}`, `agentic-graph-chat-stream-sw.js?revision=${runtimeIdentity.sourceRevision}`],
         globPatterns: ['manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,css,woff,woff2,ttf}'],
         globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js', 'assets/**/three-webgpu-*.js', 'assets/**/createWebGpuRenderer-*.js'],
-        runtimeCaching: buildPwaRuntimeCachingRules(),
       },
     }),
     ...(command === 'build' ? [] : [
