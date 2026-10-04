@@ -8,6 +8,8 @@ import yaml from 'js-yaml'
 import { chromium } from 'playwright'
 import { preview } from 'vite'
 import { createXrV2ExistingStorageFixture } from './lib/xr-v2-existing-storage-fixture.mjs'
+import { runAviationEvidenceOfflineProof } from './lib/aviation-evidence-offline-proof.mjs'
+import { createSmokeDiagnostics, collectSmokeDiagnostics, installSmokeDiagnostics, captureLegacySmokeFailure } from './lib/spatial-smoke-diagnostics.mjs'
 
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
@@ -68,55 +70,6 @@ async function visibleReviewWidth(review) {
     return { visible: Math.max(0, right - left), width: rect.width, overflow: element.scrollWidth > element.clientWidth + 1 }
   })
 }
-function createSmokeDiagnostics(page) {
-  const startedAt = Date.now(), pending = new Map(), settled = [], milestones = []
-  const requests = { total: 0, completed: 0, failed: 0, pendingDetailsDropped: 0, settledDetailsDropped: 0 }
-  const mark = label => { if (milestones.length < 64) milestones.push({ label, elapsedMs: Date.now() - startedAt }) }
-  page.on('request', request => {
-    requests.total++
-    if (pending.size >= 64) { requests.pendingDetailsDropped++; return }
-    const url = new URL(request.url())
-    pending.set(request, { path: (/^https?:$/.test(url.protocol) ? url.origin + url.pathname : url.protocol).slice(0, 240), type: request.resourceType(), method: request.method(), startedAt: Date.now() })
-  })
-  page.on('response', response => { const entry = pending.get(response.request()); if (entry) entry.status = response.status() })
-  const finish = (request, failed) => {
-    requests[failed ? 'failed' : 'completed']++
-    const entry = pending.get(request)
-    if (!entry) return
-    pending.delete(request)
-    settled.push({ ...entry, durationMs: Date.now() - entry.startedAt, failed })
-    if (settled.length > 64) { settled.shift(); requests.settledDetailsDropped++ }
-  }
-  page.on('requestfinished', request => finish(request, false))
-  page.on('requestfailed', request => finish(request, true))
-  return { mark, snapshot: () => ({ startedAt, milestones: [...milestones], requests: { ...requests,
-    pending: requests.total - requests.completed - requests.failed,
-    oldestPending: [...pending.values()].map(entry => ({ ...entry, ageMs: Date.now() - entry.startedAt })), settled: [...settled] } }) }
-}
-async function collectSmokeDiagnostics(page, collector, error) {
-  let timer
-  const snapshot = { schema: 'agentic-graph.spatial-smoke-diagnostics/v1', revision, tree, viewport: page.viewportSize(), ...collector.snapshot(), artifactEntriesDropped: 0 }
-  if (error !== undefined) snapshot.error = { name: String(error?.name || 'Error').slice(0, 60), message: String(error?.message ?? error).split('\n')[0].slice(0, 240) }
-  try {
-    snapshot.browser = await Promise.race([page.evaluate(() => {
-      const trace = Array.isArray(window.__AG_RUNTIME_TRACE__) ? window.__AG_RUNTIME_TRACE__ : []
-      return { ...window.__AG_SPATIAL_SMOKE_DIAGNOSTICS__, readyState: document.readyState, online: navigator.onLine,
-        runtimeTraceDropped: Math.max(0, trace.length - 128), runtimeTrace: trace.slice(-128).map(entry => Object.fromEntries(
-          ['ts', 'scope', 'runId', 'hypothesisId', 'traceId', 'location'].flatMap(key => {
-            const value = entry?.[key]
-            return typeof value === 'string' ? [[key, value.slice(0, 160)]] : typeof value === 'number' || typeof value === 'boolean' ? [[key, value]] : []
-          }))) }
-    }), new Promise(resolve => { timer = setTimeout(() => resolve({ unavailable: 'Browser snapshot exceeded 3000 ms' }), 3000) })])
-  } catch { snapshot.browser = { unavailable: 'Browser snapshot failed' } }
-  finally { clearTimeout(timer) }
-  const rings = [snapshot.browser.uiEvents, snapshot.browser.runtimeTrace, snapshot.requests.settled, snapshot.requests.oldestPending, snapshot.browser.longTasks, snapshot.milestones]
-  while (Buffer.byteLength(JSON.stringify(snapshot)) + 1 > 128 * 1024) {
-    const ring = rings.find(value => value?.length)
-    if (!ring) return { schema: snapshot.schema, revision, tree, unavailable: 'Diagnostic byte limit exceeded' }
-    ring.shift(); snapshot.artifactEntriesDropped++
-  }
-  return snapshot
-}
 let server, browser, activePage, activeDiagnostics, activeCollector, failed = false
 const results = []
 try {
@@ -132,38 +85,8 @@ try {
       for (const target of [navigator, document]) Object.defineProperty(target, 'modelContext', {
         configurable: false, get: () => undefined, set: () => {},
       })
-      if (window !== window.top) return
-      const state = window.__AG_SPATIAL_SMOKE_DIAGNOSTICS__ = { documentEpochMs: performance.timeOrigin,
-        uiEvents: [], uiEventsDropped: 0, longTasks: [], longTasksDropped: 0, longTaskCount: 0, longTaskTotalMs: 0, longTaskMaxMs: 0 }
-      const retain = (key, value, limit) => { state[key].push(value); if (state[key].length > limit) { state[key].shift(); state[`${key}Dropped`]++ } }
-      let previous = ''
-      const sample = () => {
-        const review = document.querySelector('[data-kg-spatial-review]'), fieldset = review?.querySelector('fieldset')
-        const current = { toast: (document.querySelector('[data-kg-toast-message="markdown-workspace-status"]')?.textContent || '').slice(0, 240),
-          reviewPresent: !!review, fieldsetDisabled: fieldset ? fieldset.disabled : null,
-          reviewStatus: [...(review?.querySelectorAll('[role="status"]') || [])].slice(0, 2).map(node => (node.textContent || '').slice(0, 160)) }
-        const signature = JSON.stringify(current)
-        if (signature !== previous) { previous = signature; retain('uiEvents', { elapsedMs: performance.now(), ...current }, 128) }
-      }
-      const observedUi = '[data-kg-toast-id="markdown-workspace-status"],[data-kg-spatial-review]'
-      new MutationObserver(records => {
-        if (records.some(record => {
-          const target = record.target.nodeType === 1 ? record.target : record.target.parentElement
-          return target?.closest(observedUi) || [...record.addedNodes, ...record.removedNodes].some(node =>
-            node.nodeType === 1 && (node.matches(observedUi) || node.querySelector(observedUi)))
-        })) sample()
-      }).observe(document, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['disabled'] })
-      sample()
-      try {
-        state.longTasksSupported = PerformanceObserver.supportedEntryTypes.includes('longtask')
-        if (state.longTasksSupported) new PerformanceObserver(list => {
-          for (const entry of list.getEntries()) {
-            state.longTaskCount++; state.longTaskTotalMs += entry.duration; state.longTaskMaxMs = Math.max(state.longTaskMaxMs, entry.duration)
-            retain('longTasks', { elapsedMs: entry.startTime, durationMs: entry.duration }, 32)
-          }
-        }).observe({ type: 'longtask', buffered: true })
-      } catch { state.longTasksSupported = false }
     })
+    await installSmokeDiagnostics(context)
     const page = activePage = await context.newPage(), errors = [], remote = [], dialogs = []
     const collector = activeCollector = createSmokeDiagnostics(page)
     const failedRequests = [], consoleErrors = []
@@ -267,45 +190,31 @@ try {
     assert.ok(visibleControl.x >= 0 && visibleControl.x + visibleControl.width <= width)
     await page.screenshot({ path: join(output, `review-${width}.png`), fullPage: true })
     collector.mark('Acceptance complete')
-    const diagnostics = await collectSmokeDiagnostics(page, collector)
+    const diagnostics = await collectSmokeDiagnostics(page, collector, { revision, tree })
     results.push({ width, actions, firstValueMs, installation, installMs, reloadMs, receipts: 2,
       noWebMcp: true, offlineReview: true, coldReload: true, reloadNavigationActions: ['Close restored source editor'], importedLabelIsText: true, renderer: width === 390 ? 'touch-opt-in-deferred' : 'loaded',
       overflow, initialLayout, reopenedLayout, pageErrors: errors, blockedRemoteRequests: [...new Set(remote)], evidenceKind: 'automated-technical-rehearsal', diagnostics })
     console.log(JSON.stringify(results.at(-1)))
     await context.close()
   }
+  activePage = null; activeCollector = null
+  const aviationResults = await runAviationEvidenceOfflineProof({ browser, origin, root, output, revision, tree })
   assert.equal(git('status', '--porcelain'), '')
   assert.equal(git('rev-parse', 'HEAD'), revision)
   await writeFile(join(output, 'acceptance.json'), JSON.stringify({ schema: 'agentic-graph.spatial-full-app-acceptance/v1', revision, tree,
-    productionAuthority: false, humanParticipants: 0, modelTokens: 0, results }, null, 2) + '\n')
+    productionAuthority: false, humanParticipants: 0, modelTokens: 0, results, aviationResults }, null, 2) + '\n')
 } catch (error) {
   failed = true
   if (activePage && activeCollector) {
     activeCollector.mark('Failure')
     try {
-      const json = JSON.stringify(await collectSmokeDiagnostics(activePage, activeCollector, error))
+      const json = JSON.stringify(await collectSmokeDiagnostics(activePage, activeCollector, { revision, tree }, error))
       console.error(json)
       await writeFile(join(output, 'failure-diagnostics.json'), json + '\n')
     }
     catch { console.error('Could not write bounded smoke diagnostics') }
   }
-  let legacyCaptureTimer
-  try {
-    await Promise.race([(async () => {
-      if (activePage && !activePage.isClosed()) {
-        await activePage.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {})
-        const failure = (error.stack || String(error)) + '\nSaved source:\n' + await storedSource(activePage).catch(() => 'Unavailable') + '\nBody:\n' + await activePage.locator('body').innerText().catch(() => 'Unavailable')
-        await writeFile(join(output, 'failure.txt'), failure)
-        // Retained stage logs must explain a disabled form even when runner screenshots are unavailable.
-        console.error(JSON.stringify({ revision, tree, viewport: activePage.viewportSize(), output }))
-        console.error(JSON.stringify(activeDiagnostics))
-        console.error(JSON.stringify(await activePage.evaluate(() => ({ readyState: document.readyState, online: navigator.onLine,
-          worker: navigator.serviceWorker?.controller?.scriptURL, scripts: [...document.scripts].map(script => script.src), html: document.documentElement.outerHTML.slice(0, 4000) })).catch(() => ({ unavailable: true }))))
-        console.error(failure.slice(0, 50000))
-      }
-    })(), new Promise(resolve => { legacyCaptureTimer = setTimeout(resolve, 3000) })])
-  } catch { console.error('Legacy smoke failure capture was unavailable') }
-  finally { clearTimeout(legacyCaptureTimer) }
+  await captureLegacySmokeFailure({ page: activePage, output, revision, tree, diagnostics: activeDiagnostics, storedSource }, error)
   throw error
 } finally {
   const cleanup = await Promise.allSettled([browser?.close(), server?.close()])

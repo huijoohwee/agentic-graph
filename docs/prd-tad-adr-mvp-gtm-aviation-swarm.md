@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.5"
-revision: "0.4.5"
+version: "0.4.6"
+revision: "0.4.6"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.5"
-tad_revision: "0.4.5"
-adr_revision: "0.4.5"
-mvp_revision: "0.4.5"
-gtm_revision: "0.4.5"
+prd_revision: "0.4.6"
+tad_revision: "0.4.6"
+adr_revision: "0.4.6"
+mvp_revision: "0.4.6"
+gtm_revision: "0.4.6"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -25,7 +25,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-import-readiness"
 agent_id: "codex-root"
-source_revision: "639965a06a394b93a982fee33407c9e99374a5e9"
+source_revision: "0504394f11b513f2b52afb9cc511541ca5c975e9"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm
 
-`aviation-swarm@0.4.5` hardens the eligible Must workflows of the existing aviation evidence capability:
+`aviation-swarm@0.4.6` hardens the eligible Must workflows of the existing aviation evidence capability:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -52,7 +52,7 @@ G1–G8 baseline: Graph `cc40000f8827ea68192edbd42385a887f107a3b5`, integrated b
 was integrated by [PR 1545](https://github.com/huijoohwee/agentic-graph/pull/1545) at `24f0614390affce87268d74e80a93791a73c30ca`.
 Startup [PR 1552](https://github.com/huijoohwee/agentic-graph/pull/1552) integrated at `201835c8`.
 [PR 1553](https://github.com/huijoohwee/agentic-graph/pull/1553) (`dcf1ccd9`) failed provider CI and stays immutable.
-This successor repairs refresh settlement; ER rows bind proof.
+PR 1555 startup repair integrated at `e6c9f1ca`; adopted at `0504394f`. ER rows bind proof.
 
 | Grounding ID / capability | Inspected owner and contract | Reuse / smallest delta | Check / evidence limit |
 |---|---|---|---|
@@ -335,7 +335,7 @@ distance-only output; neither a quote nor a commitment follows from a scenario.
 
 The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md](workspace-seeds/agentic-graph-game-flight-sim-demo.md).
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
-One checkout; exact paths; files <600 lines, plan ≤40 KiB, no new spend. Next: ≤20 active minutes, one smoke runner ≤15 KiB plus this doc. Startup retains its owner. Refresh on drift; protected review is an external wait. Preview proof is not deployment.
+One checkout; files <600 lines, plan ≤40 KiB, no spend. Next: ≤25 active minutes, runner ≤15 KiB, two helpers ≤15 KiB each; reuse one build. First offline navigation must precede online warming. Startup retains its owner. Refresh on drift; preview is not deployment.
 Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-readiness/`.
 
 | Evidence | Check / recorded result | Scope and limit |
@@ -421,8 +421,8 @@ Audience projections must preserve qualified source joins, hypotheses and the ac
 Plan PR 1545 integrated; PRs 1547/1550 remain immutable predecessors. PR 1550's path failure is
 fixed in [PR 1551](https://github.com/huijoohwee/agentic-graph/pull/1551), exact 38f2aa043;
 PR 1552 is protected; b639 local checks pass, but actual aviation first-open fails. PRs 1553/1554 retain failed provider checks. Intent: `/fix #aviation-import-readiness @codex`.
-This successor adds bounded smoke diagnostics. Startup adoption hit native owner overlap; sequence integrates its producer first. Proof covers active bytes, inactive inventory and unsaved changes.
-No old proof authorizes a changed candidate; publication precedes exact protected integration.
+Startup PR 1555 is merged and adopted. The smoke adds actual Flight first-offline-open acceptance; diagnostics move to one helper. Combined proof is pending. Shared CI-path enrollment remains with sequence.
+Changed candidates need bound proof; source integration and production remain separate.
 
 **AS-D6 · Lane & deploy boundary · flowchart LR · version 2.** Source and delivery each require their own receipt.
 
@@ -454,7 +454,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.5`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.6`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -494,7 +494,7 @@ ER1–ER11 bind proof; AS1/AS2/AS5 and delivery require separate acceptance.
 
 7ef native 10/10 passes; 639 repeats the provider import failure (ER2). The bounded manual trace
 has no stalled refresh, but misses early bootstrap overlap. No exclusive cause or CI parity claim.
-Aviation first offline-open remains unresolved (ER5); sequence owns startup repair.
+Aviation first offline-open awaits the adopted repair's combined test (ER5).
 No unchanged full-CI retry or waiver. iPhone remains SKIP/KIV.
 Whole-host 150 kB awaits the human scope decision; no feature-only reinterpretation. Real-label,
 full guideline acceptance remains separate. Recheck on source/input/profile drift.
