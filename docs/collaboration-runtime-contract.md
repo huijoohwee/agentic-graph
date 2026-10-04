@@ -81,9 +81,9 @@ ci_scopes:
     commands:
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/workspaceProjectPanel.test.tsx", "canvas/src/__tests__/workspaceProjectBridge.test.ts"]
   sequence_flow:
-    roots: ["canvas/src/features/sequence", "canvas/src/__tests__/sequenceFlow.test.ts", "docs/workspace-seeds/sequence-flow"]
+    roots: ["canvas/src/features/sequence", "canvas/src/__tests__/sequenceFlow.test.ts", "canvas/src/__tests__/sequenceFlowPresentation.test.tsx", "canvas/src/__tests__/sequenceFlowReadiness.test.ts", "canvas/src/lib/routing/queryParams.ts", "canvas/src/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration.tsx", "canvas/src/features/workspace-fs/workspaceSeedProvider.ts"]
     commands:
-      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/sequenceFlow.test.ts"]
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/sequenceFlow.test.ts", "canvas/src/__tests__/sequenceFlowPresentation.test.tsx", "canvas/src/__tests__/sequenceFlowReadiness.test.ts"]
   incremental_imports:
     roots: ["canvas/src/features/workspace-fs/sourceIndex.ts", "canvas/src/features/markdown-workspace/workspaceImport/incrementalImport.ts", "canvas/src/features/markdown-workspace/workspaceImport/localImport.ts", "canvas/src/features/markdown-workspace/workspaceImport/localFolderImport.ts", "canvas/src/features/markdown-workspace/workspaceImport/pendingLocalImport.ts", "canvas/src/features/markdown-workspace/workspaceImport/refreshIndexedSource.ts", "canvas/src/lib/websites/server/websiteImportRevalidation.ts", "canvas/src/__tests__/incrementalWorkspaceImports.test.ts", "canvas/src/__tests__/incrementalWebsiteImports.test.ts"]
     commands:

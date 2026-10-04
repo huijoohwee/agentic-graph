@@ -11,11 +11,13 @@ let branchState: { key: string; choices: Record<string, string>; selectedId?: st
 const listeners = new Set<() => void>()
 const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener) } }
 const read = () => branchState
+const sourceIdentity = (state: ReturnType<typeof useGraphStore.getState>) =>
+  state.markdownDocumentSourceUrl || state.markdownTokensPath || state.markdownDocumentName || 'untitled'
 
 export function useSequenceDocument() {
   const source = useGraphStore(useShallow(state => ({
     text: state.markdownDocumentText || '', name: state.markdownDocumentName || 'untitled',
-    identity: state.markdownDocumentSourceUrl || state.markdownTokensPath || state.markdownDocumentName || 'untitled',
+    identity: sourceIdentity(state),
     applyRevision: state.markdownDocumentApplyRevision,
     revision: state.graphDataRevision,
   })))
@@ -23,7 +25,14 @@ export function useSequenceDocument() {
     const header = readYamlFrontmatterMermaidCode(source.text)
     if (/^\s*sequenceDiagram\b/.test(header)) {
       const raw = extractYamlFrontmatterHeaderBlock(source.text)!.rawBlock
-      const index = raw.indexOf('sequenceDiagram')
+      const declaration = /^(?:mermaid|"mermaid"|'mermaid')[ \t]*:[ \t]*(.*)$/m.exec(raw)
+      if (!declaration) return { code: 'sequenceDiagram\nCannot locate the mermaid source scalar', offset: 0 }
+      const scalarLine = raw.slice(0, declaration.index).split('\n').length
+      // Literal blocks retain physical lines after the reader trims leading whitespace.
+      // Escaped/folded scalars are located at their declaration, not invented source lines.
+      if (!/^\|[\d+-]*[ \t]*(?:#.*)?\r?$/.test(declaration[1]!)) return { code: header, offset: scalarLine - 1, scalarLine }
+      const contentStart = raw.indexOf('\n', declaration.index) + 1
+      const index = contentStart + raw.slice(contentStart).search(/\S/)
       return { code: header, offset: raw.slice(0, index).split('\n').length - 1 }
     }
     const blocks = [...source.text.matchAll(/^```mermaid[^\n]*\n([\s\S]*?)^```\s*$/gm)]
@@ -36,9 +45,9 @@ export function useSequenceDocument() {
   const code = fragment.code
   const model = React.useMemo(() => {
     const parsed = parseSequence(code, `${source.identity}:${source.applyRevision}:${fragment.offset}`)
-    for (const item of [...parsed.participants, ...parsed.events, ...parsed.diagnostics]) item.line += fragment.offset
+    for (const item of [...parsed.participants, ...parsed.events, ...parsed.diagnostics]) item.line = fragment.scalarLine ?? item.line + fragment.offset
     return parsed
-  }, [code, fragment.offset, source.identity, source.applyRevision])
+  }, [code, fragment.offset, fragment.scalarLine, source.identity, source.applyRevision])
   const mermaidTheme = React.useMemo(() => readYamlFrontmatterValue(extractYamlFrontmatterHeaderBlock(source.text)?.yamlText || '', 'mermaidTheme'), [source.text])
   const branches = React.useSyncExternalStore(subscribe, read, read)
   const choices = branches.key === model.key ? branches.choices : EMPTY_CHOICES
@@ -49,7 +58,8 @@ export function useSequenceDocument() {
   const sourceIsCurrent = React.useCallback(() => {
     const state = useGraphStore.getState()
     return (state.markdownDocumentText || '') === source.text && state.markdownDocumentApplyRevision === source.applyRevision
-  }, [source.text, source.applyRevision])
+      && sourceIdentity(state) === source.identity
+  }, [source.text, source.applyRevision, source.identity])
   const setTimelineTransportState = React.useCallback((update: Parameters<typeof binding.setTimelineTransportState>[0]) => {
     const currentChoices = branchState.key === model.key ? branchState.choices : EMPTY_CHOICES
     if (sourceIsCurrent() && documentKey === `${model.key}:${JSON.stringify(currentChoices)}`) binding.setTimelineTransportState(update)

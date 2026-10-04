@@ -1,7 +1,7 @@
 .sequence-flow { --sequence-surface: var(--kg-panel-bg); --sequence-ink: var(--kg-text-primary); color: var(--sequence-ink); min-width: 0; }
 .sequence-canvas { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--sequence-surface); }
 .sequence-svg-host { width: 100%; height: 100%; overflow: auto; padding: 24px; }
-.sequence-svg-host > svg { width: 100%; height: 100%; min-width: 600px; min-height: 500px; }
+.sequence-svg-host > svg { width: 100%; height: 100%; min-width: 0; min-height: 0; }
 .sequence-participant { fill: var(--sequence-surface); stroke: var(--kg-canvas-accent); }
 .sequence-connection-badge { fill: var(--sequence-surface); stroke: var(--kg-border); }
 .sequence-svg-host [data-sequence-participant][data-sequence-current='true'] .sequence-participant,
@@ -31,3 +31,9 @@
 .sequence-transport .timeline-video-sequence-ruler-viewport { min-width: var(--sequence-axis-min-width); }
 .sequence-event-mark[data-sequence-state='complete'] > span { opacity: .6; }
 @media (max-width: 640px) { .sequence-svg-host { padding: 8px; } .sequence-flow .timeline-player-toolbar button { min-height: 44px; min-width: 44px; } }
+
+.sequence-svg-host[data-notation-theme]:not([data-notation-theme='dark']) { background: #fff; --sequence-ink: #243047; --sequence-surface: #fff; }
+.sequence-svg-host [data-sequence-participant][data-sequence-current='true'][data-et='life-line'],
+.sequence-svg-host [data-sequence-participant][data-sequence-current='true'][data-et='participant'] :is(rect, circle, line, path) { stroke: var(--kg-canvas-accent) !important; stroke-width: 3; }
+.sequence-inspector button, .sequence-flow select, .sequence-transport .timeline-transport-clip-controls select { min-height: 44px; }
+.sequence-inspector li button { overflow-wrap: anywhere; }

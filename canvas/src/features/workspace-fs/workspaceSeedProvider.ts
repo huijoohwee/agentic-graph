@@ -1,4 +1,5 @@
 import { buildCodebaseFilePath, buildLocalFsFetchPath } from '@/lib/url'
+import { isExplicitOfflineWorkspace } from '@/lib/routing/queryParams'
 import { readWorkspaceImportDefaultSourceUrlSetting } from '@/lib/workspace/workspaceStoreSyncSettings'
 import { buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState } from '@/features/source-files/sourceFilesStorageSync'
 import { fetchWorkspaceDocsMirrorResponse, readCachedConfiguredDocsMirrorEntries, readWorkspaceDocsMirrorTextViaFetch as readTextViaFetch } from './workspaceSeedProviderStorageCache'
@@ -315,7 +316,7 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
     )
   }
   const readPublishedCanonicalDocsMirrorEntries = async (): Promise<WorkspaceDocsMirrorEntry[]> => {
-    if (repoLocalRunReady) return []
+    if (repoLocalRunReady || isExplicitOfflineWorkspace()) return []
     const [publishedEntries, publishedAgenticEntries, workspaceSeedEntries] = await Promise.all([
       readCanonicalPublishedNonAgenticDocsMirrorEntries({
         maxFiles: WORKSPACE_DOCS_MIRROR_MAX_FILES,

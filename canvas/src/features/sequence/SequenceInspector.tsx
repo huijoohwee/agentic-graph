@@ -2,6 +2,7 @@ import { useSequenceDocument } from './useSequenceDocument'
 import { SequenceBranches } from './SequenceTimeline'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { sequenceParticipantLabel } from './sequencePresentation'
+import { LearningOfflineControls } from '@/features/python-learning/LearningOfflineControls'
 import './SequenceFlow.css'
 
 export function SequenceInspector() {
@@ -13,5 +14,6 @@ export function SequenceInspector() {
     {model.diagnostics.map((diagnostic, index) => <p key={index} role="alert">Line {diagnostic.line}: {diagnostic.message}</p>)}
     <ol>{model.events.map(event => <li key={event.id}><button aria-pressed={event.id === current?.id} onClick={() => selectEvent(event.id)}><strong>{event.ordinal}. {event.label}</strong><span>{sequenceParticipantLabel(model, event.from)} → {sequenceParticipantLabel(model, event.to)} · {event.kind}{event.protocol ? ` · ${event.protocol}` : ''}</span><small>Source line {event.line}{event.branches.length ? ` · ${event.branches.map(id => model.branches.find(branch => branch.id === id)!.label).join(' / ')}` : ''}</small></button></li>)}</ol>
     <p role="status">{current ? `Selected step ${current.ordinal}: ${current.label}` : 'No playable sequence'}</p>
+    <LearningOfflineControls purpose="workspace" />
   </section>
 }
