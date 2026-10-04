@@ -339,7 +339,7 @@ Private artifacts below: `/Users/huijoohwee/Documents/GitHub/.workspace/.artifac
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
 | ER1 | Prior runtime core/CLI/stdio/WebMCP-builder tests: 74 passed | G1–G7; final affected CI pending; real labels/demand unproved |
-| ER2 | Prior input/UI 24, import/inventory 23, mobile/owner 4; Canvas check and repaired inventory fixture 13/13 pass | Native CI awaits clean committed-candidate smoke |
+| ER2 | Prior input/UI 24, import/inventory 23, mobile/owner 4; Canvas check and repaired inventory fixture 13/13 pass | Clean CI: desktop offline passes; mobile source-materialization drift blocks acceptance |
 | ER3 | Exact demo: 3 entities/185 facts/3 sources; browser saved 262,899-byte pack matching visible export; reimport and prior offline reimport passed | Actual file proof; final successor save/reimport repeat pending |
 | ER4 | Build 6 passed in 73 s: 1,654 JS/MJS/CJS files; largest 495,688 B; zero ESM cycles; initial disk closure 38 files/3,497,302 B. `build-6-output-manifest.json`, aggregate `04449dfe8c5da06f3a42aeb3a5baad986a8a3db680887cde6fed8d0dc61bebc8` | Prior over-cap failure resolved; initial delta unmeasured; final source/doc/CI joins pending |
 | ER5 | Build 5 installed 1,758 files/29.4 MiB; offline reopen and 185 facts passed. Evidence-load window: exactly two same-origin fixture/lazy-JS requests, both service-worker served | No external request in that complete action capture; full reopen capture truncated, so no whole-host zero-network claim |
@@ -497,8 +497,8 @@ SVG, XR surface projections and bounded bundles. Build 5 offline native import e
 Geo startup/selection and bounded browser-tool parity pass. XR tests confirm 5→0 unrelated commits
 without freezing motion. Whole AS1/AS2/AS5 and production delivery remain unaccepted.
 
-Engineering next binds final source/doc/CI and build/UI proof. Current download automation stalled;
-retain prior save/reimport proof. Verify lazy-chunk failure recovery and 200% zoom/accessibility;
+Engineering next joins the coordinating bootstrap owner's fix and reruns failed mobile acceptance.
+Retain prior save/reimport proof; verify lazy-chunk failure recovery and 200% zoom/accessibility;
 physical-device, real-label and diagram/guideline acceptance remain separate gaps. Recheck on source,
 input/profile drift. Native publication precedes protected integration; PR 1547 review is an external
 wait. AS3/AS4 retain qualified-input/rights/buyer gates. Preserve originals/concurrent work. No new paid
