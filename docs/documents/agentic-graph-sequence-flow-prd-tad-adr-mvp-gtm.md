@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.49"
-prd_revision: "1.3.49"
-tad_revision: "1.3.49"
-adr_revision: "1.3.49"
-mvp_revision: "1.3.49"
-gtm_revision: "1.3.49"
+version: "1.3.50"
+prd_revision: "1.3.50"
+tad_revision: "1.3.50"
+adr_revision: "1.3.50"
+mvp_revision: "1.3.50"
+gtm_revision: "1.3.50"
 date: "2026-10-04"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,9 +31,9 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.49**. This native successor restores the retained offline/cache repairs, frame optimization and external-input acceptance tooling from `2fa04682facea268428d7029ba18df7192f5339b`, and admits proven native-editor document initialization during cold source loading.
+All five roles join **SEQUENCE-FLOW-001@1.3.50**. This native successor restores the retained offline/cache repairs, frame optimization and external-input acceptance tooling from `2fa04682facea268428d7029ba18df7192f5339b`, admits proven native-editor document initialization during cold source loading, and preserves an explicit file selection created after the startup directory snapshot.
 The six-file startup producer remains immutable at `7c6438edc49321a48778e96a803a5d47b52da442` in [PR #1552](https://github.com/huijoohwee/agentic-graph/pull/1552), integrated as `201835c8c69e2d1c53a25b978312c955a82e4af7`. Its ten native owner checks, required provider gate and 92 focused checks pass; native closeout confirms the six-path projection.
-Preparation is disjoint from the shared runtime owner. Final validation waits for its protected integration and exact combined-source alignment; the failed shared PR #1553 is not mergeable evidence.
+Preparation is disjoint from the shared runtime owner. Final validation waits for its protected integration and exact combined-source alignment; failed shared PRs #1553 and #1554 are not mergeable evidence; their observed import failure is not yet attributed to the startup corrections.
 Final candidate readiness requires the complete evidence matrix below; earlier proof keeps its original limits.
 
 Context: an existing sequence view and shared Timeline shown in the supplied screenshot.
@@ -48,7 +48,7 @@ import it through normal workspace controls; do not store its path, source or sp
 runtime code, fixtures or tests. Independent generic regression cases exercise the contract.
 No outside implementation, assets, hosted rendering service or dependency enters this change.
 
-Successor restoration completed at `0f6a27d650d7aa18a5906a763a770cd966acc213`: twelve changed files and 76,058 added bytes within its 80 KiB preparation cap. The requested-document correction adds three existing source/test files plus this existing plan, estimated 15 active minutes with a 25-minute/25 KiB added-byte cap. Preserve all startup producer and shared-runtime owners. The complete combined validation retains the sixteen-file/180 KiB ceiling. No new dependency or spend; external provider checks have a recheck trigger, not a completion ETA.
+Successor restoration completed at `0f6a27d650d7aa18a5906a763a770cd966acc213`: twelve changed files and 76,058 added bytes within its 80 KiB preparation cap. The requested-document correction adds three existing source/test files plus this existing plan, estimated 15 active minutes with a 25-minute/25 KiB added-byte cap. Preserve all startup producer and shared-runtime owners. The late-selection correction adds two existing source/test owners, estimated 15 active minutes with a 20 KiB added-byte cap. The complete combined validation now has an eighteen-file/180 KiB ceiling. No new dependency or spend; external provider checks have a recheck trigger, not a completion ETA.
 Keep files below 600 lines and chunks below 500 kB; load feature UI only on demand.
 The demonstration remains external; the browser proof accepts its path explicitly at invocation. External CI/review waits
 have no ETA; recheck on a changed exact-candidate status. Publication, integration,
@@ -423,7 +423,7 @@ V1–V9 pass and a pilot shows the omitted behavior matters. No second roadmap.
 
 ## GTM
 
-Current 1.3.49 prepares sequence acceptance after the protected startup producer; shared-runtime integration remains required. Complete Q1–Q9 and exact build/release evidence before
+Current 1.3.50 prepares sequence acceptance after the protected startup producer; shared-runtime integration remains required. Complete Q1–Q9 and exact build/release evidence before
 offering production readiness; focused passes and offline controls do not prove installation, delivery, buyer value or revenue.
 
 Hypothesis H1: a reachable technical team lead values a reviewed reusable interaction
@@ -464,7 +464,7 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.49. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.50. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 
@@ -508,9 +508,10 @@ The offline successor preserves that published candidate and its protected ances
 | Passive graph intent | For ordinary Markdown, cold and cached passive hydration preserve the current graph; explicit activation afterward applies the selected document. Source guards remain enforced. The combined closure group passes 42/42, with six materialization/ingest checks and one storage source check also passing; final typecheck succeeds. Retained agent-graph manifest restoration is a separate pre-existing document contract, outside this ordinary-Markdown guarantee. |
 | Retained offline owners | Restored from `2fa04682facea268428d7029ba18df7192f5339b` through this admitted native successor. Originally recovered from commit `cb83723f2dcfb5c61213af511eb941d8a2ca50f9`: actual Workbox cache strategy and production PWA boot regressions failed before repair and pass afterward: 20/20 focused tests. Verified or damaged installed members initiate no fetch; ordinary online misses still fetch. |
 | Prior offline diagnostic | Verified installation completed in 4,890 ms. The explicit offline route with connectivity available observed 463 page requests: 462 service-worker responses, zero worker fetches and one uncached host-mirror POST. The strict assertion correctly fails; this is not final offline acceptance. |
-| Shared-file handoff | The shared owner retains production/disconnected mirror suppression, acknowledgement-only digest caching and bounded chunks. Runtime candidate `b639ba42f92d3af7ac26c6e9d7949686664eb1c8` adopted protected PR #1552 and passed ten native partitions. Its plan-only successor `dcf1ccd9ed0f7c3f148754ec07d7ad131cbee5f9` in [PR #1553](https://github.com/huijoohwee/agentic-graph/pull/1553) failed the provider spatial initial-import readiness wait at the unchanged 30 seconds: prior scene, disabled review and Refreshing remained, with no console/request errors. The shared owner is repairing independently reproduced refresh-promise starvation in a native successor. No failed gate is waived or reserved file transplanted. |
+| Shared-file handoff | The shared owner retains production/disconnected mirror suppression, acknowledgement-only digest caching and bounded chunks. Its per-pass refresh settlement regression and ten native partitions pass at `7ef185a3722e4d62c4e8bea08df8a7cd01730824`. Plan-only successor `639965a06a394b93a982fee33407c9e99374a5e9` in [PR #1554](https://github.com/huijoohwee/agentic-graph/pull/1554) repeats [PR #1553](https://github.com/huijoohwee/agentic-graph/pull/1553)'s provider initial-import failure: unchanged 30-second readiness wait, prior scene, disabled review and Refreshing, no console/request errors. The per-pass fix does not close this observed failure. A fresh-origin diagnostic imports successfully after startup has settled; its later chooser timing and missing provider fixture prevent equivalence. Exact owner handoff or a minimal protected startup producer must precede shared retry; native reservations cannot be rewritten manually. No failed gate is waived. |
 | Combined cache contract | The root's immutable-assets CacheFirst route adds a sixth worker route. An exact-input external compatibility test fails the shared five-route assertion (2/3 pass); adding only the ordered expected CacheFirst entry passes 3/3. The shared test owner has agreed to hand off that path after protected integration and native closeout. This diagnostic does not replace combined native validation. |
 | Requested document convergence | Bootstrap owns the selected path and prepared active bytes while native editor indexing may publish that document during an awaited read. With an empty initial inventory, the prior guard rejected absent/prior document identity before inspecting prepared authority. The narrow correction accepts only exact current/prepared active identity and bytes, verifies persisted bytes twice, preserves current inactive records and keeps one retry. Same-path prior drafts, including empty edits, nonempty initial inventory, selection/provenance/duplicate identity and persisted drift still reject. Four new pre-fix failures establish the missing transition and previously unreachable persisted-byte fences; all 61 convergence/import checks and 45 existing bootstrap checks pass after repair. This source-grounded gap is not asserted as the cause of the separate browser or provider failures. |
+| Late-created startup selection | [sourceFilesRuntimeStartup.ts](../../canvas/src/features/source-files/sourceFilesRuntimeStartup.ts) originally resolved a newer explicit Explorer path against a directory snapshot taken before that file existed, then restored the default starter. The existing startup owner now detects the changed selection, re-lists files and directly reads the selected persisted bytes, checking raw path and selection identity after every await. It keeps three bounded attempts, rejects stable missing/deleted files and original I/O failures, and preserves an explicit clear. `workspaceBootstrapSourceAuthority.test.ts` adds scenarios inside its existing enrolled regression; no test registry or dependency is added. Eight expected pre-fix failures reproduce the lost selection; a ninth failure from independent review proves that late canonical aliases must update Explorer under the selection fence. Canonicalization now re-enters fresh observation within the same three-attempt budget. All twelve scenarios pass, including exact retry exhaustion during listing and reading, unchanged imported source ownership, and canonical bootstrap reapplication without a retry. The existing 26-check bootstrap group passes, followed by all eleven bootstrap-prefix checks and canonical Canvas check on the final correction. This defect is not asserted as the cause of the provider Refreshing timeout, which precedes explicit import activation. |
 | First-open diagnostic boundary | The actual authored shared demo failed its first offline open on a retained workspace. Its Explorer UI displayed 36 entries; that is not a graph-store snapshot. Later instrumented desktop and 390-pixel openings pass with 33 runtime source records and no guard hits. A fresh separate 390-pixel origin also passes first open with 33 records. These distinct observations preserve the original failure without establishing its cause or final sequence acceptance. |
 | Precache ownership | Retained build `89e15bb256ee088d8eee6349c94c357790803b08` reproduces four emitted-worker failures: precache eviction fetches, corrupt precache bypasses integrity, and corrupt/missing pack members return ordinary cached 200. No-pack hit/miss behavior passes. The shared owner committed a custom-worker correction using the original fetch request and existing integrity reader. Actual emitted-worker proof at `fca520008ccddbabd39717848c0dc6f8786cdd0b` passes all six cases; all installed cases observe zero worker fetches. Its provider runtime/build checks pass, but a documentation portability failure requires an immutable successor and protected integration before final adoption. The reusable browser proof covers all six cases and retains full context requests. |
 | Bundle handoff | The shared build owner reports a bounded diagnostic build with no static cycles. Final exact emitted JS/MJS/CJS sizes, worker imports, initial-load behavior and browser parity remain required before acceptance. |
