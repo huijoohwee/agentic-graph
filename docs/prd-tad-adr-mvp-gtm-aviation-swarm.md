@@ -331,7 +331,7 @@ distance-only output; neither a quote nor a commitment follows from a scenario.
 The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md](workspace-seeds/agentic-graph-game-flight-sim-demo.md).
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
 One admitted checkout; exact-path readmissions own scope. New files <600 lines, oversized owners
-shrink, plan ≤40 KiB, zero new packages/spend. Recovery: ≤5 files/8 KiB, one lazy-owned module, ≤20 active minutes; refresh
+shrink, plan ≤40 KiB, zero new packages/spend. Recovery + Geo entry: ≤7 files/8 KiB, one new module, ≤20 active minutes; refresh
 on drift. Protected review waits for status change, not an ETA. Preview proof is not deployment.
 Private artifacts below: `/Users/huijoohwee/Documents/GitHub/.workspace/.artifacts/aviation-swarm-readiness/`.
 

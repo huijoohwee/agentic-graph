@@ -1,3 +1,4 @@
+import { lazy } from 'react'
 import { hashStringToIndex } from 'grph-shared/hash/stringHash'
 import { LS_KEYS } from './lib/config.js'
 import { applyDevCrossOriginProxy, applyMediaProxySrc, coerceFetchUrl, MEDIA_PROXY_ENDPOINT } from './lib/url.js'
@@ -25,7 +26,6 @@ export type {
 export type {
   GeospatialPresentationCameraOwner,
 } from './features/geospatial/geospatialPresentationCameraOwner.js'
-import { GeospatialOverlayHost as GeospatialOverlayHostComponent } from './GeospatialHost.js'
 import { GeospatialPanelHost } from './GeospatialPanelHost.js'
 import { requestGeospatialCurrentLocation, requestGeospatialFitToData, requestGeospatialFitToSelection } from './geospatialFit.js'
 import { setGeospatialModeEnabled as setGeospatialModeEnabledViaHostBridge } from './hostBridge.js'
@@ -170,7 +170,9 @@ export type {
   NativeGeospatialMapLibreLease,
 } from './features/geospatial/mapLibreHostLease.js'
 
-export const GeospatialOverlayHost = GeospatialOverlayHostComponent
+export const GeospatialOverlayHost = lazy(async () => ({
+  default: (await import('./GeospatialHost.js')).GeospatialOverlayHost,
+}))
 
 export { GeospatialPanelHost }
 

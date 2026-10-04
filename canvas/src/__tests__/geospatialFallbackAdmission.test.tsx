@@ -64,6 +64,7 @@ async function explicitSvgRetainsGeometryAndSemanticOwnership() {
 }
 
 function fallbackAssetsStayBehindLazyBoundary() {
+  const entry = fs.readFileSync(new URL('../../../gympgrph/src/index.ts', import.meta.url), 'utf8')
   const host = fs.readFileSync(hostUrl, 'utf8')
   const svg = fs.readFileSync(svgUrl, 'utf8')
   const recovery = fs.readFileSync(recoveryUrl, 'utf8')
@@ -72,6 +73,9 @@ function fallbackAssetsStayBehindLazyBoundary() {
   assert.doesNotMatch(host, /from ['"][^'"]*(?:worldSvgBasemap|d3)['"]/, 'The primary host must not eagerly import SVG terrain or projection code')
   assert.match(svg, /from '\.\/worldSvgBasemap\.js'/)
   assert.match(svg, /from 'd3'/)
+  assert.match(entry, /GeospatialOverlayHost = lazy\(/, 'The package entry must defer the map host until it renders')
+  assert.match(entry, /await import\('\.\/GeospatialHost\.js'\)/)
+  assert.doesNotMatch(entry, /import [^\n]+ from ['"]\.\/GeospatialHost/, 'Shared Geo helpers must not load the host or its recovery UI at startup')
 }
 
 async function failedSvgLoadIsContainedAndReloadsOnlyOnRequest() {
