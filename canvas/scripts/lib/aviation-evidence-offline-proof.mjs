@@ -15,7 +15,7 @@ const hash = bytes => createHash('sha256').update(bytes).digest('hex')
 const checked = value => { notEqual(value?.ok, false, JSON.stringify(value)); return value }
 async function bounded(run, ms = 3000) {
   let timer
-  try { return await Promise.race([run(), new Promise((_, reject) => { timer = setTimeout(() => reject(Error('Diagnostic deadline exceeded')), ms) })]) }
+  try { return await Promise.race([run(), new Promise((_, reject) => { timer = setTimeout(() => reject(Error('Deadline')), ms) })]) }
   finally { clearTimeout(timer) }
 }
 async function storedSource(page) {
@@ -42,7 +42,7 @@ async function press(button, page, retain = false) {
   const handle = await button.elementHandle()
   try { await page.waitForFunction(element => element?.isConnected && !element.disabled, handle) }
   finally { await handle?.dispose() }
-  equal(await button.evaluate(element => document.activeElement === element), true, 'Async keyboard focus')
+  equal(await button.evaluate(element => document.activeElement === element), true)
 }
 async function detail(panel, title) {
   const summary = text(panel, title)
@@ -58,11 +58,10 @@ async function evidencePanel(page) {
   if (!await disclosure.evaluate(element => element.open)) await press(disclosure.locator('summary'), page)
   return role(page, 'Native evidence and analysis', 'region')
 }
-async function tableProof(panel, page, factCount) {
+async function tableProof(panel, page, expected) {
   const table = role(panel, 'Original fact table', 'region')
   equal(await table.getAttribute('tabindex'), '0')
   equal(await table.locator('th[scope="col"]').count(), 5)
-  equal(await table.locator('tbody tr').count(), Math.min(50, factCount))
   equal(await table.locator('input,textarea,select,[contenteditable="true"]').count(), 0)
   await table.focus()
   const overflow = await table.evaluate(element => element.scrollWidth > element.clientWidth + 1)
@@ -76,18 +75,19 @@ async function tableProof(panel, page, factCount) {
   match(await page.evaluate(() => document.activeElement?.getAttribute('aria-label') || ''), /^Inspect original source for /)
   await page.keyboard.press('Shift+Tab')
   equal(await table.evaluate(element => document.activeElement === element), true)
-  let count = 0, pages = 0
+  const ids = []; let pages = 0
   for (;;) {
-    count += await table.locator('tbody tr').count(); pages++
+    const batch = await table.locator('tbody button').evaluateAll(items => items.map(item => item.getAttribute('aria-label').replace('Inspect original source for ', '')))
+    ok(batch.length <= 50); ids.push(...batch); pages++
     const next = role(panel, 'Next facts')
     if (!await next.isEnabled()) break
-    ok(pages < 100, 'Fact pagination must terminate')
+    ok(pages < 100)
     await press(next, page)
   }
-  equal(count, factCount)
+  same(ids, expected); equal(new Set(ids).size, ids.length)
   for (let index = 1; index < pages; index++) await press(role(panel, 'Previous facts'), page)
   equal(await role(panel, 'Previous facts').isEnabled(), false)
-  return { pages, rows: count, columnHeaders: 5, keyboardScroll: overflow ? 'both-ends' : 'not-needed', readOnly: true,
+  return { pages, rows: ids.length, orderedUniqueIds: true, columnHeaders: 5, keyboardScroll: overflow ? 'both-ends' : 'not-needed', readOnly: true,
     fontSize: await table.locator('td').first().evaluate(element => getComputedStyle(element).fontSize) }
 }
 
@@ -100,34 +100,36 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
   const bundle = await readFile(join(root, 'canvas/public', observed.paths[0]), 'utf8')
   const routeBundle = await readFile(join(root, 'canvas/public', route.paths[0]), 'utf8')
   const args = { bundle, profileId: config.profiles.record }
-  const inspection = checked(await executeEvidence('aviation.inspect', args))
-  const factId = inspection.facts.find(fact => fact.evidence_ref === '/facts/0').id
-  const original = checked(await executeEvidence('aviation.source', { ...args, factId: factId }))
+  const replay = atUtc => executeEvidence('aviation.replay', { ...args, entityId: observed.entityId, atUtc }).then(checked)
+  const record = checked(await executeEvidence('aviation.inspect', args))
+  const factId = record.facts.find(fact => fact.evidence_ref === '/facts/0').id
+  const original = checked(await executeEvidence('aviation.source', { ...args, factId }))
   const pack = checked(await executeEvidence('aviation.export', args))
   const benchmark = checked(await executeEvidence('route.benchmark', { bundle: routeBundle, profileId: config.profiles.route, policyId: config.policies.route, entityId: route.entityId }))
-  const moments = [...new Set(inspection.facts.map(fact => new Date(fact.observed_at).toISOString()))].sort()
+  const moments = [...new Set(record.facts.map(fact => new Date(fact.observed_at).toISOString()))].sort()
   const nextUtc = moments.find(moment => Date.parse(moment) > Date.parse(observed.atUtc))
   ok(nextUtc); await mkdir(output, { recursive: true })
   const results = []
   for (const width of [1024, 390]) {
     const started = performance.now(), context = await browser.newContext({ viewport: { width, height: 900 }, isMobile: width === 390, hasTouch: width === 390, reducedMotion: 'reduce', acceptDownloads: true })
-    let page, failed = false, offlineAt = null, firstOpenAt = null, openCount = 0, remoteCount = 0, offlineRemoteCount = 0
+    let page, failed = false, offlineAt = null, openedAt = null, openCount = 0, remoteCount = 0, offlineRemoteCount = 0
     const errors = [], requests = [], remote = [], marks = []
     const mark = name => { marks.push({ name, elapsedMs: Math.round(performance.now() - started) }) }
     try {
-      await context.route('**/*', request => {
-        const url = new URL(request.request().url())
-        if (!/^https?:$/.test(url.protocol) || url.origin === origin) return request.continue()
+      const external = url => /^https?:$/.test(url.protocol) && url.origin !== origin
+      context.on('request', request => {
+        const url = new URL(request.url())
+        if (!external(url)) return
         remoteCount++; if (offlineAt !== null) offlineRemoteCount++
         if (remote.length < 32) remote.push({ path: (url.origin + url.pathname).slice(0, 240), offline: offlineAt !== null })
-        return request.abort()
       })
+      await context.route('**/*', route => external(new URL(route.request().url())) ? route.abort() : route.continue())
       page = await context.newPage(); page.setDefaultTimeout(30000)
       page.on('pageerror', error => { if (errors.length < 16) errors.push(error.message.slice(0, 400)) })
       page.on('request', request => {
         if (requests.length < 64 && offlineAt !== null) requests.push({ path: new URL(request.url()).pathname.slice(0, 240), navigation: request.isNavigationRequest() })
         if (request.isNavigationRequest() && request.frame() === page.mainFrame() && new URL(request.url()).searchParams.has('studio-offline')) {
-          openCount++; firstOpenAt = performance.now(); mark('offline-open')
+          openCount++; openedAt = performance.now(); mark('offline-open')
         }
       })
       page.on('dialog', dialog => { if (errors.length < 16) errors.push(`Dialog: ${dialog.message().slice(0, 240)}`); void dialog.dismiss() })
@@ -140,7 +142,7 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
       await (await chooser).setFiles({ name: localPath.split('/').at(-1), mimeType: 'text/markdown', buffer: Buffer.from(source) })
       let panel = await evidencePanel(page)
       await text(panel, config.title).waitFor()
-      same(await bounded(() => storedSource(page)), [source], 'Imported source bytes')
+      same(await bounded(() => storedSource(page)), [source])
       await page.waitForFunction(() => !!navigator.serviceWorker?.controller, undefined, { timeout: 60000 })
       await text(panel, 'Offline Studio').click()
       await role(panel, 'Install offline Studio').click()
@@ -151,27 +153,27 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
       await context.setOffline(true); offlineAt = performance.now(); mark('disconnected')
       equal(await page.evaluate(() => navigator.onLine), false)
       await Promise.all([page.waitForURL(url => url.searchParams.get('studio-offline') === revision), role(panel, 'Open verified offline workspace').click()])
-      equal(openCount, 1); ok(firstOpenAt > offlineAt)
+      equal(openCount, 1); ok(openedAt > offlineAt)
       await page.waitForFunction(() => document.readyState === 'complete' && !!navigator.serviceWorker?.controller, undefined, { timeout: 60000 })
-      same(await bounded(() => storedSource(page)), [source], 'Offline source bytes')
+      same(await bounded(() => storedSource(page)), [source])
       panel = await evidencePanel(page)
       await text(panel, config.title).waitFor()
       equal(await text(page, 'Canvas source unavailable').count(), 0)
       await label(panel, 'Authored example').selectOption(observed.id)
       const load = role(panel, 'Load labelled example')
       await press(load, page, true)
-      same(await detail(panel, 'Complete inspection record'), inspection)
+      same(await detail(panel, 'Complete inspection record'), record)
       await text(panel, '3 entities · 185 facts · 3 sources').waitFor()
       await press(role(panel, `Inspect original source for ${factId}`), page, true)
       same(await detail(panel, 'Exact original source and reference'), original)
       const sourceMs = Math.round(performance.now() - started); ok(sourceMs <= 300000)
       await label(panel, 'Explicit UTC time').fill(observed.atUtc)
       await press(role(panel, 'Run read-only query'), page, true)
-      same(await detail(panel, 'Complete typed result'), checked(await executeEvidence('aviation.replay', { ...args, entityId: observed.entityId, atUtc: observed.atUtc })))
+      same(await detail(panel, 'Complete typed result'), await replay(observed.atUtc))
       await press(role(panel, 'Next moment'), page, true)
       equal(await label(panel, 'Explicit UTC time').inputValue(), nextUtc)
-      same(await detail(panel, 'Complete typed result'), checked(await executeEvidence('aviation.replay', { ...args, entityId: observed.entityId, atUtc: nextUtc })))
-      const table = await tableProof(panel, page, inspection.facts.length)
+      same(await detail(panel, 'Complete typed result'), await replay(nextUtc))
+      const table = await tableProof(panel, page, record.facts.map(fact => fact.id))
       await press(role(panel, 'Prepare verifiable export'), page, true)
       const downloadReady = page.waitForEvent('download')
       await role(panel, 'Save evidence-pack.json', 'link').click()
@@ -182,7 +184,7 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
       await press(role(panel, 'Remove record'), page)
       await label(panel, 'Import local JSON or matching evidence pack').setInputFiles(savedPath)
       await page.waitForFunction(() => document.querySelector('[data-kg-evidence-status]')?.textContent?.startsWith('Accepted result is bound'))
-      same(await detail(panel, 'Complete inspection record'), inspection)
+      same(await detail(panel, 'Complete inspection record'), record)
       const routeStart = performance.now()
       await role(panel, 'Route comparison').click()
       await label(panel, 'Authored example').selectOption(route.id)
@@ -192,10 +194,10 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
       same(await detail(panel, 'Complete typed result'), routes)
       await role(panel, 'Limitations', 'heading').waitFor()
       const routeMs = Math.round(performance.now() - routeStart); ok(routeMs <= 120000)
-      same(await bounded(() => storedSource(page)), [source], 'Read-only source bytes')
+      same(await bounded(() => storedSource(page)), [source])
       equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false)
       same(errors, []); equal(offlineRemoteCount, 0)
-      equal(openCount, 1, 'No recovery navigation')
+      equal(openCount, 1)
       await page.screenshot({ path: join(output, `aviation-first-offline-${width}.png`), fullPage: true })
       const result = { revision, tree, width, sourcePath, sourceSha256: hash(source), firstInstalledNavigationOffline: true,
         installation, sourceMs, routeMs, table, sourceReference: '/facts/0', utc: [observed.atUtc, nextUtc],
@@ -205,7 +207,7 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
       results.push(result); await writeFile(join(output, `aviation-first-offline-${width}.json`), JSON.stringify(result, null, 2) + '\n')
     } catch (error) {
       failed = true
-      const failure = { revision, tree, width, sourcePath, sourceSha256: hash(source), error: String(error?.stack || error).slice(0, 2000), marks, errors, requests, remote, remoteCount, offlineRemoteCount, openCount, offlineAt, firstOpenAt }
+      const failure = { revision, tree, width, sourcePath, sourceSha256: hash(source), error: String(error?.stack || error).slice(0, 2000), marks, errors, requests, remote, remoteCount, offlineRemoteCount, openCount, offlineAt, openedAt }
       try { failure.browser = await bounded(() => page.evaluate(() => ({ url: location.href, online: navigator.onLine, text: document.body.innerText.slice(0, 16000), worker: navigator.serviceWorker?.controller?.scriptURL }))) } catch { failure.browser = 'unavailable' }
       await writeFile(join(output, `aviation-first-offline-${width}-failure.json`), JSON.stringify(failure, null, 2) + '\n').catch(() => {})
       if (page) await bounded(() => page.screenshot({ path: join(output, `aviation-first-offline-${width}-failure.png`), fullPage: true })).catch(() => {})
