@@ -25,7 +25,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-refresh-settlement"
 agent_id: "codex-root"
-source_revision: "b77ea1516e81a0abfae0b223bdae6fffe598db40"
+source_revision: "7ef185a3722e4d62c4e8bea08df8a7cd01730824"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -340,11 +340,11 @@ Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-read
 
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
-| ER1 | Core/CLI/stdio/WebMCP-builder: 74 passed; combined b639 affected CI: 10/10 selected partitions pass (`candidate-b639ba42-validation.json`) | Empty partitions are not full-suite parity; typecheck and browser checks pass. Spatial stage CPU 692,338 ms: cost regression retained |
-| ER2 | dcf provider job `111475128856` fails before offline install: 30 s disabled review, “Refreshing”, no browser/network errors. b77ea per-pass regression red→green; six related checks pass | `refresh-settlement-*.log`; source fix, not proven exclusive CI cause. New aggregate pending; cf1/38f2/6609 failures retained |
+| ER1 | Core/CLI/stdio/WebMCP-builder: 74 passed; 7ef185a3 CI: 10/10 selected partitions pass (`candidate-7ef185a3-validation.json`) | Empty partitions are not full-suite parity; typecheck and browser checks pass. Spatial CPU 519,633 ms; cost remains above 317,480 ms reference |
+| ER2 | dcf provider job `111475128856` fails before offline install: 30 s disabled review, “Refreshing”, no browser/network errors. b77ea per-pass regression red→green; six related checks pass | `refresh-settlement-*.log`; source fix, not proven exclusive CI cause. 7ef native gate passes; cf1/38f2/6609 failures retained |
 | ER3 | b639 native Save: 3 entities/185 facts/3 sources; 262,899 B, SHA-256 `09c6904154ef854656712de87c21511e630fca076c456c0ac7cfc58d473da729` | Saved bytes equal prior cf1/38f2 packs. 38f2 offline reimport retained; `evidence-pack-b639ba42.json` is the actual new download |
-| ER4 | b639 frozen inventory: 1,650 JS/MJS; maximum 495,688 B; 1,803 emitted files hash-bound | 38f2 initial closure: 37 files/3,430,192 B, SVG absent. Whole-host 150 kB remains open; human scope decision pending |
-| ER5 | b639 spatial 1024/390 import/apply/install/cold reload passes; 1,761 files/29.3 MiB verified | Actual aviation first offline-open fails at `async source read`; `aviation-cold-open-b639ba42-failed.json`. Later diagnostic reloads recover; no first-open pass. Sequence owns repair |
+| ER4 | 7ef frozen inventory: 1,659 JS/MJS; maximum 495,688 B; 1,812 files hash-bound | 38f2 initial closure: 37 files/3,430,192 B, SVG absent. Whole-host 150 kB remains open; human scope decision pending |
+| ER5 | 7ef spatial 1024/390 import/apply/install/cold reload passes; 1,767 files/29.3 MiB verified | Actual aviation first offline-open fails at `async source read`; `aviation-cold-open-b639ba42-failed.json`. Later diagnostic reloads recover; no first-open pass. Sequence owns repair |
 | ER6 | 38f2 390×844 offline + reduced-motion: import, UTC step, repeat route query, keyboard focus and zero horizontal overflow pass; 18 focus UI tests pass | `aviation-mobile-route-38f2aa043.json`; cf1 200% CSS zoom passes (not native browser zoom). Physical iPhone SKIP/KIV; startup blocked |
 | ER7 | fca5200 custom worker precedes ordinary precache with verified-pack authority. Six installed/uninstalled missing/corrupt-cache cases pass; installed cases emit zero worker fetches | Exact emitted-worker SHA `d6a542256e35b6138f88a41d46d605fb39e518f4b88ff12c13880e501f6c636c`; retained-build behavior proof, not full UI fidelity |
 | ER8 | Import regression and 14 related checks pass. Native offline bridge completes preparing→selecting→refreshing→applying→synchronizing→opening | Job fences prevent stale continuation/duplicate Launch fallback; no rollback of already dispatched lower-owner effects |
@@ -493,8 +493,8 @@ Unchecked finding families have no zero-count claim. Authoring coverage does not
 
 ER1–ER11 bind proof; AS1/AS2/AS5 and delivery require separate acceptance.
 
-b639 native 10/10 passed; dcf provider CI failed on import refresh (ER2). This successor fixes
-per-caller settlement; native demo import passes on Dev 5195, aggregate pending. Aviation first
+7ef native 10/10 passes after per-caller settlement repair; dcf provider import failure remains
+in ER2. Native demo import passes on Dev 5195. Aviation first
 offline-open remains unresolved; warm 390/1280 logpoints recover (ER5). Sequence owns startup repair.
 No unchanged full-CI retry or waiver. iPhone remains SKIP/KIV.
 Whole-host 150 kB awaits the human scope decision; no feature-only reinterpretation. Real-label,
