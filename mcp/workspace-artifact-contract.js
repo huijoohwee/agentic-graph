@@ -1,6 +1,10 @@
 export const WORKSPACE_ARTIFACT_PLAN_TOOL_NAME = "agentic-graph.workspace_artifact.plan";
 export const WORKSPACE_ARTIFACT_APPLY_TOOL_NAME = "agentic-graph.workspace_artifact.apply";
 
+export const WORKSPACE_PROJECT_OPERATIONS = Object.freeze([
+  "project-discover", "project-list", "project-inspect", "project-checkpoint", "project-import", "project-export",
+]);
+
 const OPERATION = Object.freeze([
   "inspect",
   "create-file",
@@ -9,6 +13,7 @@ const OPERATION = Object.freeze([
   "import-file",
   "export-file",
   "trash-file",
+  ...WORKSPACE_PROJECT_OPERATIONS,
 ]);
 
 const REQUEST_PROPERTIES = Object.freeze({
@@ -21,6 +26,17 @@ const REQUEST_PROPERTIES = Object.freeze({
   content: { type: "string", maxLength: 1048576 },
   expectedDigest: { type: "string", pattern: "^[0-9a-f]{64}$" },
   collisionPolicy: { type: "string", enum: ["fail", "verify-identical"], default: "fail" },
+  expectedVersion: { type: "string", pattern: "^(?:[0-9a-f]{40})?$" },
+  version: { type: "string", pattern: "^[0-9a-f]{40}$" },
+  message: { type: "string", maxLength: 200 },
+  files: {
+    type: "array", maxItems: 100,
+    items: { type: "object", additionalProperties: false, required: ["path", "content"], properties: {
+      path: { type: "string", minLength: 1, maxLength: 1024 },
+      content: { type: "string", maxLength: 262144 },
+      digest: { type: "string", pattern: "^[0-9a-f]{64}$" },
+    } },
+  },
 });
 
 const PLAN_INPUT_SCHEMA = Object.freeze({
@@ -65,7 +81,7 @@ const RESULT_SCHEMA = Object.freeze({
 export const WORKSPACE_ARTIFACT_TOOL_DEFINITIONS = Object.freeze([
   Object.freeze({
     name: WORKSPACE_ARTIFACT_PLAN_TOOL_NAME,
-    description: "Use this when an agent needs a read-only plan for one bounded configured-root workspace file or folder operation.",
+    description: "Plan a bounded configured-root file operation or zero-spend native-Git project operation. project-discover reports the actual store and supported routes.",
     inputSchema: PLAN_INPUT_SCHEMA,
     outputSchema: RESULT_SCHEMA,
     annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true },

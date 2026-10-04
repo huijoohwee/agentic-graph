@@ -111,8 +111,14 @@ const normalizeRequest = (args) => ({
 export const createWorkspaceArtifactRuntime = ({ rootDir, env = process.env } = {}) => {
   const workspaceRoots = parseRoots(env.AGENTIC_OS_WORKSPACE_ARTIFACT_ROOTS, [rootDir]);
   const externalRoots = parseRoots(env.AGENTIC_OS_WORKSPACE_ARTIFACT_EXTERNAL_ROOTS);
+  let projectRuntime;
+  const project = async () => {
+    projectRuntime ??= import("./workspace-project-runtime.js").then(({ createWorkspaceProjectRuntime }) => createWorkspaceProjectRuntime({ rootDir, env }));
+    return projectRuntime;
+  };
 
   const plan = async (args = {}) => {
+    if (String(args.operation).startsWith("project-")) return (await project()).plan(args);
     const request = normalizeRequest(args);
     if (!["inspect", "create-file", "create-folder", "update-file", "import-file", "export-file", "trash-file"].includes(request.operation)) throw new Error("Unsupported workspace artifact operation.");
     if (!["fail", "verify-identical"].includes(request.collisionPolicy)) throw new Error("Unsupported collision policy.");
@@ -182,6 +188,7 @@ export const createWorkspaceArtifactRuntime = ({ rootDir, env = process.env } = 
   };
 
   const apply = async (args = {}) => {
+    if (String(args.operation).startsWith("project-")) return (await project()).apply(args);
     const expectedPlanDigest = String(args.planDigest || "");
     const current = await plan(args);
     if (current.planDigest !== expectedPlanDigest) throw new Error("Plan digest is stale or does not match this request.");

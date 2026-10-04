@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local project workspace</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; background:#f5f7f4; color:#17251d; }
+    * { box-sizing:border-box; } body { margin:0; } header,main,footer { max-width:1100px; margin:auto; padding:20px; }
+    header { display:flex; justify-content:space-between; gap:16px; align-items:center; border-bottom:1px solid #cbd6ce; }
+    h1 { margin:0; font-size:1.4rem; } h2 { font-size:1rem; margin-top:0; } p { line-height:1.5; }
+    .badge { background:#dcefe2; border-radius:24px; padding:8px 12px; white-space:nowrap; font-size:.85rem; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; align-items:end; margin-bottom:12px; } label { display:grid; gap:5px; font-size:.9rem; }
+    input,select,textarea,button { font:inherit; color:inherit; border:1px solid #899d90; background:#fff; border-radius:6px; padding:10px; }
+    button { cursor:pointer; min-height:44px; } button.primary { color:white; background:#215d3b; border-color:#215d3b; } button:disabled { opacity:.5; cursor:default; }
+    input,select { min-width:0; max-width:100%; } .grow { flex:1; min-width:120px; } .layout { display:grid; grid-template-columns:230px 1fr; gap:16px; }
+    .card { border:1px solid #cbd6ce; background:#fff; border-radius:10px; padding:16px; min-width:0; }
+    #file-list { display:grid; gap:5px; max-height:350px; overflow:auto; margin-bottom:12px; } #file-list button { text-align:left; overflow-wrap:anywhere; }
+    #file-list button[aria-current=true] { border:2px solid #215d3b; background:#edf6ef; }
+    #editor { display:block; width:100%; min-height:340px; resize:vertical; font-family:ui-monospace,monospace; line-height:1.5; tab-size:2; }
+    #status { min-height:48px; padding:10px 0; overflow-wrap:anywhere; } #status[data-error=true] { color:#9e2323; }
+    #version-id { font-family:ui-monospace,monospace; overflow-wrap:anywhere; font-size:.8rem; } details { margin-top:16px; } pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:.8rem; }
+    footer { font-size:.85rem; color:#42594a; } .hidden { display:none; } :focus-visible { outline:3px solid #c99a12; outline-offset:3px; }
+    @media(max-width:640px) { header,main,footer { padding:14px; } header { align-items:start; } .layout { grid-template-columns:1fr; } #file-list { max-height:160px; } #editor { min-height:260px; } }
+    @media(prefers-color-scheme:dark) { :root { background:#142019; color:#e4ede7; } .card,input,select,textarea,button { background:#1e3025; } .badge { background:#274832; } #file-list button[aria-current=true] { background:#274832; } footer { color:#bfd0c4; } #status[data-error=true] { color:#ffadad; } }
+  </style>
+</head>
+<body>
+  <header><div><h1>Local project workspace</h1><p>Keep files. Save checkpoints. Carry your work.</p></div><span class="badge">Zero spend · offline</span></header>
+  <main>
+    <div class="row"><label class="grow">Saved projects<select id="projects"><option value="">Choose a project</option></select></label><button id="refresh">Refresh</button></div>
+    <form id="new-project" class="row"><label class="grow">New project name<input id="project-name" required maxlength="64" pattern="[a-z0-9][a-z0-9-]{0,63}" placeholder="my-project"></label><button type="submit">Create draft</button></form>
+    <div id="status" role="status" aria-live="polite">Connecting to the local store…</div>
+    <div class="layout">
+      <aside class="card"><h2 id="project-title">Files</h2><nav id="file-list" aria-label="Project files"></nav>
+        <form id="new-file"><label>File path<input id="file-path" placeholder="notes/readme.md" required maxlength="1024"></label><button type="submit">Add file</button></form>
+        <p id="draft-state">No project selected.</p><button id="delete-file" disabled>Remove selected file</button>
+      </aside>
+      <section class="card"><label id="editor-label">File contents<textarea id="editor" spellcheck="false" disabled aria-label="File contents"></textarea></label>
+        <div class="row"><label class="grow">Checkpoint message<input id="message" maxlength="200" placeholder="What changed?"></label><button id="checkpoint" class="primary" disabled>Save checkpoint</button></div>
+        <label>Inspect version<select id="versions" disabled><option value="">Current draft</option></select></label><p id="version-id"></p>
+        <button id="restore" disabled>Restore as new checkpoint</button>
+        <div class="row"><button id="export" disabled>Export project</button><button id="export-draft" disabled>Export draft</button><button id="import">Import project</button><input id="import-file" type="file" accept="application/json,.json" class="hidden"></div>
+      </section>
+    </div>
+    <details><summary>Commands and integrations</summary><p>Prepare a command: <code>/inspect #my-project @local-git</code>. Checkpoints and imports require an explicit apply.</p>
+      <form id="command-form" class="row"><label class="grow">Command<input id="command" placeholder="/discover #_ @local-git"></label><button type="submit">Prepare command</button></form>
+      <p id="webmcp">WebMCP: checking browser support.</p><pre id="command-result"></pre><pre id="discovery"></pre>
+    </details>
+  </main>
+  <footer>Files and versions stay in the configured local Git store. Unsaved drafts stay in this browser. Transfer exports manually between devices. Keep the local host running; no external account or provider is used.</footer>
+  <script type="module" src="/client.js"></script>
+</body>
+</html>
