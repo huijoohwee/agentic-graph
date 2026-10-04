@@ -50,6 +50,7 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
     try { bindSequenceSvg(hostRef.current, model, mermaid) }
     catch (error) { setRendered({ key: svgKey, svg: '', error: error instanceof Error ? error.message : 'Sequence binding failed' }) }
   }, [svg, model, mermaid, svgKey])
+  const eventsById = React.useMemo(() => new Map(events.map(event => [event.id, event])), [events])
   React.useEffect(() => {
     hostRef.current?.querySelector('[data-sequence-pulse]')?.remove()
     for (const participant of hostRef.current?.querySelectorAll('[data-sequence-participant]') || []) {
@@ -58,9 +59,10 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
     }
     for (const element of hostRef.current?.querySelectorAll('[data-sequence-event]') || []) {
       const id = element.getAttribute('data-sequence-event')
-      const event = events.find(entry => entry.id === id)
+      const event = id ? eventsById.get(id) : undefined
       const state = sequenceEventState(event, transport.playbackPosition)
       element.setAttribute('data-sequence-current', String(id === current?.id))
+      element.setAttribute('aria-pressed', String(id === current?.id))
       element.setAttribute('data-sequence-state', state)
       if (id !== current?.id || state !== 'active' || !event?.durationMs || window.matchMedia('(prefers-reduced-motion: reduce)').matches) continue
       const path = element.querySelector<SVGGeometryElement>('.sequence-message')
@@ -70,10 +72,10 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
       pulse.setAttribute('data-sequence-pulse', 'true'); pulse.setAttribute('cx', String(point.x)); pulse.setAttribute('cy', String(point.y)); pulse.setAttribute('r', '5'); pulse.setAttribute('fill', 'var(--kg-canvas-accent)'); pulse.setAttribute('pointer-events', 'none')
       element.append(pulse)
     }
-  }, [current?.id, svg, events, transport.playbackPosition])
+  }, [current?.id, svg, eventsById, transport.playbackPosition])
   useSvgSurfaceZoomRuntime({ active, rootRef, svgHostRef: hostRef, svgMarkup: svg, rendererId,
     graphData, graphDataRevision: sequence.revision, svgSurfaceKey: svgKey })
-  useTimelineTransportPlayback({ active: active && !model.diagnostics.length, playing: transport.playing,
+  useTimelineTransportPlayback({ active: active && Boolean(svg) && !model.diagnostics.length && duration > 0, playing: transport.playing,
     documentKey, position: transport.playbackPosition, max: duration, playbackRate: transport.playbackRate,
     unitsPerMs: 1, onPositionChange: transport.setTransportPlaybackPosition,
     onPlaybackEnd: () => transport.setTransportPlaying(false) })
@@ -81,6 +83,9 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
     if (!active) return
     useGraphStore.getState().setFloatingPanelView('sequence')
   }, [active])
+  React.useEffect(() => {
+    if (active && rendered.key === svgKey && rendered.error && transport.playing) transport.setTransportPlaying(false)
+  }, [active, rendered, svgKey, transport])
   const select = (target: EventTarget | null) => {
     const id = target instanceof Element ? target.closest('[data-sequence-event]')?.getAttribute('data-sequence-event') : null
     if (id) sequence.selectEvent(id)
@@ -91,6 +96,6 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
     </div>
     {model.diagnostics.map((d, index) => <p key={index} role="alert">Line {d.line}: {d.message}</p>)}
     {rendered.key === svgKey && rendered.error && <p role="alert">{rendered.error}</p>}
-    <div ref={hostRef} className="sequence-svg-host" onClick={event => select(event.target)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(event.target) } }} dangerouslySetInnerHTML={{ __html: svg }} />
+    <div ref={hostRef} className="sequence-svg-host" data-notation-theme={mermaid ? mermaidTheme : undefined} onClick={event => select(event.target)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(event.target) } }} dangerouslySetInnerHTML={{ __html: svg }} />
   </div>
 }

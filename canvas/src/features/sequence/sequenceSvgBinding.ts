@@ -8,6 +8,12 @@ export function bindSequenceSvg(host: HTMLElement, model: SequenceModel, mermaid
     if (svg.querySelectorAll('[data-sequence-event]').length !== model.events.length) throw new Error('Native sequence message count changed')
     return
   }
+  svg.setAttribute('role', 'group')
+  for (const element of svg.querySelectorAll('[data-et="participant"][data-id], [data-et="life-line"][data-id]')) {
+    const id = element.getAttribute('data-id')!
+    if (!model.participants.some(person => person.id === id)) throw new Error('Sequence participant identity does not match authored source')
+    element.setAttribute('data-sequence-participant', id)
+  }
   const lines = [...svg.querySelectorAll<SVGGraphicsElement>('.messageLine0, .messageLine1')]
   const texts = [...svg.querySelectorAll<SVGGraphicsElement>('.messageText')]
   const numbers = [...svg.querySelectorAll<SVGGraphicsElement>('.sequenceNumber')]

@@ -1,6 +1,5 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import { parseSequence, sequencePlaybackEvents, sequenceEventAt, sequenceTimedEvents, sequenceEventAtTime, SEQUENCE_LIMITS } from '../features/sequence/sequenceModel'
 import { sequenceNativeSvg } from '../features/sequence/sequenceNativeSvg'
 import { sequenceTopologySvg } from '../features/sequence/sequenceTopologySvg'
@@ -18,26 +17,24 @@ import { initJsdomHarness } from '../tests/lib/jsdomHarness'
 import { useGraphStore } from '../hooks/useGraphStore'
 import { useSequenceDocument } from '../features/sequence/useSequenceDocument'
 
-const demo = readFileSync(new URL('../features/sequence/fixtures/demo.md', import.meta.url), 'utf8')
-const code = demo.match(/```mermaid\n([\s\S]*?)\n```/)![1]!
-
-test('fidelity fixture keeps actors, aliases, eight messages, activations and both alternatives', () => {
-  const model = parseSequence(code)
+test('authored alternatives retain actors, aliases, activations and distinct outcomes', () => {
+  const model = parseSequence(['sequenceDiagram', 'actor Reader', 'participant Index as Local index',
+    'Reader->>Index: Find entry', 'activate Index', 'alt Available', 'Index-->>Reader: Entry',
+    'else Missing', 'Index-->>Reader: Absent', 'Reader-)Index: Refresh index', 'end', 'deactivate Index'].join('\n'))
   assert.deepEqual(model.diagnostics, [])
-  assert.equal(model.participants.length, 4)
+  assert.equal(model.participants.length, 2)
   assert.equal(model.participants[0]!.actor, true)
-  assert.equal(model.participants[1]!.label, 'Web Shop')
-  assert.equal(model.events.length, 8)
-  assert.equal(model.activations.length, 2)
-  assert.deepEqual(model.branches.map(b => b.label), ['Payment approved', 'Payment declined'])
-  const approved = sequencePlaybackEvents(model)
-  const declinedBranch = model.branches[1]!
-  const declined = sequencePlaybackEvents(model, { [declinedBranch.groupId]: declinedBranch.id })
-  assert.equal(approved.length, 6); assert.equal(declined.length, 6)
-  assert.deepEqual(approved.map(e => e.ordinal), [1, 2, 3, 4, 5, 6])
-  assert.deepEqual(declined.map(e => e.ordinal), [1, 2, 3, 4, 7, 8])
-  assert.equal(sequenceEventAt(approved, 6)?.ordinal, 6)
-  assert.equal(sequenceEventAt(declined, 4.9)?.ordinal, 7)
+  assert.equal(model.participants[1]!.label, 'Local index')
+  assert.equal(model.events.length, 4)
+  assert.equal(model.activations.length, 1)
+  assert.deepEqual(model.branches.map(b => b.label), ['Available', 'Missing'])
+  const available = sequencePlaybackEvents(model)
+  const missingBranch = model.branches[1]!
+  const missing = sequencePlaybackEvents(model, { [missingBranch.groupId]: missingBranch.id })
+  assert.deepEqual(available.map(e => e.ordinal), [1, 2])
+  assert.deepEqual(missing.map(e => e.ordinal), [1, 3, 4])
+  assert.equal(sequenceEventAt(available, 10)?.ordinal, 2)
+  assert.equal(sequenceEventAt(missing, 1.9)?.ordinal, 3)
 })
 
 test('source identity and duplicate messages remain distinct through native rendering and graph projection', () => {
@@ -72,6 +69,33 @@ test('unsupported, hostile, malformed and oversized inputs fail loudly and never
   const escaped = sequenceNativeSvg(parseSequence('sequenceDiagram\nA->>B: <script>alert(1)</script>'))
   assert.ok(!escaped.includes('<script>'))
   assert.ok(escaped.includes('&lt;script&gt;'))
+})
+
+test('parser stops bounded allocations and diagnostic floods while retaining authored bytes', () => {
+  const invalid = 'sequenceDiagram\n' + '?\n'.repeat(32000)
+  const rejected = parseSequence(invalid)
+  assert.equal(rejected.code, invalid)
+  assert.ok(rejected.diagnostics.length <= 32)
+  assert.match(rejected.diagnostics.at(-1)!.message, /remaining source was not parsed/)
+  assert.equal(rejected.diagnostics[0]!.line, 2)
+  assert.deepEqual(sequencePlaybackEvents(rejected), [])
+  const cases = [
+    { lines: Array.from({ length: 40 }, (_, i) => `participant P${i}`), field: 'participants', cap: 32, message: /Participant limit/ },
+    { lines: Array.from({ length: 300 }, () => 'A->>B: Repeat'), field: 'events', cap: 200, message: /Message limit/ },
+    { lines: Array.from({ length: 300 }, () => 'alt Choice\nend'), field: 'branches', cap: 200, message: /Branch limit/ },
+    { lines: ['participant A', ...Array.from({ length: 300 }, () => 'activate A\ndeactivate A')], field: 'activations', cap: 200, message: /Activation limit/ },
+  ] as const
+  for (const entry of cases) {
+    const source = ['sequenceDiagram', ...entry.lines].join('\n')
+    const model = parseSequence(source)
+    assert.equal(model.code, source)
+    assert.ok(model[entry.field].length <= entry.cap)
+    assert.ok(model.diagnostics.some(diagnostic => entry.message.test(diagnostic.message)))
+    assert.deepEqual(sequencePlaybackEvents(model), [])
+  }
+  const boundary = parseSequence('sequenceDiagram\n' + Array.from({ length: 200 }, () => 'A->>B: Repeat').join('\n'))
+  assert.deepEqual(boundary.diagnostics, [])
+  assert.equal(sequencePlaybackEvents(boundary).length, 200)
 })
 
 test('SVG mapping binds repeated labels by exact authored occurrence and rejects incomplete output', () => {
@@ -216,5 +240,59 @@ test('marker selection and branch/source changes fence old transport callbacks',
     assert.equal(sequence!.current!.line, 3)
     await act(async () => { useGraphStore.setState({ markdownDocumentText: '---\nmermaid: |\n  sequenceDiagram\n  C->>D: Frontmatter source\n---', markdownDocumentApplyRevision: 102 }) })
     assert.equal(sequence!.current!.line, 4)
+  } finally { await act(async () => { root.unmount() }); useGraphStore.setState(initialState); env.restore() }
+})
+
+test('identical-byte document switches fence prior selections, outcomes and transport callbacks', async () => {
+  const env = initJsdomHarness('<div id="root"></div>')
+  const initialState = useGraphStore.getState()
+  let sequence: ReturnType<typeof useSequenceDocument>
+  const Probe = () => { sequence = useSequenceDocument(); return null }
+  const root = createRoot(env.dom.window.document.getElementById('root')!)
+  try {
+    useGraphStore.setState({ markdownDocumentText: '```mermaid\nsequenceDiagram\nA->>B: Read\nalt Found\nB-->>A: Entry\nelse Missing\nB-->>A: Retry\nend\n```',
+      markdownDocumentSourceUrl: '', markdownTokensPath: '', markdownDocumentName: 'first.md', markdownDocumentApplyRevision: 200 })
+    await act(async () => { root.render(React.createElement(Probe)) })
+    for (const update of [{ markdownDocumentName: 'second.md' }, { markdownTokensPath: '/third.md' }, { markdownDocumentSourceUrl: 'local:fourth' }]) {
+      const stale = sequence!
+      const alternate = stale.model.branches[1]!
+      await act(async () => { useGraphStore.setState(update) })
+      const key = sequence!.documentKey
+      let writes = 0
+      const unsubscribe = useGraphStore.subscribe((state, previous) => {
+        if (state.timelineTransportDocumentKey !== previous.timelineTransportDocumentKey
+          || state.timelineTransportPosition !== previous.timelineTransportPosition
+          || state.timelineTransportPlaying !== previous.timelineTransportPlaying) writes++
+      })
+      try {
+        await act(async () => {
+          stale.transport.setTransportPlaying(true)
+          stale.transport.setTransportPlaybackPosition(800)
+          stale.chooseBranch(alternate.groupId, alternate.id)
+          stale.selectEvent(stale.events[1]!.id)
+        })
+      } finally { unsubscribe() }
+      assert.equal(writes, 0, 'old document callbacks cannot transiently steal the active transport')
+      assert.equal(sequence!.documentKey, key)
+      assert.equal(sequence!.transport.playbackPosition, 0)
+      assert.equal(sequence!.transport.playing, false)
+      assert.equal(sequence!.events[1]!.label, 'Entry')
+    }
+  } finally { await act(async () => { root.unmount() }); useGraphStore.setState(initialState); env.restore() }
+})
+
+test('frontmatter source locations follow the owning scalar instead of earlier text', async () => {
+  const env = initJsdomHarness('<div id="root"></div>')
+  const initialState = useGraphStore.getState()
+  let sequence: ReturnType<typeof useSequenceDocument>
+  const Probe = () => { sequence = useSequenceDocument(); return null }
+  const root = createRoot(env.dom.window.document.getElementById('root')!)
+  try {
+    useGraphStore.setState({ markdownDocumentText: '---\ntitle: sequenceDiagram review\ndescription: |\n  sequenceDiagram\nmermaid: |-\n\n  sequenceDiagram\n  A->>B: Actual source\n  unsupported\n---', markdownDocumentApplyRevision: 300 })
+    await act(async () => { root.render(React.createElement(Probe)) })
+    assert.equal(sequence!.model.events[0]!.line, 8)
+    assert.equal(sequence!.model.diagnostics[0]!.line, 9)
+    await act(async () => { useGraphStore.setState({ markdownDocumentText: '---\nmermaid: "sequenceDiagram\\nA->>B: Inline source"\n---', markdownDocumentApplyRevision: 301 }) })
+    assert.equal(sequence!.model.events[0]!.line, 2)
   } finally { await act(async () => { root.unmount() }); useGraphStore.setState(initialState); env.restore() }
 })
