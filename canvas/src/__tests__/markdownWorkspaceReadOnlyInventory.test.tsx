@@ -7,6 +7,7 @@ import { useMarkdownWorkspaceBootstrapState } from '@/lib/markdown-workspace-run
 import { useMarkdownWorkspaceExplorerState } from '@/lib/markdown-workspace-runtime/useMarkdownWorkspaceExplorerState'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
+import { loadWorkspaceSourceIndex, setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import { notifyWorkspaceFsChanged, runWorkspaceFsChangedBatch } from '@/features/workspace-fs/workspaceFsEvents'
 import { writeWorkspaceAutoRefreshEnabledSetting, writeWorkspaceSeedSyncEnabledSetting } from '@/lib/workspace/workspaceStoreSyncSettings'
 import { renderImportInventory } from '@/features/workspace-fs/importInventory'
@@ -129,7 +130,8 @@ async function testMutationRefreshPreservesExplicitReconciliation() {
   const originalSources = useGraphStore.getState().sourceFiles
   useGraphStore.getState().setSourceFiles([])
   let reads = 0, seeds = 0, fail = false
-  let heldRead: Promise<void> | null = null, releaseRead: (() => void) | undefined
+  let heldRead: Promise<void> | null = null, releaseRead: (() => void) | undefined, releaseFirstRead: (() => void) | undefined
+  const priorQueuedSource = loadWorkspaceSourceIndex()['/docs/queued.md'] || null
   let entries: WorkspaceEntry[] = [
     { path: '/', parentPath: null, name: '', kind: 'folder', updatedAtMs: 1 },
     { path: '/docs', parentPath: '/', name: 'docs', kind: 'folder', updatedAtMs: 1 },
@@ -138,10 +140,10 @@ async function testMutationRefreshPreservesExplicitReconciliation() {
   fs.ensureSeed = async () => { seeds++; return false }
   fs.listEntries = async () => {
     reads++
-    const held = heldRead; heldRead = null
+    const snapshot = entries, held = heldRead; heldRead = null
     if (held) await held
     if (fail) throw Error('Inventory unavailable')
-    return entries
+    return snapshot
   }
   let refresh: ReturnType<typeof useMarkdownWorkspaceExplorerState>['refresh'] | undefined
   const statuses: string[] = []
@@ -197,10 +199,30 @@ async function testMutationRefreshPreservesExplicitReconciliation() {
       notifyWorkspaceFsChanged({ op: 'createFile', path: '/docs/queued.md' })
     })
     await waitFor(() => reads > beforeQueuedReads && heldRead === null)
+    entries = [...entries, { path: '/docs/queued.md', parentPath: '/docs', name: 'queued.md', kind: 'file', text: '# Queued import', updatedAtMs: 3 }]
+    releaseFirstRead = releaseRead
+    heldRead = new Promise(resolve => { releaseRead = resolve })
+    let settled = false
+    let joined: Promise<Awaited<ReturnType<NonNullable<typeof refresh>>>[]> | undefined
     await act(async () => {
-      await refresh!()
-      await refresh!({ silent: true, reconcileSeed: false })
+      const explicit = refresh!().then(snapshot => { settled = true; return snapshot })
+      const local = refresh!({ silent: true, reconcileSeed: false })
+      joined = Promise.all([explicit, local])
+      await Promise.resolve(); await Promise.resolve()
+      assert.equal(settled, false, 'A queued import refresh must await inventory admission, not return the old snapshot')
+      releaseFirstRead!()
+    })
+    await waitFor(() => seeds === 2 && heldRead === null)
+    assert.equal(settled, false, 'Finishing the older pass cannot settle callers awaiting the queued import pass')
+    const source = { kind: 'local' as const, originalName: 'queued.md' }
+    setWorkspaceEntrySource('/docs/queued.md', source)
+    await act(async () => {
       releaseRead!()
+      for (const snapshot of await joined!) {
+        assert.ok(snapshot.entries.some(entry => entry.path === '/docs/queued.md' && entry.text === '# Queued import'),
+          'Every joined caller receives the completed inventory including the new import')
+        assert.deepEqual(snapshot.sourcesByPath['/docs/queued.md'], source, 'Fresh entries retain their paired source metadata')
+      }
     })
     await waitFor(() => isIdle() && seeds === 2 && statuses.length === 2)
     assert.equal(seeds, 2, 'Queued full refresh survives a subsequent local refresh')
@@ -212,7 +234,8 @@ async function testMutationRefreshPreservesExplicitReconciliation() {
     await act(async () => { await refresh!() })
     assert.match(container.textContent || '', /# Changed/)
   } finally {
-    releaseRead?.()
+    releaseFirstRead?.(); releaseRead?.()
+    setWorkspaceEntrySource('/docs/queued.md', priorQueuedSource)
     await act(async () => { root.unmount() })
     try {
       await waitFor(isIdle)

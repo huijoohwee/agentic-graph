@@ -87,7 +87,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
   folderModeContract: FolderModeContract
 }) {
   const workspaceFsRef = React.useRef<Awaited<ReturnType<typeof getWorkspaceFs>> | null>(null)
-  const refreshInFlightRef = React.useRef(false)
+  const refreshInFlightRef = React.useRef<Promise<WorkspaceRefreshSnapshot> | null>(null)
   const refreshQueuedRef = React.useRef<ExplorerRefreshOptions | null>(null)
   const workspaceRefreshDeferredRef = React.useRef(false)
   const seedSyncInFlightRef = React.useRef(false)
@@ -269,25 +269,25 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     }
   }, [args.readOnly, getFs, scheduleApplyComposedFromSourceFiles])
 
-  const refresh = React.useCallback(async (opts?: ExplorerRefreshOptions): Promise<WorkspaceRefreshSnapshot> => {
-    // Coalesce requests without letting local mutation reads downgrade an explicit refresh.
+  const refresh = React.useCallback((opts?: ExplorerRefreshOptions): Promise<WorkspaceRefreshSnapshot> => {
+    // Join the completed inventory; queued mutations cannot downgrade explicit reconciliation.
     refreshQueuedRef.current = {
       silent: !!opts?.silent && (refreshQueuedRef.current?.silent ?? true),
       reconcileSeed: opts?.reconcileSeed !== false || refreshQueuedRef.current?.reconcileSeed === true,
     }
-    if (refreshInFlightRef.current) return buildWorkspaceRefreshSnapshot({ entries: runtimeRef.current.entries })
-    refreshInFlightRef.current = true
-    let snapshot = buildWorkspaceRefreshSnapshot({ entries: runtimeRef.current.entries })
-    try {
-      do {
-        const next = refreshQueuedRef.current
-        refreshQueuedRef.current = null
-        snapshot = await refreshOnce(next)
-      } while (refreshQueuedRef.current)
-      return snapshot
-    } finally {
-      refreshInFlightRef.current = false
-    }
+    if (refreshInFlightRef.current) return refreshInFlightRef.current
+    refreshInFlightRef.current = Promise.resolve().then(async () => {
+      let snapshot = buildWorkspaceRefreshSnapshot({ entries: runtimeRef.current.entries })
+      try {
+        do {
+          const next = refreshQueuedRef.current
+          refreshQueuedRef.current = null
+          snapshot = await refreshOnce(next)
+        } while (refreshQueuedRef.current)
+        return snapshot
+      } finally { refreshInFlightRef.current = null }
+    })
+    return refreshInFlightRef.current
   }, [refreshOnce])
 
   React.useEffect(() => {
