@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.41"
-prd_revision: "1.3.41"
-tad_revision: "1.3.41"
-adr_revision: "1.3.41"
-mvp_revision: "1.3.41"
-gtm_revision: "1.3.41"
+version: "1.3.42"
+prd_revision: "1.3.42"
+tad_revision: "1.3.42"
+adr_revision: "1.3.42"
+mvp_revision: "1.3.42"
+gtm_revision: "1.3.42"
 date: "2026-10-04"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -16,11 +16,11 @@ delivered_rung: "undocumented"
 lane: "implementation"
 universal_scope: true
 frontmatter_contract: "required"
-worktree_id: "device-0232231d4a19--sequence-flow-planning"
-agent_id: "codex-sequence-flow-implementation"
+worktree_id: "device-0232231d4a19--sequence-flow-docs"
+agent_id: "codex-sequence-flow-docs"
 guideline_revision: "3.4.0"
 guideline_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
-reviewed_source_revision: "40d33424a5a2c76521f011ba578889b9a2470012"
+reviewed_source_revision: "24f0614390affce87268d74e80a93791a73c30ca"
 load_policy: "on-demand"
 canvas_render_mode: "2d"
 canvas_2d_renderer: "d3"
@@ -31,55 +31,30 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.40**. The user authorized implementation
-and live UI verification on 2026-10-02. Work extends the existing workspace through
-an admitted successor lane. Remote service invocation, production mirrors, deployment
-and payment remain separate effects with no new grant here.
-Labelled reference implementation sections bind the portable capability to source.
+All five roles join **SEQUENCE-FLOW-001@1.3.42**. This 2026-10-04 increment
+updates the existing specification and names the existing payment demonstration
+`order-payment-sequence-diagram-demo.md`. It refreshes code grounding and the review
+script; no runtime feature expansion is included. Earlier implementation and acceptance
+records remain historical evidence below, with their original limitations.
 
-Context: requested sequence views, inspector and Timeline enhancement. Intent:
-inspect source in temporal/topology views without losing the current event.
-Directive: implement owner extensions and verify their VCCs. Role: implementation
-maintainer. Action/SVO: maintainer / implements / local authored sequence rehearsal.
-Outcome: source, fidelity fixture, checks, and explicit remaining integration conditions.
+Context: an existing sequence view and shared Timeline shown in the supplied screenshot.
+Intent: explain ordered interactions and branch-specific playback using existing owners.
+Directive: update current capability claims, preserve authored messages and event identity,
+and distinguish source evidence from live acceptance. Role/action/outcome: documentation
+maintainer / reconciles / a source-grounded specification and runnable local demo.
+Invocation: `/change #sequence-flow-docs @codex-sequence-flow-docs`.
 
-Use native owners and original product UI. The latest explicit user instruction
-authorizes the supplied four-participant sequence content in demo.md for fidelity.
-No reference-site branding, UI, code, assets, identity, link or hosted service is adopted.
-No dependency or provenance is taken from the restricted references.
+Use native owners and original product UI. Preserve the existing four-participant source
+already present in this repository and the supplied screenshot. No outside implementation,
+branding, assets, hosted rendering service or runtime dependency enters this change.
 
-The implementation sprint estimates four active hours with a four-hour review checkpoint,
-120 KiB source delta, 29 changed runtime/test/owner modules, one demo and one planning
-update. Every authored module stays below 600 lines; selected lazy chunks must remain
-below 500 kB. No new paid service, dependency purchase or model-serving tokens are
-permitted. Three refinement rounds bind this slice. External owner/provider waits have
-no ETA: resume on native path admission or a changed required-check receipt.
-The module cap includes the exhaustive renderer title map and two shared feature modules
-for the requested connections projection and presentation state. The 2026-10-02 enhancement
-increment binds 40 active minutes, eight changed modules and 60 KiB source changes; no new
-dependency is added. Native Sequence Diagram defaults to Connections and offers Lifelines.
-BottomPanel Timeline uses the shared ruler, participant clips and numbered event marks;
-the inspector and transport context provide aliases, protocol, source line and state.
-The missing-menu fix pass binds 30 active minutes, seven wiring modules and 20 KiB changes,
-plus this required planning update. Native owner closeout and seven-path readmission passed;
-the checked wiring is applied. Live findings required corrections in five already-admitted
-feature modules and the existing sequence test, within the original 29-module/120 KiB cap.
-The final source handoff pass estimates 15 active minutes with a 25-minute checkpoint,
-no runtime expansion, one evidence update ≤20 KiB and no serving tokens/spend.
-Native publication committed 829ea93baf2a2e92d1e4800a4adbbabe04225a73, then
-refused its stale protected base. A source-preserving merge of protected main produced
-e6d027a9a7247d69f6a49818bebb6c41ff5bfce8 with no conflicts. Native readmission
-passed at that exact head; that earlier checkpoint preceded remote publication.
-The published implementation is PR #1490 at 59189ac76aac7e2c21d680702c4a8f498076be44.
-Its Integration Gate failed on the restricted seed inventory. Native successor
-`sequence-timeline-consolidation` retains that exact predecessor and admits the user's
-duplicate-Timeline removal plus fixture relocation. This increment estimates 35 active
-minutes, with a 50-minute checkpoint, seven changed paths and a 24 KiB delta cap; $0,
-no added dependency. Required CI and protected integration remain separate effects.
-The shared-chrome successor retains PR #1491 at 43e833856ddf4b8c1eb8972b002c54760c5b5cd7.
-This pass binds 40 active minutes, 17 paths (ten runtime owners, five existing contracts,
-one CI helper and this plan), an 80 KiB patch cap and $0. Contract updates account for
-scope growth; existing oversized files have no line growth. No dependency is added.
+Sprint: 20 active minutes estimated, 30-minute checkpoint, four reserved paths,
+20 KiB added-byte cap, zero new runtime modules/dependencies/always-load bytes and $0
+incremental spend. The existing specification is kept below 600 lines and each file
+below 500 kB. Rename the fixture at its current owner, update its one test reader and
+this document; do not introduce a second seed or compatibility copy. External CI/review
+waits have no ETA; recheck on a changed exact-candidate status. Publication, integration,
+deployment, payment and outreach each retain their own authority and evidence boundary.
 
 ## PRD
 
@@ -89,17 +64,19 @@ User: developer/facilitator explaining interactions. Buyer hypothesis: team lead
 commissioning a reviewed handoff. Beneficiary: reviewer identifying order, async
 work and recovery. Economic pain and paid demand are unverified.
 
-The 2026-10-02 request is a feature ticket. The assumed workaround is reading source
-alongside topology; its frequency and time cost are unmeasured.
+The original feature ticket established the requested capability; the current request is
+a documentation/demo refinement. The assumed workaround is reading source alongside
+topology; its frequency and time cost remain unmeasured.
 
 | Pain / priority | Hook → break → fix → close | Evidence and minimum resource/value note |
 |---|---|---|
-| P1 / first | Open an interaction → no dedicated sequence choice → add two synchronized sequence views → inspect each message in order. | Requested capability supported by the ticket; difficulty and WTP unvalidated. Reuse the source and renderer selection; add only the missing projection. |
-| P2 / second | Select a connection → context is dispersed → use the existing floating inspector for ordered steps and details → identify sender, receiver and current event. | FloatingPanel request supported by the ticket; explanatory benefit unvalidated. Extend the panel owner. |
-| P3 / third | Rehearse a flow → temporal context is incomplete → enhance the existing bottom Timeline → pause, scrub and return to the same event. | Timeline enhancement supported by the ticket; baseline loss/rework unmeasured. Reuse the playhead and controls. |
+| P1 / first | Open an interaction → discover its existing sequence choices → compare Connections/Lifelines and notation → inspect each message in order. | Choices and projections exist at the reviewed source. Improve the guided demo; difficulty and WTP remain unvalidated. |
+| P2 / second | Select a numbered connection → need exact message context → use the existing sequence inspector → identify sender, receiver and current event. | FloatingPanel request supported by the ticket; explanatory benefit unvalidated. Extend the panel owner. |
+| P3 / third | Rehearse a flow → need temporal context → use the existing shared Timeline → pause, scrub and return to the same event. | Timeline enhancement supported by the ticket; baseline loss/rework unmeasured. Reuse the playhead and controls. |
 
-Rank P1–P3 provisionally by dependency and proximity to built capability. There is
-no evidenced WTP ranking yet. A paid pilot may change that order before code work.
+Rank P1–P3 provisionally by buyer pain and proximity to existing capability. The smallest
+next solution is the named, reviewable demo, then remaining VCC proof. There is no
+evidenced WTP ranking; a consented $1 offer can test it before further feature work.
 
 ### Journey and user stories
 
@@ -162,14 +139,14 @@ R1 first. Revisit inputs after discovery; ordinal estimates prove no economic re
 | Component | Single responsibility / origin | Interface / derived VCC |
 |---|---|---|
 | C1 view selection | Extend the existing renderer registry and its invocation enum. | Existing option → selected surface; V1, V8 |
-| C2 sequence semantics | New sequence-specific extension within the existing parser/domain owner; normalize and evaluate authored events. | Source/revision → immutable plan or diagnostics; plan/time → event state; V1–V5, V9 |
+| C2 sequence semantics | Existing sequence-specific domain owner normalizes and evaluates authored events. | Source/revision → immutable plan or diagnostics; plan/time → event state; V1–V5, V9 |
 | C3 projections | Extend the canvas host with lazy native and notation-backed adapters consuming C2. | Plan/current state → lifelines or topology overlay; V1, V5–V7, V9 |
 | C4 inspector | Extend the existing floating-panel router with sequence details. | Plan/event selection → ordered list and source-linked details; V2, V6, V7 |
 | C5 Timeline | Extend the bottom Timeline routing and reuse its transport/clock. | Event tracks ↔ shared position/selection; V3, V4, V6, V7, V9 |
 | C6 persistence | Reuse the source workspace and settings owners. | Authored source → save/reopen readback; V4, V6 |
 | C7 tool adapter | Extend existing view-selection tooling, with no second discovery registry. | Same option input → same C1 handler; V8 |
 
-Proposed C2 contract: a plan has document ID, diagram ID, source revision, participants,
+Implemented C2 contract, with acceptance constraints below: a plan has document ID, diagram ID, source revision, participants,
 events, branch membership, diagnostics and source lines. Explicit dependency-based
 parallel timing remains outside this bounded grammar. Participants
 have stable IDs/labels. Events have stable IDs, participant IDs, optional graph edge
@@ -215,26 +192,25 @@ preferences stay in the existing settings owner. No automatic source rewriting.
 
 ### Reference implementation — exact codebase grounding
 
-Source rows bind to **agentic-graph `40d33424a5a2c76521f011ba578889b9a2470012`**;
-agentic-os workflow source: `4530415d3c64609392e6938b1ea01429b30fa536`;
-huijoohwee.github.io authoring guideline 3.4.0:
-`82835ac37d524643faa6b9703cb077ea9474ab15`. Refresh affected source joins on drift.
-These observations prove no runtime/deployment result and change no dependency pin.
+Current source rows bind to **agentic-graph `24f0614390affce87268d74e80a93791a73c30ca`**.
+The inspected `agentic-os` workflow checkout is `445dedbeb34693fdf5e7f92fb8aed785493096a1`;
+Graph's package manifest still pins `1d3e803f9c28c33ab41f3bf6755e760426e1c956`.
+These are separate identities; this increment changes neither pin. Earlier observations
+at `40d33424a5a2c76521f011ba578889b9a2470012` remain in the historical evidence section.
 
-| C / source owner and inspected symbol | Confirmed capability / required delta | Existing check starting point |
+| C / source owner and inspected symbol | Confirmed current behavior / remaining condition | Check starting point |
 |---|---|---|
-| C1 [config.render.ts](../../canvas/src/lib/config.render.ts), `CANVAS_2D_RENDERERS`; [Canvas2dRendererSelect.tsx](../../canvas/src/components/toolbar/Canvas2dRendererSelect.tsx), `Canvas2dRendererSelect` | Existing renderer choices and hierarchical menu. Add `sequence` / `sequenceMermaid` and lazy surface mapping. | `canvasViewDisplayControls.test.ts`, `canvasViewWebMcpTools.test.ts` |
-| C2 [markdownJsonLdMermaidParser.ts](../../canvas/src/features/parsers/markdownJsonLdMermaidParser.ts), `parseMermaidFrontmatter` | Explicitly returns unless kind is flowchart. A sequence event model and projection are confirmed gaps. Extend parser composition, retain flowchart behavior. | `mermaidFrontmatterRender.test.ts`; new sequence cases required |
-| C2 [orchestratorTraversal.ts](../../canvas/src/features/panels/utils/orchestratorTraversal.ts), `TraversalSummaryMembership` | Existing edge-step membership can annotate topology. Traversal order is not a distributed event log; do not replace it or infer responses. | `graphTraversalFloatingPanel.test.ts` |
-| C3 [CanvasViewport.tsx](../../canvas/src/components/CanvasViewport.tsx), `React.lazy` adapters; [CanvasViewContainer.tsx](../../canvas/src/components/CanvasViewContainer.tsx), `CanvasViewContainer` | Native lazy canvas host and common full/inset sizing. Add two adapters under the same host. | `canvasViewportHeavyRuntimeIntentGate.test.ts` |
-| C3 [mermaidRuntime.ts](../../canvas/src/lib/mermaid/mermaidRuntime.ts), `loadMermaidRuntimeApi`, `renderMermaidWithRuntime`; [InteractiveMermaidDiagram.tsx](../../canvas/src/lib/diagram/InteractiveMermaidDiagram.tsx) | Existing dynamic package import, strict default config and generic SVG interaction; sequence-specific event mapping unproved. Reuse pinned package, never a hosted editor/render endpoint. | `mermaidRuntimeCleanupSsot.test.ts`, `mermaidFidelityRuntimeSafe.test.ts` |
-| C4 [ToolbarToolMenu.impl.tsx](../../canvas/src/lib/toolbar/ToolbarToolMenu.impl.tsx), lazy diagram panels | Existing FloatingPanel routing, pinning and presentation. Add a lazy sequence view with summary, actor list, step list and current event detail. | `panelSemanticContract.test.ts` |
-| C5 [TimelineBottomPanelView.tsx](../../canvas/src/features/gitgraph/TimelineBottomPanelView.tsx), `TimelineBottomPanelView` | Existing Media/XR/learning routing. Add sequence-document routing before unrelated fallback; preserve their owners. | `mermaidGanttPanelRouting.test.ts`; sequence routing cases required |
-| C5 [timelineTransport.ts](../../canvas/src/components/timeline/timelineTransport.ts), `useTimelineDocumentTransportController`, `startTimelineTransportPlayback`; [uiSliceInitialState.ts](../../canvas/src/hooks/store/uiSliceInitialState.ts), `setTimelineTransportState` | One document-scoped position, rates and cancellable RAF driver; document change resets state. Extend revision fencing and sequence binding; do not add a second clock. | `timelineTransportResponsiveContract.test.ts`, `timelineTransportEditModeStore.test.ts` |
-| C5 [VideoSequenceTimelineRuler.tsx](../../canvas/src/components/timeline/VideoSequenceTimelineRuler.tsx), shared time-axis clips/marks and [SequenceTimelineRuler.tsx](../../canvas/src/features/sequence/SequenceTimelineRuler.tsx) | Existing workflow row, inserted lanes, ruler geometry and scrub owner. Adapt milliseconds to its minute contract; spans remain derived rehearsal intervals, with no persisted media clips or editable duration. | Shared ruler exact-zero, scroll and surface suites; live mark/drag/keyboard checks |
-| C6 [MarkdownWorkspaceMain.tsx](../../canvas/src/features/markdown-workspace/main/MarkdownWorkspaceMain.tsx); [vitePwaRuntimeCachePolicy.ts](../../canvas/vitePwaRuntimeCachePolicy.ts) | Existing source workspace and asset cache policy. This new loop's offline closure is unverified. | Q6 planned walkthrough |
-| C7 [canvasViewInvocationContract.mjs](../../canvas/src/lib/canvas/canvasViewInvocationContract.mjs), `CANVAS_VIEW_CONTROL_OPTION_IDS`; [canvasViewWebMcpTools.ts](../../canvas/src/features/agent-ready/canvasViewWebMcpTools.ts) | One strict invocation tuple and same control handler; new IDs absent. Extend owner enum and generated schemas. | `canvasViewWebMcpTools.test.ts` |
-| Design [panelTypography.ts](../../canvas/src/lib/ui/panelTypography.ts), `usePanelTypography`; [theme-tokens.ts](../../canvas/src/lib/ui/theme-tokens.ts) | Existing settings-derived typography and shared token exports. Consume them for panels, controls, code text and light/dark states; retain central icons. | `theme.test.ts`, `panelSemanticContract.test.ts` |
+| C1 [config.render.ts](../../canvas/src/lib/config.render.ts), `CANVAS_2D_RENDERERS` | `sequence` and `sequenceMermaid` already exist, with the native menu labels below. | `canvasViewDisplayControls.test.ts`, `canvasViewWebMcpTools.test.ts` |
+| C2 [sequenceModel.ts](../../canvas/src/features/sequence/sequenceModel.ts), `parseSequence`, `sequencePlaybackEvents`, `sequenceTimedEvents` | Bounded pure parser, branch filtering, source-scoped event IDs, 1,000 ms messages and zero-duration notes; no DOM/network dependency. This is an internal module, not a published headless API. | `sequenceFlow.test.ts`: grammar, limits, branches, time, repeated identity |
+| C2 [markdownJsonLdMermaidParser.ts](../../canvas/src/features/parsers/markdownJsonLdMermaidParser.ts), `parseMermaidFrontmatter`; [sequenceGraphProjection.ts](../../canvas/src/features/sequence/sequenceGraphProjection.ts), `projectSequenceGraph` | Sequence dispatch exists before flowchart handling. Each message projects a distinct relation with ordinal, branch, kind, protocol and absolute source line; topology alone never establishes time. | `sequenceFlow.test.ts`: Markdown round trip |
+| C3 [CanvasViewport.tsx](../../canvas/src/components/CanvasViewport.tsx), `SequenceCanvasLazy`; [SequenceCanvas.tsx](../../canvas/src/features/sequence/SequenceCanvas.tsx) | Shared lazy surface renders native Connections/Lifelines or installed notation SVG; event state, participant highlight and moving pulse derive from the same playhead. Reduced motion suppresses pulses. | `sequenceFlow.test.ts`; current browser correspondence still requires readback |
+| C3 [sequenceSvgBinding.ts](../../canvas/src/features/sequence/sequenceSvgBinding.ts), `bindSequenceSvg`; [mermaidRuntime.ts](../../canvas/src/lib/mermaid/mermaidRuntime.ts) | Native exact-count binding and notation authored-occurrence binding fail on mismatches; installed runtime uses strict configuration and queued cancellation. No hosted editor is used. | SVG count/identity and render cancellation cases |
+| C4 [SequenceInspector.tsx](../../canvas/src/features/sequence/SequenceInspector.tsx), `SequenceInspector` | Existing floating view lists all authored events, aliases, kind/protocol and source line; selecting another branch's event changes its outcome. | Mounted document/selection cases plus browser checks |
+| C5 [useSequenceDocument.ts](../../canvas/src/features/sequence/useSequenceDocument.ts) | Reads one active sequence block or frontmatter; multiple blocks diagnose ambiguity. Document/source/branch fencing rejects stale callbacks; choices and explicit selection are transient. | Branch/source callback fence and note selection cases |
+| C5 [TimelineBottomPanelView.tsx](../../canvas/src/features/gitgraph/TimelineBottomPanelView.tsx), `sequenceContext`; [SequenceTimeline.tsx](../../canvas/src/features/sequence/SequenceTimeline.tsx); [SequenceTimelineRuler.tsx](../../canvas/src/features/sequence/SequenceTimelineRuler.tsx) | Sequence routing is mounted. Existing transport/ruler/clip/mark owners provide pause/play, seek, reset, step, rate, zoom, fit and outcome selection. Milliseconds adapt to the ruler's minute contract; source duration is not editable. | `sequenceFlow.test.ts`, shared transport/ruler suites; native gestures separately |
+| C6 [MarkdownWorkspaceMain.tsx](../../canvas/src/features/markdown-workspace/main/MarkdownWorkspaceMain.tsx); [vitePwaRuntimeCachePolicy.ts](../../canvas/vitePwaRuntimeCachePolicy.ts) | Source save/import and app asset caching already exist. Full disconnected reload remains unproved; a local algorithm is not an offline installation receipt. | Q6 disconnected save/reopen walkthrough |
+| C7 [canvasViewInvocationContract.mjs](../../canvas/src/lib/canvas/canvasViewInvocationContract.mjs), `CANVAS_VIEW_CONTROL_OPTION_IDS`; [canvasViewWebMcpTools.ts](../../canvas/src/features/agent-ready/canvasViewWebMcpTools.ts) | Both renderer IDs already use the existing browser-local canvas-view route. No additional discovery registry or sequence playback tool is introduced. | `canvasViewWebMcpTools.test.ts`; Q8 current browser/tool parity |
+| Design [panelTypography.ts](../../canvas/src/lib/ui/panelTypography.ts), `usePanelTypography`; [theme-tokens.ts](../../canvas/src/lib/ui/theme-tokens.ts) | Existing panel and transport owners supply typography, shared controls and tokens. Retain mobile containment and keyboard/reduced-motion acceptance. | Q7; shared panel/transport checks |
 
 Exact requested menu labels are **Sequence Diagram** and **Sequence Diagram (Mermaid)**
 under **Toolbar → Canvas View Mode → 2D Renderer**. Both read the same normalized
@@ -246,9 +222,9 @@ overwrite one another. If reliable SVG-to-event mapping fails, report the unsupp
 interaction rather than use approximate label matching as proof.
 
 The enhanced BottomPanel Timeline retains its existing transport chrome, timecode,
-rates (0.25/0.5/1/1.5/2), zoom and fit/center actions. Add Previous/Next event,
-Reset and numbered message marks in participant clips; actor labels stay readable
-while the track viewport scrolls. Remove the separate sequence step rail/card grid.
+rates (0.25/0.5/1/1.5/2), zoom and fit/center actions. Existing Previous/Next event,
+Reset and numbered message marks appear in participant clips; actor labels stay readable
+while the track viewport scrolls. The separate sequence step rail/card grid has been removed.
 Outcome choices live in the shared workflow clip. In ordinal mode show Step n/N explicitly; in timed
 mode show milliseconds/seconds, never fabricated measured network latency. FPS is
 a display sampling setting only if its native owner supports it; event ordering and
@@ -256,15 +232,16 @@ duration do not change with display FPS. Generic Media/XR controls keep their se
 
 ### Reference implementation — invocation reuse and checks
 
-| Surface | Existing route / proposed extension | Authority and support |
+| Surface | Current route / support | Authority and support |
 |---|---|---|
-| Browser | Existing view selector → `renderer:sequence`, `renderer:sequenceMermaid` | Proposed IDs, local reversible view effect only |
-| Command / semantic / binding | `/canvas.view.set #canvas-view @canvas-view option=renderer:sequence` (or `renderer:sequenceMermaid`) | Extend existing tuple; strict enum rejects unknown IDs |
-| Tool gateway | `agentic-graph.control_local_canvas_view` / existing browser-local `control_local_canvas_view` builder | Existing owner; new enums proposed, authenticated remote access not established here |
-| Headless | C2 pure input → plan/diagnostics/state evaluation | Proposed portable domain export; no browser globals or DOM dependency |
+| Browser | Existing view selector → `renderer:sequence`, `renderer:sequenceMermaid` | Implemented IDs; local reversible view effect only |
+| Command / semantic / binding | `/canvas.view.set #canvas-view @canvas-view option=renderer:sequence` (or `renderer:sequenceMermaid`) | Existing tuple; strict enum rejects unknown IDs |
+| Tool gateway | `agentic-graph.control_local_canvas_view` / existing browser-local `control_local_canvas_view` builder | Existing owner and enums; authenticated remote access not established here |
+| Headless | C2 pure input → plan/diagnostics/state evaluation | Existing pure TypeScript module; no published SDK/remote MCP execution contract |
 | Timeline tools | No verified sequence play/scrub route found | Won't this increment; do not register speculative tools or claim tool parity for playback |
 
-Q1–Q5, Q8–Q9 need owner-suite behavioral cases. Existing invocable baseline:
+Focused sequence behavioral cases exist; complete Q1–Q9 acceptance still needs bound
+owner/browser evidence. Existing invocable baseline:
 `npm --prefix canvas run test:ci:unit -- canvasView timelineTransport mermaid panelSemantic`.
 Q6–Q7 need browser identity/screenshots/network logs. Source checks prove no browser
 result. Use `npm run ci:affected` for the implementation candidate.
@@ -333,12 +310,12 @@ Check application licensing and every asset/dependency license before code adopt
 
 | Boundary | From → to | Evidence / operator instruction | State / recovery |
 |---|---|---|---|
-| Source review | Task lane → protected source | Planning PR #1480; implementation PR #1490 at 59189ac76aac7e2c21d680702c4a8f498076be44 failed required CI. Consolidation successor is admitted with local proof below. | Closed until the successor's exact required green check and protected receipt; retain lane |
+| Source review | Task lane → protected source | Current docs lane starts at the exact reviewed source above; predecessor PR/check entries below are historical. | Publish only after current affected checks; exact protected integration remains separate |
 | Asset mirror | Protected source → generated mirror | Product owner disposition of exact doc paths and build inputs; none yet | Closed; never edit generated output directly |
 | Production | Mirror → delivery | Exact-candidate protected environment authorization and live readback; none | Closed; retain prior artifact identity and owner rollback receipt |
 
-Documentation rollback removes this proposal in a successor source change. Runtime
-rollback for future implementation restores the prior renderer/menu and lazy artifacts
+Documentation rollback reverts this increment through a reviewed successor, restoring
+the old fixture path and test reader together. Feature rollback restores prior renderer/menu and lazy artifacts
 without deleting authored source. Stored unknown renderer preferences fall back through
 the existing resolver; test this before release. No data migration is proposed.
 
@@ -346,18 +323,18 @@ the existing resolver; test this before release. No data migration is proposed.
 
 ### A1 — One semantic plan, two lazy projections
 
-Proposed decision: extend the native parser/domain owner and expose two adapters.
+Implemented decision: reuse the native parser/domain owner and two lazy projections.
 Direct owner reuse wins over an independent sequence editor because source identity,
 selection, persistence and renderer discovery already exist. A static-only view is a
 FOSS fallback but cannot satisfy V2–V4. A contract-only adapter is warranted only at
 the notation/SVG seam; it contains no duplicated parser, store or authority logic.
 Extraction into a new shared package waits for two inspected consumers and an actual
-portability need. Consequence: a new parser subset and exact SVG event mapping need
+portability need. Consequence: the bounded parser subset and exact SVG event mapping need
 behavioral tests. Revisit on unsupported grammar, mapping instability or two consumers.
 
 ### A2 — Rehearsal derives from the existing shared time authority
 
-Proposed decision: compute event state from plan/time; reuse the existing transport
+Implemented decision: compute event state from plan/time; reuse the existing transport
 and cancellation driver. An independent interval engine loses document fencing and
 adds synchronization work. Actual distributed simulation would require new effects,
 failure models and provider evidence; it is outside scope. Deterministic local replay
@@ -379,8 +356,9 @@ control override and unused two-row XR control CSS. Compact media rules exclude 
 
 ### A3 — Device-local core, existing invocation and design owners
 
-Proposed decision: render and rehearse offline after verified installation; extend
-the current invocation enum and native typography/tokens. New service/SDK/registry
+Implemented architecture: use the local domain, existing invocation enum and native
+typography/tokens. Offline render/rehearsal after verified installation remains an
+acceptance target, not a completed delivery claim. New service/SDK/registry
 options fail the zero-spend, duplication and scope constraints. Self-hosted static
 assets are a portable FOSS alternative; they add operator work and are not a new
 required runtime. Revisit only when measured integration pain justifies an adapter.
@@ -404,8 +382,10 @@ verdict. Missing source or performance evidence leaves the affected decision ope
 
 The dependency-closed slice is R1–R6/V1–V9 through C1–C7 and A1–A3. Use the user-authorized
 four-participant fidelity fixture with eight messages, activations and two payment
-outcomes in [demo.md](../../canvas/src/features/sequence/fixtures/demo.md). Each selected outcome
-contains six one-second playback messages. The focused test suite adds original duplicate,
+outcomes in [order-payment-sequence-diagram-demo.md](../../canvas/src/features/sequence/fixtures/order-payment-sequence-diagram-demo.md). Each selected outcome
+contains six one-second playback messages. Approved ordinals are 1–6; declined ordinals
+are 1–4, 7–8. Source ordinals remain stable even though both outcomes take six seconds.
+The screenshot is supplied context, not current browser acceptance. The focused test suite adds original duplicate,
 nested outcome, self-call, note, async and failure/compensation cases. Shared host/store
 owners are admitted and both renderers are mounted live. Bounded correspondence,
 transport, view preservation, mobile and keyboard observations passed; full VCCs
@@ -417,7 +397,7 @@ remain open for disconnected reopen, negative-input UI, source-edit race and per
 | Probe | 20 s | Choose native sequence view and select event 3. |
 | Reveal | 30 s | V2 holds: the same event is selected in canvas, inspector and Timeline. |
 | Rehearse interaction | 40 s | V3/V4: play, pause, scrub and switch the notation view without a second clock. |
-| Close | 20 s | V6: reopen saved source while disconnected and retain readable event detail. |
+| Close | 20 s | Save/reopen source and report observed result. Run Q6 separately after verified offline installation; record failure without calling the demo offline-proven. |
 
 Total demo cap: 120 seconds. Domain object: an authored interaction plan, not a live
 distributed system. Local menu, rendering and rehearsal behavior now has live evidence;
@@ -448,7 +428,7 @@ No bulk market, timing urgency, customer count or market-size number is asserted
 
 | Stream | Order / reason | Mechanism / demand / collection |
 |---|---|---|
-| Reviewed interaction handoff to an existing contact | 1; small deliverable using the proposed local loop | Neither mechanism-proven nor demand-validated; no payment evidence |
+| Reviewed interaction handoff to an existing contact | 1; small deliverable using the existing local loop | Neither mechanism-proven nor demand-validated; no payment evidence |
 | Repeated team walkthrough/support | 2; needs repeated accepted outcomes and measured support cost | Unvalidated; no subscription implementation |
 | Public self-serve package | 3; needs channel demand, licensed packaging and owner release evidence | Deferred; no audience publication authorized |
 
@@ -507,7 +487,13 @@ not-applicable: **1**. These are coverage decisions, not readiness proof.
 
 ## Evidence, findings and session handoff — reference implementation
 
-Update this checkpoint before publication; later observations need a successor.
+Current increment: 1.3.42 refreshes implementation claims and renames the existing fixture
+plus its test reader, preserving the sequence block. Native START admitted the four paths
+at the reviewed source above. Focused and affected check results belong to the candidate
+receipt; earlier passing entries do not transfer to new bytes. Current native preview,
+protected integration and delivery must be reported independently at handoff.
+
+The following entries retain earlier checkpoints; later observations need their own receipts.
 The authoring checkpoint below predates implementation. Current bounded source proof
 is recorded separately; bounded live verification does not establish every VCC.
 
