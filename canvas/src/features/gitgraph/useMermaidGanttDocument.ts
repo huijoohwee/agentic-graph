@@ -39,10 +39,9 @@ export function useMermaidGanttDocument({
   purpose?: MermaidGanttDocumentPurpose
 } = {}) {
   const graphData = useActiveGraphRenderData(true)
-  const { graphDataRevision, markdownDocumentName, markdownDocumentText, themeMode } = useGraphStore(
+  const { graphDataRevision, markdownDocumentText, themeMode } = useGraphStore(
     useShallow(state => ({
       graphDataRevision: state.graphDataRevision,
-      markdownDocumentName: state.markdownDocumentName,
       markdownDocumentText: state.markdownDocumentText,
       themeMode: (state.resolvedThemeMode || 'light') as 'light' | 'dark',
     })),
@@ -56,14 +55,12 @@ export function useMermaidGanttDocument({
         ...strybldrWorkflowGanttCodes,
         ...readYamlFrontmatterMermaidDiagramCodes(markdownDocumentText || '', 'gantt'),
         readYamlFrontmatterMermaidCode(markdownDocumentText || ''),
-        ...(!markdownDocumentName ? [
-          ...readFrontmatterMermaidDiagramCodes(graphData, 'gantt'),
-          readFrontmatterMermaidCode(graphData),
-        ] : []),
+        ...readFrontmatterMermaidDiagramCodes(graphData, 'gantt'),
+        readFrontmatterMermaidCode(graphData),
       ]
       return resolveMermaidGanttCode(resolveGanttCandidatesForPurpose(candidates, purpose))
     },
-    [graphData, markdownDocumentName, markdownDocumentText, purpose],
+    [graphData, markdownDocumentText, purpose],
   )
   const ganttModel = React.useMemo(() => parseMermaidDiagramCodeModel(code, 'gantt'), [code])
 

@@ -238,7 +238,7 @@ test("hosted, provider and remote operations cannot be enabled through HTTP inpu
   assert.deepEqual(await fs.readdir(service.rootDir), []);
 });
 
-test("HTTP dependencies are built-in only, stdio SDK stays lazy, and owner Git forbids remote protocols", async () => {
+test("project dependency closure stays inside the licensed MCP owner and stdio SDK stays lazy", async () => {
   const directory = fileURLToPath(new URL("..", import.meta.url));
   const pending = [path.join(directory, "workspace-project-server.js")];
   const seen = new Set();
@@ -246,6 +246,8 @@ test("HTTP dependencies are built-in only, stdio SDK stays lazy, and owner Git f
   while (pending.length) {
     const filename = pending.pop();
     if (seen.has(filename)) continue;
+    const relative = path.relative(await fs.realpath(directory), await fs.realpath(filename));
+    assert.ok(relative && !relative.startsWith("..") && !path.isAbsolute(relative), `dependency escapes MCP owner: ${filename}`);
     seen.add(filename);
     const source = await fs.readFile(filename, "utf8");
     for (const match of source.matchAll(/(?:\bfrom\s*|\bimport\s+)["']([^"']+)["']/gu)) {
@@ -264,7 +266,17 @@ test("HTTP dependencies are built-in only, stdio SDK stays lazy, and owner Git f
     }
     assert.doesNotMatch(source, /\b(?:fetch|WebSocket|XMLHttpRequest)\s*\(|\b(?:https?|net|tls)\.(?:request|get|connect)\s*\(/u);
   }
-  assert.ok(seen.size >= 2, "inspect transitive owners as well as the HTTP adapter");
+  assert.deepEqual([...seen].map(filename => path.basename(filename)).sort(), [
+    "repository-pack-error.js", "repository-pack-git.js", "workspace-artifact-contract.js",
+    "workspace-artifact-runtime.js", "workspace-project-runtime.js", "workspace-project-server.js",
+  ], "one project owner; additions require an explicit dependency-boundary review");
+  const client = await fs.readFile(path.join(directory, "workspace-project-client.js"), "utf8");
+  assert.deepEqual([...client.matchAll(/(?:\bfrom\s*|\bimport\s+)["']([^"']+)["']/gu)].map(match => match[1]), ["/contract.js"]);
+  assert.doesNotMatch(client, /\bimport\s*\(/u, "no hidden Canvas or alternative project owner");
+  const html = await fs.readFile(path.join(directory, "workspace-project.html"), "utf8");
+  assert.deepEqual([...html.matchAll(/<script[^>]+src="([^"]+)"/gu)].map(match => match[1]), ["/client.js"]);
+  assert.equal(JSON.parse(await fs.readFile(path.join(directory, "package.json"), "utf8")).license, "MIT");
+  assert.match(await fs.readFile(path.join(directory, "LICENSE"), "utf8"), /Permission is hereby granted, free of charge/u);
   const gitSource = await fs.readFile(path.join(directory, "repository-pack-git.js"), "utf8");
   assert.match(gitSource, /"protocol.allow=never"/u);
   assert.match(gitSource, /\["GIT_CONFIG_GLOBAL", NULL_DEVICE\]/u);

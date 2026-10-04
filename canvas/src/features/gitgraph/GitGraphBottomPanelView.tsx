@@ -13,7 +13,7 @@ import {
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { HistoryUndoRedoControls } from '@/features/history/HistoryUndoRedoControls'
 import { getIconSizeClass } from '@/lib/ui'
-import { buildVersionHistoryGitGraphCode, readVersionHistoryIndexFromCommitId, selectDocumentVersionHistory } from './versionHistoryGitGraph'
+import { buildVersionHistoryGitGraphCode, readVersionHistoryIndexFromCommitId } from './versionHistoryGitGraph'
 
 export function GitGraphBottomPanelView({
   compact = false,
@@ -32,7 +32,6 @@ export function GitGraphBottomPanelView({
     history,
     historyIndex,
     restoreHistory,
-    markdownDocumentName,
   } = useGraphStore(
     useShallow(state => ({
       gitGraphSelectedCommandLineIndex: state.gitGraphSelectedCommandLineIndex,
@@ -44,21 +43,18 @@ export function GitGraphBottomPanelView({
       history: state.history,
       historyIndex: state.historyIndex,
       restoreHistory: state.restoreHistory,
-      markdownDocumentName: state.markdownDocumentName,
     })),
   )
   const iconSizeClass = getIconSizeClass(uiIconScale)
-  const documentHistory = React.useMemo(() => selectDocumentVersionHistory(history, markdownDocumentName), [history, markdownDocumentName])
-  const displayCode = React.useMemo(() => code || buildVersionHistoryGitGraphCode(documentHistory.map(row => row.entry)), [code, documentHistory])
+  const displayCode = React.useMemo(() => code || buildVersionHistoryGitGraphCode(history), [code, history])
   const displayModel = React.useMemo(() => parseMermaidDiagramCodeModel(displayCode, 'gitgraph'), [displayCode])
   const displayGitGraphCommandModel = React.useMemo(() => parseMermaidGitGraphModel(displayCode), [displayCode])
-  const usesRuntimeHistory = !code && documentHistory.length > 0
+  const usesRuntimeHistory = !code && history.length > 0
   const runtimeHistorySelectedRowKey = React.useMemo(() => {
     if (!usesRuntimeHistory || historyIndex < 0) return ''
-    const versionIndex = documentHistory.findIndex(row => row.index === historyIndex)
-    const command = displayGitGraphCommandModel.commands[versionIndex]
-    return command ? resolveGitGraphCommandRowKey(command, versionIndex, displayModel) : ''
-  }, [displayGitGraphCommandModel.commands, displayModel, documentHistory, historyIndex, usesRuntimeHistory])
+    const command = displayGitGraphCommandModel.commands[historyIndex]
+    return command ? resolveGitGraphCommandRowKey(command, historyIndex, displayModel) : ''
+  }, [displayGitGraphCommandModel.commands, displayModel, historyIndex, usesRuntimeHistory])
   const { handleDiagramSelectedRowKeyChange } = useStoryboardWidgetDiagramSelectionBridge({
     graphData,
     diagramModel: model,
@@ -72,13 +68,12 @@ export function GitGraphBottomPanelView({
     )
     if (usesRuntimeHistory) {
       const versionIndex = readVersionHistoryIndexFromCommitId(command?.commitId)
-      const version = documentHistory[versionIndex]
-      if (version) restoreHistory(version.index)
+      if (versionIndex >= 0 && versionIndex < history.length) restoreHistory(versionIndex)
       return
     }
     setGitGraphSelectedCommandLineIndex(command?.lineIndex ?? null)
     handleDiagramSelectedRowKeyChange(rowKey)
-  }, [displayGitGraphCommandModel.commands, displayModel, documentHistory, gitGraphCommandModel.commands, handleDiagramSelectedRowKeyChange, model, restoreHistory, setGitGraphSelectedCommandLineIndex, usesRuntimeHistory])
+  }, [displayGitGraphCommandModel.commands, displayModel, gitGraphCommandModel.commands, handleDiagramSelectedRowKeyChange, history.length, model, restoreHistory, setGitGraphSelectedCommandLineIndex, usesRuntimeHistory])
 
   React.useEffect(() => {
     if (usesRuntimeHistory) return

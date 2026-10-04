@@ -38,6 +38,7 @@
       <section class="card"><label id="editor-label">File contents<textarea id="editor" spellcheck="false" disabled aria-label="File contents"></textarea></label>
         <div class="row"><label class="grow">Checkpoint message<input id="message" maxlength="200" placeholder="What changed?"></label><button id="checkpoint" class="primary" disabled>Save checkpoint</button></div>
         <label>Inspect version<select id="versions" disabled><option value="">Current draft</option></select></label><p id="version-id"></p>
+        <button id="restore" disabled>Restore as new checkpoint</button>
         <div class="row"><button id="export" disabled>Export project</button><button id="export-draft" disabled>Export draft</button><button id="import">Import project</button><input id="import-file" type="file" accept="application/json,.json" class="hidden"></div>
       </section>
     </div>

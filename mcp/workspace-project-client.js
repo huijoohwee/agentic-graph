@@ -110,6 +110,7 @@ const render = () => {
   $("new-file").querySelector("button").disabled = !state.id || state.inspecting || state.busy || state.recoveryBlocked;
   $("export").disabled = !state.expectedVersion || state.busy; $("export-draft").disabled = !state.id || state.busy;
   $("versions").disabled = !state.expectedVersion || state.busy;
+  $("restore").disabled = !state.inspecting || state.busy || state.recoveryBlocked;
   $("version-id").textContent = state.expectedVersion ? `Base: ${state.expectedVersion}` : "New project draft. Save its first checkpoint.";
 };
 const versions = (history = []) => {
@@ -185,6 +186,17 @@ $("versions").addEventListener("change", guard(async () => {
   retainDraft(); if (!version) return load(state.id);
   const saved = await read("inspect", { version }); state.files = saved.data.files; state.inspecting = true; state.selected = state.files[0]?.path || "";
   status(`Inspecting immutable ${version.slice(0, 8)}. Project head is unchanged.`);
+}));
+$("restore").addEventListener("click", guard(async () => {
+  const version = $("versions").value;
+  if (!state.inspecting || !version) throw new Error("Choose a saved version to restore.");
+  if (recoverDraft()?.dirty) throw new Error("An unsaved draft is retained. Return to Current draft and save it before restoring.");
+  const files = state.files.map(({ path, content }) => ({ path, content }));
+  validateFiles(files);
+  const result = await apply("checkpoint", { expectedVersion: state.expectedVersion, files, message: `Restore ${version.slice(0, 8)}` });
+  state.expectedVersion = result.version; state.inspecting = false; state.dirty = false; persist();
+  await load(state.id); await list();
+  status(`Restored ${version.slice(0, 8)} as checkpoint ${result.version.slice(0, 8)}. All earlier versions remain available.`);
 }));
 $("export").addEventListener("click", guard(async () => {
   const version = $("versions").value || state.expectedVersion;

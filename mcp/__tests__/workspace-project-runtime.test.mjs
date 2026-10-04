@@ -70,6 +70,23 @@ test("native checkpoints survive restart and immutable inspection never changes 
   assert.equal((await native(root, ["fsck", "--strict", "--no-reflogs"])).stderr.includes("error"), false);
 });
 
+test("restoring historical files appends a fenced checkpoint and preserves both previous versions", async t => {
+  const { root, runtime } = await fixture(t);
+  const first = await write(runtime, root, [{ path: "notes.md", content: "original\n" }]);
+  const second = await write(runtime, root, [{ path: "notes.md", content: "later\n" }], first.version);
+  const historical = (await read(runtime, root, "project-inspect", { version: first.version })).data.files.map(({ path, content }) => ({ path, content }));
+  const restored = await write(runtime, root, historical, second.version, { message: "Restore original" });
+  assert.notEqual(restored.version, first.version);
+  const current = (await read(runtime, root)).data;
+  assert.equal(current.version, restored.version);
+  assert.deepEqual(current.files.map(({ path, content }) => ({ path, content })), historical);
+  assert.equal(current.history[0].parent, second.version);
+  assert.equal(current.history.length, 3);
+  assert.equal((await read(runtime, root, "project-inspect", { version: second.version })).data.files[0].content, "later\n");
+  await assert.rejects(write(runtime, root, historical, second.version), { code: "VERSION_CONFLICT" });
+  assert.equal((await read(runtime, root)).data.version, restored.version);
+});
+
 test("portable export imports exact bytes and digests into a clean configured store", async t => {
   const { root, runtime } = await fixture(t);
   const first = await write(runtime, root, [{ path: "README.md", content: "No network or model needed.\n" }, { path: "unicode/日本語.txt", content: "exact\r\n" }]);

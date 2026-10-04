@@ -1,5 +1,4 @@
 import React from 'react'
-import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownEditorSsotSync } from '@/features/markdown-workspace/useMarkdownEditorSsotSync'
 import { commitActiveMarkdownBlockEditors } from '@/lib/markdown-core/ui/markdownBlockContainerCore.activeEditor'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
@@ -79,10 +78,8 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
     if (selectionPathRef.current === normalized) return
     const requestId = selectionCommitRequestRef.current + 1
     selectionCommitRequestRef.current = requestId
-    const restoreRevision = useGraphStore.getState().historyRestoreRevision
-    const admitted = () => selectionCommitRequestRef.current === requestId && useGraphStore.getState().historyRestoreRevision === restoreRevision
     const applySelection = (): boolean => {
-      if (!admitted()) return false
+      if (selectionCommitRequestRef.current !== requestId) return false
       pendingSelectionPathRef.current = normalized
       selectionPathRef.current = normalized
       setSelectionPath(normalized)
@@ -91,11 +88,10 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
     return (async (): Promise<boolean> => {
       const pendingEditorCommit = commitActiveMarkdownBlockEditors()
       if (pendingEditorCommit) await Promise.allSettled([pendingEditorCommit])
-      if (!admitted()) return false
       const commitActiveTextBeforeSelection = args.commitActiveTextBeforeSelectionRef.current
       if (commitActiveTextBeforeSelection) {
         const committed = await commitActiveTextBeforeSelection()
-        if (!committed || !admitted()) return false
+        if (!committed) return false
       }
       // A Canvas Run publishes into the active document before its serialized
       // Workspace FS and mirror writes settle. Preserve that owner at the same
@@ -104,7 +100,9 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
       return applySelection()
     })()
   }, [])
+
   const entriesIndex = React.useMemo(() => buildWorkspaceEntriesIndex(args.entries), [args.entries])
+
   React.useEffect(() => {
     const nextSelectionPath = resolveInitialMarkdownWorkspaceSelectionPath({
       selectionPath: selectionPathRef.current,
@@ -114,6 +112,7 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
     if (!nextSelectionPath) return
     setSelectionPathSafe(nextSelectionPath)
   }, [args.activePath, entriesIndex, setSelectionPathSafe])
+
   React.useEffect(() => {
     const nextSelectionPath = resolveInvalidatedMarkdownWorkspaceSelectionPath({
       selectionPath: selectionPathRef.current,
@@ -124,6 +123,7 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
     if (typeof nextSelectionPath === 'undefined') return
     setSelectionPathSafe(nextSelectionPath)
   }, [args.activePath, args.loading, entriesIndex, selectionPath, setSelectionPathSafe])
+
   const {
     activeEntry,
     selectionEntry,

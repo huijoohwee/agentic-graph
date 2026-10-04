@@ -50,10 +50,9 @@ const findGitGraphSourceFileIndex = (
 
 export function useMermaidGitGraphDocument() {
   const graphData = useActiveGraphRenderData(true)
-  const { graphDataRevision, markdownDocumentName, markdownDocumentText, themeMode } = useGraphStore(
+  const { graphDataRevision, markdownDocumentText, themeMode } = useGraphStore(
     useShallow(state => ({
       graphDataRevision: state.graphDataRevision,
-      markdownDocumentName: state.markdownDocumentName,
       markdownDocumentText: state.markdownDocumentText,
       themeMode: (state.resolvedThemeMode || 'light') as 'light' | 'dark',
     })),
@@ -63,12 +62,10 @@ export function useMermaidGitGraphDocument() {
       resolveMermaidGitGraphCode([
         ...readYamlFrontmatterMermaidDiagramCodes(markdownDocumentText || '', 'gitgraph'),
         readYamlFrontmatterMermaidCode(markdownDocumentText || ''),
-        ...(!markdownDocumentName ? [
-          ...readFrontmatterMermaidDiagramCodes(graphData, 'gitgraph'),
-          readFrontmatterMermaidCode(graphData),
-        ] : []),
+        ...readFrontmatterMermaidDiagramCodes(graphData, 'gitgraph'),
+        readFrontmatterMermaidCode(graphData),
       ]),
-    [graphData, markdownDocumentName, markdownDocumentText],
+    [graphData, markdownDocumentText],
   )
   const gitGraphModel = React.useMemo(() => parseMermaidGitGraphModel(code), [code])
   const commitGitGraphCode = React.useCallback((nextCode: string, actionLabel: string): boolean => {

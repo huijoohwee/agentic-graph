@@ -1,13 +1,6 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
-  ["canvas.storyboard.mediaRecovery.coalescesMutationFeedback", "@/__tests__/storyboardWidgetMediaRecoveryBudget.test.tsx", "testStoryboardWidgetMediaRecoveryCoalescesMutationFeedback"],
-  ["canvas.storyboard.mediaRecovery.stopsAtFrameBudget", "@/__tests__/storyboardWidgetMediaRecoveryBudget.test.tsx", "testStoryboardWidgetMediaRecoveryStopsAtFrameBudget"],
-  ["workspace.crossViewSync.historyOwnerIndexes", "@/__tests__/workspaceCrossViewSync.test.tsx", "testWorkspaceCrossViewHistoryKeepsGlobalRestoreIndexes"],
-  ["workspace.crossViewSync.emptySourceIsolation", "@/__tests__/workspaceCrossViewSync.test.tsx", "testWorkspaceCrossViewEmptySourceDoesNotBorrowOtherDiagrams"],
-  ["workspace.crossViewSync.editRestoreSourceAndGantt", "@/__tests__/workspaceCrossViewSync.test.tsx", "testWorkspaceCrossViewGitGraphEditRestoreSyncsSourceAndGantt"],
-  ["workspace.crossViewSync.documentSelectionIdentity", "@/__tests__/workspaceCrossViewSync.test.tsx", "testWorkspaceCrossViewDocumentIdentityOwnsSelection"],
-  ["workspace.crossViewSync.restoreFencesPendingSourceSelection", "@/__tests__/workspaceCrossViewSync.test.tsx", "testWorkspaceCrossViewPendingSelectionCannotOvertakeRestore"],
   ["ui.invocation.hoverSourceParity", "@/__tests__/invocationHoverSourceParity.test.tsx", "testInvocationHoverSourceParity"],
   ["ui.card.viewer.mediaSerializationParity", "@/__tests__/cardInlineTextEditorMediaInsertParity.test.tsx", "testCardViewerMediaSerializationParity"],
   ["ui.card.viewer.mediaInsertParity", "@/__tests__/cardInlineTextEditorMediaInsertParity.test.tsx", "testCardViewerMediaInsertParity"],

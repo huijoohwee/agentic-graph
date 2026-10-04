@@ -15,8 +15,6 @@ import {
   type VersionHistoryEntry,
 } from '@/features/history/versionHistoryTypes'
 import { writeActiveMarkdownDocumentTextIfPresent } from './graph-data-slice/graphDataFrontmatterFlowSync'
-import { normalizeComposedSourcePath } from '@/features/source-files/composedSourceSelection'
-import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 
 type SetGraph = StoreApi<GraphState>['setState']
 type GetGraph = StoreApi<GraphState>['getState']
@@ -37,11 +35,11 @@ const readActiveSourceFileSnapshot = (
   sourceFiles: readonly SourceFile[],
   markdownDocumentName: string | null | undefined,
 ): SourceFile | null => {
-  const documentName = normalizeComposedSourcePath(markdownDocumentName)
+  const documentName = String(markdownDocumentName || '').trim().replace(/^\/+/, '')
   if (!documentName) return null
   const match = sourceFiles.find(file => {
-    const sourcePath = normalizeComposedSourcePath(file.source?.path)
-    return sourcePath === documentName || normalizeComposedSourcePath(file.name) === documentName
+    const sourcePath = String(file.source?.path || '').trim().replace(/^\/+/, '')
+    return sourcePath === documentName || String(file.name || '').trim() === documentName
   })
   return match ?? null
 }
@@ -51,9 +49,7 @@ const restoreActiveSourceFileSnapshot = (
   snapshot: SourceFile | null,
 ): SourceFile[] => {
   if (!snapshot) return sourceFiles.slice()
-  const snapshotPath = normalizeComposedSourcePath(snapshot.source?.path || snapshot.name)
-  const idIndex = sourceFiles.findIndex(file => file.id === snapshot.id)
-  const index = idIndex >= 0 ? idIndex : sourceFiles.findIndex(file => snapshotPath && normalizeComposedSourcePath(file.source?.path || file.name) === snapshotPath)
+  const index = sourceFiles.findIndex(file => file.id === snapshot.id)
   if (index < 0) return [...sourceFiles, deepClone(snapshot) as SourceFile]
   return sourceFiles.map((file, fileIndex) => fileIndex === index ? deepClone(snapshot) as SourceFile : file)
 }
@@ -106,11 +102,6 @@ const buildHistoryEntry = (args: {
 }
 
 const restoreHistoryEntry = (set: SetGraph, get: GetGraph, entry: VersionHistoryEntry, historyIndex: number): void => {
-  cancelScheduledHistoryCommit()
-  const previousState = get()
-  const restoredPath = normalizeComposedSourcePath(entry.markdownDocumentName || entry.activeSourceFileSnapshot?.source?.path || entry.activeSourceFileSnapshot?.name)
-  const transportPath = normalizeComposedSourcePath(previousState.timelineTransportDocumentKey)
-  const restoreDocumentTransport = !!transportPath && (transportPath === restoredPath || transportPath === normalizeComposedSourcePath(previousState.markdownDocumentName))
   const graphCopy = deepClone(entry.graphData) as GraphData
   const fieldSettingsCopy = deepClone(entry.graphFieldSettingsById || {}) as GraphFieldSettingsById
   const sourceFilesCopy = restoreActiveSourceFileSnapshot(get().sourceFiles || [], entry.activeSourceFileSnapshot)
@@ -129,18 +120,10 @@ const restoreHistoryEntry = (set: SetGraph, get: GetGraph, entry: VersionHistory
     markdownTokensKey: null,
     markdownTokensMeta: null,
     markdownTokensStartLineOffset: null,
-    mermaidDiagramSelectedRowKeyByKind: {},
-    gitGraphSelectedCommandLineIndex: null,
-    ...(restoreDocumentTransport ? {
-      timelineTransportDocumentKey: String(entry.markdownDocumentName || '').trim(),
-      timelineTransportPosition: 0,
-      timelineTransportPlaying: false,
-    } : {}),
     sourceFiles: sourceFilesCopy,
     graphContentRevision: (state.graphContentRevision || 0) + 1,
     docLocationRevision: (state.docLocationRevision || 0) + 1,
   }))
-  useMarkdownExplorerStore.getState().setActivePath(restoredPath || null)
   try {
     get().resyncGraphFieldsFromGraphData?.()
   } catch {
