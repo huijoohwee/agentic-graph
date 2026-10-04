@@ -3,16 +3,10 @@ import { useShallow } from 'zustand/react/shallow'
 import { applyImageLikeProxySrc } from '@/lib/url'
 import { isCanonicalNodeIdEqual } from '@/lib/graph/canonicalNodeIds'
 import { isStoryboardWidgetFrontmatterDocumentModeRequested } from '@/lib/graph/frontmatterMode'
-import {
-  resolveRichMediaPlayableUrl,
-  resolveRichMediaPanelSelectedTab,
-} from '@/lib/render/richMediaSsot'
+import { resolveRichMediaPlayableUrl, resolveRichMediaPanelSelectedTab } from '@/lib/render/richMediaSsot'
 import { resolveRichMediaPanelDisplayText } from '@/lib/render/richMediaPanelState'
 import { normalizeRuntimeStorageMediaAccessUrl } from '@/lib/storage/runtimeMediaUrl'
-import {
-  readLatestGrabMapsPoiRichMediaPreview,
-  subscribeGrabMapsPoiRichMediaPreview,
-} from '@/features/geospatial/grabMapsPoiRichMedia'
+import { readLatestGrabMapsPoiRichMediaPreview, subscribeGrabMapsPoiRichMediaPreview } from '@/features/geospatial/grabMapsPoiRichMedia'
 import {
   normalizeRichMediaPanelInlineSrcDoc,
   RICH_MEDIA_PANEL_SRCDOC_SIZE_MESSAGE,
