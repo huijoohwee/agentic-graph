@@ -9,8 +9,9 @@ import { dismissVisibleFloatingPanel } from './panel-close-helpers.mjs'
 
 const canvasRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const repositoryRoot = resolve(canvasRoot, '..')
-const sequenceOwners = () => tsImport('../../src/features/sequence/sequenceModel.ts', { parentURL: import.meta.url, tsconfig: join(canvasRoot, 'tsconfig.json') })
-const frontmatterOwner = () => tsImport('../../src/lib/markdown/frontmatter.ts', { parentURL: import.meta.url, tsconfig: join(canvasRoot, 'tsconfig.json') })
+let sequenceOwnersPromise, frontmatterOwnerPromise
+const sequenceOwners = () => sequenceOwnersPromise ||= tsImport('../../src/features/sequence/sequenceModel.ts', { parentURL: import.meta.url, tsconfig: join(canvasRoot, 'tsconfig.json') })
+const frontmatterOwner = () => frontmatterOwnerPromise ||= tsImport('../../src/lib/markdown/frontmatter.ts', { parentURL: import.meta.url, tsconfig: join(canvasRoot, 'tsconfig.json') })
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 
 // The acceptance document is supplied by the operator, never embedded in the app or test tree.
@@ -60,7 +61,24 @@ const timeline = page => page.getByRole('region', { name: 'Sequence Timeline', e
 const currentTime = page => timeline(page).locator('.timeline-timecode-current')
 const svgEvent = (page, event) => sequenceCanvas(page).getByRole('button', { name: eventName(event), exact: true })
 
-async function importSource(page, source) {
+async function dismissWorkspaceEditor(page) {
+  const overlay = page.getByLabel('Workspace editor overlay shell', { exact: true })
+  if (!(await overlay.isVisible())) return
+  await dismissVisibleFloatingPanel(page)
+  await overlay.getByLabel('Markdown toolbar row', { exact: true }).getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(overlay).toBeHidden()
+}
+
+async function ensureWorkspaceEditor(page) {
+  await dismissVisibleFloatingPanel(page)
+  const overlay = page.getByLabel('Workspace editor overlay shell', { exact: true })
+  if (await overlay.isVisible()) return
+  await page.getByRole('navigation', { name: 'Main Toolbar', exact: true }).getByRole('button', { name: 'Workspace View', exact: true }).click()
+  if (!(await overlay.isVisible())) await page.getByRole('button', { name: 'Editor Workspace', exact: true }).click()
+  await expect(overlay).toBeVisible()
+}
+
+async function importSource(page, source, { closeEditor = true } = {}) {
   await dismissVisibleFloatingPanel(page)
   const started = performance.now()
   await page.getByRole('button', { name: 'Launch', exact: true }).click()
@@ -75,6 +93,7 @@ async function importSource(page, source) {
   if (!(await timeline(page).isVisible())) await invoke(page, 'control_local_canvas_view', { optionId: 'control:timeline' })
   await expect(timeline(page)).toBeVisible()
   await expect(sequenceCanvas(page).getByRole('alert')).toHaveCount(0)
+  if (closeEditor) await dismissWorkspaceEditor(page)
   return Math.round(performance.now() - started)
 }
 
@@ -110,6 +129,7 @@ async function saveAndReload(page, source) {
   const document = await inspectDocument(page), canonicalPath = document.canonicalPath
   assert.equal(typeof canonicalPath, 'string')
   assert.ok(canonicalPath.endsWith(source.name), 'The active source identity must name the imported file')
+  await ensureWorkspaceEditor(page)
   await page.getByRole('button', { name: 'Launch', exact: true }).click()
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect.poll(async () => {
@@ -124,6 +144,7 @@ async function saveAndReload(page, source) {
   assert.equal(restored.canonicalPath, canonicalPath)
   assert.equal(source.extract(await storedSource(page, canonicalPath)), source.code, 'Authored sequence bytes survive save and reload')
   for (const event of source.model.events) await expect(svgEvent(page, event)).toHaveCount(1)
+  await dismissWorkspaceEditor(page)
   return { canonicalPath, sequenceDigest: sha256(source.code), savedAndReloaded: true }
 }
 
@@ -158,6 +179,8 @@ async function assertSelection(page, event, requireInspector = true) {
 }
 
 async function rendererProof(page, source) {
+  await invoke(page, 'control_local_canvas_view', { optionId: 'renderer:sequence' })
+  await expect(sequenceCanvas(page)).toHaveAttribute('aria-label', 'Sequence Diagram')
   await ensureInspector(page)
   const selected = source.model.events.filter(event => event.kind !== 'note')[Math.min(2, source.model.events.filter(event => event.kind !== 'note').length - 1)]
   await svgEvent(page, selected).press('Enter')
@@ -173,15 +196,19 @@ async function rendererProof(page, source) {
     assert.deepEqual(await assertSelection(page, selected), before, 'Renderer changes preserve the exact source selection and playhead')
     switches.push({ renderer, readyMs: Math.round(performance.now() - started) })
   }
+  await dismissVisibleFloatingPanel(page)
   for (const layout of ['Lifelines', 'Connections']) {
     await sequenceCanvas(page).getByRole('button', { name: layout, exact: true }).click()
     await expect(sequenceCanvas(page).getByRole('button', { name: layout, exact: true })).toHaveAttribute('aria-pressed', 'true')
     await expect(svgEvent(page, selected)).toHaveAttribute('aria-pressed', 'true')
   }
+  await ensureInspector(page)
+  assert.deepEqual(await assertSelection(page, selected), before)
   return { selection: before, switches, layouts: ['Lifelines', 'Connections'], unknownRendererRejected: true }
 }
 
 async function branchesProof(page, source) {
+  await dismissVisibleFloatingPanel(page)
   const { sequencePlaybackEvents, sequenceTimedEvents } = await sequenceOwners()
   const groups = [...new Set(source.model.branches.map(branch => branch.groupId))], results = []
   const cases = groups.flatMap((group, index) => source.model.branches.filter(branch => branch.groupId === group).map((branch, option) => ({ group, index, branch, option })))
@@ -247,13 +274,18 @@ async function repeatedTransportProof(page, source) {
   await svgEvent(page, selected).press('Enter')
   await expect(currentTime(page)).toHaveText(expectedTime(selected))
   const selection = await assertSelection(page, selected)
+  await dismissVisibleFloatingPanel(page)
   await timeline(page).getByRole('button', { name: 'Previous step', exact: true }).click()
   await expect(currentTime(page)).toHaveText(expectedTime(previous))
+  await ensureInspector(page)
   const previousSelection = await assertSelection(page, previous)
+  await dismissVisibleFloatingPanel(page)
   await timeline(page).getByRole('button', { name: 'Next step', exact: true }).click()
   await expect(currentTime(page)).toHaveText(expectedTime(selected))
+  await ensureInspector(page)
   const restoredSelection = await assertSelection(page, selected)
   assert.deepEqual(restoredSelection, selection, 'Previous/Next must restore the exact repeated event and shared position')
+  await dismissVisibleFloatingPanel(page)
   await timeline(page).getByRole('button', { name: 'Start playback', exact: true }).click()
   await expect(currentTime(page)).not.toHaveText(expectedTime(selected))
   await timeline(page).getByRole('button', { name: 'Pause playback', exact: true }).click()
@@ -322,7 +354,6 @@ async function stressProof(page, source) {
     assert.equal(threads.size, 1, 'Trace must identify exactly one renderer thread for the measured page')
     assert.ok(metrics.AnimationFrame?.count >= 250, 'Trace must contain at least 250 complete page frames')
     assert.ok(metrics['AnimationFrame::Render']?.count >= 250, 'Trace must retain full render-work spans')
-    assert.ok(metrics.AnimationFrame.p95Ms <= 16, `200-event full frame p95 ${metrics.AnimationFrame.p95Ms.toFixed(3)}ms must remain within 16ms`)
     return { inputDigest: source.digest, events: 200, participants: source.model.participants.length, readyMs, repeatedTransport, captureMs: 8000, metrics, traceFile: basename(tracePath), traceEvents: traceEvents.length, traceBytes, complete: true, metricScope: 'Chromium AnimationFrame and nested Render/StyleAndLayout async spans on the measured page renderer thread; complete raw trace retained' }
   } finally {
     clearTimeout(completionTimer)
@@ -379,6 +410,7 @@ async function sourceInvalidationProof(page, source, validSourceDigest) {
   const inspector = await ensureInspector(page)
   await expect(inspector.getByRole('status').first()).toHaveText('No playable sequence')
   await assertDiagnostics(inspector); await expect(inspector.getByRole('button', { pressed: true })).toHaveCount(0)
+  await ensureWorkspaceEditor(page)
   await page.getByRole('button', { name: 'Launch', exact: true }).click()
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect.poll(async () => {
@@ -409,7 +441,7 @@ export async function proveSequenceRehearsal({ page, sourcePath, output, stressP
     url.searchParams.delete('python-learning-offline'); url.searchParams.set('studio-offline', revision)
     assert.equal((await page.goto(url.href, { waitUntil: 'domcontentloaded' }))?.status(), 200)
     await page.setViewportSize({ width: 1280, height: 800 }); phase = 'import-save-reload'
-    const readyMs = await importSource(page, source), binding = await saveAndReload(page, source)
+    const readyMs = await importSource(page, source, { closeEditor: false }), binding = await saveAndReload(page, source)
     phase = 'renderers'; const renderers = await rendererProof(page, source)
     phase = 'branches'; const branches = await branchesProof(page, source)
     phase = 'mobile-reduced-motion'; const mobile = await mobileMotionProof(page, source)
@@ -429,6 +461,9 @@ export async function proveSequenceRehearsal({ page, sourcePath, output, stressP
     await page.screenshot({ path: join(output, 'sequence-offline-desktop.png'), fullPage: true })
     const evidence = { source: { basename: source.name, sha256: source.digest, bytes: source.bytes }, offlineRoute: 'studio-offline', revision, binding, readyMs, events: source.model.events.length, participants: source.model.participants.length, renderers, branches, mobile, performance, sourceInvalidation, desktopViewport: { width: 1280, height: 800 }, productionBuildBrowser: true, physicalDeviceProven: false, productionDeploymentProven: false }
     await writeFile(join(output, 'sequence-evidence.json'), JSON.stringify(evidence, null, 2) + '\n')
+    // Retain recovery observations even when timing fails; the overall gate stays strict.
+    phase = 'performance-budget'
+    if (performance) assert.ok(performance.metrics.AnimationFrame.p95Ms <= 16, `200-event full frame p95 ${performance.metrics.AnimationFrame.p95Ms.toFixed(3)}ms must remain within 16ms`)
     return evidence
   } catch (error) {
     await writeFile(join(output, 'sequence-failure.json'), JSON.stringify({ status: 'failed', phase, sourceDigest: source?.digest || null, url: page.url(), error: error instanceof Error ? error.message : String(error) }, null, 2) + '\n')
