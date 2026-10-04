@@ -216,13 +216,24 @@ async function testMutationRefreshPreservesExplicitReconciliation() {
     assert.equal(settled, false, 'Finishing the older pass cannot settle callers awaiting the queued import pass')
     const source = { kind: 'local' as const, originalName: 'queued.md' }
     setWorkspaceEntrySource('/docs/queued.md', source)
+    const releaseImportRead = releaseRead
+    heldRead = new Promise(resolve => { releaseRead = resolve })
+    let laterSettled = false
+    const laterRefresh = refresh!({ silent: true, reconcileSeed: false }).then(snapshot => {
+      laterSettled = true
+      return snapshot
+    })
+    await act(async () => { releaseImportRead!() })
+    await waitFor(() => settled)
+    assert.equal(laterSettled, false, 'Import completion must not wait for a later background refresh')
     await act(async () => {
-      releaseRead!()
       for (const snapshot of await joined!) {
         assert.ok(snapshot.entries.some(entry => entry.path === '/docs/queued.md' && entry.text === '# Queued import'),
           'Every joined caller receives the completed inventory including the new import')
         assert.deepEqual(snapshot.sourcesByPath['/docs/queued.md'], source, 'Fresh entries retain their paired source metadata')
       }
+      releaseRead!()
+      await laterRefresh
     })
     await waitFor(() => isIdle() && seeds === 2 && statuses.length === 2)
     assert.equal(seeds, 2, 'Queued full refresh survives a subsequent local refresh')
