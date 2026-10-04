@@ -11,7 +11,7 @@ export function sequenceNativeSvg(model: SequenceModel): string {
   const people = model.participants.map(p => {
     const actor = p.actor ? `<g stroke="currentColor" fill="none"><circle cx="${x(p.id)}" cy="23" r="8"/><path d="M${x(p.id)},31v20m-16,-13h32m-16,13l-12,14m12,-14l12,14"/></g><text x="${x(p.id)}" y="85">${escape(p.label)}</text>`
       : `<rect x="${x(p.id) - 88}" y="18" width="176" height="52" rx="6" class="sequence-participant"/><text x="${x(p.id)}" y="48">${escape(p.label)}</text>`
-    return `${actor}<line x1="${x(p.id)}" x2="${x(p.id)}" y1="90" y2="${height - 80}" stroke="currentColor" stroke-dasharray="4 4" opacity=".45"/><rect x="${x(p.id) - 88}" y="${height - 70}" width="176" height="48" rx="6" class="sequence-participant"/><text x="${x(p.id)}" y="${height - 41}">${escape(p.label)}</text>`
+    return `<g data-sequence-participant="${escape(p.id)}">${actor}<line x1="${x(p.id)}" x2="${x(p.id)}" y1="90" y2="${height - 80}" stroke="currentColor" stroke-dasharray="4 4" opacity=".45"/><rect x="${x(p.id) - 88}" y="${height - 70}" width="176" height="48" rx="6" class="sequence-participant"/><text x="${x(p.id)}" y="${height - 41}">${escape(p.label)}</text></g>`
   }).join('')
   const branches = model.branches.map(branch => `<rect x="25" y="${y(branch.first) - 30}" width="${width - 50}" height="${Math.max(1, branch.last - branch.first) * row}" fill="none" stroke="currentColor" stroke-dasharray="3 3" opacity=".5"/><text x="40" y="${y(branch.first) - 12}" text-anchor="start">${escape(branch.label)}</text>`).join('')
   const activations = model.activations.map(a => `<rect x="${x(a.participant) - 5}" y="${y(Math.max(0, a.first - 1))}" width="10" height="${Math.max(1, a.last - a.first + 1) * row}" class="sequence-participant"/>`).join('')

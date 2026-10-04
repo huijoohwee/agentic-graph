@@ -41,13 +41,20 @@ test('fidelity fixture keeps actors, aliases, eight messages, activations and bo
 })
 
 test('source identity and duplicate messages remain distinct through native rendering and graph projection', () => {
-  const source = 'sequenceDiagram\nparticipant A\nparticipant B\nA->>B: Same\nA->>B: Same'
+  const source = 'sequenceDiagram\nactor A\nparticipant B\nA->>B: Same\nA->>B: Same'
   const model = parseSequence(source, 'doc:diagram')
   assert.notEqual(model.events[0]!.id, model.events[1]!.id)
   assert.equal(parseSequence(source, 'doc:diagram').key, model.key)
   assert.notEqual(parseSequence(`${source}\nB-->>A: Done`, 'doc:diagram').key, model.key)
   const svg = sequenceNativeSvg(model)
   assert.equal((svg.match(/data-sequence-event=/g) || []).length, 2)
+  const dom = new JSDOM(svg)
+  try {
+    const participants = [...dom.window.document.querySelectorAll('[data-sequence-participant]')]
+    assert.deepEqual(participants.map(element => element.getAttribute('data-sequence-participant')), model.participants.map(person => person.id))
+    assert.ok(participants[0]!.querySelector('circle'), 'actor geometry retains participant ownership')
+    assert.ok(participants.every(element => element.querySelector('line') && element.querySelector('.sequence-participant')), 'active-state styling reaches each lifeline and participant')
+  } finally { dom.window.close() }
   const relations: Array<Record<string, unknown>> = []
   projectSequenceGraph(source, { gid: 'g', docId: 'doc', diagramId: 'd', startIndex: 10, ensureNode: () => {}, mkMeta: (first, last) => ({ first, last }), addRel: (_a, key, _b, properties) => { if (key === 'pointsTo') relations.push(properties!) } })
   assert.equal(relations.length, 2)
