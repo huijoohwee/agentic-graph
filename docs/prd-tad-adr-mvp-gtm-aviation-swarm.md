@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.3"
-revision: "0.4.3"
+version: "0.4.4"
+revision: "0.4.4"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.3"
-tad_revision: "0.4.3"
-adr_revision: "0.4.3"
-mvp_revision: "0.4.3"
-gtm_revision: "0.4.3"
+prd_revision: "0.4.4"
+tad_revision: "0.4.4"
+adr_revision: "0.4.4"
+mvp_revision: "0.4.4"
+gtm_revision: "0.4.4"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -23,9 +23,9 @@ load_policy: "on-demand"
 agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
-worktree_id: "agent/device-0232231d4a19/aviation-swarm-acceptance"
+worktree_id: "agent/device-0232231d4a19/aviation-refresh-settlement"
 agent_id: "codex-root"
-source_revision: "b639ba42f92d3af7ac26c6e9d7949686664eb1c8"
+source_revision: "b77ea1516e81a0abfae0b223bdae6fffe598db40"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm
 
-`aviation-swarm@0.4.3` hardens the eligible Must workflows of the existing aviation evidence capability:
+`aviation-swarm@0.4.4` hardens the eligible Must workflows of the existing aviation evidence capability:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -50,8 +50,9 @@ changes discard restoration. No package, provider, model or store is added.
 G1–G8 baseline: Graph `cc40000f8827ea68192edbd42385a887f107a3b5`, integrated by [PR 1543](https://github.com/huijoohwee/agentic-graph/pull/1543).
 `E/` means `canvas/src/features/evidence-analysis/`. Plan commit `795327fb1ca10dde67450451521a6e3e97f95873`
 was integrated by [PR 1545](https://github.com/huijoohwee/agentic-graph/pull/1545) at `24f0614390affce87268d74e80a93791a73c30ca`.
-[PR 1551](https://github.com/huijoohwee/agentic-graph/pull/1551) publishes immutable
-`38f2aa04342f13c05aa7c589bdacdd2e7338daf9` remains immutable. Startup [PR 1552](https://github.com/huijoohwee/agentic-graph/pull/1552) integrated at `201835c8`; combined `b639ba42` is unpublished. ER rows bind proof.
+Startup [PR 1552](https://github.com/huijoohwee/agentic-graph/pull/1552) integrated at `201835c8`.
+[PR 1553](https://github.com/huijoohwee/agentic-graph/pull/1553) (`dcf1ccd9`) failed provider CI and stays immutable.
+This successor repairs refresh settlement; ER rows bind proof.
 
 | Grounding ID / capability | Inspected owner and contract | Reuse / smallest delta | Check / evidence limit |
 |---|---|---|---|
@@ -64,8 +65,8 @@ was integrated by [PR 1545](https://github.com/huijoohwee/agentic-graph/pull/154
 | G7 transports | `E/tools/evidenceCli.mjs`; `canvas/src/features/agent-ready/evidenceAnalysisAgentReadyContract.mjs`, `evidenceAnalysisWebMcpTools.ts`; `mcp/local-tool-contract.js`, `mcp/server.js` | Retain local CLI/MCP and browser adapters; remote aviation parity unproved | Local adapter checks; browser-discovered tools require actual invocation proof |
 | G8 native experience | `E/EvidencePanel.tsx`, `ui/evidenceInput.ts`; [Flight source](workspace-seeds/agentic-graph-game-flight-sim-demo.md) | Add bounded cancellable asset reads; collapse optional context in `FloatingPanelXrSceneViews.tsx`; retain native owners | ER3/ER6–ER10; simulation remains distinct from observed evidence |
 
-Exposure, costing, fuel models, live disruption and aviation monetary ledgers are unimplemented.
-Load affected native sources on demand; always-loaded prompt delta is zero. Recheck source joins on drift.
+Exposure, costing, fuel and live disruption remain unbuilt. Load native sources on demand;
+always-loaded prompt delta is zero. Recheck joins on drift.
 
 ## PRD
 
@@ -143,7 +144,7 @@ applies one 15-second deadline to the whole batch (test/config bound 1–30,000 
 cleanup never waits on a broken stream. Panel source/view/remove/unmount changes cancel pending assets
 and fence stale results; failed replacements retain acceptance. Local file reads remain byte-bounded
 and result-fenced, not abortable. Optional panorama/city controls mount only when expanded; view changes
-reset expansion; width fixes retain source owners. No analytical algorithm changes. `useMarkdownWorkspaceExplorerState.tsx` now joins queued refresh callers to the completed inventory instead of returning stale entries.
+reset expansion; width fixes retain source owners. No analytical algorithm changes. `workspaceRefreshQueue.ts` settles callers after their queued pass, retaining fresh paired inventory and seed escalation. Later background passes cannot prolong an import wait.
 `useWorkspaceFileActions/importActions.ts` reports await stages and fences post-await mutations;
 `core.ts` fences graph/focus. Stale/failed native imports remain handled, preventing duplicate fallback;
 dispatched lower-owner effects are not rolled back. Geo treats null map/no error as pending and lazily
@@ -340,7 +341,7 @@ Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-read
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
 | ER1 | Core/CLI/stdio/WebMCP-builder: 74 passed; combined b639 affected CI: 10/10 selected partitions pass (`candidate-b639ba42-validation.json`) | Empty partitions are not full-suite parity; typecheck and browser checks pass. Spatial stage CPU 692,338 ms: cost regression retained |
-| ER2 | Retained cf1 timeout, 38f2 provider refresh timeout and 6609 mobile source failure; b639 combined native gate passes | No timeout/assertion waiver. Joined-refresh regression fails before repair; seven checks pass after. Actual aviation first-open still fails: ER5 |
+| ER2 | dcf provider job `111475128856` fails before offline install: 30 s disabled review, “Refreshing”, no browser/network errors. b77ea per-pass regression red→green; six related checks pass | `refresh-settlement-*.log`; source fix, not proven exclusive CI cause. New aggregate pending; cf1/38f2/6609 failures retained |
 | ER3 | b639 native Save: 3 entities/185 facts/3 sources; 262,899 B, SHA-256 `09c6904154ef854656712de87c21511e630fca076c456c0ac7cfc58d473da729` | Saved bytes equal prior cf1/38f2 packs. 38f2 offline reimport retained; `evidence-pack-b639ba42.json` is the actual new download |
 | ER4 | b639 frozen inventory: 1,650 JS/MJS; maximum 495,688 B; 1,803 emitted files hash-bound | 38f2 initial closure: 37 files/3,430,192 B, SVG absent. Whole-host 150 kB remains open; human scope decision pending |
 | ER5 | b639 spatial 1024/390 import/apply/install/cold reload passes; 1,761 files/29.3 MiB verified | Actual aviation first offline-open fails at `async source read`; `aviation-cold-open-b639ba42-failed.json`. Later diagnostic reloads recover; no first-open pass. Sequence owns repair |
@@ -444,7 +445,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.3 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.4 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -454,7 +455,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-All anchors below join `aviation-swarm@0.4.3`; coverage decisions are not readiness.
+Anchors join `aviation-swarm@0.4.4`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -490,11 +491,12 @@ Unchecked finding families have no zero-count claim. Authoring coverage does not
 
 ## Handover
 
-Runtime owners and proof scopes are recorded in ER1–ER10; AS1/AS2/AS5 and delivery require separate acceptance.
+ER1–ER11 bind proof; AS1/AS2/AS5 and delivery require separate acceptance.
 
-b639 combines joined refresh with protected startup repair: native 10/10 and generic desktop/mobile
-offline checks pass. Actual aviation first offline-open still fails (ER5); diagnostic reloads recover.
-Sequence owns that transition; no unchanged full-CI retry or readiness waiver. iPhone is SKIP/KIV.
+b639 native 10/10 passed; dcf provider CI failed on import refresh (ER2). This successor fixes
+per-caller settlement; native demo import passes on Dev 5195, aggregate pending. Aviation first
+offline-open remains unresolved; warm 390/1280 logpoints recover (ER5). Sequence owns startup repair.
+No unchanged full-CI retry or waiver. iPhone remains SKIP/KIV.
 Whole-host 150 kB awaits the human scope decision; no feature-only reinterpretation. Real-label,
 full guideline acceptance remains separate. Recheck on source/input/profile drift.
 Source, protected integration and production need separate receipts; AS3/AS4 retain input/rights/buyer gates.
