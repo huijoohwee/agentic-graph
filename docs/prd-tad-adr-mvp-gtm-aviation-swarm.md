@@ -20,9 +20,9 @@ universal_scope: false
 lifecycle_status: "active"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/aviation-swarm-readiness"
+worktree_id: "agent/device-0232231d4a19/aviation-swarm-portability"
 agent_id: "codex-root"
-source_revision: "7874da22f0d02bf2e8b59195d815cad82824334b"
+source_revision: "cf1ef571b9f34f4e625830b694c81ae1c9a2ecfb"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -39,7 +39,8 @@ Operational exposure and flight-cost calculation remain unimplemented.
 consumes [aviation-evidence-layer@0.4.2](aviation-evidence/prd-tad-adr-mvp-gtm.md); it does not replace that
 owner, its eleven acceptance thresholds, rights records, financial model, or execution backlog.
 This successor adds import race fences/stages, primary-first Geo/lazy SVG, bounded bundles and XR surface
-projections. No package, provider, model or store is added; prior evidence hardening remains.
+projections. Async evidence controls retain keyboard focus unless the user moves away; source/view
+changes discard restoration. No package, provider, model or store is added.
 
 ## Scope and grounding — reference implementation
 
@@ -331,21 +332,21 @@ distance-only output; neither a quote nor a commitment follows from a scenario.
 The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md](workspace-seeds/agentic-graph-game-flight-sim-demo.md).
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
 One admitted checkout; exact-path readmissions own scope. New files <600 lines, oversized owners
-shrink, plan ≤40 KiB, zero new packages/spend. Offline repair: ≤20 active minutes, six files/10 KiB, one runtime module; refresh on drift. Protected review waits for status change, not an ETA. Preview proof is not deployment.
+shrink, plan ≤40 KiB, zero new packages/spend. Acceptance sprint: ≤30 active minutes, six source modules/30 KiB; refresh on drift. Protected review waits for status change, not an ETA. Preview proof is not deployment.
 Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-readiness/`.
 
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
-| ER1 | Prior runtime core/CLI/stdio/WebMCP-builder tests: 74 passed | G1–G7; final affected CI pending; real labels/demand unproved |
-| ER2 | `npm run ci:affected` at clean `5f9246da53715ff65c73c0fc8844524eae72ad46`: 5 passed, 1 failed, 4 unexecuted (`candidate-5f9246d-validation.json`) | Desktop offline passes; failed mobile proof retained. Startup fix f8d448c aligned at cefff3f; fresh CI pending |
-| ER3 | Exact demo: 3 entities/185 facts/3 sources; browser saved 262,899-byte pack matching visible export; reimport and prior offline reimport passed | Actual file proof; final successor save/reimport repeat pending |
-| ER4 | 160831d build: 1,648 JS; max 495,688 B; zero ESM cycles/unresolved imports; initial 37 files/3,429,534 B (−68,143 B). `candidate-160831d-bundle-proof.json` binds source/tree/manifest | Pre-alignment proof; inherited whole-host 150 kB fails; scope decision pending |
-| ER5 | Build 5 installed 1,758 files/29.4 MiB; offline reopen and 185 facts passed. Evidence-load window: exactly two same-origin fixture/lazy-JS requests, both service-worker served | No external request in that complete action capture; full reopen capture truncated, so no whole-host zero-network claim |
-| ER6 | Build 5 at 390×844: offline UTC step and repeated route result pass; collapsed context and independent scrolling retained. Prior Enter disclosure passes | 200% zoom, full accessibility and physical-device acceptance remain |
-| ER7 | Prior affected review passed. New `sw.ts` puts verified-pack reads before precache hits; three regressions and worker typecheck pass | Built eviction/corruption proof and affected CI pending |
-| ER8 | Import regression 1/1 and 14 related checks passed (`import-checks.log`). Dev and build 5 offline native bridge reached preparing→selecting→refreshing→applying→synchronizing→opening→`Imported 1; corpus source units 1` (`offline-import.json`) | Pending-toast acceptance gap closed on this candidate; original cause unproved. Job fences prevent stale continuation/duplicate Launch fallback, not rollback of dispatched lower-owner effects |
-| ER9 | Six Geo checks pass (`geo-package-lazy-regression-v2.log`). Built 160831d: zero SVG requests/mounts during activation; blocked SVG stays local, reload recovers (`geo-primary-built-160831d.json`, `geo-recovery-built-160831d.json`) | Actual browser proof; test selection restored to MapLibre |
-| ER10 | XR tests 2/2: five unrelated writes and five Flight advances each changed commits 5→0; motion and required updates remain. Build 6 retains the same connected WebGL canvas through History open/close, zero removals (`xr-canvas-stability.json`) | Independent review; render counts are test measurements, canvas retention is actual UI proof |
+| ER1 | Core/CLI/stdio/WebMCP-builder: 74 passed; clean fca5200 affected validation selected 10 owner partitions, all passed (`candidate-fca5200-validation.json`) | Some extended partitions contain zero commands; no all-platform parity claim |
+| ER2 | Clean cf1ef571 affected CI: five partitions passed, spatial full-app timed out before offline install, four unexecuted (`candidate-cf1ef571-validation-failed.json`) | Original failure retained. One unchanged replay and one instrumented native run passed 1024/390; normal refresh→index→sync→open, no errors. No confirmed refresh defect or timeout waiver; final gate pending |
+| ER3 | cf1ef571 exact demo: 3 entities/185 facts/3 sources; native Save produced 262,899 B, SHA-256 `09c6904154ef854656712de87c21511e630fca076c456c0ac7cfc58d473da729`; reimport/re-export identical (`aviation-save-cf1ef571.json`) | Actual saved file and typed replay repeat proof; final changed UI check pending |
+| ER4 | fca5200 frozen inventory: 1,656 JS/MJS, maximum 495,688 B; initial static closure 37 files/3,430,190 B; SVG absent from initial closure | All 1,809 emitted hashes verified. Inherited whole-host 150 kB fails; human scope decision pending |
+| ER5 | fca5200 native 1024/390 import/apply/offline install/cold reload pass (`candidate-fca5200-spatial-acceptance.json`). cf1 unchanged replay installs 1,761 files/29.3 MiB and passes both widths | Technical rehearsal, not aviation acceptance. cf1 evidence action capture: two same-origin requests, both worker-served; no whole-host zero-network claim |
+| ER6 | Prior build at 390×844: offline UTC step and repeated route result pass; independent scrolling retained. cf1 keyboard source disclosure/UTC/query and save/reimport pass | Query focus loss reproduced; owner repair plus 18 UI checks pass. Rebuilt UI, 200% zoom and offline aviation acceptance pending; physical iPhone SKIP/KIV |
+| ER7 | fca5200 custom worker precedes ordinary precache with verified-pack authority. Six installed/uninstalled missing/corrupt-cache cases pass; installed cases emit zero worker fetches | Exact emitted-worker SHA `d6a542256e35b6138f88a41d46d605fb39e518f4b88ff12c13880e501f6c636c`; retained-build behavior proof, not full UI fidelity |
+| ER8 | Import regression and 14 related checks pass. Native offline bridge completes preparing→selecting→refreshing→applying→synchronizing→opening | Job fences prevent stale continuation/duplicate Launch fallback; no rollback of already dispatched lower-owner effects |
+| ER9 | Six Geo checks pass. Built 160831d: zero SVG requests/mounts during activation; blocked SVG stays local and reload recovers (`geo-primary-built-160831d.json`, `geo-recovery-built-160831d.json`) | Unchanged-source browser proof; selection restored to MapLibre |
+| ER10 | XR tests 2/2: five unrelated writes and five Flight advances each change commits 5→0; motion retained. Build 6 keeps the same connected WebGL canvas through History open/close, zero removals | Unchanged-source proof; counts are test measurements, retention is actual UI evidence |
 
 Repeated offline AS2: 77,757.706 m versus 71,188.231 m, difference 6,569.475 m, conditional band
 [6,541.475,6,597.475] m with limitations. AS1 inspected `/facts/0`, UTC 02:25:30.000Z→02:25:30.574Z.
@@ -414,11 +415,13 @@ Audience projections must preserve qualified source joins, hypotheses and the ac
 
 ## ADLC and release — reference implementation
 
-The original START admitted the plan from `cc40000f…`; PR 1545 integrated it at `24f0614390…`.
-PR 1547 published head `2206391d84e47202e6b69909d88b2b922d7c5b74`; protected review/integration is pending.
-Same-checkout successor `agent/device-0232231d4a19/aviation-swarm-readiness` starts there.
-Intent: `/change #aviation-swarm-readiness @codex-root`; native readmission owns exact paths. Preserve
-concurrent owners; final checks, successor publication and integration each require fresh receipts.
+The original plan integrated via PR 1545. PR 1547 is the retained earlier source publication.
+[PR 1550](https://github.com/huijoohwee/agentic-graph/pull/1550) publishes immutable
+`fca520008ccddbabd39717848c0dc6f8786cdd0b`; its Integration Gate rejects a machine-specific
+artifact path. The unpublished same-checkout successor `aviation-swarm-portability` fixes that locator
+and keyboard focus at the existing evidence owner. Intent: `/fix #aviation-swarm-portability @codex`.
+Native exact-path readmission retains the mission; final validation/publication need fresh receipts.
+Neither predecessor checks nor a retained-build replay authorizes integration of the changed head.
 
 **AS-D6 · Lane & deploy boundary · flowchart LR · version 2.** Source and delivery each require their own receipt.
 
@@ -469,7 +472,7 @@ All anchors below join `aviation-swarm@0.4.1`; coverage decisions are not readin
 | C11 organization/obligations | covered / Source policy/GTM | Operator | Commercial/data review depends on selected buyer/source |
 | C12 viability | deferred / GTM | Product | Unknown drivers; populate/reconcile existing model after priced case |
 | C13 capital | covered / GTM | Product | Bootstrap/no ask; revisit on paid demand |
-| C14 execution | covered / ADLC | Engineering | Plan integrated; PR 1547 published; protected review and successor final release/delivery pending |
+| C14 execution | covered / ADLC | Engineering | Plan integrated; immutable PR 1550 blocked; portability/focus successor final gate/publication pending |
 | C15 audience projections | deferred / GTM | Product | No audience handoff; generate only from qualified joined claims |
 | C16 learning | covered / GTM | Product | Explicit continue/revise/stop thresholds; EXP results pending |
 
@@ -495,9 +498,10 @@ SVG, XR surface projections and bounded bundles. Build 5 offline native import e
 Geo startup/selection and bounded browser-tool parity pass. XR tests confirm 5→0 unrelated commits
 without freezing motion. Whole AS1/AS2/AS5 and production delivery remain unaccepted.
 
-Engineering aligned the bootstrap fix; verify precache admission, then affected CI/mobile acceptance.
-Retain save/reimport proof; verify 200% zoom/accessibility. Physical iPhone is SKIP/KIV, not passed.
-Real-label and diagram/guideline acceptance remain separate gaps. Recheck on source,
-input/profile drift. Native publication precedes protected integration; PR 1547 review is an external
-wait. AS3/AS4 retain qualified-input/rights/buyer gates. Preserve originals/concurrent work. No new paid
-resources/packages; labour, assistant cost and TCO are unmeasured. No revenue claim.
+Bootstrap alignment and emitted-worker recovery are verified. Final affected CI and rebuilt aviation
+UI acceptance remain open; preserve the original intermittent cf1 timeout alongside both passing
+native diagnostics. Physical iPhone remains SKIP/KIV. Whole-host 150 kB scope awaits the human
+budget decision; no feature-only reinterpretation is implied. Real-label and diagram/guideline
+acceptance remain separate gaps. Recheck on source/input/profile drift. Native publication precedes
+protected integration; exact candidate gates apply. AS3/AS4 retain qualified-input/rights/buyer gates.
+Preserve originals/concurrent work. No new paid resources/packages or revenue claim.

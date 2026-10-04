@@ -104,6 +104,37 @@ test('a late example response cannot admit data or replace status after an autho
     assert.match(container.querySelector('[role="status"]')!.textContent!, /Current source configuration ready/)
   } finally { await act(async () => root.unmount()); globalThis.fetch = oldFetch; restoreSource(); env.restore() }
 })
+for (const intent of ['none', 'pointer', 'keyboard', 'outside', 'source']) test(`async evidence respects ${intent} focus intent`, async () => {
+  const restoreSource = saveSource(), env = initJsdomHarness(), doc = env.dom.window.document
+  // This harness defaults activeElement to body; exercise the native jsdom focus owner.
+  Reflect.deleteProperty(doc, 'activeElement')
+  const container = doc.body.appendChild(doc.createElement('main')), root = createRoot(container)
+  const outside = doc.body.appendChild(doc.createElement('button')), oldFetch = globalThis.fetch
+  let resolveResponse!: (response: Response) => void
+  globalThis.fetch = (() => new Promise<Response>(resolve => { resolveResponse = resolve })) as typeof fetch
+  try {
+    installSource(); await act(async () => root.render(<EvidencePanel />))
+    const load = [...container.querySelectorAll('button')].find(element => element.textContent === 'Load labelled example')!
+    load.focus()
+    await act(async () => load.click())
+    assert.equal(load.disabled, true)
+    // Chromium drops focus when the active button becomes disabled; jsdom does not.
+    doc.body.tabIndex = -1; doc.body.focus(); assert.ok(doc.activeElement === doc.body)
+    if (intent === 'pointer') doc.body.dispatchEvent(new env.dom.window.Event('pointerdown', { bubbles: true }))
+    if (intent === 'keyboard') doc.body.dispatchEvent(new env.dom.window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    if (intent === 'outside') outside.focus()
+    if (intent === 'source') await act(async () => installSource(documentText + '\nChanged.', 2))
+    await act(async () => resolveResponse(new Response(readFileSync(new URL('../../../../public/evidence-analysis/fixtures/aviation-synthetic-v1.json', import.meta.url)))))
+    await settle(() => !load.disabled)
+    assert.ok(doc.activeElement === (intent === 'none' ? load : intent === 'outside' ? outside : doc.body), 'focus follows the latest user intent')
+    if (intent === 'none') {
+      const query = [...container.querySelectorAll('button')].find(element => element.textContent === 'Run read-only query')!
+      query.focus(); await act(async () => { query.click(); query.blur() })
+      await settle(() => !query.disabled)
+      assert.ok(doc.activeElement === query, 'query completion retains its keyboard origin')
+    }
+  } finally { await act(async () => root.unmount()); outside.remove(); globalThis.fetch = oldFetch; restoreSource(); env.restore() }
+})
 for (const departure of ['remove', 'view', 'unmount']) test(`pending evidence input is cancelled on ${departure}`, async () => {
   const restoreSource = saveSource(), env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)
   const oldFetch = globalThis.fetch
