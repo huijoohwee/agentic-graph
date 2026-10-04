@@ -46,7 +46,7 @@ export function createWebMcpToolExposure(registry, selectScope) {
   const selector = Object.freeze({
     name: WEB_MCP_SCOPE_TOOL_NAME,
     title: 'Select browser tool scope',
-    description: 'Expose core tools plus one workspace group. Changes discovery only; executes no domain action. Discover tools again after selection.',
+    description: 'Select a workspace tool group; changes discovery only. Rediscover tools after selection.',
     inputSchema: Object.freeze({ type: 'object', additionalProperties: false,
       required: ['scope'], properties: { scope: { type: 'string', enum: Object.keys(WEB_MCP_TOOL_SCOPES) } } }),
     annotations: Object.freeze({ readOnlyHint: true, idempotentHint: true, openWorldHint: false }),

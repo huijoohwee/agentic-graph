@@ -11,9 +11,10 @@ import { readXrMotionReferenceRuntime, subscribeXrMotionReferenceRuntime } from 
 import { resolveXrStageObjects } from '@/features/three/xrSceneLibrary'
 import { XrSubjectTransformEditor } from '@/features/three/XrSubjectTransformEditor'
 import { resolveXrDocumentStageAuthority } from '@/features/three/xrSceneDocumentReadiness'
-import { pythonLearningRuntime } from '@/features/python-learning/learningRuntime'
+import { useWarehouseInspectionMode } from '@/features/python-learning/useWarehouseInspectionMode'
 
 const SemanticObjectInspector = React.lazy(() => import('@/features/xr-v2/SemanticSpacePanel').then(module => ({ default: module.SemanticSpacePanel })))
+const SequenceTimeline = React.lazy(() => import('@/features/sequence/SequenceTimeline').then(module => ({ default: module.SequenceTimeline })))
 const WarehouseTimelinePanel = React.lazy(() => import('@/features/python-learning/WarehouseTimelinePanel').then(module => ({ default: module.WarehouseTimelinePanel })))
 
 function MediaTimelineBottomPanelView({ compact }: { compact: boolean }) {
@@ -34,15 +35,14 @@ export function XrObjectInspector({ emptyMessage = '' }: { emptyMessage?: string
 
 export function TimelineBottomPanelView({ compact = false }: { compact?: boolean }) {
   const sourceContext = useSourceGeospatialContext()
-  const learningDocument = React.useSyncExternalStore(pythonLearningRuntime.subscribe, () => pythonLearningRuntime.read().document, () => null)
+  const sequenceContext = useGraphStore(state => state.canvasRenderMode === '2d' && ['sequence', 'sequenceMermaid'].includes(state.canvas2dRenderer))
+  const { available: warehouseTimelineAvailable } = useWarehouseInspectionMode()
   const xrTimelineContext = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
-  const semanticSelection = useGraphStore(state => state.canvasRenderMode === '3d' && state.graphData?.nodes.some(node => node.id === state.selectedNodeId && node.type === 'semantic-space-entity'))
   const stageAuthority = useGraphStore(state => resolveXrDocumentStageAuthority(state))
   if (sourceContext) return <React.Suspense fallback={<p>Opening source Timeline…</p>}><SourceGeospatialTimelinePanel compact={compact} /></React.Suspense>
-  if (learningDocument?.lessonId === 'drone') return <React.Suspense fallback={<p>Opening warehouse timeline…</p>}><WarehouseTimelinePanel compact={compact} /></React.Suspense>
-  if (semanticSelection) return <XrObjectInspector />
+  if (warehouseTimelineAvailable) return <React.Suspense fallback={<p>Opening warehouse timeline…</p>}><WarehouseTimelinePanel compact={compact} /></React.Suspense>
   if (xrTimelineContext && !stageAuthority) return <p role="status" className="p-3 text-xs">No authored XR timeline in this document. Add an object from Media or open an XR scene.</p>
-  // Scene review also works before mobile 3D opt-in or object selection.
-  if (xrTimelineContext) return <><XrSubjectTransformEditor /><XrCameraMotionSection /></>
+  if (xrTimelineContext) return <XrCameraMotionSection />
+  if (sequenceContext) return <React.Suspense fallback={<p>Opening sequence timeline…</p>}><SequenceTimeline /></React.Suspense>
   return <MediaTimelineBottomPanelView compact={compact} />
 }

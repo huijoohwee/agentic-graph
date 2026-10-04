@@ -1,0 +1,26 @@
+.workspace-project { container-type: inline-size; color: var(--kg-text-primary, inherit); min-width: 0; }
+.workspace-project * { box-sizing: border-box; }
+.workspace-project header, .workspace-project main, .workspace-project footer { margin: auto; padding: 12px 0; }
+.workspace-project h2 { margin: 0 0 8px; font-size: 1rem; font-weight: 600; }
+.workspace-project p { line-height: 1.5; }
+.workspace-project .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; margin-bottom: 12px; }
+.workspace-project label { display: grid; gap: 5px; font-size: .9rem; min-width: 0; }
+.workspace-project input, .workspace-project select, .workspace-project textarea, .workspace-project button { font: inherit; color: inherit; border: 1px solid var(--kg-border, #899d90); background: var(--kg-bg, transparent); border-radius: 6px; padding: 10px; min-width: 0; max-width: 100%; }
+.workspace-project button { cursor: pointer; min-height: 44px; }
+.workspace-project button.primary { color: white; background: #215d3b; border-color: #215d3b; }
+.workspace-project button:disabled { opacity: .5; cursor: default; }
+.workspace-project .grow { flex: 1; min-width: 120px; }
+.workspace-project .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.workspace-project .card { border: 1px solid var(--kg-border, #899d90); border-radius: 8px; padding: 12px; min-width: 0; }
+.workspace-project #file-list { display: grid; gap: 5px; max-height: 160px; overflow: auto; margin-bottom: 12px; }
+.workspace-project #file-list button { text-align: left; overflow-wrap: anywhere; }
+.workspace-project #file-list button[aria-current=true] { outline: 2px solid #428860; outline-offset: -2px; }
+.workspace-project #editor { display: block; width: 100%; min-height: 240px; resize: vertical; font-family: ui-monospace, monospace; line-height: 1.5; tab-size: 2; }
+.workspace-project #status { min-height: 48px; padding: 10px 0; overflow-wrap: anywhere; }
+.workspace-project #status[data-error=true] { color: var(--kg-text-danger, #cc5555); }
+.workspace-project #version-id, .workspace-project pre { font-family: ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }
+.workspace-project details { margin-top: 16px; }
+.workspace-project footer { font-size: .85rem; opacity: .8; }
+.workspace-project .hidden { display: none; }
+.workspace-project :focus-visible { outline: 3px solid #c99a12; outline-offset: 3px; }
+@container (min-width: 700px) { .workspace-project .layout { grid-template-columns: 230px minmax(0, 1fr); } }

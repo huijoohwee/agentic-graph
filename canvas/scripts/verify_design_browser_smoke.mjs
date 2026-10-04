@@ -46,7 +46,9 @@ async function verify() {
         && state.sourceFiles[0]?.source?.path === `workspace:${path}`
     }, undefined, { timeout: 120000 })
     // Finish seed activation, then dismiss overlays from front to back through rendered controls.
-    await dismissVisibleFloatingPanel(page)
+    const floatingPanel = page.locator('[data-kg-floating-panel-root="true"]:not([data-kg-strybldr-bottom-timeline-panel])').first()
+    await floatingPanel.waitFor({ state: 'visible' })
+    assert.equal(await dismissVisibleFloatingPanel(page, floatingPanel), true, 'Expected seed floating panel must close through its rendered control')
     const timeline = page.getByRole('complementary', { name: 'Strybldr Timeline', exact: true })
     await timeline.getByRole('button', { name: 'Close', exact: true }).click()
     await timeline.waitFor({ state: 'detached' })

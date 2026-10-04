@@ -18,9 +18,12 @@ export async function importFileDigest(file: File): Promise<string | undefined> 
   return importContentDigest(`${digest}:${file.size}:${file.type}`)
 }
 
-export async function indexSavedUrlImports(fs: WorkspaceFs) {
+export type SavedUrlImport = { path: string; text: string; source: { kind: 'url'; url: string }; state: WorkspaceEntrySource['importState'] }
+type SavedUrlImportAcceptance = (saved: SavedUrlImport) => boolean | Promise<boolean>
+
+export async function indexSavedUrlImports(fs: WorkspaceFs, accept?: SavedUrlImportAcceptance) {
   const index = loadWorkspaceSourceIndex()
-  const saved = new Map<string, { path: string; text: string; source: { kind: 'url'; url: string }; state: WorkspaceEntrySource['importState'] }>()
+  const saved = new Map<string, SavedUrlImport>()
   for (const entry of (await fs.listEntries()).sort((a, b) => Number(/-\d+\.md$/.test(a.path)) - Number(/-\d+\.md$/.test(b.path)) || a.path.localeCompare(b.path))) {
     if (entry.kind !== 'file') continue
     const source = index[entry.path]
@@ -33,14 +36,16 @@ export async function indexSavedUrlImports(fs: WorkspaceFs) {
     if (saved.has(key) && entry.path !== canonicalPath) continue
     const text = await fs.readFileText(entry.path)
     if (!text?.trim() || /Markdown conversion is unavailable for this page|kgPendingLocalImport/.test(text)) continue
-    saved.set(key, { path: entry.path, text, source: { kind: 'url', url: key }, state: source?.importState })
+    const candidateImport: SavedUrlImport = { path: entry.path, text, source: { kind: 'url', url: key }, state: source?.importState }
+    if (accept && !await accept(candidateImport)) continue
+    saved.set(key, candidateImport)
   }
   return saved
 }
 
-export async function findSavedUrlImport(fs: WorkspaceFs, url: string) {
+export async function findSavedUrlImport(fs: WorkspaceFs, url: string, accept?: SavedUrlImportAcceptance) {
   const key = new URL(url); key.hash = ''
-  return (await indexSavedUrlImports(fs)).get(key.href) || null
+  return (await indexSavedUrlImports(fs, accept)).get(key.href) || null
 }
 
 export async function recordUrlImport(fs: WorkspaceFs, path: string, url: string) {

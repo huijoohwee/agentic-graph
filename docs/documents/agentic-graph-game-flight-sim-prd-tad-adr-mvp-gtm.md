@@ -4,7 +4,7 @@ id: "md:agentic-graph-game-flight-sim-prd-tad"
 author: "airvio / joohwee"
 date: "2026-09-22"
 updated: "2026-10-04"
-version: "1.5.30"
+version: "1.5.31"
 status: "runtime-ready"
 runtime_claim: "local-runtime-ready"
 evidence_status: "exact-head source and browser proof required at every handoff"
@@ -67,11 +67,11 @@ guideline_revision: "3.4.0"
 guideline_source: "$GITHUB_ROOT/huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
 previous_document_version: "1.5.2"
-prd_revision: "1.5.30"
-tad_revision: "1.5.30"
-adr_revision: "1.5.30"
-mvp_revision: "1.5.30"
-gtm_revision: "1.5.30"
+prd_revision: "1.5.31"
+tad_revision: "1.5.31"
+adr_revision: "1.5.31"
+mvp_revision: "1.5.31"
+gtm_revision: "1.5.31"
 ---
 
 # agentic-graph Game Flight Sim PRD-TAD-ADR-MVP-GTM
@@ -589,3 +589,7 @@ PRD, TAD, ADR, MVP and GTM consume revision `1.5.25`; normative authority remain
 PRD: retain readable, reachable Flight controls in the full canvas and alongside editor/panels. TAD/ADR: reuse `CanvasViewContainer` and `resolveCanvasContainerInsets`; its optional pointer-transparent overlay measures shared occluders and toolbar, excludes its own descendants, and releases observers on unmount. Flight removes its right-only width calculation and reflows inside that rectangle. Full/Inset renderer preferences remain with the existing owner. No scenario, clock, renderer, dependency or new runtime module is added. MVP: four Geo+XR tests, five layout/control checks and native Canvas check pass; live 1106×952 split/full and 390×844 bounds show every HUD button inside with no horizontal overflow; compact Start→ready→Stop works. Phone Safari remains KIV. Captures/logs: `output/aviation-graph-consolidation-20261004/full-viewport-*` at the GitHub workspace root. GTM: local usability verification only; no adoption or production claim. Revert the shared overlay option and HUD consumer together; keep evidence. Existing Timeline/discovery handoff and release gates remain open.
 
 Viewport ownership consolidation (2026-10-04): traversal covers the workspace pane/drag owner, shared container, MapLibre basemap, Flight/City cameras, graph fit requests and UI clearance. Delete the camera DOM-occlusion observer and its two subscriptions, global-panel camera subtraction, and the Full-only exception; all cameras now consume actual viewport dimensions and native MapLibre resize events. Keep `CanvasViewContainer` as the Full/Inset geometry owner and control clearance separate. Delete Flight’s private editable-target helper in favor of the shared predicate; focused separators and already-handled keydowns cannot fly the aircraft, and keyup publishes only for keys Flight owns. Regression reproduces Shift+Arrow resizing changing throttle, then passes with held-key release preserved. Focused geometry/camera/HUD, City, presentation and input/lifecycle checks pass. Live 544→640 px editor resize preserves 1106×952 map, camera signature, padding, instruments and Ready state. Evidence: `output/aviation-graph-consolidation-20261004/viewport-owner-*`; preserve the keyboard-red captures as prior-failure evidence. Zero new runtime modules/dependencies; runtime source shrinks. GTM remains local usability evidence; no adoption/publication claim. Revert the owner cleanup and corresponding tests together; existing release/corpus/Safari gates remain open.
+
+## ADLC reconciliation — 2026-10-04
+
+The native publication owner preserved the 111-file local frontier in `ab46022906fe57f702f8ca003216bf830209b333`. START admitted reconciliation with protected `8e77ed58bbee285b64444427db097e2fc5de9841`. The shared BottomPanel router retains source-geospatial priority plus current Warehouse, XR and Sequence owners; source toolbar, shared rates through 20× and replay bridge passed 10 focused tests. Full candidate validation, protected integration, delivery and recovery-safe worktree cleanup remain separate pending gates. Original files, patch and SHA-256 manifest are retained under workspace `output/end-adlc-flight-20261004`; this recovery evidence grants no production authority.

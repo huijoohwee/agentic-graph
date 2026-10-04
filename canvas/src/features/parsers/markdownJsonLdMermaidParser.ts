@@ -1,4 +1,5 @@
 import { hashStringToHex } from '@/lib/hash/stringHash'
+import { projectSequenceGraph } from '@/features/sequence/sequenceGraphProjection'
 import { slugify } from './markdownJsonLdUtils'
 import { readMermaidDiagramKind } from 'grph-shared/markdown/mermaidInput'
 import {
@@ -31,6 +32,7 @@ export interface MermaidParserContext {
  * - Click events
  */
 export const parseMermaidFrontmatter = (code: string, ctx: MermaidParserContext): void => {
+  if (/^\s*sequenceDiagram\b/.test(code)) { projectSequenceGraph(code, ctx); return }
   if (readMermaidDiagramKind(code) !== 'flowchart') return
 
   const {

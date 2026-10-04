@@ -398,14 +398,14 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
     "if (!args.selected || selectedTimelineLaneId !== 'scene') return beatMarks",
     'data-kg-xr-motion-scene-controls="click-appear"',
     'data-kg-xr-motion-scene-control-strip="click-appear"',
-    'className="xr-camera-motion-mark-selection-controls xr-camera-motion-mark-selection-controls--lane xr-timeline-scene-stage-control xr-timeline-scene-stage-control--selected"',
+    'className="timeline-transport-clip-controls xr-timeline-scene-stage-control"',
     'style={sceneEditorStyle}',
     'data-kg-xr-timeline-control-bar="scene-clip"',
     '<PanelSelect',
     'className="xr-timeline-scene-stage-select"',
     'data-kg-xr-motion-stage-select="scene-clip"',
     'data-kg-xr-motion-stage-select-lane="scene"',
-    'onChange={event => applyStage(event.target.value)}',
+    'onValueChange={selectedValueInput => applyStage(selectedValueInput)}',
     '<option key={preset.id} value={preset.id}>',
     'data-kg-xr-motion-stage-summary="scene-clip"',
     'xr-timeline-scene-stage-summary-chip',
@@ -421,7 +421,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
   for (const forbidden of ['selectedStagePreset', 'activeStagePreset', 'sceneStagePickerOpen', 'applySceneClipStage', 'SCENE · {', 'data-kg-xr-motion-stage-options="scene-clip"', 'data-kg-xr-motion-stage-option={preset.id}', 'aria-haspopup="listbox"', 'data-kg-xr-motion-scene-controls="compact"', 'data-kg-xr-motion-scene-controls="expanded"', 'data-kg-xr-motion-scene-control-row=', 'xr-timeline-scene-stage-row', 'xr-timeline-scene-stage-button', 'xr-timeline-scene-stage-options', 'xr-timeline-scene-stage-option']) {
     if (xrCameraMotionSource.includes(forbidden)) throw new Error(`expected consolidated BottomPanel XR motion controls to remove stale stage selector ${forbidden}`)
   }
-  for (const marker of ['data-kg-media-3d-toggle="1"', '<XrMediaLibraryPanel', '3D for XR', "if (xrSurfaceActive) setMediaCatalogMode('xr-3d')"]) {
+  for (const marker of ['<MediaCatalogModeControls', '<XrMediaLibraryPanel', '3D for XR', "if (xrSurfaceActive && (!previous.active || xrSimulationWorkbenchOpenRevision > previous.revision)) setMediaCatalogMode('xr-3d')"]) {
     if (!mediaCatalogViewSource.includes(marker)) throw new Error(`expected FloatingPanel Media to expose ${marker}`)
   }
   for (const marker of ['data-kg-media-xr-environments="1"', 'data-kg-media-xr-subject-library="1"', 'data-kg-media-xr-next-label="1"', 'data-kg-media-xr-assets-mcp=', 'data-kg-media-xr-invocation=', 'data-kg-media-xr-invocation-chip-renderer="shared-markdown-sigil"', 'renderMarkdownSigilInlineText(invocation', 'renderAgenticOsInvocationKeywordChip', 'sourceLink: false', 'UI_INLINE_CHIP_GROUP_CLASSNAME', 'data-kg-media-xr-asset-transition=', 'buildXrMediaInvocationControlInput(invocation)', 'onInvoke={runInvocation}', 'controlLocalXrScene']) {

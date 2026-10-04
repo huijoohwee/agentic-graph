@@ -206,9 +206,9 @@ test('canonical contract is valid and selects deduplicated affected checks', asy
     'package.json',
     'README.md',
   ], contract)
-  assert.deepEqual(plan.scopes, ['agent_mission_control', 'dependencies', 'canvas', 'storage_parent_child_browser', 'runtime', 'xrpl_paid_resource', 'documentation'])
+  assert.deepEqual(plan.scopes, ['evidence_analysis', 'agent_mission_control', 'dependencies', 'canvas', 'storage_parent_child_browser', 'runtime', 'xrpl_paid_resource', 'documentation'])
   assert.deepEqual(plan.unmatchedPaths, [])
-  assert.deepEqual(plan.commands, [
+  assert.deepEqual(plan.commands, [...contract.ci_scopes.evidence_analysis.commands,
     ...contract.ci_command_expansions.find(item => item.command.join(' ') === 'npm run agent-mission:check').steps,
     canvasCheck,
     ...runtimeCommands,
