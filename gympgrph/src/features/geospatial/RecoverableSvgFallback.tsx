@@ -44,4 +44,4 @@ export function createRecoverableSvgFallback(
   }
 }
 
-export default createRecoverableSvgFallback(() => import('./SvgGeospatialFallback.js'))
+export default /* @__PURE__ */ createRecoverableSvgFallback(() => import('./SvgGeospatialFallback.js'))
