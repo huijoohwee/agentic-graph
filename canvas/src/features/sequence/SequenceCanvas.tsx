@@ -2,7 +2,8 @@ import React from 'react'
 import { useSequenceDocument } from './useSequenceDocument'
 import { sequenceNativeSvg } from './sequenceNativeSvg'
 import { sequenceTopologySvg } from './sequenceTopologySvg'
-import { bindSequenceSvg, createSequenceSvgPlayback } from './sequenceSvgBinding'
+import { sequenceEventState } from './sequencePresentation'
+import { bindSequenceSvg } from './sequenceSvgBinding'
 import { renderMermaidWithRuntime } from '@/lib/mermaid/mermaidRuntime'
 import { postprocessMermaidSvg } from '@/lib/mermaid/mermaidSvg'
 import { useSvgSurfaceZoomRuntime } from '@/components/GraphCanvas/hooks/useSvgSurfaceZoomRuntime'
@@ -18,19 +19,11 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
   const { model, events, duration, current, transport, documentKey } = sequence
   const graphData = useActiveGraphRenderData(active)
   const rootRef = React.useRef<HTMLDivElement>(null), hostRef = React.useRef<HTMLDivElement>(null)
-  const playbackRef = React.useRef<ReturnType<typeof createSequenceSvgPlayback> | null>(null)
-  const [reducedMotion, setReducedMotion] = React.useState(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   const renderId = React.useId().replace(/[^a-zA-Z0-9]/g, '')
   const rootTheme = useRootThemeMode()
   const mermaidTheme = sequence.mermaidTheme || (rootTheme === 'dark' ? 'dark' : 'default')
   const [rendered, setRendered] = React.useState({ key: '', svg: '', error: '' })
   const [layout, setLayout] = React.useState<'connections' | 'lifelines'>('connections')
-  React.useEffect(() => {
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const update = () => setReducedMotion(media.matches)
-    update(); media.addEventListener('change', update)
-    return () => media.removeEventListener('change', update)
-  }, [])
   const svgKey = `${model.key}:${mermaid}:${mermaidTheme}:${layout}`
   React.useEffect(() => {
     if (!active || !model.code || model.diagnostics.length) return
@@ -57,17 +50,29 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
     try { bindSequenceSvg(hostRef.current, model, mermaid) }
     catch (error) { setRendered({ key: svgKey, svg: '', error: error instanceof Error ? error.message : 'Sequence binding failed' }) }
   }, [svg, model, mermaid, svgKey])
-  React.useLayoutEffect(() => {
-    if (!svg || !hostRef.current) return
-    try {
-      const playback = createSequenceSvgPlayback(hostRef.current, events)
-      playbackRef.current = playback
-      return () => { playback.dispose(); if (playbackRef.current === playback) playbackRef.current = null }
-    } catch (error) { setRendered({ key: svgKey, svg: '', error: error instanceof Error ? error.message : 'Sequence binding failed' }) }
-  }, [svg, events, svgKey])
+  const eventsById = React.useMemo(() => new Map(events.map(event => [event.id, event])), [events])
   React.useEffect(() => {
-    playbackRef.current?.update(current, transport.playbackPosition, reducedMotion)
-  }, [current, svg, events, transport.playbackPosition, reducedMotion])
+    hostRef.current?.querySelector('[data-sequence-pulse]')?.remove()
+    for (const participant of hostRef.current?.querySelectorAll('[data-sequence-participant]') || []) {
+      const id = participant.getAttribute('data-sequence-participant')
+      participant.setAttribute('data-sequence-current', String(id === current?.from || id === current?.to))
+    }
+    for (const element of hostRef.current?.querySelectorAll('[data-sequence-event]') || []) {
+      const id = element.getAttribute('data-sequence-event')
+      const event = id ? eventsById.get(id) : undefined
+      const state = sequenceEventState(event, transport.playbackPosition)
+      element.setAttribute('data-sequence-current', String(id === current?.id))
+      element.setAttribute('aria-pressed', String(id === current?.id))
+      element.setAttribute('data-sequence-state', state)
+      if (id !== current?.id || state !== 'active' || !event?.durationMs || window.matchMedia('(prefers-reduced-motion: reduce)').matches) continue
+      const path = element.querySelector<SVGGeometryElement>('.sequence-message')
+      if (!path?.getTotalLength) continue
+      const point = path.getPointAtLength(path.getTotalLength() * Math.min(1, Math.max(0, (transport.playbackPosition - event.startMs) / event.durationMs)))
+      const pulse = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+      pulse.setAttribute('data-sequence-pulse', 'true'); pulse.setAttribute('cx', String(point.x)); pulse.setAttribute('cy', String(point.y)); pulse.setAttribute('r', '5'); pulse.setAttribute('fill', 'var(--kg-canvas-accent)'); pulse.setAttribute('pointer-events', 'none')
+      element.append(pulse)
+    }
+  }, [current?.id, svg, eventsById, transport.playbackPosition])
   useSvgSurfaceZoomRuntime({ active, rootRef, svgHostRef: hostRef, svgMarkup: svg, rendererId,
     graphData, graphDataRevision: sequence.revision, svgSurfaceKey: svgKey })
   useTimelineTransportPlayback({ active: active && Boolean(svg) && !model.diagnostics.length && duration > 0, playing: transport.playing,

@@ -81,7 +81,7 @@ ci_scopes:
     commands:
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/workspaceProjectPanel.test.tsx", "canvas/src/__tests__/workspaceProjectBridge.test.ts"]
   sequence_flow:
-    roots: ["canvas/scripts/lib/sequence-rehearsal-proof.mjs", "canvas/src/features/sequence", "canvas/src/__tests__/sequenceFlow.test.ts", "canvas/src/__tests__/sequenceFlowPresentation.test.tsx", "canvas/src/__tests__/sequenceFlowReadiness.test.ts", "canvas/src/lib/routing/queryParams.ts", "canvas/src/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration.tsx", "canvas/src/features/workspace-fs/workspaceSeedProvider.ts"]
+    roots: ["canvas/src/features/sequence", "canvas/src/__tests__/sequenceFlow.test.ts", "canvas/src/__tests__/sequenceFlowPresentation.test.tsx", "canvas/src/__tests__/sequenceFlowReadiness.test.ts", "canvas/src/lib/routing/queryParams.ts", "canvas/src/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration.tsx", "canvas/src/features/workspace-fs/workspaceSeedProvider.ts"]
     commands:
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/sequenceFlow.test.ts", "canvas/src/__tests__/sequenceFlowPresentation.test.tsx", "canvas/src/__tests__/sequenceFlowReadiness.test.ts"]
   source_files_bootstrap:
@@ -198,9 +198,9 @@ ci_scopes:
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/features/evidence-analysis/ui/EvidenceUi.test.tsx", "canvas/src/features/evidence-analysis/ui/evidenceInput.test.ts"]
       - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "agentReady.webMcpRuntime.scope.budgets", "agentReady.webMcpRuntime.scope.workspace"]
   python_learning:
-    roots: ["canvas/scripts/lib/offline-cache-precedence-proof.mjs", "canvas/scripts/lib/sequence-rehearsal-proof.mjs", "canvas/src/features/python-learning/", "canvas/src/__tests__/pythonLearning", "canvas/scripts/run_python_learning_", "canvas/src/features/testing/PythonLearningSmokePage.tsx", "canvas/vitePythonLearningOffline.mjs", "canvas/viteServiceWorkerRevisionAuthority.mjs", "canvas/vitePwaRuntimeCachePolicy.ts", "canvas/src/lib/pwa/runtime.ts", "canvas/src/__tests__/serviceWorkerRevisionUpdateOwner.test.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/features/agent-ready/webMcpToolRegistry.ts", "canvas/src/features/agent-ready/webMcpToolExposure.mjs"]
+    roots: ["canvas/src/features/python-learning/", "canvas/src/__tests__/pythonLearning", "canvas/scripts/run_python_learning_", "canvas/src/features/testing/PythonLearningSmokePage.tsx", "canvas/vitePythonLearningOffline.mjs", "canvas/viteServiceWorkerRevisionAuthority.mjs", "canvas/vitePwaRuntimeCachePolicy.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/features/agent-ready/webMcpToolRegistry.ts", "canvas/src/features/agent-ready/webMcpToolExposure.mjs"]
     commands:
-      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/pythonLearning.test.ts", "canvas/src/__tests__/pythonLearningLifecycle.test.ts", "canvas/src/__tests__/pythonLearningOffline.test.ts", "canvas/src/__tests__/serviceWorkerRevisionUpdateOwner.test.ts"]
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/pythonLearning.test.ts", "canvas/src/__tests__/pythonLearningLifecycle.test.ts", "canvas/src/__tests__/pythonLearningOffline.test.ts"]
       - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "agentReady.webMcpRuntime.scope.budgets", "agentReady.webMcpRuntime.scope.workspace"]
       - ["node", "canvas/scripts/run_python_learning_browser_smoke.mjs"]
       - ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--build"]

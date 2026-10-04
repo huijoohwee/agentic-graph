@@ -378,7 +378,11 @@ function mergeGraphOwningActiveWorkspaceSourceFiles(
 ): void {
   const store = useGraphStore.getState()
   // The verified cold-start retry owns the full current inventory, including empty placeholders.
-  const mergedSourceFiles = args.expectedSourceText !== undefined ? args.existingSourceFiles : args.premergedSourceFiles || mergeWorkspaceEntriesIntoSourceFiles({
+  if (args.expectedSourceText !== undefined) {
+    if (!hasExpectedMaterializationSourceText(args.existingSourceFiles, resolveWorkspaceSourcePathKey(args.activePath), args.expectedSourceText)) throw staleMaterialization()
+    return
+  }
+  const mergedSourceFiles = args.premergedSourceFiles || mergeWorkspaceEntriesIntoSourceFiles({
     existing: args.existingSourceFiles,
     workspaceEntries: args.workspaceEntries,
     sourcesByPath: resolveWorkspaceSourceIndexSnapshot(args.sourcesByPath || undefined),
@@ -391,7 +395,6 @@ function mergeGraphOwningActiveWorkspaceSourceFiles(
       chatLocalStorageRootPath: store.chatLocalStorageRootPath,
     }),
   })
-  if (!hasExpectedMaterializationSourceText(mergedSourceFiles, resolveWorkspaceSourcePathKey(args.activePath), args.expectedSourceText)) throw staleMaterialization()
   if (mergedSourceFiles !== args.existingSourceFiles) {
     store.setSourceFiles(mergedSourceFiles)
   }
