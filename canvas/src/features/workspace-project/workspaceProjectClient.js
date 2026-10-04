@@ -1,20 +1,28 @@
-import { WORKSPACE_ARTIFACT_TOOL_DEFINITIONS, WORKSPACE_PROJECT_OPERATIONS } from "/contract.js";
+import { WORKSPACE_ARTIFACT_TOOL_DEFINITIONS, WORKSPACE_PROJECT_OPERATIONS } from "../../../../mcp/workspace-artifact-contract.js";
 
-const $ = (id) => document.getElementById(id);
+// One bounded in-memory recovery slot survives panel closure when browser storage fails.
+let suspendedDraft = null;
+
+// Moved from the MIT MCP package; retained draft keys and protocol remain unchanged.
+export function mountWorkspaceProject(root, { endpoint = "/__workspace_project", captureFile, openFile } = {}) {
+const lifetime = new AbortController();
+let disposed = false;
+const registeredTools = [];
+const $ = (id) => root.querySelector(`#${id}`);
 const encoder = new TextEncoder();
 const MAX_FILE = 256 * 1024, MAX_PROJECT = 2 * 1024 * 1024, MAX_DRAFTS = 10 * 1024 * 1024;
 const state = { root: "", token: "", id: "", expectedVersion: "", files: [], selected: "", history: [], inspecting: false, dirty: false, busy: false, writer: crypto.randomUUID(), ancestors: [], recoveryBlocked: true };
 let writerEpoch = 0, writerRelease = null;
-const status = (message, error = false) => { $("status").textContent = message; $("status").dataset.error = String(error); };
+const status = (message, error = false) => { if (disposed) return; $("status").textContent = message; $("status").dataset.error = String(error); };
 const assertRecoveryAdmission = () => {
-  if (state.recoveryBlocked) throw Object.assign(new Error("Tab recovery admission failed; visible drafts and retained keys remain untouched."), { code: "RECOVERY_BLOCKED" });
+  if (disposed || state.recoveryBlocked) throw Object.assign(new Error("Tab recovery admission failed; visible drafts and retained keys remain untouched."), { code: "RECOVERY_BLOCKED" });
 };
 const request = async (mode, args) => {
   const epoch = writerEpoch;
   if (mode === "apply") assertRecoveryAdmission();
-  const response = await fetch(`/api/${mode}`, { method: "POST", headers: { "Content-Type": "application/json", "x-workspace-token": state.token }, body: JSON.stringify(args) });
+  const response = await fetch(`${endpoint}/api/${mode}`, { signal: lifetime.signal, method: "POST", headers: { "Content-Type": "application/json", "x-workspace-token": state.token }, body: JSON.stringify(args) });
   const result = await response.json();
-  if (epoch !== writerEpoch) throw Object.assign(new Error("Page lifecycle changed during the operation; inspect its saved version before retrying."), { code: "RECOVERY_BLOCKED" });
+  if (disposed || epoch !== writerEpoch) throw Object.assign(new Error("Page lifecycle changed during the operation; inspect its saved version before retrying."), { code: "RECOVERY_BLOCKED" });
   if (mode === "apply") assertRecoveryAdmission();
   if (!response.ok || !result.ok) throw Object.assign(new Error(result.error?.message || "Local operation failed."), { code: result.error?.code || "STORAGE_UNAVAILABLE" });
   return result;
@@ -29,6 +37,7 @@ const apply = async (operation, extra = {}) => {
 const draftPrefix = () => `agentic-graph-local-draft:${state.root}:`;
 const draftKey = () => `${draftPrefix()}${state.writer}:${state.id}`;
 const recoverDraft = () => {
+  if (suspendedDraft?.root === state.root && suspendedDraft.id === state.id) return suspendedDraft.draft;
   for (const key of [draftKey(), ...state.ancestors.map((writer) => `${draftPrefix()}${writer}:${state.id}`), `${draftPrefix()}${state.id}`]) {
     const raw = localStorage.getItem(key); if (raw) return JSON.parse(raw);
   }
@@ -38,7 +47,7 @@ const claimWriter = async (candidate, epoch) => {
   if (typeof navigator.locks?.request !== "function") return false;
   return new Promise((resolve) => {
     navigator.locks.request(`agentic-graph-draft:${state.root}:${candidate}`, { ifAvailable: true }, async (lock) => {
-      if (!lock || epoch !== writerEpoch) { resolve(false); return; }
+      if (!lock || disposed || epoch !== writerEpoch) { resolve(false); return; }
       state.writer = candidate;
       let releaseLock;
       await new Promise((release) => { releaseLock = release; writerRelease = release; resolve(true); });
@@ -53,7 +62,7 @@ const admitWriter = async (previous = {}) => {
   if (ancestors.length > 100 || ancestors.some((writer) => typeof writer !== "string" || writer.length > 128)) throw new Error("Writer recovery history exceeds its bound.");
   const candidate = previous.writer || state.writer;
   if (!await claimWriter(candidate, epoch) && !await claimWriter(crypto.randomUUID(), epoch)) throw new Error("Exclusive tab recovery admission is unavailable.");
-  if (epoch !== writerEpoch) throw new Error("Page lifecycle changed during tab recovery admission.");
+  if (disposed || epoch !== writerEpoch) throw new Error("Page lifecycle changed during tab recovery admission.");
   state.ancestors = ancestors.filter((writer) => writer !== state.writer);
   sessionStorage.setItem(`agentic-graph-local-writer:${state.root}`, JSON.stringify({ writer: state.writer, ancestors: state.ancestors }));
   state.recoveryBlocked = false;
@@ -74,6 +83,7 @@ const validateFiles = (files) => {
   if (bytes > MAX_PROJECT) throw new Error("Project text exceeds 2 MiB. The visible draft is retained.");
 };
 const persist = () => {
+  if (disposed) return false;
   if (state.recoveryBlocked) { $("draft-state").textContent = "Draft remains visible; exclusive browser recovery is unavailable."; return false; }
   if (!state.id || state.inspecting) return true;
   try {
@@ -87,13 +97,20 @@ const persist = () => {
     if (size > MAX_DRAFTS) throw new Error("Browser draft cache exceeds 10 MiB. Export this draft before closing.");
     localStorage.setItem(draftKey(), draft);
     localStorage.setItem(activeKey(), state.id);
+    if (suspendedDraft?.root === state.root && suspendedDraft.id === state.id) suspendedDraft = null;
     $("draft-state").textContent = state.dirty ? "Draft retained in this browser." : "Checkpoint saved.";
     return true;
-  } catch (error) { $("draft-state").textContent = "Draft remains visible; browser recovery unavailable."; status(error.message, true); return false; }
+  } catch (error) {
+    if (state.dirty) suspendedDraft = { root: state.root, id: state.id, writer: state.writer, ancestors: state.ancestors,
+      draft: { expectedVersion: state.expectedVersion, files: state.files.map(file => ({ ...file })), selected: state.selected, dirty: true } };
+    $("draft-state").textContent = "Draft retained in this app session only. Export before reloading or closing the browser.";
+    status(error.message, true); return false;
+  }
 };
 const retainDraft = () => { if (state.dirty && !persist()) throw new Error("Draft recovery could not be saved. Copy or export the visible draft before switching."); };
 const setDirty = () => { state.dirty = true; persist(); };
 const render = () => {
+  if (disposed) return;
   $("project-title").textContent = state.id || "Files";
   $("file-list").replaceChildren();
   for (const file of state.files) {
@@ -111,6 +128,8 @@ const render = () => {
   $("export").disabled = !state.expectedVersion || state.busy; $("export-draft").disabled = !state.id || state.busy;
   $("versions").disabled = !state.expectedVersion || state.busy;
   $("restore").disabled = !state.inspecting || state.busy || state.recoveryBlocked;
+  $("capture-canvas").disabled = !captureFile || !state.id || state.inspecting || state.busy || state.recoveryBlocked;
+  $("open-canvas").disabled = !openFile || !selected || state.busy || state.recoveryBlocked;
   $("version-id").textContent = state.expectedVersion ? `Base: ${state.expectedVersion}` : "New project draft. Save its first checkpoint.";
 };
 const versions = (history = []) => {
@@ -133,6 +152,9 @@ const list = async () => {
       }
     }
   } catch { status("Saved projects loaded; browser draft inventory unavailable.", true); }
+  if (suspendedDraft?.root === state.root && ![...$("projects").options].some(({ value }) => value === suspendedDraft.id)) {
+    $("projects").add(new Option(`${suspendedDraft.id} · session recovery`, suspendedDraft.id));
+  }
   $("projects").value = state.id;
 };
 const load = async (id) => {
@@ -172,7 +194,9 @@ $("refresh").addEventListener("click", guard(async () => { retainDraft(); await 
 $("new-file").addEventListener("submit", guard(async () => {
   const file = { path: $("file-path").value, content: "" }; validateFiles([...state.files, file]); state.files.push(file); state.selected = file.path; $("file-path").value = ""; setDirty(); status("File added to draft.");
 }));
-$("editor").addEventListener("input", () => { if (!state.inspecting && !state.busy && !state.recoveryBlocked) { const file = state.files.find(({ path }) => path === state.selected); if (file) { file.content = $("editor").value; setDirty(); } } });
+$("editor").addEventListener("input", () => { if (!state.inspecting && !state.busy && !state.recoveryBlocked) { const file = state.files.find(({ path }) => path === state.selected); if (file) { const previous = file.content; file.content = $("editor").value;
+    try { validateFiles(state.files); setDirty(); }
+    catch (error) { file.content = previous; $("editor").value = previous; status(`Edit exceeds project limits: ${error.message}`, true); } } } });
 $("delete-file").addEventListener("click", guard(async () => { state.files = state.files.filter(({ path }) => path !== state.selected); state.selected = state.files[0]?.path || ""; setDirty(); status("File removed from draft. Earlier versions retain it."); }));
 $("checkpoint").addEventListener("click", guard(async () => {
   validateFiles(state.files); const files = state.files.map(({ path, content }) => ({ path, content }));
@@ -201,7 +225,7 @@ $("restore").addEventListener("click", guard(async () => {
 $("export").addEventListener("click", guard(async () => {
   const version = $("versions").value || state.expectedVersion;
   await read("export", { version });
-  const link = document.createElement("a"); link.href = `/export/${encodeURIComponent(state.id)}?version=${encodeURIComponent(version)}`;
+  const link = document.createElement("a"); link.href = `${endpoint}/export/${encodeURIComponent(state.id)}?version=${encodeURIComponent(version)}`;
   link.download = `${state.id}.project.json`; link.click(); status("Export download requested with SHA-256 file digests.");
 }));
 $("export-draft").addEventListener("click", guard(async () => {
@@ -236,10 +260,22 @@ $("command-form").addEventListener("submit", guard(async () => {
   const extra = ["checkpoint", "import"].includes(match[1]) ? { expectedVersion: state.expectedVersion, files: state.files.map(({ path, content }) => ({ path, content })) } : {};
   const result = await read(match[1], extra, match[2]); $("command-result").textContent = JSON.stringify(result, null, 2); status("Prepared exact command; no mutation applied.");
 }));
-window.addEventListener("beforeunload", persist);
+$("capture-canvas").addEventListener("click", guard(async () => {
+  const file = captureFile();
+  if (!file) throw new Error("Open a Canvas document first.");
+  validateFiles([...state.files, file]);
+  state.files.push(file); state.selected = file.path; setDirty();
+  status("Canvas document added to this project draft. Save a checkpoint to retain it.");
+}));
+$("open-canvas").addEventListener("click", guard(async () => {
+  const file = state.files.find(({ path }) => path === state.selected);
+  retainDraft(); await openFile({ ...file, projectId: state.id });
+  status("Opened a copy in Canvas. Project checkpoints are unchanged.");
+}));
+window.addEventListener("beforeunload", (event) => { if (state.dirty && !persist()) { event.preventDefault(); event.returnValue = ""; } }, { signal: lifetime.signal });
 window.addEventListener("pagehide", () => {
   state.recoveryBlocked = true; writerEpoch++; writerRelease?.(); writerRelease = null; render();
-});
+}, { signal: lifetime.signal });
 window.addEventListener("pageshow", async (event) => {
   if (!event.persisted || !state.root) return;
   try {
@@ -247,36 +283,56 @@ window.addEventListener("pageshow", async (event) => {
     status("Tab recovery readmitted. Retained draft bytes remain available.");
   } catch (error) { status(`Tab recovery unavailable: ${error.message} Visible drafts remain available.`, true); }
   render();
-});
+}, { signal: lifetime.signal });
 
+const ready = (async () => {
 try {
-  const session = await (await fetch("/session")).json(); state.root = session.rootDir; state.token = session.token;
+  const response = await fetch(`${endpoint}/session`, { signal: lifetime.signal });
+  if (!response.headers.get("content-type")?.includes("application/json")) throw new Error("Project storage is not available on this Canvas host");
+  const session = await response.json();
+  if (!response.ok || !session.rootDir || !session.token) throw new Error(session.error?.message || "This host has no configured local project store.");
+  if (disposed) return;
+  state.root = session.rootDir; state.token = session.token;
   try {
     const key = `agentic-graph-local-writer:${state.root}`;
     const raw = sessionStorage.getItem(key); let previous;
     try { previous = JSON.parse(raw); } catch { previous = { writer: raw }; }
     if (typeof previous === "string") previous = { writer: previous };
-    await admitWriter(previous || {});
+    await admitWriter(suspendedDraft?.root === state.root ? suspendedDraft : previous || {});
   } catch { state.recoveryBlocked = true; status("Tab recovery admission failed; retained drafts remain untouched.", true); }
   const discovery = await read("discover", {}, "_"); $("discovery").textContent = JSON.stringify(discovery.data, null, 2);
   await list(); status("Local store ready. Create a draft or choose a saved project.");
   try {
-    const active = localStorage.getItem(activeKey());
+    const active = suspendedDraft?.root === state.root ? suspendedDraft.id : localStorage.getItem(activeKey());
     if (active && [...$("projects").options].some(({ value }) => value === active)) { await load(active); $("projects").value = active; }
   } catch (error) { status(`Local projects ready; draft recovery unavailable: ${error.message}`, true); }
+  try {
   const modelContext = document.modelContext;
   if (typeof modelContext?.registerTool === "function") {
     for (const definition of WORKSPACE_ARTIFACT_TOOL_DEFINITIONS) {
       const mode = definition.name.endsWith(".plan") ? "plan" : "apply";
+      if (disposed) return;
       await modelContext.registerTool({ name: definition.name, description: `${definition.description} Confined local project mode.`,
         inputSchema: { ...definition.inputSchema, properties: { ...definition.inputSchema.properties, operation: { type: "string", enum: WORKSPACE_PROJECT_OPERATIONS } } },
         execute: async (args) => {
           assertRecoveryAdmission();
           if (mode === "apply" && !window.confirm(`Apply ${args.operation} to ${args.path}?\nPlan: ${args.planDigest}`)) throw new Error("Operator declined the exact plan.");
           return request(mode, args);
-        } });
+        } }, { signal: lifetime.signal });
+      if (disposed) { modelContext.unregisterTool?.(definition.name); return; }
+      registeredTools.push(definition.name);
     }
     $("webmcp").textContent = "WebMCP: registered the existing plan/apply identities in native document.modelContext.";
   } else $("webmcp").textContent = "WebMCP: unavailable in this browser. Local HTTP and stdio MCP remain separate supported adapters.";
-} catch (error) { status(`Local store unavailable: ${error.message}. Existing drafts remain in this browser.`, true); }
+  } catch (error) { if (!disposed) $("webmcp").textContent = `WebMCP unavailable: ${error.message}. Project controls remain available.`; }
+} catch (error) { if (disposed) return; status(`Local store unavailable: ${error.message}. Existing drafts remain in this browser.`, true); }
 render();
+
+})();
+return { ready, dispose() {
+  if (disposed) return;
+  persist(); disposed = true; state.recoveryBlocked = true; writerEpoch++;
+  lifetime.abort(); writerRelease?.(); writerRelease = null;
+  for (const name of registeredTools) document.modelContext?.unregisterTool?.(name);
+} };
+}

@@ -67,17 +67,11 @@ const checkpoint = async (service, requestValue) => {
   return applied.data;
 };
 
-test("local HTTP surface binds only loopback and serves the owned browser without remote assets", async (t) => {
+test("local HTTP surface is API-only; retired standalone UI routes cannot return", async (t) => {
   const service = await fixture(t);
   assert.equal(service.server.address().address, "127.0.0.1");
-  assert.equal(new URL(service.url).hostname, "127.0.0.1");
   for (const route of ["/", "/client.js", "/contract.js"]) {
-    const response = await request(service, route);
-    assert.equal(response.status, 200, `${route}: ${response.text}`);
-    assert.equal(response.headers["access-control-allow-origin"], undefined);
-    assert.ok(response.text.length > 0);
-    assert.doesNotMatch(response.text, /(?:src|href)=["']https?:\/\//iu);
-    assert.ok(!response.text.includes(service.token), "static assets must not embed session authorization");
+    failure(await request(service, route), 404, "UNSUPPORTED");
   }
 });
 
@@ -270,11 +264,14 @@ test("project dependency closure stays inside the licensed MCP owner and stdio S
     "repository-pack-error.js", "repository-pack-git.js", "workspace-artifact-contract.js",
     "workspace-artifact-runtime.js", "workspace-project-runtime.js", "workspace-project-server.js",
   ], "one project owner; additions require an explicit dependency-boundary review");
-  const client = await fs.readFile(path.join(directory, "workspace-project-client.js"), "utf8");
-  assert.deepEqual([...client.matchAll(/(?:\bfrom\s*|\bimport\s+)["']([^"']+)["']/gu)].map(match => match[1]), ["/contract.js"]);
-  assert.doesNotMatch(client, /\bimport\s*\(/u, "no hidden Canvas or alternative project owner");
-  const html = await fs.readFile(path.join(directory, "workspace-project.html"), "utf8");
-  assert.deepEqual([...html.matchAll(/<script[^>]+src="([^"]+)"/gu)].map(match => match[1]), ["/client.js"]);
+  for (const retired of ["workspace-project-client.js", "workspace-project.html"]) {
+    await assert.rejects(fs.stat(path.join(directory, retired)), { code: "ENOENT" });
+  }
+  const panelRoot = path.resolve(directory, "../canvas/src/features/workspace-project");
+  const client = await fs.readFile(path.join(panelRoot, "workspaceProjectClient.js"), "utf8");
+  assert.deepEqual([...client.matchAll(/(?:\bfrom\s*|\bimport\s+)["']([^"']+)["']/gu)].map(match => match[1]), ["../../../../mcp/workspace-artifact-contract.js"]);
+  const markup = await fs.readFile(path.join(panelRoot, "workspaceProjectMarkup.html"), "utf8");
+  assert.doesNotMatch(markup, /<script|<iframe|<!doctype|<html/iu, "one native panel, no parallel page or embedded app");
   assert.equal(JSON.parse(await fs.readFile(path.join(directory, "package.json"), "utf8")).license, "MIT");
   assert.match(await fs.readFile(path.join(directory, "LICENSE"), "utf8"), /Permission is hereby granted, free of charge/u);
   const gitSource = await fs.readFile(path.join(directory, "repository-pack-git.js"), "utf8");

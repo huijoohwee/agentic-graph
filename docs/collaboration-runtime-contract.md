@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 82
+contract_version: 83
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -76,6 +76,10 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  workspace_project_canvas:
+    roots: ["canvas/src/features/workspace-project/", "canvas/viteWorkspaceProject.ts", "canvas/viteWorkspaceArtifactBridge.ts", "canvas/src/features/panels/views/HistoryView.tsx", "canvas/src/__tests__/workspaceProjectPanel.test.tsx", "canvas/src/__tests__/workspaceProjectBridge.test.ts", "canvas/src/__tests__/workspaceCrossViewSync.test.tsx", "canvas/src/__tests__/storyboardWidgetMediaRecoveryBudget.test.tsx"]
+    commands:
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/workspaceProjectPanel.test.tsx", "canvas/src/__tests__/workspaceProjectBridge.test.ts"]
   sequence_flow:
     roots: ["canvas/src/features/sequence", "canvas/src/__tests__/sequenceFlow.test.ts", "docs/workspace-seeds/sequence-flow"]
     commands:
