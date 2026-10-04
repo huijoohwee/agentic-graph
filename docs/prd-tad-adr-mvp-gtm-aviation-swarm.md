@@ -134,8 +134,8 @@ stated rate. No operational optimization, quote, commitment or external write fo
 Native limits: original ≤499,999 B; profile ≤10 entities/5,000 facts/20 sources/24 hours; each notice
 ≤12,000 B; combined tool input ≤2,000,000 B; export pack ≤2,000,000 B. Pack/input envelopes are not
 JavaScript chunks. New files <600 lines; oversized owners shrink; emitted JS/MJS <500,000 B.
-Build 6 passes the chunk gate (ER4). Target ≤30 KiB lazy JS, zero initial-JS delta/packages;
-initial-size comparison remains unmeasured.
+ER4 passes the chunk gate. Target ≤30 KiB new lazy JS, zero initial-JS growth/packages;
+moving existing Geo code behind its package boundary cuts startup by 68,143 B.
 Current hardening: `readEvidenceExamples` admits all paths before I/O, aborts superseded reads and
 applies one 15-second deadline to the whole batch (test/config bound 1–30,000 ms). Late bodies cancel;
 cleanup never waits on a broken stream. Panel source/view/remove/unmount changes cancel pending assets
@@ -331,21 +331,20 @@ distance-only output; neither a quote nor a commitment follows from a scenario.
 The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md](workspace-seeds/agentic-graph-game-flight-sim-demo.md).
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
 One admitted checkout; exact-path readmissions own scope. New files <600 lines, oversized owners
-shrink, plan ≤40 KiB, zero new packages/spend. Recovery + Geo entry: ≤7 files/8 KiB, one new module, ≤20 active minutes; refresh
-on drift. Protected review waits for status change, not an ETA. Preview proof is not deployment.
+shrink, plan ≤40 KiB, zero new packages/spend. Geo repair: seven files/one module. Verification: ≤15 active minutes, one doc/1 KiB, no new modules; refresh on drift. Protected review waits for status change, not an ETA. Preview proof is not deployment.
 Private artifacts below: `/Users/huijoohwee/Documents/GitHub/.workspace/.artifacts/aviation-swarm-readiness/`.
 
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
 | ER1 | Prior runtime core/CLI/stdio/WebMCP-builder tests: 74 passed | G1–G7; final affected CI pending; real labels/demand unproved |
-| ER2 | `npm run ci:affected` at clean `5f9246da53715ff65c73c0fc8844524eae72ad46`: 5 passed, 1 failed, 4 unexecuted (`candidate-5f9246d-validation.json`) | Desktop offline passes; mobile 390 materialization drift blocks acceptance; producer integration pending |
+| ER2 | `npm run ci:affected` at clean `5f9246da53715ff65c73c0fc8844524eae72ad46`: 5 passed, 1 failed, 4 unexecuted (`candidate-5f9246d-validation.json`) | Desktop offline passes; failed mobile proof retained. Startup fix f8d448c aligned at cefff3f; fresh CI pending |
 | ER3 | Exact demo: 3 entities/185 facts/3 sources; browser saved 262,899-byte pack matching visible export; reimport and prior offline reimport passed | Actual file proof; final successor save/reimport repeat pending |
-| ER4 | Aligned 5f9246d build: 1,648 JS; max 495,688 B; zero ESM cycles/unresolved imports; initial 38 files/3,497,677 B. `candidate-build-lineage.json` binds source, manifest and proof | Replaces historical Build 6 for aligned bytes; initial delta/recovery build pending |
+| ER4 | 160831d build: 1,648 JS; max 495,688 B; zero ESM cycles/unresolved imports; initial 37 files/3,429,534 B (−68,143 B). `candidate-160831d-bundle-proof.json` binds source/tree/manifest | Pre-alignment proof; inherited whole-host 150 kB fails; scope decision pending |
 | ER5 | Build 5 installed 1,758 files/29.4 MiB; offline reopen and 185 facts passed. Evidence-load window: exactly two same-origin fixture/lazy-JS requests, both service-worker served | No external request in that complete action capture; full reopen capture truncated, so no whole-host zero-network claim |
 | ER6 | Build 5 at 390×844: offline UTC step and repeated route result pass; collapsed context and independent scrolling retained. Prior Enter disclosure passes | 200% zoom, full accessibility and physical-device acceptance remain |
 | ER7 | Independent code review found no blocker in evidence/mobile/import/Geo/XR changes; cancellation/late-body/stale-result checks pass | Affected diff review only |
 | ER8 | Import regression 1/1 and 14 related checks passed (`import-checks.log`). Dev and build 5 offline native bridge reached preparing→selecting→refreshing→applying→synchronizing→opening→`Imported 1; corpus source units 1` (`offline-import.json`) | Pending-toast acceptance gap closed on this candidate; original cause unproved. Job fences prevent stale continuation/duplicate Launch fallback, not rollback of dispatched lower-owner effects |
-| ER9 | Geo 5 checks pass (`geo-recovery-test-v2.log`); registered `canvas.geospatial.fallbackAdmission`. Dev 7874 + diff: blocked SVG stays local; explicit reload restores map/toolbar (`geo-recovery-dev.json`) | Primary-first/selection proof retained; built recovery repeat pending |
+| ER9 | Six Geo checks pass (`geo-package-lazy-regression-v2.log`). Built 160831d: zero SVG requests/mounts during activation; blocked SVG stays local, reload recovers (`geo-primary-built-160831d.json`, `geo-recovery-built-160831d.json`) | Actual browser proof; test selection restored to MapLibre |
 | ER10 | XR tests 2/2: five unrelated writes and five Flight advances each changed commits 5→0; motion and required updates remain. Build 6 retains the same connected WebGL canvas through History open/close, zero removals (`xr-canvas-stability.json`) | Independent review; render counts are test measurements, canvas retention is actual UI proof |
 
 Repeated offline AS2: 77,757.706 m versus 71,188.231 m, difference 6,569.475 m, conditional band
@@ -496,9 +495,9 @@ SVG, XR surface projections and bounded bundles. Build 5 offline native import e
 Geo startup/selection and bounded browser-tool parity pass. XR tests confirm 5→0 unrelated commits
 without freezing motion. Whole AS1/AS2/AS5 and production delivery remain unaccepted.
 
-Engineering next joins the coordinating bootstrap owner's fix and reruns failed mobile acceptance.
-Retain save/reimport proof; repeat built recovery and verify 200% zoom/accessibility;
-physical-device, real-label and diagram/guideline acceptance remain separate gaps. Recheck on source,
+Engineering aligned the protected bootstrap fix; rerun affected CI/mobile acceptance.
+Retain save/reimport proof; verify 200% zoom/accessibility. Physical iPhone is SKIP/KIV, not passed.
+Real-label and diagram/guideline acceptance remain separate gaps. Recheck on source,
 input/profile drift. Native publication precedes protected integration; PR 1547 review is an external
 wait. AS3/AS4 retain qualified-input/rights/buyer gates. Preserve originals/concurrent work. No new paid
-resources/packages; labour, assistant cost, initial-bundle delta and TCO are unmeasured. No revenue claim.
+resources/packages; labour, assistant cost and TCO are unmeasured. No revenue claim.
