@@ -99,6 +99,7 @@ export async function reapplyActiveWorkspaceMarkdownDocument(args?: {
   fs?: Awaited<ReturnType<typeof getWorkspaceFs>>
   activeWorkspaceEntriesSnapshot?: WorkspaceEntry[]
   expectedSourceText?: string
+  applyToGraph?: boolean
 }): Promise<boolean> {
   const activePath = resolveMaterializedWorkspaceActivePath({
     activePathOverride: args?.activePathOverride ?? null,
@@ -141,6 +142,7 @@ export async function reapplyActiveWorkspaceMarkdownDocument(args?: {
   })
   if (normalizeWorkspacePath(latestActivePath) !== activePath) return false
   if (
+    args?.applyToGraph !== true &&
     matchesMarkdownDocumentPath(activePath, store.markdownDocumentName) &&
     String(store.markdownDocumentText || '') === nextText &&
     store.markdownDocumentApplyViewPreset !== false
@@ -153,8 +155,8 @@ export async function reapplyActiveWorkspaceMarkdownDocument(args?: {
     text: nextText,
     autoEnableFrontmatter: true,
     applyViewPreset: true,
-    applyToGraph: true,
-    forceApplyToGraph: true,
+    applyToGraph: args?.applyToGraph !== false,
+    forceApplyToGraph: args?.applyToGraph !== false,
     normalizeWebpageFrontmatterToMarkdown: false,
   }))
 }
@@ -428,6 +430,7 @@ async function materializeGraphOwningActiveWorkspaceSourceFiles(args: GraphOwnin
   mergeGraphOwningActiveWorkspaceSourceFiles(args)
   // Identity precedes presets so run-ready Exit retains the neutral surface.
   await settleMaterializedDocument({
+    applyToGraph: true,
     activePathOverride: args.activePath,
     fs: args.fs,
     activeWorkspaceEntriesSnapshot: args.workspaceEntries,
@@ -534,6 +537,7 @@ async function materializeActiveWorkspaceEntryAttempt(args?: ActiveWorkspaceMate
       if (!await parseActiveWorkspaceSourceBeforeDocumentApply(activePath, explorerActivePathAtStart)) throw staleMaterialization(false, 'active source parse')
       const active = useGraphStore.getState().sourceFiles.find(file => file.source?.path === activeSourcePath)
       return settleMaterializedDocument({
+        applyToGraph: false,
         activePathOverride: activePath,
         fs: args?.fs,
         activeWorkspaceEntriesSnapshot: args?.activeWorkspaceEntriesSnapshot,
@@ -566,6 +570,7 @@ async function materializeActiveWorkspaceEntryAttempt(args?: ActiveWorkspaceMate
     if (!await parseActiveWorkspaceSourceBeforeDocumentApply(activePath, explorerActivePathAtStart)) throw staleMaterialization(false, 'active source parse')
     const active = useGraphStore.getState().sourceFiles.find(file => file.source?.path === activeSourcePath)
     return settleMaterializedDocument({
+      applyToGraph: false,
       activePathOverride: activePath,
       fs,
       activeWorkspaceEntriesSnapshot: workspaceEntries,

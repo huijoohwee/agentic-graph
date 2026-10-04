@@ -1,3 +1,4 @@
+import { readSourceFilesBootstrapSource } from './helpers/sourceFilesBootstrapSource'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { withDurableBrowserStorage } from '@/__tests__/helpers/durable-browser-storage'
 import { createFakeAgenticGraphStorageBrowserSession } from '@/__tests__/helpers/fake-agentic-graph-storage-browser-session'
@@ -457,7 +458,16 @@ export async function testSourceFileShareUrlHydratesMetadataOnlyWorkspaceEntryBe
 
 export function testSourceFilesPersistenceBootstrapOwnsAgenticGraphStorageLoopAndQueueIntegration() {
   const bootstrapPath = resolve(process.cwd(), 'src', 'features', 'source-files', 'SourceFilesPersistenceBootstrap.tsx')
-  const text = readFileSync(bootstrapPath, 'utf8')
+  const text = readSourceFilesBootstrapSource(bootstrapPath)
+  if (text.includes("import { notifyAgenticGraphStorageConflictUx } from '@/lib/storage/agentic-graph-storage-conflict-ux'")) {
+    throw new Error('expected source-files bootstrap to avoid eagerly importing storage conflict UX into the bootstrap module graph')
+  }
+  if (text.includes("import { applyPulledAgenticGraphStorageChangesToSourceFiles } from '@/features/source-files/sourceFilesInboundStorageApply'")) {
+    throw new Error('expected source-files bootstrap to avoid eagerly importing inbound storage apply logic into the bootstrap module graph')
+  }
+  if (text.includes("import {\n  cancelAgenticGraphStorageSync,\n  scheduleAgenticGraphStorageSync,\n  startAgenticGraphStorageSyncLoop,\n} from '@/lib/storage/agentic-graph-storage-client-sync'")) {
+    throw new Error('expected source-files bootstrap to avoid eagerly importing the storage client runtime into the bootstrap module graph')
+  }
   const settingsText = readFileSync(
     resolve(process.cwd(), 'src', 'features', 'source-files', 'source-files-agentic-graph-storage-settings.ts'),
     'utf8',

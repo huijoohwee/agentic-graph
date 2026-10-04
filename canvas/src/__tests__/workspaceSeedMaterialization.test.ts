@@ -114,8 +114,11 @@ export async function testWorkspaceBootstrapMaterializeReusesProvidedWorkspaceSn
 
 export async function testWorkspaceBootstrapMaterializeDoesNotApplyGraphWithoutExplicitOptIn() {
   const { restore } = initJsdomHarness()
+  const previous = useGraphStore.getState(), explorer = useMarkdownExplorerStore.getState()
   try {
     useGraphStore.getState().resetAll()
+    useGraphStore.setState({ sourceFiles: [], markdownDocumentName: null, markdownDocumentText: '' })
+    useMarkdownExplorerStore.getState().setActivePath('/notes/imported.md')
     const fs = createMemoryWorkspaceFs({
       initialEntries: [
         { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
@@ -153,16 +156,20 @@ export async function testWorkspaceBootstrapMaterializeDoesNotApplyGraphWithoutE
     })
     const state = useGraphStore.getState()
     state.setGraphData({ nodes: [{ id: 'keep', type: 'Text', x: 0, y: 0 } as never], edges: [] as never, metadata: {} as never } as never)
-    await materializeActiveWorkspaceEntryIntoSourceFiles({
-      activePathOverride: '/notes/imported.md' as never,
-      fs,
-    })
-    await new Promise<void>(resolve => setTimeout(resolve, 0))
+    for (const phase of ['cold source', 'parsed source']) {
+      useGraphStore.setState({ markdownDocumentApplyViewPreset: false })
+      await materializeActiveWorkspaceEntryIntoSourceFiles({
+        activePathOverride: '/notes/imported.md' as never,
+        fs,
+      })
+      await new Promise<void>(resolve => setTimeout(resolve, 0))
 
-    const after = useGraphStore.getState()
-    if (!after.graphData || (after.graphData.nodes || []).length !== 1 || String(after.graphData.nodes?.[0]?.id || '') !== 'keep') {
-      throw new Error('expected bootstrap workspace materialization to avoid graph apply unless explicitly opted in')
+      const after = useGraphStore.getState()
+      if (!after.graphData || (after.graphData.nodes || []).length !== 1 || String(after.graphData.nodes?.[0]?.id || '') !== 'keep') {
+        throw new Error(`expected ${phase} materialization to avoid graph apply unless explicitly opted in`)
+      }
     }
+    const after = useGraphStore.getState()
     const sourceFile = after.sourceFiles.find(file => file.source?.path === 'workspace:/notes/imported.md')
     if (!sourceFile) {
       throw new Error('expected bootstrap workspace materialization to still mirror the active file into Source Files')
@@ -170,7 +177,15 @@ export async function testWorkspaceBootstrapMaterializeDoesNotApplyGraphWithoutE
     if (sourceFile.enabled !== true) {
       throw new Error('expected bootstrap workspace materialization to keep the active source file enabled without applying graph state')
     }
+    await materializeActiveWorkspaceEntryIntoSourceFiles({ activePathOverride: '/notes/imported.md', fs, applyToGraph: true })
+    await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()))
+    const appliedIds = useGraphStore.getState().graphData?.nodes.map(node => node.id) || []
+    if (!appliedIds.includes('a') || !appliedIds.includes('b') || appliedIds.includes('keep')) {
+      throw new Error(`explicit graph ownership must still apply the selected parsed source: ${JSON.stringify(appliedIds)}`)
+    }
   } finally {
+    useGraphStore.setState(previous, true)
+    useMarkdownExplorerStore.setState(explorer, true)
     restore()
   }
 }
