@@ -49,7 +49,7 @@ shared_xr_scene:
   camera_owner: "canvas/src/features/three/useXrNativeControllerDemoCamera.ts"
   second_r3f_canvas_forbidden: true
 geo_flight_overlay:
-  geographic_reference: {anchor: [103.851959, 1.29027], presentationBounds: [[103.605, 1.158], [104.09, 1.48]]}
+  geographic_reference: {anchor: [103.994003, 1.35019], presentationBounds: [[103.90, 1.18], [104.06, 1.51]]}
   activation: "selected authored environment plus source-authored Flight identity"
   renderer_owner: "native MapLibre Geo host"
   geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
@@ -67,9 +67,13 @@ geo_flight_overlay:
   composition: "MapLibre owns the geospatial world plus all visible Flight route/waypoint/aircraft geometry; the existing transparent R3F Canvas retains simulation/input/readiness and paints no Flight or XR geometry"
 clean_room_policy:
   boundary: "External references inform conceptual principles only. Maintainers attest that implementation and instructional content are source-authored. Copying or deriving source, prose, prompts, schemas, algorithms, tests, binaries, or assets is forbidden. External project identity and URL are forbidden in product source and runtime metadata. There is no external project dependency. The deterministic locator gate cannot prove the absence of arbitrary derived code."
+  factual_data: "Permitted factual datasets are separately governed evidence inputs, bundled with exact originals, hashes, rights and attribution; they are not implementation or design material and introduce no upstream service dependency. Data licences remain separate from application code."
+source_geospatial:
+  schema: "source-geospatial-config/v1"
+  scenePath: "/evidence-analysis/fixtures/scene-wsss-v1.json"
 native_flight_demo:
   runtime_owner: "Flight Sim projection on the active shared XR or Geo Canvas surface"
-  aircraft_visual_owner: "one MapLibre Point feature plus fixed-pixel symbol stack"
+  aircraft_visual_owner: "one simulated MapLibre Point feature plus fixed-pixel symbol stack; separately sourced observed tracks never become simulated aircraft"
   deterministic_step: true
   fixed_step: "exactly 1/60 second (approximately 16.667 ms, 60 Hz)"
   max_catch_up_ticks_per_advance: 5
@@ -101,7 +105,7 @@ native_flight_demo:
     hud_cue: "objective label, rounded distance, and signed left/right heading error; per-tick cue is not a live region"
     runtime_network_calls: 0
     external_map_or_token_required: false
-  scene: "selected authored shared XR stage with demo-authored geographic reference"
+  scene: "WSSS geographic context with a separately labelled authored practice stage; airport records do not supply collision geometry"
   terrain:
     default: "active authored plan, otherwise the shared XR source plan"
     selector: "FloatingPanel Media Terrain / Environment Kits; the Media Geo action stages the selected authored environment before opening FloatingPanel Geo"
@@ -128,6 +132,50 @@ native_flight_demo:
       throttle: "standard triggers"
     multi_device_conflict: "select the largest absolute value independently per axis"
   lifecycle: ["develop-and-run", "pause", "resume", "reset", "exit"]
+evidence_workspace:
+  schema: "evidence-workspace/v1"
+  title: "Singapore and surrounding airspace evidence"
+  description: "Inspect three actual WSSS-vicinity tracks or the earlier Singapore–Riau segment, then separately labelled synthetic analysis exercises. Study bounds and observed paths do not define controlled airspace, sovereignty, clearance or airport assignment."
+  profiles: {record: "aviation-v1", volume: "volume-v1", arrival: "arrival-v1", route: "route-v1"}
+  policies: {volume: "volume-view", arrival: "arrival-policy", route: "route-policy", notice: "notice-policy"}
+  examples:
+    - id: "observed-wsss-multitrack"
+      label: "WSSS vicinity · three observed aircraft · 4 October 2026 · ODbL"
+      kind: "record"
+      paths: ["/evidence-analysis/fixtures/aviation-singapore-multitrack-v1.json"]
+      entityId: "76d1ca"
+      atUtc: "2026-10-04T02:25:30.000Z"
+    - id: "observed-segment"
+      label: "Singapore–Riau observed segment · ODbL attribution"
+      kind: "record"
+      paths: ["/evidence-analysis/fixtures/aviation-singapore-v1.json"]
+      entityId: "76b452"
+      atUtc: "2026-10-03T10:45:00.000Z"
+    - id: "synthetic-record"
+      label: "Synthetic record with gaps and conflicts"
+      kind: "record"
+      paths: ["/evidence-analysis/fixtures/aviation-synthetic-v1.json"]
+      entityId: "synthetic-flight-01"
+    - id: "synthetic-volume"
+      label: "Singapore study volume · synthetic"
+      kind: "volume"
+      paths: ["/evidence-analysis/fixtures/volume-singapore-synthetic-v1.json"]
+      entityId: "synthetic-volume-01"
+      atUtc: "2026-10-03T10:45:00.000Z"
+    - id: "synthetic-arrival"
+      label: "Singapore arrival evaluation · three synthetic batches"
+      kind: "arrival"
+      paths: ["/evidence-analysis/fixtures/arrival-singapore-exercise-train.json", "/evidence-analysis/fixtures/arrival-singapore-exercise-calibration.json", "/evidence-analysis/fixtures/arrival-singapore-exercise-test.json"]
+    - id: "synthetic-route"
+      label: "Singapore route comparison · synthetic"
+      kind: "route"
+      paths: ["/evidence-analysis/fixtures/route-singapore-synthetic-v1.json"]
+      entityId: "synthetic-singapore-route-01"
+    - id: "synthetic-notice"
+      label: "Singapore structured notice · synthetic"
+      kind: "notice"
+      paths: ["/evidence-analysis/fixtures/notice-singapore-synthetic-v1.json"]
+      atUtc: "2026-10-03T10:45:00.000Z"
 flight_training_profile:
   schema: "flight-training-profile/v1"
   defaultMissionId: "circuit-foundation"
@@ -138,16 +186,16 @@ flight_training_profile:
   missions:
     - id: "circuit-foundation"
       label: "Circuit Foundation"
-      objective: "Fly the ordered waterfront circuit and stabilize the marked landing."
-      terrain: "Procedural waterfront"
+      objective: "Fly the ordered WSSS-vicinity practice circuit and stabilize the simulated landing; this is not a real procedure or clearance."
+      terrain: "WSSS vicinity practice stage; airport records are separate geographic context"
       night: false
       targetSpeedMetersPerSecond: [8, 22]
       defaultFailureId: "none"
       systemsChecklist: ["Controls free", "Power set", "Route briefed"]
     - id: "night-circuit"
       label: "Night Circuit"
-      objective: "Hold the circuit by instruments and runway lighting with reduced visual range."
-      terrain: "Procedural waterfront at night"
+      objective: "Hold the authored practice circuit using simulated instruments and night cues; these are not observed airport conditions."
+      terrain: "WSSS vicinity practice stage with simulated night palette"
       night: true
       targetSpeedMetersPerSecond: [9, 20]
       defaultFailureId: "instrument-uncertainty"
@@ -155,7 +203,7 @@ flight_training_profile:
     - id: "systems-recovery"
       label: "Systems Recovery"
       objective: "Recognize a bounded power loss, retain control, and recover before landing."
-      terrain: "Procedural waterfront recovery area"
+      terrain: "WSSS vicinity practice recovery stage; no surveyed airport collision claim"
       night: false
       targetSpeedMetersPerSecond: [8, 18]
       defaultFailureId: "engine-power-loss"
@@ -347,11 +395,69 @@ For pose control, open and start **Motion Control** from the active Flight panel
 
 Terminal results remain pending and never auto-save. **Save** is the only operation that persists validated gameplay Decisions through browser-local WorkspaceFs at `/game-flight-sim/mission-1-decisions.md`; explicit **Reset local save** is a separate recovery write of the canonical empty AGENTIC_OS document. Successful hydration preserves the validated active run identifier and ordered waypoint history, Start continues that run, and only Restart mints a fresh run. Malformed bytes remain intact and block Start and Restart until Reset succeeds.
 
-The mission uses the fixed `flight-meters-20` transform: one authored scene unit equals 20 mission meters. MapLibre projects mission positions through this demo’s geographic reference while the transparent runtime retains local simulation scale. The shared XR source supplies the initial stage; choose Singapore in Media Terrain / Environment Kits to rehearse the waterfront setting. The simulation advances at exactly `1/60` second (approximately 16.667 ms, 60 Hz) and executes at most five catch-up ticks per advance. Capture exactly three waypoints in authored order and then the marked landing pad; all four objective radii are 50 m, and an out-of-order waypoint cannot advance progress.
+The mission uses the fixed `flight-meters-20` transform: one authored scene unit equals 20 mission meters. Its geographic anchor is the community-reported WSSS airport location. The selected shared XR stage still supplies local practice collision geometry and route; neither is an observed airport procedure or surveyed runway. Native MapLibre separately presents the authored airport/traffic context. The simulation advances at exactly `1/60` second (approximately 16.667 ms, 60 Hz) and executes at most five catch-up ticks per advance. Capture three practice waypoints in authored order and then the simulated landing objective; all four radii are 50 m, and an out-of-order waypoint cannot advance progress.
 
 Four meaningful systems run in stable transactional order: `InputIntegrationSystem`, `FlightModelSystem`, `CollisionResolverSystem`, and `ObjectiveSystem`. The Agentic ECS harness emits the one post-systems Cost_Log, and immutable render/HUD projection is captured only after the World commits. A failing system rolls back itself while retaining prior same-tick commits. Replay validates source, mission seed, input count/order/bytes, halts on the first divergence, and retains the last byte-equivalent committed World. Exit disposes the ECS World and unsaved in-memory mission state, restores the complete pre-document surface including Geo ownership, and does not acknowledge a prior non-Geo surface until MapLibre has released its active map and canvas for two committed frames.
 
 ## Evidence rehearsal: instrument uncertainty and local debrief
+
+### WSSS airport and observed traffic context
+
+The `source_geospatial` declaration selects the local scene through the existing MapLibre owner.
+Its scene file owns field roles, colours, replay time and gap/staleness thresholds. Runtime code
+contains no airport coordinates or aircraft catalog. Source-authored context keeps recorded traffic
+active while Timeline and FloatingPanel open or close; practice aircraft, route, HUD and controls do
+not replace it. The existing MapLibre camera frames accepted geometry once; UTC playback preserves
+subsequent pan/zoom. Select labelled position buttons or path/runway outlines to inspect observation
+UTC, status, altitude reference and source provenance. Tab then Enter/Space works on the same targets.
+Use **Toolbar → Canvas View Mode → Display Controls → Timeline** for the shared transport. Its single rate button cycles from 0.25× through 20×; 20× wraps to 0.25×. An explicitly
+authored simulation-only document without `source_geospatial` can use the practice exercises below.
+
+- **Airport:** three pinned OurAirports runway records, Public Domain, source commit
+  `07f86e80d3f15296c3ff971f49c33ddb331c8d8a`. The local source envelope preserves the exact CSV
+  subset (`a1747c5790f9ce98923f725c5a4401f960093ae8a0ce2881891451343362e416`), original fields and references.
+  Centreline joins and width-derived footprints are derived display geometry, not surveyed polygons.
+  Runway 02R/20L retains source `closed=1`; all current operational statuses remain unverified.
+- **Observed traffic:** three independent ADSB.lol aircraft, 85 position/altitude pairs and 15 explicit
+  unknowns in 185 facts. The 4 October 2026 common observed span is 02:24:46.425–02:26:26.565 UTC;
+  the initial cursor is 02:25:30 UTC. Gaps over 15 s break paths; samples older than 30 s are stale.
+  Original source bytes and millisecond timestamps remain inspectable. Pressure altitude is retained
+  without MSL/AGL conversion; proximity establishes no arrival, departure, runway use or clearance.
+- **Airspace:** qualification remains unavailable. The source envelope links dated CAAS references
+  and their rights limitation, without copying official geometry. Bounds, footprints and observed
+  tracks are not controlled-airspace volumes. Synthetic volume exercises stay separately labelled.
+- **Local assets:** the same verified offline manifest binds scene, provenance, corpus and licence
+  bytes. Loading the scene requires no upstream data API; native basemap transport retains its own owner.
+
+### Native evidence workspace
+
+Open **Flight Sim → Evidence and analysis** in this same native panel. The declaration above selects
+the profiles, policies and bundled examples; exact enabled, parsed SourceFile text owns activation.
+The evidence modules load on opening the disclosure. Imported observations and authored synthetic
+exercises remain independent of the simulation; gameplay never supplies observational truth.
+
+- **Record / replay:** load the three-aircraft WSSS corpus, the earlier Singapore–Riau segment or permitted JSON/pack;
+  inspect explicit UTC, unknowns, conflicts and gaps. Open a fact's source to inspect unchanged source
+  text, rights, hash and its resolved original record. Save/reimport a pack to verify both identities.
+- **Volumes:** project the synthetic compatible-datum polygon; inspect numeric floor/ceiling,
+  validity and original vertices independently of its schematic SVG. The scene is not official airspace.
+- **Arrival evaluation:** load the three synthetic chronological batches. Training correction,
+  separate calibration and held-out metrics remain inspectable; synthetic truth cannot qualify the
+  200-arrival independent real-data acceptance gate.
+- **Route comparison:** compare explicit paired polylines using the declared fixed-sphere model and
+  conditional positional bounds. This establishes no fuel, optimality or legal-feasibility claim.
+- **Notice triage:** inspect the bounded explicit structured JSON exercise. Free text, compound
+  geometry, recurring schedules and missing/incompatible datums remain unresolved. It is not an
+  actual NOTAM or an assertion of 100-notice independent-label acceptance.
+
+All controls use the native shared read-only executor and its displayed `/operation @evidence #evidence`
+invocation. Source changes invalidate pending work; failed inputs retain the prior accepted result.
+Record, volume and route exports are evidence packs. Arrival/notice exports are reports that must be
+kept with their original inputs. Save completion, exact-head native browser/offline proof and real
+acceptance gates require their own receipts. Physical iPhone Safari remains SKIP/KIV by user decision.
+This is the sole product implementation and authored demo; no external product shell or host is used.
+
+### Simulation-only reliability exercise
 
 Use the existing night mission to practise judging the reliability of a displayed fact. This is a
 synthetic, browser-local training scenario. Aircraft state, route, night palette, failure and coaching
@@ -405,6 +511,8 @@ Choose **Simulation speed** `0.5×`, `1×`, or `2×` to pace the rehearsal. Each
 The presentation controls do not select a mission, location, failure, route, or source. The rehearsal above and the existing authored mission/scenario owners supply those details. Settings apply to any selected scenario through the same controls and clock. Training selection uses generic admitted-ID operations; this profile alone declares its compatibility aliases. No replay/export tool is introduced.
 
 ## Runtime-readiness gates
+
+The new airport/traffic scene binding still requires exact-source browser and offline receipts; the gates below describe the existing native runtime contract and do not grant those new results.
 
 - [x] Source identity is `flight-sim`, independent of import path, with conflict rejection.
 - [x] Flight is a Geo+XR Mode composition: native MapLibre is the geospatial world and visible Flight renderer in all four views, one transparent R3F Canvas retains simulation/input/readiness with zero visuals, and duplicate XR terrain stays unmounted.

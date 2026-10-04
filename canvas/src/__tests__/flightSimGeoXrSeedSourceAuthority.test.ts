@@ -33,6 +33,7 @@ import {
 } from '@/features/three/xrSceneMcpRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { completeSourceFilesBootstrap } from '@/features/source-files/sourceFilesBootstrapReadiness'
+import { validateFlightSimGeographicReference } from '@/features/game-flight-sim/flightSimGeospatialCoordinates'
 
 const repoRoot = resolve(process.cwd(), '..')
 const seedSource = readFileSync(
@@ -140,8 +141,14 @@ test('Flight Sim source declares the canonical Geo+XR composition', () => {
     camera_owner: 'canvas/src/features/three/useXrNativeControllerDemoCamera.ts',
     second_r3f_canvas_forbidden: true,
   })
-  assert.deepEqual(meta.geo_flight_overlay, {
-    geographic_reference: { anchor: [103.851959, 1.29027], presentationBounds: [[103.605, 1.158], [104.09, 1.48]] },
+  const { geographic_reference, ...geoPresentation } = meta.geo_flight_overlay as Record<string, unknown>
+  const reference = validateFlightSimGeographicReference(geographic_reference)
+  assert.ok(reference, 'The demo must author a valid geographic reference and containing bounds.')
+  const airportProvenance = JSON.parse(readFileSync(
+    resolve(repoRoot, 'canvas/public/evidence-analysis/fixtures/airport-wsss-source-v1.json'), 'utf8',
+  ))
+  assert.deepEqual(reference.anchor, airportProvenance.airportReference.coordinate)
+  assert.deepEqual(geoPresentation, {
     activation: 'selected authored environment plus source-authored Flight identity',
     renderer_owner: 'native MapLibre Geo host',
     geo_policy_owner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',

@@ -78,7 +78,9 @@ test('geography is admitted from the exact source; absent geography preserves on
     const before = readFlightSimTrainingScenario()
     assert.throws(() => admitCapturedFlightSimTrainingSource({ ...capture, geographicReference: null }, 'ready'), /active run/)
     assert.equal(readFlightSimTrainingScenario(), before)
-    setSource(seedSource.replace('anchor: [103.851959, 1.29027]', 'anchor: [103.851959, 90]'), 2)
+    const invalidGeographySource = seedSource.replace(/anchor:\s*\[[^\]]+\]/u, 'anchor: [0, 90]')
+    assert.notEqual(invalidGeographySource, seedSource)
+    setSource(invalidGeographySource, 2)
     reads = 0
     const malformed = await openFlightSimSurface({ webglSupported: true, geospatialComposite: true, workspace })
     assert.equal(malformed.active, false)

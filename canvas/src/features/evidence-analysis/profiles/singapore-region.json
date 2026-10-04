@@ -1,0 +1,28 @@
+{
+  "schema": "readsb-selection/v1",
+  "datasetId": "singapore-riau-20261003-v1",
+  "title": "Singapore–Riau real ADS-B observations · 3 October 2026",
+  "entityLabel": "76b452 · Singapore–Riau observation segment",
+  "studyArea": {
+    "label": "Singapore, Johor and Riau study window; not an official FIR, sovereignty boundary or clearance zone",
+    "latitude": [
+      0.5,
+      2.6
+    ],
+    "longitude": [
+      102.7,
+      105.1
+    ]
+  },
+  "startUtc": "2026-10-03T10:37:00.000Z",
+  "endUtc": "2026-10-03T10:53:00.000Z",
+  "maxPoints": 100,
+  "excludeFlags": 1,
+  "positionSource": "adsb_icao",
+  "sourceUrl": "https://adsb.lol/globe_history/2026/10/03/traces/52/trace_full_76b452.json",
+  "sourceSha256": "7bff816aabbb6d2344f1eb8a123276150255d4f6c21700ea7242b4cdb401e20b",
+  "retrievedAt": "2026-10-04T00:58:26.294Z",
+  "schemaReference": "https://github.com/wiedehopf/readsb/blob/094720939c01943de82b14df6f42f67fff1cd514/README-json.md#trace-jsons",
+  "licenseReference": "https://github.com/adsblol/globe_history_2026/blob/fa2cfaa721eb8360f481bbf1f1f0a7c63a605131/README.md",
+  "rightsStatement": "ADSB.lol contributors — https://www.adsb.lol — Open Database License (ODbL) 1.0, https://opendatacommons.org/licenses/odbl/1.0/. This extracted/adapted database remains ODbL-1.0; code is licensed separately. Source bytes, selection and mapping are retained. Crowdsourced observations; no independent accuracy, route, touchdown, schedule or clearance truth."
+}

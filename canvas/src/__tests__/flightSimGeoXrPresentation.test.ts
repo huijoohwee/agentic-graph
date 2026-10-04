@@ -9,7 +9,7 @@ import { projectFlightSimToGeospatialOverlay, projectFlightSimTimelineCameraToGe
 import { projectXrEnvironmentToFlightGeo } from '@/features/game-flight-sim/flightSimGeoEnvironmentProjection'
 import { createFlightSimRuntime } from '@/features/game-flight-sim/flightSimRuntimeCore'
 import { readFlightSimXrSpatialProfile } from '@/features/game-flight-sim/flightSimSpatialProfile'
-import { projectLocalMetersToGeospatial, projectSingaporeLocalMeters } from '@/lib/gympgrph/api'
+import { projectLocalMetersToGeospatial } from '@/lib/gympgrph/api'
 
 const geographicReference = validateFlightSimGeographicReference(
   (parseMarkdownFrontmatter(splitMarkdownLines(readFileSync('../docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md', 'utf8'))).meta.geo_flight_overlay as { geographic_reference: unknown }).geographic_reference,
@@ -432,7 +432,7 @@ test('authored geography is bounded, immutable, and required only for geographic
   assert.throws(() => projectLocalMetersToGeospatial(1e308, 0, [0, 89.999999]))
   assert.throws(() => projectLocalMetersToGeospatial(1000, 0, [179.999, 0]))
   assert.throws(() => projectLocalMetersToGeospatial(0, 1000, [0, 89.999]))
-  assert.deepEqual(projectSingaporeLocalMeters(0, 0), geographicReference.anchor)
+  assert.deepEqual(projectLocalMetersToGeospatial(0, 0, geographicReference.anchor), geographicReference.anchor)
   const reference = validateFlightSimGeographicReference({ anchor: [-74, 40], presentationBounds: [[-75, 39], [-73, 41]] })!
   assert.ok(Object.isFrozen(reference) && Object.isFrozen(reference.anchor) && Object.isFrozen(reference.presentationBounds))
   const profile = readFlightSimXrSpatialProfile()

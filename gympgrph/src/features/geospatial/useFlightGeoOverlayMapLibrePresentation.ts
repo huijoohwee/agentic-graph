@@ -14,7 +14,6 @@ import {
 } from '../../flightGeoOverlayMapLibre.js'
 import {
   geoMapViewportPaddingKey,
-  observeGeoMapOcclusionChanges,
   readGeoMapViewportPadding,
 } from '../../geoMapViewport.js'
 import {
@@ -346,9 +345,6 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     map?.on?.('style.load', scheduleFinalApply)
     map?.on?.('load', scheduleFinalApply)
     map?.on?.('resize', scheduleFinalApply)
-    const root = options.rootRef.current
-    const observedRoot = root || map?.getContainer?.()
-    const stopObservingOcclusion = observeGeoMapOcclusionChanges(observedRoot || null, scheduleFinalApply)
     return () => {
       unsubscribe()
       unsubscribeBootstrapSettled()
@@ -356,7 +352,6 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       map?.off?.('style.load', scheduleFinalApply)
       map?.off?.('load', scheduleFinalApply)
       map?.off?.('resize', scheduleFinalApply)
-      stopObservingOcclusion()
       // Graph/style effect restarts retain proof earned by this same canvas.
       // Map/activation ownership cleanup and stopped/inactive apply clear it.
       disposeGate(false)

@@ -1,0 +1,275 @@
+{
+  "schema": "source-geospatial-scene/v1",
+  "title": "WSSS airport context and three observed aircraft",
+  "description": "Pinned community runway geometry and actual 4 October 2026 ADS-B observations in the WSSS vicinity. Practice Flight Sim state remains separate; geography does not establish clearance, surveyed collision surfaces or airport assignment.",
+  "profileId": "aviation-v1",
+  "defaultAtUtc": "2026-10-04T02:25:30.000Z",
+  "gapAfterSeconds": 15,
+  "staleAfterSeconds": 30,
+  "trackBundlePaths": [
+    "/evidence-analysis/fixtures/aviation-singapore-multitrack-v1.json"
+  ],
+  "surfaces": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "id": "wsss-runway-238866-footprint",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                103.9847519899,
+                1.3289045369
+              ],
+              [
+                103.9987519865,
+                1.3622345369
+              ],
+              [
+                103.9992500134,
+                1.3620254631
+              ],
+              [
+                103.98525001,
+                1.3286954631
+              ],
+              [
+                103.9847519899,
+                1.3289045369
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "label": "WSSS 02C/20C \u00b7 endpoint/width-derived footprint \u00b7 source closed=0; current status unverified",
+          "color": "#334155",
+          "sourceId": "ourairports-wsss-20261004",
+          "sourceHash": "0587077382f81e85b89143e9c1de110a0e91a525ee76c956e7c947d7cf9afe36",
+          "sourcePointer": "/rows/0",
+          "status": "source-open",
+          "role": "surface"
+        }
+      },
+      {
+        "type": "Feature",
+        "id": "wsss-runway-238866-centerline",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              103.985001,
+              1.3288
+            ],
+            [
+              103.999001,
+              1.36213
+            ]
+          ]
+        },
+        "properties": {
+          "label": "WSSS 02C/20C \u00b7 endpoint-derived centreline \u00b7 source closed=0; current status unverified",
+          "color": "#f8fafc",
+          "sourceId": "ourairports-wsss-20261004",
+          "sourceHash": "0587077382f81e85b89143e9c1de110a0e91a525ee76c956e7c947d7cf9afe36",
+          "sourcePointer": "/rows/0",
+          "status": "source-open",
+          "role": "path"
+        }
+      },
+      {
+        "type": "Feature",
+        "id": "wsss-runway-238868-footprint",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                103.9777478649,
+                1.3490742436
+              ],
+              [
+                103.9917478614,
+                1.3825142436
+              ],
+              [
+                103.9922461386,
+                1.3823057564
+              ],
+              [
+                103.9782461351,
+                1.3488657564
+              ],
+              [
+                103.9777478649,
+                1.3490742436
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "label": "WSSS 02L/20R \u00b7 endpoint/width-derived footprint \u00b7 source closed=0; current status unverified",
+          "color": "#334155",
+          "sourceId": "ourairports-wsss-20261004",
+          "sourceHash": "0587077382f81e85b89143e9c1de110a0e91a525ee76c956e7c947d7cf9afe36",
+          "sourcePointer": "/rows/1",
+          "status": "source-open",
+          "role": "surface"
+        }
+      },
+      {
+        "type": "Feature",
+        "id": "wsss-runway-238868-centerline",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              103.977997,
+              1.34897
+            ],
+            [
+              103.991997,
+              1.38241
+            ]
+          ]
+        },
+        "properties": {
+          "label": "WSSS 02L/20R \u00b7 endpoint-derived centreline \u00b7 source closed=0; current status unverified",
+          "color": "#f8fafc",
+          "sourceId": "ourairports-wsss-20261004",
+          "sourceHash": "0587077382f81e85b89143e9c1de110a0e91a525ee76c956e7c947d7cf9afe36",
+          "sourcePointer": "/rows/1",
+          "status": "source-open",
+          "role": "path"
+        }
+      },
+      {
+        "type": "Feature",
+        "id": "wsss-runway-238867-footprint",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                103.9997510355,
+                1.3224946439
+              ],
+              [
+                104.0137510322,
+                1.3557846439
+              ],
+              [
+                104.0142489678,
+                1.3555753561
+              ],
+              [
+                104.0002489644,
+                1.3222853561
+              ],
+              [
+                103.9997510355,
+                1.3224946439
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "label": "WSSS 02R/20L \u00b7 endpoint/width-derived footprint \u00b7 source closed=1; current status unverified",
+          "color": "#9ca3af",
+          "sourceId": "ourairports-wsss-20261004",
+          "sourceHash": "0587077382f81e85b89143e9c1de110a0e91a525ee76c956e7c947d7cf9afe36",
+          "sourcePointer": "/rows/2",
+          "status": "source-closed",
+          "role": "surface"
+        }
+      },
+      {
+        "type": "Feature",
+        "id": "wsss-runway-238867-centerline",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              104.0,
+              1.32239
+            ],
+            [
+              104.014,
+              1.35568
+            ]
+          ]
+        },
+        "properties": {
+          "label": "WSSS 02R/20L \u00b7 endpoint-derived centreline \u00b7 source closed=1; current status unverified",
+          "color": "#f97316",
+          "sourceId": "ourairports-wsss-20261004",
+          "sourceHash": "0587077382f81e85b89143e9c1de110a0e91a525ee76c956e7c947d7cf9afe36",
+          "sourcePointer": "/rows/2",
+          "status": "source-closed",
+          "role": "path"
+        }
+      }
+    ]
+  },
+  "references": [
+    {
+      "label": "OurAirports WSSS records \u00b7 exact CSV retained \u00b7 no operational accuracy guarantee",
+      "url": "/evidence-analysis/fixtures/airport-wsss-source-v1.json",
+      "license": "Public Domain",
+      "sha256": "0587077382f81e85b89143e9c1de110a0e91a525ee76c956e7c947d7cf9afe36",
+      "upstreamUrl": "https://raw.githubusercontent.com/davidmegginson/ourairports-data/07f86e80d3f15296c3ff971f49c33ddb331c8d8a/runways.csv"
+    }
+  ],
+  "airspace": {
+    "status": "unavailable",
+    "statement": "No actual controlled-airspace geometry is included. CAAS AIP defines dated CTR/sector boundaries and ALT/FL/SFC limits, but reusable redistribution rights and current NOTAM qualification remain unresolved. The view bounds and observed tracks are only a study extent, not airspace, sovereignty or clearance boundaries."
+  },
+  "roles": {
+    "position": "position",
+    "altitude": "altitude"
+  },
+  "trackColors": [
+    "#38bdf8",
+    "#f59e0b",
+    "#e879f9"
+  ],
+  "timeline": {
+    "title": "WSSS airport, airspace, runways and observed aircraft",
+    "window": {
+      "startUtc": "2026-10-04T02:24:42.724Z",
+      "endUtc": "2026-10-04T02:26:38.156Z"
+    },
+    "lanes": [
+      {
+        "id": "airport-context",
+        "label": "Airport \u00b7 WSSS",
+        "kind": "context",
+        "statement": "Airport reference and community records only. No time-valid operational status is established.",
+        "referenceHashes": [
+          "0587077382f81e85b89143e9c1de110a0e91a525ee76c956e7c947d7cf9afe36"
+        ]
+      },
+      {
+        "id": "airspace-qualification",
+        "label": "Airspace \u00b7 unavailable",
+        "kind": "qualification"
+      },
+      {
+        "id": "runway-context",
+        "label": "Runways \u00b7 source geometry",
+        "kind": "surfaces",
+        "featureIds": [
+          "wsss-runway-238866-footprint",
+          "wsss-runway-238868-footprint",
+          "wsss-runway-238867-footprint"
+        ]
+      },
+      {
+        "id": "observed-aircraft",
+        "label": "Aircraft",
+        "kind": "observations"
+      }
+    ]
+  }
+}

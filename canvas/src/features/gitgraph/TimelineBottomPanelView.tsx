@@ -1,4 +1,7 @@
 import React from 'react'
+import { useSourceGeospatialContext } from '@/features/evidence-analysis/geospatialSource'
+
+const SourceGeospatialTimelinePanel = React.lazy(() => import('@/features/evidence-analysis/SourceGeospatialTimelinePanel').then(module => ({ default: module.SourceGeospatialTimelinePanel })))
 import { GanttTimelineTransportPanel } from './GanttTimelineTransportPanel'
 import { useMermaidGanttDocument } from './useMermaidGanttDocument'
 import { useStoryboardWidgetDiagramSelectionBridge } from './useStoryboardWidgetDiagramSelectionBridge'
@@ -30,10 +33,12 @@ export function XrObjectInspector({ emptyMessage = '' }: { emptyMessage?: string
 }
 
 export function TimelineBottomPanelView({ compact = false }: { compact?: boolean }) {
+  const sourceContext = useSourceGeospatialContext()
   const learningDocument = React.useSyncExternalStore(pythonLearningRuntime.subscribe, () => pythonLearningRuntime.read().document, () => null)
   const xrTimelineContext = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
   const semanticSelection = useGraphStore(state => state.canvasRenderMode === '3d' && state.graphData?.nodes.some(node => node.id === state.selectedNodeId && node.type === 'semantic-space-entity'))
   const stageAuthority = useGraphStore(state => resolveXrDocumentStageAuthority(state))
+  if (sourceContext) return <React.Suspense fallback={<p>Opening source Timeline…</p>}><SourceGeospatialTimelinePanel compact={compact} /></React.Suspense>
   if (learningDocument?.lessonId === 'drone') return <React.Suspense fallback={<p>Opening warehouse timeline…</p>}><WarehouseTimelinePanel compact={compact} /></React.Suspense>
   if (semanticSelection) return <XrObjectInspector />
   if (xrTimelineContext && !stageAuthority) return <p role="status" className="p-3 text-xs">No authored XR timeline in this document. Add an object from Media or open an XR scene.</p>

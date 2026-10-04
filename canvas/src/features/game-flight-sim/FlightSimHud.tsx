@@ -1,7 +1,7 @@
 import React from 'react'
-import { useGraphStore } from '@/hooks/useGraphStore'
+import { useSourceGeospatialReview } from '@/features/evidence-analysis/geospatialSource'
+import { CanvasViewContainer } from '@/components/CanvasViewContainer'
 import { subscribeGlobalCancelEvents } from '@/lib/browser/globalCancelEvents'
-import { resolveFloatingPanelRightClearanceCss } from '@/lib/ui/floatingPanelGeometry'
 import {
   flightSimInputFromHeldTouches,
   releaseFlightSimHeldTouch,
@@ -66,8 +66,7 @@ function envelopeClassName(severity: 'nominal' | 'caution' | 'warning'): string 
 }
 
 export function FlightSimHud() {
-  const floatingPanelOpen = useGraphStore(state => state.floatingPanelOpen === true)
-  const floatingPanelWidthRatio = useGraphStore(state => state.floatingPanelWidthRatio)
+  const sourceReview = useSourceGeospatialReview()
   const flight = React.useSyncExternalStore(
     subscribeFlightSimHudSnapshot,
     readFlightSimSnapshot,
@@ -162,12 +161,6 @@ export function FlightSimHud() {
       return null
     }
   }, [flight])
-  const floatingPanelRightClearance = floatingPanelOpen
-    ? resolveFloatingPanelRightClearanceCss(floatingPanelWidthRatio)
-    : undefined
-  const floatingPanelClearanceVariables = floatingPanelRightClearance
-    ? { '--kg-flight-sim-panel-clearance': floatingPanelRightClearance } as React.CSSProperties
-    : undefined
   const hudPanelClassName = training.night
     ? 'border-violet-300/35 bg-indigo-950/80'
     : 'border-white/20 bg-slate-950/75'
@@ -193,9 +186,17 @@ export function FlightSimHud() {
     hydrationPending,
   ])
 
+  React.useLayoutEffect(() => {
+    if (!sourceReview) return
+    cancelHeldTouches()
+    if (flight.active && (flight.phase === 'ready' || flight.phase === 'flying')) stopFlightSim()
+  }, [sourceReview, flight.active, flight.phase, cancelHeldTouches])
+  if (sourceReview) return null
+
   return (
+    <CanvasViewContainer sizing="inset" overlay>
     <section
-      className="pointer-events-none absolute inset-0 z-[230] select-none overflow-hidden text-white"
+      className="pointer-events-none absolute inset-0 z-[230] flex flex-col gap-2 select-none overflow-y-auto p-3 text-white"
       aria-label="Flight Sim HUD"
       data-kg-flight-sim-hud="1"
       data-kg-flight-sim-phase={flight.phase}
@@ -224,13 +225,13 @@ export function FlightSimHud() {
       data-kg-flight-sim-overlays-visible={presentation.overlaysVisible ? '1' : '0'}
       data-kg-flight-sim-navigation-visible={presentation.navigationVisible ? '1' : '0'}
       data-kg-flight-sim-simulation-speed={presentation.simulationSpeed}
-      data-kg-flight-sim-panel-clearance={floatingPanelOpen ? 'reserved' : 'none'}
-      style={floatingPanelClearanceVariables}
+      data-kg-flight-sim-viewport="shared"
     >
       <header
-        className={`absolute left-3 right-3 top-3 grid grid-cols-1 gap-2 pt-[env(safe-area-inset-top)] ${floatingPanelOpen ? 'sm:right-[var(--kg-flight-sim-panel-clearance)]' : 'sm:flex sm:items-start sm:justify-between sm:gap-3'}`}
+        className="grid shrink-0 items-start gap-2 pt-[env(safe-area-inset-top)]"
+        style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,18rem),1fr))' }}
       >
-        <section className={`max-w-none rounded-xl border px-3 py-2 shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm sm:max-w-[58vw] ${hudPanelClassName}`}>
+        <section className={`min-w-0 rounded-xl border px-3 py-2 shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm ${hudPanelClassName}`}>
           <p className="text-xs font-semibold uppercase tracking-normal text-cyan-200">Local deterministic flight mission</p>
           <p
             className="mt-1 text-sm font-semibold"
@@ -257,7 +258,7 @@ export function FlightSimHud() {
           {save.error ? <p className="mt-1 text-xs text-rose-200" role="alert">{save.error}</p> : null}
         </section>
         {presentation.overlaysVisible ? <section
-          className={`grid min-w-0 grid-cols-3 gap-2 rounded-xl border px-2 py-2 text-center shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm sm:grid-cols-6 ${hudPanelClassName} ${floatingPanelOpen ? '' : 'sm:min-w-[22rem]'}`}
+          className={`grid min-w-0 grid-cols-6 gap-2 rounded-xl border px-2 py-2 text-center shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm ${hudPanelClassName}`}
           aria-label="Flight HUD instruments"
         >
           <span className="text-xs text-slate-300">KTS<strong className="block text-sm text-white">{training.airspeedReliable ? (projection.airspeed * 1.94384).toFixed(0) : '---'}</strong></span>
@@ -269,9 +270,10 @@ export function FlightSimHud() {
         </section> : null}
       </header>
 
+      <section className="grid min-h-16 flex-1 grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
       {flight.active && (flight.phase === 'ready' || flight.phase === 'flying') ? (
         <section
-          className={`absolute left-1/2 top-32 w-[min(24rem,calc(100%-1.5rem))] -translate-x-1/2 rounded-xl border px-3 py-2 text-center shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm sm:top-20 ${envelopeClassName(training.envelope.severity)}`}
+          className={`min-w-0 max-w-sm rounded-xl border px-3 py-2 text-center shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm ${envelopeClassName(training.envelope.severity)}`}
           aria-label="Flight envelope director"
           role={training.envelope.severity === 'warning' ? 'alert' : 'status'}
         >
@@ -286,11 +288,11 @@ export function FlightSimHud() {
 
       {flight.active ? (
         <aside
-          className={`pointer-events-auto absolute bottom-32 right-3 grid w-32 gap-1 sm:bottom-auto sm:top-36 sm:w-40 ${floatingPanelOpen ? 'sm:right-[var(--kg-flight-sim-panel-clearance)]' : ''}`}
+          className="pointer-events-auto col-start-2 row-start-1 grid w-40 gap-1"
           aria-label="Flight navigation HUD"
           data-kg-workspace-visible-viewport-occluder="vertical"
         >
-          {presentation.navigationVisible ? <FlightSimNavigationInset className="hidden sm:grid" flight={flight} /> : null}
+          {presentation.navigationVisible ? <FlightSimNavigationInset className="hidden sm:grid !border-white/20 !bg-slate-950/80" flight={flight} /> : null}
           <button
             className={buttonClass}
             type="button"
@@ -303,7 +305,9 @@ export function FlightSimHud() {
         </aside>
       ) : null}
 
-      <section className="pointer-events-auto absolute bottom-32 left-3 grid grid-cols-3 gap-1 pb-[env(safe-area-inset-bottom)] sm:bottom-3" aria-label="Touch flight controls">
+      </section>
+      <footer className="grid shrink-0 items-end gap-2 pb-[env(safe-area-inset-bottom)]" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,16rem),1fr))' }}>
+      <section className="pointer-events-auto grid max-w-64 grid-cols-3 gap-1" aria-label="Touch flight controls">
         <span />
         <button className={buttonClass} type="button" disabled={!flightControlsEnabled} {...touchHandlers('pitch-up')}>Pitch ▲</button>
         <span />
@@ -313,7 +317,7 @@ export function FlightSimHud() {
       </section>
 
       <section
-        className={`pointer-events-auto absolute bottom-3 left-3 right-3 flex max-w-none flex-wrap items-center justify-end gap-1 pb-[env(safe-area-inset-bottom)] sm:left-auto sm:max-w-[56vw] ${floatingPanelOpen ? 'sm:right-[var(--kg-flight-sim-panel-clearance)]' : ''}`}
+        className="pointer-events-auto flex min-w-0 flex-wrap items-center justify-end gap-1"
       >
         <button
           aria-label="Capture flight pointer"
@@ -346,6 +350,8 @@ export function FlightSimHud() {
         {terminal ? <button className={buttonClass} type="button" disabled={save.status === 'saving'} onClick={() => void persistFlightSimPendingDecisions()}>{save.status === 'error' && save.retainedCount > 0 ? 'Retry save' : 'Save Decisions'}</button> : null}
         {save.hydrationBlocked ? <button className={buttonClass} type="button" onClick={() => void resetFlightSimLocalPersistence()}>Reset local save</button> : null}
       </section>
+      </footer>
     </section>
+    </CanvasViewContainer>
   )
 }

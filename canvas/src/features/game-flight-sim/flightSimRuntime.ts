@@ -1,3 +1,4 @@
+import { readSourceGeospatialState } from '@/features/evidence-analysis/geospatialSource'
 import {
   acquireDurableChatStreamTransportSuspension,
 } from '@/features/chat/floatingPanelChat/floatingPanelChatDurableStream'
@@ -93,7 +94,7 @@ let releaseFlightSimWorkspaceSeedSyncSuspension: (() => void) | null = null
 function hasFlightSimBrowserPresentationRuntime(): boolean {
   return typeof window !== 'undefined'
     && typeof document !== 'undefined'
-    && typeof window.requestAnimationFrame === 'function'
+    && typeof window.requestAnimationFrame === 'function' && !readSourceGeospatialState().sourceKey
 }
 function captureAuthoredRuntimeOwnership(): void {
   authoredRuntimeOwnership ??= captureFlightSimAuthoredRuntimeOwnership()
@@ -416,6 +417,7 @@ export function startFlightSim(
       ? startFlightSim()
       : opened
   ))
+  if (readSourceGeospatialState().sourceKey) return defaultRuntime.fail('Recorded source context is active. Use Timeline playback; practice requires a simulation-only document.')
   if (readFlightSimHydrationPending()) {
     return defaultRuntime.fail('Flight Sim Decisions are still loading; wait before starting.')
   }
@@ -435,6 +437,7 @@ export function stopFlightSim(): FlightSimSnapshot {
   return defaultRuntime.stop()
 }
 export function restartFlightSim(): FlightSimSnapshot {
+  if (readSourceGeospatialState().sourceKey) return defaultRuntime.fail('Recorded source context is active. Use Timeline playback; practice requires a simulation-only document.')
   if (readFlightSimHydrationPending()) {
     return defaultRuntime.fail('Flight Sim Decisions are still loading; wait before restarting.')
   }
@@ -448,15 +451,12 @@ export function restartFlightSim(): FlightSimSnapshot {
   try { admitCapturedFlightSimTrainingSource(captureFlightSimTrainingSource(), 'stopped') } catch (error) { return defaultRuntime.fail(error) }
   return startFlightSimWithReadyFrame(() => { const restarted = defaultRuntime.restart(); bindFlightSimTrainingRun(restarted); return restarted })
 }
-
 export function setFlightSimInput(patch: FlightSimInputPatch): FlightSimSnapshot {
   return defaultRuntime.setInput(patch)
 }
-
 export function queueFlightSimInput(patch: FlightSimInputPatch): FlightSimSnapshot {
   return defaultRuntime.queueInput(patch)
 }
-
 export function setFlightSimThrottle(value: number): FlightSimSnapshot {
   return defaultRuntime.setThrottle(value)
 }

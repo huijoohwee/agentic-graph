@@ -1,0 +1,17 @@
+{
+  "schema": "arrival-policy/v1",
+  "id": "singapore-arrival-exercise-v1",
+  "profile": {"id": "arrival-v1", "version": "1.0.0"},
+  "roles": {"schedule": "schedule", "plan": "plan", "position": "position", "destination": "destination", "speed": "ground_speed", "truth": "touchdown", "truthBasis": "truth_basis", "partition": "partition"},
+  "components": {"longitude": "longitude", "latitude": "latitude"},
+  "partitions": {
+    "train": {"fromUtc": "2026-09-30T00:00:00Z", "toUtc": "2026-10-01T00:00:00Z"},
+    "calibration": {"fromUtc": "2026-10-01T00:00:00Z", "toUtc": "2026-10-02T00:00:00Z"},
+    "test": {"fromUtc": "2026-10-02T00:00:00Z", "toUtc": "2026-10-03T00:00:00Z"}
+  },
+  "scope": {"label": "Authored Singapore and surrounding study window, not official airspace or a clearance zone", "latitude": [0.5, 2.6], "longitude": [102.7, 105.1], "supportedTypes": ["fixed-wing-study"], "caseType": "fixed-wing-study"},
+  "distance": {"method": "sphere-haversine/v1", "radiusMetres": 6371008.8, "datum": "WGS84", "unit": "deg"},
+  "model": {"method": "median-track-residual/v1", "calibration": "absolute-residual-order-statistic/v1", "nominalCoverage": 0.9, "minimumTrainingCases": 3},
+  "evaluation": {"sampleSecondsBeforeTruth": 1800, "minimumQualifiedArrivals": 200, "minimumCoverage": 0.85, "lateSeconds": 600, "leadSeconds": 1200, "minimumLeadCoverage": 0.7, "maximumFeatureAgeSeconds": 60, "maximumRemainingSeconds": 21600, "independentTruthBasis": "independently-observed-touchdown", "advisoryRule": "interval-lower-exceeds-plan-plus-threshold"},
+  "ui": {"title": "Singapore arrival exercise · synthetic", "description": "Three invented batches exercise training, calibration and held-out evaluation. They are NOT actual flights, touchdown labels or operational advice.", "fixturePaths": ["./fixtures/arrival-singapore-exercise-train.json", "./fixtures/arrival-singapore-exercise-calibration.json", "./fixtures/arrival-singapore-exercise-test.json"]}
+}

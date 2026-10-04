@@ -4,7 +4,7 @@ id: "md:agentic-graph-game-flight-sim-prd-tad"
 author: "airvio / joohwee"
 date: "2026-09-22"
 updated: "2026-10-04"
-version: "1.5.23"
+version: "1.5.30"
 status: "runtime-ready"
 runtime_claim: "local-runtime-ready"
 evidence_status: "exact-head source and browser proof required at every handoff"
@@ -67,16 +67,24 @@ guideline_revision: "3.4.0"
 guideline_source: "$GITHUB_ROOT/huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
 previous_document_version: "1.5.2"
-prd_revision: "1.5.23"
-tad_revision: "1.5.23"
-adr_revision: "1.5.23"
-mvp_revision: "1.5.23"
-gtm_revision: "1.5.23"
+prd_revision: "1.5.30"
+tad_revision: "1.5.30"
+adr_revision: "1.5.30"
+mvp_revision: "1.5.30"
+gtm_revision: "1.5.30"
 ---
 
 # agentic-graph Game Flight Sim PRD-TAD-ADR-MVP-GTM
 
 Governed by the same solo-dev AI-native orientation as the sibling `agentic-graph-game-fps-prd-tad-adr-mvp-gtm.md`: every decision is evaluated through the four compounding lenses (min-viable-max-value, TCO-zero, token economics, harness-first). Repository-owned focused and browser proof gates are registered and must bind the unchanged exact candidate at handoff. Protected integration, production, and Cloudflare deployment remain separate and unauthorized here.
+
+Aviation Evidence Layer [0.4.1](../aviation-evidence/prd-tad-adr-mvp-gtm.md) uses source-authored WSSS airport/runway records and three actual observed aircraft through the existing MapLibre owner. On 2026-10-04 the user explicitly authorized local application and UI verification of the held BottomPanel routing patch. Authored source context now takes priority over XR storyboard routing through loading, error and removal states. The shared Timeline owns seek/play/pause; the duplicate source-panel clock controls and Open Timeline button are removed. Toolbar → Canvas View Mode → Display Controls → Timeline is the single toggle in every surface mode, including Geo+XR; it opens and closes the existing BottomPanel without changing the map or source clock. The old geospatial-only menu disable and action early return are removed together. UTC controls use a disclosure so the default panel retains visible lanes; long source labels are bounded with full accessible text and titles. Twenty-one focused source/UI/clock tests, native typecheck and build passed. Live checks proved exact UTC/event seeking, invalid UTC rejection, next observation, advancing playback, stable pause, source-switch release and paused re-entry. Airport, runway, airspace-availability and three observed-aircraft lanes replace unrelated XR characters. The shared routing registry test remains red because its `gantt: ChartGantt` assertion is already absent at unchanged HEAD; this fix does not claim aggregate CI green. Evidence and exact local file hashes are retained in `output/aviation-graph-consolidation-20261004/timeline-activation-*`. Rollback the source-context routing and paired source controls together using the retained preimages. This human exception grants local application only: native overlapping-path reconciliation, publication and integration remain pending. Actual controlled airspace, surveyed collision surfaces and host budgets remain open; iPhone Safari stays SKIP/KIV. Source-review follow-up: the cyan aircraft and triangular route were authored practice geometry. Authored source context now owns presentation independently of Timeline visibility, including load, error and removal states; closing a panel never restores practice geometry. The existing Canvas composition now suspends its gameplay publisher, clears both gameplay overlays, releases their camera claim and fits accepted source geometry once per source entry. Flight HUD clears held touch input and pauses ready/flying practice while source context exists. The Flight panel presents recorded evidence instead of simulated telemetry and controls for this context. Recorded entry does not wait for a deliberately suppressed practice presenter; Start/Restart reject while source context is active. The existing source-layer controller owns semantic projected buttons and SVG path targets with pointer/keyboard inspection, visible selection, source identity, UTC and provenance. Targets follow MapLibre movement and are fenced by source readiness and disposal; no generic div or aria-hidden feature decoration is introduced. No second renderer, camera, clock or source owner is introduced. Earlier source-review proof remains historical; the corrected source-owned presentation and semantic targets are verified in `output/aviation-graph-consolidation-20261004/source-affordances-*`. The source-affordance follow-up stayed within its already-owned paths. For the subsequent Timeline toolbar consolidation, native scope re-admission rejected the earlier user-approved unreserved router bytes; the user then explicitly authorized applying and verifying the prepared consolidation patch locally. Seventeen focused tests, native typecheck, build, worktree check and diff check passed. Live verification proved the existing menu toggles Off → On → Off → On in Geo+XR, opens the recorded-source BottomPanel, removes the duplicate entry and preserves source presentation without practice geometry. The final changed-file hashes, patch, logs and screenshot are retained in `output/aviation-graph-consolidation-20261004/timeline-toolbar-*`; restore only those six matching preimages for rollback. This local exception does not reconcile reservations or authorize publication, integration or deployment. The shared Timeline rate policy now includes 4×, 8×, 10×, 15× and 20×; its existing button cycles back to 0.25×. All transport consumers and the animation invocation grammar reuse that policy. Native media rates rejected by a browser use the existing Timeline seek path through one shared adapter, with no clamped competing clock; supported rates resume native playback. Local verification and exact rollback preimages are retained under `output/aviation-graph-consolidation-20261004/timeline-rate-*`. This extends the same local-only implementation; the native admission conflict and previous release gates remain open.
+
+## Evidence consolidation — reference implementation checkpoint
+
+The 2026-10-04 user decision makes this repository the sole aviation evidence runtime owner. The existing Flight panel admits an authored evidence workspace; pure record/replay/source/export, volume, arrival, route and structured-notice modules move here from the predecessor shell. That shell retires its aviation implementation and retains its unrelated drone tools. No iframe or alternate Flight runtime is retained. Evidence state remains independent of simulation state; region, policy, examples and mission choices are authored data. New adapters are lazy and reuse native capability owners.
+
+Current transition: admitted `aviation-evidence-consolidation` from `061df9dc9df465f9b54281d576fc9c81f1b092da`; WSSS checkpoint81 feature/31 UI-source-offline tests and bounded live checks passed; Timeline successor tests and native typecheck/build passed; route activation and live verification are now locally complete under the explicit user exception above. Native aggregate fails discovery partition; discovery/CI-scope and narrow-layout fixes await the active source-annotation owner. At390px fixed context cards leave only28px for Flight controls. The Timeline patch is applied locally; the separate discovery/CI and narrow-layout proposals remain unapplied. Graph is unpublished. Retirement PR10 publishes predecessor removal at `b6d0e6ae01df4f1d6da1478cabcbd21da2c73efd`, with test/budget CI green; no merge/deploy. The joined evidence plan is `../aviation-evidence/prd-tad-adr-mvp-gtm.md`. The preserved predecessor archive is `output/aviation-graph-consolidation-20261004/81-staging-preserved.tar.gz`, SHA-256 `3b0d7e6fa07ad103c84dbc47362fd41b4bdd5a9211a32f59a0801acadcecd6f4`. iPhone Safari remains KIV; real arrival/notice acceptance and host-wide offline/chunk limits are not waived by consolidation.
 
 ## Status boundary
 
@@ -438,7 +446,7 @@ Local runtime readiness requires the externally reported exact-HEAD source and b
 
 ## Planning revision — reference implementation
 
-All five roles below consume `PLAN-AGENTIC-GRAPH-GAME-FLIGHT-SIM-PRD-TAD-ADR-MVP-GTM@1.5.23`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The historical review used guideline v2.7.0; the new proposal below records its current authoring input separately. The shared maturity rubric loads on demand.
+All five roles below consume `PLAN-AGENTIC-GRAPH-GAME-FLIGHT-SIM-PRD-TAD-ADR-MVP-GTM@1.5.25`. Existing source and runtime observations retain their original revisions and scope; this documentation update renews no deployment or demand evidence. The historical review used guideline v2.7.0; the new proposal below records its current authoring input separately. The shared maturity rubric loads on demand.
 
 | Role | Owning content at this revision |
 |---|---|
@@ -465,7 +473,7 @@ Experience observations, current VCC execution and buyer/payment evidence are un
 
 ## Offline learning proposal - reference implementation
 
-**Scope and authority.** PRD, TAD, ADR, MVP and GTM below join this document's `1.5.23` revision.
+**Scope and authority.** PRD, TAD, ADR, MVP and GTM below join this document's `1.5.25` revision.
 This proposal records the earlier structured-control alternative. The separately authored offline Python learning specification now requires Python execution; this alternative does not satisfy that requirement and does not authorize a competing evaluator. Its L01–L05 criteria remain historical proposal evidence, not implemented acceptance. Accepted Kiro requirements stay unchanged. Any future Flight-specific implementation must update `.kiro/specs/agentic-graph-game-flight-sim/{requirements,design,tasks}.md`
 at its normative owner before implementation, and this derived document together.
 Do not modify the shared XR workbench while another active lane owns it.
@@ -556,7 +564,7 @@ Future Flight acceptance must name its exact normative revision. Python learning
 
 ## Shared presentation and rehearsal increment — reference implementation
 
-PRD, TAD, ADR, MVP and GTM consume revision `1.5.23`; normative authority remains Requirements 28–30 in the repository-tracked Kiro package. Authoring input: PRD/TAD/ADR/MVP/GTM guideline `3.4.0` at `82835ac37d524643faa6b9703cb077ea9474ab15`; this bounded increment does not claim a full retrospective guideline audit.
+PRD, TAD, ADR, MVP and GTM consume revision `1.5.25`; normative authority remains Requirements 28–30 in the repository-tracked Kiro package. Authoring input: PRD/TAD/ADR/MVP/GTM guideline `3.4.0` at `82835ac37d524643faa6b9703cb077ea9474ab15`; this bounded increment does not claim a full retrospective guideline audit.
 
 **PRD:** one player rehearses the existing authored instrument-uncertainty scenario and chooses how much optional instrumentation to display and how quickly fixed ticks arrive. Acceptance: both native surfaces synchronize HUD overlays, Navigation and `0.5×`/`1×`/`2×`; critical objective/error/envelope/lifecycle controls remain available; equal tick-indexed inputs through the serialized browser clock produce equal captures; broader batched advance calls are outside this pacing proof. This increment is synthetic training; buyer pain and observed aviation evidence remain unvalidated.
 
@@ -574,4 +582,10 @@ PRD, TAD, ADR, MVP and GTM consume revision `1.5.23`; normative authority remain
 
 | Continuity | CID | RAO | Date |
 |---|---|---|---|
-| `PLAN-AGENTIC-GRAPH-GAME-FLIGHT-SIM-PRD-TAD-ADR-MVP-GTM@1.5.23` | C: Existing admitted Flight owners and user-authorized dual document/runtime scope. · I: Rehearse authored uncertainty with scenario-independent controls. · D: Add shared visibility and fixed-tick pacing; move training policy and geographic reference into demo configuration. | R: Engineer · A: Engineer implements Requirements 28–30 in the admitted native lane. · O: One bounded increment and joined demo/specification. · check: affected tests plus clean-candidate aggregate and serial browser receipts | 2026-10-04 |
+| `PLAN-AGENTIC-GRAPH-GAME-FLIGHT-SIM-PRD-TAD-ADR-MVP-GTM@1.5.25` | C: Existing admitted Flight owners and user-authorized dual document/runtime scope. · I: Rehearse authored uncertainty with scenario-independent controls. · D: Add shared visibility and fixed-tick pacing; move training policy and geographic reference into demo configuration. | R: Engineer · A: Engineer implements Requirements 28–30 in the admitted native lane. · O: One bounded increment and joined demo/specification. · check: affected tests plus clean-candidate aggregate and serial browser receipts | 2026-10-04 |
+
+## Shared full-viewport HUD — 2026-10-04
+
+PRD: retain readable, reachable Flight controls in the full canvas and alongside editor/panels. TAD/ADR: reuse `CanvasViewContainer` and `resolveCanvasContainerInsets`; its optional pointer-transparent overlay measures shared occluders and toolbar, excludes its own descendants, and releases observers on unmount. Flight removes its right-only width calculation and reflows inside that rectangle. Full/Inset renderer preferences remain with the existing owner. No scenario, clock, renderer, dependency or new runtime module is added. MVP: four Geo+XR tests, five layout/control checks and native Canvas check pass; live 1106×952 split/full and 390×844 bounds show every HUD button inside with no horizontal overflow; compact Start→ready→Stop works. Phone Safari remains KIV. Captures/logs: `output/aviation-graph-consolidation-20261004/full-viewport-*` at the GitHub workspace root. GTM: local usability verification only; no adoption or production claim. Revert the shared overlay option and HUD consumer together; keep evidence. Existing Timeline/discovery handoff and release gates remain open.
+
+Viewport ownership consolidation (2026-10-04): traversal covers the workspace pane/drag owner, shared container, MapLibre basemap, Flight/City cameras, graph fit requests and UI clearance. Delete the camera DOM-occlusion observer and its two subscriptions, global-panel camera subtraction, and the Full-only exception; all cameras now consume actual viewport dimensions and native MapLibre resize events. Keep `CanvasViewContainer` as the Full/Inset geometry owner and control clearance separate. Delete Flight’s private editable-target helper in favor of the shared predicate; focused separators and already-handled keydowns cannot fly the aircraft, and keyup publishes only for keys Flight owns. Regression reproduces Shift+Arrow resizing changing throttle, then passes with held-key release preserved. Focused geometry/camera/HUD, City, presentation and input/lifecycle checks pass. Live 544→640 px editor resize preserves 1106×952 map, camera signature, padding, instruments and Ready state. Evidence: `output/aviation-graph-consolidation-20261004/viewport-owner-*`; preserve the keyboard-red captures as prior-failure evidence. Zero new runtime modules/dependencies; runtime source shrinks. GTM remains local usability evidence; no adoption/publication claim. Revert the owner cleanup and corresponding tests together; existing release/corpus/Safari gates remain open.

@@ -1,4 +1,5 @@
 import React from 'react'
+import { useSourceGeospatialContext } from '@/features/evidence-analysis/geospatialSource'
 import {
   Gauge,
   Plane,
@@ -68,6 +69,8 @@ import {
   subscribeFlightSimTrainingSnapshot,
 } from './flightSimTrainingRuntime'
 
+const EvidencePanelLazy = React.lazy(() => import('@/features/evidence-analysis/EvidencePanel'))
+
 type PendingOperation = FlightSimOperation | 'reset-save'
 
 function Invocation({
@@ -107,6 +110,7 @@ function airspeed(velocity: readonly number[]): string {
 }
 
 export function FlightSimFloatingPanelView() {
+  const sourceContext = useSourceGeospatialContext()
   const flight = React.useSyncExternalStore(
     subscribeFlightSimSnapshot,
     readFlightSimSnapshot,
@@ -143,6 +147,7 @@ export function FlightSimFloatingPanelView() {
     || resolveXrMotionReferenceStage(XR_MOTION_REFERENCE_DEFAULT_STAGE_ID)
   const [pendingOperation, setPendingOperation] = React.useState<PendingOperation | null>(null)
   const [throttle, setThrottle] = React.useState(flight.aircraft.throttle)
+  const [evidenceLoaded, setEvidenceLoaded] = React.useState(false)
 
   React.useEffect(() => {
     setThrottle(flight.aircraft.throttle)
@@ -205,6 +210,16 @@ export function FlightSimFloatingPanelView() {
     && !decisions.hydrationBlocked
   const canSave = flight.phase === 'completed' || flight.phase === 'crashed'
 
+  if (sourceContext) return (
+    <section className={floatingPanelCatalogSurfaceClassName()} aria-label="Recorded flight evidence">
+      <FloatingPanelCatalogHeader title="Recorded flight evidence" subtitle="Source observations · shared map and Timeline" actionsLabel="Recorded evidence actions" />
+      <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
+        <p className="text-xs">Select a map feature to inspect its source and observation time. Closing Timeline keeps the recorded map active.</p>
+        <React.Suspense fallback={<p role="status">Loading local evidence tools…</p>}><EvidencePanelLazy /></React.Suspense>
+      </section>
+    </section>
+  )
+
   return (
     <section
       className={floatingPanelCatalogSurfaceClassName()}
@@ -256,6 +271,12 @@ export function FlightSimFloatingPanelView() {
       />
 
       <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
+        <details className={cn('min-w-0 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
+          onToggle={event => { if (event.currentTarget.open) setEvidenceLoaded(true) }} data-kg-flight-evidence="1">
+          <summary className="min-h-[44px] cursor-pointer text-xs font-semibold">Evidence and analysis</summary>
+          <p className="mb-2 text-xs">Local imported records are separate from simulated aircraft state. Export before closing the Flight panel.</p>
+          {evidenceLoaded ? <React.Suspense fallback={<p role="status" className="text-xs">Loading local evidence tools…</p>}><EvidencePanelLazy /></React.Suspense> : null}
+        </details>
         <section
           className={cn(
             'grid grid-cols-3 gap-2 rounded border p-2 text-xs',
