@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.45"
-prd_revision: "1.3.45"
-tad_revision: "1.3.45"
-adr_revision: "1.3.45"
-mvp_revision: "1.3.45"
-gtm_revision: "1.3.45"
+version: "1.3.46"
+prd_revision: "1.3.46"
+tad_revision: "1.3.46"
+adr_revision: "1.3.46"
+mvp_revision: "1.3.46"
+gtm_revision: "1.3.46"
 date: "2026-10-04"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,8 +31,8 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.45**. This 2026-10-04 offline successor follows the protected startup repair.
-It restores the existing PWA/cache-owner repair, removes redundant per-frame canvas mutations and strengthens external-input browser proof,
+All five roles join **SEQUENCE-FLOW-001@1.3.46**. This 2026-10-04 offline successor follows the protected startup repair.
+It restores the existing PWA/cache-owner repair, removes redundant per-frame canvas mutations, repairs startup inventory convergence and strengthens external-input browser proof,
 preserving bounded parsing, event identity and the shared playback clock. Shared runtime adoption precedes final validation.
 Final candidate readiness requires the complete evidence matrix below; earlier proof keeps its original limits.
 
@@ -48,8 +48,8 @@ import it through normal workspace controls; do not store its path, source or sp
 runtime code, fixtures or tests. Independent generic regression cases exercise the contract.
 No outside implementation, assets, hosted rendering service or dependency enters this change.
 
-Sprint refresh: estimated 15 active minutes, 20-minute repair/check cap, twelve repository files and 180 KiB added bytes.
-Reuse the protected bootstrap owners and existing cache, PWA and proof owners. No new dependency or spend.
+Sprint refresh: estimated 15 active minutes, 25-minute repair/check cap, sixteen changed repository files and 180 KiB added bytes.
+Reuse the protected bootstrap owners and existing cache, PWA and proof owners. One companion regression file is admitted; no new dependency or spend.
 Keep files below 600 lines and chunks below 500 kB; load feature UI only on demand.
 The demonstration remains external; the browser proof accepts its path explicitly at invocation. External CI/review waits
 have no ETA; recheck on a changed exact-candidate status. Publication, integration,
@@ -424,7 +424,7 @@ V1–V9 pass and a pilot shows the omitted behavior matters. No second roadmap.
 
 ## GTM
 
-Current 1.3.45 is the offline successor after protected startup integration. Complete Q1–Q9 and exact build/release evidence before
+Current 1.3.46 is the offline successor after protected startup integration. Complete Q1–Q9 and exact build/release evidence before
 offering production readiness; focused passes and offline controls do not prove installation, delivery, buyer value or revenue.
 
 Hypothesis H1: a reachable technical team lead values a reviewed reusable interaction
@@ -465,7 +465,7 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.45. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.46. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 
@@ -516,7 +516,8 @@ The offline successor preserves that published candidate and its protected ances
 | Producer browser proof | Clean `89e15bb256ee088d8eee6349c94c357790803b08` passes the existing full-app walkthrough at 1024×900 and 390×900: local import, apply/cancel/undo, verified 980-file installation, offline cold reopen, no page errors or blocked remote requests. Mobile first value 16,186 ms, installation 5,344 ms and reload 1,781 ms. The producer changes only two test files after that browser receipt; application/build inputs are identical. This is not strict zero-fetch sequence acceptance. |
 | Validation ownership | Focused bootstrap checks retain the shared lazy gate’s relevant positive and negative storage-import assertions, eager mount/SSOT bridge rules and Flight ordering. The unrelated broad gate and its pre-existing selections remain unchanged. |
 | Frame work | Retained build traces measure 655 frames at p95 15.328 ms and 605 frames at p95 17.135 ms; the latter fails the unchanged 16 ms gate. Both traces are retained. The prior canvas rewrites at least 620 attributes and replaces its pulse per tick. The existing SVG owner now caches bindings and geometry, writes only changed semantic attributes and reuses one pulse. The shared clock stays unchanged; disposal and replaced-SVG guards fence stale updates, and reduced-motion changes remove the pulse while preserving selection. All 26 focused sequence tests pass, including mutation, branch exclusion and lifetime regressions. Final exact-build validation must prove the frame improvement. |
-| Final validation | Producer local/provider gates pass. After the shared owner’s protected release, freeze the combined source, run its selected native gate, exact build and external-input acceptance. Final proof adds repeated-connection selection across all three surfaces, native step controls and observed pause stability, 1280×800 desktop coverage, active-play source invalidation and visible invalid-input diagnostics with saved-byte/offline-reopen recovery. Retained build `54fe9baeae578c2d39b931c716a3b718a3a760ed` now passes that complete sequence walkthrough: 652 full frames at p95 15.273 ms, exact repeated event 3, Previous 2/Next 3, pause stability 677 ms, active-source invalidation stable for 2,108 ms, diagnostics and native save/reload/recovery. It still records worker fetches and uses a different helper checkout, so it is diagnostic evidence only. The final combined-candidate matrix remains pending. |
+| Startup inventory convergence | Shared candidate `38f2aa04342f13c05aa7c589bdacdd2e7338daf9` passes all ten native partitions and source portability locally; [PR #1551](https://github.com/huijoohwee/agentic-graph/pull/1551) failed its provider spatial import check at the unchanged 30-second readiness wait and retains a separate authored-document offline-open failure. A shared successor owns the explicit-refresh concurrency correction; no failed provider result is waived. Its bound debugger trace locates the graph/bootstrap async-read guard: current SourceFiles change from empty to 49 entries while the active path, document and active record remain identical. Nine inactive prepared seed texts differ from current empty placeholders, so whole-list equality is false. The existing source owner is responsible for a bounded initial-empty retry with an already-enabled exact active identity, persisted-byte and publication fences; it must preserve current inactive records and reject unsaved, selection or filesystem drift. The cold-start repair reproduces the failure on the original owner. Independent review also found a late-import overwrite during awaited parsing in `applyWorkspaceImportToCanvas`; the repaired owner checks inventory and caller authority before publication, preserves callback errors and rejects synchronous subscriber replacement. Deferred-parser regressions demonstrate lost imports and active bytes on the old owner and zero stale publication on the repaired owner. All 47 focused convergence/import guards, 45 existing bootstrap checks and the Canvas type/runtime checks pass after preserving the shared resolver contract. Combined exact-build proof remains required before acceptance. |
+| Final validation | Producer local/provider gates pass. After the shared owner’s protected release, freeze the combined source, run its selected native gate, exact build and external-input acceptance. Final proof adds repeated-connection selection across all three surfaces, native step controls and observed pause stability, 1280×800 desktop coverage, active-play source invalidation and visible invalid-input diagnostics with saved-byte/offline-reopen recovery. Retained build `54fe9baeae578c2d39b931c716a3b718a3a760ed` now passes that complete sequence walkthrough: 652 full frames at p95 15.273 ms, exact repeated event 3, Previous 2/Next 3, pause stability 677 ms, active-source invalidation stable for 2,108 ms, diagnostics and native save/reload/recovery. It still records worker fetches and uses a different helper checkout, so it is diagnostic evidence only. The final combined-candidate matrix remains pending. Repository prose freezes before exact-candidate proof; final observed results and raw receipts belong to the candidate-bound handoff, without changing source afterward. |
 
 TAD: one source owner and one shared clock remain authoritative. Startup retries are capped at three;
 no retry may overwrite a newer document. The PWA uses revision namespaces and its existing integrity

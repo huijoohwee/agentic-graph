@@ -30,7 +30,7 @@ import {
 import { resolveWorkspaceSourceRootPaths } from '@/features/workspace-fs/workspaceSourceRoots'
 import { readWorkspaceSourceFilesDocsOnlySetting } from '@/lib/workspace/workspaceStoreSyncSettings'
 import { buildSourceFileParseIdentityHash } from '@/features/source-files/sourceFileParseIdentity'
-import { buildSourceFileLifecycleState } from '@/features/source-files/sourceFileParsedState'
+import { areSourceFileRecordsEqual, buildSourceFileLifecycleState, normalizeSourceFiles } from '@/features/source-files/sourceFileParsedState'
 import { resolveWorkspaceSourceFileInlineText } from './workspaceInlineText'
 import {
   activateStrybldrImportSurface,
@@ -45,6 +45,7 @@ type ApplyWorkspaceImportToCanvasOpts = {
   sourcesByPath?: WorkspaceSourceIndex
   removedPaths?: WorkspacePath[]
   premergedSourceFiles?: SourceFile[]
+  assertCurrent?: () => void
 }
 
 type ApplyWorkspaceImportToCanvasResult = {
@@ -147,6 +148,24 @@ export async function applyWorkspaceImportToCanvas(args: {
   if (createdPaths.length === 0) return { sourceFilesUpdated: false, enabledCount: 0, parsedCount: 0 }
 
   const store = useGraphStore.getState()
+  let expectedSourceFiles = store.sourceFiles
+  const staleImport = () => Object.assign(new Error('Active document source changed during materialization (workspace import publication).'),
+    { code: 'SOURCE_FILES_MATERIALIZATION_STALE', retryable: false })
+  const assertCurrent = () => {
+    args.opts?.assertCurrent?.()
+    if (useGraphStore.getState().sourceFiles !== expectedSourceFiles) throw staleImport()
+  }
+  const publishSourceFiles = (files: SourceFile[]) => {
+    assertCurrent()
+    const normalized = normalizeSourceFiles(files)
+    store.setSourceFiles(normalized)
+    const published = useGraphStore.getState().sourceFiles
+    // A synchronous subscriber may publish a newer import while the setter notifies.
+    if (normalized.length !== published.length || normalized.some((file, index) => !areSourceFileRecordsEqual(file, published[index]))) throw staleImport()
+    expectedSourceFiles = published
+    assertCurrent()
+  }
+  assertCurrent()
   const removedSourcePathKeys = new Set(
     (Array.isArray(args.opts?.removedPaths) ? args.opts.removedPaths : [])
       .map(path => resolveWorkspaceSourcePathKey(normalizeWorkspacePath(path)))
@@ -161,6 +180,7 @@ export async function applyWorkspaceImportToCanvas(args: {
   const workspaceEntries = premergedSourceFiles
     ? []
     : Array.isArray(args.opts?.workspaceEntries) ? args.opts.workspaceEntries : await fs.listEntries()
+  assertCurrent()
   const sourcesByPath = premergedSourceFiles ? null : resolveWorkspaceSourceIndexSnapshot(args.opts?.sourcesByPath)
   const importSourcePaths = new Set([
     ...createdPaths.map(resolveWorkspaceSourcePathKey),
@@ -219,17 +239,18 @@ export async function applyWorkspaceImportToCanvas(args: {
 
   if (!applyToGraph) {
     if (next) {
-      store.setSourceFiles(next)
+      publishSourceFiles(next)
       return { sourceFilesUpdated: true, enabledCount, parsedCount: 0 }
     }
     if (merged !== existing || existing.length !== existingAll.length) {
-      store.setSourceFiles(merged)
+      publishSourceFiles(merged)
       return { sourceFilesUpdated: true, enabledCount: 0, parsedCount: 0 }
     }
     return { sourceFilesUpdated: false, enabledCount: 0, parsedCount: 0 }
   }
 
   const { loadGraphDataFromTextViaParser } = (await import('@/features/parsers/loader')) as typeof import('@/features/parsers/loader')
+  assertCurrent()
 
   let remainingFiles = WORKSPACE_IMPORT_AUTO_PARSE_MAX_FILES
   let remainingChars = WORKSPACE_IMPORT_AUTO_PARSE_MAX_TOTAL_CHARS
@@ -253,6 +274,7 @@ export async function applyWorkspaceImportToCanvas(args: {
       } catch {
         text = ''
       }
+      assertCurrent()
     }
     if (!text.trim()) continue
     const nameForParse = workspaceDocumentKey(path)
@@ -297,6 +319,8 @@ export async function applyWorkspaceImportToCanvas(args: {
     } catch {
       res = null
     }
+    // Keep authority errors outside the parser fallback so the original rejection survives.
+    assertCurrent()
     const graphData = res?.graphData || null
     const parserId = typeof res?.parserId === 'string' ? res.parserId : undefined
     const inlineText = resolveWorkspaceSourceFileInlineText(text)
@@ -361,8 +385,9 @@ export async function applyWorkspaceImportToCanvas(args: {
     }
   }
 
+  assertCurrent()
   if (next) {
-    store.setSourceFiles(next)
+    publishSourceFiles(next)
     const preserveInteractiveImportLanding =
       !!preferredInteractiveImportRawText
       || !!preferredInteractiveImportGraphData
@@ -374,33 +399,39 @@ export async function applyWorkspaceImportToCanvas(args: {
         scheduleApplyComposedGraphFromSourceFiles()
       }
     }
+    assertCurrent()
     applyInteractiveImportModes({
       graphData: preferredInteractiveImportGraphData,
       frontmatterOnlyDoc: sawFrontmatterOnlyDoc,
       rawText: preferredInteractiveImportRawText,
     })
     await waitForCanvasFrontmatterSurfaceTransition()
+    assertCurrent()
     return { sourceFilesUpdated: true, enabledCount, parsedCount }
   }
   if (merged !== existing || existing.length !== existingAll.length) {
-    store.setSourceFiles(merged)
+    publishSourceFiles(merged)
     if (preferredInteractiveImportRawText || preferredInteractiveImportGraphData || sawFrontmatterOnlyDoc) {
+      assertCurrent()
       applyInteractiveImportModes({
         graphData: preferredInteractiveImportGraphData,
         frontmatterOnlyDoc: sawFrontmatterOnlyDoc,
         rawText: preferredInteractiveImportRawText,
       })
       await waitForCanvasFrontmatterSurfaceTransition()
+      assertCurrent()
     }
     return { sourceFilesUpdated: true, enabledCount, parsedCount: 0 }
   }
   if (preferredInteractiveImportRawText || preferredInteractiveImportGraphData || sawFrontmatterOnlyDoc) {
+    assertCurrent()
     applyInteractiveImportModes({
       graphData: preferredInteractiveImportGraphData,
       frontmatterOnlyDoc: sawFrontmatterOnlyDoc,
       rawText: preferredInteractiveImportRawText,
     })
     await waitForCanvasFrontmatterSurfaceTransition()
+    assertCurrent()
   }
   return { sourceFilesUpdated: false, enabledCount: 0, parsedCount: 0 }
 }
