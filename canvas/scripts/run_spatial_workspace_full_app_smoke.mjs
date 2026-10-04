@@ -289,19 +289,23 @@ try {
     }
     catch { console.error('Could not write bounded smoke diagnostics') }
   }
+  let legacyCaptureTimer
   try {
-    if (activePage && !activePage.isClosed()) {
-      await activePage.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {})
-      const failure = (error.stack || String(error)) + '\nSaved source:\n' + await storedSource(activePage).catch(() => 'Unavailable') + '\nBody:\n' + await activePage.locator('body').innerText().catch(() => 'Unavailable')
-      await writeFile(join(output, 'failure.txt'), failure)
-      // Retained stage logs must explain a disabled form even when runner screenshots are unavailable.
-      console.error(JSON.stringify({ revision, tree, viewport: activePage.viewportSize(), output }))
-      console.error(JSON.stringify(activeDiagnostics))
-      console.error(JSON.stringify(await activePage.evaluate(() => ({ readyState: document.readyState, online: navigator.onLine,
-        worker: navigator.serviceWorker?.controller?.scriptURL, scripts: [...document.scripts].map(script => script.src), html: document.documentElement.outerHTML.slice(0, 4000) })).catch(() => ({ unavailable: true }))))
-      console.error(failure.slice(0, 50000))
-    }
+    await Promise.race([(async () => {
+      if (activePage && !activePage.isClosed()) {
+        await activePage.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {})
+        const failure = (error.stack || String(error)) + '\nSaved source:\n' + await storedSource(activePage).catch(() => 'Unavailable') + '\nBody:\n' + await activePage.locator('body').innerText().catch(() => 'Unavailable')
+        await writeFile(join(output, 'failure.txt'), failure)
+        // Retained stage logs must explain a disabled form even when runner screenshots are unavailable.
+        console.error(JSON.stringify({ revision, tree, viewport: activePage.viewportSize(), output }))
+        console.error(JSON.stringify(activeDiagnostics))
+        console.error(JSON.stringify(await activePage.evaluate(() => ({ readyState: document.readyState, online: navigator.onLine,
+          worker: navigator.serviceWorker?.controller?.scriptURL, scripts: [...document.scripts].map(script => script.src), html: document.documentElement.outerHTML.slice(0, 4000) })).catch(() => ({ unavailable: true }))))
+        console.error(failure.slice(0, 50000))
+      }
+    })(), new Promise(resolve => { legacyCaptureTimer = setTimeout(resolve, 3000) })])
   } catch { console.error('Legacy smoke failure capture was unavailable') }
+  finally { clearTimeout(legacyCaptureTimer) }
   throw error
 } finally {
   const cleanup = await Promise.allSettled([browser?.close(), server?.close()])
