@@ -119,7 +119,7 @@ async function packageHostSupportsTheCanvasLazyLoader() {
   const container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main'))
   const root = createRoot(container)
   const { GeospatialOverlayHost } = await import(new URL('../../../gympgrph/src/index.ts', import.meta.url).href)
-  const CanvasHost = React.lazy(async () => ({ default: GeospatialOverlayHost }))
+  const CanvasHost = React.lazy<typeof import('gympgrph')['GeospatialOverlayHost']>(async () => ({ default: GeospatialOverlayHost }))
   try {
     await act(async () => root.render(<React.Suspense fallback={<p>Loading host</p>}>
       <CanvasHost active={false} gameplayPresentationOwner={null} />
