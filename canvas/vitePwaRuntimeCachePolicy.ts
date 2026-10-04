@@ -52,6 +52,22 @@ export const buildPwaRuntimeCachingRules = (): RuntimeCaching[] => [
     },
   },
   {
+    // Build output gives each revision its own immutable namespace. In particular,
+    // verified lazy assets must not trigger background revalidation while offline.
+    urlPattern: ({ request, url }) => {
+      const scope = new URL((self as unknown as { registration: { scope: string } }).registration.scope)
+      const prefix = scope.pathname + 'assets/'
+      return request.method === 'GET' && url.origin === scope.origin && !url.search
+        && url.pathname.startsWith(prefix)
+        && /^[0-9a-f]{40}\/[A-Za-z0-9._-]+\.(?:js|css|woff2?|ttf|svg|png)$/.test(url.pathname.slice(prefix.length))
+    },
+    handler: 'CacheFirst',
+    options: {
+      cacheName: 'kg-assets', plugins: [nonHtmlRuntimeCachePlugin],
+      expiration: { maxEntries: 160, maxAgeSeconds: 60 * 60 * 24 * 14 },
+    },
+  },
+  {
     urlPattern: ({ request }) =>
       request.destination === 'script'
       || request.destination === 'style'
