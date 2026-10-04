@@ -15,7 +15,7 @@ import {
   resolveVideoSequenceClipEditStepMinutes,
 } from '@/components/timeline/videoSequenceClipEdit'
 import { resolveVideoSequenceRulerInsetPixelMetrics } from '@/components/timeline/videoSequenceTimelineRulerGeometry'
-import { VIDEO_SEQUENCE_LANE_HEIGHT_PX } from '@/components/timeline/videoSequenceTimeline'
+import { VIDEO_SEQUENCE_LANE_HEIGHT_PX, resolveVideoSequenceTimelineDragLaneDelta } from '@/components/timeline/videoSequenceTimeline'
 
 export type GanttTimelineTransportDragState = {
   mode: MermaidGanttBarDragMode
@@ -28,6 +28,14 @@ export type GanttTimelineTransportDragState = {
   markdownDocumentName: string | null
   markdownText: string
   span: MermaidGanttTimelineTaskSpan
+  laneOrder?: { host: HTMLElement; ids: string[]; origin: number; key: string }
+}
+
+function readTimelineDragLanes(host: HTMLElement): string[] {
+  return Array.from(host.querySelectorAll<HTMLElement>('[data-kg-video-sequence-drag-lane-id]'), row => row.dataset.kgVideoSequenceDragLaneId || '')
+}
+function hasCurrentTimelineDragLanes(state: GanttTimelineTransportDragState): boolean {
+  return !state.laneOrder || (state.laneOrder.host.isConnected && JSON.stringify(readTimelineDragLanes(state.laneOrder.host)) === state.laneOrder.key)
 }
 
 type GanttTimelineTransportRulerScrubState = {
@@ -57,6 +65,7 @@ function resolveTimelineRulerScrubRowKey(eventTarget: EventTarget | null): strin
 
 function isTimelineRulerInteractiveControl(eventTarget: EventTarget | null): boolean {
   const target = eventTarget instanceof HTMLElement ? eventTarget : null
+  if (target?.closest('[data-kg-source-annotation-layer]')) return true
   const buttonTarget = target?.closest('button')
   if (buttonTarget && !buttonTarget.closest('[data-kg-video-sequence-ruler-scrub-target="1"]')) return true
   return Boolean(target?.closest('[data-kg-gantt-timeline-track-span="1"]'))
@@ -118,7 +127,7 @@ export function useGanttTimelineInteractions(args: {
     if (!Number.isFinite(deltaY)) return 0
     const threshold = VIDEO_SEQUENCE_LANE_HEIGHT_PX / 2
     if (Math.abs(deltaY) < threshold) return 0
-    return Math.trunc(deltaY / VIDEO_SEQUENCE_LANE_HEIGHT_PX)
+    return state.laneOrder ? resolveVideoSequenceTimelineDragLaneDelta(state.laneOrder.ids, state.laneOrder.origin, deltaY) : Math.trunc(deltaY / VIDEO_SEQUENCE_LANE_HEIGHT_PX)
   }, [])
 
   const resolveSnappedDragDeltaMinutes = React.useCallback((deltaMinutes: number, state: GanttTimelineTransportDragState): number => {
@@ -143,6 +152,7 @@ export function useGanttTimelineInteractions(args: {
     if (!dragState) return
     const handlePointerMove = (event: PointerEvent) => {
       if (event.pointerId !== dragState.pointerId) return
+      if (!hasCurrentTimelineDragLanes(dragState)) { setDragState(null); setDragPreview(null); return }
       const preview = resolveMermaidGanttBarDragPreview({
         mode: dragState.mode,
         originClientX: dragState.originClientX,
@@ -163,6 +173,7 @@ export function useGanttTimelineInteractions(args: {
     }
     const handlePointerEnd = (event: PointerEvent) => {
       if (event.pointerId !== dragState.pointerId) return
+      if (!hasCurrentTimelineDragLanes(dragState)) { setDragState(null); setDragPreview(null); return }
       const preview = resolveMermaidGanttBarDragPreview({
         mode: dragState.mode,
         originClientX: dragState.originClientX,
@@ -259,7 +270,11 @@ export function useGanttTimelineInteractions(args: {
     event.stopPropagation()
     event.currentTarget.setPointerCapture?.(event.pointerId)
     args.setTransportPlaying(false)
+    const ids = rulerElement ? readTimelineDragLanes(rulerElement) : []
+    const laneId = event.currentTarget.closest<HTMLElement>('[data-kg-video-sequence-display-lane]')?.dataset.kgVideoSequenceDisplayLane
+    const origin = laneId ? ids.indexOf(laneId) : -1
     setDragState({
+      ...(rulerElement && origin >= 0 ? { laneOrder: { host: rulerElement, ids, origin, key: JSON.stringify(ids) } } : {}),
       mode,
       pointerId: event.pointerId,
       originClientX: event.clientX,

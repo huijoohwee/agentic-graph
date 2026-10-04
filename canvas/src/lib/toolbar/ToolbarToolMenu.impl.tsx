@@ -1,12 +1,9 @@
 import React from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { ChevronDown } from 'lucide-react'
 import { setMediaCatalogMode } from '@/features/command-menu/mediaCatalogModeRuntime'
 import { useOrchestratorPanelState } from '@/features/panels/hooks/useOrchestratorPanelState'
 import { GRAPH_TRAVERSAL_FLOATING_PANEL_EVENT } from '@/features/panels/utils/useMainPanelRect'
 import OrchestratorSettingsSection from '@/features/panels/views/OrchestratorSettingsSection'
-import IconButton from '@/components/IconButton'
-import { ToolbarDropdownSelect } from '@/components/toolbar/ToolbarDropdownSelect'
 import { ToolbarToolMenuRendererView } from '@/features/toolbar/ToolbarToolMenuRendererView'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { FloatingPanelView } from '@/hooks/store/store-types/graph-state-chat-import'
@@ -14,24 +11,21 @@ import { getIconSizeClass } from '@/lib/ui'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
   UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME,
-  UI_RESPONSIVE_NARROW_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME,
   UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME,
   UI_RESPONSIVE_SAFE_VIEWPORT_PANEL_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { usePinnedLs } from '@/lib/ui/panelPinned'
-import { uiPrimaryPillActiveClassName, uiToolbarRowScrollClassName, uiToolbarRowScrollJustifyBetweenClassName } from '@/features/toolbar/ui/toolbarStyles'
+import { uiToolbarRowScrollClassName, uiToolbarRowScrollJustifyBetweenClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { cn } from '@/lib/utils'
-import { Z_INDEX_FLOATING_PANEL_DEFAULT } from '@/lib/ui/zIndex'
+import { resolveFloatingPanelZIndex } from '@/lib/ui/zIndex'
 import {
   FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS,
   resolveFloatingPanelWidthCss,
 } from '@/lib/ui/floatingPanelGeometry'
 import { LS_KEYS, UI_LABELS, UI_SELECTORS } from '@/lib/config'
 import HeaderActions from '@/features/panels/ui/HeaderActions'
-import {
-  FLOATING_PANEL_TYPE_ICON_BY_VIEW,
-} from '@/features/panels/ui/mainPanelHelpIconLibrary'
+import { FloatingPanelViewTabs } from '@/features/toolbar/FloatingPanelViewTabs'
 import { FloatingPropsPanel } from '@/features/toolbar/FloatingPropsPanel'
 import { FloatingPanelSkillsCommandsView } from '@/features/toolbar/FloatingPanelSkillsCommandsView'; import { FloatingPanelPromptPresetsView } from '@/features/toolbar/FloatingPanelPromptPresetsView'
 import { clearSkillsCommandsMcpTarget } from '@/features/agentic-os/skillsCommandsMcpTarget'
@@ -61,23 +55,6 @@ type FloatingHeaderActions = {
   resetDisabled?: boolean
 }
 
-type FloatingPanelViewButtonSpec = {
-  view: FloatingPanelView
-  title: string
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
-  disabled?: boolean
-  hidden?: boolean
-  spotlightView?: string
-}
-
-type FloatingPanelOverflowOption = {
-  id: FloatingPanelView
-  title: string
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
-  disabled?: boolean
-  hidden?: boolean
-}
-
 const FloatingPanelChatLazy = React.lazy(() => import('@/features/chat/FloatingPanelChat'))
 const AgentMissionConsolePanelLazy = React.lazy(() => import('@/features/agent-ready/AgentMissionConsolePanel'))
 const FloatingPanelBlockLibraryLazy = React.lazy(() => import('@/features/toolbar/FloatingPanelBlockLibraryView').then(mod => ({ default: mod.FloatingPanelBlockLibraryView })))
@@ -86,46 +63,13 @@ const FlowchartFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgr
 const GitGraphFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/GitGraphFloatingPanelView').then(mod => ({ default: mod.GitGraphFloatingPanelView })))
 const GanttFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/GanttFloatingPanelView').then(mod => ({ default: mod.GanttFloatingPanelView })))
 const TimelineFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/TimelineFloatingPanelView').then(mod => ({ default: mod.TimelineFloatingPanelView })))
+const SequenceInspectorLazy = React.lazy(() => import('@/features/sequence/SequenceInspector').then(mod => ({ default: mod.SequenceInspector })))
 const ArchitectureFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/ArchitectureFloatingPanelView').then(mod => ({ default: mod.ArchitectureFloatingPanelView })))
 const EventModelingFloatingPanelViewLazy = React.lazy(() => import('@/features/gitgraph/EventModelingFloatingPanelView').then(mod => ({ default: mod.EventModelingFloatingPanelView })))
 
 const FloatingPreviewPanelLazy = React.lazy(() => import('@/features/panels/views/FloatingPreviewPanel'))
 
-const FLOATING_PANEL_FULL_HEIGHT_VIEWS = new Set<FloatingPanelView>(['preview', 'skillsCommands', 'blockLibrary', 'promptPresets', 'view', 'animation', 'motionControl', 'gameMode', 'flightSim', 'cityBuilder', 'camera', 'chat', 'console', 'geo', 'storyboardWidget', 'flowchart', 'gitGraph', 'gantt', 'timeline', 'architecture', 'eventModeling'])
-
-const FLOATING_PANEL_PRIMARY_VIEW_BUTTON_SPECS: FloatingPanelViewButtonSpec[] = [
-  { view: 'propsPanel', title: UI_LABELS.propsPanel, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.propsPanel },
-  { view: 'skillsCommands', title: UI_LABELS.skillsCommands, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.skillsCommands },
-  { view: 'blockLibrary', title: UI_LABELS.blockLibrary, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.blockLibrary },
-  { view: 'promptPresets', title: UI_LABELS.promptPresets, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.promptPresets },
-  { view: 'view', title: UI_LABELS.view, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.view },
-  { view: 'preview', title: UI_LABELS.previewPanel, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.preview },
-  { view: 'media', title: 'Media', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.media },
-  { view: 'animation', title: 'Animation', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.animation },
-  { view: 'motionControl', title: UI_LABELS.motionControl, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.motionControl },
-  { view: 'gameMode', title: UI_LABELS.gameMode, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.gameMode },
-  { view: 'flightSim', title: UI_LABELS.flightSim, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.flightSim },
-  { view: 'cityBuilder', title: UI_LABELS.cityBuilder, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.cityBuilder },
-  { view: 'camera', title: 'Camera', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.camera },
-  { view: 'design', title: 'Design', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.design },
-  { view: 'chat', title: UI_LABELS.chat, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.chat },
-  { view: 'console', title: 'Console', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.console },
-  { view: 'geo', title: UI_LABELS.geo, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.geo },
-  { view: 'renderer', title: UI_LABELS.renderer, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.renderer },
-  { view: 'storyboardWidget', title: 'Storyboard Widget', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.storyboardWidget },
-  { view: 'flowchart', title: 'Flowchart', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.flowchart },
-  { view: 'gitGraph', title: UI_LABELS.gitGraph, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.gitGraph },
-  { view: 'gantt', title: UI_LABELS.gantt, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.gantt },
-  { view: 'timeline', title: UI_LABELS.timeline, icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.timeline },
-  { view: 'architecture', title: 'Architecture', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.architecture },
-  { view: 'eventModeling', title: 'Event Model', icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.eventModeling },
-]
-
-const FLOATING_PANEL_VISIBLE_OVERFLOW_OPTIONS: FloatingPanelOverflowOption[] = [{
-  id: 'graphTraversal',
-  title: UI_LABELS.graphTraversal,
-  icon: FLOATING_PANEL_TYPE_ICON_BY_VIEW.graphTraversal,
-}]
+const FLOATING_PANEL_FULL_HEIGHT_VIEWS = new Set<FloatingPanelView>(['preview', 'skillsCommands', 'blockLibrary', 'promptPresets', 'view', 'animation', 'motionControl', 'gameMode', 'flightSim', 'cityBuilder', 'camera', 'chat', 'console', 'geo', 'storyboardWidget', 'flowchart', 'gitGraph', 'gantt', 'timeline', 'architecture', 'eventModeling', 'sequence'])
 
 export function ToolbarToolMenu({
   pipelineStatus,
@@ -241,10 +185,11 @@ export function ToolbarToolMenu({
   }, [geospatialModeEnabled])
 
   const handleSelectView = React.useCallback((view: RequestedFloatingPanelView, preserveMediaMode = false) => {
-    if (routeToolbarXrScenePanel({ view, canvasRenderMode, canvas3dMode })) return
-    if (view === 'media' && !preserveMediaMode) setMediaCatalogMode(canvasRenderMode === '3d' && canvas3dMode === 'xr' ? 'xr-3d' : 'media')
     if (floatingPanelView === 'skillsCommands' && view !== 'skillsCommands') clearSkillsCommandsMcpTarget()
+    const xrRouted = routeToolbarXrScenePanel({ view, canvasRenderMode, canvas3dMode })
+    if (view === 'media' && !preserveMediaMode && !xrRouted) setMediaCatalogMode('media')
     setFloatingPanelView(view)
+    setFloatingPanelMinimized(false)
     if (view === 'geo') void ensureGeospatialEnabled()
   }, [canvas3dMode, canvasRenderMode, ensureGeospatialEnabled, floatingPanelView, setFloatingPanelView])
   const handleClose = React.useCallback(() => {
@@ -281,9 +226,7 @@ export function ToolbarToolMenu({
     setManagedHeaderActions(actions)
   }, [])
   const floatingPanelRootStyle = React.useMemo(() => {
-    const safeZ = Number.isFinite(floatingPanelZIndex) ? Math.max(1, Math.floor(floatingPanelZIndex)) : Z_INDEX_FLOATING_PANEL_DEFAULT
-    if (floatingPanelPinned) return { zIndex: Math.max(safeZ, 1000) }
-    return { zIndex: Math.max(safeZ, workspaceEditorOverlayOpen ? 420 : 90) }
+    return { zIndex: resolveFloatingPanelZIndex(floatingPanelZIndex, floatingPanelPinned, workspaceEditorOverlayOpen) }
   }, [floatingPanelPinned, floatingPanelZIndex, workspaceEditorOverlayOpen])
 
   const floatingPanelSizeStyle = React.useMemo(() => {
@@ -307,57 +250,6 @@ export function ToolbarToolMenu({
     uiPanelTextFontClass,
     uiPanelKeyValueTextSizeClass,
     UI_THEME_TOKENS.text.primary,
-  )
-
-  const isOverflowViewActive = floatingPanelView === 'graphTraversal'
-  const overflowValue = React.useMemo(() => {
-    if (floatingPanelView === 'graphTraversal') {
-      return floatingPanelView
-    }
-    const fallback = FLOATING_PANEL_VISIBLE_OVERFLOW_OPTIONS.find(option => !option.disabled)?.id ?? FLOATING_PANEL_VISIBLE_OVERFLOW_OPTIONS[0]?.id
-    return fallback ?? 'graphTraversal'
-  }, [floatingPanelView])
-
-  const viewButtons = (
-    <>
-      {FLOATING_PANEL_PRIMARY_VIEW_BUTTON_SPECS.map(spec => {
-        if (spec.hidden) return null
-        const Icon = spec.icon
-        return (
-          <IconButton
-            key={spec.view}
-            title={spec.title}
-            onClick={() => handleSelectView(spec.view)}
-            disabled={spec.disabled}
-            className={`App-toolbar__btn ${
-              floatingPanelView === spec.view ? uiPrimaryPillActiveClassName : UI_THEME_TOKENS.text.secondary
-            }`}
-            showTooltip
-            data-kg-floating-panel-view-trigger={spec.view} data-kg-spotlight-view={spec.spotlightView}
-          >
-            <Icon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
-          </IconButton>
-        )
-      })}
-      {FLOATING_PANEL_VISIBLE_OVERFLOW_OPTIONS.length > 0 ? (
-        <ToolbarDropdownSelect
-          value={overflowValue}
-          options={FLOATING_PANEL_VISIBLE_OVERFLOW_OPTIONS}
-          title="More floating views"
-          showTooltip={false}
-          isButtonActive={isOverflowViewActive}
-          onSelect={id => handleSelectView(id as FloatingPanelView)}
-          renderButtonContent={() => <ChevronDown className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />}
-          renderOptionContent={option => (
-            <>
-              <option.icon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
-              <span className="truncate">{option.title}</span>
-            </>
-          )}
-          menuWidthClass={UI_RESPONSIVE_NARROW_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME}
-        />
-      ) : null}
-    </>
   )
 
   React.useEffect(() => {
@@ -406,65 +298,33 @@ export function ToolbarToolMenu({
     }
   }, [setFloatingPanelView])
 
-  if (floatingPanelMinimized) {
-    return (
-      <section className={floatingPanelRootClassName} style={floatingPanelRootStyle}>
-        <aside
-          ref={toolMenuCardRef}
-          className={`pointer-events-auto ModalContainer App-toolbar App-toolbar--compact select-none min-w-0 ${UI_RESPONSIVE_SAFE_VIEWPORT_PANEL_CLASSNAME} p-0 ${!floatingPanelPinned ? 'cursor-move' : ''}`}
-          style={toolMenuCardStyle}
-          data-kg-floating-panel-root="true"
-          data-kg-floating-panel-row-height={panelFormDensity.rowHeightPreset}
-          data-kg-floating-panel-field-line={panelFormDensity.fieldLineMode}
-        >
-          <header className={`${uiToolbarRowScrollJustifyBetweenClassName} w-full gap-1 sm:gap-2`} onPointerDown={handleFloatingPanelPointerDown}>
-            <nav className={`${uiToolbarRowScrollClassName} flex-1 gap-1 ${uiPanelTextFontClass}`} aria-label="Floating panel views">
-              {viewButtons}
-              <FloatingPanelHeaderStatus
-                pipelineStatus={pipelineStatus}
-                devStatusMetrics={devStatusMetrics}
-                uiPanelMicroLabelTextSizeClass={uiPanelMicroLabelTextSizeClass}
-              />
-            </nav>
-            <HeaderActions
-              onPinToggle={handlePinToggle}
-              pinned={floatingPanelPinned}
-              onApply={managedHeaderActionsView ? managedHeaderActions.apply : undefined}
-              onReset={managedHeaderActionsView ? managedHeaderActions.reset : undefined}
-              applyDisabled={managedHeaderActionsView ? managedHeaderActions.applyDisabled : true}
-              resetDisabled={managedHeaderActionsView ? managedHeaderActions.resetDisabled : true}
-              onRestore={() => {
-                setFloatingPanelMinimized(false)
-              }}
-              onClose={handleClose}
-            />
-          </header>
-        </aside>
-      </section>
-    )
-  }
 
   return (
     <section className={floatingPanelRootClassName} style={floatingPanelRootStyle}>
       <aside
         ref={toolMenuCardRef}
         className={`pointer-events-auto ModalContainer flex ${UI_RESPONSIVE_SAFE_VIEWPORT_PANEL_CLASSNAME} flex-col overflow-hidden p-0 ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.primary}`}
-        style={{ ...toolMenuCardStyle, ...floatingPanelSizeStyle }}
+        style={{ ...toolMenuCardStyle, ...(floatingPanelMinimized ? {} : floatingPanelSizeStyle) }}
         data-kg-floating-panel-root="true"
         data-kg-floating-panel-row-height={panelFormDensity.rowHeightPreset}
         data-kg-floating-panel-field-line={panelFormDensity.fieldLineMode}
       >
-        <section className={`px-2 py-1 flex h-full ${UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME} min-w-0 flex-col gap-1`} aria-label="Floating panel">
+        <section className={`px-2 py-1 flex ${floatingPanelMinimized ? '' : 'h-full'} ${UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME} min-w-0 flex-col gap-1`} aria-label="Floating panel">
           <header className={`${uiToolbarRowScrollJustifyBetweenClassName} w-full gap-1 select-none sm:gap-2 ${!floatingPanelPinned ? 'cursor-move' : ''}`} onPointerDown={handleFloatingPanelPointerDown}>
-            <nav className={`${uiToolbarRowScrollClassName} flex-1 gap-1 ${uiPanelTextFontClass}`} aria-label="Floating panel views">
-              {viewButtons}
+            <FloatingPanelViewTabs
+              view={floatingPanelView}
+              onSelect={handleSelectView}
+              iconSizeClass={iconSizeClass}
+              iconStrokeWidth={uiIconStrokeWidth}
+              fontClass={uiPanelTextFontClass}
+            >
               <FloatingPanelHeaderStatus
                 pipelineStatus={pipelineStatus}
                 exportStatus={exportStatus}
                 devStatusMetrics={devStatusMetrics}
                 uiPanelMicroLabelTextSizeClass={uiPanelMicroLabelTextSizeClass}
               />
-            </nav>
+            </FloatingPanelViewTabs>
             <HeaderActions
               onPinToggle={handlePinToggle}
               pinned={floatingPanelPinned}
@@ -472,15 +332,15 @@ export function ToolbarToolMenu({
               onReset={managedHeaderActionsView ? managedHeaderActions.reset : undefined}
               applyDisabled={managedHeaderActionsView ? managedHeaderActions.applyDisabled : true}
               resetDisabled={managedHeaderActionsView ? managedHeaderActions.resetDisabled : true}
-              onMinimize={() => {
-                setFloatingPanelMinimized(true)
-              }}
+              onMinimize={floatingPanelMinimized ? undefined : () => setFloatingPanelMinimized(true)}
+              onRestore={floatingPanelMinimized ? () => setFloatingPanelMinimized(false) : undefined}
               onClose={handleClose}
             />
           </header>
-          <section className={floatingPanelBodyClassName} aria-label={UI_LABELS.floatingPanel}>
+          {!floatingPanelMinimized && <section className={floatingPanelBodyClassName} aria-label={UI_LABELS.floatingPanel}>
             <PanelFormDensityProvider value={panelFormDensity}>
             {floatingPanelView === 'propsPanel' && <FloatingPropsPanel />}
+            {floatingPanelView === 'sequence' && <React.Suspense fallback={<p>Opening sequence…</p>}><SequenceInspectorLazy /></React.Suspense>}
             {floatingPanelView === 'skillsCommands' && <FloatingPanelSkillsCommandsView />}
             {floatingPanelView === 'blockLibrary' && <React.Suspense fallback={<p role="status">Loading Block library…</p>}><FloatingPanelBlockLibraryLazy /></React.Suspense>}
             {floatingPanelView === 'promptPresets' && <FloatingPanelPromptPresetsView />}
@@ -575,7 +435,7 @@ export function ToolbarToolMenu({
               </section>
             )}
             </PanelFormDensityProvider>
-          </section>
+          </section>}
         </section>
       </aside>
     </section>

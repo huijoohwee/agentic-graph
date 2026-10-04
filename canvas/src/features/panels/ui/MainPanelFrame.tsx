@@ -1,9 +1,31 @@
 import React from 'react'
+import { createPortal } from 'react-dom'
+import { resolveMainPanelZIndex } from '@/lib/ui/zIndex'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import MainPanelContainer from './MainPanelContainer'
 import TabHeader, { type TabIconComponent } from './TabHeader'
+import HeaderActions from './HeaderActions'
+
+export function MainPanelLayer({ style, ...props }: React.ComponentPropsWithoutRef<'section'>) {
+  const floatingPanelZIndex = useGraphStore(s => s.floatingPanelZIndex)
+  const layer = <section
+    {...props}
+    data-kg-canvas-pointer-ignore="1"
+    data-kg-canvas-wheel-ignore="1"
+    style={{ ...style, zIndex: resolveMainPanelZIndex(floatingPanelZIndex) }}
+  />
+  return typeof document !== 'undefined' && document.body ? createPortal(layer, document.body) : layer
+}
+
+export function MainPanelLoadingFallback({ onClose }: { onClose: () => void }) {
+  return (
+    <MainPanelFrame ariaLabel="Main panel loading" rightSlot={<HeaderActions onClose={onClose} />}>
+      <p role="status" data-kg-main-panel-loading="1" className="p-3">Loading panel…</p>
+    </MainPanelFrame>
+  )
+}
 
 interface MainPanelFrameProps {
   ariaLabel: string
@@ -21,7 +43,6 @@ interface MainPanelFrameProps {
   onTabChange?: (key: string) => void
   tabIdBase?: string
   footer?: React.ReactNode
-  tabVariant?: 'text' | 'icon'
   tabIconByKey?: Partial<Record<string, TabIconComponent>>
 }
 
@@ -41,7 +62,6 @@ export default function MainPanelFrame({
   onTabChange,
   tabIdBase,
   footer,
-  tabVariant,
   tabIconByKey,
 }: MainPanelFrameProps) {
   const uiHeaderRowHeightClass = useGraphStore(
@@ -67,7 +87,6 @@ export default function MainPanelFrame({
           searchQuery={searchQuery}
           onSearchChange={onSearchChange}
           rightSlot={rightSlot}
-          tabVariant={tabVariant}
           tabIconByKey={tabIconByKey}
         />
         {!collapsed && (

@@ -1,4 +1,8 @@
 import React from 'react'
+import { useContainerDims } from '@/hooks/useContainerDims'
+import { TimelinePlayhead } from './TimelinePlayhead'
+import { VideoSequenceTimelineLaneLabels, VideoSequenceTimelineLaneRows, type VideoSequenceTimelineInsertedLane } from './VideoSequenceTimelineLanes'
+export { buildVideoSequenceLaneSidebarStyle, type VideoSequenceTimelineInsertedLaneRenderArgs, type VideoSequenceTimelineInsertedLane } from './VideoSequenceTimelineLanes'
 import type { TimelineMediaReaderThumbnail } from './timelineMediaReader'
 import { buildTimelineAnimationState } from './timelineAnimationEngine'
 import { VideoSequenceFrameSampleRail } from './VideoSequenceFrameSampleRail'
@@ -15,24 +19,12 @@ import { resolveVideoSequenceClipThumbnails } from './videoSequenceClipThumbnail
 import { useVideoSequenceTimelineMediaDropTarget } from './useVideoSequenceTimelineMediaDropTarget'
 import { buildVideoSequenceTimelineZoomTicks, resolveVideoSequenceTimelineAppendSpacePercent, resolveVideoSequenceTimelineContentZoom, resolveVideoSequenceTimelineScaleMaxMinutes, resolveVideoSequenceTimelineWorkspaceLayout } from './videoSequenceTimelineZoom'
 import {
-  VIDEO_SEQUENCE_BOTTOM_PANEL_DISABLED_LANE_IDS,
-  VIDEO_SEQUENCE_LANE_HEIGHT_PX,
-  VIDEO_SEQUENCE_TIMELINE_LANES,
-  buildVideoSequenceTimelineCueSamples,
-  buildVideoSequenceTimelineFrameSamples,
-  buildVideoSequenceTimelineWaveformSamples,
-  formatVideoSequenceTimelineSecondsOffset,
-  isCompactSourceMediaSpan,
-  resolveRenderableVideoSequenceTimelineSpans,
-  resolveVideoSequenceTimelineDisplayLaneId,
-  resolveVideoSequenceTimelineMediaSeconds,
-  resolveVideoSequenceTimelineLane,
-  resolveVisibleVideoSequenceTimelineDisplayLanes,
-  shouldRenderVideoSequenceTimelineSpan,
-  type VideoSequenceTimelineDisplayLane,
-  type VideoSequenceTimelineLaneId,
-  type VideoSequenceTimelineProjectionOptions,
-  type VideoSequenceTimelineScope,
+  VIDEO_SEQUENCE_BOTTOM_PANEL_DISABLED_LANE_IDS, VIDEO_SEQUENCE_LANE_HEIGHT_PX, VIDEO_SEQUENCE_TIMELINE_LANES,
+  buildVideoSequenceTimelineLaneOrder, resolveVideoSequenceTimelineInsertedLaneOffset, buildVideoSequenceTimelineCueSamples, buildVideoSequenceTimelineFrameSamples, buildVideoSequenceTimelineWaveformSamples,
+  formatVideoSequenceTimelineSecondsOffset, isCompactSourceMediaSpan, resolveRenderableVideoSequenceTimelineSpans,
+  resolveVideoSequenceTimelineDisplayLaneId, resolveVideoSequenceTimelineMediaSeconds, resolveVideoSequenceTimelineLane,
+  resolveVisibleVideoSequenceTimelineDisplayLanes, shouldRenderVideoSequenceTimelineSpan,
+  type VideoSequenceTimelineDisplayLane, type VideoSequenceTimelineLaneId, type VideoSequenceTimelineProjectionOptions, type VideoSequenceTimelineScope,
 } from './videoSequenceTimeline'
 import { readMermaidGanttTaskSourceRangeSeconds, type MermaidGanttBarDragMode, type MermaidGanttTimelineDragPreview, type MermaidGanttTimelineTaskSpan, type MermaidGanttTimelineTick } from '@/lib/mermaid/mermaidGanttBarInteraction'
 import type { MediaDragPayload } from '@/lib/ui/mediaDragPayload'
@@ -44,25 +36,9 @@ export const VIDEO_SEQUENCE_RULER_FOOTER_PX = 28 + VIDEO_SEQUENCE_RULER_SCOPE_ST
 export type VideoSequenceTimelineThumbnailWindow = { sourceEndSeconds: number; sourceStartSeconds: number; timelineEndMinutes: number; timelineStartMinutes: number }
 export type VideoSequenceTimelineSourceThumbnailSet = { kind: 'image' | 'video'; label: string; sourceAudioWaveformSamples: readonly number[]; sourceId: string; sourceThumbnailWindows: readonly VideoSequenceTimelineThumbnailWindow[]; sourceThumbnails: readonly TimelineMediaReaderThumbnail[]; sourceUrl: string }
 export type VideoSequenceTimelineProjectionMode = 'media' | 'workflow'
-export type VideoSequenceTimelineInsertedLaneRenderArgs = {
-  selected: boolean
-  selectRowKey: string
-}
-export type VideoSequenceTimelineInsertedLane = {
-  content: React.ReactNode | ((args: VideoSequenceTimelineInsertedLaneRenderArgs) => React.ReactNode)
-  id: string
-  insertAfterLaneId: string
-  label: React.ReactNode
-  selectRowKey?: string
-  selected?: boolean
-}
 export type VideoSequenceTimelineClipOverlayRenderArgs = {
-  compact: boolean
-  displayLaneId: string
-  lane: VideoSequenceTimelineLaneId
-  selected: boolean
-  span: MermaidGanttTimelineTaskSpan
-  verticalMarker: boolean
+  compact: boolean; displayLaneId: string; lane: VideoSequenceTimelineLaneId
+  selected: boolean; span: MermaidGanttTimelineTaskSpan; verticalMarker: boolean
 }
 export type VideoSequenceTimelineClipOverlayRenderer = (args: VideoSequenceTimelineClipOverlayRenderArgs) => React.ReactNode
 const VIDEO_SEQUENCE_RESIZE_MODE_LABELS: Record<Extract<MermaidGanttBarDragMode, 'resize-start' | 'resize-end'>, string> = {
@@ -193,38 +169,16 @@ function resolveActiveVideoSequenceResizeMode(args: {
   if (args.previewSpan.durationMinutes !== args.span.durationMinutes) return 'resize-end'
   return null
 }
-export function buildVideoSequenceLaneSidebarStyle(lanes: readonly { id: string }[] = VIDEO_SEQUENCE_TIMELINE_LANES): React.CSSProperties {
-  return { gridTemplateRows: `repeat(${lanes.length}, ${VIDEO_SEQUENCE_LANE_HEIGHT_PX}px)` }
-}
-export function resolveVideoSequenceRulerMinHeight(laneCount = VIDEO_SEQUENCE_TIMELINE_LANES.length): number {
-  return VIDEO_SEQUENCE_LANE_TOP_OFFSET_PX + (laneCount * VIDEO_SEQUENCE_LANE_HEIGHT_PX) + VIDEO_SEQUENCE_RULER_FOOTER_PX
-}
+export function resolveVideoSequenceRulerMinHeight(laneCount = VIDEO_SEQUENCE_TIMELINE_LANES.length): number { return VIDEO_SEQUENCE_LANE_TOP_OFFSET_PX + (laneCount * VIDEO_SEQUENCE_LANE_HEIGHT_PX) + VIDEO_SEQUENCE_RULER_FOOTER_PX }
 export function VideoSequenceTimelineRuler({
-  contentRef,
-  viewportRef,
-  displayTicks,
-  dragPreview,
-  draggingMode,
-  draggingRowKey,
-  editable = true, canEditTrack,
-  maxMinutes,
-  mediaDurationSeconds = 0,
-  mediaFrameRate = 0,
-  playheadPercent,
-  projectionMode = 'media',
-  selectedRowKey,
-  sourceThumbnails = [],
-  sourceThumbnailWindows = [],
-  sourceThumbnailSets = [],
-  scopes = [],
-  renderClipOverlay,
+  contentRef, viewportRef, displayTicks, dragPreview, draggingMode, draggingRowKey,
+  editable = true, canEditTrack, maxMinutes,
+  mediaDurationSeconds = 0, mediaFrameRate = 0, playheadPercent,
+  projectionMode = 'media', selectedRowKey,
+  sourceThumbnails = [], sourceThumbnailWindows = [], sourceThumbnailSets = [], scopes = [], renderClipOverlay, renderLaneOverlay,
   taskSpans, timeAxisControls, timeRulerOverlay, timelineInsertedLanes = [], timelineZoom,
   disabledLaneIds = VIDEO_SEQUENCE_BOTTOM_PANEL_DISABLED_LANE_IDS,
-  onRulerPointerDown,
-  onSelectRowKey,
-  onSelectRowPosition,
-  onDropMedia,
-  onTrackPointerStart,
+  onRulerPointerDown, onSelectRowKey, onSelectRowPosition, onDropMedia, onTrackPointerStart,
 }: {
   contentRef: React.RefObject<HTMLElement | null>
   viewportRef: React.RefObject<HTMLElement | null>
@@ -243,6 +197,7 @@ export function VideoSequenceTimelineRuler({
   sourceThumbnailSets?: readonly VideoSequenceTimelineSourceThumbnailSet[]
   scopes?: readonly VideoSequenceTimelineScope[]
   renderClipOverlay?: VideoSequenceTimelineClipOverlayRenderer
+  renderLaneOverlay?: VideoSequenceTimelineClipOverlayRenderer
   taskSpans: readonly MermaidGanttTimelineTaskSpan[]; timeAxisControls?: React.ReactNode; timeRulerOverlay?: React.ReactNode; timelineInsertedLanes?: readonly VideoSequenceTimelineInsertedLane[]; timelineZoom: number
   disabledLaneIds?: VideoSequenceTimelineProjectionOptions['disabledLaneIds']
   onRulerPointerDown: (event: React.PointerEvent<HTMLElement>) => void
@@ -254,6 +209,7 @@ export function VideoSequenceTimelineRuler({
   const mediaDropRef = React.useRef<HTMLElement | null>(null)
   const rulerScrollRef = React.useRef<HTMLElement | null>(null)
   const laneSidebarScrollRef = React.useRef<HTMLElement | null>(null)
+  const rulerDims = useContainerDims(viewportRef)
   const workflowProjection = projectionMode === 'workflow'
   const projectionOptions = React.useMemo<VideoSequenceTimelineProjectionOptions>(() => ({ disabledLaneIds }), [disabledLaneIds])
   const visibleLanes = React.useMemo(() => (
@@ -261,16 +217,7 @@ export function VideoSequenceTimelineRuler({
       ? (taskSpans.some(shouldRenderVideoSequenceTimelineSpan) ? WORKFLOW_TIMELINE_DISPLAY_LANES : [])
       : resolveVisibleVideoSequenceTimelineDisplayLanes(taskSpans, projectionOptions)
   ), [projectionOptions, taskSpans, workflowProjection])
-  const timelineLanes = React.useMemo(() => {
-    if (!timelineInsertedLanes.length) return visibleLanes
-    const insertedByAnchor = new Map<string, VideoSequenceTimelineInsertedLane[]>()
-    for (const lane of timelineInsertedLanes) {
-      const anchored = insertedByAnchor.get(lane.insertAfterLaneId) || []
-      anchored.push(lane)
-      insertedByAnchor.set(lane.insertAfterLaneId, anchored)
-    }
-    return visibleLanes.flatMap(lane => [lane, ...(insertedByAnchor.get(lane.id) || [])])
-  }, [timelineInsertedLanes, visibleLanes])
+  const timelineLanes = React.useMemo(() => buildVideoSequenceTimelineLaneOrder(visibleLanes, timelineInsertedLanes), [timelineInsertedLanes, visibleLanes])
   const renderableSpans = React.useMemo(() => (
     workflowProjection
       ? taskSpans.filter(shouldRenderVideoSequenceTimelineSpan)
@@ -291,7 +238,7 @@ export function VideoSequenceTimelineRuler({
     workflowProjection ? false : onDropMedia(payload, positionMinutes)
   ), [onDropMedia, workflowProjection])
   const mediaDropTargetProps = useVideoSequenceTimelineMediaDropTarget({ contentRef, maxMinutes: timelineScaleMaxMinutes, onDropMedia: handleDropMedia, targetRef: mediaDropRef })
-  const timelineAxisTicks = React.useMemo(() => buildVideoSequenceTimelineZoomTicks({ displayTicks, frameRate: mediaFrameRate, maxMinutes: timelineScaleMaxMinutes, mediaDurationSeconds, timelineZoom }), [displayTicks, mediaDurationSeconds, mediaFrameRate, timelineScaleMaxMinutes, timelineZoom])
+  const timelineAxisTicks = React.useMemo(() => buildVideoSequenceTimelineZoomTicks({ displayTicks, frameRate: mediaFrameRate, maxMinutes: timelineScaleMaxMinutes, mediaDurationSeconds, rulerWidthPx: rulerDims.width, timelineZoom }), [displayTicks, mediaDurationSeconds, mediaFrameRate, rulerDims.width, timelineScaleMaxMinutes, timelineZoom])
   const timelineContentZoom = React.useMemo(() => resolveVideoSequenceTimelineContentZoom({ frameRate: mediaFrameRate, mediaDurationSeconds, timelineZoom }), [mediaDurationSeconds, mediaFrameRate, timelineZoom])
   const appendSpacePercent = React.useMemo(() => resolveVideoSequenceTimelineAppendSpacePercent(timelineZoom), [timelineZoom])
   const workspaceLayout = React.useMemo(() => resolveVideoSequenceTimelineWorkspaceLayout({ appendSpacePercent, timelineContentZoom }), [appendSpacePercent, timelineContentZoom])
@@ -339,31 +286,8 @@ export function VideoSequenceTimelineRuler({
     >
       <aside className="timeline-video-sequence-lane-sidebar" aria-label={workflowProjection ? 'Workflow lane labels' : 'Video sequence lane labels'}>
         <VideoSequenceTimeAxisControls>{timeAxisControls}</VideoSequenceTimeAxisControls>
-        <section
-          ref={laneSidebarScrollRef}
-          className="timeline-video-sequence-lane-sidebar-scroll"
-          style={buildVideoSequenceLaneSidebarStyle(timelineLanes)}
-        >
-          {timelineLanes.map(lane => {
-            const inserted = 'content' in lane
-            const insertedSelected = inserted && lane.selected === true
-            return (
-              <section
-                key={lane.id}
-                className={`timeline-video-sequence-lane-label ${insertedSelected ? 'timeline-video-sequence-lane-label--inserted-selected' : ''}`}
-                aria-current={insertedSelected ? 'true' : undefined}
-                data-kg-video-sequence-display-lane-label={lane.id}
-                data-kg-video-sequence-inserted-lane={inserted ? lane.id : undefined}
-                data-kg-video-sequence-inserted-lane-selected={insertedSelected ? '1' : undefined}
-                data-kg-video-sequence-inserted-lane-row-selection={insertedSelected ? lane.id : undefined}
-                data-kg-video-sequence-lane-append={'append' in lane && lane.append ? '1' : undefined}
-                data-kg-video-sequence-lane-label={'semanticId' in lane ? lane.semanticId : 'inserted'}
-              >
-                {lane.label}
-              </section>
-            )
-          })}
-        </section>
+        <VideoSequenceTimelineLaneLabels lanes={timelineLanes} selectedDisplayLaneId={displayLaneIdByRowKey.get(selectedRowKey)} scrollRef={laneSidebarScrollRef}
+          rowKeyToDisplayLaneId={displayLaneIdByRowKey} selectedRowKey={selectedRowKey} onSelectRowKey={onSelectRowKey} />
       </aside>
       <section ref={setRulerScrollElement} className="timeline-video-sequence-ruler-scroll timeline-video-sequence-ruler-surface" aria-label={workflowProjection ? 'Workflow timeline rail' : 'Video sequence timeline rail'} data-kg-video-sequence-ruler-scroll="1" {...mediaDropTargetProps}>
         <section className="timeline-video-sequence-ruler-scroll-content" aria-label={workflowProjection ? 'Workflow timeline workspace' : 'Video sequence timeline workspace'} style={{ minHeight, width: `${workspaceLayout.workspaceWidthPercent}%` }}>
@@ -379,7 +303,7 @@ export function VideoSequenceTimelineRuler({
         <section className="timeline-video-sequence-ruler-axis" aria-label="Timeline time ruler" data-kg-video-sequence-ruler-axis="1" onPointerDown={onRulerPointerDown}>
           <VideoSequenceTimelineRulerTicks displayTicks={timelineAxisTicks} />
           {timeRulerOverlay}
-          <span
+          <TimelinePlayhead maxMinutes={maxMinutes} positionMinutes={maxMinutes * playheadPercent / 100} frameRate={mediaFrameRate} onSeek={minutes => onSelectRowPosition(selectedRowKey, minutes)}
             className="timeline-transport-playhead-marker timeline-video-sequence-ruler-playhead-marker"
             style={{ left: resolveVideoSequenceRulerInsetLeft(timelineScaleMaxMinutes > 0 ? playheadPercent * (maxMinutes / timelineScaleMaxMinutes) : playheadPercent) }}
             data-kg-video-sequence-ruler-playhead-marker="1"
@@ -407,37 +331,15 @@ export function VideoSequenceTimelineRuler({
             strokeWidth="1.5"
           />
         </svg>
-        <span
+        <TimelinePlayhead maxMinutes={maxMinutes} positionMinutes={maxMinutes * playheadPercent / 100} frameRate={mediaFrameRate} onSeek={minutes => onSelectRowPosition(selectedRowKey, minutes)}
           className="timeline-transport-playhead"
           style={{ left: resolveVideoSequenceRulerInsetLeft(timelineScaleMaxMinutes > 0 ? playheadPercent * (maxMinutes / timelineScaleMaxMinutes) : playheadPercent) }}
           data-kg-gantt-timeline-playhead="1"
           data-kg-video-sequence-ruler-playhead="1"
           aria-label="Timeline playhead"
           onPointerDown={onRulerPointerDown}
-        >
-        </span>
-        {timelineInsertedLanes.map(lane => {
-          const laneIndex = visibleLaneIndexById.get(lane.id)
-          if (laneIndex === undefined) return null
-          const laneSelectRowKey = lane.selectRowKey || ''
-          const insertedSelected = lane.selected === true
-          const laneContent = typeof lane.content === 'function'
-            ? lane.content({ selected: insertedSelected, selectRowKey: laneSelectRowKey })
-            : lane.content
-          return (
-            <section
-              key={`inserted:${lane.id}`}
-              className={`timeline-video-sequence-inserted-lane ${insertedSelected ? 'timeline-video-sequence-inserted-lane--selected-row' : ''}`}
-              aria-current={insertedSelected ? 'true' : undefined}
-              style={{ top: `${laneIndex * VIDEO_SEQUENCE_LANE_HEIGHT_PX}px` }}
-              data-kg-video-sequence-inserted-lane-content={lane.id}
-              data-kg-video-sequence-inserted-lane-selected={insertedSelected ? '1' : undefined}
-              data-kg-video-sequence-inserted-lane-row-selection={insertedSelected ? lane.id : undefined}
-            >
-              {laneContent}
-            </section>
-          )
-        })}
+        />
+        <VideoSequenceTimelineLaneRows lanes={timelineLanes} selectedDisplayLaneId={displayLaneIdByRowKey.get(selectedRowKey)} selectedRowKey={selectedRowKey} onSelectRowKey={onSelectRowKey} />
         {renderableSpans.map((span, index) => {
           const media = clipMediaByRowKey.get(span.rowKey)
           if (!media) return null
@@ -500,8 +402,9 @@ export function VideoSequenceTimelineRuler({
             span,
             verticalMarker,
           }) || null
+          const laneOverlay = renderLaneOverlay?.({ compact: compactTimelineBar, displayLaneId, lane, selected, span, verticalMarker })
           return (
-            <article
+            <React.Fragment key={`span:${span.rowKey}`}><article
               key={`span:${span.rowKey}`}
               className={`timeline-transport-track-clip timeline-transport-track-clip--lane-${lane} ${verticalMarker ? 'timeline-transport-track-clip--milestone' : ''} ${selected ? 'timeline-transport-track-clip--selected' : ''} ${dragging ? 'timeline-transport-track-clip--dragging' : ''}`}
               style={{
@@ -649,9 +552,11 @@ export function VideoSequenceTimelineRuler({
                 {activeResizeMode === 'resize-end' ? <span className="timeline-video-sequence-trim-guide">{VIDEO_SEQUENCE_RESIZE_MODE_LABELS[activeResizeMode]}</span> : null}
               </button> : null}
             </article>
+            {laneOverlay ? <section className="timeline-video-sequence-source-annotation-placement" style={{ left: resolveVideoSequenceRulerInsetLeft(leftPercent), top: `${laneIndex * VIDEO_SEQUENCE_LANE_HEIGHT_PX}px`, width: resolveVideoSequenceRulerInsetWidth(Math.min(100 - leftPercent, widthPercent)), '--kg-annotation-row-offset': `${resolveVideoSequenceTimelineInsertedLaneOffset(timelineLanes, displayLaneId, span.rowKey)}px` } as React.CSSProperties}>{laneOverlay}</section> : null}
+            </React.Fragment>
           )
         })}
-        {scopes.length ? (
+        {renderableSpans.length && scopes.length ? (
           <section className="timeline-video-sequence-ruler-scope-strip" aria-label="Video sequence scopes" data-kg-video-sequence-ruler-scopes="1">
             {scopes.map(scope => (
               <section

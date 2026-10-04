@@ -5,6 +5,7 @@ import { type GanttTimelineTransportRulerModel } from './useGanttTimelineTranspo
 export type GanttTimelineTransportRulerProps = {
   model: GanttTimelineTransportRulerModel['ruler']
   renderClipOverlay?: VideoSequenceTimelineClipOverlayRenderer
+  renderLaneOverlay?: VideoSequenceTimelineClipOverlayRenderer
   timeAxisControls?: React.ReactNode
   timeRulerOverlay?: React.ReactNode
   timelineInsertedLanes?: readonly VideoSequenceTimelineInsertedLane[]
@@ -27,7 +28,7 @@ export function GanttTimelineTransportRuler(args: GanttTimelineTransportRulerPro
       mediaFrameRate={args.model.mediaFrameRate}
       playheadPercent={args.model.playheadPercent}
       projectionMode={args.model.mode}
-      renderClipOverlay={args.renderClipOverlay}
+      renderClipOverlay={args.renderClipOverlay} renderLaneOverlay={args.renderLaneOverlay}
       selectedRowKey={args.model.selectedRowKey}
       scopes={args.model.scopes}
       sourceThumbnails={args.model.sourceThumbnails}
