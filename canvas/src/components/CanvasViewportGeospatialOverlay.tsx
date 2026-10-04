@@ -31,6 +31,7 @@ import { createId } from '@/lib/id'
 import { resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
 import { buildRichMediaPanelNode } from '@/lib/render/richMediaPanelNode'
 import { buildSourceFilesGeospatialSelectionSignature } from '@/features/source-files/sourceFilesSignatures'
+import { readSourceGeospatialSnapshot, subscribeSourceGeospatial, useSourceGeospatialReview, sourceGeospatialReviewBounds } from '@/features/evidence-analysis/geospatialSource'
 import { useCanvasAppliedMarkdownDocument } from '@/features/canvas/useCanvasAppliedMarkdownDocument'
 import {
   isFlightSimHydrationPending,
@@ -84,6 +85,7 @@ type GympgrphStoreState = {
 
 type GympgrphModule = GeoXrOverlayStoreModule & {
   useGympgrphStore?: { getState?: () => GympgrphStoreState }
+  requestGeospatialFitToBounds?: (bounds: readonly [number, number, number, number]) => void
   requestGeospatialFitToData?: () => void
   requestGeospatialFitToSelection?: () => void
   GeospatialOverlayHost?: React.ComponentType<GeospatialOverlayHostProps>
@@ -174,7 +176,8 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     readCitySimActive,
     readCitySimActive,
   )
-  const gameplayPresentationOwner = resolveGeoXrGameplayPresentationOwner({
+  const sourceReview = useSourceGeospatialReview()
+  const gameplayPresentationOwner = sourceReview ? null : resolveGeoXrGameplayPresentationOwner({
     cityActive: citySimActive,
     flightActive: flightSimActive,
     flightBootstrapRequested,
@@ -261,9 +264,11 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     geoGraphLastRef.current = geospatialGraphData
   }, [active, geospatialGraphData])
 
+  const sourceGeospatial = React.useSyncExternalStore(subscribeSourceGeospatial, readSourceGeospatialSnapshot, () => null)
   const snapshot = React.useMemo(
     () => ({
       graphData: geospatialGraphData,
+      sourceGeospatial,
       graphRevision: graphDataRevision,
       zoomState: gympgrphBridge.zoomState,
       canvasRenderMode: gympgrphBridge.canvasRenderMode,
@@ -275,6 +280,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     }),
     [
       geospatialGraphData,
+      sourceGeospatial,
       graphDataRevision,
       gympgrphBridge.canvasRenderMode,
       gympgrphBridge.openWidgetNodeIds,
@@ -431,10 +437,26 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
   }, [active, composedWithXr, flightSimActive])
 
   useGeoXrOverlayPublisher({
-    active,
+    active: active && !sourceReview,
     composedWithXr,
     loadOverlayModule: loadGympgrphModule,
   })
+
+  // The existing composition owner releases gameplay before source review claims framing.
+  // Keyed to source identity, never the moving UTC cursor, so playback preserves user pan/zoom.
+  const reviewSourceKey = sourceReview ? sourceGeospatial?.sourceKey : null
+  React.useEffect(() => {
+    if (!active || !sourceReview) return
+    let disposed = false
+    void loadGympgrphModule().then(module => {
+      if (disposed) return
+      module.clearFlightGeoOverlay()
+      module.clearCityGeoOverlay()
+      const bounds = sourceGeospatialReviewBounds(readSourceGeospatialSnapshot())
+      if (bounds) module.requestGeospatialFitToBounds?.(bounds)
+    })
+    return () => { disposed = true }
+  }, [active, sourceReview, reviewSourceKey])
 
   const handleFlightOverlayPresented = React.useCallback((
     presentation: FlightGeoOverlayPresentation,

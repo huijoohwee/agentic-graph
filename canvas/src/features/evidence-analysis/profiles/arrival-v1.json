@@ -1,0 +1,23 @@
+{
+  "schema": "evidence-profile/v1",
+  "id": "arrival-v1",
+  "version": "1.0.0",
+  "bundleSchema": "arrival-evidence-bundle/v1",
+  "limits": {"maxBytes": 499999, "maxPackBytes": 2000000, "maxEntities": 10, "maxFacts": 80, "maxSources": 20, "maxSpanSeconds": 86400, "maxTextLength": 2048},
+  "classifications": ["synthetic", "fixture", "imported"],
+  "rightsStatuses": {"synthetic": ["synthetic-authored"], "fixture": ["synthetic-authored", "operator-attested"], "imported": ["operator-attested"]},
+  "staleAfterSeconds": 60,
+  "gapAfterSeconds": 60,
+  "requiredKinds": ["schedule", "plan", "position", "destination", "ground_speed", "touchdown", "truth_basis", "partition"],
+  "ui": {"title": "Arrival evaluation", "description": "Separate frozen baselines, a trained candidate and held-out evidence. Synthetic exercises never establish real arrival accuracy.", "entityLabel": "Arrival case", "fixturePath": "./fixtures/arrival-singapore-exercise-test.json"},
+  "fields": [
+    {"key": "schedule", "label": "Scheduled arrival", "type": "utc", "nullable": true, "units": ["UTC"], "datums": ["not-applicable"], "sameDatum": true, "canonicalUnit": "UTC", "conversions": [], "range": null, "components": []},
+    {"key": "plan", "label": "Known plan", "type": "utc", "nullable": true, "units": ["UTC"], "datums": ["not-applicable"], "sameDatum": true, "canonicalUnit": "UTC", "conversions": [], "range": null, "components": []},
+    {"key": "position", "label": "Position at forecast issue", "type": "vector", "nullable": true, "units": ["deg"], "datums": ["WGS84"], "sameDatum": true, "canonicalUnit": "deg", "conversions": [], "range": null, "components": [{"key": "longitude", "minimum": -180, "maximum": 180}, {"key": "latitude", "minimum": -90, "maximum": 90}]},
+    {"key": "destination", "label": "Declared destination", "type": "vector", "nullable": true, "units": ["deg"], "datums": ["WGS84"], "sameDatum": true, "canonicalUnit": "deg", "conversions": [], "range": null, "components": [{"key": "longitude", "minimum": -180, "maximum": 180}, {"key": "latitude", "minimum": -90, "maximum": 90}]},
+    {"key": "ground_speed", "label": "Ground speed", "type": "number", "nullable": true, "units": ["m/s"], "datums": ["ground"], "sameDatum": true, "canonicalUnit": "m/s", "conversions": [], "range": [0, 500], "components": []},
+    {"key": "touchdown", "label": "Evaluation touchdown truth", "type": "utc", "nullable": true, "units": ["UTC"], "datums": ["not-applicable"], "sameDatum": true, "canonicalUnit": "UTC", "conversions": [], "range": null, "components": []},
+    {"key": "truth_basis", "label": "Declared truth basis", "type": "string", "nullable": true, "units": ["text"], "datums": ["not-applicable"], "sameDatum": true, "canonicalUnit": "text", "conversions": [], "range": null, "components": []},
+    {"key": "partition", "label": "Frozen evaluation partition", "type": "string", "nullable": false, "units": ["text"], "datums": ["not-applicable"], "sameDatum": true, "canonicalUnit": "text", "conversions": [], "range": null, "components": []}
+  ]
+}

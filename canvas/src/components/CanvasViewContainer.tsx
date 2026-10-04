@@ -5,12 +5,14 @@ import {
 } from '@/lib/canvas/canvasContainerSizing'
 
 const OVERLAYS = '[data-kg-workspace-left-pane="1"], [data-kg-floating-panel-root="true"], .MainPanelContainer'
+const CHROME = `${OVERLAYS}, [data-kg-workspace-visible-viewport-occluder], [aria-label="Canvas Toolbar"]`
 
 /** One sizing owner for all renderers. Editor and panel overlays remain on the full workspace. */
-export function CanvasViewContainer({ children, configurable = true, sizing }: {
+export function CanvasViewContainer({ children, configurable = true, sizing, overlay = false }: {
   children: React.ReactNode
   configurable?: boolean
   sizing?: 'full' | 'inset'
+  overlay?: boolean
 }) {
   const preference = React.useSyncExternalStore(subscribeCanvasContainerSizing, readCanvasContainerSizing, () => 'full' as const)
   const mode = sizing ?? (configurable ? preference : 'full')
@@ -21,12 +23,13 @@ export function CanvasViewContainer({ children, configurable = true, sizing }: {
     if (mode !== 'inset' || !frame) return
     const doc = frame.ownerDocument, win = doc.defaultView
     if (!win) return
+    const selectors = overlay ? CHROME : OVERLAYS
     let pending = 0
     let panels: Element[] = []
     const resize = new ResizeObserver(() => schedule())
     const measure = () => {
       pending = 0
-      const nextPanels = Array.from(doc.querySelectorAll(OVERLAYS))
+      const nextPanels = Array.from(doc.querySelectorAll(selectors)).filter(panel => !frame.contains(panel))
       for (const panel of panels) if (!nextPanels.includes(panel)) resize.unobserve(panel)
       for (const panel of nextPanels) if (!panels.includes(panel)) resize.observe(panel)
       panels = nextPanels
@@ -39,14 +42,14 @@ export function CanvasViewContainer({ children, configurable = true, sizing }: {
     }
     function schedule() { if (!pending) pending = win!.requestAnimationFrame(measure) }
     const containsPanel = (node: Node) => node instanceof Element
-      && (node.matches(OVERLAYS) || Boolean(node.querySelector(OVERLAYS)))
-    const mutations = new MutationObserver(records => {
+      && (node.matches(selectors) || Boolean(node.querySelector(selectors)))
+    const mutations = new win.MutationObserver(records => {
       if (records.some(record => record.type === 'attributes'
         ? containsPanel(record.target)
         : [...record.addedNodes, ...record.removedNodes].some(containsPanel))) schedule()
     })
     resize.observe(frame)
-    mutations.observe(doc.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class', 'hidden', 'aria-hidden'] })
+    mutations.observe(doc.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class', 'hidden', 'aria-hidden', 'data-kg-workspace-visible-viewport-occluder'] })
     win.addEventListener('resize', schedule)
     doc.addEventListener('scroll', schedule, true)
     measure()
@@ -57,9 +60,9 @@ export function CanvasViewContainer({ children, configurable = true, sizing }: {
       win.removeEventListener('resize', schedule)
       doc.removeEventListener('scroll', schedule, true)
     }
-  }, [mode])
+  }, [mode, overlay])
   return <section ref={frameRef} className="absolute inset-0 pointer-events-none" data-kg-canvas-container-frame="1">
-    <section className="absolute overflow-hidden pointer-events-auto" style={mode === 'inset' ? insets : FULL_CANVAS_INSETS}
+    <section className={`absolute overflow-hidden ${overlay ? 'pointer-events-none' : 'pointer-events-auto'}`} style={mode === 'inset' ? insets : FULL_CANVAS_INSETS}
       data-kg-canvas-view-container={mode}>
       {children}
     </section>

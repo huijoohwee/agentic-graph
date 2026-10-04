@@ -95,15 +95,19 @@ function isFiniteVector(value: unknown): boolean {
     && value.slice(0, 3).every(entry => Number.isFinite(entry))
 }
 
-function canonicalJsonValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(canonicalJsonValue)
+function authoredJsonMatches(value: unknown, normalized: unknown): boolean {
+  if (Array.isArray(value)) {
+    return Array.isArray(normalized)
+      && value.length === normalized.length
+      && value.every((entry, index) => authoredJsonMatches(entry, normalized[index]))
+  }
   const record = asRecord(value)
-  if (!record) return value
-  return Object.fromEntries(
-    Object.keys(record)
-      .sort()
-      .map(key => [key, canonicalJsonValue(record[key])]),
-  )
+  if (!record) return value === normalized
+  const normalizedRecord = asRecord(normalized)
+  return !!normalizedRecord && Object.entries(record).every(([key, entry]) => (
+    Object.prototype.hasOwnProperty.call(normalizedRecord, key)
+      && authoredJsonMatches(entry, normalizedRecord[key])
+  ))
 }
 
 function validateMotionReferencePlan(
@@ -165,6 +169,7 @@ function validateMotionReferencePlan(
       !track
       || !actorId
       || castActorIds.has(actorId)
+      || (track.label !== undefined && typeof track.label !== 'string')
       || !Array.isArray(track.marks)
       || track.marks.some(valueMark => {
         const mark = asRecord(valueMark)
@@ -177,7 +182,13 @@ function validateMotionReferencePlan(
     }
     castActorIds.add(actorId)
   }
-  if (plan.camera.some(mark => !asRecord(mark))) {
+  if (plan.camera.some(valueMark => {
+    const mark = asRecord(valueMark)
+    return !mark
+      || !Number.isFinite(mark.timeSeconds)
+      || typeof mark.anchorId !== 'string'
+      || !asRecord(mark.settings)
+  })) {
     return 'The XR motion-reference plan contains an invalid camera mark.'
   }
   if (
@@ -188,14 +199,22 @@ function validateMotionReferencePlan(
   ) {
     return 'The canonical Physics source must provide a vehicle subject.'
   }
-  const normalized = serializeXrMotionReferencePlan(
-    readXrMotionReferencePlan(value, graphNodes),
-  )
-  if (
-    JSON.stringify(canonicalJsonValue(normalized))
-      !== JSON.stringify(canonicalJsonValue(value))
-  ) {
-    return 'The XR motion-reference plan is not in canonical serialized form.'
+  const nativePlan = readXrMotionReferencePlan(value, graphNodes)
+  const normalized = serializeXrMotionReferencePlan(nativePlan)
+  // Authored sources may omit native defaults. Every supplied runtime field
+  // must survive serialization; the native subject owns its cast label.
+  const authored = {
+    ...plan,
+    cast: plan.cast.map(valueTrack => {
+      const track = asRecord(valueTrack)!
+      const subject = nativePlan.subjects.find(entry => entry.id === track.actorId)
+      return subject && track.label !== undefined
+        ? { ...track, label: subject.label }
+        : track
+    }),
+  }
+  if (!authoredJsonMatches(authored, normalized)) {
+    return 'The XR motion-reference plan contains fields that cannot be canonically serialized without loss.'
   }
   return ''
 }

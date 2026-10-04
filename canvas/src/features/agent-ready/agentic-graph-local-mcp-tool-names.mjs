@@ -1,3 +1,4 @@
+import { EVIDENCE_OPERATIONS } from "../evidence-analysis/tools/evidenceCatalog.mjs";
 import { AGENTIC_OS_AGENT_READY_TOOL_IDS } from "./agentic-graph-agent-ready-tool-contract.mjs";
 import { AGENTIC_OS_PROBE_TREE_TOOL_NAMES } from "./probeTreeContract.mjs";
 import { AGENTIC_OS_STORAGE_LOCAL_TOOL_NAMES } from "../../lib/storage/agentic-graph-storage-engine-mcp-contract.mjs";
@@ -5,6 +6,7 @@ import { AGENTIC_OS_STORAGE_LOCAL_TOOL_NAMES } from "../../lib/storage/agentic-g
 export const AGENTIC_OS_OS_STATUS_TOOL_NAME = "agentic-graph.os.status";
 
 export const AGENTIC_OS_LOCAL_MCP_TOOL_NAMES = Object.freeze({
+  ...Object.fromEntries(EVIDENCE_OPERATIONS.map(({ name, webName }) => [name, webName])),
   search: AGENTIC_OS_AGENT_READY_TOOL_IDS.search,
   fetch: AGENTIC_OS_AGENT_READY_TOOL_IDS.fetch,
   uiLaunch: "agentic-graph.ui.launch",

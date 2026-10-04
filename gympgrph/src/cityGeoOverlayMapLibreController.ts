@@ -24,7 +24,6 @@ import {
 } from './regionalPoiMapLibre.js'
 import {
   geoMapViewportPaddingKey,
-  observeGeoMapOcclusionChanges,
   readGeoMapViewportPadding,
 } from './geoMapViewport.js'
 
@@ -366,10 +365,6 @@ export function createCityGeoOverlayMapLibreController(
     map.on('sourcedataloading', handleRegionalPoiSourceLoading)
     map.on('sourcedata', handleRegionalPoiSourceData)
   }
-  const stopObservingOcclusion = observeGeoMapOcclusionChanges(
-    viewport || null,
-    apply,
-  )
   apply()
 
   return Object.freeze({
@@ -386,7 +381,6 @@ export function createCityGeoOverlayMapLibreController(
         map.off('sourcedataloading', handleRegionalPoiSourceLoading)
         map.off('sourcedata', handleRegionalPoiSourceData)
       }
-      stopObservingOcclusion()
       if (options.clearOnDispose !== false) {
         clearCityGeoPresentationFromMap(map)
         clearRegionalPoiProfileFromMap(map)

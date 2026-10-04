@@ -9,9 +9,20 @@ import {
 import { readGeoMapViewportPadding } from 'gympgrph/testkit/geoMapViewport'
 import { flightOverlay } from './helpers/flightSimMapLibreFixtures'
 
-test('Flight camera preserves 2D north-up and 3D oblique mode ownership', () => {
+test('Flight camera uses actual viewport padding independently of HUD and panels in all four views', t => {
+  const dom = new JSDOM('<main id="map"></main><aside aria-label="Markdown Workspace"></aside><aside aria-label="Floating panel"></aside><aside data-kg-workspace-visible-viewport-occluder="vertical"></aside><aside class="kg-canvas-bottom-panel"></aside>')
+  t.after(() => dom.window.close())
+  const rects = [[0, 0, 1100, 962], [0, 0, 550, 962], [747.40625, 8, 344.59375, 946],
+    [574.40625, 144, 160, 382], [562, 617.3047, 526, 336.6953]]
+  ;(Array.from(dom.window.document.body.children) as HTMLElement[]).forEach((element, index) => {
+    const [left, top, width, height] = rects[index]
+    element.getBoundingClientRect = () => ({ left, top, width, height, right: left + width, bottom: top + height } as DOMRect)
+  })
+  const viewport = dom.window.document.querySelector('#map') as HTMLElement
+  Object.defineProperties(viewport, { clientWidth: { value: 1100 }, clientHeight: { value: 962 } })
+  const padding = readGeoMapViewportPadding({ getContainer: () => viewport })
+  assert.deepEqual(padding, { top: 88, right: 72, bottom: 112, left: 72 })
   const calls: Record<string, unknown>[] = []
-  const padding = { top: 24, right: 412, bottom: 48, left: 652 }
   const map = {
     jumpTo: (camera: Record<string, unknown>) => calls.push(camera),
   }
@@ -126,7 +137,7 @@ test('stopped preparation stages each tick-zero camera so Ready does not jump ag
   }
 })
 
-test('Flight camera reserves a panel that crosses the compact map centre', () => {
+test('Flight camera stays fixed when a panel crosses the compact map centre', () => {
   const dom = new JSDOM('<main><section id="map"></section><aside aria-label="Floating panel"></aside></main>')
   const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
   const previousDocument = Object.getOwnPropertyDescriptor(globalThis, 'document')
@@ -148,7 +159,7 @@ test('Flight camera reserves a panel that crosses the compact map centre', () =>
 
     assert.deepEqual(
       readGeoMapViewportPadding({ getContainer: () => mapContainer }),
-      { bottom: 112, left: 44, right: 369, top: 88 },
+      { bottom: 112, left: 44, right: 44, top: 88 },
     )
   } finally {
     if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow)

@@ -422,7 +422,7 @@ export function inspectLocalAnimation() {
       configureCastMark: `${canonical.command} ${canonical.actionPath} ${canonical.selectedActor} operation=configure-mark markKind=cast markId=<typed-id> easing=<typed-easing> gait=<typed-gait> position=<x,y,z>`,
       configureCameraMark: `${canonical.command} ${canonical.canvas} operation=configure-mark markKind=camera markId=<typed-id> easing=<typed-easing>`,
       transport: `${canonical.command} ${canonical.canvas} operation=play|pause|scrub|export`,
-      slowMotion: `${canonical.command} ${canonical.canvas} operation=play rate=<0.25|0.5|1|1.5|2>`,
+      slowMotion: `${canonical.command} ${canonical.canvas} operation=play rate=<${TIMELINE_TRANSPORT_PLAYBACK_RATES.join('|')}>`,
       frameStep: `${canonical.command} ${canonical.canvas} operation=scrub frame=<next|previous|integer>`,
     },
     presets: XR_ANIMATION_PRESETS.map(preset => ({

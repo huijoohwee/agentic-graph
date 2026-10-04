@@ -1,4 +1,5 @@
 import { AGENTIC_OS_AGENT_READY_TOOL_IDS as ids } from './agenticGraphAgentReadyToolIds.mjs'
+import { EVIDENCE_ANALYSIS_TOOL_IDS } from './evidenceAnalysisAgentReadyContract.mjs'
 import { PYTHON_LEARNING_TOOL_IDS } from '../python-learning/learningToolContract.mjs'
 
 // Browser discovery policy only. Shared contracts/executors remain the invocation authority.
@@ -21,7 +22,7 @@ export const WEB_MCP_TOOL_SCOPES = Object.freeze(Object.fromEntries(Object.entri
   animation: [ids.inspectLocalAnimation, ids.controlLocalAnimation],
   motionControl: [ids.inspectLocalMotionControl, ids.controlLocalMotionControl],
   gameMode: [ids.inspectLocalGameMode, ids.controlLocalGameMode],
-  flightSim: [ids.inspectLocalFlightSim, ids.controlLocalFlightSim],
+  flightSim: [ids.inspectLocalFlightSim, ids.controlLocalFlightSim, ...Object.values(EVIDENCE_ANALYSIS_TOOL_IDS)],
   media: [ids.inspectLocalImmersiveMedia, ids.controlLocalImmersiveMedia],
   cityBuilder: [ids.inspectLocalCitySim, ids.controlLocalCitySim],
   storage: [ids.inspectLocalGitRepository, ids.controlLocalGitRepository, ids.inspectLocalFileSync, ids.controlLocalFileSync],

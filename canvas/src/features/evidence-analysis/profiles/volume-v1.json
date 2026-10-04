@@ -1,0 +1,20 @@
+{
+  "schema": "evidence-profile/v1",
+  "id": "volume-v1",
+  "version": "1.0.0",
+  "bundleSchema": "volume-evidence-bundle/v1",
+  "limits": {"maxBytes": 499999, "maxPackBytes": 2000000, "maxEntities": 10, "maxFacts": 680, "maxSources": 20, "maxSpanSeconds": 86400, "maxTextLength": 2048},
+  "classifications": ["synthetic", "fixture", "imported"],
+  "rightsStatuses": {"synthetic": ["synthetic-authored"], "fixture": ["synthetic-authored", "operator-attested"], "imported": ["operator-attested"]},
+  "staleAfterSeconds": 60,
+  "gapAfterSeconds": 60,
+  "requiredKinds": ["boundary", "lower", "upper", "valid_from", "valid_to"],
+  "ui": {"title": "Structured volumes", "description": "Inspect explicit geometry, time and vertical references. Unsupported or unresolved volumes are refused.", "entityLabel": "Volume", "fixturePath": "./fixtures/volume-singapore-synthetic-v1.json"},
+  "fields": [
+    {"key": "boundary", "label": "Boundary vertex", "type": "vector", "nullable": true, "units": ["deg"], "datums": ["WGS84"], "sameDatum": true, "canonicalUnit": "deg", "conversions": [], "range": null, "components": [{"key": "ordinal", "minimum": 0, "maximum": 63}, {"key": "longitude", "minimum": -180, "maximum": 180}, {"key": "latitude", "minimum": -90, "maximum": 90}]},
+    {"key": "lower", "label": "Floor", "type": "number", "nullable": true, "units": ["m", "ft"], "datums": ["AMSL", "AGL", "pressure", "geometric", "unknown"], "sameDatum": true, "canonicalUnit": "m", "conversions": [{"from": "ft", "to": "m", "factor": 0.3048}], "range": [-500, 30000], "components": []},
+    {"key": "upper", "label": "Ceiling", "type": "number", "nullable": true, "units": ["m", "ft"], "datums": ["AMSL", "AGL", "pressure", "geometric", "unknown"], "sameDatum": true, "canonicalUnit": "m", "conversions": [{"from": "ft", "to": "m", "factor": 0.3048}], "range": [-500, 30000], "components": []},
+    {"key": "valid_from", "label": "Valid from", "type": "utc", "nullable": true, "units": ["UTC"], "datums": ["not-applicable"], "sameDatum": true, "canonicalUnit": "UTC", "conversions": [], "range": null, "components": []},
+    {"key": "valid_to", "label": "Valid to", "type": "utc", "nullable": true, "units": ["UTC"], "datums": ["not-applicable"], "sameDatum": true, "canonicalUnit": "UTC", "conversions": [], "range": null, "components": []}
+  ]
+}

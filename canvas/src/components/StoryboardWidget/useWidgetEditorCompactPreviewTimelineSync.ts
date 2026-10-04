@@ -8,6 +8,7 @@ import {
 import {
   resolveRichMediaTimelineDurationUnits,
   resolveRichMediaTimelineMediaTargetSeconds,
+  applyRichMediaTimelinePlaybackRate,
 } from '@/lib/render/richMediaTimelineSync'
 
 export function useWidgetEditorCompactPreviewTimelineSync(args: {
@@ -76,8 +77,8 @@ export function useWidgetEditorCompactPreviewTimelineSync(args: {
         void 0
       }
     }
-    if (media.playbackRate !== playbackRate) media.playbackRate = playbackRate
-    if (playing) {
+    const nativeRate = applyRichMediaTimelinePlaybackRate(media, playbackRate)
+    if (playing && nativeRate) {
       if (media.paused) {
         try {
           const maybePromise = media.play()

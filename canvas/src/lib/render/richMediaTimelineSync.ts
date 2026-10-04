@@ -259,3 +259,26 @@ export function resolveRichMediaTimelineMediaTargetSeconds(args: {
   }
   return positionSeconds
 }
+
+/** Unsupported native rates stay on the shared clock's seek path, never a clamped second clock. */
+const rejectedMediaRates = new WeakMap<HTMLMediaElement, number>()
+export function isRichMediaTimelineRateSeekOnly(media: HTMLMediaElement): boolean {
+  return rejectedMediaRates.has(media)
+}
+export function applyRichMediaTimelinePlaybackRate(media: HTMLMediaElement, rate: number): boolean {
+  if (rejectedMediaRates.get(media) === rate) return false
+  try {
+    if (media.playbackRate !== rate) media.playbackRate = rate
+    if (media.playbackRate === rate) {
+      rejectedMediaRates.delete(media)
+      media.removeAttribute('data-kg-timeline-rate-fallback')
+      return true
+    }
+  } catch (error) {
+    if (!(error instanceof Error) || error.name !== 'NotSupportedError') throw error
+  }
+  rejectedMediaRates.set(media, rate)
+  media.setAttribute('data-kg-timeline-rate-fallback', 'seek')
+  if (!media.paused) media.pause()
+  return false
+}

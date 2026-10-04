@@ -530,8 +530,6 @@ export const buildCanvasViewOptions = (
           label: 'Time',
           Icon: History,
           isActive: timelineBottomPanelVisible,
-          disabled: state.geospatialEnabled,
-          disabledReason: state.geospatialEnabled ? 'Disabled in Geospatial Mode' : undefined,
         },
         {
           id: 'control:flowchart',

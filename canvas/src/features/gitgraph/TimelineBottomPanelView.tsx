@@ -1,4 +1,7 @@
 import React from 'react'
+import { useSourceGeospatialContext } from '@/features/evidence-analysis/geospatialSource'
+
+const SourceGeospatialTimelinePanel = React.lazy(() => import('@/features/evidence-analysis/SourceGeospatialTimelinePanel').then(module => ({ default: module.SourceGeospatialTimelinePanel })))
 import { GanttTimelineTransportPanel } from './GanttTimelineTransportPanel'
 import { useMermaidGanttDocument } from './useMermaidGanttDocument'
 import { useStoryboardWidgetDiagramSelectionBridge } from './useStoryboardWidgetDiagramSelectionBridge'
@@ -31,13 +34,15 @@ export function XrObjectInspector({ emptyMessage = '' }: { emptyMessage?: string
 }
 
 export function TimelineBottomPanelView({ compact = false }: { compact?: boolean }) {
+  const sourceContext = useSourceGeospatialContext()
   const sequenceContext = useGraphStore(state => state.canvasRenderMode === '2d' && ['sequence', 'sequenceMermaid'].includes(state.canvas2dRenderer))
   const { available: warehouseTimelineAvailable } = useWarehouseInspectionMode()
   const xrTimelineContext = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
   const stageAuthority = useGraphStore(state => resolveXrDocumentStageAuthority(state))
+  if (sourceContext) return <React.Suspense fallback={<p>Opening source Timeline…</p>}><SourceGeospatialTimelinePanel compact={compact} /></React.Suspense>
   if (warehouseTimelineAvailable) return <React.Suspense fallback={<p>Opening warehouse timeline…</p>}><WarehouseTimelinePanel compact={compact} /></React.Suspense>
   if (xrTimelineContext && !stageAuthority) return <p role="status" className="p-3 text-xs">No authored XR timeline in this document. Add an object from Media or open an XR scene.</p>
-  if (xrTimelineContext) return <XrCameraMotionSection />
+  if (xrTimelineContext) return <><XrSubjectTransformEditor /><XrCameraMotionSection /></>
   if (sequenceContext) return <React.Suspense fallback={<p>Opening sequence timeline…</p>}><SequenceTimeline /></React.Suspense>
   return <MediaTimelineBottomPanelView compact={compact} />
 }

@@ -267,7 +267,6 @@ export const applyCanvasViewSelection = (params: CanvasViewActionParams) => {
     return
   }
   if (id === 'control:timeline') {
-    if (geospatialEnabled) return
     const nextTab: BottomSurfaceTab = 'timeline'
     if (bottomSurfaceCollapsed !== true && bottomSurfaceTab === nextTab) {
       setBottomSurfaceCollapsed(true)
