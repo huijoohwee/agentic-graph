@@ -165,9 +165,16 @@ export function readColdStartMaterializationSource(args: {
   requestedSourceFiles: SourceFile[]; preparedSourceFiles?: SourceFile[]
 }): SourceFile | null {
   const { initial, before, current, activePath, activeSourcePath } = args
+  const sameDocument = (left: MaterializationDocument, right: MaterializationDocument) =>
+    left.markdownDocumentName === right.markdownDocumentName && left.markdownDocumentText === right.markdownDocumentText
+  // The editor may publish the requested document while its empty inventory loads.
+  // A prior draft of this same path remains authoritative, including empty drafts.
+  const priorName = String(initial.markdownDocumentName || '').trim()
+  const requestedDocumentInitialization = !!activePath && (priorName
+    ? !matchesMarkdownDocumentPath(activePath, priorName) : !String(initial.markdownDocumentText || '').trim())
   if (args.applyToGraph !== true || !activePath || args.requestedSourceFiles.length
-    || [initial, before].some(state => state.sourceFiles.length || state.markdownDocumentName !== current.markdownDocumentName
-      || state.markdownDocumentText !== current.markdownDocumentText)
+    || [initial, before].some(state => state.sourceFiles.length) || !sameDocument(initial, before)
+    || (!sameDocument(before, current) && !requestedDocumentInitialization)
     || !String(current.markdownDocumentName || '').trim() || !matchesMarkdownDocumentPath(activePath, current.markdownDocumentName)) return null
   const active = current.sourceFiles.filter(file => file.source?.path === activeSourcePath)
   const prepared = (args.preparedSourceFiles || []).filter(file => file.source?.path === activeSourcePath)
