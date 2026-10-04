@@ -25,7 +25,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-swarm-acceptance"
 agent_id: "codex-root"
-source_revision: "38f2aa04342f13c05aa7c589bdacdd2e7338daf9"
+source_revision: "6609c981d251ffd15f21ba19befaaf11a7b160d8"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -342,7 +342,7 @@ Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-read
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
 | ER1 | Core/CLI/stdio/WebMCP-builder: 74 passed; clean 38f2 affected CI: 10/10 selected owner partitions pass (`candidate-38f2aa043-validation.json`) | Empty partitions do not imply full-suite parity; typecheck, portability and two browser owners passed |
-| ER2 | cf1 timeout retained; two unchanged diagnostics pass. 38f2 local passes; protected run 37210634938 times out at spatial fieldset readiness (30 s), ending Refreshing | No waiver or proven cause. New joined-refresh regression fails before repair; seven checks pass after (`refresh-joined-regressions.log`); production recheck pending |
+| ER2 | cf1 timeout retained; two unchanged diagnostics pass. 38f2 provider times out at Refreshing. 6609 desktop offline passes; mobile fails with source error (`candidate-6609c981-validation-failed.json`) | No waiver/retry. Joined-refresh test fails before repair; seven checks pass after. Integrate startup producer before new gate |
 | ER3 | 38f2 native Save: 3 entities/185 facts/3 sources; 262,899 B, SHA-256 `09c6904154ef854656712de87c21511e630fca076c456c0ac7cfc58d473da729`; offline reimport passes | cf1 re-export identical; 38f2 saved bytes identical. `aviation-mobile-reimport-38f2aa043.json` |
 | ER4 | 38f2 frozen inventory: 1,650 JS/MJS; maximum 495,688 B; initial closure 37 files/3,430,192 B | 1,803 final emitted files hash-verified; SVG absent from initial closure. Whole-host 150 kB fails; human scope decision pending |
 | ER5 | 38f2 native spatial 1024/390 import/apply/install/cold reload passes; installation verifies 1,761 files/29.3 MiB | Aviation offline-open with editor fails: inventory 0→49; nine inactive placeholder texts differ. Sequence owns startup repair; no waiver |
@@ -420,7 +420,7 @@ Audience projections must preserve qualified source joins, hypotheses and the ac
 
 Plan PR 1545 integrated; PRs 1547/1550 remain immutable predecessors. PR 1550's path failure is
 fixed in [PR 1551](https://github.com/huijoohwee/agentic-graph/pull/1551), exact 38f2aa043;
-local checks pass; provider spatial gate timed out during refresh. Intent: `/fix #aviation-swarm-acceptance @codex`.
+38f2 local checks pass; provider refresh timeout and 6609 mobile source failure remain. Intent: `/fix #aviation-swarm-acceptance @codex`.
 The admitted doc successor records acceptance; sequence owns the reproduced startup repair.
 Its proof must cover active bytes, current inactive inventory and genuine unsaved changes.
 No old proof authorizes a changed candidate; publication precedes exact protected integration.
@@ -494,9 +494,9 @@ Unchecked finding families have no zero-count claim. Authoring coverage does not
 
 Runtime owners and proof scopes are recorded in ER1–ER10; AS1/AS2/AS5 and delivery require separate acceptance.
 
-38f2 local CI and evidence controls pass; provider spatial timeout and aviation startup race remain
-(ER5). Debugger traces retain unchanged active bytes and nine inactive placeholder differences;
-sequence owns the repair. Recheck its production build before AS5 closure. Physical iPhone is SKIP/KIV.
+6609 fixes joined refresh; desktop offline passes, mobile reproduces the startup source race (ER2/ER5).
+Sequence owns producer `7c6438ed`; native ownership requires its source dependency before combining.
+No unchanged rerun. Recheck the combined build for AS5. Physical iPhone is SKIP/KIV.
 Whole-host 150 kB awaits the human scope decision; no feature-only reinterpretation. Real-label,
 static diagram and full guideline acceptance remain separate gaps. Recheck on source/input/profile drift.
 Source, protected integration and production need separate receipts; AS3/AS4 retain input/rights/buyer gates.
