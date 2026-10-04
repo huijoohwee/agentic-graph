@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.2"
-revision: "0.4.2"
-date: "2026-10-04"
+version: "0.4.3"
+revision: "0.4.3"
+date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.2"
-tad_revision: "0.4.2"
-adr_revision: "0.4.2"
-mvp_revision: "0.4.2"
-gtm_revision: "0.4.2"
+prd_revision: "0.4.3"
+tad_revision: "0.4.3"
+adr_revision: "0.4.3"
+mvp_revision: "0.4.3"
+gtm_revision: "0.4.3"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -25,7 +25,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-swarm-acceptance"
 agent_id: "codex-root"
-source_revision: "6609c981d251ffd15f21ba19befaaf11a7b160d8"
+source_revision: "b639ba42f92d3af7ac26c6e9d7949686664eb1c8"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm
 
-`aviation-swarm@0.4.2` hardens the eligible Must workflows of the existing aviation evidence capability:
+`aviation-swarm@0.4.3` hardens the eligible Must workflows of the existing aviation evidence capability:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -51,7 +51,7 @@ G1–G8 baseline: Graph `cc40000f8827ea68192edbd42385a887f107a3b5`, integrated b
 `E/` means `canvas/src/features/evidence-analysis/`. Plan commit `795327fb1ca10dde67450451521a6e3e97f95873`
 was integrated by [PR 1545](https://github.com/huijoohwee/agentic-graph/pull/1545) at `24f0614390affce87268d74e80a93791a73c30ca`.
 [PR 1551](https://github.com/huijoohwee/agentic-graph/pull/1551) publishes immutable
-`38f2aa04342f13c05aa7c589bdacdd2e7338daf9`; protected integration pending. ER rows bind tested candidates.
+`38f2aa04342f13c05aa7c589bdacdd2e7338daf9` remains immutable. Startup [PR 1552](https://github.com/huijoohwee/agentic-graph/pull/1552) integrated at `201835c8`; combined `b639ba42` is unpublished. ER rows bind proof.
 
 | Grounding ID / capability | Inspected owner and contract | Reuse / smallest delta | Check / evidence limit |
 |---|---|---|---|
@@ -75,8 +75,7 @@ User/beneficiary: analyst or reviewer reconstructing a permitted historical case
 team lead authorized to pay. Job: “Show supporting facts, gaps and reproduction steps.” Manual source
 reconciliation and spreadsheets are the hypothesized workaround, pending interviews.
 
-All pain and willingness-to-pay rankings are **unvalidated**. Rank hypothesized buyer cost, then
-nearest native solution; contrary buyer evidence overrides this order. No market statistic proves pain.
+Pain and willingness-to-pay rankings are **unvalidated**. Buyer evidence overrides the proposed order.
 
 | Rank / pain | Hook → break → fix → close | Native reuse / delta | Priority and outcome |
 |---|---|---|---|
@@ -170,8 +169,7 @@ operation and name; WebMCP names add `agentic-graph.`. All use `/operation @evid
 
 Discovery: `node canvas/src/features/evidence-analysis/tools/evidenceCli.mjs --list`.
 CLI consumes stdin JSON; browser uses source-authored finite profile/policy IDs and the same executor.
-Future tools enter the existing catalog and supported adapters together; do not expose unimplemented
-aliases. Remote availability is separate. Unknown/extra/conflicting arguments fail; snapshot before
+New tools enter the catalog/adapters together; unimplemented aliases stay hidden. Remote availability is separate. Unknown/extra/conflicting arguments fail; snapshot before
 awaits and fence supersession. Check parity, rejection, cancellation, byte bounds and no effects.
 
 ### Five flows and diagram register
@@ -341,11 +339,11 @@ Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-read
 
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
-| ER1 | Core/CLI/stdio/WebMCP-builder: 74 passed; clean 38f2 affected CI: 10/10 selected owner partitions pass (`candidate-38f2aa043-validation.json`) | Empty partitions do not imply full-suite parity; typecheck, portability and two browser owners passed |
-| ER2 | cf1 timeout retained; two unchanged diagnostics pass. 38f2 provider times out at Refreshing. 6609 desktop offline passes; mobile fails with source error (`candidate-6609c981-validation-failed.json`) | No waiver/retry. Joined-refresh test fails before repair; seven checks pass after. Integrate startup producer before new gate |
-| ER3 | 38f2 native Save: 3 entities/185 facts/3 sources; 262,899 B, SHA-256 `09c6904154ef854656712de87c21511e630fca076c456c0ac7cfc58d473da729`; offline reimport passes | cf1 re-export identical; 38f2 saved bytes identical. `aviation-mobile-reimport-38f2aa043.json` |
-| ER4 | 38f2 frozen inventory: 1,650 JS/MJS; maximum 495,688 B; initial closure 37 files/3,430,192 B | 1,803 final emitted files hash-verified; SVG absent from initial closure. Whole-host 150 kB fails; human scope decision pending |
-| ER5 | 38f2 native spatial 1024/390 import/apply/install/cold reload passes; installation verifies 1,761 files/29.3 MiB | Aviation offline-open with editor fails: inventory 0→49; nine inactive placeholder texts differ. Sequence owns startup repair; no waiver |
+| ER1 | Core/CLI/stdio/WebMCP-builder: 74 passed; combined b639 affected CI: 10/10 selected partitions pass (`candidate-b639ba42-validation.json`) | Empty partitions are not full-suite parity; typecheck and browser checks pass. Spatial stage CPU 692,338 ms: cost regression retained |
+| ER2 | Retained cf1 timeout, 38f2 provider refresh timeout and 6609 mobile source failure; b639 combined native gate passes | No timeout/assertion waiver. Joined-refresh regression fails before repair; seven checks pass after. Actual aviation first-open still fails: ER5 |
+| ER3 | b639 native Save: 3 entities/185 facts/3 sources; 262,899 B, SHA-256 `09c6904154ef854656712de87c21511e630fca076c456c0ac7cfc58d473da729` | Saved bytes equal prior cf1/38f2 packs. 38f2 offline reimport retained; `evidence-pack-b639ba42.json` is the actual new download |
+| ER4 | b639 frozen inventory: 1,650 JS/MJS; maximum 495,688 B; 1,803 emitted files hash-bound | 38f2 initial closure: 37 files/3,430,192 B, SVG absent. Whole-host 150 kB remains open; human scope decision pending |
+| ER5 | b639 spatial 1024/390 import/apply/install/cold reload passes; 1,761 files/29.3 MiB verified | Actual aviation first offline-open fails at `async source read`; `aviation-cold-open-b639ba42-failed.json`. Later diagnostic reloads recover; no first-open pass. Sequence owns repair |
 | ER6 | 38f2 390×844 offline + reduced-motion: import, UTC step, repeat route query, keyboard focus and zero horizontal overflow pass; 18 focus UI tests pass | `aviation-mobile-route-38f2aa043.json`; cf1 200% CSS zoom passes (not native browser zoom). Physical iPhone SKIP/KIV; startup blocked |
 | ER7 | fca5200 custom worker precedes ordinary precache with verified-pack authority. Six installed/uninstalled missing/corrupt-cache cases pass; installed cases emit zero worker fetches | Exact emitted-worker SHA `d6a542256e35b6138f88a41d46d605fb39e518f4b88ff12c13880e501f6c636c`; retained-build behavior proof, not full UI fidelity |
 | ER8 | Import regression and 14 related checks pass. Native offline bridge completes preparing→selecting→refreshing→applying→synchronizing→opening | Job fences prevent stale continuation/duplicate Launch fallback; no rollback of already dispatched lower-owner effects |
@@ -421,8 +419,8 @@ Audience projections must preserve qualified source joins, hypotheses and the ac
 
 Plan PR 1545 integrated; PRs 1547/1550 remain immutable predecessors. PR 1550's path failure is
 fixed in [PR 1551](https://github.com/huijoohwee/agentic-graph/pull/1551), exact 38f2aa043;
-38f2 local checks pass; provider refresh timeout and 6609 mobile source failure remain. Intent: `/fix #aviation-swarm-acceptance @codex`.
-The admitted doc successor records acceptance; sequence owns the reproduced startup repair.
+PR 1552 startup repair is protected; b639 combined checks pass, but actual aviation first-open fails. Intent: `/fix #aviation-swarm-acceptance @codex`.
+This successor records bounded source checks; sequence owns the remaining first-open repair.
 Its proof must cover active bytes, current inactive inventory and genuine unsaved changes.
 No old proof authorizes a changed candidate; publication precedes exact protected integration.
 
@@ -446,7 +444,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.2 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.3 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -456,7 +454,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-All anchors below join `aviation-swarm@0.4.2`; coverage decisions are not readiness.
+All anchors below join `aviation-swarm@0.4.3`; coverage decisions are not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -473,7 +471,7 @@ All anchors below join `aviation-swarm@0.4.2`; coverage decisions are not readin
 | C11 organization/obligations | covered / Source policy/GTM | Operator | Commercial/data review depends on selected buyer/source |
 | C12 viability | deferred / GTM | Product | Unknown drivers; populate/reconcile existing model after priced case |
 | C13 capital | covered / GTM | Product | Bootstrap/no ask; revisit on paid demand |
-| C14 execution | covered / ADLC | Engineering | PR 1551 published; local green, protected spatial timeout; source repair/recheck pending |
+| C14 execution | covered / ADLC | Engineering | PR 1552 integrated; shared b639 local gate green, actual first-open fails; source review pending |
 | C15 audience projections | deferred / GTM | Product | No audience handoff; generate only from qualified joined claims |
 | C16 learning | covered / GTM | Product | Explicit continue/revise/stop thresholds; EXP results pending |
 
@@ -494,9 +492,9 @@ Unchecked finding families have no zero-count claim. Authoring coverage does not
 
 Runtime owners and proof scopes are recorded in ER1–ER10; AS1/AS2/AS5 and delivery require separate acceptance.
 
-6609 fixes joined refresh; desktop offline passes, mobile reproduces the startup source race (ER2/ER5).
-Sequence owns producer `7c6438ed`; native ownership requires its source dependency before combining.
-No unchanged rerun. Recheck the combined build for AS5. Physical iPhone is SKIP/KIV.
+b639 combines joined refresh with protected startup repair: native 10/10 and generic desktop/mobile
+offline checks pass. Actual aviation first offline-open still fails (ER5); diagnostic reloads recover.
+Sequence owns that transition; no unchanged full-CI retry or readiness waiver. iPhone is SKIP/KIV.
 Whole-host 150 kB awaits the human scope decision; no feature-only reinterpretation. Real-label,
 full guideline acceptance remains separate. Recheck on source/input/profile drift.
 Source, protected integration and production need separate receipts; AS3/AS4 retain input/rights/buyer gates.
