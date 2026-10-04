@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.4"
-revision: "0.4.4"
+version: "0.4.5"
+revision: "0.4.5"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.4"
-tad_revision: "0.4.4"
-adr_revision: "0.4.4"
-mvp_revision: "0.4.4"
-gtm_revision: "0.4.4"
+prd_revision: "0.4.5"
+tad_revision: "0.4.5"
+adr_revision: "0.4.5"
+mvp_revision: "0.4.5"
+gtm_revision: "0.4.5"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -23,9 +23,9 @@ load_policy: "on-demand"
 agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
-worktree_id: "agent/device-0232231d4a19/aviation-refresh-settlement"
+worktree_id: "agent/device-0232231d4a19/aviation-import-readiness"
 agent_id: "codex-root"
-source_revision: "7ef185a3722e4d62c4e8bea08df8a7cd01730824"
+source_revision: "639965a06a394b93a982fee33407c9e99374a5e9"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm
 
-`aviation-swarm@0.4.4` hardens the eligible Must workflows of the existing aviation evidence capability:
+`aviation-swarm@0.4.5` hardens the eligible Must workflows of the existing aviation evidence capability:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -335,13 +335,13 @@ distance-only output; neither a quote nor a commitment follows from a scenario.
 
 The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md](workspace-seeds/agentic-graph-game-flight-sim-demo.md).
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
-One checkout; exact-path scope; new files <600 lines, oversized owners shrink, plan ≤40 KiB, no new spend. Acceptance: ≤20 active minutes, two source/test modules ≤10 KiB plus this doc; startup retains its owner. Refresh on drift. Protected review waits for status change, not an ETA. Preview proof is not deployment.
+One checkout; exact paths; files <600 lines, plan ≤40 KiB, no new spend. Next: ≤20 active minutes, one smoke runner ≤15 KiB plus this doc. Startup retains its owner. Refresh on drift; protected review is an external wait. Preview proof is not deployment.
 Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-readiness/`.
 
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
 | ER1 | Core/CLI/stdio/WebMCP-builder: 74 passed; 7ef185a3 CI: 10/10 selected partitions pass (`candidate-7ef185a3-validation.json`) | Empty partitions are not full-suite parity; typecheck and browser checks pass. Spatial CPU 519,633 ms; cost remains above 317,480 ms reference |
-| ER2 | dcf provider job `111475128856` fails before offline install: 30 s disabled review, “Refreshing”, no browser/network errors. b77ea per-pass regression red→green; six related checks pass | `refresh-settlement-*.log`; source fix, not proven exclusive CI cause. 7ef native gate passes; cf1/38f2/6609 failures retained |
+| ER2 | dcf/639 jobs `111475128856`/`111480521921` fail before install: 30 s disabled review, “Refreshing”, no reported browser/network errors. b77ea red→green; six related checks pass | Provider failure persists. 7ef manual import: 1,588 ms after startup settled; limits in `refresh-7ef-single-origin-diagnostic.json`. Prior failures retained |
 | ER3 | b639 native Save: 3 entities/185 facts/3 sources; 262,899 B, SHA-256 `09c6904154ef854656712de87c21511e630fca076c456c0ac7cfc58d473da729` | Saved bytes equal prior cf1/38f2 packs. 38f2 offline reimport retained; `evidence-pack-b639ba42.json` is the actual new download |
 | ER4 | 7ef frozen inventory: 1,659 JS/MJS; maximum 495,688 B; 1,812 files hash-bound | 38f2 initial closure: 37 files/3,430,192 B, SVG absent. Whole-host 150 kB remains open; human scope decision pending |
 | ER5 | 7ef spatial 1024/390 import/apply/install/cold reload passes; 1,767 files/29.3 MiB verified | Actual aviation first offline-open fails at `async source read`; `aviation-cold-open-b639ba42-failed.json`. Later diagnostic reloads recover; no first-open pass. Sequence owns repair |
@@ -420,9 +420,8 @@ Audience projections must preserve qualified source joins, hypotheses and the ac
 
 Plan PR 1545 integrated; PRs 1547/1550 remain immutable predecessors. PR 1550's path failure is
 fixed in [PR 1551](https://github.com/huijoohwee/agentic-graph/pull/1551), exact 38f2aa043;
-PR 1552 startup repair is protected; b639 combined checks pass, but actual aviation first-open fails. Intent: `/fix #aviation-swarm-acceptance @codex`.
-This successor records bounded source checks; sequence owns the remaining first-open repair.
-Its proof must cover active bytes, current inactive inventory and genuine unsaved changes.
+PR 1552 is protected; b639 local checks pass, but actual aviation first-open fails. PRs 1553/1554 retain failed provider checks. Intent: `/fix #aviation-import-readiness @codex`.
+This successor adds bounded smoke diagnostics. Startup adoption hit native owner overlap; sequence integrates its producer first. Proof covers active bytes, inactive inventory and unsaved changes.
 No old proof authorizes a changed candidate; publication precedes exact protected integration.
 
 **AS-D6 · Lane & deploy boundary · flowchart LR · version 2.** Source and delivery each require their own receipt.
@@ -455,7 +454,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.4`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.5`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -493,9 +492,9 @@ Unchecked finding families have no zero-count claim. Authoring coverage does not
 
 ER1–ER11 bind proof; AS1/AS2/AS5 and delivery require separate acceptance.
 
-7ef native 10/10 passes after per-caller settlement repair; dcf provider import failure remains
-in ER2. Native demo import passes on Dev 5195. Aviation first
-offline-open remains unresolved; warm 390/1280 logpoints recover (ER5). Sequence owns startup repair.
+7ef native 10/10 passes; 639 repeats the provider import failure (ER2). The bounded manual trace
+has no stalled refresh, but misses early bootstrap overlap. No exclusive cause or CI parity claim.
+Aviation first offline-open remains unresolved (ER5); sequence owns startup repair.
 No unchanged full-CI retry or waiver. iPhone remains SKIP/KIV.
 Whole-host 150 kB awaits the human scope decision; no feature-only reinterpretation. Real-label,
 full guideline acceptance remains separate. Recheck on source/input/profile drift.

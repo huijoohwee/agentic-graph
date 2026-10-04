@@ -68,7 +68,56 @@ async function visibleReviewWidth(review) {
     return { visible: Math.max(0, right - left), width: rect.width, overflow: element.scrollWidth > element.clientWidth + 1 }
   })
 }
-let server, browser, activePage, activeDiagnostics
+function createSmokeDiagnostics(page) {
+  const startedAt = Date.now(), pending = new Map(), settled = [], milestones = []
+  const requests = { total: 0, completed: 0, failed: 0, pendingDetailsDropped: 0, settledDetailsDropped: 0 }
+  const mark = label => { if (milestones.length < 64) milestones.push({ label, elapsedMs: Date.now() - startedAt }) }
+  page.on('request', request => {
+    requests.total++
+    if (pending.size >= 64) { requests.pendingDetailsDropped++; return }
+    const url = new URL(request.url())
+    pending.set(request, { path: (/^https?:$/.test(url.protocol) ? url.origin + url.pathname : url.protocol).slice(0, 240), type: request.resourceType(), method: request.method(), startedAt: Date.now() })
+  })
+  page.on('response', response => { const entry = pending.get(response.request()); if (entry) entry.status = response.status() })
+  const finish = (request, failed) => {
+    requests[failed ? 'failed' : 'completed']++
+    const entry = pending.get(request)
+    if (!entry) return
+    pending.delete(request)
+    settled.push({ ...entry, durationMs: Date.now() - entry.startedAt, failed })
+    if (settled.length > 64) { settled.shift(); requests.settledDetailsDropped++ }
+  }
+  page.on('requestfinished', request => finish(request, false))
+  page.on('requestfailed', request => finish(request, true))
+  return { mark, snapshot: () => ({ startedAt, milestones: [...milestones], requests: { ...requests,
+    pending: requests.total - requests.completed - requests.failed,
+    oldestPending: [...pending.values()].map(entry => ({ ...entry, ageMs: Date.now() - entry.startedAt })), settled: [...settled] } }) }
+}
+async function collectSmokeDiagnostics(page, collector, error) {
+  let timer
+  const snapshot = { schema: 'agentic-graph.spatial-smoke-diagnostics/v1', revision, tree, viewport: page.viewportSize(), ...collector.snapshot(), artifactEntriesDropped: 0 }
+  if (error !== undefined) snapshot.error = { name: String(error?.name || 'Error').slice(0, 60), message: String(error?.message ?? error).split('\n')[0].slice(0, 240) }
+  try {
+    snapshot.browser = await Promise.race([page.evaluate(() => {
+      const trace = Array.isArray(window.__AG_RUNTIME_TRACE__) ? window.__AG_RUNTIME_TRACE__ : []
+      return { ...window.__AG_SPATIAL_SMOKE_DIAGNOSTICS__, readyState: document.readyState, online: navigator.onLine,
+        runtimeTraceDropped: Math.max(0, trace.length - 128), runtimeTrace: trace.slice(-128).map(entry => Object.fromEntries(
+          ['ts', 'scope', 'runId', 'hypothesisId', 'traceId', 'location'].flatMap(key => {
+            const value = entry?.[key]
+            return typeof value === 'string' ? [[key, value.slice(0, 160)]] : typeof value === 'number' || typeof value === 'boolean' ? [[key, value]] : []
+          }))) }
+    }), new Promise(resolve => { timer = setTimeout(() => resolve({ unavailable: 'Browser snapshot exceeded 3000 ms' }), 3000) })])
+  } catch { snapshot.browser = { unavailable: 'Browser snapshot failed' } }
+  finally { clearTimeout(timer) }
+  const rings = [snapshot.browser.uiEvents, snapshot.browser.runtimeTrace, snapshot.requests.settled, snapshot.requests.oldestPending, snapshot.browser.longTasks, snapshot.milestones]
+  while (Buffer.byteLength(JSON.stringify(snapshot)) + 1 > 128 * 1024) {
+    const ring = rings.find(value => value?.length)
+    if (!ring) return { schema: snapshot.schema, revision, tree, unavailable: 'Diagnostic byte limit exceeded' }
+    ring.shift(); snapshot.artifactEntriesDropped++
+  }
+  return snapshot
+}
+let server, browser, activePage, activeDiagnostics, activeCollector, failed = false
 const results = []
 try {
   await mkdir(output, { recursive: true })
@@ -83,8 +132,40 @@ try {
       for (const target of [navigator, document]) Object.defineProperty(target, 'modelContext', {
         configurable: false, get: () => undefined, set: () => {},
       })
+      if (window !== window.top) return
+      const state = window.__AG_SPATIAL_SMOKE_DIAGNOSTICS__ = { documentEpochMs: performance.timeOrigin,
+        uiEvents: [], uiEventsDropped: 0, longTasks: [], longTasksDropped: 0, longTaskCount: 0, longTaskTotalMs: 0, longTaskMaxMs: 0 }
+      const retain = (key, value, limit) => { state[key].push(value); if (state[key].length > limit) { state[key].shift(); state[`${key}Dropped`]++ } }
+      let previous = ''
+      const sample = () => {
+        const review = document.querySelector('[data-kg-spatial-review]'), fieldset = review?.querySelector('fieldset')
+        const current = { toast: (document.querySelector('[data-kg-toast-message="markdown-workspace-status"]')?.textContent || '').slice(0, 240),
+          reviewPresent: !!review, fieldsetDisabled: fieldset ? fieldset.disabled : null,
+          reviewStatus: [...(review?.querySelectorAll('[role="status"]') || [])].slice(0, 2).map(node => (node.textContent || '').slice(0, 160)) }
+        const signature = JSON.stringify(current)
+        if (signature !== previous) { previous = signature; retain('uiEvents', { elapsedMs: performance.now(), ...current }, 128) }
+      }
+      const observedUi = '[data-kg-toast-id="markdown-workspace-status"],[data-kg-spatial-review]'
+      new MutationObserver(records => {
+        if (records.some(record => {
+          const target = record.target.nodeType === 1 ? record.target : record.target.parentElement
+          return target?.closest(observedUi) || [...record.addedNodes, ...record.removedNodes].some(node =>
+            node.nodeType === 1 && (node.matches(observedUi) || node.querySelector(observedUi)))
+        })) sample()
+      }).observe(document, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['disabled'] })
+      sample()
+      try {
+        state.longTasksSupported = PerformanceObserver.supportedEntryTypes.includes('longtask')
+        if (state.longTasksSupported) new PerformanceObserver(list => {
+          for (const entry of list.getEntries()) {
+            state.longTaskCount++; state.longTaskTotalMs += entry.duration; state.longTaskMaxMs = Math.max(state.longTaskMaxMs, entry.duration)
+            retain('longTasks', { elapsedMs: entry.startTime, durationMs: entry.duration }, 32)
+          }
+        }).observe({ type: 'longtask', buffered: true })
+      } catch { state.longTasksSupported = false }
     })
     const page = activePage = await context.newPage(), errors = [], remote = [], dialogs = []
+    const collector = activeCollector = createSmokeDiagnostics(page)
     const failedRequests = [], consoleErrors = []
     activeDiagnostics = { errors, failedRequests, consoleErrors }
     page.setDefaultTimeout(30000)
@@ -98,16 +179,23 @@ try {
       remote.push(url.origin + url.pathname); return route.abort()
     })
     const start = performance.now(), actions = []
+    const action = label => { actions.push(label); collector.mark(label) }
+    collector.mark('Navigate:start')
     await page.goto(origin + '/agentic-graph/?openEditorWorkspace=1', { waitUntil: 'domcontentloaded', timeout: 60000 })
+    collector.mark('Navigate:domcontentloaded')
     // Boot readiness accepts multiple source roots; subsequent actions target their own named controls.
     await page.getByRole('navigation', { name: 'Source files', exact: true }).first().waitFor({ timeout: 60000 })
-    await page.getByRole('button', { name: 'Launch', exact: true }).click(); actions.push('Open Launch')
+    collector.mark('Source files visible')
+    await page.getByRole('button', { name: 'Launch', exact: true }).click(); action('Open Launch')
     const chooser = page.waitForEvent('filechooser')
-    await page.getByText('Choose files', { exact: true }).click(); actions.push('Choose files')
-    await (await chooser).setFiles({ name: 'spatial-pilot.md', mimeType: 'text/markdown', buffer: Buffer.from(source) }); actions.push('Select local scene')
+    await page.getByText('Choose files', { exact: true }).click(); action('Choose files')
+    collector.mark('Select local scene:start')
+    await (await chooser).setFiles({ name: 'spatial-pilot.md', mimeType: 'text/markdown', buffer: Buffer.from(source) }); action('Select local scene')
     const review = page.getByRole('region', { name: 'Spatial change review', exact: true })
     await review.getByRole('button', { name: 'Preview +1 m on X', exact: true }).waitFor()
+    collector.mark('Review visible; awaiting enabled fieldset')
     await page.waitForFunction(() => { const fieldset = document.querySelector('[data-kg-spatial-review] fieldset'); return fieldset && !fieldset.disabled })
+    collector.mark('Review enabled')
     const initialLayout = await visibleReviewWidth(review)
     assert.ok(initialLayout.visible >= Math.min(320, width - 48), JSON.stringify(initialLayout))
     assert.equal(initialLayout.overflow, false)
@@ -119,10 +207,10 @@ try {
     await context.setOffline(true)
     const quickPreview = review.getByRole('button', { name: 'Preview +1 m on X', exact: true })
     const bounds = await quickPreview.boundingBox(); assert.ok(bounds.width >= 44 && bounds.height >= 44)
-    await quickPreview.click(); actions.push('Preview +1 m on X')
+    await quickPreview.click(); action('Preview +1 m on X')
     await review.getByRole('button', { name: 'Apply reviewed change', exact: true }).waitFor()
     assert.equal(await storedSource(page), initial, 'preview cannot mutate the saved source')
-    await review.getByRole('button', { name: 'Apply reviewed change', exact: true }).click(); actions.push('Apply reviewed change')
+    await review.getByRole('button', { name: 'Apply reviewed change', exact: true }).click(); action('Apply reviewed change')
     await review.getByText('Change applied and verified in local storage.', { exact: true }).waitFor()
     const firstValueMs = Math.round(performance.now() - start), applied = await storedSource(page)
     const metadata = yaml.load(applied.split('---', 3)[1])
@@ -141,10 +229,12 @@ try {
     await page.waitForFunction(() => !!navigator.serviceWorker?.controller, undefined, { timeout: 60000 })
     await review.getByText('Offline Studio', { exact: true }).click()
     const installStart = performance.now()
+    collector.mark('Install offline Studio:start')
     await review.getByRole('button', { name: 'Install offline Studio', exact: true }).click()
     const verified = review.getByRole('status').filter({ hasText: /^Verified \d+ files/ })
     await verified.waitFor({ timeout: 190000 })
     const installation = await verified.innerText(), installMs = Math.round(performance.now() - installStart)
+    collector.mark('Install offline Studio:verified')
     await review.getByRole('button', { name: 'Open verified offline workspace', exact: true }).click()
     await page.waitForURL(url => url.searchParams.has('studio-offline'), { timeout: 60000 })
     await review.waitFor({ timeout: 60000 })
@@ -152,6 +242,7 @@ try {
     await page.waitForLoadState('networkidle', { timeout: 30000 })
     assert.equal(await storedSource(page), undone, 'installed route must finish restoring the saved scene before disconnecting')
     await context.setOffline(true)
+    collector.mark('Offline reload:start')
     const reloadStart = performance.now(), response = await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
     assert.equal(response.status(), 200)
     await review.getByRole('button', { name: 'Preview +1 m on X', exact: true }).waitFor({ timeout: 60000 })
@@ -160,6 +251,7 @@ try {
     // Return through its native Close action before resuming canvas review.
     await page.locator('[aria-label="Markdown view controls"]').getByRole('button', { name: 'Close', exact: true }).click()
     await page.waitForFunction(() => { const fieldset = document.querySelector('[data-kg-spatial-review] fieldset'); return fieldset && !fieldset.disabled })
+    collector.mark('Offline review enabled')
     await quickPreview.click(); await review.getByRole('button', { name: 'Cancel proposal', exact: true }).click()
     const reloadMs = Math.round(performance.now() - reloadStart)
     assert.equal(await storedSource(page), undone)
@@ -174,9 +266,11 @@ try {
     const visibleControl = await quickPreview.boundingBox()
     assert.ok(visibleControl.x >= 0 && visibleControl.x + visibleControl.width <= width)
     await page.screenshot({ path: join(output, `review-${width}.png`), fullPage: true })
+    collector.mark('Acceptance complete')
+    const diagnostics = await collectSmokeDiagnostics(page, collector)
     results.push({ width, actions, firstValueMs, installation, installMs, reloadMs, receipts: 2,
       noWebMcp: true, offlineReview: true, coldReload: true, reloadNavigationActions: ['Close restored source editor'], importedLabelIsText: true, renderer: width === 390 ? 'touch-opt-in-deferred' : 'loaded',
-      overflow, initialLayout, reopenedLayout, pageErrors: errors, blockedRemoteRequests: [...new Set(remote)], evidenceKind: 'automated-technical-rehearsal' })
+      overflow, initialLayout, reopenedLayout, pageErrors: errors, blockedRemoteRequests: [...new Set(remote)], evidenceKind: 'automated-technical-rehearsal', diagnostics })
     console.log(JSON.stringify(results.at(-1)))
     await context.close()
   }
@@ -185,16 +279,32 @@ try {
   await writeFile(join(output, 'acceptance.json'), JSON.stringify({ schema: 'agentic-graph.spatial-full-app-acceptance/v1', revision, tree,
     productionAuthority: false, humanParticipants: 0, modelTokens: 0, results }, null, 2) + '\n')
 } catch (error) {
-  if (activePage && !activePage.isClosed()) {
-    await activePage.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {})
-    const failure = (error.stack || String(error)) + '\nSaved source:\n' + await storedSource(activePage).catch(() => 'Unavailable') + '\nBody:\n' + await activePage.locator('body').innerText().catch(() => 'Unavailable')
-    await writeFile(join(output, 'failure.txt'), failure)
-    // Retained stage logs must explain a disabled form even when runner screenshots are unavailable.
-    console.error(JSON.stringify({ revision, tree, viewport: activePage.viewportSize(), output }))
-    console.error(JSON.stringify(activeDiagnostics))
-    console.error(JSON.stringify(await activePage.evaluate(() => ({ readyState: document.readyState, online: navigator.onLine,
-      worker: navigator.serviceWorker?.controller?.scriptURL, scripts: [...document.scripts].map(script => script.src), html: document.documentElement.outerHTML.slice(0, 4000) })).catch(() => ({ unavailable: true }))))
-    console.error(failure.slice(0, 50000))
+  failed = true
+  if (activePage && activeCollector) {
+    activeCollector.mark('Failure')
+    try {
+      const json = JSON.stringify(await collectSmokeDiagnostics(activePage, activeCollector, error))
+      console.error(json)
+      await writeFile(join(output, 'failure-diagnostics.json'), json + '\n')
+    }
+    catch { console.error('Could not write bounded smoke diagnostics') }
   }
+  try {
+    if (activePage && !activePage.isClosed()) {
+      await activePage.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {})
+      const failure = (error.stack || String(error)) + '\nSaved source:\n' + await storedSource(activePage).catch(() => 'Unavailable') + '\nBody:\n' + await activePage.locator('body').innerText().catch(() => 'Unavailable')
+      await writeFile(join(output, 'failure.txt'), failure)
+      // Retained stage logs must explain a disabled form even when runner screenshots are unavailable.
+      console.error(JSON.stringify({ revision, tree, viewport: activePage.viewportSize(), output }))
+      console.error(JSON.stringify(activeDiagnostics))
+      console.error(JSON.stringify(await activePage.evaluate(() => ({ readyState: document.readyState, online: navigator.onLine,
+        worker: navigator.serviceWorker?.controller?.scriptURL, scripts: [...document.scripts].map(script => script.src), html: document.documentElement.outerHTML.slice(0, 4000) })).catch(() => ({ unavailable: true }))))
+      console.error(failure.slice(0, 50000))
+    }
+  } catch { console.error('Legacy smoke failure capture was unavailable') }
   throw error
-} finally { await browser?.close(); await server?.close() }
+} finally {
+  const cleanup = await Promise.allSettled([browser?.close(), server?.close()])
+  const rejection = cleanup.find(result => result.status === 'rejected')
+  if (!failed && rejection) throw rejection.reason
+}
