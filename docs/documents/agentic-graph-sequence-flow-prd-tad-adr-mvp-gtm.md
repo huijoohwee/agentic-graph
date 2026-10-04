@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.50"
-prd_revision: "1.3.50"
-tad_revision: "1.3.50"
-adr_revision: "1.3.50"
-mvp_revision: "1.3.50"
-gtm_revision: "1.3.50"
+version: "1.3.51"
+prd_revision: "1.3.51"
+tad_revision: "1.3.51"
+adr_revision: "1.3.51"
+mvp_revision: "1.3.51"
+gtm_revision: "1.3.51"
 date: "2026-10-04"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,9 +31,9 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.50**. This native successor restores the retained offline/cache repairs, frame optimization and external-input acceptance tooling from `2fa04682facea268428d7029ba18df7192f5339b`, admits proven native-editor document initialization during cold source loading, and preserves an explicit file selection created after the startup directory snapshot.
+All five roles join **SEQUENCE-FLOW-001@1.3.51**. This six-file startup producer admits proven native-editor document initialization during cold source loading and preserves an explicit file selection created after the startup directory snapshot. The complete prepared sequence candidate is retained at `e278802a56410eecdb824e0057cc7dffde009df2`; its offline/cache, renderer and external-input proof changes are intentionally excluded from this source projection until the shared runtime dependency can integrate.
 The six-file startup producer remains immutable at `7c6438edc49321a48778e96a803a5d47b52da442` in [PR #1552](https://github.com/huijoohwee/agentic-graph/pull/1552), integrated as `201835c8c69e2d1c53a25b978312c955a82e4af7`. Its ten native owner checks, required provider gate and 92 focused checks pass; native closeout confirms the six-path projection.
-Preparation is disjoint from the shared runtime owner. Final validation waits for its protected integration and exact combined-source alignment; failed shared PRs #1553 and #1554 are not mergeable evidence; their observed import failure is not yet attributed to the startup corrections.
+Native admission rejected a direct startup-file handoff because this lane still owns the files. The supported delivery order is this minimal protected startup producer, the shared runtime successor, then the restored sequence candidate and its exact combined proof. Failed shared PRs #1553 and #1554 remain invalid merge evidence; their Refreshing failure is not yet attributed to these startup corrections.
 Final candidate readiness requires the complete evidence matrix below; earlier proof keeps its original limits.
 
 Context: an existing sequence view and shared Timeline shown in the supplied screenshot.
@@ -48,7 +48,7 @@ import it through normal workspace controls; do not store its path, source or sp
 runtime code, fixtures or tests. Independent generic regression cases exercise the contract.
 No outside implementation, assets, hosted rendering service or dependency enters this change.
 
-Successor restoration completed at `0f6a27d650d7aa18a5906a763a770cd966acc213`: twelve changed files and 76,058 added bytes within its 80 KiB preparation cap. The requested-document correction adds three existing source/test files plus this existing plan, estimated 15 active minutes with a 25-minute/25 KiB added-byte cap. Preserve all startup producer and shared-runtime owners. The late-selection correction adds two existing source/test owners, estimated 15 active minutes with a 20 KiB added-byte cap. The complete combined validation now has an eighteen-file/180 KiB ceiling. No new dependency or spend; external provider checks have a recheck trigger, not a completion ETA.
+The retained complete preparation at `e278802a56410eecdb824e0057cc7dffde009df2` includes the 12-scenario late-selection correction: three source/test/plan files, 16,878 added bytes, within its 15-active-minute/20 KiB cap. This producer projects five existing source/test owners and this existing plan against protected `201835c8c69e2d1c53a25b978312c955a82e4af7`: estimate 10 active minutes, cap 20 minutes/6 files/40 KiB added bytes for local preparation and checks. The eventual combined sequence ceiling remains eighteen files/180 KiB. No new dependency or spend; external provider checks have a recheck trigger, not a completion ETA.
 Keep files below 600 lines and chunks below 500 kB; load feature UI only on demand.
 The demonstration remains external; the browser proof accepts its path explicitly at invocation. External CI/review waits
 have no ETA; recheck on a changed exact-candidate status. Publication, integration,
@@ -190,7 +190,7 @@ preferences stay in the existing settings owner. No automatic source rewriting.
 
 ### Reference implementation — exact codebase grounding
 
-These runtime rows are grounded in protected **agentic-graph `f8d448cb7bd8764feb9f8163edf39c49d932701e`**. The startup producer is integrated; restored offline work and final combined proof retain separate evidence below.
+These runtime rows are grounded in protected **agentic-graph `f8d448cb7bd8764feb9f8163edf39c49d932701e`**. The earlier startup producer is integrated; this additional startup projection, retained offline work and final combined proof have separate evidence below.
 Prior grounding at `24f0614390affce87268d74e80a93791a73c30ca`, inspected OS checkout `445dedbeb34693fdf5e7f92fb8aed785493096a1`
 and recorded OS pin `1d3e803f9c28c33ab41f3bf6755e760426e1c956` are historical identities, not new delivery proof.
 
@@ -423,7 +423,7 @@ V1–V9 pass and a pilot shows the omitted behavior matters. No second roadmap.
 
 ## GTM
 
-Current 1.3.50 prepares sequence acceptance after the protected startup producer; shared-runtime integration remains required. Complete Q1–Q9 and exact build/release evidence before
+Current 1.3.51 releases the additional startup corrections; shared-runtime integration and restored sequence acceptance remain required. Complete Q1–Q9 and exact build/release evidence before
 offering production readiness; focused passes and offline controls do not prove installation, delivery, buyer value or revenue.
 
 Hypothesis H1: a reachable technical team lead values a reviewed reusable interaction
@@ -464,7 +464,7 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.50. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.51. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 
@@ -506,7 +506,7 @@ The offline successor preserves that published candidate and its protected ances
 | Cancellation | Existing mount controller supplies its signal; cancellation fences preparation, reads, retries and result publication. It preserves the exact abort reason. This is not cancellation of already-started inner operations. |
 | Responsibility and size | Existing persistence/bootstrap owner is extracted into typed, acyclic workspace, cloud and polling hooks. The caller is 552 lines; hooks are 458/368/174 and shared types 95. AST review preserves callback bodies and effect order; all currently modified files are below 600 lines. |
 | Passive graph intent | For ordinary Markdown, cold and cached passive hydration preserve the current graph; explicit activation afterward applies the selected document. Source guards remain enforced. The combined closure group passes 42/42, with six materialization/ingest checks and one storage source check also passing; final typecheck succeeds. Retained agent-graph manifest restoration is a separate pre-existing document contract, outside this ordinary-Markdown guarantee. |
-| Retained offline owners | Restored from `2fa04682facea268428d7029ba18df7192f5339b` through this admitted native successor. Originally recovered from commit `cb83723f2dcfb5c61213af511eb941d8a2ca50f9`: actual Workbox cache strategy and production PWA boot regressions failed before repair and pass afterward: 20/20 focused tests. Verified or damaged installed members initiate no fetch; ordinary online misses still fetch. |
+| Retained offline owners | Preserved in complete candidate `e278802a56410eecdb824e0057cc7dffde009df2`, with restoration provenance `2fa04682facea268428d7029ba18df7192f5339b`; excluded from this minimal producer and restored only after the shared protected dependency. Originally recovered from commit `cb83723f2dcfb5c61213af511eb941d8a2ca50f9`: actual Workbox cache strategy and production PWA boot regressions failed before repair and pass afterward: 20/20 focused tests. Verified or damaged installed members initiate no fetch; ordinary online misses still fetch. |
 | Prior offline diagnostic | Verified installation completed in 4,890 ms. The explicit offline route with connectivity available observed 463 page requests: 462 service-worker responses, zero worker fetches and one uncached host-mirror POST. The strict assertion correctly fails; this is not final offline acceptance. |
 | Shared-file handoff | The shared owner retains production/disconnected mirror suppression, acknowledgement-only digest caching and bounded chunks. Its per-pass refresh settlement regression and ten native partitions pass at `7ef185a3722e4d62c4e8bea08df8a7cd01730824`. Plan-only successor `639965a06a394b93a982fee33407c9e99374a5e9` in [PR #1554](https://github.com/huijoohwee/agentic-graph/pull/1554) repeats [PR #1553](https://github.com/huijoohwee/agentic-graph/pull/1553)'s provider initial-import failure: unchanged 30-second readiness wait, prior scene, disabled review and Refreshing, no console/request errors. The per-pass fix does not close this observed failure. A fresh-origin diagnostic imports successfully after startup has settled; its later chooser timing and missing provider fixture prevent equivalence. Exact owner handoff or a minimal protected startup producer must precede shared retry; native reservations cannot be rewritten manually. No failed gate is waived. |
 | Combined cache contract | The root's immutable-assets CacheFirst route adds a sixth worker route. An exact-input external compatibility test fails the shared five-route assertion (2/3 pass); adding only the ordered expected CacheFirst entry passes 3/3. The shared test owner has agreed to hand off that path after protected integration and native closeout. This diagnostic does not replace combined native validation. |
@@ -515,7 +515,7 @@ The offline successor preserves that published candidate and its protected ances
 | First-open diagnostic boundary | The actual authored shared demo failed its first offline open on a retained workspace. Its Explorer UI displayed 36 entries; that is not a graph-store snapshot. Later instrumented desktop and 390-pixel openings pass with 33 runtime source records and no guard hits. A fresh separate 390-pixel origin also passes first open with 33 records. These distinct observations preserve the original failure without establishing its cause or final sequence acceptance. |
 | Precache ownership | Retained build `89e15bb256ee088d8eee6349c94c357790803b08` reproduces four emitted-worker failures: precache eviction fetches, corrupt precache bypasses integrity, and corrupt/missing pack members return ordinary cached 200. No-pack hit/miss behavior passes. The shared owner committed a custom-worker correction using the original fetch request and existing integrity reader. Actual emitted-worker proof at `fca520008ccddbabd39717848c0dc6f8786cdd0b` passes all six cases; all installed cases observe zero worker fetches. Its provider runtime/build checks pass, but a documentation portability failure requires an immutable successor and protected integration before final adoption. The reusable browser proof covers all six cases and retains full context requests. |
 | Bundle handoff | The shared build owner reports a bounded diagnostic build with no static cycles. Final exact emitted JS/MJS/CJS sizes, worker imports, initial-load behavior and browser parity remain required before acceptance. |
-| Retained external-input proof | Restored from `2fa04682facea268428d7029ba18df7192f5339b` through this admitted native successor. Originally recovered from commit `cb83723f2dcfb5c61213af511eb941d8a2ca50f9`, the built offline smoke accepts an explicit external sequence document, with no default specimen or repository fixture. It derives event and branch expectations from the actual parser, records the source hash and checks save/reopen, public view controls, playback, narrow keyboard access and reduced motion. |
+| Retained external-input proof | Preserved in complete candidate `e278802a56410eecdb824e0057cc7dffde009df2`, with restoration provenance `2fa04682facea268428d7029ba18df7192f5339b`; excluded from this minimal producer and restored only after the shared protected dependency. Originally recovered from commit `cb83723f2dcfb5c61213af511eb941d8a2ca50f9`, the built offline smoke accepts an explicit external sequence document, with no default specimen or repository fixture. It derives event and branch expectations from the actual parser, records the source hash and checks save/reopen, public view controls, playback, narrow keyboard access and reduced motion. |
 | Producer browser proof | Clean `89e15bb256ee088d8eee6349c94c357790803b08` passes the existing full-app walkthrough at 1024×900 and 390×900: local import, apply/cancel/undo, verified 980-file installation, offline cold reopen, no page errors or blocked remote requests. Mobile first value 16,186 ms, installation 5,344 ms and reload 1,781 ms. The producer changes only two test files after that browser receipt; application/build inputs are identical. This is not strict zero-fetch sequence acceptance. |
 | Validation ownership | Focused bootstrap checks retain the shared lazy gate’s relevant positive and negative storage-import assertions, eager mount/SSOT bridge rules and Flight ordering. The unrelated broad gate and its pre-existing selections remain unchanged. |
 | Frame work | Retained build traces measure 655 frames at p95 15.328 ms and 605 frames at p95 17.135 ms; the latter fails the unchanged 16 ms gate. Both traces are retained. The prior canvas rewrites at least 620 attributes and replaces its pulse per tick. The preserved `2fa04682facea268428d7029ba18df7192f5339b` SVG repair caches bindings and geometry, writes only changed semantic attributes and reuses one pulse. The shared clock stays unchanged; disposal and replaced-SVG guards fence stale updates, and reduced-motion changes remove the pulse while preserving selection. All 26 focused sequence tests pass, including mutation, branch exclusion and lifetime regressions. Final exact-build validation must prove the frame improvement. |
