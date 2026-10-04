@@ -9,7 +9,6 @@ import { WORKSPACE_ARTIFACT_TOOL_DEFINITIONS, WORKSPACE_PROJECT_OPERATIONS } fro
 const ECONOMICS = Object.freeze({ networkCalls: 0, modelCalls: 0, inputTokens: 0, outputTokens: 0, estimatedCostUsd: 0 });
 const MAX_BODY = 3 * 1024 * 1024;
 const CHUNK = 256 * 1024;
-const directory = path.dirname(fileURLToPath(import.meta.url));
 const fail = (code, message) => Object.assign(new Error(message), { code });
 const failure = (error) => ({ ok: false, error: { code: error.code || "STORAGE_UNAVAILABLE", message: error.message }, economics: ECONOMICS });
 const statusFor = (code) => ({ HOST_DENIED: 403, ORIGIN_DENIED: 403, TOKEN_REQUIRED: 403, QUOTA_EXCEEDED: 413,
@@ -54,7 +53,7 @@ const write = async (response, status, value, type = "application/json; charset=
   response.end();
 };
 
-export const createWorkspaceProjectServer = async ({ rootDir, port = 0 } = {}) => {
+export const createWorkspaceProjectHandler = async ({ rootDir, getOrigin, cookiePath = "/" } = {}) => {
   if (typeof rootDir !== "string" || !path.isAbsolute(rootDir)) throw fail("INVALID_INPUT", "An explicit absolute local store directory is required.");
   const stats = await fs.lstat(rootDir);
   if (!stats.isDirectory() || stats.isSymbolicLink() || await fs.realpath(rootDir) !== rootDir) throw fail("INVALID_INPUT", "Store must be a real directory without symlink components.");
@@ -63,18 +62,19 @@ export const createWorkspaceProjectServer = async ({ rootDir, port = 0 } = {}) =
       throw fail("INVALID_INPUT", "Use a dedicated store outside an existing repository.");
     }
   }
-  if (!Number.isInteger(port) || port < 0 || port > 65535) throw fail("INVALID_INPUT", "Port must be 0..65535.");
+  if (typeof getOrigin !== "function" || !/^\/[a-z0-9_/-]*$/u.test(cookiePath)) throw fail("INVALID_INPUT", "A bound loopback origin and cookie path are required.");
   const token = randomBytes(32).toString("hex");
   const runtime = createWorkspaceArtifactRuntime({ rootDir, env: {} });
-  let url;
-  const server = http.createServer(async (request, response) => {
+  const handler = async (request, response) => {
     response.setHeader("Cache-Control", "no-store");
     response.setHeader("X-Content-Type-Options", "nosniff");
     response.setHeader("Referrer-Policy", "no-referrer");
     response.setHeader("Cross-Origin-Resource-Policy", "same-origin");
     response.setHeader("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; object-src 'none'");
     try {
+      const url = getOrigin();
       const address = new URL(url);
+      if (address.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes(address.hostname)) throw fail("HOST_DENIED", "Local Canvas host required.");
       if (request.headers.host !== address.host) throw fail("HOST_DENIED", "Exact loopback host required.");
       let refererOrigin;
       if (request.headers.referer) {
@@ -87,7 +87,7 @@ export const createWorkspaceProjectServer = async ({ rootDir, port = 0 } = {}) =
       const route = request.url;
       if (request.method === "GET") {
         if (route === "/session") {
-          response.setHeader("Set-Cookie", `workspace-session=${token}; HttpOnly; SameSite=Strict; Path=/`);
+          response.setHeader("Set-Cookie", `workspace-session=${token}; HttpOnly; SameSite=Strict; Path=${cookiePath}`);
           return await write(response, 200, { rootDir, token, zeroSpend: true, store: "localhost-host-git", transport: "loopback-http", economics: ECONOMICS });
         }
         if (route?.startsWith("/export/")) {
@@ -98,13 +98,6 @@ export const createWorkspaceProjectServer = async ({ rootDir, port = 0 } = {}) =
             ...(parsed.searchParams.has("version") ? { version: parsed.searchParams.get("version") } : {}) }, rootDir);
           response.setHeader("Content-Disposition", `attachment; filename="${projectId}.project.json"`);
           return await write(response, 200, result.data);
-        }
-        const assets = { "/": ["workspace-project.html", "text/html; charset=utf-8"],
-          "/client.js": ["workspace-project-client.js", "text/javascript; charset=utf-8"],
-          "/contract.js": ["workspace-artifact-contract.js", "text/javascript; charset=utf-8"] };
-        if (Object.hasOwn(assets, route)) {
-          const [file, type] = assets[route];
-          return await write(response, 200, await fs.readFile(path.join(directory, file), "utf8"), type);
         }
         throw fail("UNSUPPORTED", "Route is unavailable; no remote fallback exists.");
       }
@@ -119,7 +112,15 @@ export const createWorkspaceProjectServer = async ({ rootDir, port = 0 } = {}) =
       if (!response.headersSent) await write(response, statusFor(error.code), failure(error));
       else response.destroy();
     }
-  });
+  };
+  return { handler, token, runtime };
+};
+
+export const createWorkspaceProjectServer = async ({ rootDir, port = 0 } = {}) => {
+  if (!Number.isInteger(port) || port < 0 || port > 65535) throw fail("INVALID_INPUT", "Port must be 0..65535.");
+  let url;
+  const { handler, token, runtime } = await createWorkspaceProjectHandler({ rootDir, getOrigin: () => url });
+  const server = http.createServer(handler);
   server.requestTimeout = 15000; server.headersTimeout = 10000;
   await new Promise((resolve, reject) => { server.once("error", reject); server.listen(port, "127.0.0.1", resolve); });
   url = `http://127.0.0.1:${server.address().port}`;
@@ -150,7 +151,7 @@ export const startWorkspaceProjectStdio = async ({ rootDir }) => {
   return server;
 };
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+const main = async () => {
   const options = Object.fromEntries(process.argv.slice(2).filter((arg) => arg.startsWith("--") && arg.includes("=")).map((arg) => arg.slice(2).split(/=(.*)/su).slice(0, 2)));
   if (!options.root) { console.error("Use --root=/absolute/dedicated/existing/store [--port=8788] [--stdio]. Zero-spend local mode only."); process.exitCode = 1; }
   else {
@@ -159,9 +160,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
       if (process.argv.includes("--stdio")) await startWorkspaceProjectStdio({ rootDir });
       else {
         const host = await createWorkspaceProjectServer({ rootDir, port: options.port === undefined ? 8788 : Number(options.port) });
-        console.log(`Local project workspace: ${host.url}\nStore: ${rootDir}\nZero-spend: no provider, model, or external network calls.`);
+        console.log(`Local project API: ${host.url}\nStore: ${rootDir}\nUse Canvas History > Projects for the UI. This listener serves API requests only.\nZero-spend: no provider, model, or external network calls.`);
         for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, async () => { await host.close(); process.exitCode = 0; });
       }
     } catch (error) { console.error(`${error.code || "STORAGE_UNAVAILABLE"}: ${error.message}`); process.exitCode = 1; }
   }
+};
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  main().catch((error) => { console.error(`${error.code || "STORAGE_UNAVAILABLE"}: ${error.message}`); process.exitCode = 1; });
 }

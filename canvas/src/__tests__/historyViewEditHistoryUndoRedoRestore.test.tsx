@@ -156,11 +156,16 @@ export function testToolbarAndHistoryViewShareVersionUndoRedoControls() {
   if (controlsText.includes('showLabels')) {
     throw new Error('expected shared Undo/Redo controls to remain icon-only')
   }
-  if (!bottomGitGraphText.includes('buildVersionHistoryGitGraphCode(history)')) {
-    throw new Error('expected BottomPanel GitGraph chart to fall back to shared version history')
+  for (const panelText of [bottomGitGraphText, floatingGitGraphText]) {
+    if (!panelText.includes('selectDocumentVersionHistory(history, markdownDocumentName)')) {
+      throw new Error('expected both GitGraph panels to project shared history for the active source document')
+    }
   }
-  if (!bottomGitGraphText.includes('readVersionHistoryIndexFromCommitId') || !bottomGitGraphText.includes('restoreHistory(versionIndex)')) {
-    throw new Error('expected BottomPanel GitGraph selection to restore the shared runtime version')
+  if (!bottomGitGraphText.includes('buildVersionHistoryGitGraphCode(documentHistory.map(row => row.entry))')) {
+    throw new Error('expected BottomPanel GitGraph chart to use document-scoped shared version history')
+  }
+  if (!bottomGitGraphText.includes('readVersionHistoryIndexFromCommitId') || !bottomGitGraphText.includes('restoreHistory(version.index)')) {
+    throw new Error('expected BottomPanel GitGraph selection to restore the original shared history index')
   }
   if (!bottomGitGraphText.includes('runtimeHistorySelectedRowKey') || !bottomGitGraphText.includes('controlledSelectedRowKey={usesRuntimeHistory ? runtimeHistorySelectedRowKey : undefined}')) {
     throw new Error('expected BottomPanel GitGraph selection to follow historyIndex through controlled selection')
@@ -171,7 +176,7 @@ export function testToolbarAndHistoryViewShareVersionUndoRedoControls() {
   if (!floatingGitGraphText.includes('aria-label="Version history list"') || !floatingGitGraphText.includes('restoreHistory(index)')) {
     throw new Error('expected FloatingPanel GitGraph list to expose restorable shared version history')
   }
-  if (!floatingGitGraphText.includes('const usesRuntimeHistory = !code && history.length > 0')) {
+  if (!floatingGitGraphText.includes('const usesRuntimeHistory = !code && documentHistory.length > 0')) {
     throw new Error('expected FloatingPanel GitGraph to distinguish runtime history from authored Mermaid commands')
   }
   const runtimeHistoryGuards = floatingGitGraphText.match(/if \(usesRuntimeHistory\) return/g) || []
