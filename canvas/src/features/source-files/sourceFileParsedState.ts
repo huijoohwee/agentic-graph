@@ -1,5 +1,6 @@
 import type { GraphData } from '@/lib/graph/types'
 import type { SourceFile } from '@/hooks/store/types'
+import { matchesMarkdownDocumentPath } from 'grph-shared/markdown/documentPath'
 import {
   incrementParsedGraphRevision,
   resolveParsedGraphRevision,
@@ -128,6 +129,59 @@ export function areSourceFileSourcesEqual(
     String(left.path || '') === String(right.path || '') &&
     String(left.url || '') === String(right.url || '')
   )
+}
+
+export function sameMaterializationSourceIdentities(left: SourceFile[], right: SourceFile[]): boolean {
+  return left.length === right.length && left.every((file, index) => {
+    const next = right[index]
+    return next && file.id === next.id && file.name === next.name && file.text === next.text
+      && file.enabled === next.enabled && file.geoLayerEnabled === next.geoLayerEnabled && areSourceFileSourcesEqual(file.source, next.source)
+  })
+}
+
+type MaterializationDocument = { markdownDocumentName?: string | null; markdownDocumentText?: string | null }
+export function hasMaterializationDocumentDrifted(activePath: string | null, before: MaterializationDocument, current: MaterializationDocument, sourceText?: string): boolean {
+  const changed = current.markdownDocumentName !== before.markdownDocumentName || current.markdownDocumentText !== before.markdownDocumentText
+  // A native editor can publish this exact requested document while async source work is pending.
+  const converged = !!activePath && !!current.markdownDocumentName && typeof sourceText === 'string'
+    && matchesMarkdownDocumentPath(activePath, current.markdownDocumentName) && current.markdownDocumentText === sourceText
+  return changed && !converged
+}
+
+export function canSkipActiveWorkspaceSourceFilesRematerialization(args: { sourceFiles: SourceFile[]; activeSourcePath: string }): boolean {
+  const list = Array.isArray(args.sourceFiles) ? args.sourceFiles : []
+  if (!args.activeSourcePath || list.length === 0) return false
+  for (const file of list) {
+    if (file && String(file.source?.path || '') === args.activeSourcePath) return file.enabled === true && String(file.text || '').trim().length > 0
+  }
+  return false
+}
+
+type MaterializationSourceSnapshot = MaterializationDocument & { sourceFiles: SourceFile[] }
+/** Only the cold graph bootstrap may adopt an inventory published by the same active editor. */
+export function readColdStartMaterializationSource(args: {
+  applyToGraph?: boolean; activePath: string | null; activeSourcePath: string
+  initial: MaterializationSourceSnapshot; before: MaterializationSourceSnapshot; current: MaterializationSourceSnapshot
+  requestedSourceFiles: SourceFile[]; preparedSourceFiles?: SourceFile[]
+}): SourceFile | null {
+  const { initial, before, current, activePath, activeSourcePath } = args
+  if (args.applyToGraph !== true || !activePath || args.requestedSourceFiles.length
+    || [initial, before].some(state => state.sourceFiles.length || state.markdownDocumentName !== current.markdownDocumentName
+      || state.markdownDocumentText !== current.markdownDocumentText)
+    || !String(current.markdownDocumentName || '').trim() || !matchesMarkdownDocumentPath(activePath, current.markdownDocumentName)) return null
+  const active = current.sourceFiles.filter(file => file.source?.path === activeSourcePath)
+  const prepared = (args.preparedSourceFiles || []).filter(file => file.source?.path === activeSourcePath)
+  if (active.length !== 1 || prepared.length !== 1 || active[0]!.enabled !== true || !active[0]!.id.trim() || !active[0]!.name.trim()
+    || current.sourceFiles.filter(file => file.id === active[0]!.id).length !== 1
+    || args.preparedSourceFiles!.filter(file => file.id === active[0]!.id).length !== 1
+    || active[0]!.text !== current.markdownDocumentText || !sameMaterializationSourceIdentities(active, prepared)) return null
+  return active[0]!
+}
+
+export function hasExpectedMaterializationSourceText(sourceFiles: SourceFile[], activeSourcePath: string, expectedText: string | undefined): boolean {
+  if (expectedText === undefined) return true
+  const active = sourceFiles.filter(file => file.source?.path === activeSourcePath)
+  return active.length === 1 && active[0]!.text === expectedText
 }
 
 export function areSourceFileRecordsEqual(
