@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readSourceFilesBootstrapSource } from './helpers/sourceFilesBootstrapSource'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import test from 'node:test'
@@ -17,12 +18,11 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
     ),
     'utf8',
   )
-  const sourceFilesBootstrap = readFileSync(
+  const sourceFilesBootstrap = readSourceFilesBootstrapSource(
     resolve(
       repoRoot,
       'canvas/src/features/source-files/SourceFilesPersistenceBootstrap.tsx',
     ),
-    'utf8',
   )
   const workspaceExplorer = readFileSync(
     resolve(

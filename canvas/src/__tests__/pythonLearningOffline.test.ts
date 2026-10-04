@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { installLearningOfflineOwner, createPythonLearningOfflinePlugin, offlinePrecacheEntries } from '../../vitePythonLearningOffline.mjs'
 import authoredPublicAssets from '../features/evidence-analysis/profiles/offline-assets.json'
+import { buildPwaRuntimeCachingRules } from '../../vitePwaRuntimeCachePolicy'
 
 const scope = 'https://local.test/app/', prefix = 'kg-python-learning-v1-%2Fapp%2F-', first = '1'.repeat(40), second = '2'.repeat(40)
 const digest = async (bytes: Uint8Array) => Buffer.from(await webcrypto.subtle.digest('SHA-256', bytes)).toString('hex')
@@ -218,4 +219,53 @@ test('one bounded authored asset declaration supplies exact build and precache m
     assert.throws(() => offlinePrecacheEntries([{ ...authoredPublicAssets[0], path: 'example/../escape.json' }]), /Invalid offline public asset/)
     assert.throws(() => offlinePrecacheEntries([{ ...authoredPublicAssets[0], bytes: 500000 }]), /Invalid offline public asset/)
   } finally { await rm(directory, { recursive: true, force: true }) }
+})
+
+test('immutable build assets use verified pack bytes without background fetch and preserve mutable online policy', async () => {
+  const env = environment(); await env.publish(first); const one = env.ownerFor(first)
+  await one.request('install')
+  const prior = new Map<string, PropertyDescriptor | undefined>(), priorMode = process.env.NODE_ENV
+  const set = (key: string, value: unknown) => { prior.set(key, Object.getOwnPropertyDescriptor(globalThis, key)); Object.defineProperty(globalThis, key, { configurable: true, writable: true, value }) }
+  class WorkerEvent extends Event { waitUntil(_promise: Promise<unknown>) {} }
+  let networkCalls = 0
+  set('self', { ...one.owner, location: new URL(scope), __WB_DISABLE_DEV_LOGS: true })
+  set('location', new URL(scope)); set('ExtendableEvent', WorkerEvent); set('FetchEvent', WorkerEvent)
+  set('caches', {
+    async match(request: Request, options: { cacheName: string }) { return (await one.owner.caches.open(options.cacheName)).match(request.url) },
+    async open(name: string) { const cache = await one.owner.caches.open(name); return { match: (request: Request) => cache.match(request.url), put: (request: Request, response: Response) => cache.put(request.url, response) } },
+  })
+  set('fetch', async () => { networkCalls++; return new Response('// online replacement', { headers: { 'content-type': 'text/javascript' } }) })
+  process.env.NODE_ENV = 'production'
+  try {
+    const strategies = await import('workbox-strategies')
+    const rules = buildPwaRuntimeCachingRules()
+    const ruleFor = (path: string, destination = 'script', method = 'GET') => {
+      const request = new Request(new URL(path, scope), { method }); Object.defineProperty(request, 'destination', { value: destination })
+      const rule = rules.find(candidate => typeof candidate.urlPattern === 'function' && candidate.urlPattern({ request, url: new URL(request.url), sameOrigin: new URL(request.url).origin === new URL(scope).origin, event: new WorkerEvent('fetch') as never }))
+      assert.ok(rule); return { request, rule }
+    }
+    const handle = async (path: string) => {
+      const { request, rule } = ruleFor(path), Strategy = strategies[rule.handler as 'CacheFirst' | 'StaleWhileRevalidate']
+      const strategy = new Strategy({ cacheName: rule.options!.cacheName, plugins: rule.options!.plugins })
+      const [response, done] = strategy.handleAll({ request, event: new WorkerEvent('fetch') as never })
+      const result = await response; await done; return result
+    }
+    const path = `assets/${first}/pythonWorker.js`
+    assert.equal(await (await handle(path)).text(), `// worker ${first}`)
+    assert.equal(networkCalls, 0, 'verified installed bytes must not schedule stale-while-revalidate traffic')
+    const installed = env.caches.get((await env.state()).active.cache)!
+    await installed.put(scope + path, new Response('corrupted'))
+    assert.equal((await handle(path)).status, 503); assert.equal(networkCalls, 0, 'corruption must fail closed without fetching a replacement')
+    installed.values.delete(scope + path)
+    assert.equal((await handle(path)).status, 503); assert.equal(networkCalls, 0, 'an evicted admitted member must not fall through to the network')
+    assert.equal((await handle(`assets/${second}/next.js`)).status, 200); assert.equal(networkCalls, 1, 'an uninstalled online revision must still fetch on its first request')
+    assert.equal(ruleFor(path).rule.handler, 'CacheFirst')
+    for (const mutable of ['assets/current/module.js', `assets/${first}/module.js?refresh=1`, `https://foreign.test/app/${path}`, `../another/${path}`, `assets/${first}/nested/module.js`]) {
+      assert.equal(ruleFor(mutable).rule.handler, 'StaleWhileRevalidate', mutable)
+    }
+    assert.equal(ruleFor(path, 'script', 'POST').rule.handler, 'StaleWhileRevalidate')
+  } finally {
+    if (priorMode === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = priorMode
+    for (const [key, descriptor] of prior) { if (descriptor) Object.defineProperty(globalThis, key, descriptor); else Reflect.deleteProperty(globalThis, key) }
+  }
 })

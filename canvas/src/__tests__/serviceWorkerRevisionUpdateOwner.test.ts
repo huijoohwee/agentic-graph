@@ -6,6 +6,10 @@ import {
   SERVICE_WORKER_UPDATE_MIN_INTERVAL_MS,
 } from '../lib/pwa/serviceWorkerRevisionUpdateOwner'
 import { registerCanonicalServiceWorker } from '../lib/pwa/serviceWorkerRegistrationOwner'
+import { readFile } from 'node:fs/promises'
+import { runInNewContext } from 'node:vm'
+import { transform } from 'esbuild'
+import { isExplicitOfflineWorkspace } from '../lib/routing/queryParams'
 
 const CURRENT_REVISION = 'b'.repeat(40)
 
@@ -331,4 +335,44 @@ test('canonical service worker registration reports a first install without relo
 
   assert.equal(offlineReadyCount, 1)
   assert.equal(reloadCount, 0, 'the first controller claim must not reload a newly installed app')
+})
+
+test('production PWA boot keeps explicit offline routes free of registration and update requests', async () => {
+  const source = await readFile(new URL('../lib/pwa/runtime.ts', import.meta.url), 'utf8')
+  const { code } = await transform(source, { loader: 'ts', format: 'cjs', define: { 'import.meta.env.PROD': 'true', 'import.meta.env.BASE_URL': '"/app/"' } })
+  const cases = [
+    [`?studio-offline=${CURRENT_REVISION}`, 0],
+    [`?python-learning-offline=${CURRENT_REVISION}&openEditorWorkspace=1`, 0],
+    ['', 1], ['?studio-offline=latest', 1],
+    [`?studio-offline=${CURRENT_REVISION}&studio-offline=${CURRENT_REVISION}`, 1],
+  ] as const
+  for (const [search, expected] of cases) {
+    let registrations = 0, updates = 0
+    const disposers: Array<() => void> = []
+    const serviceWorker = Object.assign(new EventTarget(), { controller: null, async register() {
+      registrations++
+      return { active: null, installing: null, waiting: null, async update() { updates++ } }
+    } })
+    const windowTarget = Object.assign(new EventTarget(), { navigator: { serviceWorker }, location: { search, reload() {} } })
+    const documentTarget = Object.assign(new EventTarget(), { visibilityState: 'visible', documentElement: { dataset: {}, setAttribute() {} } })
+    const module = { exports: {} as { installPwaRuntime(): void } }
+    const dependencies: Record<string, unknown> = {
+      '@/hooks/useGraphStore': { useGraphStore: { getState: () => ({ upsertUiToast() {} }) } },
+      '@/features/runtime-identity/agentic-graph-runtime-identity': { readAgenticGraphSourceRevision: () => CURRENT_REVISION },
+      '@/lib/routing/queryParams': { isExplicitOfflineWorkspace: () => isExplicitOfflineWorkspace(search) },
+      '@/lib/pwa/serviceWorkerRegistrationOwner': { registerCanonicalServiceWorker },
+      '@/lib/pwa/serviceWorkerRevisionUpdateOwner': { readActiveServiceWorkerSourceRevision, installServiceWorkerRevisionUpdateOwner(options: Parameters<typeof installServiceWorkerRevisionUpdateOwner>[0]) {
+        const dispose = installServiceWorkerRevisionUpdateOwner({ ...options, convergenceRetryDelaysMs: [] }); disposers.push(dispose); return dispose
+      } },
+    }
+    try {
+      runInNewContext(code, { module, exports: module.exports, window: windowTarget, document: documentTarget, console,
+        require(name: string) { assert.ok(name in dependencies, `Unexpected PWA dependency: ${name}`); return dependencies[name] } })
+      module.exports.installPwaRuntime(); await flushPromises()
+      windowTarget.dispatchEvent(new Event('online')); documentTarget.dispatchEvent(new Event('visibilitychange')); await flushPromises()
+      assert.equal(registrations, expected, search || 'ordinary online boot')
+      assert.equal(updates, expected, 'offline boot, online and foreground events must not start an update owner')
+      assert.equal(serviceWorker.controller, null, 'boot must not replace the existing controller')
+    } finally { disposers.forEach(dispose => dispose()) }
+  }
 })

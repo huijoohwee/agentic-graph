@@ -19,8 +19,11 @@ import type { SourceFilesWorkspaceState } from '@/features/source-files/sourceFi
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { resolveWorkspaceSourceRootPaths } from '@/features/workspace-fs/workspaceSourceRoots'
 import { readWorkspaceSourceFilesDocsOnlySetting } from '@/lib/workspace/workspaceStoreSyncSettings'
+import { matchesMarkdownDocumentPath } from 'grph-shared/markdown/documentPath'
+import { resolveWorkspaceSourcePathKey } from '@/features/workspace-fs/syncToSourceFiles'
 
 type BootstrapWorkspaceMaterializationArgs = {
+  signal?: AbortSignal
   startupState?: Awaited<ReturnType<typeof resolveInitialWorkspaceStartupState>>
   fs?: Awaited<ReturnType<typeof getWorkspaceFs>>
   existingSourceFiles?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
@@ -79,8 +82,11 @@ function hasBootstrapActivePathDrifted(startupActivePath: ReturnType<typeof reso
 export async function prepareBootstrapWorkspaceMaterialization(
   args: BootstrapWorkspaceMaterializationArgs = {},
 ): Promise<BootstrapWorkspaceMaterializationContext> {
+  args.signal?.throwIfAborted()
   const fs = args.fs || await getWorkspaceFs()
+  args.signal?.throwIfAborted()
   const startup = args.startupState || await resolveInitialWorkspaceStartupState({ fs })
+  args.signal?.throwIfAborted()
   const startupActivePath = resolveMaterializedWorkspaceActivePath({
     activePathOverride: startup.activePath,
   })
@@ -91,6 +97,7 @@ export async function prepareBootstrapWorkspaceMaterialization(
       activePathOverride: startupActivePath,
     }),
   })
+  args.signal?.throwIfAborted()
   const startupSourcesByPath = readBootstrapSourceIndexSnapshot(args.sourcesByPath)
   const existingSourceFiles = readBootstrapExistingSourceFiles(args.existingSourceFiles)
   const mergedSourceFiles = startupActivePath
@@ -103,7 +110,7 @@ export async function prepareBootstrapWorkspaceMaterialization(
         workspaceSourceRootPaths: resolveWorkspaceSourceRootPaths({
           chatLocalStorageRootPath: useGraphStore.getState().chatLocalStorageRootPath,
         }),
-      }).mergedSourceFiles
+      }).runtimeSourceFiles
     : existingSourceFiles
   return {
     startupActivePath,
@@ -123,21 +130,52 @@ export async function materializeBootstrapWorkspaceSourceFiles(
   workspaceEntries: ReturnType<typeof readReusableWorkspaceEntriesSnapshot>
   workspaceFs: Awaited<ReturnType<typeof getWorkspaceFs>>
 }> {
+  let supersededError: unknown
   for (let attempt = 0; attempt < BOOTSTRAP_MATERIALIZATION_MAX_ATTEMPTS; attempt += 1) {
+    args.signal?.throwIfAborted()
     const context = await prepareBootstrapWorkspaceMaterialization({
       ...args,
       startupState: attempt === 0 ? args.startupState : undefined,
+      existingSourceFiles: attempt === 0 ? args.existingSourceFiles : undefined,
+      sourcesByPath: attempt === 0 ? args.sourcesByPath : undefined,
     })
+    args.signal?.throwIfAborted()
     if (hasBootstrapActivePathDrifted(context.startupActivePath)) continue
+    if (supersededError && context.startupActivePath) {
+      // A new selection may already contain an unsaved edit. Retry only from
+      // consistent persisted bytes, never by replacing that newer document.
+      const before = useGraphStore.getState(), activePath = context.startupActivePath
+      const text = await context.workspaceFs.readFileText(activePath)
+      args.signal?.throwIfAborted()
+      if (hasBootstrapActivePathDrifted(activePath)) continue
+      const current = useGraphStore.getState(), sourcePath = resolveWorkspaceSourcePathKey(activePath)
+      const activeSource = current.sourceFiles.find(file => file.source?.path === sourcePath)
+      const preparedSource = context.mergedSourceFiles.find(file => file.source?.path === sourcePath)
+      if (text === null || current.sourceFiles !== before.sourceFiles
+        || current.markdownDocumentName !== before.markdownDocumentName || current.markdownDocumentText !== before.markdownDocumentText
+        || (current.markdownDocumentName?.trim() && matchesMarkdownDocumentPath(activePath, current.markdownDocumentName) && current.markdownDocumentText !== text)
+        || (activeSource && activeSource.text !== text) || (preparedSource && preparedSource.text !== text)) throw supersededError
+    }
     const workspaceEntries = readReusableWorkspaceEntriesSnapshot(context.hydratedEntries)
-    await materializeActiveWorkspaceEntryIntoSourceFiles({
-      activePathOverride: context.startupActivePath,
-      fs: context.workspaceFs,
-      activeWorkspaceEntriesSnapshot: workspaceEntries,
-      sourcesByPath: context.startupSourcesByPath,
-      premergedSourceFiles: context.mergedSourceFiles,
-      applyToGraph: true,
-    })
+    try {
+      args.signal?.throwIfAborted()
+      await materializeActiveWorkspaceEntryIntoSourceFiles({
+        activePathOverride: context.startupActivePath,
+        fs: context.workspaceFs,
+        activeWorkspaceEntriesSnapshot: workspaceEntries,
+        sourcesByPath: context.startupSourcesByPath,
+        premergedSourceFiles: context.mergedSourceFiles,
+        applyToGraph: true,
+      })
+      args.signal?.throwIfAborted()
+    } catch (error) {
+      args.signal?.throwIfAborted()
+      if ((error as { code?: string })?.code !== 'SOURCE_FILES_MATERIALIZATION_STALE'
+        || !hasBootstrapActivePathDrifted(context.startupActivePath)) throw error
+      supersededError = error
+      continue
+    }
+    args.signal?.throwIfAborted()
     if (hasBootstrapActivePathDrifted(context.startupActivePath)) continue
     const store = useGraphStore.getState()
     return {
@@ -154,6 +192,7 @@ export async function materializeBootstrapWorkspaceSourceFiles(
       workspaceFs: context.workspaceFs,
     }
   }
+  args.signal?.throwIfAborted()
   throw new Error('Canvas source selection changed repeatedly during startup')
 }
 

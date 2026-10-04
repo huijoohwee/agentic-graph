@@ -1,3 +1,4 @@
+import { readSourceFilesBootstrapSource } from './helpers/sourceFilesBootstrapSource'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { withDurableBrowserStorage } from '@/__tests__/helpers/durable-browser-storage'
 import { createFakeAgenticGraphStorageBrowserSession } from '@/__tests__/helpers/fake-agentic-graph-storage-browser-session'
@@ -457,7 +458,7 @@ export async function testSourceFileShareUrlHydratesMetadataOnlyWorkspaceEntryBe
 
 export function testSourceFilesPersistenceBootstrapOwnsAgenticGraphStorageLoopAndQueueIntegration() {
   const bootstrapPath = resolve(process.cwd(), 'src', 'features', 'source-files', 'SourceFilesPersistenceBootstrap.tsx')
-  const text = readFileSync(bootstrapPath, 'utf8')
+  const text = readSourceFilesBootstrapSource(bootstrapPath)
   const settingsText = readFileSync(
     resolve(process.cwd(), 'src', 'features', 'source-files', 'source-files-agentic-graph-storage-settings.ts'),
     'utf8',

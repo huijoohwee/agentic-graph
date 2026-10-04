@@ -2,6 +2,7 @@ import { selectMenuOption } from './lib/select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
+import { lstatSync, readFileSync, readlinkSync } from 'node:fs'
 import { readFile, mkdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve, join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -12,12 +13,33 @@ import { expect } from 'playwright/test'
 import { tsImport } from 'tsx/esm/api'
 import { dismissVisibleFloatingPanel } from './lib/panel-close-helpers.mjs'
 import { proveWarehouseRehearsal } from './lib/warehouse-rehearsal-proof.mjs'
+import { proveSequenceRehearsal } from './lib/sequence-rehearsal-proof.mjs'
 
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
 const checkoutRevision = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
 const { resolveViteRuntimeIdentity } = await tsImport('../viteChatProxyEnv.ts', import.meta.url)
 const { sourceRevision: revision } = resolveViteRuntimeIdentity(root)
-const sourceState = () => execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' })
+const sourceState = () => {
+  const git = args => execFileSync('git', ['-C', root, ...args], { maxBuffer: 32 * 1024 * 1024 })
+  const digest = bytes => createHash('sha256').update(bytes).digest('hex')
+  const paths = git(['ls-files', '--others', '--exclude-standard', '-z']).toString('utf8').split('\0').filter(Boolean).sort()
+  assert.ok(paths.length <= 10000, 'Source freeze input must fit the untracked file budget')
+  const untracked = createHash('sha256')
+  let untrackedBytes = 0
+  for (const path of paths) {
+    const absolute = join(root, path), stat = lstatSync(absolute)
+    assert.ok(stat.isFile() || stat.isSymbolicLink(), 'Source freeze requires ordinary files or symbolic links')
+    assert.ok(stat.size <= 32 * 1024 * 1024, 'Source freeze file exceeds the bounded input budget')
+    const bytes = stat.isSymbolicLink() ? Buffer.from(readlinkSync(absolute)) : readFileSync(absolute)
+    untrackedBytes += bytes.length
+    assert.ok(untrackedBytes <= 64 * 1024 * 1024, 'Source freeze untracked content exceeds the bounded input budget')
+    untracked.update(JSON.stringify([path, stat.isSymbolicLink() ? 'symlink' : 'file', stat.mode & 0o111, bytes.length, digest(bytes)]) + '\n')
+  }
+  const trackedDiff = git(['diff', '--binary', '--no-ext-diff', 'HEAD'])
+  return { checkoutRevision: git(['rev-parse', 'HEAD']).toString('utf8').trim(),
+    porcelainSha256: digest(git(['status', '--porcelain', '-z'])), trackedDiffSha256: digest(trackedDiff), trackedDiffBytes: trackedDiff.length,
+    untrackedSha256: untracked.digest('hex'), untrackedFiles: paths.length, untrackedBytes }
+}
 const before = sourceState(), output = resolve(process.env.PYTHON_LEARNING_PROOF_DIR || join(tmpdir(), `python-learning-offline-${revision.slice(0, 12)}`))
 const port = Number(process.env.PYTHON_LEARNING_PROOF_PORT || 4198)
 assert.ok(Number.isInteger(port) && port >= 1024 && port <= 65535, 'offline proof port must be 1024..65535')
@@ -31,12 +53,45 @@ for (const file of manifest.files) {
 }
 let server, browser, page, evidenceWritten = false
 const consoleWarnings = []
+let networkPhase = 'setup'
+const networkRequests = [], networkRecords = new WeakMap()
+const networkEvidence = () => ['verified-online', 'verified-offline',
+  ...(process.env.AG_SEQUENCE_PROOF_SOURCE || networkRequests.some(request => request.phase === 'sequence-offline') ? ['sequence-offline'] : []),
+].map(phase => {
+  const requests = networkRequests.filter(request => request.phase === phase)
+  return { phase, total: requests.length, workerFetches: requests.filter(request => request.serviceWorker).length,
+    failed: requests.filter(request => request.failure).length,
+    uncachedPageRequests: requests.filter(request => !request.serviceWorker && !request.fromServiceWorker).length }
+})
+const assertVerifiedNetwork = phase => {
+  const observed = networkEvidence().find(evidence => evidence.phase === phase)
+  assert.ok(observed, `${phase} must have a network evidence phase`)
+  assert.ok(observed.total > 0, `${phase} must observe actual browser requests`)
+  assert.equal(observed.workerFetches, 0, `${phase} must not initiate service-worker network fetches`)
+  assert.equal(observed.failed, 0, `${phase} must not attempt failing background requests`)
+  assert.equal(observed.uncachedPageRequests, 0, `${phase} must serve every page request from the installed pack`)
+}
 try {
   await mkdir(output, { recursive: true })
   server = await preview({ root: canvas, configFile: join(canvas, 'vite.config.ts'), configLoader: 'runner', base: '/agentic-graph/', preview: { host: '127.0.0.1', port, strictPort: true } })
   const origin = `http://127.0.0.1:${port}`, base = origin + '/agentic-graph/'
   browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, hasTouch: true })
+  // Context events include worker fetches, which page-only listeners miss.
+  context.on('request', request => {
+    if (!/^https?:/.test(request.url())) return
+    const record = { phase: networkPhase, url: request.url(), method: request.method(),
+      serviceWorker: Boolean(request.serviceWorker()), fromServiceWorker: false, status: null, failure: null }
+    networkRecords.set(request, record); networkRequests.push(record)
+  })
+  context.on('response', response => {
+    const record = networkRecords.get(response.request())
+    if (record) { record.status = response.status(); record.fromServiceWorker = response.fromServiceWorker() }
+  })
+  context.on('requestfailed', request => {
+    const record = networkRecords.get(request)
+    if (record) record.failure = request.failure()?.errorText || 'request failed'
+  })
   // Controlled browser-host surface; production registers its actual validated lazy tools.
   // This proves application registration, not an experimental browser vendor API.
   await context.addInitScript(() => {
@@ -166,12 +221,20 @@ try {
   await pane.getByText(/^Verified \d+ files/).waitFor({ timeout: 190000 })
   const installMs = Math.round(performance.now() - installStart)
   console.log('Offline lessons: verified installation in', installMs, 'ms')
+  networkPhase = 'verified-online'
   await Promise.all([
     page.waitForURL(url => url.searchParams.get('python-learning-offline') === revision, { waitUntil: 'load', timeout: 60000 }),
     pane.getByRole('button', { name: 'Open verified offline workspace', exact: true }).click(),
   ])
   await pane.waitFor({ timeout: 60000 })
   await page.waitForFunction(() => document.readyState === 'complete' && !!navigator.serviceWorker.controller, undefined, { timeout: 60000 })
+  await selectPython()
+  await dismissVisibleFloatingPanel(page)
+  await pane.getByRole('button', { name: 'Code', exact: true }).click()
+  await expect(pane.getByRole('textbox', { name: 'Python source text', exact: true })).toHaveValue(lessons[0].solution)
+  await page.waitForLoadState('networkidle')
+  assertVerifiedNetwork('verified-online')
+  networkPhase = 'verified-offline'
   await context.setOffline(true)
   const reloadStart = performance.now()
   const offlineResponse = await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
@@ -367,6 +430,10 @@ try {
   const warehouseRehearsal = await proveWarehouseRehearsal({
     page, pane, lessons, inspect, selectPython, selectSurface, editRichSource, awaitStoredSource, output,
   })
+  await page.waitForLoadState('networkidle')
+  assertVerifiedNetwork('verified-offline')
+  // Deliberate cache corruption has a separate, expected failure receipt.
+  networkPhase = 'corruption-recovery'
   await page.setViewportSize({ width: 375, height: 812 })
   // A missing admitted worker must block offline navigation even if another runtime cache has it.
   const missing = await page.evaluate(async () => {
@@ -384,12 +451,17 @@ try {
   assert.equal(await pane.getAttribute('data-learning-state'), 'idle')
   await awaitSource(lessons[0].solution)
   assert.equal(await editor.inputValue(), lessons[0].solution)
+  const sequenceRehearsal = process.env.AG_SEQUENCE_PROOF_SOURCE ? await proveSequenceRehearsal({
+    page, sourcePath: process.env.AG_SEQUENCE_PROOF_SOURCE, stressPath: process.env.AG_SEQUENCE_PROOF_STRESS,
+    output, setNetworkPhase: phase => { networkPhase = phase },
+  }) : null
+  if (sequenceRehearsal) { await page.waitForLoadState('networkidle'); assertVerifiedNetwork('sequence-offline') }
   assert.deepEqual(errors, [])
-  assert.equal(sourceState(), before, 'source must stay frozen throughout the proof')
+  assert.deepEqual(sourceState(), before, 'source bytes must stay frozen throughout the proof')
   const evidence = { revision, checkoutRevision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
     nativeLessonFilesProven: true, nativeLessonSaveReloadProven: true, toolRegistrationProven: true, narrowDesktopPaneProven: true, mainCanvasSceneProven: true, monacoEditorRoundTripProven: true, viewSwitchPreservesRun: true, toolHost: 'controlled-registerTool-browser-host', discovery,
-    installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, warehouseRehearsal, corruptionBlocked: true,
-    pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
+    installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, warehouseRehearsal, sequenceRehearsal, corruptionBlocked: true,
+    pageErrors: errors, verifiedNetwork: networkEvidence(), remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n')
   evidenceWritten = true
   console.log(JSON.stringify({ status: 'passed', output, ...evidence }, null, 2))
@@ -397,6 +469,10 @@ try {
   console.error('Browser warnings:', consoleWarnings)
   if (page) { console.error('Page state:', await page.evaluate(() => ({ url: location.href, readyState: document.readyState, serviceWorker: Boolean(navigator.serviceWorker?.controller) })).catch(() => ({}))); console.error('Visible failure:', (await page.locator('body').innerText()).slice(-12000)); console.error('Editor values:', await page.locator('textarea').evaluateAll(elements => elements.map(element => ({ label: element.getAttribute('aria-label'), value: element.value.slice(0, 2000) })))); await page.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {}) }
   throw error
-} finally { await browser?.close(); await new Promise(resolve => server?.httpServer.close(resolve) || resolve()) }
+} finally {
+  await writeFile(join(output, 'network-evidence.json'), JSON.stringify({ revision, checkoutRevision,
+    summaries: networkEvidence(), requests: networkRequests }, null, 2) + '\n')
+  await browser?.close(); await new Promise(resolve => server?.httpServer.close(resolve) || resolve())
+}
 
 assert.ok(evidenceWritten, 'full offline acceptance must write its evidence before success')
