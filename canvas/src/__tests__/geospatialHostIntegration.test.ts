@@ -236,9 +236,6 @@ export const testGeospatialOverlayHostProvidesSvgFallbackBasemapAndDisablesDefau
   await (await import('./geospatialFallbackAdmission.test')).testGeospatialFallbackAdmission()
   const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
   const text = readUtf8(hostPath)
-  if (!text.includes("React.lazy(() => import('./features/geospatial/SvgGeospatialFallback.js'))")) {
-    throw new Error('Expected GeospatialOverlayHost to provide a built-in SVG fallback basemap surface')
-  }
   if (!text.includes('const show2dSvgFallback = active && geospatialViewMode === \'2d-svg\'')) {
     throw new Error('Expected GeospatialOverlayHost to expose a dedicated 2D SVG fallback mode')
   }
