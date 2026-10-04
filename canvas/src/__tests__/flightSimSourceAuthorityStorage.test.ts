@@ -2,9 +2,10 @@ import assert from 'node:assert/strict'
 import { readSourceFilesBootstrapSource } from './helpers/sourceFilesBootstrapSource'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 
-const repoRoot = resolve(process.cwd(), '..')
+const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
 
 test('Flight surface fencing drains and restores both workspace seed-sync owners', () => {
   const runtime = readFileSync(
