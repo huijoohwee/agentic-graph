@@ -180,7 +180,7 @@ All diagrams are version 2, 2026-10-04, replacing the greenfield 0.1.0 drawings.
 proposed work; solid edges mean reused structure, not a readiness badge. Inventory rows are text
 equivalents. Primary: `flowchart`; AS-D2 secondary: `sequence`. Actual Graph parser counts
 (nodes/relations/clusters): D1 5/4/0, D2 3/6/0, D3 5/5/0, D4 4/4/0, D5 6/5/2, D6 5/6/0
-(`diagram-native-projection-38f2aa043.json`, zero model calls). Static/narrow render remains open.
+(`diagram-native-projection-38f2aa043.json`, zero model calls). Static/narrow render: ER11.
 Regex counts undercount inline edges; native counts govern.
 
 **AS-D1 · Journey stage map · flowchart LR.** Analyst reaches a reproducible result before a decision.
@@ -351,6 +351,7 @@ Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-read
 | ER8 | Import regression and 14 related checks pass. Native offline bridge completes preparing→selecting→refreshing→applying→synchronizing→opening | Job fences prevent stale continuation/duplicate Launch fallback; no rollback of already dispatched lower-owner effects |
 | ER9 | Six Geo checks pass. Built 160831d: zero SVG requests/mounts during activation; blocked SVG stays local and reload recovers (`geo-primary-built-160831d.json`, `geo-recovery-built-160831d.json`) | Unchanged-source browser proof; selection restored to MapLibre |
 | ER10 | XR tests 2/2: five unrelated writes and five Flight advances each change commits 5→0; motion retained. Build 6 keeps the same connected WebGL canvas through History open/close, zero removals | Unchanged-source proof; counts are test measurements, retention is actual UI evidence |
+| ER11 | 392fa static Mermaid: 6/6 render at 390 px, 16 px labels, all scroll endpoints reachable, page width 390 | `diagram-render-392fa379c/`: exact source hashes, screenshots, zero model/API calls; static artifact, not full canvas UI acceptance |
 
 Repeated offline AS2: 77,757.706 m versus 71,188.231 m, difference 6,569.475 m, conditional band
 [6,541.475,6,597.475] m with limitations. AS1 inspected `/facts/0`, UTC 02:25:30.000Z→02:25:30.574Z.
@@ -478,7 +479,7 @@ All anchors below join `aviation-swarm@0.4.2`; coverage decisions are not readin
 
 Dispositioned 16/16; covered applicable 13/16; deferred 3; not-applicable 0. This is domain coverage,
 not full guideline alignment. Complete artifact-bearing-rule coverage and advisory count are unmeasured;
-diagram coverage/render verdict is open; native counts are recorded above. No full conformance claim.
+native projection counts and static render pass; full diagram conformance is unmeasured.
 
 | Finding Type | Severity | Rule anchor | Artifact reference | Evidence excerpt | Remediation |
 |---|---|---|---|---|---|
@@ -486,7 +487,6 @@ diagram coverage/render verdict is open; native counts are recorded above. No fu
 | `market-size-single-method` | major | `venture-record-pitch-deck-business-plan--financial-model#6` — two independent sizing methods | GTM | “Two independent sizing methods remain unrun” | Documentation change: add sourced methods and reconciliation |
 | `scenario-set-incomplete` | major | `venture-record-pitch-deck-business-plan--financial-model#5` — linked statements/scenarios | GTM | “populated scenarios and reconciled balance/cash statements remain incomplete” | Documentation change: populate existing model with dated inputs |
 | `unimplemented-guideline` | major | `autonomous-implementation-verification#3` — distinct evaluator | MVP / coverage | “Complete artifact-bearing-rule coverage and advisory count are unmeasured” | Locally reproducible check: independent full guideline evaluation before baseline |
-| `unimplemented-guideline` | major | `flow-patterns#2` — render each required class | AS-D1–D6 | “Static/narrow render remains open” | Locally reproducible check: render/parse and inspect narrow layout |
 
 Unchecked finding families have no zero-count claim. Authoring coverage does not establish runtime readiness.
 
@@ -498,6 +498,6 @@ Runtime owners and proof scopes are recorded in ER1–ER10; AS1/AS2/AS5 and deli
 Sequence owns producer `7c6438ed`; native ownership requires its source dependency before combining.
 No unchanged rerun. Recheck the combined build for AS5. Physical iPhone is SKIP/KIV.
 Whole-host 150 kB awaits the human scope decision; no feature-only reinterpretation. Real-label,
-static diagram and full guideline acceptance remain separate gaps. Recheck on source/input/profile drift.
+full guideline acceptance remains separate. Recheck on source/input/profile drift.
 Source, protected integration and production need separate receipts; AS3/AS4 retain input/rights/buyer gates.
 Preserve originals/concurrent work; no new spend/packages or revenue claim.
