@@ -26,7 +26,7 @@ function deferred<T>() {
 
 async function fixture(run: (f: {
   active: SourceFile; inactive: SourceFile; imported: SourceFile; prepared: SourceFile[]; current: SourceFile[]
-  request: Request; reads: string[]; applications: { name: string; text: string }[]
+  request: Request; reads: string[]; writes: string[]; applications: { name: string; text: string }[]
   read: (operation: () => Promise<string | null>) => void
   start: (publish?: () => void) => ReturnType<typeof materializeActiveWorkspaceEntryIntoSourceFiles>
 }) => Promise<void>) {
@@ -42,11 +42,11 @@ async function fixture(run: (f: {
   const prepared = [active, { ...inactive, text: '# Previously hydrated inactive seed\n' }]
   const current = [{ ...active, status: 'loading' as const }, inactive, imported]
   const entry: WorkspaceEntry = { path: activePath, parentPath: '/drafts', kind: 'file', name: active.name, text, updatedAtMs: 1 }
-  const reads: string[] = [], applications: { name: string; text: string }[] = []
+  const reads: string[] = [], writes: string[] = [], applications: { name: string; text: string }[] = []
   let read = async (): Promise<string | null> => text
   const fs: WorkspaceFs = {
     ensureSeed: async () => false, listEntries: async () => [],
-    readFileText: async path => { reads.push(path); return read() }, writeFileText: async () => undefined,
+    readFileText: async path => { reads.push(path); return read() }, writeFileText: async path => { writes.push(path) },
     createFile: async () => '/drafts/new.md', createFolder: async () => '/drafts', deleteEntry: async () => undefined,
   }
   const initial: SourceFile[] = []
@@ -60,7 +60,7 @@ async function fixture(run: (f: {
     } })
   useMarkdownExplorerStore.getState().setActivePath(activePath)
   try {
-    await run({ active, inactive, imported, prepared, current, request, reads, applications,
+    await run({ active, inactive, imported, prepared, current, request, reads, writes, applications,
       read: operation => { read = operation },
       start: (publish = () => useGraphStore.setState({ sourceFiles: current })) => {
         const pending = materializeActiveWorkspaceEntryIntoSourceFiles(request)
@@ -93,6 +93,89 @@ test('cold bootstrap retries the current inventory and preserves concurrent impo
   assert.equal(result.sourceFiles.some(file => file.text === f.prepared[1].text), false)
   useGraphStore.setState({ sourceFiles: result.sourceFiles.slice() })
   assert.equal(isMaterializedWorkspaceSourceProofCurrent(proof), false, 'proof is bound to the exact settled inventory')
+}))
+
+type ConvergenceFixture = Parameters<Parameters<typeof fixture>[0]>[0]
+function startEditorConvergence(f: ConvergenceFixture, name: string | null, previousText: string, afterPublication?: () => void) {
+  useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: previousText })
+  return f.start(() => {
+    useGraphStore.setState({ sourceFiles: f.current, markdownDocumentName: documentName,
+      markdownDocumentText: text, markdownDocumentApplyViewPreset: false })
+    afterPublication?.()
+  })
+}
+
+for (const [label, name, previousText] of [
+  ['absent document', null, ''], ['prior document', 'README.md', '# Previous workspace document\n'],
+] as const) test(`cold editor convergence accepts ${label} becoming the requested persisted document`, async () => fixture(async f => {
+  const proof = await startEditorConvergence(f, name, previousText)
+  assert.ok(proof && isMaterializedWorkspaceSourceProofCurrent(proof))
+  const state = useGraphStore.getState()
+  assert.deepEqual(f.applications, [{ name: documentName, text }], 'only the retried current document is applied')
+  assert.ok(f.reads.length >= 2 && f.reads.length <= 3, 'admission and publication both observe persisted bytes')
+  assert.ok(f.reads.every(path => path === activePath))
+  assert.deepEqual(f.writes, [], 'editor convergence never rewrites persisted contents')
+  assert.equal(state.sourceFiles.length, 3)
+  assert.equal(state.sourceFiles.find(file => file.id === f.inactive.id), f.inactive)
+  assert.equal(state.sourceFiles.find(file => file.id === f.imported.id), f.imported)
+  assert.equal(state.sourceFiles.find(file => file.id === f.active.id)?.text, text)
+  assert.equal(state.markdownDocumentName, documentName)
+  assert.equal(state.markdownDocumentText, text)
+  assert.equal(state.markdownDocumentApplyViewPreset, true)
+  assert.equal(useMarkdownExplorerStore.getState().activePath, activePath)
+}))
+
+for (const previousText of ['', '# Unsaved requested document\n']) test(`cold editor convergence rejects overwritten same-path ${previousText ? 'unsaved bytes' : 'empty edit'}`, async () => fixture(async f => {
+  await assert.rejects(startEditorConvergence(f, documentName, previousText), stale)
+  assert.equal(useGraphStore.getState().sourceFiles, f.current)
+  assert.equal(useGraphStore.getState().markdownDocumentText, text)
+  assert.deepEqual(f.reads, [], 'a later persisted-looking publication cannot authorize discarding an earlier active edit')
+  assert.deepEqual(f.applications, [])
+  assert.deepEqual(f.writes, [])
+}))
+
+const editorAuthorityChanges: [string, (f: ConvergenceFixture) => void][] = [
+  ['active ID mismatch', f => { f.current[0] = { ...f.current[0], id: 'replacement-active' } }],
+  ['active source path mismatch', f => { f.current[0] = { ...f.current[0], source: { kind: 'local', path: 'workspace:/other/convergence.md' } } }],
+  ['prepared byte mismatch', f => { f.prepared[0] = { ...f.prepared[0], text: '# Stale prepared bytes\n' } }],
+  ['duplicate prepared identity', f => { f.prepared.push({ ...f.active }) }],
+  ['current document path mismatch', () => { useGraphStore.setState({ markdownDocumentName: 'other/convergence.md' }) }],
+  ['current document edit', () => { useGraphStore.setState({ markdownDocumentText: '# New unsaved editor bytes\n' }) }],
+  ['Explorer selection drift', () => { useMarkdownExplorerStore.getState().setActivePath('/drafts/newer.md') }],
+]
+for (const [label, change] of editorAuthorityChanges) test(`cold editor convergence rejects ${label}`, async () => fixture(async f => {
+  const pending = startEditorConvergence(f, null, '', () => change(f))
+  const current = useGraphStore.getState(), selectedPath = useMarkdownExplorerStore.getState().activePath
+  await assert.rejects(pending, stale)
+  assert.equal(useGraphStore.getState().sourceFiles, current.sourceFiles)
+  assert.equal(useGraphStore.getState().markdownDocumentName, current.markdownDocumentName)
+  assert.equal(useGraphStore.getState().markdownDocumentText, current.markdownDocumentText)
+  assert.equal(useMarkdownExplorerStore.getState().activePath, selectedPath)
+  assert.deepEqual(f.reads, [])
+  assert.deepEqual(f.applications, [])
+  assert.deepEqual(f.writes, [])
+}))
+
+test('cold editor convergence rejects a nonempty initial inventory', async () => fixture(async f => {
+  const initial = [f.active]
+  f.request.sourceFilesSnapshot = initial
+  useGraphStore.setState({ sourceFiles: initial })
+  await assert.rejects(startEditorConvergence(f, 'README.md', '# Prior document\n'), stale)
+  assert.equal(useGraphStore.getState().sourceFiles, f.current)
+  assert.deepEqual(f.reads, [])
+  assert.deepEqual(f.applications, [])
+  assert.deepEqual(f.writes, [])
+}))
+
+for (const phase of [1, 2]) test(`cold editor convergence rejects changed persisted bytes at fresh read ${phase}`, async () => fixture(async f => {
+  f.read(async () => f.reads.length === phase ? '# Changed persisted source\n' : text)
+  await assert.rejects(startEditorConvergence(f, 'README.md', '# Prior document\n'), stale)
+  assert.deepEqual(f.reads, Array(phase).fill(activePath), 'the admitted editor transition must reach its targeted persisted-byte fence')
+  assert.equal(useGraphStore.getState().sourceFiles, f.current)
+  assert.equal(useGraphStore.getState().markdownDocumentName, documentName)
+  assert.equal(useGraphStore.getState().markdownDocumentText, text)
+  assert.deepEqual(f.applications, [])
+  assert.deepEqual(f.writes, [])
 }))
 
 const ineligible: [string, (f: Parameters<Parameters<typeof fixture>[0]>[0]) => void][] = [
