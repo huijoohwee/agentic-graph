@@ -331,8 +331,7 @@ distance-only output; neither a quote nor a commitment follows from a scenario.
 
 The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md](workspace-seeds/agentic-graph-game-flight-sim-demo.md).
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
-One admitted checkout; exact-path readmissions own scope. New files <600 lines, oversized owners
-shrink, plan ≤40 KiB, zero new packages/spend. Acceptance sprint: ≤30 active minutes, six source modules/30 KiB; refresh on drift. Protected review waits for status change, not an ETA. Preview proof is not deployment.
+One checkout; exact-path scope; new files <600 lines, oversized owners shrink, plan ≤40 KiB, no new spend. Acceptance sprint: ≤30 active minutes, six source modules/30 KiB; refresh on drift. Protected review waits for status change, not an ETA. Preview proof is not deployment.
 Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-readiness/`.
 
 | Evidence | Check / recorded result | Scope and limit |
@@ -365,9 +364,8 @@ writes cache digests. Local bytes and explicit Reveal retain existing owners; re
 | Close |35| Missing evidence, qualified scope and next priced-review decision |
 | Total |240| Target ≤300 seconds; not an observed TTV result |
 
-Maturity ratings remain unassessed; tests do not manufacture a score. Complete AS1/AS2/AS5 and
-qualified benchmarks before acceptance. Existing identity and G6/G7 owners serve platform dimensions;
-new remote/exposure/cost surfaces remain unproved.
+Maturity remains unassessed. Complete AS1/AS2/AS5 and qualified benchmarks before acceptance;
+remote/exposure/cost surfaces remain unproved.
 
 ## GTM, economics and learning
 
@@ -440,10 +438,8 @@ flowchart LR
 | A, B | Admitted runtime/doc delta; affected checks then native `release:common publish`; exact protected receipt required |
 | M, C, D | Existing release controller and protected production environment; no mirror/deploy grant in this task; retained baseline plus authorized rollback/readback |
 
-Human gates are confined to source/data rights and commercial review for dependent work, and the
-existing candidate-specific production authorization. Read-only source/browser checks continue.
-Documentation may be published content; no deploy exemption is inferred from its extension. Release,
-integration, canonical sync, deployment, rollback and cleanup remain separate effects/receipts.
+Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
+sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
 | PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.1 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
@@ -488,15 +484,11 @@ diagram-domain coverage/render verdict is also unmeasured. Neither is represente
 | `unimplemented-guideline` | major | `autonomous-implementation-verification#3` — distinct evaluator | MVP / coverage | “Complete artifact-bearing-rule coverage and advisory count are unmeasured” | Locally reproducible check: independent full guideline evaluation before baseline |
 | `unimplemented-guideline` | major | `flow-patterns#2` — render each required class | AS-D1–D6 | “Notation render/Canvas projection remains an explicit verification gap” | Locally reproducible check: render/parse and inspect narrow layout |
 
-No zero-count assertion for unchecked finding families. These are tracked authoring gaps, not a claim
-that the inherited feature lacks implementations or that this proposed increment is runtime-ready.
+Unchecked finding families have no zero-count claim. Authoring coverage does not establish runtime readiness.
 
 ## Handover
 
-Implemented: bounded evidence/mobile/offline owners, import stages/job fences, primary-first Geo/lazy
-SVG, XR surface projections and bounded bundles. Build 5 offline native import explicitly completes;
-Geo startup/selection and bounded browser-tool parity pass. XR tests confirm 5→0 unrelated commits
-without freezing motion. Whole AS1/AS2/AS5 and production delivery remain unaccepted.
+Runtime owners and proof scopes are recorded in ER1–ER10; AS1/AS2/AS5 and delivery require separate acceptance.
 
 Bootstrap alignment and emitted-worker recovery are verified. Final affected CI and rebuilt aviation
 UI acceptance remain open; preserve the original intermittent cf1 timeout alongside both passing
