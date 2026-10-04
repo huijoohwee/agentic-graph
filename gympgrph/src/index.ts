@@ -170,7 +170,7 @@ export type {
   NativeGeospatialMapLibreLease,
 } from './features/geospatial/mapLibreHostLease.js'
 
-export const GeospatialOverlayHost = lazy(async () => ({
+export const GeospatialOverlayHost = /* @__PURE__ */ lazy(async () => ({
   default: (await import('./GeospatialHost.js')).GeospatialOverlayHost,
 }))
 
