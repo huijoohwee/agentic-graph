@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile, realpath, writeFile } from 'node:fs/promises'
-import { basename, dirname, join, relative, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect } from 'playwright/test'
 import { tsImport } from 'tsx/esm/api'
@@ -19,7 +19,7 @@ export async function readSequenceProofSource(sourcePath, { valid = true } = {})
   assert.equal(typeof sourcePath, 'string', 'An external Markdown source path is required')
   assert.ok(sourcePath.trim(), 'An external Markdown source path is required')
   const path = await realpath(sourcePath), relation = relative(await realpath(repositoryRoot), path)
-  assert.ok(relation.startsWith('../'), 'Sequence acceptance inputs must remain outside the repository')
+  assert.ok(isAbsolute(relation) || relation === '..' || relation.startsWith(`..${sep}`), 'Sequence acceptance inputs must remain outside the repository')
   const bytes = await readFile(path)
   assert.ok(bytes.length > 0 && bytes.length <= 256 * 1024, 'External Markdown must fit the bounded import budget')
   const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
