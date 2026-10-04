@@ -10,7 +10,8 @@ import { executeEvidence } from '../tools/executeEvidence.mjs'
 import type { EvidenceSourceCapture } from '../evidenceSource'
 const path='/evidence-analysis/fixtures/scene-wsss-v1.json'
 const capture={documentName:'/scene.md',documentText:`---\nsource_geospatial: ${JSON.stringify({schema:'source-geospatial-config/v1',scenePath:path})}\n---\n`,sourceId:'scene',sourceRevision:1,sourceKey:'scene:1',config:{} } as EvidenceSourceCapture
-const local=(url: unknown)=>new Response(readFileSync(`public${String(url).split('?')[0]}`))
+const assetPath=(url: unknown)=>new URL(`../../../../public${String(url).split('?')[0]}`,import.meta.url)
+const local=(url: unknown)=>new Response(readFileSync(assetPath(url)))
 const dependencies=(fetcher:typeof fetch=((async url=>local(url)) as typeof fetch))=>({isCurrent:()=>true,read:(paths:readonly string[],fetcher:typeof fetch)=>readEvidenceExamples(paths,fetcher),fetcher,inspect:(bundle:string,profileId:string)=>executeEvidence('aviation.inspect',{bundle,profileId})})
 test('one owner loads verified actual runway and three-track assets and rejects invalid query without replacing acceptance',async()=>{
  const owner=createSourceGeospatialOwner(dependencies()); await owner.load(capture)
@@ -90,9 +91,9 @@ test('the native source subscription loads opt-in context without a panel and cl
 
 test('duplicate keys in either scene or hash-matched provenance are refused by the shared parser',async()=>{
  for(const duplicateScene of [true,false]) {
-  const scene=JSON.parse(readFileSync(`public${path}`,'utf8'));
+  const scene=JSON.parse(readFileSync(assetPath(path),'utf8'));
   delete scene.timeline;
-  const referencePath=scene.references[0].url,reference=readFileSync(`public${referencePath}`,'utf8').replace('{','{"rows":[],');
+  const referencePath=scene.references[0].url,reference=readFileSync(assetPath(referencePath),'utf8').replace('{','{"rows":[],');
   const sha=createHash('sha256').update(reference).digest('hex');scene.references[0].sha256=sha;scene.surfaces.features.forEach((f:any)=>{f.properties.sourceHash=sha});
   const sceneText=JSON.stringify(scene),owner=createSourceGeospatialOwner(dependencies((async url=>{
    if(String(url)===path)return new Response(duplicateScene?sceneText.replace('{','{"title":"shadow",'):sceneText)
@@ -118,7 +119,7 @@ test('the timeline descriptor stays stable while UTC changes and its document id
  let suffix=''
  const owner=createSourceGeospatialOwner(dependencies((async url=>{
   if(String(url)!==path)return local(url)
-  const scene=JSON.parse(readFileSync(`public${path}`,'utf8'))
+  const scene=JSON.parse(readFileSync(assetPath(path),'utf8'))
   scene.title+=suffix
   scene.timeline={title:'Authored observations',window:{startUtc:'2026-10-04T02:24:40.000Z',endUtc:'2026-10-04T02:26:40.000Z'},lanes:[{id:'observed',label:'Observed',kind:'observations'}]}
   return new Response(JSON.stringify(scene))
@@ -136,7 +137,7 @@ test('malformed timeline retry retains only accepted same-source context, and in
  let invalid=false
  const owner=createSourceGeospatialOwner(dependencies((async url=>{
   if(String(url)!==path)return local(url)
-  const scene=JSON.parse(readFileSync(`public${path}`,'utf8'))
+  const scene=JSON.parse(readFileSync(assetPath(path),'utf8'))
   scene.timeline={title:'Authored observations',window:{startUtc:'2026-10-04T02:24:40.000Z',endUtc:'2026-10-04T02:26:40.000Z'},lanes:[{id:'observed',label:'Observed',kind:'observations',...(invalid?{entityIds:['missing-entity']}: {})}]}
   return new Response(JSON.stringify(scene))
  }) as typeof fetch))

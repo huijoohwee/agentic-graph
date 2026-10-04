@@ -64,7 +64,7 @@ test('collapsed JSON is neither serialized nor rendered until the user opens it'
   } finally { await act(async () => root.unmount()); env.restore() }
 })
 test('typed projection retains exact SVG altitude points and replay surfaces conflicts and gaps', async () => {
-  const bundle = readFileSync('public/evidence-analysis/fixtures/volume-singapore-synthetic-v1.json', 'utf8')
+  const bundle = readFileSync(new URL('../../../../public/evidence-analysis/fixtures/volume-singapore-synthetic-v1.json', import.meta.url), 'utf8')
   const volume = await dispatchEvidence('volume.project', { bundle, entityId: 'synthetic-volume-01', atUtc: '2026-10-03T10:45:00.000Z' }, config)
   assert.notEqual(volume.ok, false)
   const rendered = renderToStaticMarkup(<VolumeResult value={volume} />)
@@ -73,7 +73,7 @@ test('typed projection retains exact SVG altitude points and replay surfaces con
   assert.match(replay, /Missing · Stale · Conflicting evidence/); assert.match(replay, /No observation/); assert.match(replay, /50 seconds/)
 })
 test('inspection disclosure exposes the complete shared typed record beyond the visible fact page', async () => {
-  const bundle = readFileSync('public/evidence-analysis/fixtures/aviation-singapore-multitrack-v1.json', 'utf8')
+  const bundle = readFileSync(new URL('../../../../public/evidence-analysis/fixtures/aviation-singapore-multitrack-v1.json', import.meta.url), 'utf8')
   const record = await executeEvidence('aviation.inspect', { bundle, profileId: 'aviation-v1' })
   assert.notEqual(record.ok, false); assert.ok(record.facts.length > 50)
   const env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)
@@ -97,7 +97,7 @@ test('a late example response cannot admit data or replace status after an autho
     await act(async () => [...container.querySelectorAll('button')].find(element => element.textContent === 'Load labelled example')!.click())
     assert.match(container.textContent!, /Reading local evidence/)
     await act(async () => installSource(documentText + '\nNew revision.', 2))
-    await act(async () => { resolveResponse(new Response(readFileSync('public/evidence-analysis/fixtures/aviation-synthetic-v1.json'))); await new Promise(resolve => setTimeout(resolve, 20)) })
+    await act(async () => { resolveResponse(new Response(readFileSync(new URL('../../../../public/evidence-analysis/fixtures/aviation-synthetic-v1.json', import.meta.url)))); await new Promise(resolve => setTimeout(resolve, 20)) })
     assert.equal(container.querySelector('[aria-label="Accepted evidence record"]'), null)
     assert.match(container.querySelector('[role="status"]')!.textContent!, /Current source configuration ready/)
   } finally { await act(async () => root.unmount()); globalThis.fetch = oldFetch; restoreSource(); env.restore() }
@@ -111,7 +111,7 @@ for (const change of [
   const restoreSource = saveSource(), env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)
   const oldFetch = globalThis.fetch, oldCreate = URL.createObjectURL, oldRevoke = URL.revokeObjectURL
   const revoked: string[] = []
-  globalThis.fetch = (async () => new Response(readFileSync('public/evidence-analysis/fixtures/aviation-synthetic-v1.json'))) as typeof fetch
+  globalThis.fetch = (async () => new Response(readFileSync(new URL('../../../../public/evidence-analysis/fixtures/aviation-synthetic-v1.json', import.meta.url)))) as typeof fetch
   URL.createObjectURL = () => 'blob:accepted-evidence'; URL.revokeObjectURL = url => { revoked.push(url) }
   const button = (label: string) => [...container.querySelectorAll('button')].find(element => element.textContent === label)!
   try {
