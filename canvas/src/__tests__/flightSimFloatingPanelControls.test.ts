@@ -74,7 +74,12 @@ test('Flight Sim panel opens Geo+XR and retains state through Start and Stop', {
   resetFlightSimCameraForTests()
   resetGraphStoreForTests()
   setGeospatialModeEnabled(true)
+  const documentName = '/imports/panel-geographic-reference.md'
+  const documentText = '---\ngeo_flight_overlay:\n  geographic_reference: { "anchor": [0, 0], "presentationBounds": [[-1, -1], [1, 1]] }\n---\n# Panel geographic fixture\n'
   useGraphStore.setState({
+    markdownDocumentName: documentName,
+    markdownDocumentText: documentText,
+    sourceFiles: [{ id: 'panel-geography', name: documentName, text: documentText, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: documentName } }],
     canvasRenderMode: '2d',
     canvas3dMode: '3d',
     floatingPanelOpen: true,

@@ -43,6 +43,11 @@ import {
   type FlightSimOperation,
 } from './flightSimMcpRuntime'
 import { FlightSimNavigationInset } from './FlightSimNavigationInset'
+import { FlightSimPresentationControls } from './FlightSimPresentationControls'
+import {
+  readFlightSimPresentationSettings,
+  subscribeFlightSimPresentationSettings,
+} from './flightSimPresentationSettings'
 import {
   FLIGHT_SIM_CAMERA_VIEW_OPTIONS,
   readFlightSimCameraSnapshot,
@@ -57,6 +62,7 @@ import {
   subscribeFlightSimSnapshot,
 } from './flightSimRuntime'
 import { FlightSimTrainingSurfaceProjection } from './FlightSimTrainingSurfaceProjection'
+import { readFlightSimTrainingScenario } from './flightSimTrainingScenario'
 import {
   readFlightSimTrainingSnapshot,
   subscribeFlightSimTrainingSnapshot,
@@ -125,6 +131,11 @@ export function FlightSimFloatingPanelView() {
     subscribeFlightSimCamera,
     readFlightSimCameraSnapshot,
     readFlightSimCameraSnapshot,
+  )
+  const presentation = React.useSyncExternalStore(
+    subscribeFlightSimPresentationSettings,
+    readFlightSimPresentationSettings,
+    readFlightSimPresentationSettings,
   )
   const pushUiToast = useGraphStore(state => state.pushUiToast)
   const spatialProfile = readFlightSimSpatialProfile()
@@ -303,7 +314,8 @@ export function FlightSimFloatingPanelView() {
               </button>
             ))}
           </div>
-          <FlightSimNavigationInset flight={flight} />
+          <FlightSimPresentationControls surface="panel" buttonClassName="App-toolbar__btn" />
+          {presentation.navigationVisible ? <FlightSimNavigationInset flight={flight} /> : null}
           <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
             Press C to cycle views · north-up route is derived from the authored local mission only.
           </p>
@@ -333,7 +345,9 @@ export function FlightSimFloatingPanelView() {
             className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}
             data-kg-flight-sim-geography-boundary="not-rendered"
           >
-            The local XR stage is aligned to Singapore’s Flight anchor; it is not a Singapore geographic boundary.
+            {readFlightSimTrainingScenario().geographicReference
+              ? 'The local scene uses the authored geographic anchor and presentation bounds.'
+              : 'Geographic projection unavailable. The local simulation has no authored geographic anchor.'}
           </p>
           <p
             className={cn(
