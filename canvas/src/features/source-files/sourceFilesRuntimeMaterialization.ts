@@ -470,10 +470,10 @@ export async function materializeActiveWorkspaceEntryIntoSourceFiles(args?: Acti
       const current = useGraphStore.getState()
       if (attempt || (error as { code?: string; retryable?: boolean })?.code !== 'SOURCE_FILES_MATERIALIZATION_STALE'
         || !(error as { retryable?: boolean }).retryable
-        || hasMaterializationDocumentDrifted(activePath, initial, current, initialText)
         || useMarkdownExplorerStore.getState().activePath !== explorer) throw error
       let expectedSourceText: string | undefined, fs = args?.fs
-      if (!sameMaterializationSourceIdentities(request?.sourceFilesSnapshot || before.sourceFiles, current.sourceFiles)) {
+      if (hasMaterializationDocumentDrifted(activePath, initial, current, initialText)
+        || !sameMaterializationSourceIdentities(request?.sourceFilesSnapshot || before.sourceFiles, current.sourceFiles)) {
         const readConvergence = () => readColdStartMaterializationSource({ applyToGraph: args?.applyToGraph, activePath,
           activeSourcePath: resolveWorkspaceSourcePathKey(activePath || ''), initial, before, current: useGraphStore.getState(),
           requestedSourceFiles: request?.sourceFilesSnapshot || before.sourceFiles, preparedSourceFiles: request?.premergedSourceFiles })
@@ -481,6 +481,8 @@ export async function materializeActiveWorkspaceEntryIntoSourceFiles(args?: Acti
         if (!active) throw error
         expectedSourceText = active.text; fs ||= await getWorkspaceFs()
         if (await fs.readFileText(activePath!) !== expectedSourceText || useGraphStore.getState().sourceFiles !== current.sourceFiles
+          || useGraphStore.getState().markdownDocumentName !== current.markdownDocumentName
+          || useGraphStore.getState().markdownDocumentText !== current.markdownDocumentText
           || useMarkdownExplorerStore.getState().activePath !== explorer || !readConvergence()) throw error
       }
       request = { activePathOverride: args?.activePathOverride, fs, applyToGraph: args?.applyToGraph, refreshActiveText: args?.refreshActiveText,

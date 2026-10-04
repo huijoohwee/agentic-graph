@@ -7,6 +7,9 @@ import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import { resolveInitialWorkspaceStartupState } from '@/features/source-files/sourceFilesRuntimeStartup'
 import assert from 'node:assert/strict'
 import type { SourceFile } from '@/hooks/store/types'
+import { XR_PHYSICS_WORKSPACE_SEED_PATH } from '@/features/workspace-fs/workspaceFs'
+import { loadWorkspaceSourceIndex, setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
+import { invalidateCachedWorkspaceActiveEntrySnapshot } from '@/features/source-files/workspaceActiveEntryCache'
 
 async function verifyLessonFilesAreReadyBeforeSourceBootstrapReturns() {
   useGraphStore.getState().resetAll()
@@ -46,6 +49,157 @@ async function verifyLessonFilesAreReadyBeforeSourceBootstrapReturns() {
   if (!rejected || await blockedFs.readFileText('/docs') !== 'retain me') {
     throw new Error('A lesson-folder collision must reject startup without replacing existing bytes.')
   }
+}
+
+type LateStartupSelectionCase = 'created' | 'canonical' | 'switch-list' | 'switch-read' | 'reselect-read' | 'churn-list' | 'churn-read' | 'missing' | 'deleted' | 'read-error' | 'clear-read' | 'starter'
+async function verifyLateStartupSelection(mode: LateStartupSelectionCase): Promise<void> {
+  const previous = useGraphStore.getState(), explorer = useMarkdownExplorerStore.getState()
+  const { restore } = initJsdomHarness()
+  const pathA = XR_PHYSICS_WORKSPACE_SEED_PATH, pathB = mode === 'canonical' ? '/docs/late-import.md' : '/notes/late-import.md', pathC = '/notes/newer-import.md'
+  const textA = '# Initial startup source\n', textB = '# Late authored source\n', textC = '# Newer authored source\n'
+  const paths = [pathA, pathB, pathC], sourceIndex = loadWorkspaceSourceIndex()
+  const previousSources = paths.map(path => sourceIndex[path])
+  const baseFs = createMemoryWorkspaceFs({ initialEntries: [
+    { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
+    { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: 1 },
+    { path: '/docs/python-lessons', parentPath: '/docs', kind: 'folder', name: 'python-lessons', updatedAtMs: 1 },
+    { path: '/notes', parentPath: '/', kind: 'folder', name: 'notes', updatedAtMs: 1 },
+    { path: pathA, parentPath: pathA.slice(0, pathA.lastIndexOf('/')) || '/', kind: 'file', name: pathA.split('/').at(-1)!, text: textA, updatedAtMs: 1 },
+  ] })
+  let releaseRead!: () => void, markReadStarted!: () => void
+  const pendingRead = new Promise<void>(resolve => { releaseRead = resolve })
+  const readStarted = new Promise<void>(resolve => { markReadStarted = resolve })
+  const failure = new Error('Latest selected source read failed')
+  let deferred = false, latePublished = false, switched = false, freshLists = 0, latestReads = 0, ownerWrites = 0, seedCalls = 0
+  let latestSources: SourceFile[] = []
+  const publish = (path: string, text: string) => {
+    latestSources = [{ id: `local:${path}`, name: path.split('/').at(-1)!, text, enabled: true, status: 'idle',
+      source: { kind: 'local', path: `workspace:${path}` } }]
+    useGraphStore.setState({ sourceFiles: latestSources, markdownDocumentName: path.slice(1), markdownDocumentText: text })
+    useMarkdownExplorerStore.getState().setActivePath(path)
+  }
+  const publishNewer = async () => {
+    switched = true
+    await baseFs.createFile({ parentPath: '/notes', name: 'newer-import.md', text: textC })
+    publish(pathC, textC)
+  }
+  const changeSelection = () => {
+    const next = useMarkdownExplorerStore.getState().activePath === pathB ? pathC : pathB
+    publish(next, next === pathC ? textC : textB)
+  }
+  const fs: WorkspaceFs = { ...baseFs, ensureSeed: async () => { seedCalls += 1; return false },
+    listEntries: async () => {
+      const rows = await baseFs.listEntries()
+      if (latePublished) {
+        freshLists += 1
+        if (!switched && mode === 'switch-list') await publishNewer()
+        if (!switched && mode === 'deleted') { switched = true; await baseFs.deleteEntry(pathB) }
+        if (mode === 'churn-list') changeSelection()
+      }
+      return rows
+    },
+    readFileText: async path => {
+      if (mode !== 'starter' && path === pathA && !deferred) { deferred = true; markReadStarted(); await pendingRead }
+      if (latePublished && (path === pathB || path === pathC)) {
+        latestReads += 1
+        if (mode === 'read-error') throw failure
+        const observed = await baseFs.readFileText(path)
+        if (mode === 'churn-read') changeSelection()
+        if (!switched && mode === 'switch-read') await publishNewer()
+        if (!switched && mode === 'reselect-read') {
+          switched = true
+          await baseFs.writeFileText(pathB, textC)
+          useMarkdownExplorerStore.getState().setActivePath(pathA)
+          publish(pathB, textC)
+        }
+        if (!switched && mode === 'clear-read') { switched = true; useMarkdownExplorerStore.getState().setActivePath(null) }
+        return observed
+      }
+      return baseFs.readFileText(path)
+    },
+    writeFileText: async (...args) => { ownerWrites += 1; return baseFs.writeFileText(...args) },
+    createFile: async args => { ownerWrites += 1; return baseFs.createFile(args) },
+    createFolder: async args => { ownerWrites += 1; return baseFs.createFolder(args) },
+    deleteEntry: async path => { ownerWrites += 1; return baseFs.deleteEntry(path) },
+  }
+  let settled: Promise<{ result?: Awaited<ReturnType<typeof resolveInitialWorkspaceStartupState>>; error?: unknown }> | undefined
+  try {
+    useGraphStore.getState().resetAll()
+    for (const path of paths) setWorkspaceEntrySource(path, { kind: 'local' }, { persist: 'sync' })
+    useMarkdownExplorerStore.getState().setActivePath(mode === 'starter' ? null : pathA)
+    settled = resolveInitialWorkspaceStartupState({ fs }).then(result => ({ result }), error => ({ error }))
+    if (mode !== 'starter') {
+      await Promise.race([readStarted, settled.then(() => assert.fail('startup did not yield after capturing its old file list'))])
+      ownerWrites = 0
+      if (mode !== 'missing') await baseFs.createFile({ parentPath: pathB.slice(0, pathB.lastIndexOf('/')), name: 'late-import.md', text: textB })
+      if (mode.startsWith('churn-')) await baseFs.createFile({ parentPath: '/notes', name: 'newer-import.md', text: textC })
+      publish(pathB, textB)
+      if (mode === 'canonical') useMarkdownExplorerStore.getState().setActivePath('/late-import.md')
+      latePublished = true
+      releaseRead()
+    }
+    const outcome = await settled
+    if (mode === 'read-error') assert.equal(outcome.error, failure, 'the original filesystem error must escape')
+    else if (mode === 'missing' || mode === 'deleted') assert.ok(outcome.error instanceof Error, 'a stable missing selected file must fail loudly')
+    else if (mode.startsWith('churn-')) {
+      assert.ok(outcome.error instanceof Error && /changed repeatedly/.test(outcome.error.message), 'selection churn must terminate loudly')
+      assert.equal(outcome.result, undefined)
+      assert.equal(freshLists, 3, 'only three fresh selection attempts are allowed')
+      assert.equal(latestReads, mode === 'churn-read' ? 3 : 0, 'each changed observation is discarded without an extra read')
+    }
+    else {
+      assert.equal(outcome.error, undefined)
+      const expected = mode === 'starter' ? pathA : mode === 'clear-read' ? null : mode.startsWith('switch-') ? pathC : pathB
+      assert.equal(outcome.result?.activePath, expected, 'startup must return the latest explicit selection instead of the old starter')
+      assert.equal(useMarkdownExplorerStore.getState().activePath, expected, 'startup must not republish an older selection')
+      if (mode === 'clear-read') assert.deepEqual(outcome.result?.workspaceEntries, [])
+      if (mode === 'created' || mode === 'canonical' || mode.startsWith('switch-') || mode === 'reselect-read') {
+        assert.ok(freshLists >= 1 && freshLists <= 3, 'late selection uses bounded fresh file observations')
+        assert.ok(latestReads >= 1 && latestReads <= 3, 'selected bytes must come from direct bounded reads')
+        if (mode === 'reselect-read') assert.ok(latestReads >= 2, 'same-path reselection must invalidate the earlier read')
+        const returned = outcome.result?.workspaceEntries || []
+        if (returned.length) assert.equal(returned.find(value => value.path === expected)?.text,
+          expected === pathC || mode === 'reselect-read' ? textC : textB)
+      }
+    }
+    if (mode !== 'starter') {
+      const expectedPath = mode === 'clear-read' ? null : mode.startsWith('switch-') || mode.startsWith('churn-') ? pathC : pathB
+      assert.equal(useMarkdownExplorerStore.getState().activePath, expectedPath)
+      assert.equal(useGraphStore.getState().sourceFiles, latestSources, 'startup selection cannot overwrite imported source ownership')
+      assert.equal(useGraphStore.getState().markdownDocumentText, latestSources[0].text)
+    }
+    if (mode === 'deleted') assert.equal(latestReads, 1, 'stale inline text cannot bypass direct deletion observation')
+    assert.equal(ownerWrites, 0, 'selection recovery must not rewrite or create workspace files')
+    if (mode === 'canonical') {
+      const initialSeedCalls = seedCalls
+      const result = await materializeBootstrapWorkspaceSourceFiles({ fs, startupState: outcome.result,
+        existingSourceFiles: latestSources, sourcesByPath: {} })
+      assert.ok(result.activePathKey)
+      assert.equal(seedCalls, initialSeedCalls, 'canonical selection must materialize without restarting startup preparation')
+      assert.equal(useMarkdownExplorerStore.getState().activePath, pathB)
+      assert.equal(useGraphStore.getState().markdownDocumentName, pathB.slice(1))
+      assert.equal(useGraphStore.getState().markdownDocumentText, textB)
+    }
+  } finally {
+    releaseRead()
+    await settled
+    for (const [index, path] of paths.entries()) {
+      invalidateCachedWorkspaceActiveEntrySnapshot(path)
+      setWorkspaceEntrySource(path, previousSources[index] ?? null, { persist: 'sync' })
+    }
+    useGraphStore.setState(previous, true)
+    useMarkdownExplorerStore.setState(explorer, true)
+    restore()
+  }
+}
+
+async function verifyLateStartupSelections(): Promise<void> {
+  const failures: string[] = []
+  for (const mode of ['created', 'canonical', 'switch-list', 'switch-read', 'reselect-read', 'churn-list', 'churn-read', 'missing', 'deleted', 'read-error', 'clear-read', 'starter'] as const) {
+    try { await verifyLateStartupSelection(mode); console.log(`Late startup selection ${mode}: PASS`) }
+    catch (error) { failures.push(`${mode}: ${error instanceof Error ? error.message : String(error)}`) }
+  }
+  assert.equal(failures.length, 0, `Late startup selection scenarios failed:\n${failures.join('\n')}`)
 }
 
 export async function testWorkspaceBootstrapRetriesGraphOwningMaterializationAfterActivePathDrift() {
@@ -114,6 +268,7 @@ export async function testWorkspaceBootstrapRetriesGraphOwningMaterializationAft
     useMarkdownExplorerStore.setState(explorer, true)
     restore()
   }
+  await verifyLateStartupSelections()
 }
 
 type SupersessionCase = 'selection' | 'unsaved' | 'stale-fs' | 'failure' | 'churn'

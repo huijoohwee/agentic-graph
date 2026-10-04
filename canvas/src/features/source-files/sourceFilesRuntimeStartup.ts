@@ -125,6 +125,45 @@ export function createWorkspaceStartupSourceRootEntriesReader(args: {
   }
 }
 
+async function readLateWorkspaceStartupSelection(fs: WorkspaceFs): Promise<{
+  activePath: WorkspacePath | null
+  workspaceEntries: WorkspaceEntry[]
+}> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const selection = useMarkdownExplorerStore.getState()
+    const selectedPath = resolveMaterializedWorkspaceActivePath({ explorerActivePath: selection.activePath })
+    if (!selectedPath) return { activePath: null, workspaceEntries: [] }
+    const selectionChanged = () => {
+      const latest = useMarkdownExplorerStore.getState()
+      return latest.activePath !== selection.activePath || latest.lastSetActivePath !== selection.lastSetActivePath
+    }
+    const entries = await fs.listEntries()
+    if (selectionChanged()) continue
+    const activePath = resolveExistingWorkspaceStartupCanonicalPath({ activePath: selectedPath, workspaceEntries: entries })
+    if (!activePath) throw new Error(`Selected workspace file is unavailable during startup: ${selectedPath}`)
+    // A file created after the startup snapshot needs its own persisted-byte proof.
+    // Inline entries can outlive a deletion, and a later selection owns the next attempt.
+    const text = await fs.readFileText(activePath)
+    if (selectionChanged()) continue
+    if (text === null) throw new Error(`Selected workspace file is unavailable during startup: ${activePath}`)
+    if (activePath !== selectedPath) {
+      selection.setActivePath(activePath)
+      // Re-observe after canonicalization, including synchronous selection subscribers.
+      continue
+    }
+    return buildInitialWorkspaceStartupSnapshot({
+      currentActivePath: activePath,
+      desiredActivePath: activePath,
+      workspaceEntries: entries.map(entry => entry.kind === 'file' && normalizeWorkspacePath(entry.path) === activePath
+        ? { ...entry, text }
+        : entry),
+      lastSetActivePath: selection.lastSetActivePath,
+      sourceFilesMaterialized: hasMaterializedWorkspaceSourceFiles(),
+    })
+  }
+  throw new Error('Workspace selection changed repeatedly during startup.')
+}
+
 export async function resolveInitialWorkspaceStartupState(args?: { fs?: WorkspaceFs }): Promise<{
   activePath: WorkspacePath | null
   workspaceEntries: WorkspaceEntry[]
@@ -172,10 +211,17 @@ export async function resolveInitialWorkspaceStartupState(args?: { fs?: Workspac
       : startupWorkspaceEntries
   }
   const latestExplorer = useMarkdownExplorerStore.getState()
+  const latestSelectedPath = resolveMaterializedWorkspaceActivePath({ explorerActivePath: latestExplorer.activePath })
   const latestActivePath = resolveExistingWorkspaceStartupCanonicalPath({
-    activePath: resolveMaterializedWorkspaceActivePath({ explorerActivePath: latestExplorer.activePath }),
+    activePath: latestSelectedPath,
     workspaceEntries: startupWorkspaceEntries,
   })
+  if (!preferCustomValidationSeed && !latestActivePath && (
+    latestSelectedPath !== resolveMaterializedWorkspaceActivePath({ explorerActivePath: explorer.activePath })
+    || latestExplorer.lastSetActivePath !== explorer.lastSetActivePath
+  )) {
+    return readLateWorkspaceStartupSelection(fs)
+  }
   if (!preferCustomValidationSeed && latestActivePath && latestActivePath !== currentActivePath) {
     const latestWorkspaceEntries = latestActivePath === desiredActivePath
       ? workspaceEntries
