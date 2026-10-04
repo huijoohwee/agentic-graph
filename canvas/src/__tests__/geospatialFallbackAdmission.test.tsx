@@ -114,7 +114,27 @@ async function failedSvgLoadIsContainedAndReloadsOnlyOnRequest() {
   }
 }
 
-const cases = [pendingIsNotFailure, pendingHostRendersOnlyPrimary, explicitSvgRetainsGeometryAndSemanticOwnership, fallbackAssetsStayBehindLazyBoundary, failedSvgLoadIsContainedAndReloadsOnlyOnRequest]
+async function packageHostSupportsTheCanvasLazyLoader() {
+  const env = initJsdomHarness()
+  const container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main'))
+  const root = createRoot(container)
+  const { GeospatialOverlayHost } = await import(new URL('../../../gympgrph/src/index.ts', import.meta.url).href)
+  const CanvasHost = React.lazy(async () => ({ default: GeospatialOverlayHost }))
+  try {
+    await act(async () => root.render(<React.Suspense fallback={<p>Loading host</p>}>
+      <CanvasHost active={false} gameplayPresentationOwner={null} />
+      <output>Package host ready</output>
+    </React.Suspense>))
+    await act(async () => { await import(hostUrl.href) })
+    assert.equal(container.textContent, 'Package host ready', 'Canvas must resolve the package host to a renderable component, not another lazy object')
+    assert.equal(container.querySelector('svg'), null, 'Resolving the host must not start the SVG renderer')
+  } finally {
+    await act(async () => root.unmount())
+    env.restore()
+  }
+}
+
+const cases = [pendingIsNotFailure, pendingHostRendersOnlyPrimary, explicitSvgRetainsGeometryAndSemanticOwnership, fallbackAssetsStayBehindLazyBoundary, failedSvgLoadIsContainedAndReloadsOnlyOnRequest, packageHostSupportsTheCanvasLazyLoader]
 
 export async function testGeospatialFallbackAdmission() {
   for (const run of cases) await run()

@@ -1,4 +1,4 @@
-import { lazy } from 'react'
+import { createElement, lazy, type ComponentProps } from 'react'
 import { hashStringToIndex } from 'grph-shared/hash/stringHash'
 import { LS_KEYS } from './lib/config.js'
 import { applyDevCrossOriginProxy, applyMediaProxySrc, coerceFetchUrl, MEDIA_PROXY_ENDPOINT } from './lib/url.js'
@@ -170,9 +170,13 @@ export type {
   NativeGeospatialMapLibreLease,
 } from './features/geospatial/mapLibreHostLease.js'
 
-export const GeospatialOverlayHost = /* @__PURE__ */ lazy(async () => ({
+const GeospatialOverlayHostLazy = /* @__PURE__ */ lazy(async () => ({
   default: (await import('./GeospatialHost.js')).GeospatialOverlayHost,
 }))
+
+export function GeospatialOverlayHost(props: ComponentProps<typeof GeospatialOverlayHostLazy>) {
+  return createElement(GeospatialOverlayHostLazy, props)
+}
 
 export { GeospatialPanelHost }
 
