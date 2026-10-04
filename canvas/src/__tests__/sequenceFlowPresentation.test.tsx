@@ -1,10 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { JSDOM } from 'jsdom'
-import { parseSequence } from '../features/sequence/sequenceModel'
+import { parseSequence, sequenceTimedEvents } from '../features/sequence/sequenceModel'
 import { sequenceNativeSvg } from '../features/sequence/sequenceNativeSvg'
 import { sequenceTopologySvg } from '../features/sequence/sequenceTopologySvg'
-import { bindSequenceSvg } from '../features/sequence/sequenceSvgBinding'
+import { bindSequenceSvg, createSequenceSvgPlayback } from '../features/sequence/sequenceSvgBinding'
 
 type Box = { x: number; y: number; width: number; height: number }
 const boxOf = (element: Element): Box => Object.fromEntries(
@@ -163,4 +163,72 @@ test('notation rejects unknown participant or lifeline identities instead of hig
       assert.throws(() => bindSequenceSvg(host, model, true), /participant identity does not match authored source/)
     })
   }
+})
+
+test('playback preserves semantic selection without repeating static SVG mutations', () => {
+  const model = parseSequence('sequenceDiagram\nparticipant Left\nparticipant Right\nLeft->>Right: Request\nRight-->>Left: Response')
+  const events = sequenceTimedEvents(model.events)
+  const dom = new JSDOM(`<main>${sequenceNativeSvg(model)}</main>`)
+  const host = dom.window.document.querySelector('main')!
+  const groups = [...host.querySelectorAll('[data-sequence-event]')]
+  let lengthReads = 0
+  for (const path of host.querySelectorAll('.sequence-message')) {
+    Object.assign(path, {
+      getTotalLength: () => { lengthReads++; return 100 },
+      getPointAtLength: (distance: number) => ({ x: distance, y: distance / 2 }),
+    })
+  }
+  const projection = createSequenceSvgPlayback(host, events)
+  const mutations = new dom.window.MutationObserver(() => {})
+  mutations.observe(host, { attributes: true, childList: true, subtree: true })
+  try {
+    projection.update(events[0]!, 100, false)
+    const pulse = host.querySelector('[data-sequence-pulse]')!
+    assert.ok(pulse)
+    assert.equal(pulse.parentElement, groups[0])
+    assert.equal(pulse.getAttribute('cx'), '10')
+    assert.deepEqual(groups.map(group => group.getAttribute('aria-pressed')), ['true', 'false'])
+    assert.deepEqual(groups.map(group => group.getAttribute('data-sequence-state')), ['active', 'pending'])
+    mutations.takeRecords()
+    projection.update(events[0]!, 200, false)
+    const tick = mutations.takeRecords()
+    assert.equal(host.querySelector('[data-sequence-pulse]'), pulse, 'Continuous playback retains the same pulse')
+    assert.equal(pulse.getAttribute('cx'), '20')
+    assert.equal(lengthReads, 1, 'Geometry length is stable for this bound path')
+    assert.ok(tick.length > 0)
+    assert.ok(tick.every(change => change.type === 'attributes' && change.target === pulse && ['cx', 'cy'].includes(change.attributeName!)), 'Only pulse coordinates change within the same event')
+    projection.update(events[1]!, 1100, false)
+    assert.equal(host.querySelectorAll('[data-sequence-pulse]').length, 1)
+    assert.equal(host.querySelector('[data-sequence-pulse]')!.parentElement, groups[1])
+    assert.deepEqual(groups.map(group => group.getAttribute('aria-pressed')), ['false', 'true'])
+    assert.deepEqual(groups.map(group => group.getAttribute('data-sequence-state')), ['complete', 'active'])
+    projection.update(events[1]!, 1200, true)
+    assert.equal(host.querySelectorAll('[data-sequence-pulse]').length, 0, 'Reduced motion removes the moving projection')
+    assert.equal(groups[1]!.getAttribute('aria-pressed'), 'true', 'Textual selection survives reduced motion')
+    projection.update(events[1]!, 1300, false)
+    assert.equal(host.querySelectorAll('[data-sequence-pulse]').length, 1)
+    assert.equal(lengthReads, 2, 'Each stable path is measured only once')
+    projection.dispose(); mutations.takeRecords()
+    projection.update(events[0]!, 100, false)
+    assert.equal(mutations.takeRecords().length, 0, 'Disposed playback cannot mutate a stale source')
+    assert.equal(host.querySelectorAll('[data-sequence-pulse]').length, 0)
+  } finally { mutations.disconnect(); projection.dispose(); dom.window.close() }
+})
+
+test('playback bindings cannot publish into a replaced SVG or select an excluded branch', () => {
+  const model = parseSequence('sequenceDiagram\nparticipant Left\nparticipant Right\nLeft->>Right: Included\nRight-->>Left: Excluded')
+  const events = sequenceTimedEvents(model.events)
+  const dom = new JSDOM(`<main>${sequenceNativeSvg(model)}</main>`)
+  const host = dom.window.document.querySelector('main')!
+  const projection = createSequenceSvgPlayback(host, events.slice(0, 1))
+  try {
+    projection.update(events[0]!, 100, true)
+    const excluded = host.querySelectorAll('[data-sequence-event]')[1]!
+    assert.equal(excluded.getAttribute('data-sequence-state'), 'skipped')
+    assert.equal(excluded.getAttribute('aria-pressed'), 'false')
+    host.innerHTML = sequenceNativeSvg(model)
+    const original = host.innerHTML
+    projection.update(events[0]!, 300, false)
+    assert.equal(host.innerHTML, original, 'A replaced source requires a new binding')
+  } finally { projection.dispose(); dom.window.close() }
 })
