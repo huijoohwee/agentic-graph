@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.0"
-revision: "0.3.0"
+version: "0.4.0"
+revision: "0.4.0"
 date: "2026-10-04"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.3.0"
-tad_revision: "0.3.0"
-adr_revision: "0.3.0"
-mvp_revision: "0.3.0"
-gtm_revision: "0.3.0"
+prd_revision: "0.4.0"
+tad_revision: "0.4.0"
+adr_revision: "0.4.0"
+mvp_revision: "0.4.0"
+gtm_revision: "0.4.0"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -20,9 +20,9 @@ universal_scope: false
 lifecycle_status: "active"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/aviation-swarm-runtime"
+worktree_id: "agent/device-0232231d4a19/aviation-swarm-readiness"
 agent_id: "codex-root"
-source_revision: "cc40000f8827ea68192edbd42385a887f107a3b5"
+source_revision: "2206391d84e47202e6b69909d88b2b922d7c5b74"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -31,7 +31,7 @@ source_docs:
 
 # Aviation Swarm
 
-`aviation-swarm@0.3.0` hardens the eligible Must workflows of the existing aviation evidence capability:
+`aviation-swarm@0.4.0` hardens the eligible Must workflows of the existing aviation evidence capability:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 The longer-term question remains “Which routes are exposed, and what does each option cost?”
 Neither operational exposure assessment nor flight-cost calculation is currently implemented.
@@ -39,16 +39,17 @@ Neither operational exposure assessment nor flight-cost calculation is currently
 The user selected **agentic-graph** as the implementation and document owner. This reference implementation
 consumes [aviation-evidence-layer@0.4.2](aviation-evidence/prd-tad-adr-mvp-gtm.md); it does not replace that
 owner, its eleven acceptance thresholds, rights records, financial model, or execution backlog.
-The 0.2.0 native-grounded plan replaced the greenfield draft; 0.3.0 adds bounded read cancellation and
-accessible Flight composition and offline-safe local import. It adds no package, provider, model or store.
+This successor adds import race fences/stages, primary-first Geo/lazy SVG, bounded bundles and XR surface
+projections. No package, provider, model or store is added; prior evidence hardening remains.
 
 ## Scope and grounding — reference implementation
 
 G1–G8 baseline: Graph `cc40000f8827ea68192edbd42385a887f107a3b5`, integrated by [PR 1543](https://github.com/huijoohwee/agentic-graph/pull/1543).
 `E/` means `canvas/src/features/evidence-analysis/`. Plan commit `795327fb1ca10dde67450451521a6e3e97f95873`
 was integrated by [PR 1545](https://github.com/huijoohwee/agentic-graph/pull/1545) at `24f0614390affce87268d74e80a93791a73c30ca`.
-The runtime successor is the working tree based on `795327f…`; its publication/integration is unproved.
-Historical owner-document publication gaps do not override these receipts or establish deployment.
+[PR 1547](https://github.com/huijoohwee/agentic-graph/pull/1547) published exact runtime head
+`2206391d84e47202e6b69909d88b2b922d7c5b74`; protected review/integration remains pending. The admitted
+readiness successor starts there. Publication is neither integration nor deployment.
 
 | Grounding ID / capability | Inspected owner and contract | Reuse / smallest delta | Check / evidence limit |
 |---|---|---|---|
@@ -59,7 +60,7 @@ Historical owner-document publication gaps do not override these receipts or est
 | G5 arrival evaluator | `E/core/arrival-analysis.mjs`: `analyzeArrivals`; authored train/calibration/test policy | Retain deterministic evaluation; do not add a predictive agent | `arrival-analysis.test.mjs`; ER1; real touchdown benchmark open |
 | G6 shared tools | `E/tools/evidenceCatalog.mjs`: `EVIDENCE_OPERATIONS`; `executeEvidence.mjs`: `executeEvidence`, `dispatchEvidence`, `invokeEvidenceCommand` | Extend this single catalog/executor only after a new criterion is admitted | `evidenceTools.test.mjs`; ER2 scope recorded below |
 | G7 transports | `E/tools/evidenceCli.mjs`; `canvas/src/features/agent-ready/evidenceAnalysisAgentReadyContract.mjs`, `evidenceAnalysisWebMcpTools.ts`; `mcp/local-tool-contract.js`, `mcp/server.js` | Retain local CLI/MCP and browser adapters; remote aviation parity unproved | Local adapter checks; browser-discovered tools require actual invocation proof |
-| G8 native experience | `E/EvidencePanel.tsx`, `ui/evidenceInput.ts`; [Flight source](workspace-seeds/agentic-graph-game-flight-sim-demo.md) | Add bounded cancellable asset reads; collapse optional context in `FloatingPanelXrSceneViews.tsx`; retain native owners | ER3/ER6/ER7; simulation remains distinct from observed evidence |
+| G8 native experience | `E/EvidencePanel.tsx`, `ui/evidenceInput.ts`; [Flight source](workspace-seeds/agentic-graph-game-flight-sim-demo.md) | Add bounded cancellable asset reads; collapse optional context in `FloatingPanelXrSceneViews.tsx`; retain native owners | ER3/ER6–ER10; simulation remains distinct from observed evidence |
 
 Exposure, costing, fuel models, live disruption and aviation monetary ledgers are unimplemented.
 Load affected native sources on demand; always-loaded prompt delta is zero. Recheck source joins on drift.
@@ -90,15 +91,15 @@ certified advice or live surveillance is provided.
 
 | ID / story | VCC: measurable end state / check / constraints | Join and disposition |
 |---|---|---|
-| AS1 Must: inspect and reproduce | Exact native demo opens Evidence and analysis; selected case exposes original source, UTC, gaps and deterministic replay; prepared export matches executor. Check actual UI plus G1/G6 suites; no provider call or synthetic-as-observed claim | G1/G2/G6/G8; AEL VCC-1/2/8/11; ER1–ER3/ER7, full acceptance open |
-| AS2 Must: compare routes honestly | Same admitted routes/policy yield identical lengths, signed difference and conditional band; result explicitly excludes fuel, optimality and legal feasibility. Check `route-benchmark.test.mjs` plus live route exercise | G3/G8; AEL VCC-9 unchanged; ER1 covers core only |
+| AS1 Must: inspect and reproduce | Exact native demo opens Evidence and analysis; selected case exposes original source, UTC, gaps and deterministic replay; prepared export matches executor. Check actual UI plus G1/G6 suites; no provider call or synthetic-as-observed claim | G1/G2/G6/G8; AEL VCC-1/2/8/11; ER1–ER3/ER7–ER10, full acceptance open |
+| AS2 Must: compare routes honestly | Same admitted routes/policy yield identical lengths, signed difference and conditional band; result explicitly excludes fuel, optimality and legal feasibility. Check `route-benchmark.test.mjs` plus live route exercise | G3/G8; AEL VCC-9 unchanged; ER1 core and ER6 live proof |
 | AS3 Should: bounded exposure | For supplied route/volume/time inputs, independently labelled fixtures cover intersecting, disjoint, boundary-touch, stale, absent datum and absent-source cases; 100% report a reason, sources and qualified scope. Proposed test is not yet invocable | G3/G4 extension; no implementation/evidence |
 | AS4 Could: scenario costing | Every line includes value or null, unit/currency, basis, source/model version and omissions. Reject currency/unit mixing, stale/negative/non-finite input; unknown never becomes zero. Proposed schema/arithmetic/parity suite | New bounded pure calculation only after ADR-S3 gate; unbuilt |
 | AS5 Must: accessible local review | Desktop and 390 CSS px complete AS1/AS2 with visible labels and controls; record layout/keyboard errors. Offline reload/save and physical-device proof use the inherited device acceptance, not viewport emulation | G8; AEL VCC-5/6 open; ER6/ER7 separate code checks from live acceptance |
 
 `spec-complete` means VCCs exist, not that this artifact passes every guideline or the product is ready.
 Current hardening checks do not satisfy whole AS1/AS2/AS5. Local rung stays `spec-complete`;
-delivered rung for this runtime increment stays `undocumented` without its delivery evidence.
+delivered rung for this successor stays `undocumented` without integration/delivery evidence.
 
 | Metric | Baseline / proposed target | Measurement and limit |
 |---|---|---|
@@ -124,29 +125,29 @@ add route bands for their difference. This excludes geodetic/model error. G4 sup
 polygon and continuous half-open UTC interval, with compatible vertical datums. Missing geometry,
 uncertainty, stale evidence or unsupported datum yields an unresolved result, never operational clearance.
 
-Proposed AS3 must call a dedicated pure join within the existing feature, consuming G3/G4 outputs.
-Its vocabulary is `intersects`, `no_intersection_with_supplied_evidence`, `unknown`; no “safe route”.
-An uncovered source/time/region remains unknown even if geometry does not intersect. Preserve reasons
-such as unsupported geometry, incompatible datum, stale source and incomplete coverage as evidence.
-Do not retrofit a four-value generic error enum over the native `{ok:false,error:{code,message,path}}`
-or erase structured unresolved reports. Actual runtime code owns error names.
-
-AS4 is explicitly a user-supplied scenario: `time = distance / stated_groundspeed`; fuel requires an
-independently qualified burn model; cost requires stated quantities × currency/unit prices. Each line's
-`basis` is observed, derived, assumed or unknown. A subtotal of known comparable lines must say
-“incomplete” when any line is unknown; mixed currency has no total without a stated dated conversion.
-No operational optimization, fare quote, price lookup or external write follows from arithmetic.
+AS3 extends G3/G4 with one qualified pure join: `intersects`,
+`no_intersection_with_supplied_evidence`, or `unknown`. Preserve native errors and reason codes.
+Uncovered source/time/region or unsupported geometry/datum never implies a safe/legal route.
+AS4 needs qualified user-supplied units/models/prices; label observed/derived/assumed/unknown basis.
+Unknown is not zero. Incomplete comparable subtotals must say so; currency conversion needs a dated
+stated rate. No operational optimization, quote, commitment or external write follows from arithmetic.
 
 Native limits: original ≤499,999 B; profile ≤10 entities/5,000 facts/20 sources/24 hours; each notice
 ≤12,000 B; combined tool input ≤2,000,000 B; export pack ≤2,000,000 B. Pack/input envelopes are not
-JavaScript chunks. Authoring cap <600 lines/file and emitted chunk <500,000 B remains; inherited host
-bundle violations stay open. New design target ≤30 KiB lazy JS, zero added initial JS, zero packages.
+JavaScript chunks. New files <600 lines; oversized owners shrink; emitted JS/MJS <500,000 B.
+Build 6 passes the chunk gate (ER4). Target ≤30 KiB lazy JS, zero initial-JS delta/packages;
+initial-size comparison remains unmeasured.
 Current hardening: `readEvidenceExamples` admits all paths before I/O, aborts superseded reads and
 applies one 15-second deadline to the whole batch (test/config bound 1–30,000 ms). Late bodies cancel;
 cleanup never waits on a broken stream. Panel source/view/remove/unmount changes cancel pending assets
 and fence stale results; failed replacements retain acceptance. Local file reads remain byte-bounded
 and result-fenced, not abortable. Optional panorama/city controls mount only when expanded; view changes
-reset expansion. Shared projection min-width/wrapping fixes retain their source owners. No algorithm changes.
+reset expansion; width fixes retain source owners. No analytical algorithm changes.
+`useWorkspaceFileActions/importActions.ts` reports await stages and fences post-await mutations;
+`core.ts` fences graph/focus. Stale/failed native imports remain handled, preventing duplicate fallback;
+dispatched lower-owner effects are not rolled back. Geo treats null map/no error as pending and lazily
+loads `SvgGeospatialFallback.tsx` only for explicit SVG or confirmed failure, preserving geometry and
+semantics. Shared XR selects schema/actions and stable surface fields; frame/HUD owners remain live.
 AS3/AS4: separate ≤4-hour/4-module/30-KiB sprints after admission; ≤3 cycles, stop after two no-progress cycles.
 
 ### Invocation and shared-utility reuse
@@ -307,8 +308,9 @@ Constraints: K1 zero new spend; K2 native reuse; K3 deterministic local/offline 
 operational claim; K5 bounded work/rights. Existing tools pass; AS3/AS4 stay gated. New orchestration
 fails K2/K5, mandatory cloud inference fails K1/K3, ungranted licensed feeds fail K1/rights. Manual
 review remains the baseline. Native reuse improves reproducibility/reuse cost; buyer/WTP value is unknown.
-Decision: logical analytical roles, no second runtime. Revisit when buyer evidence shows missing value;
-one review cycle, unresolved economics retained. Hardening extends existing I/O and composition owners.
+Decision: extend native owners, no second runtime. Import stages expose pending work; job fences stop
+stale continuation. Geo defers SVG until selection/failure; XR narrows subscriptions without freezing
+simulation. Revisit on reproduced failure/buyer evidence; preserve originals and unresolved economics.
 
 ### ADR-S2 Distance, evidence and operational feasibility stay distinct
 
@@ -329,26 +331,29 @@ distance-only output; neither a quote nor a commitment follows from a scenario.
 
 The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md](workspace-seeds/agentic-graph-game-flight-sim-demo.md).
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
-Initial sprint: 60 minutes/eight runtime-test files; offline verification exposed a host-mirror dependency.
-Native readmission added three existing-owner files (11 plus this plan); final verification/release target
-20 minutes, one checkout, <600 lines/file, plan ≤40 KiB, zero added packages/spend. Proof below binds
-the working candidate; build identity uses base HEAD plus the inspected diff, not an immutable release.
+One admitted checkout; exact-path readmissions own scope. New files <600 lines, oversized owners
+shrink, plan ≤40 KiB, zero new packages/spend. Next local validation target ≤20 active minutes; refresh
+on drift. Protected review waits for status change, not an ETA. Preview proof is not deployment.
+Private artifacts below: `/Users/huijoohwee/Documents/GitHub/.workspace/.artifacts/aviation-swarm-readiness/`.
 
-| Evidence | Check / environment / recorded result | Satisfies / does not establish |
+| Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
-| ER1 | Current `node --test E/tests/{evidence-core,evidence-readsb,volume-project,arrival-analysis,route-benchmark,notice-triage,evidenceTools}.test.mjs`: 74 passed, 0 failed | Core and local CLI/stdio/WebMCP-builder behavior; not browser-discovery, real labels or demand |
-| ER2 | Current input/UI: 24 passed; import/inventory/website regressions: 23 passed; four mobile/owner checks and Canvas typecheck/three harness tests passed | Bounded affected proof; not full-host or full-guideline conformance |
-| ER3 | Exact Flight demo on task Dev `:5184`: 3 entities/185 facts/3 sources. Browser saved 262,899-byte evidence pack; saved JSON exactly matched visible export and reimport was accepted | Actual save/reimport; same saved pack accepted offline on the final built preview; no authenticity claim |
-| ER4 | Historical missing `tsx` recovered with lockfile `npm ci`, without added packages. Final production build succeeded in 71 s: 918 precache entries, 23,308.91 KiB | Reproducible dependency/build path; six inherited JavaScript chunks exceed 500,000 B, so full-host size gate fails |
-| ER5 | Baseline `:5173` native recovery identified `cc40000f…` at 2026-10-04T10:32:13.832Z. Final task preview `:5186/agentic-graph/` verified 980 offline files/29.3 MiB, reopened with network disabled, restored the exact demo and loaded 185 facts; import toast remained at 1/1 | Local runtime/build identity is separate from final UI acceptance and production authorization |
-| ER6 | Final 390×844 built preview: Flight context defaults collapsed; Enter expands/collapses it; primary evidence scrolls independently. Offline UTC step, source inspection and route comparison passed | Narrow/disclosure proof; import finalization status, 200% zoom, reduced motion and device acceptance remain open |
-| ER7 | Distinct code evaluator found no blocker, including Flight→Camera→Flight reset and offline-import repair. Timeout/cancellation, late-body disposal, retained-record and source/view/remove/unmount checks pass | Runtime diff review only; no self-certified full guideline alignment, device acceptance or deployment |
+| ER1 | Prior runtime core/CLI/stdio/WebMCP-builder tests: 74 passed | G1–G7; final affected CI pending; real labels/demand unproved |
+| ER2 | Prior input/UI 24, import/inventory 23, mobile/owner 4; Canvas check and repaired inventory fixture 13/13 pass | Native CI awaits clean committed-candidate smoke |
+| ER3 | Exact demo: 3 entities/185 facts/3 sources; browser saved 262,899-byte pack matching visible export; reimport and prior offline reimport passed | Actual file proof; final successor save/reimport repeat pending |
+| ER4 | Build 6 passed in 73 s: 1,654 JS/MJS/CJS files; largest 495,688 B; zero ESM cycles; initial disk closure 38 files/3,497,302 B. `build-6-output-manifest.json`, aggregate `04449dfe8c5da06f3a42aeb3a5baad986a8a3db680887cde6fed8d0dc61bebc8` | Prior over-cap failure resolved; initial delta unmeasured; final source/doc/CI joins pending |
+| ER5 | Build 5 installed 1,758 files/29.4 MiB; offline reopen and 185 facts passed. Evidence-load window: exactly two same-origin fixture/lazy-JS requests, both service-worker served | No external request in that complete action capture; full reopen capture truncated, so no whole-host zero-network claim |
+| ER6 | Build 5 at 390×844: offline UTC step and repeated route result pass; collapsed context and independent scrolling retained. Prior Enter disclosure passes | 200% zoom, full accessibility and physical-device acceptance remain |
+| ER7 | Independent code review found no blocker in evidence/mobile/import/Geo/XR changes; cancellation/late-body/stale-result checks pass | Affected diff review only |
+| ER8 | Import regression 1/1 and 14 related checks passed (`import-checks.log`). Dev and build 5 offline native bridge reached preparing→selecting→refreshing→applying→synchronizing→opening→`Imported 1; corpus source units 1` (`offline-import.json`) | Pending-toast acceptance gap closed on this candidate; original cause unproved. Job fences prevent stale continuation/duplicate Launch fallback, not rollback of dispatched lower-owner effects |
+| ER9 | Geo 4 behavior, 25 host, 1 City checks and linked build passed. Built UI loading/no SVG→map+loading/no SVG→map/no SVG; explicit SVG renders and Modern restores (`geo-startup.json`) | Actual startup/selection proof; lazy-chunk failure recovery and final repeat remain |
+| ER10 | XR tests 2/2: five unrelated writes and five Flight advances each changed commits 5→0; motion and required updates remain. Build 6 retains the same connected WebGL canvas through History open/close, zero removals (`xr-canvas-stability.json`) | Independent review; render counts are test measurements, canvas retention is actual UI proof |
 
-Final offline AS2: synthetic distances 77,757.706 m and 71,188.231 m; difference 6,569.475 m,
-conditional band [6,541.475, 6,597.475] m and explicit limitations. Final offline AS1 inspected `/facts/0`
-and stepped UTC 02:25:30.000Z→02:25:30.574Z. Browser evidence is bounded to this working candidate.
-Offline repair: automatic website mirrors skip production/offline hosts; only acknowledged writes cache
-the digest, so reconnect can retry. Existing local bytes and explicit Reveal ownership are preserved.
+Repeated offline AS2: 77,757.706 m versus 71,188.231 m, difference 6,569.475 m, conditional band
+[6,541.475,6,597.475] m with limitations. AS1 inspected `/facts/0`, UTC 02:25:30.000Z→02:25:30.574Z.
+Actual browser WebMCP inspect and invalid-input results match local executor bytes (`webmcp-parity.json`);
+not all-operation/remote parity. Automatic mirrors skip production/offline hosts; only acknowledged
+writes cache digests. Local bytes and explicit Reveal retain existing owners; reconnect can retry.
 
 ### Demonstration and experience assessment
 
@@ -361,10 +366,9 @@ the digest, so reconnect can retry. Existing local bytes and explicit Reveal own
 | Close |35| Missing evidence, qualified scope and next priced-review decision |
 | Total |240| Target ≤300 seconds; not an observed TTV result |
 
-Core/functionality, integration, usefulness and innovation ratings are **unassessed** under the guideline
-rubric; test counts do not manufacture a maturity score. Next checks: complete AS1/AS2/AS5, qualified
-real-data benchmarks and inherited EXP-1/4. OS-status dimension reuses existing runtime identity reads;
-AI-agent and federation dimensions reuse G6/G7. New aviation remote/exposure/cost surfaces have no proof.
+Maturity ratings remain unassessed; tests do not manufacture a score. Complete AS1/AS2/AS5 and
+qualified benchmarks before acceptance. Existing identity and G6/G7 owners serve platform dimensions;
+new remote/exposure/cost surfaces remain unproved.
 
 ## GTM, economics and learning
 
@@ -387,11 +391,10 @@ receipts. No offer/invoice/message sent; aviation mechanism, demand, revenue and
 | A-S3 buyer frequency, price, support minutes and labour value | No observed buyer / unknown / 2026-10-04 | Use EXP-1/3/4 and retain negative results |
 | A-S4 cash balances, tax, fees, collection lag and runway | Existing financial-model input register / unknown / 2026-10-04 | No numeric profit/runway claim |
 
-Local TCO has no new subscription; hardware, energy, labour and assistant cost are unmeasured.
-Self-hosting is deferred with unknown cash/time; managed edge awaits quota/FOSS/no-overage proof.
-Economic contribution = earned price − direct costs − labour/support; cash contribution = settled
-receipts − attributable cash outflows. Serving tokens enter COGS; implementation tokens enter ADLC.
-A $1 pilot may have negative economic contribution.
+No new subscription or paid resource; hardware, energy, labour, support and assistant cost are unknown.
+Self-hosting/managed edge await cost/quota/FOSS proof. Economic contribution deducts all direct and
+labour costs; cash contribution uses actual settlements/outflows. Serving tokens enter COGS and
+implementation tokens ADLC. A $1 pilot may have negative contribution.
 
 Market: analyst teams with permitted historical evidence; initial geography follows existing examples,
 not demonstrated demand. Two independent sizing methods remain unrun: counted eligible buyers ×
@@ -399,14 +402,13 @@ validated annual spend, and budget-based segment sizing from a cited primary dat
 number or “why now” statistic is invented. Existing Base/Downside/Upside and linked-statement formulas
 are reusable, but populated scenarios and reconciled balance/cash statements remain incomplete.
 
-One operator/pilot, agreed hours, no safety-response SLA. Buyer-specific entity/jurisdiction, IP, data,
-contract, tax and privacy review remain open. Bootstrap at zero new spend; funding/hiring/debt deferred
-until paid demand/support evidence. Deferred audience projections must cite continuity/revision and
-the existing owner, preserve hypotheses and show the actual demo.
+One operator/pilot and agreed hours; no safety-response SLA. Buyer-specific entity/IP/data/contract,
+tax/privacy review remains open. Zero-new-spend bootstrap; funding/hiring/debt depend on paid demand.
+Audience projections must preserve qualified source joins, hypotheses and the actual demo.
 
 | Roadmap | Reuse / exit | Active bound or external wait | Stop / next owner action |
 |---|---|---|---|
-| R0 current Must hardening | G1–G8; cancel stalled reads, preserve evidence, complete narrow/offline review | 11 runtime/test files + document/40 KiB after readmission; 60-minute initial target | Engineering reconciles final live evidence and uses native release; host chunk/device gates remain |
+| R0 current Must readiness | G1–G8; finish import/Geo/XR/bundle proof | Exact admitted paths; plan ≤40 KiB; next ≤20 active minutes, refresh on drift | Engineering binds final checks/UI then native release; protected review waits for receipt |
 | R1 priced review discovery | Existing EXP-1 then EXP-3; ≥3/10 pain accounts, ≥1/2 genuine paid acceptances | External wait: authorized access/response; recheck on response, no completion ETA | Two declined offers → revise/stop; Product owns consent/outreach authority |
 | R2 bounded exposure | G3/G4/G6/G8; AS3 and qualified rights/labels | ≤4 active hours, ≤4 modules/30 KiB, 3 cycles after admission | Unknown datum/coverage remains unknown; disable extension on regression |
 | R3 scenario costing | G3/G6/G8; AS4 and buyer/model inputs | Separate ≤4-hour sprint, same caps; no inferred grant | Stop without qualified units/currency/model; preserve distance comparison |
@@ -415,9 +417,10 @@ the existing owner, preserve hypotheses and show the actual demo.
 ## ADLC and release — reference implementation
 
 The original START admitted the plan from `cc40000f…`; PR 1545 integrated it at `24f0614390…`.
-The same checkout now carries `agent/device-0232231d4a19/aviation-swarm-runtime` based on `795327f…`.
-Intent: `/change #aviation-swarm-runtime @codex-root`; scope is 11 runtime/test files and this plan.
-One checkout; preserve concurrent owners. Runtime publication and integration require fresh receipts.
+PR 1547 published head `2206391d84e47202e6b69909d88b2b922d7c5b74`; protected review/integration is pending.
+Same-checkout successor `agent/device-0232231d4a19/aviation-swarm-readiness` starts there.
+Intent: `/change #aviation-swarm-readiness @codex-root`; native readmission owns exact paths. Preserve
+concurrent owners; final checks, successor publication and integration each require fresh receipts.
 
 **AS-D6 · Lane & deploy boundary · flowchart LR · version 2.** Source and delivery each require their own receipt.
 
@@ -441,17 +444,17 @@ existing candidate-specific production authorization. Read-only source/browser c
 Documentation may be published content; no deploy exemption is inferred from its extension. Release,
 integration, canonical sync, deployment, rollback and cleanup remain separate effects/receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.3.0 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.0 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
-| TAD | C: stalled reads/clipped context; I: reuse owners; D: bounded I/O and lazy composition | Engineering → add cancellation/layout hardening → no new package or algorithm | 2026-10-04 |
+| TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
 | ADR | C: cost/exposure absent; I: preserve bounds; D: reject duplicate runtime | Architecture → disposition alternatives → ADR-S1–S3, unresolved value explicit | 2026-10-04 |
-| MVP | C: save/device gaps; I: reproducible demo; D: verify exact candidate | Engineering → tests, build and actual save/reimport → ER1–ER7; full-host/device gates open | 2026-10-04 |
+| MVP | C: readiness gaps; I: reproducible demo; D: verify candidate | Engineering → tests/build/offline/Geo → ER1–ER10; final/device gates open | 2026-10-04 |
 | GTM | C: no payer evidence; I: nearest first dollar; D: consume existing experiments | Product → rank review before new services → unsent proposal, no revenue claim | 2026-10-04 |
 
 ## Coverage and findings
 
-All anchors below join `aviation-swarm@0.3.0`; coverage decisions are not readiness.
+All anchors below join `aviation-swarm@0.4.0`; coverage decisions are not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -460,7 +463,7 @@ All anchors below join `aviation-swarm@0.3.0`; coverage decisions are not readin
 | C03 offer/alternatives | covered / ADR/GTM | Product | Unsent review offer; EXP-3 |
 | C04 product/experience | covered / PRD/MVP | Product | AS1–AS5; exact demo and device checks |
 | C05 architecture/data | covered / TAD | Engineering | G1–G8; input/export identity checks |
-| C06 quality/security/AI | covered / TAD | Engineering | ER1/ER2/ER7; complete effects/accessibility open |
+| C06 quality/security/AI | covered / TAD | Engineering | ER1/ER2/ER7–ER10; final effects/accessibility proof open |
 | C07 decisions | covered / ADR | Architecture | Constraints and unresolved economics; revisit with buyer |
 | C08 smallest slice | covered / MVP | Engineering | Must hardening checked; whole AS1/AS2/AS5 not yet accepted |
 | C09 acquisition/retention | covered / GTM | Product | Existing EXP-1/3/4 unrun |
@@ -468,7 +471,7 @@ All anchors below join `aviation-swarm@0.3.0`; coverage decisions are not readin
 | C11 organization/obligations | covered / Source policy/GTM | Operator | Commercial/data review depends on selected buyer/source |
 | C12 viability | deferred / GTM | Product | Unknown drivers; populate/reconcile existing model after priced case |
 | C13 capital | covered / GTM | Product | Bootstrap/no ask; revisit on paid demand |
-| C14 execution | covered / ADLC | Engineering | Plan integrated; runtime successor publication/production receipts absent |
+| C14 execution | covered / ADLC | Engineering | Plan integrated; PR 1547 published; protected review and successor final release/delivery pending |
 | C15 audience projections | deferred / GTM | Product | No audience handoff; generate only from qualified joined claims |
 | C16 learning | covered / GTM | Product | Explicit continue/revise/stop thresholds; EXP results pending |
 
@@ -489,16 +492,14 @@ that the inherited feature lacks implementations or that this proposed increment
 
 ## Handover
 
-Implemented: bounded cancellable reads, native Flight context/width hardening and offline-safe import,
-with regression checks and this joined plan. Actual Save/reimport and built-preview offline/mobile
-checks passed. Import finalization toast remains pending after usable source restoration; its await-stage
-needs tracing before claiming whole-import completion. Six oversized host chunks and broader device,
-accessibility and guideline gates remain.
-AS3/AS4, first collection and production deployment have no acceptance receipt.
+Implemented: bounded evidence/mobile/offline owners, import stages/job fences, primary-first Geo/lazy
+SVG, XR surface projections and bounded bundles. Build 5 offline native import explicitly completes;
+Geo startup/selection and bounded browser-tool parity pass. XR tests confirm 5→0 unrelated commits
+without freezing motion. Whole AS1/AS2/AS5 and production delivery remain unaccepted.
 
-Engineering next runs affected release checks and publishes
-through the native lane. Recheck on candidate/input/profile drift; completion requires VCC-linked
-proof and separate integration/delivery receipts. Product discovery follows qualified consent and
-authorization; rights/model gaps block AS3/AS4 only. Preserve originals and concurrent work.
-Final build took 71 s; total labour, assistant tokens/cost and host TCO remain unmeasured. No new paid
-resources or packages were selected. Physical-device acceptance retains its inherited decision.
+Engineering next binds final source/doc/CI and build/UI proof. Current download automation stalled;
+retain prior save/reimport proof. Verify lazy-chunk failure recovery and 200% zoom/accessibility;
+physical-device, real-label and diagram/guideline acceptance remain separate gaps. Recheck on source,
+input/profile drift. Native publication precedes protected integration; PR 1547 review is an external
+wait. AS3/AS4 retain qualified-input/rights/buyer gates. Preserve originals/concurrent work. No new paid
+resources/packages; labour, assistant cost, initial-bundle delta and TCO are unmeasured. No revenue claim.
