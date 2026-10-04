@@ -9,6 +9,7 @@ import { initJsdomHarness } from '../tests/lib/jsdomHarness'
 
 const hostUrl = new URL('../../../gympgrph/src/GeospatialHost.tsx', import.meta.url)
 const svgUrl = new URL('../../../gympgrph/src/features/geospatial/SvgGeospatialFallback.tsx', import.meta.url)
+const recoveryUrl = new URL('../../../gympgrph/src/features/geospatial/RecoverableSvgFallback.tsx', import.meta.url)
 
 async function pendingIsNotFailure() {
   const { hasUnavailableMapLibreBasemap } = await import(hostUrl.href)
@@ -65,13 +66,52 @@ async function explicitSvgRetainsGeometryAndSemanticOwnership() {
 function fallbackAssetsStayBehindLazyBoundary() {
   const host = fs.readFileSync(hostUrl, 'utf8')
   const svg = fs.readFileSync(svgUrl, 'utf8')
-  assert.match(host, /React\.lazy\(\(\) => import\('\.\/features\/geospatial\/SvgGeospatialFallback\.js'\)\)/)
+  const recovery = fs.readFileSync(recoveryUrl, 'utf8')
+  assert.match(recovery, /createRecoverableSvgFallback\(\(\) => import\('\.\/SvgGeospatialFallback\.js'\)\)/)
+  assert.doesNotMatch(recovery, /import (?!type)[^\n]+ from ['"]\.\/SvgGeospatialFallback/)
   assert.doesNotMatch(host, /from ['"][^'"]*(?:worldSvgBasemap|d3)['"]/, 'The primary host must not eagerly import SVG terrain or projection code')
   assert.match(svg, /from '\.\/worldSvgBasemap\.js'/)
   assert.match(svg, /from 'd3'/)
 }
 
-const cases = [pendingIsNotFailure, pendingHostRendersOnlyPrimary, explicitSvgRetainsGeometryAndSemanticOwnership, fallbackAssetsStayBehindLazyBoundary]
+async function failedSvgLoadIsContainedAndReloadsOnlyOnRequest() {
+  const env = initJsdomHarness()
+  const container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main'))
+  const root = createRoot(container)
+  const { createRecoverableSvgFallback } = await import(recoveryUrl.href)
+  let attempts = 0
+  let reloads = 0
+  const Map = createRecoverableSvgFallback(async () => {
+    attempts += 1
+    throw new Error('Fixture SVG chunk unavailable')
+  }, () => { reloads += 1 })
+  const features = { type: 'FeatureCollection' as const, features: [] }
+  const render = (label: string) => root.render(<>
+    <button type="button" data-workspace-control>Workspace remains available</button>
+    <Map featureCollection={features} selectedFeatureCollection={features} className={label} />
+  </>)
+  try {
+    assert.equal(attempts, 0, 'Constructing the boundary must not fetch a chunk')
+    await act(async () => render('initial'))
+    assert.ok(container.querySelector('[role="alert"]'), 'A rejected chunk must expose local recovery')
+    const workspaceControl = container.querySelector('[data-workspace-control]')
+    assert.ok(workspaceControl?.isConnected, 'A rejected map must preserve the workspace')
+    await act(async () => render('latest'))
+    assert.equal(attempts, 1, 'Unrelated renders must not retry a failed fetch')
+    const reload = container.querySelector('[role="alert"] button') as HTMLButtonElement
+    assert.equal(reload.textContent?.trim(), 'Reload workspace')
+    assert.equal(reloads, 0, 'Chunk failures must never reload automatically')
+    await act(async () => reload.click())
+    assert.equal(reloads, 1, 'One explicit action must request one document reload')
+    assert.equal(attempts, 1, 'Do not spend requests retrying a cached module failure')
+    assert.equal(container.querySelector('[data-workspace-control]') === workspaceControl, true, 'The workspace must remain mounted until navigation')
+  } finally {
+    await act(async () => root.unmount())
+    env.restore()
+  }
+}
+
+const cases = [pendingIsNotFailure, pendingHostRendersOnlyPrimary, explicitSvgRetainsGeometryAndSemanticOwnership, fallbackAssetsStayBehindLazyBoundary, failedSvgLoadIsContainedAndReloadsOnlyOnRequest]
 
 export async function testGeospatialFallbackAdmission() {
   for (const run of cases) await run()

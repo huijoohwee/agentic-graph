@@ -1,6 +1,7 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
+  ["canvas.geospatial.fallbackAdmission", "@/__tests__/geospatialFallbackAdmission.test.tsx", "testGeospatialFallbackAdmission"],
   ["ui.invocation.hoverSourceParity", "@/__tests__/invocationHoverSourceParity.test.tsx", "testInvocationHoverSourceParity"],
   ["ui.card.viewer.mediaSerializationParity", "@/__tests__/cardInlineTextEditorMediaInsertParity.test.tsx", "testCardViewerMediaSerializationParity"],
   ["ui.card.viewer.mediaInsertParity", "@/__tests__/cardInlineTextEditorMediaInsertParity.test.tsx", "testCardViewerMediaInsertParity"],

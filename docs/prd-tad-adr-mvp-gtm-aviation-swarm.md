@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.0"
-revision: "0.4.0"
+version: "0.4.1"
+revision: "0.4.1"
 date: "2026-10-04"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.0"
-tad_revision: "0.4.0"
-adr_revision: "0.4.0"
-mvp_revision: "0.4.0"
-gtm_revision: "0.4.0"
+prd_revision: "0.4.1"
+tad_revision: "0.4.1"
+adr_revision: "0.4.1"
+mvp_revision: "0.4.1"
+gtm_revision: "0.4.1"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -22,7 +22,7 @@ runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
 worktree_id: "agent/device-0232231d4a19/aviation-swarm-readiness"
 agent_id: "codex-root"
-source_revision: "2206391d84e47202e6b69909d88b2b922d7c5b74"
+source_revision: "7874da22f0d02bf2e8b59195d815cad82824334b"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -31,12 +31,11 @@ source_docs:
 
 # Aviation Swarm
 
-`aviation-swarm@0.4.0` hardens the eligible Must workflows of the existing aviation evidence capability:
+`aviation-swarm@0.4.1` hardens the eligible Must workflows of the existing aviation evidence capability:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
-The longer-term question remains “Which routes are exposed, and what does each option cost?”
 Neither operational exposure assessment nor flight-cost calculation is currently implemented.
 
-The user selected **agentic-graph** as the implementation and document owner. This reference implementation
+**agentic-graph** owns implementation and documentation. This reference implementation
 consumes [aviation-evidence-layer@0.4.2](aviation-evidence/prd-tad-adr-mvp-gtm.md); it does not replace that
 owner, its eleven acceptance thresholds, rights records, financial model, or execution backlog.
 This successor adds import race fences/stages, primary-first Geo/lazy SVG, bounded bundles and XR surface
@@ -49,7 +48,7 @@ G1–G8 baseline: Graph `cc40000f8827ea68192edbd42385a887f107a3b5`, integrated b
 was integrated by [PR 1545](https://github.com/huijoohwee/agentic-graph/pull/1545) at `24f0614390affce87268d74e80a93791a73c30ca`.
 [PR 1547](https://github.com/huijoohwee/agentic-graph/pull/1547) published exact runtime head
 `2206391d84e47202e6b69909d88b2b922d7c5b74`; protected review/integration remains pending. The admitted
-readiness successor starts there. Publication is neither integration nor deployment.
+readiness successor starts there; `source_revision` is the pre-repair baseline. ER rows bind tested candidates.
 
 | Grounding ID / capability | Inspected owner and contract | Reuse / smallest delta | Check / evidence limit |
 |---|---|---|---|
@@ -147,7 +146,7 @@ reset expansion; width fixes retain source owners. No analytical algorithm chang
 `core.ts` fences graph/focus. Stale/failed native imports remain handled, preventing duplicate fallback;
 dispatched lower-owner effects are not rolled back. Geo treats null map/no error as pending and lazily
 loads `SvgGeospatialFallback.tsx` only for explicit SVG or confirmed failure, preserving geometry and
-semantics. Shared XR selects schema/actions and stable surface fields; frame/HUD owners remain live.
+semantics. `RecoverableSvgFallback.tsx` contains failure and offers explicit reload: browsers can cache failed imports until navigation. No automatic retry/reload. XR selects stable surface fields; frame/HUD owners remain live.
 AS3/AS4: separate ≤4-hour/4-module/30-KiB sprints after admission; ≤3 cycles, stop after two no-progress cycles.
 
 ### Invocation and shared-utility reuse
@@ -332,21 +331,21 @@ distance-only output; neither a quote nor a commitment follows from a scenario.
 The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md](workspace-seeds/agentic-graph-game-flight-sim-demo.md).
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
 One admitted checkout; exact-path readmissions own scope. New files <600 lines, oversized owners
-shrink, plan ≤40 KiB, zero new packages/spend. Next local validation target ≤20 active minutes; refresh
+shrink, plan ≤40 KiB, zero new packages/spend. Recovery: ≤5 files/8 KiB, one lazy-owned module, ≤20 active minutes; refresh
 on drift. Protected review waits for status change, not an ETA. Preview proof is not deployment.
 Private artifacts below: `/Users/huijoohwee/Documents/GitHub/.workspace/.artifacts/aviation-swarm-readiness/`.
 
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
 | ER1 | Prior runtime core/CLI/stdio/WebMCP-builder tests: 74 passed | G1–G7; final affected CI pending; real labels/demand unproved |
-| ER2 | Prior input/UI 24, import/inventory 23, mobile/owner 4; Canvas check and repaired inventory fixture 13/13 pass | Clean CI: desktop offline passes; mobile source-materialization drift blocks acceptance |
+| ER2 | `npm run ci:affected` at clean `5f9246da53715ff65c73c0fc8844524eae72ad46`: 5 passed, 1 failed, 4 unexecuted (`candidate-5f9246d-validation.json`) | Desktop offline passes; mobile 390 materialization drift blocks acceptance; producer integration pending |
 | ER3 | Exact demo: 3 entities/185 facts/3 sources; browser saved 262,899-byte pack matching visible export; reimport and prior offline reimport passed | Actual file proof; final successor save/reimport repeat pending |
-| ER4 | Build 6 passed in 73 s: 1,654 JS/MJS/CJS files; largest 495,688 B; zero ESM cycles; initial disk closure 38 files/3,497,302 B. `build-6-output-manifest.json`, aggregate `04449dfe8c5da06f3a42aeb3a5baad986a8a3db680887cde6fed8d0dc61bebc8` | Prior over-cap failure resolved; initial delta unmeasured; final source/doc/CI joins pending |
+| ER4 | Aligned 5f9246d build: 1,648 JS; max 495,688 B; zero ESM cycles/unresolved imports; initial 38 files/3,497,677 B. `candidate-build-lineage.json` binds source, manifest and proof | Replaces historical Build 6 for aligned bytes; initial delta/recovery build pending |
 | ER5 | Build 5 installed 1,758 files/29.4 MiB; offline reopen and 185 facts passed. Evidence-load window: exactly two same-origin fixture/lazy-JS requests, both service-worker served | No external request in that complete action capture; full reopen capture truncated, so no whole-host zero-network claim |
 | ER6 | Build 5 at 390×844: offline UTC step and repeated route result pass; collapsed context and independent scrolling retained. Prior Enter disclosure passes | 200% zoom, full accessibility and physical-device acceptance remain |
 | ER7 | Independent code review found no blocker in evidence/mobile/import/Geo/XR changes; cancellation/late-body/stale-result checks pass | Affected diff review only |
 | ER8 | Import regression 1/1 and 14 related checks passed (`import-checks.log`). Dev and build 5 offline native bridge reached preparing→selecting→refreshing→applying→synchronizing→opening→`Imported 1; corpus source units 1` (`offline-import.json`) | Pending-toast acceptance gap closed on this candidate; original cause unproved. Job fences prevent stale continuation/duplicate Launch fallback, not rollback of dispatched lower-owner effects |
-| ER9 | Geo 4 behavior, 25 host, 1 City checks and linked build passed. Built UI loading/no SVG→map+loading/no SVG→map/no SVG; explicit SVG renders and Modern restores (`geo-startup.json`) | Actual startup/selection proof; lazy-chunk failure recovery and final repeat remain |
+| ER9 | Geo 5 checks pass (`geo-recovery-test-v2.log`); registered `canvas.geospatial.fallbackAdmission`. Dev 7874 + diff: blocked SVG stays local; explicit reload restores map/toolbar (`geo-recovery-dev.json`) | Primary-first/selection proof retained; built recovery repeat pending |
 | ER10 | XR tests 2/2: five unrelated writes and five Flight advances each changed commits 5→0; motion and required updates remain. Build 6 retains the same connected WebGL canvas through History open/close, zero removals (`xr-canvas-stability.json`) | Independent review; render counts are test measurements, canvas retention is actual UI proof |
 
 Repeated offline AS2: 77,757.706 m versus 71,188.231 m, difference 6,569.475 m, conditional band
@@ -444,7 +443,7 @@ existing candidate-specific production authorization. Read-only source/browser c
 Documentation may be published content; no deploy exemption is inferred from its extension. Release,
 integration, canonical sync, deployment, rollback and cleanup remain separate effects/receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.0 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.1 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -454,7 +453,7 @@ integration, canonical sync, deployment, rollback and cleanup remain separate ef
 
 ## Coverage and findings
 
-All anchors below join `aviation-swarm@0.4.0`; coverage decisions are not readiness.
+All anchors below join `aviation-swarm@0.4.1`; coverage decisions are not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -498,7 +497,7 @@ Geo startup/selection and bounded browser-tool parity pass. XR tests confirm 5�
 without freezing motion. Whole AS1/AS2/AS5 and production delivery remain unaccepted.
 
 Engineering next joins the coordinating bootstrap owner's fix and reruns failed mobile acceptance.
-Retain prior save/reimport proof; verify lazy-chunk failure recovery and 200% zoom/accessibility;
+Retain save/reimport proof; repeat built recovery and verify 200% zoom/accessibility;
 physical-device, real-label and diagram/guideline acceptance remain separate gaps. Recheck on source,
 input/profile drift. Native publication precedes protected integration; PR 1547 review is an external
 wait. AS3/AS4 retain qualified-input/rights/buyer gates. Preserve originals/concurrent work. No new paid

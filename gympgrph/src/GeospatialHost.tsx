@@ -55,7 +55,7 @@ import {
 import type { FeatureCollection } from 'geojson'
 import { useEnhancedGeospatialHostLayers } from './useEnhancedGeospatialHostLayers.js'
 
-const SvgGeospatialFallback = React.lazy(() => import('./features/geospatial/SvgGeospatialFallback.js'))
+import SvgGeospatialFallback from './features/geospatial/RecoverableSvgFallback.js'
 
 export function hasUnavailableMapLibreBasemap(basemap: {
   map: unknown
@@ -1078,16 +1078,14 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
       data-kg-geo-xr-aerial-geography-boundary={flightOverlayActive ? 'not-rendered' : undefined}
     >
       {showSvgFallback ? (
-        <React.Suspense fallback={loadingStatus('Loading SVG map…')}>
-          <SvgGeospatialFallback
-            featureCollection={graphFeatureCollection}
-            selectedFeatureCollection={selectedFeatureCollection}
-            className={svgFallbackClassName}
-            insetPadding={shouldOverlaySvgFallbackBasemap ? { top: 12, right: Math.max(220, svgOverlayInsetRight), bottom: 12, left: 12 } : undefined}
-            semanticMediaOwner={props.semanticMediaOwner}
-            style={shouldOverlaySvgFallbackBasemap ? { transform: 'translateX(-220px)' } : undefined}
-          />
-        </React.Suspense>
+        <SvgGeospatialFallback
+          featureCollection={graphFeatureCollection}
+          selectedFeatureCollection={selectedFeatureCollection}
+          className={svgFallbackClassName}
+          insetPadding={shouldOverlaySvgFallbackBasemap ? { top: 12, right: Math.max(220, svgOverlayInsetRight), bottom: 12, left: 12 } : undefined}
+          semanticMediaOwner={props.semanticMediaOwner}
+          style={shouldOverlaySvgFallbackBasemap ? { transform: 'translateX(-220px)' } : undefined}
+        />
       ) : null}
       {mapLibrePending ? loadingStatus('Loading map…') : null}
       {mapLibreRuntimeEnabled ? (
