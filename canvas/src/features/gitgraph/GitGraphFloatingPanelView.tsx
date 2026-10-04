@@ -22,6 +22,7 @@ import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import { useMermaidGitGraphDocument } from './useMermaidGitGraphDocument'
 import { HistoryUndoRedoControls } from '@/features/history/HistoryUndoRedoControls'
 import { getIconSizeClass } from '@/lib/ui'
+import { selectDocumentVersionHistory } from './versionHistoryGitGraph'
 
 const GITGRAPH_COMMAND_LABELS: Record<MermaidGitGraphAddKind, string> = {
   commit: 'Commit',
@@ -51,6 +52,7 @@ export function GitGraphFloatingPanelView() {
     history,
     historyIndex,
     restoreHistory,
+    markdownDocumentName,
   } = useGraphStore(
     useShallow(state => ({
       gitGraphSelectedCommandLineIndex: state.gitGraphSelectedCommandLineIndex,
@@ -62,11 +64,13 @@ export function GitGraphFloatingPanelView() {
       history: state.history,
       historyIndex: state.historyIndex,
       restoreHistory: state.restoreHistory,
+      markdownDocumentName: state.markdownDocumentName,
     })),
   )
   const iconSizeClass = getIconSizeClass(uiIconScale)
   const { code, commitGitGraphCode, gitGraphModel, graphData } = useMermaidGitGraphDocument()
-  const usesRuntimeHistory = !code && history.length > 0
+  const documentHistory = React.useMemo(() => selectDocumentVersionHistory(history, markdownDocumentName), [history, markdownDocumentName])
+  const usesRuntimeHistory = !code && documentHistory.length > 0
   const gitGraphDiagramModel = React.useMemo(() => parseMermaidDiagramCodeModel(code, 'gitgraph'), [code])
   const { handleDiagramSelectedRowKeyChange } = useStoryboardWidgetDiagramSelectionBridge({
     graphData,
@@ -173,9 +177,9 @@ export function GitGraphFloatingPanelView() {
           <span className={cn('truncate text-xs font-semibold', UI_THEME_TOKENS.text.primary)}>GitGraph</span>
           <HistoryUndoRedoControls iconSizeClass={iconSizeClass} iconStrokeWidth={uiIconStrokeWidth} />
         </header>
-        {history.length ? (
+        {documentHistory.length ? (
           <ol className="min-h-0 flex-1 overflow-auto rounded-md border border-[var(--kg-border)]" aria-label="Version history list">
-            {history.map((entry, index) => (
+            {documentHistory.map(({ entry, index }, versionIndex) => (
               <li key={entry.id}>
                 <button
                   type="button"
@@ -188,7 +192,7 @@ export function GitGraphFloatingPanelView() {
                   data-kg-version-history-index={index}
                 >
                   <span className="min-w-0 flex-1 truncate">{entry.label}</span>
-                  <span className={UI_THEME_TOKENS.text.tertiary}>v{index + 1}</span>
+                  <span className={UI_THEME_TOKENS.text.tertiary}>v{versionIndex + 1}</span>
                 </button>
               </li>
             ))}

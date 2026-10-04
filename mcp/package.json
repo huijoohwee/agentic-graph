@@ -7,7 +7,9 @@
   "license": "MIT",
   "main": "server.js",
   "scripts": {
-    "start": "node ./server.js"
+    "start": "node ./server.js",
+    "dev:project": "node ./workspace-project-server.js",
+    "test:project": "node --test ./__tests__/workspace-project-runtime.test.mjs ./__tests__/workspace-project-server.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.1.0",
