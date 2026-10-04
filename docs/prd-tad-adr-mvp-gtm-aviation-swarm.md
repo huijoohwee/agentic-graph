@@ -332,7 +332,7 @@ The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.m
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
 One admitted checkout; exact-path readmissions own scope. New files <600 lines, oversized owners
 shrink, plan ≤40 KiB, zero new packages/spend. Offline repair: ≤20 active minutes, six files/10 KiB, one runtime module; refresh on drift. Protected review waits for status change, not an ETA. Preview proof is not deployment.
-Private artifacts below: `/Users/huijoohwee/Documents/GitHub/.workspace/.artifacts/aviation-swarm-readiness/`.
+Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-readiness/`.
 
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
