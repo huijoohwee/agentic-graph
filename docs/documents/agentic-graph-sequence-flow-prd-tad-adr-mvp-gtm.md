@@ -20,7 +20,7 @@ worktree_id: "device-0232231d4a19--sequence-flow-docs"
 agent_id: "codex-sequence-flow-docs"
 guideline_revision: "3.4.0"
 guideline_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
-reviewed_source_revision: "55bce6cf09cc822b6e9f829338f8e0e103a34131"
+reviewed_source_revision: "cb83723f2dcfb5c61213af511eb941d8a2ca50f9"
 load_policy: "on-demand"
 canvas_render_mode: "2d"
 canvas_2d_renderer: "d3"
@@ -31,8 +31,9 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.44**. This 2026-10-04 successor closes automatic offline fetches and startup selection races through
+All five roles join **SEQUENCE-FLOW-001@1.3.44**. This 2026-10-04 producer release fixes startup selection races and graph-application intent through
 existing owners, preserving bounded parsing, event identity and the shared playback clock.
+The offline repair is retained for the following release after the shared runtime dependency lands.
 Final candidate readiness requires the complete evidence matrix below; earlier proof keeps its original limits.
 
 Context: an existing sequence view and shared Timeline shown in the supplied screenshot.
@@ -190,7 +191,7 @@ preferences stay in the existing settings owner. No automatic source rewriting.
 
 ### Reference implementation — exact codebase grounding
 
-Current rows describe the working candidate based on **agentic-graph `eea2db95344af90b40a9754087eaa5be299b4492`**; final receipts must bind final bytes.
+These runtime rows are grounded in protected **agentic-graph `8734a89f8851a0a9a7dc40e896f055aa78f015f1`**. The startup producer and retained offline work have separate evidence below; final receipts must bind final bytes.
 Prior grounding at `24f0614390affce87268d74e80a93791a73c30ca`, inspected OS checkout `445dedbeb34693fdf5e7f92fb8aed785493096a1`
 and recorded OS pin `1d3e803f9c28c33ab41f3bf6755e760426e1c956` are historical identities, not new delivery proof.
 
@@ -388,7 +389,7 @@ user-supplied external demonstration through normal file controls, retaining its
 bytes outside the repository. The screenshot is context, not current acceptance. Generic
 authored tests cover alternatives, duplicates, self-calls, notes, async, failure/recovery,
 budget floods, identity switches, scalar lines, target collisions and accessible projections.
-Current focused checks pass 14 domain/hook cases and five presentation cases. Current
+The protected predecessor passed 14 domain/hook cases and seven presentation cases. Current
 build, browser and affected validation are underway; inherited live observations do not
 prove the repaired candidate. Disconnected reopen, strict zero requests, negative-input UI,
 race, mobile/keyboard and performance obligations require exact-candidate receipts.
@@ -423,7 +424,7 @@ V1–V9 pass and a pilot shows the omitted behavior matters. No second roadmap.
 
 ## GTM
 
-Current 1.3.44 is an unpublished readiness candidate. Complete Q1–Q9 and exact build/release evidence before
+Current 1.3.44 is the startup producer candidate in a serialized readiness release. Complete Q1–Q9 and exact build/release evidence before
 offering production readiness; focused passes and offline controls do not prove installation, delivery, buyer value or revenue.
 
 Hypothesis H1: a reachable technical team lead values a reviewed reusable interaction
@@ -504,17 +505,22 @@ Earlier source, implementation, diagnosis and release checkpoints remain in the
 | Cancellation | Existing mount controller supplies its signal; cancellation fences preparation, reads, retries and result publication. It preserves the exact abort reason. This is not cancellation of already-started inner operations. |
 | Responsibility and size | Existing persistence/bootstrap owner is extracted into typed, acyclic workspace, cloud and polling hooks. The caller is 552 lines; hooks are 458/368/174 and shared types 95. AST review preserves callback bodies and effect order; all currently modified files are below 600 lines. |
 | Passive graph intent | For ordinary Markdown, cold and cached passive hydration preserve the current graph; explicit activation afterward applies the selected document. Source guards remain enforced. The combined closure group passes 42/42, with six materialization/ingest checks and one storage source check also passing; final typecheck succeeds. Retained agent-graph manifest restoration is a separate pre-existing document contract, outside this ordinary-Markdown guarantee. |
-| Offline owners | Actual Workbox cache strategy and production PWA boot regressions failed before repair and pass afterward: 20/20 focused tests. Verified or damaged installed members initiate no fetch; ordinary online misses still fetch. |
-| Browser diagnostic | Verified installation completed in 4,890 ms. The explicit offline route with connectivity available observed 463 page requests: 462 service-worker responses, zero worker fetches and one uncached host-mirror POST. The strict assertion correctly fails; this is not final offline acceptance. |
-| Shared-file handoff | PR #1547 head `2206391d84e47202e6b69909d88b2b922d7c5b74` contains production/disconnected mirror suppression plus acknowledgement-only digest caching. Native ownership transfer or protected integration is required before consumption. |
+| Deferred offline owners | Retained recovery commit `cb83723f2dcfb5c61213af511eb941d8a2ca50f9`, outside this producer diff: actual Workbox cache strategy and production PWA boot regressions failed before repair and pass afterward: 20/20 focused tests. Verified or damaged installed members initiate no fetch; ordinary online misses still fetch. |
+| Prior offline diagnostic | Verified installation completed in 4,890 ms. The explicit offline route with connectivity available observed 463 page requests: 462 service-worker responses, zero worker fetches and one uncached host-mirror POST. The strict assertion correctly fails; this is not final offline acceptance. |
+| Shared-file handoff | The shared owner retains production/disconnected mirror suppression, acknowledgement-only digest caching and bounded chunks. Its clean mobile acceptance reproduced the startup error; the complete startup producer passes that walkthrough. Land the independent producer through its protected gate, then let the shared owner align and validate. No reserved file is transplanted. |
 | Bundle handoff | The shared build owner reports a bounded diagnostic build with no static cycles. Final exact emitted JS/MJS/CJS sizes, worker imports, initial-load behavior and browser parity remain required before acceptance. |
-| External-input proof | The existing built offline smoke accepts an explicit external sequence document, with no default specimen or repository fixture. It derives event and branch expectations from the actual parser, records the source hash and checks save/reopen, public view controls, playback, narrow keyboard access and reduced motion. |
-| Final validation | Freeze all admitted source, build once and run the selected affected gate plus the external-input browser proof. Rebind any result invalidated by later source or shared-owner changes. |
+| Deferred external-input proof | Retained in recovery commit `cb83723f2dcfb5c61213af511eb941d8a2ca50f9`, the built offline smoke accepts an explicit external sequence document, with no default specimen or repository fixture. It derives event and branch expectations from the actual parser, records the source hash and checks save/reopen, public view controls, playback, narrow keyboard access and reduced motion. |
+| Producer browser proof | Clean `cb83723f2dcfb5c61213af511eb941d8a2ca50f9` passes the existing full-app walkthrough at 1024×900 and 390×900: local import, apply/cancel/undo, verified 980-file installation, offline cold reopen, no page errors or blocked remote requests. Mobile first value 14,278 ms, installation 6,350 ms and reload 1,406 ms. This is not strict zero-fetch sequence acceptance. |
+| Validation ownership | Focused bootstrap checks retain the shared lazy gate’s relevant positive and negative storage-import assertions, eager mount/SSOT bridge rules and Flight ordering. The unrelated broad gate and its pre-existing selections remain unchanged. |
+| Final validation | Run the clean producer’s selected native affected gate before publication. After its protected integration and the shared owner’s protected release, restore the retained offline/proof changes, freeze the combined source, and run exact build and external-input acceptance. |
 
 TAD: one source owner and one shared clock remain authoritative. Startup retries are capped at three;
 no retry may overwrite a newer document. The PWA uses revision namespaces and its existing integrity
 reader; source storage, manual reveal and deliberate refresh keep their existing owners.
-ADR: repair automatic request callers and the existing cache policy; do not replace persistence,
+ADR: serialize startup producer → shared runtime dependency → offline closure because native admission does
+not transfer active reservations between unpublished lanes. Keep the complete cancellation/caller closure;
+focused validation preserves every relevant lazy-loading assertion. In the final stage, repair automatic
+request callers and the existing cache policy; do not replace persistence,
 weaken stale-source checks, increase chunk exceptions or duplicate the shared-file repair.
 MVP: Q1–Q9 bind to the same final build, complete network records and external source hash;
 desktop browser emulation does not establish physical-device or screen-reader coverage.
