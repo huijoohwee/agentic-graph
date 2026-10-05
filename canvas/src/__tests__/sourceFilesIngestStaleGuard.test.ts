@@ -243,8 +243,12 @@ export function testSourceFilesBootstrapResyncsOnWorkspaceFsSeedChanges() {
   }
   if (text.includes('const workspaceEntries = await fs.listEntries()')) throw new Error('expected source files bootstrap workspace-fs event handler to avoid direct listEntries calls during Source Files sync')
   if (!text.includes('const workspaceEntries = await readWorkspaceActiveEntrySnapshot({')) throw new Error('expected source files bootstrap workspace-fs event handler to refresh only the active workspace entry snapshot for Source Files sync')
-  if (!text.includes('buildActiveWorkspaceRuntimeSourceFilesSnapshot({')) {
-    throw new Error('expected source files bootstrap workspace-fs event handler to centralize active runtime source-files shaping through the shared helper before rematerialization')
+  const runtime = readFileSync(resolve(process.cwd(), 'src', 'features', 'source-files', 'useSourceFilesWorkspaceRuntime.ts'), 'utf8')
+  if (!runtime.includes('const proof = await materializeActiveWorkspaceEntryIntoSourceFiles({') || !runtime.includes('return proof.sourceFiles')) {
+    throw new Error('expected deferred workspace rematerialization to delegate source publication and return the guarded materializer proof')
+  }
+  if (runtime.includes('buildActiveWorkspaceRuntimeSourceFilesSnapshot(') || /\bsetSourceFiles\s*\(/.test(runtime)) {
+    throw new Error('expected the guarded materializer to remain the sole source writer after deferred workspace hydration')
   }
 }
 
