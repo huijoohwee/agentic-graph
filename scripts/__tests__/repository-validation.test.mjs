@@ -239,7 +239,13 @@ test('measured slow checks are isolated without raising their command timeout', 
   const contract = await readContract()
   const policy = JSON.parse(readFileSync(new URL('../../.agentic-os-validation.json', import.meta.url)))
   const isolated = contract.ci_command_timeout_overrides.filter(row => row.timeout_ms === contract.ci_command_timeout_ms)
-  assert.equal(isolated.length, 5)
+  assert.equal(isolated.length, 4)
+  const combined = ['npm', 'run', 'spatial-workspace:full-app']
+  assert.equal(resolveCiCommandTimeoutMs(combined, contract), 600000)
+  const combinedGroups = partitionAffectedCommands([combined], contract)
+  validateExecutionPartitions(combinedGroups, policy)
+  assert.equal(combinedGroups.standard.length, 0)
+  assert.deepEqual(Object.values(combinedGroups).flat(), [combined])
   const ordinary = { ...contract, ci_command_timeout_overrides: [] }
   const commands = isolated.map(row => row.command)
   const groups = partitionAffectedCommands(commands, contract)
