@@ -136,3 +136,15 @@ test('a new import cannot reuse an unchanged terminal in its own channel', async
   await assert.rejects(f.run(async () => { f.window.document.body.append(f.window.document.createElement('div')) }, { timeoutMs: 25 }), /timed out/)
   f.clean()
 })
+test('browser import proof and receipt consumers have no undefined identifiers', async () => {
+  const [{ ESLint }, { default: globals }, { fileURLToPath }] = await Promise.all([
+    import('eslint'), import('globals'), import('node:url'),
+  ])
+  const eslint = new ESLint({ overrideConfigFile: true, overrideConfig: [{ files: ['**/*.mjs'],
+    languageOptions: { ecmaVersion: 'latest', sourceType: 'module', globals: { ...globals.node, ...globals.browser } },
+    rules: { 'no-undef': 'error' } }] })
+  const paths = ['../lib/workspace-import-proof.mjs', '../lib/aviation-evidence-offline-proof.mjs', '../run_spatial_workspace_full_app_smoke.mjs']
+    .map(path => fileURLToPath(new URL(path, import.meta.url)))
+  const results = await eslint.lintFiles(paths)
+  assert.deepEqual(results.flatMap(result => result.messages.map(message => ({ file: result.filePath, ...message }))), [])
+})

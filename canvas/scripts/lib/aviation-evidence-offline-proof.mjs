@@ -151,7 +151,7 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
       const chooser = page.waitForEvent('filechooser')
       await text(page, 'Choose files').click()
       const fileChooser = await chooser
-      await importWorkspaceFile({ page, fileChooser, path: localPath, source,
+      const importCompletion = await importWorkspaceFile({ page, fileChooser, path: localPath, source,
         file: { name: localPath.split('/').at(-1), mimeType: 'text/markdown', buffer: Buffer.from(source) } })
       mark('import-complete')
       let panel = await evidencePanel(page)
