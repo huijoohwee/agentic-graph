@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.23"
-revision: "0.4.23"
+version: "0.4.24"
+revision: "0.4.24"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.23"
-tad_revision: "0.4.23"
-adr_revision: "0.4.23"
-mvp_revision: "0.4.23"
-gtm_revision: "0.4.23"
+prd_revision: "0.4.24"
+tad_revision: "0.4.24"
+adr_revision: "0.4.24"
+mvp_revision: "0.4.24"
+gtm_revision: "0.4.24"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -25,7 +25,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-import-readiness"
 agent_id: "codex-root"
-source_revision: "1fcc35b373c5ddd622be1a19887963845e6c93b5"
+source_revision: "f897c8e8725c3a7f7431a710cd8a3539f8bd7aaf"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm — reference implementation
 
-`aviation-swarm@0.4.23` hardens eligible aviation evidence Must workflows:
+`aviation-swarm@0.4.24` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -335,12 +335,12 @@ distance-only output; neither a quote nor a commitment follows from a scenario.
 
 The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md](workspace-seeds/agentic-graph-game-flight-sim-demo.md).
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
-Next verification cycle: ≤30 active minutes/12,000 implementation tokens/3 iterations; replan after two no-progress attempts. ≤4 agents, one writer; runtime frozen, doc delta ≤4 KiB, plan ≤40 KiB, files <600 lines. No spend/packages. Historical authoring usage/cost unknown; serving models zero.
+Next verification cycle: ≤20 active minutes/12,000 implementation tokens/3 iterations; replan after two no-progress attempts. ≤4 agents, one writer; runtime frozen, doc delta ≤4 KiB, plan ≤40 KiB, files <600 lines. No spend/packages. Historical authoring usage/cost unknown; serving models zero.
 Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-readiness/`.
 
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
-| ER1 | Python offline 10/10; import ownership 7/7, Evidence UI 21/21, XR 4/4 and Canvas typecheck pass | All ten native `ci:affected` plans must pass on the final publication candidate; its exact receipt owns that verdict |
+| ER1 | f897 source convergence 161/161 and Canvas check pass; Python offline unit 10/10, import ownership 7/7, Evidence UI 21/21 and XR 4/4 retained | All ten native `ci:affected` plans must pass on the final publication candidate; its exact receipt owns that verdict |
 | ER2 | PR 1560 merged e551c50c; native closeout/alignment 534b213 complete | Integration Gate 37259875188 passes; producer ten plans, 121 source/42 sequence checks pass |
 | ER3 | 1fcc desktop/mobile export: 3 entities/185 facts/3 sources; 262,899 B; executor/reimport parity | `aviation-offline-1fcc35b/acceptance.json`; exact originals/replay and browser fallback inspect/replay parity |
 | ER4 | 1fcc build/PWA authority pass; 1,672 JS, largest 495,688 B; whole host 28,467,885 B | ADR-004 feature 148,203 B; initial 20,881 B pass. Feature plus ten native owners 161,084 B fails 150 kB; combined initial 33,762 B. `final-byte-audit-1fcc35b.md` |
@@ -441,7 +441,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.23 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.24 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -451,7 +451,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.23`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.24`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -486,8 +486,8 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-Development: PR1560 integrated; 1fcc passes desktop/mobile-emulated first-offline and native 200% review. ER5/ER6 bind runtime bytes; rerun if owners change. Independent repair review found no actionable regression.
-Cold bootstrap remains bounded to 30 seconds. Harness total-import allowance is 60 seconds, requiring terminal success/exact source; AS1 remains ≤300 seconds.
-Production Release: ten native plans and protected integration need exact receipts. The build plus four cold contexts exceeded 300 s; v94 bounds that aggregate command to 600 s, preserving per-journey limits. Native publication stops at provider handoff.
-Runtime: no deployment/promotion authority or receipt. Physical iPhone SKIP/KIV; inherited real touchdown/notice labels and commercial validation remain open. AS3/AS4 retain gates.
-ADR-004 feature passes; 161,084 B including native repairs fails 150 kB. No broader readiness claim follows. Preserve concurrent work and prior failed receipts; recheck on drift.
+Development: PR1560 integrated. At 99c92d4, eight native plans passed; Python restore failed before lesson execution. f897 admits one exact persisted non-Markdown restore before importer publication; later effects forbid retry. ER1 binds focused checks. ER3–ER7 are historical; final candidate receipts own refreshed verdicts.
+Cold bootstrap stays ≤30 s; total-import harness ≤60 s requires terminal success/exact source; AS1 ≤300 s.
+Production Release: ten native plans and protected integration need exact receipts. Contract v94 allows 600 s for one build plus four cold contexts, retaining journey deadlines. Native publication stops at provider handoff.
+Runtime: no deployment/promotion grant or receipt. Physical iPhone SKIP/KIV; real-label and commercial gates remain. AS3/AS4 stay conditional.
+ADR-004 passed at 1fcc; its 161,084 B including native repairs failed 150 kB. Final byte receipt must rebind the successor. No broader readiness claim. Preserve concurrent work and historical failures.
