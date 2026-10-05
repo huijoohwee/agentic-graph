@@ -17,6 +17,7 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["markdown.viewer.sharedInvocations", "@/__tests__/markdownVariableInvocations.test.tsx", "testMarkdownViewerSharedInvocations"],
   ["canvas.xrMode.renderSubscriptions.store", "@/__tests__/threeGraphRenderSubscriptions.test.tsx", "testThreeGraphIgnoresUnrelatedStoreUpdates"],
   ["canvas.xrMode.renderSubscriptions.gameplay", "@/__tests__/threeGraphRenderSubscriptions.test.tsx", "testGameplaySurfaceIgnoresFramePublications"],
+  ["xr.motionReference.bridge.selectionSync.noRerender", "@/__tests__/threeGraphRenderSubscriptions.test.tsx", "testXrMotionBridgeSelectionSyncDoesNotRerenderTheBridge"],
   ["canvas.xrMode.choreographyOwnership", "@/__tests__/xrChoreographyOwnership.test.tsx", "testXrChoreographyOwnership"],
   ["canvas.xrMode.studio.semanticExercises", "@/__tests__/xrSceneSemantic.test.ts", "testXrStudioSceneProjectionAndExercises"],
   ["canvas.xrMode.studio.inspector", "@/__tests__/xrSceneSemantic.test.ts", "testXrStudioInspectorProjectsSceneAndExercises"],

@@ -10,6 +10,11 @@ import { FLIGHT_SIM_FIXED_STEP_SECONDS } from '@/features/game-flight-sim/flight
 import { readGameModeSnapshot, reportGameModeSimulationFailure, resetGameModeRuntimeForTests } from '@/features/game-fps/gameModeRuntime'
 import { publishCitySimSnapshot, publishCitySimSuccess, readCitySimSnapshot, resetCitySimSnapshotForTests } from '@/features/game-city-sim/citySimRuntimeState'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { completeSourceFilesBootstrap } from '@/features/source-files/sourceFilesBootstrapReadiness'
+import { XrMotionReferenceRuntimeBridge } from '@/features/three/XrMotionReferenceRuntimeBridge'
+import { readXrMotionReferencePlan, serializeXrMotionReferencePlan } from '@/features/three/xrMotionReferenceModel'
+import { hydrateXrMotionReferenceRuntime, readXrMotionReferenceRuntime, restoreXrMotionReferenceRuntimeSnapshot } from '@/features/three/xrMotionReferenceRuntime'
+import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
 
 export async function testThreeGraphIgnoresUnrelatedStoreUpdates() {
   const previous = useGraphStore.getState()
@@ -115,5 +120,37 @@ export async function testGameplaySurfaceIgnoresFramePublications() {
     resetGameModeRuntimeForTests()
     resetCitySimSnapshotForTests(null, false)
     restore()
+  }
+}
+
+export async function testXrMotionBridgeSelectionSyncDoesNotRerenderTheBridge() {
+  const prior = useGraphStore.getState(), priorRuntime = readXrMotionReferenceRuntime()
+  const env = initJsdomHarness('<!doctype html><body><div id="root"></div></body>')
+  const root = createRoot(env.dom.window.document.getElementById('root')!)
+  const nodes = [
+    { id: 'actor-a', label: 'Actor A', type: 'Person', properties: {} },
+    { id: 'actor-b', label: 'Actor B', type: 'Person', properties: {} },
+  ]
+  let commits = 0
+  try {
+    completeSourceFilesBootstrap()
+    const plan = readXrMotionReferencePlan({ cast: [{ actorId: 'actor-a' }, { actorId: 'actor-b' }] }, nodes)
+    useGraphStore.setState({ markdownDocumentName: 'XR bridge selection.md', markdownDocumentText: '# XR bridge selection',
+      graphData: { type: 'Graph', nodes, edges: [], metadata: { kgXrMotionReference: serializeXrMotionReferencePlan(plan) } }, selectedNodeId: null } as never)
+    await mountReactRoot(root, <React.Profiler id="xr-motion-bridge" onRender={() => { commits += 1 }}>
+      <XrMotionReferenceRuntimeBridge />
+    </React.Profiler>)
+    const initial = commits
+    assert.ok(initial > 0, 'The mounted XR bridge must commit')
+    for (const actorId of ['actor-a', 'actor-b']) {
+      await act(async () => { useGraphStore.getState().selectNode(actorId) })
+      assert.equal(readXrMotionReferenceRuntime().selectedActorId, actorId)
+      assert.equal(commits, initial, 'Selection must sync without rerendering the XR bridge')
+    }
+  } finally {
+    await unmountReactRoot(root)
+    useGraphStore.setState(prior)
+    restoreXrMotionReferenceRuntimeSnapshot(priorRuntime)
+    env.restore()
   }
 }

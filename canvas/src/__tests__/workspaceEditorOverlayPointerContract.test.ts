@@ -219,6 +219,19 @@ export function testWorkspaceEditorOverlayDoesNotShrinkCanvasViewport() {
   if (!workspaceToolbarText.includes('closeWorkspaceView({')) {
     throw new Error('expected workspace close action to reuse the shared close helper for residue cleanup')
   }
+  const closeButtonIndex = workspaceToolbarText.indexOf('data-kg-workspace-toolbar-close="1"')
+  const controlsIndex = workspaceToolbarText.indexOf('<CollapsibleToolbar')
+  if (closeButtonIndex < 0 || controlsIndex < 0 || closeButtonIndex > controlsIndex) {
+    throw new Error('expected Workspace Close to stay visible before the horizontally scrolling toolbar controls')
+  }
+  const actionsMenuIndex = workspaceToolbarText.indexOf('aria-label="Actions"')
+  if (
+    !workspaceToolbarText.includes('title={UI_LABELS.close}') ||
+    actionsMenuIndex < 0 ||
+    workspaceToolbarText.slice(actionsMenuIndex).includes('title={UI_LABELS.close}')
+  ) {
+    throw new Error('expected one close control outside the scrollable actions menu')
+  }
   if (workspaceToolbarText.includes("setWorkspaceViewMode('canvas')")) {
     throw new Error('expected workspace close action to avoid manual canvas-mode fallback bypassing the shared close helper')
   }
