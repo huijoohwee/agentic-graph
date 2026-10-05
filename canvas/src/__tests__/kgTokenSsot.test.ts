@@ -58,7 +58,7 @@ export async function testKgTokenValidationAndAliases() {
 }
 
 export async function testKgTokenExportsAreDeterministicAndBounded() {
-  const { serializeKgTokens, buildKgTokenBundle, buildKgTokensCssText } = await import('@/lib/ui/tokens-ssot')
+  const { serializeKgTokens, buildKgTokenBundle, buildKgTokensCssText, renderKgTokensCss } = await import('@/lib/ui/tokens-ssot')
   const reversed = [...AG_TOKEN_DEFS].reverse()
   for (const target of ['css', 'json', 'typescript'] as const) {
     const result = serializeKgTokens(AG_TOKEN_DEFS, target)
@@ -75,6 +75,26 @@ export async function testKgTokenExportsAreDeterministicAndBounded() {
   for (const token of bundle.tokens) for (const theme of ['light', 'dark', 'black'] as const) {
     assert.ok(css.includes(`${token.cssVar}: ${token.css[theme]};`))
   }
+  assert.equal(css.match(/--kg-control-height:/g)?.length, 1, 'Joined themes inherit responsive layout from the base root')
+  for (const theme of ['dark', 'black'] as const) {
+    assert.doesNotMatch(buildKgTokensCssText(theme), /--kg-control-height:/)
+    assert.match(buildKgTokensCssText(theme, { selector: ':root' }), /--kg-control-height: 28px;/, 'Standalone roots remain complete')
+    assert.match(renderKgTokensCss(AG_TOKEN_DEFS, theme, ":root[data-theme='dark']"), /--kg-control-height: 28px;/, 'Generic renderer stays complete by default')
+  }
+  const dimension = { name: 'size', cssVar: '--kg-size' as const, type: 'dimension' as const,
+    purpose: 'Layout size', light: '28px', dark: '28px', black: '28px' }
+  const varying = { ...dimension, name: 'varying', cssVar: '--kg-varying' as const, dark: '44px', black: '48px' }
+  const count = { ...dimension, name: 'count', cssVar: '--kg-count' as const, type: 'number' as const, light: '2', dark: '2', black: '2' }
+  const alias = { ...dimension, name: 'alias', cssVar: '--kg-alias' as const,
+    light: 'var(--kg-varying)', dark: 'var(--kg-varying)', black: 'var(--kg-varying)',
+    references: { light: 'varying', dark: 'varying', black: 'varying' } }
+  const definitions = [dimension, varying, count, alias]
+  const inherited = renderKgTokensCss(definitions, 'dark', ":root[data-theme='dark']", false, { inheritLayout: true })
+  assert.doesNotMatch(inherited, /--kg-(?:size|count):/)
+  assert.match(inherited, /--kg-varying: 44px;/, 'Theme-dependent dimensions retain their declaration')
+  assert.match(inherited, /--kg-alias: var\(--kg-varying\);/, 'References are resolved before deciding whether layout is invariant')
+  assert.match(renderKgTokensCss(definitions, 'dark', ':root', false, { inheritLayout: true }), /--kg-size: 28px;/)
+  assert.throws(() => renderKgTokensCss([alias], 'dark', ":root[data-theme='dark']", false, { inheritLayout: true }), /missing reference/)
   assert.throws(() => serializeKgTokens(AG_TOKEN_DEFS, 'native' as 'css'), /unsupported/)
   assert.throws(() => buildKgTokensCssText('light', { selector: ':root { color: red; }' }), /selector/)
   const excessive = Array.from({ length: 256 }, (_, i) => ({ ...AG_TOKEN_DEFS[0], name: `token-${i}`,

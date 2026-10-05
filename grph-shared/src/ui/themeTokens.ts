@@ -65,6 +65,9 @@ export function normalizeUiIconStrokeWidth(value: number): number {
   return Number.isFinite(value) ? Math.max(0.5, Math.min(4, value)) : UI_ICON_DEFAULTS.strokeWidth
 }
 
+// A stronger primary wash distinguishes keyboard focus even on a selected icon.
+const ICON_FOCUS_CLASS_NAME = 'focus-visible:bg-blue-100 dark:focus-visible:bg-blue-900/40 focus-visible:text-blue-600 dark:focus-visible:text-blue-400'
+
 export const UI_THEME_TOKENS = {
   shadow: {
     flat: 'shadow-none',
@@ -81,7 +84,7 @@ export const UI_THEME_TOKENS = {
     singleLine: `${CONTROL_HEIGHT_CLASS_NAME} box-border min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-2 py-0`,
   },
   button: {
-    iconControl: 'kg-icon-control rounded transition-colors shadow-none',
+    iconControl: `kg-icon-control min-w-[var(--kg-control-height)]! min-h-[var(--kg-default-glyph-size,1rem)] rounded border-0 outline-none transition-colors shadow-none ${ICON_FOCUS_CLASS_NAME}`,
     selectedIcon: `${UI_INTENT_TOKENS.primary.bg} ${UI_INTENT_TOKENS.primary.text}`,
     text: 'text-[color:var(--kg-text-secondary)]',
     hoverText: 'hover:text-[color:var(--kg-text-primary)]',

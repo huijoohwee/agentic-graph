@@ -27,7 +27,7 @@ export const uiToolbarToggleActiveClassName = uiPrimaryToggleActiveClassName
 
 export const uiDangerButtonClassName = `App-toolbar__btn border ${UI_COLOR_DANGER_RED_BORDER} ${UI_COLOR_DANGER_RED_BG} ${UI_COLOR_DANGER_RED_TEXT}`
 
-export const uiPrimaryPillActiveClassName = `${UI_COLOR_PRIMARY_BLUE_BG} ${UI_THEME_TOKENS.button.activeText}`
+export const uiPrimaryPillActiveClassName = UI_THEME_TOKENS.button.selectedIcon
 
 export const uiToolbarButtonNeutralClassName = `${UI_THEME_TOKENS.button.neutralSubtle} ${UI_THEME_TOKENS.button.hoverBg}`
 

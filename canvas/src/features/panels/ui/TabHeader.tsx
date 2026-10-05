@@ -122,23 +122,24 @@ function TabHeaderImpl({
           'select-none',
           onDragStart ? 'cursor-move' : '',
           onToggle ? 'cursor-pointer' : '',
-          uiHeaderRowHeightClass,
-          uiHeaderRowPaddingClass,
+          collapsed ? UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME : uiHeaderRowHeightClass,
+          collapsed ? '' : uiHeaderRowPaddingClass,
         ].join(' ')
       }
       onClick={onHeaderClick}
       onDoubleClick={handleDoubleClick}
       onPointerDown={handlePointerDown}
       aria-expanded={typeof collapsed === 'boolean' ? !collapsed : undefined}
+      data-kg-panel-header-minimized={collapsed ? 'true' : undefined}
     >
-	      <nav className={`kg-panel-tabs-nav ${uiToolbarRowScrollClassName} basis-full w-full sm:basis-auto sm:w-auto sm:flex-1`} aria-label="Panel tabs">
+	      <nav className={`kg-panel-tabs-nav ${uiToolbarRowScrollClassName} ${collapsed ? 'basis-auto w-auto flex-1' : 'basis-full w-full sm:basis-auto sm:w-auto sm:flex-1'}`} aria-label="Panel tabs">
         {tabs.length > 0 && (
           <PanelViewTabs
             activeKey={activeTab || ''}
             role="tablist"
             aria-label="Tabs"
             aria-orientation="horizontal"
-            className="kg-panel-tablist w-full pb-[1px] sm:w-auto"
+            className={`kg-panel-tablist w-full ${collapsed ? '' : 'pb-[1px]'} sm:w-auto`}
           >
             {tabs.map(t => {
               const TabIcon = tabIconByKey?.[t.key]
@@ -161,7 +162,7 @@ function TabHeaderImpl({
           </PanelViewTabs>
         )}
       </nav>
-	      <section className={`${uiToolbarRowScrollJustifyEndClassName} w-full gap-1 sm:w-auto sm:shrink-0 sm:gap-2`} aria-label="Panel tools">
+	      <section className={`${uiToolbarRowScrollJustifyEndClassName} ${collapsed ? 'w-auto shrink-0' : 'w-full sm:w-auto sm:shrink-0'} gap-1 sm:gap-2`} aria-label="Panel tools">
         {onSearchChange && (
           <section
             className={`overflow-hidden transition-[width,flex-basis,opacity] duration-200 ease-out ${
