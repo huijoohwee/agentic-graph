@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 84
+contract_version: 85
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -176,7 +176,7 @@ ci_scopes:
     commands:
       - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "markdown.workspace.toolbar.autoRoutesImageMode", "ui.markdown.workspace.toolbar.webpageViewControls", "markdown.workspace.toolbar.viewerAndHtmlRenderTogetherAfterSelection"]
   spatial_workspace:
-    roots: ["canvas/src/features/three/spatialWorkspace", "canvas/src/features/three/SpatialWorkspaceReview.tsx", "canvas/src/features/three/XrSubjectTransformEditor.tsx", "canvas/src/features/workspace-table/workspaceSceneMetadataAuthoring.ts", "canvas/src/hooks/store/graph-data-slice/graphDataFrontmatterFlowSync.ts", "canvas/src/hooks/store/graph-data-slice/graphDataNodeActions.ts", "canvas/src/features/agent-ready/xrSceneWebMcpTools.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/__tests__/spatialWorkspace", "canvas/scripts/run_spatial_workspace_browser_smoke.mjs", "canvas/scripts/run_spatial_workspace_full_app_smoke.mjs", "canvas/src/features/strybldr/strybldrTimelineBottomPanelLayout.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/core.ts"]
+    roots: ["canvas/src/features/three/spatialWorkspace", "canvas/src/features/three/SpatialWorkspaceReview.tsx", "canvas/src/features/three/XrSubjectTransformEditor.tsx", "canvas/src/features/workspace-table/workspaceSceneMetadataAuthoring.ts", "canvas/src/hooks/store/graph-data-slice/graphDataFrontmatterFlowSync.ts", "canvas/src/hooks/store/graph-data-slice/graphDataNodeActions.ts", "canvas/src/features/agent-ready/xrSceneWebMcpTools.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/__tests__/spatialWorkspace", "canvas/scripts/run_spatial_workspace_browser_smoke.mjs", "canvas/scripts/run_spatial_workspace_full_app_smoke.mjs", "canvas/scripts/lib/aviation-evidence-offline-proof.mjs", "canvas/scripts/lib/spatial-smoke-diagnostics.mjs", "canvas/src/features/strybldr/strybldrTimelineBottomPanelLayout.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/core.ts"]
     commands:
       - ["npm", "run", "spatial-workspace:test"]
       - ["npm", "run", "spatial-workspace:browser"]
