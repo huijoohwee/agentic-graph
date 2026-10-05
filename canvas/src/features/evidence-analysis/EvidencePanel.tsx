@@ -1,5 +1,6 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { findComposedSourceFileByPath } from '@/features/source-files/composedSourceSelection'
 import { useSourceFilesBootstrapSnapshot } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { LearningOfflineControls } from '@/features/python-learning/LearningOfflineControls'
@@ -48,18 +49,18 @@ export default function EvidencePanel() {
   const generation = React.useRef(0), current = React.useRef(accepted), downloadUrl = React.useRef<string | null>(null)
   const pendingRead = React.useRef<AbortController | null>(null)
   const panel = React.useRef<HTMLElement | null>(null)
-  const pendingFocus = React.useRef<{ element: HTMLElement; dispose: () => void } | null>(null)
+  const pendingFocus = React.useRef<{ element: HTMLElement; owner: EvidenceSourceCapture; dispose: () => void } | null>(null)
   const discardFocus = React.useCallback(() => { pendingFocus.current?.dispose(); pendingFocus.current = null }, [])
   function beginBusy() {
     discardFocus()
     const doc = panel.current?.ownerDocument, element = doc?.activeElement
-    if (doc && element instanceof HTMLElement && panel.current?.contains(element)) {
+    if (capture && doc && element instanceof HTMLElement && panel.current?.contains(element)) {
       const cancel = () => discardFocus()
       const moved = (event: FocusEvent) => { if (event.target !== element && event.target !== doc.body) cancel() }
       doc.addEventListener('pointerdown', cancel, true)
       doc.addEventListener('keydown', cancel, true)
       doc.addEventListener('focusin', moved, true)
-      pendingFocus.current = { element, dispose: () => {
+      pendingFocus.current = { element, owner: capture, dispose: () => {
         doc.removeEventListener('pointerdown', cancel, true)
         doc.removeEventListener('keydown', cancel, true)
         doc.removeEventListener('focusin', moved, true)
@@ -68,12 +69,23 @@ export default function EvidencePanel() {
     setBusy(true)
   }
   React.useLayoutEffect(() => {
-    if (busy) return
-    const element = pendingFocus.current?.element
-    discardFocus()
-    if (element?.isConnected && panel.current?.contains(element) && !element.matches(':disabled')
-      && element.ownerDocument.activeElement === element.ownerDocument.body) element.focus({ preventScroll: true })
-  })
+    const pending = pendingFocus.current
+    if (!pending) return
+    const { element, owner } = pending, state = useGraphStore.getState()
+    const file = findComposedSourceFileByPath({ sourceFiles: state.sourceFiles, targetPath: state.markdownDocumentName })
+    // Only focus intent survives temporary availability loss; source/read fences stay exact.
+    if (!element.isConnected || !panel.current?.contains(element)
+      || element.closest('[hidden],[inert],[aria-hidden="true"],details:not([open])')
+      || state.markdownDocumentName !== owner.documentName || state.markdownDocumentText !== owner.documentText
+      || file?.id !== owner.sourceId || file?.text !== owner.documentText
+      || file?.parsedGraphRevision !== owner.sourceRevision || file?.enabled !== true) { discardFocus(); return }
+    if (busy || !capture || !isEvidenceSourceCurrent(capture) || !isEvidenceSourceCurrent(owner) || element.matches(':disabled')) return
+    const active = element.ownerDocument.activeElement
+    if (active === element.ownerDocument.body) {
+      element.focus({ preventScroll: true })
+      if (element.ownerDocument.activeElement !== element) discardFocus()
+    } else if (active !== element) discardFocus()
+  }, [busy, capture, documentName, documentText, sourceFiles, accepted, detail, prepared, status, discardFocus])
   const cancelRead = React.useCallback(() => { pendingRead.current?.abort(); pendingRead.current = null }, [])
   current.current = accepted
   const examples = capture?.config.examples.filter(item => item.kind === kind) || []
@@ -87,7 +99,7 @@ export default function EvidencePanel() {
     if (downloadUrl.current) URL.revokeObjectURL(downloadUrl.current)
     downloadUrl.current = null; setPrepared(null)
   }, [])
-  React.useLayoutEffect(() => { generation.current++; cancelRead(); discardFocus(); setBusy(false); setDetail(null); release(); setStatus(source.error || 'Current source configuration ready. Choose an example or import permitted JSON.') }, [capture?.documentName, capture?.documentText, capture?.sourceId, capture?.sourceRevision, source.error, release, cancelRead, discardFocus])
+  React.useLayoutEffect(() => { generation.current++; cancelRead(); setBusy(false); setDetail(null); release(); setStatus(source.error || 'Current source configuration ready. Choose an example or import permitted JSON.') }, [capture?.documentName, capture?.documentText, capture?.sourceId, capture?.sourceRevision, source.error, release, cancelRead, discardFocus])
   React.useEffect(() => () => { generation.current++; cancelRead(); discardFocus(); if (downloadUrl.current) URL.revokeObjectURL(downloadUrl.current) }, [cancelRead, discardFocus])
   const live = (token: number, owner: EvidenceSourceCapture) => token === generation.current && isEvidenceSourceCurrent(owner)
   function selectKind(next: EvidenceKind) {

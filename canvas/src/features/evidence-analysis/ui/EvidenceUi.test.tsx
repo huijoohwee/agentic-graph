@@ -6,7 +6,7 @@ import { createRoot } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { completeSourceFilesBootstrap } from '@/features/source-files/sourceFilesBootstrapReadiness'
+import { beginSourceFilesDocumentIntent, clearSourceFilesDocumentIntent, completeSourceFilesBootstrap, completeSourceFilesDocumentIntent } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { captureEvidenceSource, isEvidenceSourceCurrent, validateEvidenceConfiguration } from '../evidenceSource'
 import { JsonDetails, VolumeResult, ReplayResult, RecordResult } from './EvidenceResults'
 import EvidencePanel from '../EvidencePanel'
@@ -283,3 +283,70 @@ test('accepted evidence survives a transient Recorded context departure while ex
     assert.equal(record.textContent, retained)
   } finally { await act(async () => root.unmount()); restoreSource(); globalThis.fetch = oldFetch; env.restore() }
 })
+
+for (const availability of ['readiness', 'parsed-status']) for (const phase of ['busy', 'completed']) {
+  for (const intent of ['retain', 'pointer', 'keyboard', 'outside', 'hidden', 'source-revert', 'id-revert', 'revision-revert', 'disabled-revert']) {
+    test(`evidence focus survives ${availability} during ${phase} only for ${intent} ownership`, async () => {
+      const restore = saveSource(), env = initJsdomHarness(), doc = env.dom.window.document
+      Reflect.deleteProperty(doc, 'activeElement')
+      const container = doc.body.appendChild(doc.createElement('main')), root = createRoot(container)
+      const outside = doc.body.appendChild(doc.createElement('button')), oldFetch = globalThis.fetch
+      const fixture = readFileSync(new URL('../../../../public/evidence-analysis/fixtures/aviation-synthetic-v1.json', import.meta.url))
+      const intentKey = `evidence-focus-${availability}-${phase}-${intent}`
+      let signal: AbortSignal | undefined, respond!: (response: Response) => void
+      globalThis.fetch = ((_path, init) => {
+        signal = init?.signal as AbortSignal
+        return new Promise<Response>(resolve => { respond = resolve })
+      }) as typeof fetch
+      try {
+        installSource(); await act(async () => root.render(<EvidencePanel />))
+        const load = [...container.querySelectorAll('button')].find(element => element.textContent === 'Load labelled example')!
+        load.focus(); await act(async () => load.click())
+        assert.equal(load.disabled, true)
+        // Chromium moves focus to BODY when the focused control becomes disabled.
+        doc.body.tabIndex = -1; doc.body.focus()
+        if (phase === 'completed') {
+          await act(async () => respond(new Response(fixture)))
+          await settle(() => container.textContent!.includes('Accepted result is bound'))
+          assert.ok(doc.activeElement === load, 'the completed action first restores its initiating control')
+        }
+        await act(async () => {
+          if (availability === 'readiness') beginSourceFilesDocumentIntent(intentKey)
+          else useGraphStore.setState({ sourceFiles: useGraphStore.getState().sourceFiles.map(file => ({ ...file, status: 'parsing' })) } as never)
+        })
+        assert.equal(load.disabled, true)
+        doc.body.focus()
+        if (phase === 'busy') assert.equal(signal?.aborted, true, 'availability loss still cancels the old read')
+        if (intent === 'pointer') doc.dispatchEvent(new env.dom.window.Event('pointerdown', { bubbles: true }))
+        if (intent === 'keyboard') doc.dispatchEvent(new env.dom.window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+        if (intent === 'outside') outside.focus()
+        if (intent === 'hidden') container.hidden = true
+        if (['id-revert', 'revision-revert', 'disabled-revert'].includes(intent)) {
+          await act(async () => useGraphStore.setState({ sourceFiles: useGraphStore.getState().sourceFiles.map(file => ({ ...file,
+            ...(intent === 'id-revert' ? { id: 'replacement-source' } : intent === 'revision-revert' ? { parsedGraphRevision: 2 } : { enabled: false }),
+          })) } as never))
+          await act(async () => installSource())
+        }
+        if (intent === 'source-revert') {
+          await act(async () => installSource(documentText + '\nChanged while unavailable.', 2))
+          await act(async () => installSource())
+        }
+        await act(async () => {
+          installSource()
+          if (availability === 'readiness') completeSourceFilesDocumentIntent(intentKey)
+        })
+        assert.equal(load.disabled, false)
+        if (intent === 'hidden') { container.hidden = false; await act(async () => root.render(<EvidencePanel />)) }
+        assert.ok(doc.activeElement === (intent === 'retain' ? load : intent === 'outside' ? outside : doc.body),
+          'restore only the still-owned exact-source control; source reversion never revives retired focus')
+        if (phase === 'busy') {
+          await act(async () => respond(new Response(fixture)))
+          assert.equal(container.querySelector('[aria-label="Accepted evidence record"]'), null, 'focus recovery does not revive the cancelled operation')
+        } else assert.ok(container.querySelector('[aria-label="Accepted evidence record"]'), 'exact-source acceptance survives availability churn')
+      } finally {
+        clearSourceFilesDocumentIntent(intentKey)
+        await act(async () => root.unmount()); globalThis.fetch = oldFetch; restore(); env.restore()
+      }
+    })
+  }
+}
