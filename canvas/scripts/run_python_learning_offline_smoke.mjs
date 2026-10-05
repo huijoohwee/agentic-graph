@@ -1,3 +1,4 @@
+import { verifyBrowserProofBuild } from '../../scripts/browser-proof-build.mjs'
 import { selectMenuOption } from './lib/select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
@@ -21,6 +22,12 @@ const sourceState = () => execFileSync('git', ['-C', root, 'status', '--porcelai
 const before = sourceState(), output = resolve(process.env.PYTHON_LEARNING_PROOF_DIR || join(tmpdir(), `python-learning-offline-${revision.slice(0, 12)}`))
 const port = Number(process.env.PYTHON_LEARNING_PROOF_PORT || 4198)
 assert.ok(Number.isInteger(port) && port >= 1024 && port <= 65535, 'offline proof port must be 1024..65535')
+const buildEnvironment = { ...process.env }
+let verifiedBuild = null
+if (process.argv.includes('--verified-build')) {
+  assert.ok(!process.argv.includes('--build') && !process.argv.includes('--dev'), 'Verified build cannot be combined with build/dev flags')
+  verifiedBuild = await verifyBrowserProofBuild(root, { environment: buildEnvironment })
+}
 if (process.argv.includes('--build')) execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 240000 })
 const { LEARNING_LESSONS: lessons } = await tsImport('../src/features/python-learning/learningLessons.ts', import.meta.url)
 const { LEARNING_LESSON_FILES: lessonFiles } = await tsImport('../src/features/python-learning/learningLessonFiles.ts', { parentURL: import.meta.url, tsconfig: join(canvas, 'tsconfig.json') })
@@ -386,7 +393,8 @@ try {
   assert.equal(await editor.inputValue(), lessons[0].solution)
   assert.deepEqual(errors, [])
   assert.equal(sourceState(), before, 'source must stay frozen throughout the proof')
-  const evidence = { revision, checkoutRevision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
+  if (verifiedBuild) assert.deepEqual(await verifyBrowserProofBuild(root, { environment: buildEnvironment }), verifiedBuild)
+  const evidence = { verifiedBuild, revision, checkoutRevision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
     nativeLessonFilesProven: true, nativeLessonSaveReloadProven: true, toolRegistrationProven: true, narrowDesktopPaneProven: true, mainCanvasSceneProven: true, monacoEditorRoundTripProven: true, viewSwitchPreservesRun: true, toolHost: 'controlled-registerTool-browser-host', discovery,
     installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, warehouseRehearsal, corruptionBlocked: true,
     pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }

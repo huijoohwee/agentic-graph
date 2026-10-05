@@ -2,10 +2,12 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 95
+contract_version: 96
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
+  - command: ["node", "scripts/browser-proof-build.mjs"]
+    timeout_ms: 300000
   - command: ["node", "canvas/scripts/run_agent_mission_browser_smoke.mjs"]
     timeout_ms: 900000
   - command: ["npm", "-C", "canvas", "run", "test:smoke:xr-v2:browser"]
@@ -14,15 +16,13 @@ ci_command_timeout_overrides:
     timeout_ms: 900000
   - command: ["npm", "run", "travel-commerce:test"]
     timeout_ms: 900000
-  # One build plus four cold browser journeys; individual acceptance deadlines remain unchanged.
-  - command: ["npm", "run", "spatial-workspace:full-app"]
+  - command: ["node", "canvas/scripts/run_spatial_workspace_full_app_smoke.mjs", "--verified-build"]
     timeout_ms: 600000
-  # Other measured expensive commands retain their five-minute limits.
-  - command: ["node", "canvas/scripts/run_block_editor_browser_smoke.mjs", "--build"]
+  - command: ["node", "canvas/scripts/run_block_editor_browser_smoke.mjs", "--verified-build"]
     timeout_ms: 300000
   - command: ["node", "canvas/scripts/run_python_learning_browser_smoke.mjs"]
     timeout_ms: 300000
-  - command: ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--build"]
+  - command: ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--verified-build"]
     timeout_ms: 300000
   - command: ["npm", "run", "runtime:test:core"]
     timeout_ms: 300000
@@ -77,6 +77,9 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  browser_proof_build:
+    roots: ["scripts/browser-proof-build.mjs", "scripts/__tests__/browser-proof-build.test.mjs"]
+    commands: [["node", "--test", "scripts/__tests__/browser-proof-build.test.mjs"], ["node", "scripts/browser-proof-build.mjs"], ["node", "canvas/scripts/run_spatial_workspace_full_app_smoke.mjs", "--verified-build"], ["node", "canvas/scripts/run_block_editor_browser_smoke.mjs", "--verified-build"], ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--verified-build"]]
   verification_workspace:
     roots: ["scripts/lib/git-verification-workspace.mjs", "scripts/__tests__/git-verification-workspace.test.mjs"]
     commands: [["node", "--test", "scripts/__tests__/git-verification-workspace.test.mjs"]]
@@ -191,13 +194,15 @@ ci_scopes:
       - ["node", "--test", "canvas/scripts/__tests__/workspace-import-proof.test.mjs"]
       - ["npm", "run", "spatial-workspace:test"]
       - ["npm", "run", "spatial-workspace:browser"]
-      - ["npm", "run", "spatial-workspace:full-app"]
+      - ["node", "scripts/browser-proof-build.mjs"]
+      - ["node", "canvas/scripts/run_spatial_workspace_full_app_smoke.mjs", "--verified-build"]
   block_editor:
     roots: ["canvas/src/features/block-editor/", "canvas/src/__tests__/blockEditor", "canvas/src/features/workspace-fs/", "canvas/src/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.io.ts", "canvas/src/__tests__/workspaceFsPersistenceReload.test.ts", "canvas/scripts/run_block_editor_browser_smoke.mjs"]
     commands:
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/blockEditorNative.test.tsx", "canvas/src/__tests__/blockEditorWorkspace.test.tsx"]
       - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "workspaceFs.indexedDb."]
-      - ["node", "canvas/scripts/run_block_editor_browser_smoke.mjs", "--build"]
+      - ["node", "scripts/browser-proof-build.mjs"]
+      - ["node", "canvas/scripts/run_block_editor_browser_smoke.mjs", "--verified-build"]
   xr_subject:
     roots: ["canvas/src/features/three/XrAuthoredSubjectGeometry.tsx", "canvas/src/features/three/XrSceneLibrarySubject.tsx", "canvas/src/features/three/XrSubject", "canvas/src/features/three/xrSubject", "canvas/src/features/three/xrMotionReferenceModel.ts", "canvas/src/features/three/xrMotionReferenceRuntime", "canvas/src/features/three/xrMotionReferenceSubjectPlacement.ts", "canvas/src/features/three/XrMotionReferenceRuntimeBridge.tsx", "canvas/src/__tests__/xrSubjectAuthoring.test.tsx", "canvas/src/tests/registry/postParserCases3Tail.ts"]
     commands:
@@ -216,7 +221,8 @@ ci_scopes:
       - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "pwa.shell.precachesHashedAssetsAndCachesLocalJson"]
       - ["node", "--test", "scripts/__tests__/vite-service-worker-owner.test.mjs"]
       - ["node", "canvas/scripts/run_python_learning_browser_smoke.mjs"]
-      - ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--build"]
+      - ["node", "scripts/browser-proof-build.mjs"]
+      - ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--verified-build"]
   design_review:
     roots: ["grph-shared/src/ui/kgToken", "canvas/src/lib/ui/tokens-ssot.ts", "canvas/src/lib/markdown.ts", "canvas/src/cli/gen-kg-tokens-css.ts", "canvas/src/features/design/", "canvas/src/features/design-system/", "canvas/src/features/agent-ready/localCanvasTopologyInspection.ts", "canvas/src/__tests__/designTokenSummary.test.ts", "canvas/src/__tests__/kgTokenSsot.test.ts", "canvas/scripts/verify_design_browser_smoke.mjs"]
     commands:
@@ -457,7 +463,6 @@ fallback_commands:
 ## Authority
 This opening YAML frontmatter is the machine source of truth for collaboration grammar, local source identity, deployment isolation, and affected-scope CI selection. Runtime scripts parse it directly; workflow files must not duplicate its source registry or path-to-command mapping.
 The protected Git guideline and checker under `huijoohwee.github.io/scripts/` are an external advisory projection. This contract and its repository-owned executable checks remain `agentic-graph`'s collaboration source of truth. `agentic-graph` may consume the upstream rule intent and exact protected revision, but it must not copy that guideline, checker implementation, rule catalog, or fixtures into this repository.
-
 An exact-path CI scope may narrow only its own composite command when the complete normalized change set consists exclusively of declared repository-relative file paths. Other matching scopes still run normally. Any mixed, unknown, directory,
 configuration, or source path falls back to the ordinary affected-scope plan.
 An exact test mapping may explicitly select `scope_local: true` when its command executes the complete named test and no runtime source changes are exempted.
@@ -480,12 +485,9 @@ derive that inventory from `GITHUB_BASE_REF`. Protected-refresh
 nonempty native and canonical bases. This keeps refreshed merge candidates
 scoped to the pull request versus its current base rather than the imported
 first-parent `main` delta.
-
 ## Invocation Grammar
-
 Every non-draft pull request starts with a YAML frontmatter declaration.
 Leading HTML comment wrappers around that declaration are ignored:
-
 ```yaml
 ---
 action: /change
@@ -494,7 +496,6 @@ actor: "@developer-or-codex-task"
 base_sha: "0123456789abcdef0123456789abcdef01234567"
 ---
 ```
-
 - `/` declares one operation.
 - `#` declares one semantic ownership scope.
 - `@` declares one accountable human or Codex task.

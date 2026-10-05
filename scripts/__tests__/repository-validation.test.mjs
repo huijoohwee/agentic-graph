@@ -81,14 +81,19 @@ test('default and protected affected validation share one owner command map', as
   assert.equal(pkg.scripts['ci:affected:source'], 'node ./scripts/run-affected-ci.mjs')
   assert.ok(pkg.scripts['ci:integration'].endsWith('npm run ci:affected'))
   validateValidationPolicy(policy)
-  const partitions = partitionAffectedCommands([], await readContract())
+  const contract = await readContract()
+  const partitions = partitionAffectedCommands([], contract)
   validateExecutionPartitions(partitions, policy)
   assert.deepEqual(policy.fallback, Object.keys(partitions).map(name => `graph-${name}-plan`))
   assert.equal(policy.checks.length, Object.keys(partitions).length)
+  const freshCommands = contract.ci_command_timeout_overrides.filter(row =>
+    row.command[1] === 'scripts/browser-proof-build.mjs' || row.command.includes('--verified-build')).map(row => row.command)
+  const freshPartitions = new Set(Object.entries(partitionAffectedCommands(freshCommands, contract))
+    .filter(([, commands]) => commands.length).map(([partition]) => partition))
   for (const [index, partition] of Object.keys(partitions).entries()) {
     const check = policy.checks[index]
     assert.deepEqual(check.command, ['npm', 'run', 'ci:affected:source', '--', `--partition=${partition}`])
-    assert.equal(check.reuse, 'local-plan')
+    assert.equal(check.reuse, freshPartitions.has(partition) ? 'never' : 'local-plan')
     assert.deepEqual(check.inputs, ['*'], 'reuse binds the entire source-selected plan')
     assert.equal(check.timeoutMs, 900000)
   }
@@ -97,7 +102,7 @@ test('default and protected affected validation share one owner command map', as
   }
   for (const check of policy.checks.slice(1)) {
     assert.deepEqual(selectValidationChecks(policy, ['canvas/src/scene.ts'], { only: [check.id] })
-      .checks.map(check => check.id), [policy.checks[0].id, check.id],
+      .checks.map(check => check.id), [...new Set([policy.checks[0].id, ...check.requires, check.id])],
     'extended validation cannot omit its standard prerequisite')
   }
 })
@@ -239,8 +244,8 @@ test('measured slow checks are isolated without raising their command timeout', 
   const contract = await readContract()
   const policy = JSON.parse(readFileSync(new URL('../../.agentic-os-validation.json', import.meta.url)))
   const isolated = contract.ci_command_timeout_overrides.filter(row => row.timeout_ms === contract.ci_command_timeout_ms)
-  assert.equal(isolated.length, 4)
-  const combined = ['npm', 'run', 'spatial-workspace:full-app']
+  assert.equal(isolated.length, 5)
+  const combined = ['node', 'canvas/scripts/run_spatial_workspace_full_app_smoke.mjs', '--verified-build']
   assert.equal(resolveCiCommandTimeoutMs(combined, contract), 600000)
   const combinedGroups = partitionAffectedCommands([combined], contract)
   validateExecutionPartitions(combinedGroups, policy)
@@ -256,4 +261,38 @@ test('measured slow checks are isolated without raising their command timeout', 
     assert(!groups.standard.some(row => JSON.stringify(row) === key))
     assert.equal(Object.values(groups).flat().filter(row => JSON.stringify(row) === key).length, 1)
   }
+})
+
+
+test('browser checks share one fresh build and cannot reuse generated-input evidence', async () => {
+  const contract = await readContract()
+  const policy = JSON.parse(readFileSync(new URL('../../.agentic-os-validation.json', import.meta.url)))
+  const build = ['node', 'scripts/browser-proof-build.mjs']
+  const buildPartition = Object.entries(partitionAffectedCommands([build], contract)).find(([, commands]) => commands.length)[0]
+  const buildId = `graph-${buildPartition}-plan`
+  assert.equal(policy.checks.find(check => check.id === buildId).reuse, 'never')
+  for (const paths of [['canvas/src/features/three/SpatialWorkspaceReview.tsx'],
+    ['canvas/src/features/block-editor/change.ts'], ['canvas/src/features/python-learning/change.ts'],
+    ['scripts/browser-proof-build.mjs']]) {
+    const { commands } = selectAffectedCommands(paths, contract)
+    assert.equal(commands.filter(command => JSON.stringify(command) === JSON.stringify(build)).length, 1)
+    const browsers = commands.filter(command => command.includes('--verified-build'))
+    assert(browsers.length > 0)
+    for (const browser of browsers) {
+      const partition = Object.entries(partitionAffectedCommands([browser], contract)).find(([, rows]) => rows.length)[0]
+      const check = policy.checks.find(check => check.id === `graph-${partition}-plan`)
+      assert.deepEqual(check.requires, ['graph-standard-plan', buildId])
+      assert.equal(check.reuse, 'never')
+      assert(!browser.includes('--build'))
+    }
+  }
+  let calls = 0
+  const forbidden = () => { calls++; throw Error('must execute fresh') }
+  for (const command of [build, ['node', 'browser.mjs', '--verified-build']])
+    assert.equal(await sourcePlanReuse('standard', { standard: [command] }, {
+      environment: { AGENTIC_OS_CI_SOURCE_EVIDENCE_DIR: '/unused', GITHUB_ACTIONS: 'true',
+        GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/main' },
+      verify: forbidden, captureInputs: forbidden,
+    }), null)
+  assert.equal(calls, 0)
 })
