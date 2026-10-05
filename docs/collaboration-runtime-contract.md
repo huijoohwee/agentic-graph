@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 85
+contract_version: 86
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -185,7 +185,7 @@ ci_scopes:
     roots: ["canvas/src/features/block-editor/", "canvas/src/__tests__/blockEditor", "canvas/src/features/workspace-fs/", "canvas/src/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.io.ts", "canvas/src/__tests__/workspaceFsPersistenceReload.test.ts", "canvas/scripts/run_block_editor_browser_smoke.mjs"]
     commands:
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/blockEditorNative.test.tsx", "canvas/src/__tests__/blockEditorWorkspace.test.tsx"]
-      - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "workspaceFs.indexedDb.conditionalTwoTabSave"]
+      - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "workspaceFs.indexedDb."]
       - ["node", "canvas/scripts/run_block_editor_browser_smoke.mjs", "--build"]
   xr_subject:
     roots: ["canvas/src/features/three/XrAuthoredSubjectGeometry.tsx", "canvas/src/features/three/XrSceneLibrarySubject.tsx", "canvas/src/features/three/XrSubject", "canvas/src/features/three/xrSubject", "canvas/src/features/three/xrMotionReferenceModel.ts", "canvas/src/features/three/xrMotionReferenceRuntime", "canvas/src/features/three/xrMotionReferenceSubjectPlacement.ts", "canvas/src/features/three/XrMotionReferenceRuntimeBridge.tsx", "canvas/src/__tests__/xrSubjectAuthoring.test.tsx", "canvas/src/tests/registry/postParserCases3Tail.ts"]

@@ -3,30 +3,21 @@ import { isMarkdownLikeFileName } from 'grph-shared/markdown/mermaidInput'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { applyActiveMarkdownDocumentPayload } from '@/features/markdown/activeMarkdownDocument'
 import { matchesMarkdownDocumentPath } from 'grph-shared/markdown/documentPath'
-import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
+import { getWorkspaceFs, isInitializationWorkspacePath } from '@/features/workspace-fs/workspaceFs'
 import type { WorkspaceEntry, WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import type { SourceFile } from '@/hooks/store/types'
-import {
-  resolveWorkspaceSourceIndexSnapshot,
-  type WorkspaceSourceIndex,
-} from '@/features/workspace-fs/sourceIndex'
+import { resolveWorkspaceSourceIndexSnapshot, type WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import { mergeWorkspaceEntriesIntoSourceFiles, resolveWorkspaceSourcePathKey } from '@/features/workspace-fs/syncToSourceFiles'
 import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
 import { normalizeWorkspacePath, workspaceDocumentKey } from '@/features/workspace-fs/path'
 import { resolveWorkspaceSourceRootPaths } from '@/features/workspace-fs/workspaceSourceRoots'
-import {
-  isInitializationWorkspacePath,
-} from '@/features/workspace-fs/workspaceFs'
 import { readWorkspaceSourceFilesDocsOnlySetting } from '@/lib/workspace/workspaceStoreSyncSettings'
 import { hashStringToHexSharedContentCached } from '@/lib/hash/textHashCache'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
-import { areSourceFileRecordsEqual, canSkipActiveWorkspaceSourceFilesRematerialization, hasExpectedMaterializationSourceText,
+import { isFrontmatterOnlyDoc } from '@/lib/markdown/frontmatter'
+import { areSourceFileRecordsEqual, buildSourceFileLifecycleState, canSkipActiveWorkspaceSourceFilesRematerialization, hasExpectedMaterializationSourceText,
   hasMaterializationDocumentDrifted, readColdStartMaterializationSource, sameMaterializationSourceIdentities } from '@/features/source-files/sourceFileParsedState'
-import {
-  readActiveWorkspaceSourceFileFallbackText,
-  readWorkspaceActiveDocumentResolvedText,
-  resolveActiveWorkspaceEntriesSnapshot,
-} from '@/features/source-files/sourceFilesRuntimeActive'
+import { readActiveWorkspaceSourceFileFallbackText, readWorkspaceActiveDocumentResolvedText, resolveActiveWorkspaceEntriesSnapshot } from '@/features/source-files/sourceFilesRuntimeActive'
 export { sameMaterializationSourceIdentities } from '@/features/source-files/sourceFileParsedState'
 
 function ensureActiveWorkspaceSourceFileEnabled(args: {
@@ -88,10 +79,9 @@ export async function reapplyActiveWorkspaceMarkdownDocument(args?: {
   expectedSourceText?: string
   applyToGraph?: boolean
 }): Promise<boolean> {
-  const activePath = resolveMaterializedWorkspaceActivePath({
-    activePathOverride: args?.activePathOverride ?? null,
-    explorerActivePath: useMarkdownExplorerStore.getState().activePath,
-  })
+  const explorerActivePathAtStart = resolveMaterializedWorkspaceActivePath({ explorerActivePath: useMarkdownExplorerStore.getState().activePath })
+  const activePath = resolveMaterializedWorkspaceActivePath({ activePathOverride: args?.activePathOverride ?? null,
+    explorerActivePath: explorerActivePathAtStart })
   const store = useGraphStore.getState()
   if (!shouldProactivelyReapplyActiveWorkspaceMarkdownDocument({
     activePath,
@@ -104,15 +94,9 @@ export async function reapplyActiveWorkspaceMarkdownDocument(args?: {
   if (!activePath) return false
   const activeDocumentKey = workspaceDocumentKey(activePath)
   if (!activeDocumentKey) return false
-  const currentText = readActiveWorkspaceEntryInlineText({
-    activePath,
-    activeWorkspaceEntriesSnapshot: args?.activeWorkspaceEntriesSnapshot,
-  })
-  const nextText = await readWorkspaceActiveDocumentResolvedText({
-    activePath,
-    currentText,
-    fs: args?.fs,
-  })
+  const currentText = readActiveWorkspaceEntryInlineText({ activePath,
+    activeWorkspaceEntriesSnapshot: args?.activeWorkspaceEntriesSnapshot })
+  const nextText = await readWorkspaceActiveDocumentResolvedText({ activePath, currentText, fs: args?.fs })
   if (args?.expectedSourceText !== undefined && nextText !== args.expectedSourceText) throw staleMaterialization()
   const latestStore = useGraphStore.getState()
   if (latestStore.sourceFiles !== store.sourceFiles
@@ -124,10 +108,7 @@ export async function reapplyActiveWorkspaceMarkdownDocument(args?: {
   })) {
     return false
   }
-  const latestActivePath = resolveMaterializedWorkspaceActivePath({
-    explorerActivePath: useMarkdownExplorerStore.getState().activePath,
-  })
-  if (normalizeWorkspacePath(latestActivePath) !== activePath) return false
+  if (hasMaterializedActivePathDrifted(activePath, explorerActivePathAtStart)) return false
   if (
     args?.applyToGraph !== true &&
     matchesMarkdownDocumentPath(activePath, store.markdownDocumentName) &&
@@ -305,7 +286,8 @@ function hasMaterializedActivePathDrifted(
 async function parseActiveWorkspaceSourceBeforeDocumentApply(activePath: WorkspacePath, explorerActivePathAtStart: WorkspacePath | null): Promise<boolean> {
   const before = useGraphStore.getState()
   const sourcePath = resolveWorkspaceSourcePathKey(activePath)
-  const file = before.sourceFiles.find(value => String(value.source?.path || '') === sourcePath)
+  const matches = before.sourceFiles.filter(value => String(value.source?.path || '') === sourcePath), file = matches[0]
+  if (matches.length > 1 || (file && before.sourceFiles.some(value => value !== file && value.id === file.id))) return false
   if (!file || !file.enabled || !String(file.text || '').trim()) return true
   const { parseAndApplySourceFile } = await import('@/features/source-files/sourceFilesParseRuntime')
   const changedDocument = () => {
@@ -354,9 +336,15 @@ async function settleMaterializedDocument(args: NonNullable<Parameters<typeof re
   const activePath = args.activePathOverride!, before = useGraphStore.getState()
   await reapplyActiveWorkspaceMarkdownDocument(args)
   const current = useGraphStore.getState()
+  const documentOwnedRecord = (file: SourceFile) => args.applyToGraph === true && file.status === 'error'
+    && file.source?.path === resolveWorkspaceSourcePathKey(activePath) && file.name === workspaceDocumentKey(activePath)
+    && current.markdownDocumentName === file.name && current.markdownDocumentText === file.text && isFrontmatterOnlyDoc(file.text)
+    && !file.parsedGraphData?.nodes?.length && !file.parsedGraphData?.edges?.length
+    ? { ...file, ...buildSourceFileLifecycleState({ status: 'idle', previousState: file, preserveParsedState: true }) } : file
   if (hasMaterializedActivePathDrifted(activePath, explorerAtStart)
     || before.sourceFiles.length !== current.sourceFiles.length
-    || before.sourceFiles.some((file, index) => !areSourceFileRecordsEqual(file, current.sourceFiles[index]))) throw staleMaterialization()
+    || before.sourceFiles.some((file, index) => !areSourceFileRecordsEqual(file, current.sourceFiles[index])
+      && !areSourceFileRecordsEqual(documentOwnedRecord(file), current.sourceFiles[index]))) throw staleMaterialization()
   if (isMarkdownLikeFileName(activePath) && (!matchesMarkdownDocumentPath(activePath, current.markdownDocumentName)
     || current.markdownDocumentApplyViewPreset === false
     || (args.expectedSourceText !== undefined && current.markdownDocumentText !== args.expectedSourceText))) throw staleMaterialization()
@@ -401,41 +389,42 @@ function mergeGraphOwningActiveWorkspaceSourceFiles(
 }
 
 async function materializeGraphOwningActiveWorkspaceSourceFiles(args: GraphOwningActiveWorkspaceSourceFilesArgs): Promise<MaterializedWorkspaceSourceProof> {
-  const explorerActivePathAtStart = resolveMaterializedWorkspaceActivePath({
-    explorerActivePath: useMarkdownExplorerStore.getState().activePath,
-  })
+  const explorerActivePathAtStart = resolveMaterializedWorkspaceActivePath({ explorerActivePath: useMarkdownExplorerStore.getState().activePath })
   mergeGraphOwningActiveWorkspaceSourceFiles(args)
+  let expectedSourceText = args.expectedSourceText
+  const activeText = useGraphStore.getState().sourceFiles.find(file => file.source?.path === resolveWorkspaceSourcePathKey(args.activePath))?.text || ''
+  if (isMarkdownLikeFileName(args.activePath) && activeText.trim() && !isFrontmatterOnlyDoc(activeText)) {
+    const before = useGraphStore.getState(), activeSourcePath = resolveWorkspaceSourcePathKey(args.activePath)
+    const enabled = ensureActiveWorkspaceSourceFileEnabled({ sourceFiles: before.sourceFiles, activeSourcePath })
+    const active = enabled.filter(file => file.source?.path === activeSourcePath)
+    if (active.length !== 1 || enabled.filter(file => file.id === active[0]!.id).length !== 1 || (args.expectedSourceText !== undefined && active[0]!.text !== args.expectedSourceText)) throw staleMaterialization(false, 'active source identity')
+    if (enabled !== before.sourceFiles) before.setSourceFiles(enabled)
+    if (!sameMaterializationSourceIdentities(enabled, useGraphStore.getState().sourceFiles)
+      || hasMaterializationDocumentDrifted(args.activePath, before, useGraphStore.getState(), active[0]!.text)
+      || hasMaterializedActivePathDrifted(args.activePath, explorerActivePathAtStart)) throw staleMaterialization(false, 'active source enabling')
+    if (!await parseActiveWorkspaceSourceBeforeDocumentApply(args.activePath, explorerActivePathAtStart)) throw staleMaterialization(false, 'active source parse')
+    const afterParse = useGraphStore.getState(), parsed = afterParse.sourceFiles.find(file => file.id === active[0]!.id)
+    if (!parsed || !sameMaterializationSourceIdentities(active, [parsed]) || afterParse.sourceFiles.length !== enabled.length
+      || enabled.some(file => file.id !== parsed.id && !afterParse.sourceFiles.includes(file))
+      || hasMaterializationDocumentDrifted(args.activePath, before, afterParse, parsed.text)
+      || hasMaterializedActivePathDrifted(args.activePath, explorerActivePathAtStart)) throw staleMaterialization(false, 'active source parse')
+    if (parsed.status !== 'parsed') throw new Error(parsed.error || `Active SourceFile ${parsed.name} parsing did not complete.`)
+    expectedSourceText = parsed.text
+  }
   // Identity precedes presets so run-ready Exit retains the neutral surface.
-  await settleMaterializedDocument({
-    applyToGraph: true,
-    activePathOverride: args.activePath,
-    fs: args.fs,
-    activeWorkspaceEntriesSnapshot: args.workspaceEntries,
-    expectedSourceText: args.expectedSourceText,
-  }, explorerActivePathAtStart)
+  await settleMaterializedDocument({ applyToGraph: true, activePathOverride: args.activePath,
+    fs: args.fs, activeWorkspaceEntriesSnapshot: args.workspaceEntries, expectedSourceText }, explorerActivePathAtStart)
   if (hasMaterializedActivePathDrifted(args.activePath, explorerActivePathAtStart)) throw staleMaterialization()
-  const mergedSourceFiles = useGraphStore.getState().sourceFiles
-  const document = useGraphStore.getState()
-
-  const preserveFrontmatterDrivenLanding = isInitializationWorkspacePath(args.activePath)
-  await applyWorkspaceImportToCanvas({
-    fs: args.fs,
-    createdPaths: [args.activePath],
-    opts: {
-      workspaceEntries: args.workspaceEntries,
-      sourcesByPath: resolveWorkspaceSourceIndexSnapshot(args.sourcesByPath || undefined),
-      premergedSourceFiles: mergedSourceFiles,
-      applyToGraph: true,
-      skipComposedGraphApply: preserveFrontmatterDrivenLanding,
-      assertCurrent: () => {
-        if (hasMaterializedActivePathDrifted(args.activePath, explorerActivePathAtStart)
-          || useGraphStore.getState().markdownDocumentName !== document.markdownDocumentName
-          || useGraphStore.getState().markdownDocumentText !== document.markdownDocumentText) {
-          throw staleMaterialization(false, 'graph import authority')
-        }
-      },
+  const mergedSourceFiles = useGraphStore.getState().sourceFiles, document = useGraphStore.getState()
+  await applyWorkspaceImportToCanvas({ fs: args.fs, createdPaths: [args.activePath], opts: {
+    workspaceEntries: args.workspaceEntries, sourcesByPath: resolveWorkspaceSourceIndexSnapshot(args.sourcesByPath || undefined),
+    premergedSourceFiles: mergedSourceFiles, applyToGraph: true, skipComposedGraphApply: isInitializationWorkspacePath(args.activePath),
+    assertCurrent: () => {
+      if (hasMaterializedActivePathDrifted(args.activePath, explorerActivePathAtStart)
+        || useGraphStore.getState().markdownDocumentName !== document.markdownDocumentName
+        || useGraphStore.getState().markdownDocumentText !== document.markdownDocumentText) throw staleMaterialization(false, 'graph import authority')
     },
-  })
+  } })
   if (hasMaterializedActivePathDrifted(args.activePath, explorerActivePathAtStart)
     || useGraphStore.getState().markdownDocumentName !== document.markdownDocumentName
     || useGraphStore.getState().markdownDocumentText !== document.markdownDocumentText
@@ -467,10 +456,25 @@ export async function materializeActiveWorkspaceEntryIntoSourceFiles(args?: Acti
       if (proof && !isMaterializedWorkspaceSourceProofCurrent(proof)) throw staleMaterialization()
       return proof
     } catch (error) {
-      const current = useGraphStore.getState()
+      let current = useGraphStore.getState()
       if (attempt || (error as { code?: string; retryable?: boolean })?.code !== 'SOURCE_FILES_MATERIALIZATION_STALE'
         || !(error as { retryable?: boolean }).retryable
         || useMarkdownExplorerStore.getState().activePath !== explorer) throw error
+      const retrySources = request?.sourceFilesSnapshot || before.sourceFiles
+      const active = current.sourceFiles.filter(file => file.source?.path === resolveWorkspaceSourcePathKey(activePath || ''))
+      if (activePath && active.length === 1 && active[0]!.status === 'loading'
+        && current.markdownDocumentName === before.markdownDocumentName && current.markdownDocumentText === before.markdownDocumentText
+        && sameMaterializationSourceIdentities(retrySources, current.sourceFiles)) {
+        if (retrySources.some(file => file.id !== active[0]!.id && !current.sourceFiles.includes(file))) throw error
+        if (!await parseActiveWorkspaceSourceBeforeDocumentApply(activePath,
+          resolveMaterializedWorkspaceActivePath({ explorerActivePath: explorer }))) throw error
+        const settled = useGraphStore.getState()
+        if (useMarkdownExplorerStore.getState().activePath !== explorer
+          || settled.markdownDocumentName !== before.markdownDocumentName || settled.markdownDocumentText !== before.markdownDocumentText
+          || current.sourceFiles.some(file => file.id !== active[0]!.id && !settled.sourceFiles.includes(file))
+          || !sameMaterializationSourceIdentities(current.sourceFiles, settled.sourceFiles)) throw error
+        current = settled
+      }
       let expectedSourceText: string | undefined, fs = args?.fs
       if (hasMaterializationDocumentDrifted(activePath, initial, current, initialText)
         || !sameMaterializationSourceIdentities(request?.sourceFilesSnapshot || before.sourceFiles, current.sourceFiles)) {
@@ -492,10 +496,8 @@ export async function materializeActiveWorkspaceEntryIntoSourceFiles(args?: Acti
   throw staleMaterialization()
 }
 async function materializeActiveWorkspaceEntryAttempt(args?: ActiveWorkspaceMaterializationAttemptArgs): Promise<MaterializedWorkspaceSourceProof | null> {
-  const activePath = resolveMaterializedWorkspaceActivePath({
-    activePathOverride: args?.activePathOverride ?? null,
-    explorerActivePath: useMarkdownExplorerStore.getState().activePath,
-  })
+  const activePath = resolveMaterializedWorkspaceActivePath({ activePathOverride: args?.activePathOverride ?? null,
+    explorerActivePath: useMarkdownExplorerStore.getState().activePath })
   if (!activePath) return null
   const shouldApplyToGraph = args?.applyToGraph === true
   const store = useGraphStore.getState()
