@@ -33,14 +33,15 @@ function buildManifest(workspaceManifestDigest: string): Plugin {
 export default defineConfig(async environment => {
   const manifestFile = process.env.VITE_OBSERVABILITY_WORKSPACE_MANIFEST || ''
   const workspaceRoot = process.env.AGENTIC_WORKSPACE_ROOT || ''
-  const workspace = loadWorkspaceManifest(manifestFile, workspaceRoot)
+  const allowMissingRepositories = environment.command === 'build'
+  const workspace = loadWorkspaceManifest(manifestFile, workspaceRoot, { allowMissingRepositories })
   // Native resolution, compiler, worker, and styling owners are shared; host mutation/proxy plugins are deliberately not installed.
   const native = typeof nativeConfig === 'function' ? await nativeConfig(environment) : await nativeConfig
   return {
     root: canvasRoot, base: './', publicDir: false,
     resolve: native.resolve, esbuild: native.esbuild, define: native.define, worker: native.worker,
     optimizeDeps: { ...native.optimizeDeps, include: ['react', 'react-dom/client', 'd3', 'dagre'] },
-    plugins: [react(), tailwindcss(), createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot, graphRoot }), buildManifest(workspace.digest)],
+    plugins: [react(), tailwindcss(), createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot, graphRoot, allowMissingRepositories }), buildManifest(workspace.digest)],
     server: { host: '127.0.0.1', strictPort: true, headers: { 'Cache-Control': 'no-store' }, fs: { allow: [graphRoot] } },
     build: { ...native.build, outDir: path.join(canvasRoot, 'dist/observability'), emptyOutDir: true, sourcemap: false,
       rollupOptions: { ...native.build?.rollupOptions, input: path.join(canvasRoot, 'observability.html') } },

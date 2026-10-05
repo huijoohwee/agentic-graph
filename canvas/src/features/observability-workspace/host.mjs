@@ -18,21 +18,39 @@ export function validateWorkspaceManifest(value) {
     || Object.keys(value).some(key => !['schema', 'title', 'readOnly', 'repositories'].includes(key))) throw Error('Invalid observability workspace manifest')
   const ids = new Set()
   for (const row of value.repositories) {
-    if (!row || Object.keys(row).sort().join() !== 'id,label,path' || typeof row.id !== 'string' || !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(row.id)
+    if (!row || Object.keys(row).some(key => !['id', 'label', 'path', 'buildRevision'].includes(key)) || typeof row.id !== 'string' || !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(row.id)
       || ids.has(row.id) || typeof row.label !== 'string' || !row.label.trim() || row.label.length > 160
       || typeof row.path !== 'string' || !row.path || row.path.length > 1024 || path.isAbsolute(row.path)
       || /[\\\0\r\n]/.test(row.path) || row.path.split('/').some(part => !part || part === '..' || part === '.')) throw Error('Invalid workspace repository')
+    if (row.buildRevision !== undefined && (row.id !== 'agentic-graph' || !/^[a-f0-9]{40}$/.test(row.buildRevision))) throw Error('Invalid Graph build revision')
     ids.add(row.id)
   }
   return value
 }
-export function loadWorkspaceManifest(file, workspaceRoot) {
+export function loadWorkspaceManifest(file, workspaceRoot, { allowMissingRepositories = false } = {}) {
   if (!path.isAbsolute(file || '') || !path.isAbsolute(workspaceRoot || '')) throw Error('Explicit absolute workspace manifest and root are required')
   if (statSync(file).size > 32000) throw Error('Workspace manifest exceeds 32000 bytes')
   const bytes = readFileSync(file), value = validateWorkspaceManifest(JSON.parse(bytes.toString('utf8')))
   const root = realpathSync(workspaceRoot)
   const repositories = value.repositories.map(row => {
-    const resolved = realpathSync(path.resolve(root, row.path)), relative = path.relative(root, resolved)
+    const candidate = path.resolve(root, row.path), lexical = path.relative(root, candidate)
+    if (!lexical || lexical.startsWith('..' + path.sep) || lexical === '..' || path.isAbsolute(lexical)) throw Error('Repository escapes the configured workspace')
+    let resolved
+    try { resolved = realpathSync(candidate) }
+    catch (error) {
+      if (!allowMissingRepositories || error.code !== 'ENOENT') throw error
+      let parent = path.dirname(candidate), checked = false
+      while (parent !== root && parent !== path.dirname(parent)) {
+        try { resolved = realpathSync(parent); checked = true; break }
+        catch (parentError) { if (parentError.code !== 'ENOENT') throw parentError; parent = path.dirname(parent) }
+      }
+      if (!checked) resolved = root
+      const parentRelative = path.relative(root, resolved)
+      if (parentRelative.startsWith('..' + path.sep) || parentRelative === '..' || path.isAbsolute(parentRelative)
+        || !statSync(resolved).isDirectory()) throw Error('Repository escapes the configured workspace')
+      return { ...row, resolved: null }
+    }
+    const relative = path.relative(root, resolved)
     if (!relative || relative.startsWith('..' + path.sep) || relative === '..' || path.isAbsolute(relative)
       || !statSync(resolved).isDirectory()) throw Error('Repository escapes the configured workspace')
     return { ...row, resolved }
@@ -51,6 +69,7 @@ export function captureRepositorySource(root) {
 export function selectedRepository(workspace, id) {
   const row = workspace.repositories.find(row => row.id === id)
   if (!row) throw Error('Repository is not selected in this workspace')
+  if (!row.resolved) throw Error('Repository directory is unavailable in this host')
   if (realpathSync(path.resolve(workspace.root, row.path)) !== row.resolved) throw Error('Repository path changed')
   return row
 }
@@ -62,8 +81,8 @@ export function bindRetainedIndexSource(result, source, expectedDigest) {
   // A linked artifact does not inherit the workflow's source identity. Only explicit native acquisition metadata binds its commit.
   return { repository: `${repository.hostname}/${repository.repositoryPath}`, revision: acquisition.commitSha, snapshotDigest: result.result.snapshotDigest }
 }
-export function createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot, graphRoot }) {
-  const workspace = loadWorkspaceManifest(manifestFile, workspaceRoot)
+export function createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot, graphRoot, allowMissingRepositories = false }) {
+  const workspace = loadWorkspaceManifest(manifestFile, workspaceRoot, { allowMissingRepositories })
   const publicManifest = { ...workspace.value, repositories: workspace.value.repositories.map(({ id, label }) => ({ id, label })) }
   let busy = false
   return {

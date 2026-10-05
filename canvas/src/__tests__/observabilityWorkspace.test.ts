@@ -14,11 +14,40 @@ test('workspace manifest accepts configurable repository counts and rejects muta
   assert.throws(() => validateWorkspaceManifest({ ...manifest(), repositories: Array(33).fill(manifest().repositories[0]) }))
   assert.throws(() => validateWorkspaceManifest({ ...manifest(), repositories: [...manifest().repositories, ...manifest().repositories] }))
 })
+test('workspace manifest accepts only an exact build revision on the native Graph repository', () => {
+  const row = { id: 'agentic-graph', label: 'Graph', path: 'agentic-graph', buildRevision: 'a'.repeat(40) }
+  const value = { ...manifest(), repositories: [row] }
+  assert.equal(validateWorkspaceManifest(value).repositories[0].buildRevision, row.buildRevision)
+  assert.throws(() => validateWorkspaceManifest({ ...manifest(), repositories: [{ ...row, buildRevision: 'main' }] }))
+  assert.throws(() => validateWorkspaceManifest({ ...manifest(), repositories: [{ ...row, id: 'example' }] }))
+})
 test('workspace manifest refuses absolute, traversal and ambiguous repository paths', () => {
   for (const value of ['/tmp/repo', '../repo', 'repo/../other', './repo', 'repo\\other', 'repo//other']) {
     const input = manifest(); input.repositories[0].path = value
     assert.throws(() => validateWorkspaceManifest(input), value)
   }
+})
+test('build-only manifest reads tolerate absent siblings but serving and symlink escapes remain blocked', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'graph-observability-build-workspace-'))
+  const outside = mkdtempSync(path.join(os.tmpdir(), 'graph-observability-build-outside-'))
+  try {
+    mkdirSync(path.join(root, 'graph'))
+    const file = path.join(root, 'workspace.json')
+    const value = { ...manifest(), repositories: [
+      { id: 'agentic-graph', label: 'Graph', path: 'graph', buildRevision: 'a'.repeat(40) },
+      { id: 'missing', label: 'Missing', path: 'missing' },
+    ] }
+    writeFileSync(file, JSON.stringify(value))
+    assert.throws(() => loadWorkspaceManifest(file, root), /ENOENT/)
+    const build = loadWorkspaceManifest(file, root, { allowMissingRepositories: true })
+    assert.equal(selectedRepository(build, 'agentic-graph').resolved, realpathSync(path.join(root, 'graph')))
+    assert.equal(build.repositories[1].resolved, null)
+    assert.throws(() => selectedRepository(build, 'missing'), /unavailable in this host/)
+    symlinkSync(outside, path.join(root, 'escape'))
+    value.repositories[1].path = 'escape/missing'
+    writeFileSync(file, JSON.stringify(value))
+    assert.throws(() => loadWorkspaceManifest(file, root, { allowMissingRepositories: true }), /escapes/)
+  } finally { rmSync(root, { recursive: true, force: true }); rmSync(outside, { recursive: true, force: true }) }
 })
 test('workspace host binds raw manifest bytes and rejects unknown IDs and symlink escapes', () => {
   const root = mkdtempSync(path.join(os.tmpdir(), 'graph-observability-test-'))
