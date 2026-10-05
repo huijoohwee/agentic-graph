@@ -65,8 +65,8 @@ export function normalizeUiIconStrokeWidth(value: number): number {
   return Number.isFinite(value) ? Math.max(0.5, Math.min(4, value)) : UI_ICON_DEFAULTS.strokeWidth
 }
 
-// Icon keyboard focus uses the same primary wash and glyph colors as selection.
-const ICON_FOCUS_CLASS_NAME = 'focus-visible:bg-blue-50 dark:focus-visible:bg-blue-900/20 focus-visible:text-blue-600 dark:focus-visible:text-blue-400'
+// A stronger primary wash distinguishes keyboard focus even on a selected icon.
+const ICON_FOCUS_CLASS_NAME = 'focus-visible:bg-blue-100 dark:focus-visible:bg-blue-900/40 focus-visible:text-blue-600 dark:focus-visible:text-blue-400'
 
 export const UI_THEME_TOKENS = {
   shadow: {

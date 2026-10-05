@@ -225,7 +225,8 @@ live app; expanded typography and mobile touch targets remain source-owned.
 
 
 Toolbar and panel icon selection/focus use the shared primary blue background and
-glyph colors, with no border, browser outline or ring. `button.iconControl` owns
+glyph colors, with no border, browser outline or ring. Keyboard focus uses a stronger
+blue wash so an already-selected icon remains distinguishable. `button.iconControl` owns
 keyboard focus for native and portable icons; `button.selectedIcon` owns selection.
 MainPanel tabs, FloatingPanel/BottomPanel tabs and pin controls delegate to these
 owners. Data-view icon actions reuse them; labeled field and row borders retain

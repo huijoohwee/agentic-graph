@@ -45,7 +45,7 @@ Minimized panel chrome consumes the native toolbar's control height, compact pad
 surface height, border and island radius. MainPanel has one horizontally scrollable
 header when minimized. Existing icon size, stroke and selected-state utilities apply
 across all three panels. The shared icon owner renders selection and keyboard focus
-as blue background/glyphs without borders, browser outlines or hover rings.
+as blue background/glyphs without borders or rings; keyboard focus deepens the blue wash.
 
 ## ADR
 
