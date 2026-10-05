@@ -7,13 +7,12 @@ import {
   readReusableWorkspaceEntriesSnapshot, resolveMaterializedWorkspaceActivePath,
 } from '@/features/source-files/sourceFilesRuntimeShared'
 import { areSourceFileRecordsEqual } from '@/features/source-files/sourceFileParsedState'
-import { isMaterializedWorkspaceSourceProofCurrent, type MaterializedWorkspaceSourceProof } from '@/features/source-files/sourceFilesRuntimeMaterialization'
+import { isMaterializedWorkspaceSourceProofCurrent } from '@/features/source-files/sourceFilesRuntimeMaterialization'
 import { resolveWorkspaceSourceRootPaths } from '@/features/workspace-fs/workspaceSourceRoots'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { subscribeWorkspaceFsChanged } from '@/features/workspace-fs/workspaceFsEvents'
 import { isWebsiteImportExplorerUpdate } from '@/features/workspace-fs/websiteImportRefreshGuard'
 import { resolveWorkspaceSourceIndexSnapshot } from '@/features/workspace-fs/sourceIndex'
-import { buildWorkspaceEntriesSemanticKey } from '@/features/workspace-fs/workspaceEntriesSemanticKey'
 import { invalidateCachedWorkspaceActiveEntrySnapshot } from '@/features/source-files/workspaceActiveEntryCache'
 import { createWorkspaceSeedSyncDeferredScheduler } from '@/lib/workspace/workspaceSeedSyncDeferredScheduler'
 import { beginWorkspaceSeedSyncTask, runWorkspaceSeedSyncTask } from '@/lib/workspace/workspaceSeedSyncRuntime'
@@ -78,8 +77,6 @@ export function useSourceFilesWorkspaceRuntime({
   const activePathMaterializeInFlightRef = React.useRef(false)
   const queuedActivePathMaterializeRef = React.useRef<ActivePathMaterializationRequest | null>(null)
   const pendingEnsureSeedMutationRequestRef = React.useRef<WorkspaceFsMutationRequest | null>(null)
-  const lastWorkspaceEntriesSignatureRef = React.useRef('')
-  const lastWorkspaceMaterializationProofRef = React.useRef<MaterializedWorkspaceSourceProof | null>(null)
   const hasWorkspaceRematerializeCandidates = React.useCallback((
     sourceFiles?: ReturnType<typeof useGraphStore.getState>['sourceFiles'],
   ): boolean => {
@@ -128,22 +125,14 @@ export function useSourceFilesWorkspaceRuntime({
     const fs = await readReusableWorkspaceFs()
     assertCurrent()
     const forceIncludePaths = buildMaterializedWorkspaceForceIncludePaths({ activePathOverride: activePath })
+    const entriesCache = reusableWorkspaceEntriesRef.current
     const workspaceEntries = await readWorkspaceActiveEntrySnapshot({
-      fs, activePath, workspaceEntries: reusableWorkspaceEntriesRef.current,
+      fs, activePath, workspaceEntries: entriesCache,
     })
     assertCurrent()
     const hydratedWorkspaceEntries = await hydrateWorkspaceEntriesInlineText({ fs, workspaceEntries, forceIncludePaths })
     assertCurrent()
-    const signature = buildWorkspaceEntriesSemanticKey({
-      entries: hydratedWorkspaceEntries,
-      docsOnly: workspaceSourceFilesDocsOnly,
-      forceIncludePaths,
-      forceIncludeOnly: true,
-      workspaceSourceRootPaths: resolveWorkspaceSourceRootPaths({ chatLocalStorageRootPath: baseline.chatLocalStorageRootPath }),
-    })
-    const previousProof = lastWorkspaceMaterializationProofRef.current
-    if (signature === lastWorkspaceEntriesSignatureRef.current && previousProof && isMaterializedWorkspaceSourceProofCurrent(previousProof)) return previousProof.sourceFiles
-    // Read provenance without publishing its cache until the source proof succeeds.
+    // The index cache stays owned by bootstrap; a deferred return cannot revive invalidation.
     const sourcesByPath = resolveWorkspaceSourceIndexSnapshot(reusableWorkspaceSourcesByPathRef.current || undefined)
     assertCurrent()
     // Publication belongs to the guarded materializer, never this deferred hydration callback.
@@ -154,12 +143,9 @@ export function useSourceFilesWorkspaceRuntime({
     })
     if (!proof || lifecycle.signal.aborted || lifecycle !== workspaceSeedSyncLifecycleAbortControllerRef.current
       || !isMaterializedWorkspaceSourceProofCurrent(proof)) throw stale()
-    lastWorkspaceEntriesSignatureRef.current = signature
-    lastWorkspaceMaterializationProofRef.current = proof
-    reusableWorkspaceEntriesRef.current = readReusableWorkspaceEntriesSnapshot(hydratedWorkspaceEntries)
-    reusableWorkspaceSourcesByPathRef.current = sourcesByPath
+    if (reusableWorkspaceEntriesRef.current === entriesCache) reusableWorkspaceEntriesRef.current = readReusableWorkspaceEntriesSnapshot(hydratedWorkspaceEntries)
     return proof.sourceFiles
-  }, [readCallerOwnedSourceFilesSnapshot, readReusableWorkspaceFs, readReusableWorkspaceSourceIndexSnapshot, reusableWorkspaceEntriesRef, reusableWorkspaceSourcesByPathRef, workspaceSeedSyncLifecycleAbortControllerRef, workspaceSourceFilesDocsOnly])
+  }, [readCallerOwnedSourceFilesSnapshot, readReusableWorkspaceFs, reusableWorkspaceEntriesRef, reusableWorkspaceSourcesByPathRef, workspaceSeedSyncLifecycleAbortControllerRef])
 
   const isWorkspaceSourceRootMutationPath = React.useCallback((path: string): boolean => {
     if (!path) return false
@@ -419,8 +405,6 @@ export function useSourceFilesWorkspaceRuntime({
       }
       scheduleWorkspaceRematerialize()
     }
-    lastWorkspaceEntriesSignatureRef.current = ''
-    lastWorkspaceMaterializationProofRef.current = null
     scheduleWorkspaceRematerialize()
     const unsubscribe = subscribeWorkspaceFsChanged(detail => {
       const request = resolveWorkspaceFsMutationRequest(detail)

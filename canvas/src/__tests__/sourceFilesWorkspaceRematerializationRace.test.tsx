@@ -118,6 +118,7 @@ test('equivalent caller snapshot remains admissible and uses the current invento
   assert.equal(useGraphStore.getState().sourceFiles.find(file => file.id === 'active')?.text, text)
   assert.equal(useGraphStore.getState().sourceFiles.find(file => file.id === 'retained'), f.initial[1])
   assert.equal(useGraphStore.getState().markdownDocumentText, text)
+  assert.equal(f.input.reusableWorkspaceEntriesRef.current?.find(entry => entry.path === path)?.text, text)
   assert.ok(f.published.length > 0)
 }))
 
@@ -149,4 +150,20 @@ test('a missing active source retains cached URL provenance through guarded mate
   assert.ok(source)
   assert.equal(source.source?.kind, 'url'); assert.equal(source.source?.url, url)
   assert.equal(useGraphStore.getState().sourceFiles.find(file => file.id === 'retained'), current[0])
+}))
+
+for (const change of ['replacement', 'invalidation', 'initial null invalidation']) test(`late cache ${change} survives materialization`, async () => fixture(async f => {
+  f.input.reusableWorkspaceEntriesRef.current = []
+  if (change !== 'initial null invalidation') f.input.reusableWorkspaceSourcesByPathRef.current = {}
+  const entries = change === 'replacement' ? [] : undefined, sources = change === 'replacement' ? {} : null
+  const apply = useGraphStore.getState().setActiveMarkdownDocument
+  useGraphStore.setState({ setActiveMarkdownDocument: async payload => {
+    const result = await apply(payload)
+    f.input.reusableWorkspaceEntriesRef.current = entries; f.input.reusableWorkspaceSourcesByPathRef.current = sources
+    return result
+  } })
+  f.release(); await f.schedule(); await f.drain()
+  assert.equal(useGraphStore.getState().markdownDocumentText, text)
+  assert.equal(f.input.reusableWorkspaceEntriesRef.current, entries)
+  assert.equal(f.input.reusableWorkspaceSourcesByPathRef.current, sources)
 }))
