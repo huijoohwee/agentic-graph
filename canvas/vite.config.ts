@@ -70,6 +70,7 @@ const resolvedD3Entry = nodeRequire.resolve('d3')
 const resolvedMaplibreEntry = nodeRequire.resolve('maplibre-gl/dist/maplibre-gl.mjs')
 const resolvedZustandCompatEntry = path.resolve(__dirname, 'src/lib/vendor/zustandCompat.ts')
 const resolvedGympgrphSrc = path.resolve(__dirname, '../gympgrph/src/index.ts')
+const resolvedGympgrphGeoJsonSrc = path.resolve(__dirname, '../gympgrph/src/geojson.ts')
 const resolvedGympgrphMapPreviewSrc = path.resolve(__dirname, '../gympgrph/src/mapPreview.ts')
 const resolvedGympgrphTestkitSrc = path.resolve(__dirname, '../gympgrph/src/testkit.ts')
 const MARKDOWN_PIPELINE_INPUT_REL_PATH = String(process.env.VITE_MARKDOWN_PIPELINE_INPUT_REL_PATH || '').trim() || 'docs/agentic-graph-pipeline-document.md'
@@ -6462,6 +6463,7 @@ export default defineConfig(({ command, mode }) => {
       { find: /^maplibre-gl(?:\/dist\/maplibre-gl\.js)?$/, replacement: resolvedMaplibreEntry },
       { find: /^zustand$/, replacement: resolvedZustandCompatEntry },
       { find: /^gympgrph$/, replacement: resolvedGympgrphSrc },
+      { find: /^gympgrph\/geojson$/, replacement: resolvedGympgrphGeoJsonSrc },
       { find: /^gympgrph\/map-preview$/, replacement: resolvedGympgrphMapPreviewSrc },
       { find: /^gympgrph\/testkit$/, replacement: resolvedGympgrphTestkitSrc },
       {
