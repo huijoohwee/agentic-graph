@@ -9,6 +9,7 @@ import { chromium } from 'playwright'
 import { preview } from 'vite'
 import { createXrV2ExistingStorageFixture } from './lib/xr-v2-existing-storage-fixture.mjs'
 import { runAviationEvidenceOfflineProof } from './lib/aviation-evidence-offline-proof.mjs'
+import { importWorkspaceFile } from './lib/workspace-import-proof.mjs'
 import { createSmokeDiagnostics, collectSmokeDiagnostics, installSmokeDiagnostics, captureLegacySmokeFailure } from './lib/spatial-smoke-diagnostics.mjs'
 
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
@@ -113,7 +114,9 @@ try {
     const chooser = page.waitForEvent('filechooser')
     await page.getByText('Choose files', { exact: true }).click(); action('Choose files')
     collector.mark('Select local scene:start')
-    await (await chooser).setFiles({ name: 'spatial-pilot.md', mimeType: 'text/markdown', buffer: Buffer.from(source) }); action('Select local scene')
+    await importWorkspaceFile({ page, fileChooser: await chooser, path: '/notes/spatial-pilot.md', source,
+      file: { name: 'spatial-pilot.md', mimeType: 'text/markdown', buffer: Buffer.from(source) } })
+    action('Local scene import complete; exact persisted source verified')
     const review = page.getByRole('region', { name: 'Spatial change review', exact: true })
     await review.getByRole('button', { name: 'Preview +1 m on X', exact: true }).waitFor()
     collector.mark('Review visible; awaiting enabled fieldset')
@@ -125,7 +128,7 @@ try {
     if (width === 1024) await page.locator('[data-kg-xr-document-loaded="1"]').waitFor({ timeout: 60000 })
     else await page.getByRole('button', { name: 'Load 3D view', exact: true }).waitFor()
     await page.waitForFunction(() => !!navigator.serviceWorker?.controller, undefined, { timeout: 60000 })
-    const initial = await storedSource(page); assert.ok(initial)
+    const initial = await storedSource(page); assert.equal(initial, source)
     await page.waitForLoadState('networkidle', { timeout: 30000 })
     await context.setOffline(true)
     const quickPreview = review.getByRole('button', { name: 'Preview +1 m on X', exact: true })

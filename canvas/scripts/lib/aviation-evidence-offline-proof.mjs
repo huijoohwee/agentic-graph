@@ -1,3 +1,4 @@
+import { importWorkspaceFile } from './workspace-import-proof.mjs'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
@@ -150,18 +151,8 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
       const chooser = page.waitForEvent('filechooser')
       await text(page, 'Choose files').click()
       const fileChooser = await chooser
-      const [importCompletion] = await Promise.all([
-        page.waitForFunction(() => {
-          const toast = document.querySelector('[data-kg-toast-id="markdown-workspace-status"]')
-          const message = toast?.querySelector('[data-kg-toast-message]')?.textContent?.trim() || ''
-          return /^(Imported\b|Import failed:)/.test(message) ? { message, role: toast.getAttribute('role') } : false
-        // Cold imports may first consume the bounded 30-second source bootstrap wait.
-        }, undefined, { timeout: 60000 }).then(async handle => {
-          try { return await handle.jsonValue() } finally { await handle.dispose() }
-        }),
-        fileChooser.setFiles({ name: localPath.split('/').at(-1), mimeType: 'text/markdown', buffer: Buffer.from(source) }),
-      ])
-      match(importCompletion.message, /^Imported 1(?:;|$)/); equal(importCompletion.role, 'status')
+      await importWorkspaceFile({ page, fileChooser, path: localPath, source,
+        file: { name: localPath.split('/').at(-1), mimeType: 'text/markdown', buffer: Buffer.from(source) } })
       mark('import-complete')
       let panel = await evidencePanel(page)
       await text(panel, config.title).waitFor()
