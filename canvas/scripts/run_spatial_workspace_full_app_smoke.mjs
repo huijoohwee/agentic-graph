@@ -180,9 +180,17 @@ try {
     assert.equal(response.status(), 200)
     await review.getByRole('button', { name: 'Preview +1 m on X', exact: true }).waitFor({ timeout: 60000 })
     assert.equal(await storedSource(page), undone, 'offline reload retains source and receipt bytes')
-    // Offline Studio intentionally reopens the source editor for source verification.
-    // Return through its native Close action before resuming canvas review.
+    // Offline Studio restores the Timeline and source editor independently. On narrow screens
+    // the visible Timeline Close action is topmost; dismiss it before closing the editor.
+    const reloadNavigationActions = []
+    const timelinePanel = page.getByRole('complementary', { name: 'Strybldr Timeline', exact: true })
+    if (await timelinePanel.isVisible()) {
+      await timelinePanel.getByRole('button', { name: 'Close', exact: true }).click()
+      await timelinePanel.waitFor({ state: 'hidden', timeout: 30000 })
+      reloadNavigationActions.push('Close restored Timeline overlay')
+    }
     await page.locator('[aria-label="Markdown view controls"]').getByRole('button', { name: 'Close', exact: true }).click()
+    reloadNavigationActions.push('Close restored source editor')
     await page.waitForFunction(() => { const fieldset = document.querySelector('[data-kg-spatial-review] fieldset'); return fieldset && !fieldset.disabled })
     collector.mark('Offline review enabled')
     await quickPreview.click(); await review.getByRole('button', { name: 'Cancel proposal', exact: true }).click()
@@ -202,7 +210,7 @@ try {
     collector.mark('Acceptance complete')
     const diagnostics = await collectSmokeDiagnostics(page, collector, { revision, tree })
     results.push({ width, actions, firstValueMs, installation, installMs, reloadMs, receipts: 2,
-      noWebMcp: true, offlineReview: true, coldReload: true, reloadNavigationActions: ['Close restored source editor'], importedLabelIsText: true, renderer: width === 390 ? 'touch-opt-in-deferred' : 'loaded',
+      noWebMcp: true, offlineReview: true, coldReload: true, reloadNavigationActions, importedLabelIsText: true, renderer: width === 390 ? 'touch-opt-in-deferred' : 'loaded',
       overflow, initialLayout, reopenedLayout, pageErrors: errors, blockedRemoteRequests: [...new Set(remote)], evidenceKind: 'automated-technical-rehearsal', diagnostics })
     console.log(JSON.stringify(results.at(-1)))
     await context.close()
