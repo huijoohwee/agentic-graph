@@ -46,5 +46,10 @@ for (const { urlPattern, handler, method, options = {} } of buildPwaRuntimeCachi
     else if (['cacheName', 'fetchOptions', 'matchOptions'].includes(key)) strategyOptions[key] = value
     else throw new Error(`Unsupported runtime cache option: ${key}`)
   }
-  registerRoute(urlPattern, new Strategy({ ...strategyOptions, plugins }), method)
+  const strategy = new Strategy({ ...strategyOptions, plugins })
+  // SWR starts its network request before consulting cache plugins. An installed
+  // pack (including a damaged-member denial) must resolve before that side effect.
+  registerRoute(urlPattern, handler === 'StaleWhileRevalidate'
+    ? async options => await self.__agLearningOffline?.read(options.request) ?? strategy.handle(options)
+    : strategy, method)
 }
