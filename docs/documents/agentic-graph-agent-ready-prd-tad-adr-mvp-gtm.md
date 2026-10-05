@@ -2,7 +2,7 @@
 title: "Agent-Ready Surface Contract"
 id: "md:agentic-graph-agent-ready-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.29.0"
+version: "1.29.1"
 date: "2026-10-05"
 lang: "en-US"
 owner: "cloudflare.pages.agent-ready.surface"
@@ -22,12 +22,12 @@ agent_id: "codex-canvas-observability"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "1.28.0"
-prd_revision: "1.29.0"
-tad_revision: "1.29.0"
-adr_revision: "1.29.0"
-mvp_revision: "1.29.0"
-gtm_revision: "1.29.0"
+previous_document_version: "1.29.0"
+prd_revision: "1.29.1"
+tad_revision: "1.29.1"
+adr_revision: "1.29.1"
+mvp_revision: "1.29.1"
+gtm_revision: "1.29.1"
 ---
 
 # Agent-Ready Surface Contract
@@ -362,7 +362,7 @@ Experience observations, current VCC execution and buyer/payment evidence are un
 
 ## Native observability composition — reference implementation
 
-Five roles join `PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM@1.29.0` for this bounded increment.
+Five roles join `PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM@1.29.1` for this bounded increment.
 
 **PRD / O-1.** An operator must trace observed agent work to its exact codebase and evidence across explicitly selected repositories. The existing development entry opened an unrelated saved export. The accepted scope shows only the native Mission Dashboard, including its built-in Explore codebase · D3 and source evidence. A separate source tree, editor, standalone canvas and other application surfaces are excluded. Preserve repository selection, no fabricated run/causal edge, visible missing/stale/partial provenance, and separate repository, revision, tree and snapshot identities.
 
@@ -376,4 +376,6 @@ Five roles join `PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM@1.29.0` for 
 
 **GTM / O-1.** Hypothesis: maintainers value a shorter path from failed run to exact affected source and proof. Measure time to one source-bound explanation with the local workspace before pricing an assisted pilot. Willingness to pay, saved time and revenue remain unmeasured. No outreach, payment or deployment is part of this implementation.
 
-**Handoff / O-1.** Local dashboard functionality is implemented; source publication and artifact readiness are separate pending stages. Complete final checks and native RELEASE; the MapLibre owner must resolve the admitted capability boundary before static artifact consumption can pass. Production and protected-main runtime readiness require separate receipts. Rollback restores the preceding admitted source and exact generated bundle; no source/evidence datastore migration is introduced.
+**Readiness repair / O-1.** PR #1568's Integration Gate passed its standard plan but timed out before Mission checkpoints in the authored-workspace readiness wait. Semantic readiness must not depend on animation frames: the existing helper uses bounded timer polling while retaining the bootstrap, synchronization, history and exact-source predicates and the original deadline. `node --test canvas/scripts/lib/mission-authored-state-readiness.test.mjs` passed 2/2 in normal and disabled-animation-frame modes, rejecting incomplete and mismatched source states while preserving timeout diagnostics and page-close failure. This proves frame-independent semantic readiness; it does not establish that frame starvation caused the observed CI timeout. The repair is bounded to the helper, its test and this plan, with no new dependency.
+
+**Handoff / O-1.** Local dashboard functionality is implemented; source publication and artifact readiness remain separate pending stages. The native readiness successor retains the published host candidate. The MapLibre fix remains in another active owner and must integrate before static artifact consumption can pass. Canvas PR #955 also needs its exact Graph source supplied to the CI build and passing dependency checks. Protected integration, full Mission smoke and production remain unverified. Rollback restores the preceding admitted source and exact generated bundle; no source/evidence datastore migration is introduced.
