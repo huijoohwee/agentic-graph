@@ -81,6 +81,17 @@ test('retained native acquisition binds only its own explicit identity and rejec
   assert.throws(() => bindRetainedIndexSource(result, source, result.manifestDigest))
 })
 
+test('standalone observation renderer receives native defaults through a mutation-free store adapter', async () => {
+  const { useGraphStore } = await import('@/features/observability-workspace/readOnlyGraphCanvasStore')
+  const state = useGraphStore.getState()
+  assert.equal(state.canvasPointerMode2d, 'select')
+  assert.equal(state.viewportFitFillRatio, undefined)
+  assert.equal(useGraphStore(current => current.schema), state.schema)
+  assert.doesNotThrow(() => (state.clearZoomRequest as () => void)())
+  assert.doesNotThrow(() => (state.setLifecycleStage as (value: string) => void)('zoomUpdate'))
+  assert.deepEqual(state.schema, (await import('@/lib/graph/schema')).defaultSchema)
+})
+
 test('session index keeps native identities without DOM, storage or a retained workflow binding', async () => {
   assert.equal(typeof document, 'undefined')
   assert.equal(typeof indexedDB, 'undefined')

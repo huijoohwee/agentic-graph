@@ -6,13 +6,12 @@ import type { RunTrace } from '@/features/agent-ready/missionControlProjection'
 import type { MissionDashboardSnapshot } from '@/features/agent-ready/agentMissionDashboardSnapshot'
 import { readWorkspaceObservation } from '@/features/agent-ready/workspaceObservation'
 import type { AgentMissionProvenanceContext } from '@/features/agent-ready/agentMissionProvenance'
-import type { AgentRunView } from '@/features/agent-ready/agentRunInspectionStore'
 import type { MissionCodebaseIndex } from '@/features/agent-ready/useAgentMissionCodebaseIndex'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 import { AGENT_GRAPH_PROJECTION_DIRECTORY } from '@/features/agent-graph/agentGraphProjectionPolicy'
+import { buildAgentGraphWorkspaceIndex } from '@/features/agent-graph/agentGraphWorkspaceIndexBuilder'
 
-const Mission = React.lazy(() => import('@/features/agent-ready/AgenticOsMissionControl'))
-const MissionOverview = React.lazy(() => import('@/features/agent-ready/AgentMissionOverview'))
+const MissionDashboard = React.lazy(() => import('@/features/agent-ready/AgentMissionDashboardView'))
 const button = `${UI_THEME_TOKENS.control.singleLine} rounded border text-sm disabled:opacity-50 ${UI_THEME_TOKENS.button.neutralMuted}`
 type Manifest = { title: string; repositories: { id: string; label: string }[] }
 type Observation = { trace: RunTrace | null; graph: GraphData | null; codebase?: MissionCodebaseIndex; provenance: AgentMissionProvenanceContext; sourceDirty?: boolean }
@@ -33,16 +32,15 @@ function requestFor(repositoryId: string): typeof fetch {
 }
 async function project(result: any): Promise<GraphData | null> {
   if (!result?.result) return null
-  const { buildAgentGraphCanvasProjection } = await import('@/features/agent-graph/agentGraphCanvasProjection')
+  const { buildAgentGraphCanvasProjection } = await import('@/features/agent-graph/agentGraphCanvasProjectionBuilder')
   return buildAgentGraphCanvasProjection({ ...result.result, handled: true, kind: 'agent-graph' })
 }
 async function inspectIndex(graph: GraphData, signal: AbortSignal): Promise<MissionCodebaseIndex> {
-  const owner = await import('@/features/agent-graph/agentGraphWorkspaceIndex')
   signal.throwIfAborted()
   const identity = graph.metadata!.agentGraphProjection as { graphId: string; snapshotDigest: string }
   const path = `${AGENT_GRAPH_PROJECTION_DIRECTORY}/${identity.graphId.slice(9)}-${identity.snapshotDigest}.json`
   // Logical native identity only: session inspection never initializes storage or binds workflow references.
-  return { index: owner.buildAgentGraphWorkspaceIndex(graph, path, { retention: 'session' }) }
+  return { index: buildAgentGraphWorkspaceIndex(graph, path, { retention: 'session' }) }
 }
 
 /** This entry owns only local selection; native Mission and D3 own every evidence view. */
@@ -51,7 +49,6 @@ export default function ObservabilityWorkspace() {
   const [observation, setObservation] = React.useState<Observation | null>(null), [error, setError] = React.useState('')
   const [busy, setBusy] = React.useState(false)
   const [spanId, setSpanId] = React.useState<string | null>(null)
-  const [view, setView] = React.useState<AgentRunView>('tree')
   const pending = React.useRef<AbortController | null>(null), generation = React.useRef(0)
   React.useEffect(() => {
     const controller = new AbortController()
@@ -62,7 +59,7 @@ export default function ObservabilityWorkspace() {
     return () => { controller.abort(); pending.current?.abort(); generation.current++ }
   }, [])
   const choose = (id: string) => {
-    pending.current?.abort(); generation.current++; setRepository(id); setObservation(null); setError(''); setBusy(false); setSpanId(null); setView('tree')
+    pending.current?.abort(); generation.current++; setRepository(id); setObservation(null); setError(''); setBusy(false); setSpanId(null)
   }
   const load = async (index: boolean) => {
     pending.current?.abort()
@@ -108,9 +105,7 @@ export default function ObservabilityWorkspace() {
         {retained && <>
           <section aria-label="Mission dashboard" className="kg-dashboard-content min-w-0">
             <React.Suspense fallback={<p role="status">Loading native Mission…</p>}>
-              <MissionOverview embedded retained={retained} retainedSpanId={spanId} onRetainedSpan={setSpanId} onRetainedView={setView} provenance={observation.provenance}>
-                <Mission key={`${repository}:${retained.trace.workflowManifest?.digest ?? retained.trace.runId}:${retained.trace.observedAt}`} retained={retained} retainedSpanId={spanId} onRetainedSpan={setSpanId} retainedView={view} onRetainedView={setView} />
-              </MissionOverview>
+              <MissionDashboard retained={retained} retainedSpanId={spanId} onRetainedSpan={setSpanId} provenance={observation.provenance} />
             </React.Suspense>
           </section>
           {observation.sourceDirty && <p role="status" className="text-sm">The local index contains uncommitted source; no immutable Git revision is assigned.</p>}

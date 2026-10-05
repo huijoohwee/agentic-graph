@@ -37,13 +37,28 @@ export default defineConfig(async environment => {
   const workspace = loadWorkspaceManifest(manifestFile, workspaceRoot, { allowMissingRepositories })
   // Native resolution, compiler, worker, and styling owners are shared; host mutation/proxy plugins are deliberately not installed.
   const native = typeof nativeConfig === 'function' ? await nativeConfig(environment) : await nativeConfig
+  const nativeAliases = Array.isArray(native.resolve.alias) ? native.resolve.alias : native.resolve.alias ?? []
+  const nativeOutput = native.build?.rollupOptions?.output
   return {
     root: canvasRoot, base: './', publicDir: false,
-    resolve: native.resolve, esbuild: native.esbuild, define: native.define, worker: native.worker,
+    resolve: { ...native.resolve, alias: [
+      { find: /^@\/hooks\/useGraphStore$/, replacement: path.join(canvasRoot, 'src/features/observability-workspace/readOnlyGraphCanvasStore.ts') },
+      ...nativeAliases,
+    ] }, esbuild: native.esbuild, define: native.define, worker: native.worker,
     optimizeDeps: { ...native.optimizeDeps, include: ['react', 'react-dom/client', 'd3', 'dagre'] },
     plugins: [react(), tailwindcss(), createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot, graphRoot, allowMissingRepositories }), buildManifest(workspace.digest)],
     server: { host: '127.0.0.1', strictPort: true, headers: { 'Cache-Control': 'no-store' }, fs: { allow: [graphRoot] } },
     build: { ...native.build, outDir: path.join(canvasRoot, 'dist/observability'), emptyOutDir: true, sourcemap: false,
-      rollupOptions: { ...native.build?.rollupOptions, input: path.join(canvasRoot, 'observability.html') } },
+      rollupOptions: { ...native.build?.rollupOptions, input: path.join(canvasRoot, 'observability.html'), output: {
+        ...(Array.isArray(nativeOutput) ? {} : nativeOutput ?? {}),
+        manualChunks: (id, _meta) => {
+          const moduleId = id.replace(/\\/g, '/')
+          if (moduleId.endsWith('/canvas/src/lib/chatEndpoint.ts') || moduleId.endsWith('/canvas/src/lib/config.storyboard-widget.ts')) return 'graph-canvas-shared'
+          if (moduleId.includes('/canvas/src/components/GraphCanvas/layout/')) return 'graph-canvas-layout'
+          if (moduleId.includes('/canvas/src/components/GraphCanvas/layers/')) return 'graph-canvas-layers'
+          if (moduleId.includes('/canvas/src/features/integrations/')) return 'graph-renderer-integrations'
+          return undefined
+        },
+      } } },
   }
 })
