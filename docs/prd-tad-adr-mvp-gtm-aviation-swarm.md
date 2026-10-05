@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.34"
-revision: "0.4.34"
+version: "0.4.35"
+revision: "0.4.35"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.34"
-tad_revision: "0.4.34"
-adr_revision: "0.4.34"
-mvp_revision: "0.4.34"
-gtm_revision: "0.4.34"
+prd_revision: "0.4.35"
+tad_revision: "0.4.35"
+adr_revision: "0.4.35"
+mvp_revision: "0.4.35"
+gtm_revision: "0.4.35"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -23,9 +23,9 @@ load_policy: "on-demand"
 agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
-worktree_id: "agent/device-0232231d4a19/aviation-startup-settlement"
+worktree_id: "agent/device-0232231d4a19/aviation-render-budget"
 agent_id: "codex-root"
-source_revision: "3573451fa84518a4a62fa8be309a2bbb4cd03c53"
+source_revision: "55ba964cd4570ded760e6760cb78dbdfb39ef6aa"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm — reference implementation
 
-`aviation-swarm@0.4.34` hardens eligible aviation evidence Must workflows:
+`aviation-swarm@0.4.35` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -441,7 +441,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.34 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.35 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -451,7 +451,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.34`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.35`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -486,8 +486,9 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-Development: PR1560 integrated. Historical 29a passes eleven local plans, desktop/mobile first offline-open and actual 200% zoom. PR1567 passes 39 standard checks and the shared build (98.53 s); startup fails before import writes.
-Successor 3573451f admits one disabled-inventory append while the exact normalized document path/bytes are already open. Retry requires application not started, unchanged existing records and fresh persisted bytes. Four regressions failed before repair; 295 focused tests pass (6.9 s), independently reviewed.
-Economy: one verified build for three browser consumers; invocation-local hash cache. Four-file repair cap 20 KiB; no new modules/dependencies. Build limits remain 60/300/60 s and 4 GiB heap; import 60 s, AS1 300 s.
-Production Release: fresh required CI and exact integration receipts pending. OS cache retention merged in PR343. Physical iPhone SKIP/KIV; AS3/AS4 and commercial gates remain. No deployment/promotion receipt.
-ADR-004: historical 29a scoped 148,746 bytes pass; with thirteen native repairs 166,376 fails 150 kB. Byte/UI receipts remain bound to 29a; no broader readiness claim.
+PR1560 integrated. Historical 29a passes eleven local plans, first offline-open and 200% zoom. PR1569 builds; import exceeds 60 s with all 1,178 requests complete.
+3573451f preserves exact-path/bytes and pre-application retry fences; 195 cases pass. The f64 trace attributes 3.96/4.88 s to WebGL readback; instrumented local import passes, without provider parity.
+55ba964c extends pixel adaptation to 3D and repeated severe stalls; visibility/frame-loop transitions reset samples. Isolated pauses, immersive/recording exclusions, quality floor and slow recovery remain; 21 focused checks pass (1.16 s).
+Economy: one verified build for three browser consumers; invocation-local hash cache. Four-file diff cap 16 KiB; no new modules/dependencies. Build limits stay 60/300/60 s and 4 GiB heap; import 60 s, AS1 300 s. Browser/CI receipts bind the final commit externally.
+Release requires exact CI/integration receipts. OS cache retention merged in PR343. Physical iPhone SKIP/KIV; AS3/AS4 and commercial gates remain. No deployment/promotion receipt.
+ADR-004: historical 29a scoped 148,746 bytes pass; with thirteen native repairs 166,376 fails 150 kB. 29a byte/UI proof grants no broader readiness.
