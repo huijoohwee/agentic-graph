@@ -1,7 +1,7 @@
 ---
 title: "agentic-graph Agentic Commerce Platform — Agent Marketplace & Orchestration Hub plus Clean-Room Native Vendor Settlement Layer, with Platform Roadmap"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.5.0"
+version: "0.5.1"
 date: "2026-10-05"
 lang: "en-US"
 owner: "Solo Founder / AI Orchestrator"
@@ -19,19 +19,19 @@ agent_id: "codex-commerce-data-view-embed"
 guideline_revision: "3.4.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/82835ac37d524643faa6b9703cb077ea9474ab15/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "e551c50c7ad74a99af8a3169409aff36d31642bf"
-previous_document_version: "0.4.0"
-prd_revision: "0.5.0"
-tad_revision: "0.5.0"
-adr_revision: "0.5.0"
-mvp_revision: "0.5.0"
-gtm_revision: "0.5.0"
+previous_document_version: "0.5.0"
+prd_revision: "0.5.1"
+tad_revision: "0.5.1"
+adr_revision: "0.5.1"
+mvp_revision: "0.5.1"
+gtm_revision: "0.5.1"
 ---
 
 The prior [inherited specification](agentic-graph-agentic-commerce-platform-prd-tad-adr-mvp-gtm.md) remains byte-exact because the travel-commerce reused-interface evidence pins it. This planning successor supplies the current five-role structure; it does not replace the inherited interface baseline or renew its runtime evidence.
 
 # Reference implementation: agentic-graph Agentic Commerce Platform — Agent Marketplace & Orchestration Hub plus Clean-Room Native Vendor Settlement Layer, with Platform Roadmap
 
-This combined planning artifact joins `PLAN-AGENTIC-GRAPH-AGENTIC-COMMERCE-PLATFORM-PRD-TAD-ADR-MVP-GTM@0.5.0`. The native reuse sections below own the 0.5.0 increment. Linked historical parts retain their 0.3.1 acceptance and evidence scope; this join does not renew those observations. Sections are split solely to keep each authored file below 600 lines. The links below preserve the original section anchors and locate the unchanged requirement/design/decision text plus the current MVP/GTM assessment.
+This combined planning artifact joins `PLAN-AGENTIC-GRAPH-AGENTIC-COMMERCE-PLATFORM-PRD-TAD-ADR-MVP-GTM@0.5.1`. The native reuse sections below own the 0.5.1 increment. Linked historical parts retain their 0.3.1 acceptance and evidence scope; this join does not renew those observations. Sections are split solely to keep each authored file below 600 lines. The links below preserve the original section anchors and locate the unchanged requirement/design/decision text plus the current MVP/GTM assessment.
 
 <a id="feature-agent-marketplace--orchestration-hub--domain-agnostic-commerce-substrate"></a>
 - [Feature: Agent Marketplace & Orchestration Hub — Domain-Agnostic Commerce Substrate](agentic-graph-agentic-commerce-platform-planning-prd-tad-adr-mvp-gtm.part-01.md#feature-agent-marketplace--orchestration-hub--domain-agnostic-commerce-substrate)
@@ -223,7 +223,7 @@ browser-local offers and an independent offer-table projection. The user explici
 **Directive GDV-D1:** reuse the native table and selected-record inspection inside Commerce.
 **Role / action / outcome:** Graph UI and Commerce integration owners extract and consume one
 portable native core so users keep the same table semantics without a second visual variant.
-All five roles in this section consume `PLAN-AGENTIC-GRAPH-AGENTIC-COMMERCE-PLATFORM-PRD-TAD-ADR-MVP-GTM@0.5.0`;
+All five roles in this section consume `PLAN-AGENTIC-GRAPH-AGENTIC-COMMERCE-PLATFORM-PRD-TAD-ADR-MVP-GTM@0.5.1`;
 the consumer joins `edge-commerce-agent-mvp@0.21.0`.
 
 ### PRD — native reuse
@@ -368,3 +368,28 @@ operands survive the bounded test split; six delegation checks added, maximum te
 Commerce's focused keyboard/offline/stale/busy/late-load/200%-reflow checks pass against generated
 candidate assets. Byte-identical generation was observed; clean source pin and protected CI remain
 separate release gates. No source stylesheet was modified or independent visual variant created.
+
+
+## Shared toolbar affordances — 0.5.1
+
+PRD: main toolbar, floating guide and pinned controls use one compact height, selected-state
+and glyph authority. At default text scale: 28px desktop controls, 38px compact surface,
+16px glyphs and 1.5 stroke; native mobile/coarse controls remain 44px (installed-app 48px).
+TAD: FloatingPanelShell consumes existing compact padding and control-height tokens; its header
+owns the responsive row utility. FloatingPanelCloseButton uses UI_ICON_DEFAULTS. Pin and tab
+selection both consume button.selectedIcon. Shared icon controls retain an intrinsic glyph
+minimum so doubled text cannot clip an enlarged icon; the same control token enforces minimum
+width over generic row shrinking. Existing preferences remain authoritative.
+ADR: neutral layout tokens inherit the root baseline in themed CSS; full standalone theme and
+metadata exports stay complete. The adapter projects native responsive declarations and their
+at-rules; consumers regenerate assets, never maintain a CSS variant. No new runtime module.
+MVP: this increment is bounded to 35 active minutes, 16 paths, 40kB authored changes, files
+<600 lines and generated chunks <500kB. Verify native controls and exported CSS in light/dark/
+black, fine/coarse/mobile, keyboard and 200% text. Revert shared source and consumer pin together.
+GTM: this improves the existing setup/recovery path; no new buyer or revenue claim. Local
+appearance evidence is separate from protected integration and production delivery.
+
+Verification: ten token-contract cases, five guide and four table-adapter tests, and four native
+appearance/pin/scroll/click checks pass. Twelve computed native/exported CSS cases and eight
+mounted glyph/target cases pass, including coarse44px, installed48px and 200% text containment.
+Commerce integration and protected publication are recorded separately in exact-source receipts.

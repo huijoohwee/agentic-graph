@@ -81,7 +81,7 @@ export const UI_THEME_TOKENS = {
     singleLine: `${CONTROL_HEIGHT_CLASS_NAME} box-border min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-2 py-0`,
   },
   button: {
-    iconControl: 'kg-icon-control rounded transition-colors shadow-none',
+    iconControl: 'kg-icon-control min-w-[var(--kg-control-height)]! min-h-[var(--kg-default-glyph-size,1rem)] rounded transition-colors shadow-none',
     selectedIcon: `${UI_INTENT_TOKENS.primary.bg} ${UI_INTENT_TOKENS.primary.text}`,
     text: 'text-[color:var(--kg-text-secondary)]',
     hoverText: 'hover:text-[color:var(--kg-text-primary)]',
