@@ -153,3 +153,19 @@ test('nested panel owns its captured events; inactive panels and unmounted floor
     assert(env.z('main') >= 1000 && env.z('main') <= 1002)
   } finally { env.cleanup() }
 })
+
+test('inactive canvas panels keep their local background layer below the editor overlay', () => {
+  const env = setup(), Panel = env.Panel
+  try {
+    act(() => env.root.render(<>
+      <Panel id="main" base={5000} />
+      <Panel id="floating" base={5000} />
+      <Panel id="bottom" base={230} active={false} />
+    </>))
+    assert.equal(env.z('bottom'), 230)
+    assert(env.z('main') > env.z('floating'))
+    const before = [env.z('main'), env.z('floating')]
+    env.pointer(env.button('bottom'))
+    assert.deepEqual([env.z('main'), env.z('floating')], before, 'an inactive canvas panel cannot promote over the editor')
+  } finally { env.cleanup() }
+})
