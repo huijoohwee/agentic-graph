@@ -5,7 +5,7 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'; import tailwindcss from '@tailwindcss/vite'
 import { traeBadgePlugin } from 'vite-plugin-trae-solo-badge'
 import { VitePWA } from 'vite-plugin-pwa'
-import { createPythonLearningOfflinePlugin, offlinePrecacheEntries } from './vitePythonLearningOffline.mjs'; import offlinePublicAssets from './src/features/evidence-analysis/profiles/offline-assets.json'
+import { createPythonLearningOfflinePlugin } from './vitePythonLearningOffline.mjs'; import offlinePublicAssets from './src/features/evidence-analysis/profiles/offline-assets.json'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -362,7 +362,6 @@ const inlineHtmlStylesheetAssetsPlugin = (): Plugin => {
       }
     },
     async writeBundle(options, bundle) {
-      if (!inlinedCssFileNames.size) return
       const outDir = resolveBundleOutputDir(options)
       if (!outDir) return
       for (const output of Object.values(bundle)) {
@@ -6511,7 +6510,7 @@ export default defineConfig(({ command, mode }) => {
         },
       },
       injectManifest: {
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, additionalManifestEntries: offlinePrecacheEntries(offlinePublicAssets),
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         globPatterns: ['manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,mjs,cjs,css,woff,woff2,ttf}'],
         manifestTransforms: [precacheAdmission.manifestTransform],
       },

@@ -14,6 +14,7 @@ import {
   assertBuiltJavaScriptBudget, assertChunkGraphAcyclic, boundedChunksPlugin, dependencyComponents,
   extractDeferredParserFactories, extractStaticPayload, inspectBuiltJavaScript, partitionModuleGraph,
   finalizeChunkReport, isEvidenceRuntimeModule, removeInlinedStylesheetDepsFromViteMapDeps,
+  factorVitePreloadPrefixes, poolEvidenceStringValues,
   rewriteInlinedStylesheetPreloads, rewriteInlinedStylesheetPreloadsOnDisk,
 } from '../../canvas/viteBoundedChunks.mjs'
 
@@ -351,4 +352,106 @@ test('late preload cleanup preserves exact JS and original map positions in bund
   assert.equal(removeInlinedStylesheetDepsFromViteMapDeps('plain()', removed), null)
   assert.throws(() => rewriteInlinedStylesheetPreloads({ fileName: 'entry.js', code: source,
     map: new MagicString(source).generateMap({ source: 'source.ts', hires: true }) }, removed, {}), /Missing emitted source map/)
+})
+
+test('preload prefix factoring preserves cache identity, index results, CSS order and maps', async t => {
+  const deps = ['first.js', 'second.js', 'third.css'].map(name => `assets/${SOURCE_REVISION}/${name}`)
+  const source = `const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=${JSON.stringify(deps)})))=>i.map(i=>d[i]);export {__vite__mapDeps};export const proof="é";`
+  const originalMap = new MagicString(source).generateMap({ source: 'original.js', file: 'entry.js', hires: true, includeContent: true })
+  const next = factorVitePreloadPrefixes(source, originalMap)
+  assert.ok(Buffer.byteLength(next.code) < Buffer.byteLength(source))
+  assert.equal(factorVitePreloadPrefixes(next.code), null)
+  const module = await import(`data:text/javascript;base64,${Buffer.from(next.code).toString('base64')}`)
+  assert.deepEqual(module.__vite__mapDeps([2, 0, 1, 2, 9]), [deps[2], deps[0], deps[1], deps[2], undefined])
+  const cache = module.__vite__mapDeps.f
+  module.__vite__mapDeps([]); assert.equal(module.__vite__mapDeps.f, cache)
+  assert.deepEqual(module.__vite__mapDeps([1], { f: ['a', 'b'] }), ['b'])
+  const position = originalPositionFor(new TraceMap(next.map), { line: 1, column: next.code.indexOf('proof') })
+  assert.equal(position.column, source.indexOf('proof'))
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'preload-prefix-')); t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  fs.writeFileSync(path.join(directory, 'entry.js'), source); fs.writeFileSync(path.join(directory, 'entry.js.map'), originalMap.toString())
+  const chunk = { code: source, fileName: 'entry.js', sourcemapFileName: 'entry.js.map', map: originalMap }, bundle = { 'entry.js.map': { type: 'asset' } }
+  await rewriteInlinedStylesheetPreloadsOnDisk(chunk, new Set([deps[2]]), bundle, directory)
+  const transformed = await import(`data:text/javascript;base64,${Buffer.from(chunk.code).toString('base64')}`)
+  assert.deepEqual(transformed.__vite__mapDeps([0, 1, 2]), [deps[0], deps[1], undefined])
+  assert.equal(await rewriteInlinedStylesheetPreloadsOnDisk(chunk, new Set([deps[2]]), bundle, directory), false)
+})
+
+test('string pooling preserves values, keys, directives, module interfaces and dynamic scope', async () => {
+  const value = 'repeated primitive value é', literal = JSON.stringify(value)
+  const source = `"use strict";const $0=7;export const values=[${literal},${literal},${literal}];export const obj={${literal}:${literal}};export const computed={[${literal}]:${literal}};export const read=(x=${literal})=>x;export class C{${literal}(){return ${literal}}}`
+  const next = poolEvidenceStringValues(source)
+  assert.ok(next && Buffer.byteLength(next.code) < Buffer.byteLength(source)); assert.ok(next.code.startsWith('"use strict";'))
+  const load = code => import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)
+  const [original, transformed] = await Promise.all([load(source), load(next.code)])
+  assert.deepEqual(transformed.values, original.values); assert.deepEqual(transformed.obj, original.obj); assert.deepEqual(transformed.computed, original.computed)
+  assert.equal(transformed.read(), original.read()); assert.equal(new transformed.C()[value](), new original.C()[value]())
+  assert.match(next.code, new RegExp(`const \\$0=7`))
+  for (const scope of ['eval("0")', 'new Function("return 0")', 'globalThis["eval"]("0")']) assert.equal(poolEvidenceStringValues(source + ';' + scope), null)
+  for (const interfaceCode of [`import {x as $1} from ${literal};`, `import ${literal};`, `import x from ${literal} with {type:"json"};`, `export {x as "${value}"} from ${literal};`, `export * from ${literal};`, `export const lazy=()=>import(${literal});`]) {
+    const result = poolEvidenceStringValues(interfaceCode + source)
+    assert.ok(result.code.includes(interfaceCode), 'module syntax and source literals must be byte-identical')
+  }
+})
+
+test('post-minification pooling shrinks actual Vite output and preserves native evidence operations', async t => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'evidence-pooling-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const root = fileURLToPath(new URL('../..', import.meta.url)), entry = path.join(root, 'canvas/src/features/evidence-analysis/tools/executeEvidence.mjs')
+  const plugin = boundedChunksPlugin(), render = plugin.renderChunk.handler
+  let saved = 0, transformedChunks = 0
+  plugin.renderChunk.handler = function (code, chunk, ...args) {
+    const result = render.call(this, code, chunk, ...args)
+    if (result) { saved += Buffer.byteLength(code) - Buffer.byteLength(result.code); transformedChunks++ }
+    return result
+  }
+  const result = await viteBuild({ configFile: false, root, logLevel: 'silent', esbuild: { sourcemap: true }, plugins: [plugin],
+    build: { outDir: directory, emptyOutDir: false, modulePreload: false, sourcemap: 'hidden', minify: 'esbuild', reportCompressedSize: false,
+      rollupOptions: { input: entry, preserveEntrySignatures: 'strict', output: { entryFileNames: '[name].mjs', chunkFileNames: '[name].mjs' } } } })
+  assert.ok(saved > 1000 && transformedChunks > 3, `post-minifier saving must be measurable: ${saved}`)
+  assert.ok(result.output.some(item => item.type === 'chunk' && /;const \$[a-z0-9]+=/.test(item.code)), 'pooled constants must survive final minification')
+  t.diagnostic(`native executor post-minification pooling saves ${saved} bytes across ${transformedChunks} chunks`)
+  const output = result.output, emittedEntry = output.find(item => item.type === 'chunk' && item.isEntry)
+  const transformed = await import(pathToFileURL(path.join(directory, emittedEntry.fileName)).href), original = await import(pathToFileURL(entry).href)
+  const fixture = name => fs.readFileSync(path.join(root, 'canvas/public/evidence-analysis/fixtures', name), 'utf8')
+  const bundle = fixture('aviation-singapore-v1.json'), record = { profileId: 'aviation-v1', bundle }, atUtc = '2026-10-03T10:48:27.060Z'
+  const inspection = await original.executeEvidence('aviation.inspect', record), entityId = JSON.parse(bundle).entities[0].id
+  const cases = [['aviation.inspect', record], ['aviation.replay', { ...record, entityId, atUtc }], ['aviation.source', { ...record, factId: inspection.facts[0].id }], ['aviation.export', record]]
+  const volume = fixture('volume-singapore-synthetic-v1.json'), route = fixture('route-singapore-synthetic-v1.json')
+  cases.push(['volume.project', { profileId: 'volume-v1', viewId: 'volume-view', bundle: volume, entityId: JSON.parse(volume).entities[0].id, atUtc }],
+    ['route.benchmark', { profileId: 'route-v1', policyId: 'route-policy', bundle: route, entityId: JSON.parse(route).entities[0].id }],
+    ['arrival.evaluate', { profileId: 'arrival-v1', policyId: 'arrival-policy', bundles: ['train', 'calibration', 'test'].map(part => fixture(`arrival-singapore-exercise-${part}.json`)) }],
+    ['notice.triage', { profileId: 'volume-v1', policyId: 'notice-policy', viewId: 'volume-view', notice: fixture('notice-singapore-synthetic-v1.json'), atUtc }])
+  for (const [operation, input] of cases) assert.deepEqual(await transformed.executeEvidence(operation, input), await original.executeEvidence(operation, input))
+  for (const [operation, input] of [['aviation.inspect', { ...record, bundle: '{' }], ['aviation.replay', { ...record, entityId, atUtc: 'yesterday' }]]) {
+    assert.deepEqual(await transformed.executeEvidence(operation, input), await original.executeEvidence(operation, input))
+  }
+  for (const chunk of output.filter(item => item.type === 'chunk')) {
+    const map = new TraceMap(JSON.parse(fs.readFileSync(path.join(directory, chunk.fileName + '.map'), 'utf8')))
+    if (Object.entries(chunk.modules).some(([id, module]) => isEvidenceRuntimeModule(id) && module.renderedLength)) assert.ok(map.sourcesContent.some(source => source?.length), `composed maps must retain native source: ${chunk.fileName} ${Object.keys(chunk.modules).join(',')}`)
+    if (chunk.isEntry) assert.ok(map.sourcesContent.includes(fs.readFileSync(entry, 'utf8')), 'entry map must contain the exact original executor')
+  }
+})
+
+
+test('pooled ordinary object keys preserve descriptors, key order, prototypes and inferred names', async () => {
+  const key = 'ordinaryRepeatedLongProperty', literal = JSON.stringify(key)
+  const source = `const proto={sentinel:1};const ${key}=9;export const objects=[{__proto__:proto,${key}:1,2:"two"},{"__proto__":proto,${key}:2}, {${key}:function(){}}, {${key}:()=>3},{${key}}];
+    export const special={get ${key}(){return 8},set setter(x){},${key}(){return 4}};export class C{${key}(){return 5}[${literal}](){return 6}}
+    export const read=({${key}:v})=>v;export const key=${literal};export const values=[${literal},${literal}];`
+  const next = poolEvidenceStringValues(source)
+  assert.ok(next && Buffer.byteLength(next.code) < Buffer.byteLength(source)); assert.match(next.code, /\[\$[a-z0-9]+\]:function/)
+  assert.ok(next.code.includes('{__proto__:proto,')); assert.ok(next.code.includes('{"__proto__":proto,'))
+  for (const unchanged of [`get ${key}()`, `${key}(){`, `{${key}}`, `({${key}:v})`, `[${literal}]()`]) assert.ok(next.code.includes(unchanged), unchanged)
+  const load = code => import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)
+  const [original, transformed] = await Promise.all([load(source), load(next.code)])
+  const descriptors = object => Object.fromEntries(Object.entries(Object.getOwnPropertyDescriptors(object)).map(([name, descriptor]) => [name,
+    Object.fromEntries(Object.entries(descriptor).map(([field, value]) => [field, typeof value === 'function' ? { name: value.name, result: value.length ? undefined : value() } : value]))]))
+  for (let i = 0; i < original.objects.length; i++) {
+    assert.deepEqual(Reflect.ownKeys(transformed.objects[i]), Reflect.ownKeys(original.objects[i]))
+    assert.deepEqual(descriptors(transformed.objects[i]), descriptors(original.objects[i]))
+    assert.deepEqual(Object.getPrototypeOf(transformed.objects[i]), Object.getPrototypeOf(original.objects[i]))
+  }
+  assert.deepEqual(descriptors(transformed.special), descriptors(original.special))
+  assert.equal(new transformed.C()[key](), new original.C()[key]()); assert.equal(transformed.read({ [key]: 3 }), original.read({ [key]: 3 }))
 })

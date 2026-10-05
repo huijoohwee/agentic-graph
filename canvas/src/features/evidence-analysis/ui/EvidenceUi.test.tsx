@@ -9,6 +9,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { captureEvidenceSource, isEvidenceSourceCurrent, validateEvidenceConfiguration } from '../evidenceSource'
 import { JsonDetails, VolumeResult, ReplayResult, RecordResult } from './EvidenceResults'
 import EvidencePanel from '../EvidencePanel'
+import { FlightSimFloatingPanelView } from '../../game-flight-sim/FlightSimFloatingPanelView'
 import { dispatchEvidence, executeEvidence } from '../tools/executeEvidence.mjs'
 
 const config = {
@@ -206,4 +207,36 @@ for (const change of [
   } finally {
     await act(async () => root.unmount()); globalThis.fetch = oldFetch; URL.createObjectURL = oldCreate; URL.revokeObjectURL = oldRevoke; restoreSource(); env.restore()
   }
+})
+
+
+test('accepted evidence survives a transient Recorded context departure while exact-source fences remain active', { timeout: 10000 }, async () => {
+  const restoreSource = saveSource(), env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)
+  const oldFetch = globalThis.fetch
+  const authored = documentText.replace('---\n# Study', 'source_geospatial: {"schema":"source-geospatial-config/v1","scenePath":"/evidence-analysis/fixtures/scene-wsss-v1.json"}\n---\n# Study')
+  globalThis.fetch = (async url => new Response(readFileSync(new URL(`../../../../public${String(url).split('?')[0]}`, import.meta.url)))) as typeof fetch
+  const button = (label: string) => [...container.querySelectorAll('button')].find(element => element.textContent === label)!
+  try {
+    installSource(); await act(async () => root.render(<FlightSimFloatingPanelView />))
+    assert.equal(container.querySelector('[aria-label="Native evidence and analysis"]'), null, 'Practice keeps evidence lazy until first use')
+    await act(async () => installSource(authored))
+    await settle(() => Boolean(container.querySelector('[aria-label="Native evidence and analysis"]')))
+    assert.ok(container.querySelector('[aria-label="Recorded flight evidence"]'))
+    await act(async () => button('Load labelled example').click()); await settle(() => container.textContent!.includes('Accepted result is bound'))
+    const panel = container.querySelector('[aria-label="Native evidence and analysis"]')!, record = container.querySelector('[aria-label="Accepted evidence record"]')!
+    const retained = record.textContent, query = button('Run read-only query')
+    await act(async () => useGraphStore.setState({ sourceFiles: useGraphStore.getState().sourceFiles.map(source => ({ ...source, status: 'parsing' })) } as never))
+    assert.ok(container.querySelector('[aria-label="Flight Sim"]')); assert.equal(container.querySelector('[aria-label="Native evidence and analysis"]'), panel)
+    assert.equal(container.querySelector('[aria-label="Accepted evidence record"]'), record); assert.equal(record.textContent, retained)
+    assert.equal(query.disabled, true); assert.match(panel.textContent!, /exact enabled, parsed|earlier source revision/)
+    await act(async () => installSource(authored))
+    assert.ok(container.querySelector('[aria-label="Recorded flight evidence"]')); assert.equal(container.querySelector('[aria-label="Native evidence and analysis"]'), panel)
+    assert.equal(button('Run read-only query'), query); assert.equal(query.disabled, false)
+    await act(async () => query.click()); await settle(() => container.textContent!.includes('Explicit query completed'))
+    assert.equal(container.querySelector('[aria-label="Accepted evidence record"]'), record)
+    await act(async () => installSource(authored + '\nNew authored revision.', 2))
+    assert.equal(container.querySelector('[aria-label="Native evidence and analysis"]'), panel)
+    assert.equal(query.disabled, true); assert.match(panel.textContent!, /earlier source revision/)
+    assert.equal(record.textContent, retained)
+  } finally { await act(async () => root.unmount()); restoreSource(); globalThis.fetch = oldFetch; env.restore() }
 })

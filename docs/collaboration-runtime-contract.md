@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 90
+contract_version: 91
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -201,7 +201,7 @@ ci_scopes:
     commands:
       - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "xr.subject.draft.sourceAndSelectionFence", "xr.subject.editor.documentFenceAndPersistence"]
   evidence_analysis:
-    roots: ["canvas/src/features/evidence-analysis/", "canvas/public/evidence-analysis/", "canvas/src/features/agent-ready/evidenceAnalysisAgentReadyContract.mjs", "canvas/src/features/agent-ready/evidenceAnalysisWebMcpTools.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/features/agent-ready/webMcpToolRegistry.ts", "canvas/src/features/agent-ready/webMcpToolExposure.mjs", "mcp/local-tool-contract.js", "mcp/server.js"]
+    roots: ["canvas/src/features/game-flight-sim/FlightSimFloatingPanelView.tsx", "canvas/src/features/evidence-analysis/", "canvas/public/evidence-analysis/", "canvas/src/features/agent-ready/evidenceAnalysisAgentReadyContract.mjs", "canvas/src/features/agent-ready/evidenceAnalysisWebMcpTools.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/features/agent-ready/webMcpToolRegistry.ts", "canvas/src/features/agent-ready/webMcpToolExposure.mjs", "mcp/local-tool-contract.js", "mcp/server.js"]
     commands:
       - ["node", "--test", "canvas/src/features/evidence-analysis/tests/evidence-core.test.mjs", "canvas/src/features/evidence-analysis/tests/evidence-readsb.test.mjs", "canvas/src/features/evidence-analysis/tests/volume-project.test.mjs", "canvas/src/features/evidence-analysis/tests/arrival-analysis.test.mjs", "canvas/src/features/evidence-analysis/tests/route-benchmark.test.mjs", "canvas/src/features/evidence-analysis/tests/notice-triage.test.mjs", "canvas/src/features/evidence-analysis/tests/evidenceTools.test.mjs"]
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/features/evidence-analysis/ui/EvidenceUi.test.tsx", "canvas/src/features/evidence-analysis/ui/evidenceInput.test.ts"]

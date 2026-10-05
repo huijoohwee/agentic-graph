@@ -54,6 +54,8 @@ export async function testPwaShellPrecachesHashedAssetsAndCachesLocalJson() {
     throw new Error('Expected the imported chat worker to leave install and activate ownership to VitePWA')
   }
   assert.equal(/globIgnores:.*(?:monaco|mermaid|three-webgpu)/.test(text), false, 'Required static chunks cannot be excluded by vendor name')
+  assert.doesNotMatch(text, /additionalManifestEntries:|offlinePrecacheEntries/, 'Deferred fixtures must not download during automatic shell installation')
+  assert.match(text, /createPythonLearningOfflinePlugin\(runtimeIdentity.sourceRevision, offlinePublicAssets\)/, 'Explicit offline installation must still verify every declared fixture')
   const chunk = (fileName: string, imports: string[] = [], isEntry = false, dynamicImports: string[] = []) =>
     ({ type: 'chunk', fileName, imports, isEntry, dynamicImports })
   const nodes = [chunk('assets/entry.js', ['assets/shared.mjs', 'assets/mermaid-static.js'], true, ['assets/mermaid-lazy.js']),

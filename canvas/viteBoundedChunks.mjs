@@ -60,6 +60,10 @@ export function removeInlinedStylesheetDepsFromViteMapDeps(code, inlinedCssFileN
     const next = values.map(value => indexes.get(value)).filter(value => typeof value === 'number')
     edited.overwrite(match.index, match.index + match[0].length, `__vite__mapDeps([${next.join(',')}])`)
   }
+  return mappedRewrite(edited, originalMap)
+}
+
+function mappedRewrite(edited, originalMap) {
   let map = null
   if (originalMap) {
     const shift = edited.generateMap({ hires: true, source: originalMap.file || 'chunk.js' })
@@ -68,6 +72,74 @@ export function removeInlinedStylesheetDepsFromViteMapDeps(code, inlinedCssFileN
     if (originalMap.debugId) map.debugId = originalMap.debugId
   }
   return { code: edited.toString(), map }
+}
+
+// Run after CSS cleanup: the strict helper shape excludes an already factored array.
+export function factorVitePreloadPrefixes(code, originalMap = null) {
+  const helper = /const __vite__mapDeps=\(i,m=__vite__mapDeps,d=\(m\.f\|\|\(m\.f=(\[[^\]]*\])\)\)\)=>i\.map\(i=>d\[i\]\);/.exec(code)
+  if (!helper) return null
+  let values
+  try { values = JSON.parse(helper[1]) } catch { return null }
+  if (!values.length || !values.every(value => typeof value === 'string')) return null
+  let prefix = values[0]
+  for (const value of values) {
+    let i = 0
+    while (i < prefix.length && prefix[i] === value[i]) i++
+    prefix = prefix.slice(0, i)
+  }
+  const expression = `${JSON.stringify(values.map(value => value.slice(prefix.length)))}.map(s=>${JSON.stringify(prefix)}+s)`
+  if (Buffer.byteLength(expression) >= Buffer.byteLength(helper[1])) return null
+  const edited = new MagicString(code), start = helper.index + helper[0].indexOf(helper[1])
+  edited.overwrite(start, start + helper[1].length, expression)
+  return mappedRewrite(edited, originalMap)
+}
+
+/** Pool primitive values and ordinary data keys after minification; preserve module and eval scope. */
+export function poolEvidenceStringValues(code, fileName = 'chunk.js') {
+  const ast = parseAst(code), names = new Set(), literals = new Map(), pending = [[ast, null, '', false]]
+  let unsafe = false
+  while (pending.length) {
+    const [node, parent, key, excluded] = pending.pop()
+    if (node.type === 'Identifier') names.add(node.name)
+    if ((node.type === 'Identifier' && /^(eval|Function)$/.test(node.name))
+      || (node.type === 'Literal' && /^(eval|Function)$/.test(node.value))) unsafe = true
+    if (!excluded && node.type === 'Property' && parent?.type === 'ObjectExpression'
+      && !node.computed && !node.method && !node.shorthand && node.kind === 'init') {
+      const value = node.key.type === 'Identifier' ? node.key.name : node.key.value
+      if (typeof value === 'string' && value !== '__proto__') {
+        const group = literals.get(value) || []; group.push({ ...node.key, pooledKey: true }); literals.set(value, group)
+      }
+    }
+    if (!excluded && node.type === 'Literal' && typeof node.value === 'string'
+      && !(key === 'key' && (parent?.computed === false || ['MethodDefinition', 'PropertyDefinition'].includes(parent?.type))) && parent?.type !== 'ExpressionStatement') {
+      const group = literals.get(node.value) || []; group.push(node); literals.set(node.value, group)
+    }
+    const omit = excluded || ['ImportDeclaration', 'ImportExpression', 'ExportAllDeclaration', 'ExportSpecifier'].includes(node.type)
+      || (node.type === 'ExportNamedDeclaration' && Boolean(node.source))
+    for (const [key, value] of Object.entries(node)) {
+      if (Array.isArray(value)) { for (const child of value) if (child?.type) pending.push([child, node, key, omit]) }
+      else if (value?.type) pending.push([value, node, key, omit])
+    }
+  }
+  if (unsafe) return null
+  const edited = new MagicString(code), declarations = []
+  let serial = 0
+  for (const [value, nodes] of literals) {
+    if (nodes.length < 2) continue
+    let name
+    do { name = '$' + (serial++).toString(36) } while (names.has(name))
+    const declaration = `${name}=${JSON.stringify(value)}`
+    const saving = nodes.reduce((sum, node) => sum + Buffer.byteLength(code.slice(node.start, node.end)) - name.length - (node.pooledKey ? 2 : 0), 0)
+    if (saving <= Buffer.byteLength(declaration) + 8) continue
+    declarations.push(declaration)
+    for (const node of nodes) edited.overwrite(node.start, node.end, node.pooledKey ? `[${name}]` : name)
+  }
+  if (!declarations.length) return null
+  let start = 0
+  for (const node of ast.body) { if (node.type === 'ExpressionStatement' && typeof node.expression.value === 'string') start = node.end; else break }
+  edited.appendLeft(start, `;const ${declarations.join(',')};`)
+  if (Buffer.byteLength(edited.toString()) >= Buffer.byteLength(code)) return null
+  return { code: edited.toString(), map: edited.generateMap({ hires: true, source: fileName, includeContent: true }) }
 }
 
 export function rewriteInlinedStylesheetPreloads(output, inlinedCssFileNames, bundle) {
@@ -82,11 +154,17 @@ export function rewriteInlinedStylesheetPreloads(output, inlinedCssFileNames, bu
 
 export async function rewriteInlinedStylesheetPreloadsOnDisk(output, inlinedCssFileNames, bundle, directory) {
   const file = path.resolve(directory, output.fileName), code = await readFile(file, 'utf8')
-  if (!removeInlinedStylesheetDepsFromViteMapDeps(code, inlinedCssFileNames)) return false
+  if (!removeInlinedStylesheetDepsFromViteMapDeps(code, inlinedCssFileNames) && !factorVitePreloadPrefixes(code)) return false
   const mapFile = output.sourcemapFileName && path.resolve(directory, output.sourcemapFileName)
   const map = output.map ? JSON.parse(await readFile(mapFile, 'utf8')) : null
   const current = { ...output, code, map }
-  if (!rewriteInlinedStylesheetPreloads(current, inlinedCssFileNames, bundle)) return false
+  rewriteInlinedStylesheetPreloads(current, inlinedCssFileNames, bundle)
+  const factored = factorVitePreloadPrefixes(current.code, current.map)
+  if (factored) {
+    if (factored.map && bundle[current.sourcemapFileName]?.type !== 'asset') throw new Error(`Missing emitted source map: ${current.fileName}`)
+    current.code = factored.code
+    if (factored.map) { current.map = factored.map; bundle[current.sourcemapFileName].source = factored.map.toString() }
+  }
   if (current.map) await writeFile(mapFile, current.map.toString())
   await writeFile(file, current.code)
   Object.assign(output, current)
@@ -165,7 +243,7 @@ export function partitionModuleGraph(infos, byteLimit = RAW_GROUP_BYTES) {
       : ids.every(id => /\/node_modules\/(?:three|@react-three)\//.test(id)) ? 'three'
       : 'runtime'
     if (!group || group.signature !== signature || group.bytes + bytes > byteLimit || group.kind !== kind || group.evidenceOwned !== evidenceOwned) {
-      group = { name: `${kind}-${++serial}`, kind, signature, evidenceOwned, bytes: 0 }
+      group = { name: `${kind === 'runtime' ? 'r' : kind}-${++serial}`, kind, signature, evidenceOwned, bytes: 0 }
     }
     group.bytes += bytes
     for (const id of ids) assignment.set(id, group.name)
@@ -318,6 +396,10 @@ export function boundedChunksPlugin() {
         return assignment.get(id)
       } }
     },
+    renderChunk: { order: 'post', handler(code, chunk) {
+      const ids = Object.keys(chunk.modules)
+      return ids.length && ids.every(isEvidenceRuntimeModule) ? poolEvidenceStringValues(code, chunk.fileName) : null
+    } },
     // Vite prunes CSS-only JavaScript during later generateBundle hooks. Capture
     // the surviving graph after every generation hook and normal disk rewrite.
     writeBundle: { order: 'post', sequential: true, handler(_options, bundle) {

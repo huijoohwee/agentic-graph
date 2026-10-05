@@ -109,6 +109,7 @@ test('one worker retains exact imports and composes canonical route policy after
   assert.deepEqual(Array.from(routes[1][1].options.plugins, p => p.name ?? 'policy'), ['policy', 'cacheable', 'expiration'])
   const config = readFileSync(new URL('../../canvas/vite.config.ts', import.meta.url), 'utf8')
   assert.match(config, /strategies: 'injectManifest', srcDir: '\.', filename: 'sw.ts'/)
-  assert.match(config, /additionalManifestEntries: offlinePrecacheEntries\(offlinePublicAssets\)/)
+  assert.doesNotMatch(config, /additionalManifestEntries:|offlinePrecacheEntries/)
+  assert.match(config, /createPythonLearningOfflinePlugin\(runtimeIdentity.sourceRevision, offlinePublicAssets\)/)
   assert.doesNotMatch(config, /navigateFallback:|runtimeCaching:/)
 })
