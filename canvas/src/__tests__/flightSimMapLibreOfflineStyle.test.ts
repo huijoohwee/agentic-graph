@@ -3,8 +3,12 @@ import test from 'node:test'
 import { FLIGHT_GEO_BOOTSTRAP_STYLE } from 'gympgrph/testkit/features/geospatial/basemapStyle'
 import { preflightMapLibreStyle, readMapLibreProviderOnline, resolveInitialMapLibreStyle, resolveMapLibreBootstrapStyle,
   resolveMapLibreFlightProviderStyle, subscribeMapLibreProviderOnline } from 'gympgrph/testkit/features/geospatial/mapLibreProviderStyle'
-import { disposeMapLibreFlightBootstrap, markMapLibreFlightBootstrapApplied,
+import { disposeMapLibreFlightBootstrap, markMapLibreFlightBootstrapApplied, markMapLibreFlightOverlayPresented,
   reconcileMapLibreFlightBootstrap } from 'gympgrph/testkit/features/geospatial/mapLibreFlightBootstrap'
+import { clearFlightGeoOverlay, setFlightGeoOverlay } from 'gympgrph/testkit/flightGeoOverlay'
+import { createMapLibreFlightRuntimeFallbackRequester } from 'gympgrph/testkit/features/geospatial/mapLibreFlightRuntimeFallback'
+import { tryCreateGrabMapsLibraryMap } from 'grph-shared/geospatial/grabMapsLibrary'
+import { readyFlightOverlay } from './helpers/flightSimGeoMapLibreLeaseHarness'
 
 async function withConnectivity(run: (setOnline: (value: boolean) => void) => Promise<void>) {
   const previous = ['window', 'navigator'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const)
@@ -83,5 +87,46 @@ test('offline generic and GrabMaps preflights cancel without admitting any reque
     controller.abort()
     await assert.rejects(pending, { name: 'AbortError' })
     assert.equal(requests, 0)
+  }
+}))
+
+test('required offline bootstrap replaces a presented provider while retaining local Flight layers', async context => withConnectivity(async () => {
+  const overlay = readyFlightOverlay('offline:provider-presented', null); setFlightGeoOverlay(overlay); context.after(clearFlightGeoOverlay)
+  const flightSource = { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
+  const flightLayer = { id: 'flight-route', type: 'line' }; let style: any = { ...local, sources: { provider: { url: provider }, flight: flightSource }, layers: [flightLayer] }, loads = 0
+  const map = { getStyle: () => style, setStyle: (next: any) => { style = next }, on: () => {}, off: () => {} }
+  context.after(() => disposeMapLibreFlightBootstrap(map)); markMapLibreFlightOverlayPresented(map, overlay)
+  reconcileMapLibreFlightBootstrap({ map, bootstrapStyle: FLIGHT_GEO_BOOTSTRAP_STYLE, requireBootstrapStyle: true,
+    hasExactFlightOverlay: () => true, hasLiveFlightStyleOwner: () => true, loadProviderStyle: async () => { loads++; return local },
+    retainFlightOverlay: (previous, next) => ({ ...next, sources: { ...next.sources, flight: previous?.sources.flight }, layers: [...next.layers, flightLayer] }) })
+  await new Promise<void>(resolve => setImmediate(resolve))
+  assert.deepEqual(style.layers, [...FLIGHT_GEO_BOOTSTRAP_STYLE.layers, flightLayer]); assert.deepEqual(style.sources, { flight: flightSource })
+  assert.equal(loads, 0)
+}))
+test('offline transition cancels a scheduled fallback and allows a later online retry', async context => withConnectivity(async setOnline => {
+  let apply!: () => void; const writes: unknown[] = [], callbacks: unknown[] = []
+  const map = { getStyle: () => local, setStyle: (style: unknown) => writes.push(style) }; setOnline(true)
+  const requester = createMapLibreFlightRuntimeFallbackRequester({ readMap: () => map, isDisposed: () => !readMapLibreProviderOnline(),
+    requiresFlightRetention: () => true, hasCurrentProviderPresentation: () => true, hasExactFlightPresentation: () => true,
+    loadResolvedStyle: async () => local, resetNonFlightStyleRevision: () => {}, retainFlightOverlay: (_previous, next) => ({ ...next }),
+    scheduleProviderApply: callback => { apply = callback; return () => {} } })
+  const cleanup = subscribeMapLibreProviderOnline(() => { if (!readMapLibreProviderOnline()) requester.cancelPending() })
+  const callbacksForRequest = { key: 'offline', onApplied: () => callbacks.push('applied'), onRejected: (error: unknown) => callbacks.push(error) }
+  try { requester.request(provider, callbacksForRequest)
+  await new Promise<void>(resolve => setImmediate(resolve)); assert.equal(typeof apply, 'function'); setOnline(false); apply()
+  await new Promise<void>(resolve => setImmediate(resolve)); assert.deepEqual(writes, []); assert.deepEqual(callbacks, [])
+  setOnline(true); requester.request(provider, callbacksForRequest); await new Promise<void>(resolve => setImmediate(resolve)); apply()
+  await new Promise<void>(resolve => setImmediate(resolve)); assert.deepEqual(writes, [local]); assert.deepEqual(callbacks, ['applied'])
+  } finally { cleanup(); requester.dispose() }
+}))
+test('GrabMaps SDK construction rechecks connectivity after library resolution', async () => withConnectivity(async setOnline => {
+  const root = globalThis as any; const previous = [root.GrabMaps, root.__kgGrabMapsApiKey]; let constructed = 0
+  Object.assign(window, { localStorage: { getItem: () => 'byok' } }); root.__kgGrabMapsApiKey = 'offline-test-key'
+  root.GrabMaps = { GrabMapsBuilder: class { constructor() { constructed++ } } }; setOnline(true)
+  try {
+    const pending = tryCreateGrabMapsLibraryMap({ containerEl: {} as HTMLElement, center: [0, 0], zoom: 1, isCurrent: readMapLibreProviderOnline })
+    setOnline(false); assert.equal(await pending, null); assert.equal(constructed, 0)
+  } finally {
+    for (const [i, key] of ['GrabMaps', '__kgGrabMapsApiKey'].entries()) { if (previous[i] === undefined) delete root[key]; else root[key] = previous[i] }
   }
 }))

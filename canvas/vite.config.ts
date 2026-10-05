@@ -6331,7 +6331,7 @@ export default defineConfig(({ command, mode }) => {
     __AGENTIC_OS_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__: JSON.stringify(readMainPanelSectionDescriptionsMarkdownSource()),
   },
   esbuild: {
-    sourcemap: false,
+    sourcemap: process.env.AG_BUILD_SOURCEMAP === '1',
   },
   optimizeDeps: {
     include: [

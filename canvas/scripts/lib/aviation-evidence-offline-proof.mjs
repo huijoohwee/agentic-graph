@@ -140,7 +140,19 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
       await role(page, 'Launch').click()
       const chooser = page.waitForEvent('filechooser')
       await text(page, 'Choose files').click()
-      await (await chooser).setFiles({ name: localPath.split('/').at(-1), mimeType: 'text/markdown', buffer: Buffer.from(source) })
+      const fileChooser = await chooser
+      const [importCompletion] = await Promise.all([
+        page.waitForFunction(() => {
+          const toast = document.querySelector('[data-kg-toast-id="markdown-workspace-status"]')
+          const message = toast?.querySelector('[data-kg-toast-message]')?.textContent?.trim() || ''
+          return /^(Imported\b|Import failed:)/.test(message) ? { message, role: toast.getAttribute('role') } : false
+        }, undefined, { timeout: 30000 }).then(async handle => {
+          try { return await handle.jsonValue() } finally { await handle.dispose() }
+        }),
+        fileChooser.setFiles({ name: localPath.split('/').at(-1), mimeType: 'text/markdown', buffer: Buffer.from(source) }),
+      ])
+      match(importCompletion.message, /^Imported 1(?:;|$)/); equal(importCompletion.role, 'status')
+      mark('import-complete')
       let panel = await evidencePanel(page)
       await text(panel, config.title).waitFor()
       same(await bounded(() => storedSource(page)), [source])
@@ -170,7 +182,10 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
       const sourceMs = Math.round(performance.now() - started); ok(sourceMs <= 300000)
       await label(panel, 'Explicit UTC time').fill(observed.atUtc)
       await press(role(panel, 'Run read-only query'), page, true)
-      same(await detail(panel, 'Complete typed result'), await replay(observed.atUtc))
+      const firstReplay = await detail(panel, 'Complete typed result')
+      same(firstReplay, await replay(observed.atUtc))
+      await press(role(panel, 'Run read-only query'), page, true)
+      same(await detail(panel, 'Complete typed result'), firstReplay)
       await press(role(panel, 'Next moment'), page, true)
       equal(await label(panel, 'Explicit UTC time').inputValue(), nextUtc)
       same(await detail(panel, 'Complete typed result'), await replay(nextUtc))
@@ -201,7 +216,7 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
       equal(openCount, 1)
       await page.screenshot({ path: join(output, `aviation-first-offline-${width}.png`), fullPage: true })
       const result = { revision, tree, width, sourcePath, sourceSha256: hash(source), firstInstalledNavigationOffline: true,
-        installation, sourceMs, routeMs, table, sourceReference: '/facts/0', utc: [observed.atUtc, nextUtc],
+        installation, importCompletion, replayRepeatIdentical: true, sourceMs, routeMs, table, sourceReference: '/facts/0', utc: [observed.atUtc, nextUtc],
         pack: { file: savedPath, bytes: Buffer.byteLength(saved), sha256: hash(saved), executorParity: true, reimportParity: true },
         routeRepeatIdentical: true, keyboardFocusRetained: true, reducedMotion: true, nativeBrowserZoom: 'not-tested',
         pageErrors: errors, remoteCount, offlineRemoteCount, blockedRemoteRequests: remote, marks, productionAuthority: false }

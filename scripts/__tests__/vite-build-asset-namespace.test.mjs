@@ -6,6 +6,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { rollup } from 'rollup'
+import { build as viteBuild } from 'vite'
 import MagicString from 'magic-string'
 import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping'
 import { spawnSync } from 'node:child_process'
@@ -170,6 +171,43 @@ test('feature reporting counts final UTF-8 bytes and hashes after preload rewrit
   assert.equal(report.chunks[0].sha256, createHash('sha256').update('é/* late preload */').digest('hex'))
   assert.equal(report.evidenceRuntime.addedInitialBytes, null)
   await assert.rejects(finalizeChunkReport({ chunks: [{ file: 'feature.js', modules: [{ id: evidenceModule }, { id: 'host' }] }] }, directory), /Mixed evidence\/host emitted chunk/)
+  await assert.rejects(finalizeChunkReport({ chunks: [{ file: 'missing.js', modules: [{ id: evidenceModule }] }] }, directory), /ENOENT/)
+})
+
+test('final report follows native Vite CSS pruning and retains minified hidden source maps', async t => {
+  const config = fs.readFileSync(new URL('../../canvas/vite.config.ts', import.meta.url), 'utf8')
+  assert.match(config, /\besbuild:\s*\{\s*sourcemap: process\.env\.AG_BUILD_SOURCEMAP === '1',/)
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'agentic-final-report-'))
+  const reportPath = path.join(directory, 'report.json'), previous = process.env.AG_BUNDLE_REPORT_PATH
+  t.after(() => { fs.rmSync(directory, { recursive: true, force: true }); if (previous === undefined) delete process.env.AG_BUNDLE_REPORT_PATH; else process.env.AG_BUNDLE_REPORT_PATH = previous })
+  process.env.AG_BUNDLE_REPORT_PATH = reportPath
+  const css = path.join(directory, 'node_modules/monaco-editor/theme.css')
+  fs.mkdirSync(path.dirname(css), { recursive: true }); fs.writeFileSync(css, '.theme{color:red}')
+  const source = 'import "./node_modules/monaco-editor/theme.css";\nexport const proof: string = "é𝒜";\nglobalThis.__proof = proof;\n'
+  fs.writeFileSync(path.join(directory, 'main.ts'), source)
+  let cssJavaScript
+  await viteBuild({ configFile: false, root: directory, logLevel: 'silent', esbuild: { sourcemap: true },
+    plugins: [boundedChunksPlugin(), { name: 'observe-css-before-native-pruning', generateBundle: { order: 'pre', handler(_options, bundle) {
+      cssJavaScript = Object.values(bundle).find(chunk => chunk.type === 'chunk' && Object.keys(chunk.modules).some(id => id.endsWith('/monaco-editor/theme.css')))?.fileName
+    } } }], build: { sourcemap: 'hidden', minify: 'esbuild', reportCompressedSize: false, rollupOptions: { input: path.join(directory, 'main.ts') } } })
+  assert.ok(cssJavaScript, 'fixture must exercise a native CSS-only JavaScript chunk')
+  const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')), dist = path.join(directory, 'dist')
+  assert(!fs.existsSync(path.join(dist, cssJavaScript)), 'Vite must prune the CSS-only JavaScript')
+  assert(!report.chunks.some(chunk => chunk.file === cssJavaScript))
+  assert(report.chunks.every(chunk => !chunk.imports.includes(cssJavaScript)))
+  assert(fs.readdirSync(path.join(dist, 'assets')).some(file => file.endsWith('.css')))
+  const emitted = await inspectBuiltJavaScript(dist)
+  assert.deepEqual(report.chunks.map(chunk => chunk.file).sort(), emitted.map(file => file.file).sort())
+  for (const chunk of report.chunks) {
+    const bytes = fs.readFileSync(path.join(dist, chunk.file))
+    assert.equal(chunk.bytes, bytes.length); assert.equal(chunk.sha256, createHash('sha256').update(bytes).digest('hex'))
+  }
+  const entry = report.chunks.find(chunk => chunk.entry), code = fs.readFileSync(path.join(dist, entry.file), 'utf8')
+  const map = new TraceMap(JSON.parse(fs.readFileSync(path.join(dist, entry.file + '.map'), 'utf8')))
+  assert.ok(map.sources.length && map.sourcesContent.includes(source), 'minification must retain original TypeScript sources')
+  const prefix = code.slice(0, code.indexOf('__proof')), lines = prefix.split('\n')
+  const original = originalPositionFor(map, { line: lines.length, column: lines.at(-1).length })
+  assert.match(original.source, /main\.ts$/); assert.equal(original.line, 3)
 })
 
 test('static cycles stay together through zero-render reexport barrels', () => {

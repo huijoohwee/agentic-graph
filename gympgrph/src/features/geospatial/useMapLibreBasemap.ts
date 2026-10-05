@@ -415,6 +415,7 @@ export function useMapLibreBasemap(args: {
     let lastBasemapSourceActivityAtMs = 0
     let basemapSourceRenderable = false
     let consecutiveIdleGrabMapsServiceErrors = 0
+    let releaseRuntimeFallbackConnectivity: (() => void) | null = null
     let removePoiClickBinding: (() => void) | null = null
     let releaseMapLease: (() => void) | null = null
     let releaseMapDisposalPreparation: (() => void) | null = null
@@ -442,6 +443,7 @@ export function useMapLibreBasemap(args: {
     const disposeMountedMap = (): void => {
       cancelled = true
       runtimeFallbackRequester.dispose()
+      releaseRuntimeFallbackConnectivity?.()
       initialStylePreflightAbortRef.current?.abort()
       initialStylePreflightAbortRef.current = null
       if (mountRetryTimer) {
@@ -524,7 +526,7 @@ export function useMapLibreBasemap(args: {
         hasExactFlightPresentation:
           mapHasExactCurrentFlightPresentation,
         isDisposed: () => (
-          cancelled
+          cancelled || !readMapLibreProviderOnline()
           || (map ? isMapLibreMapPreparingForDisposal(map) : false)
         ),
         loadResolvedStyle: async (style, signal) => (
@@ -547,6 +549,7 @@ export function useMapLibreBasemap(args: {
             canvasRenderMode,
           ),
       })
+    releaseRuntimeFallbackConnectivity = subscribeMapLibreProviderOnline(() => { if (!readMapLibreProviderOnline()) runtimeFallbackRequester.cancelPending() })
     const requestResolvedBasemapStyleWithoutDroppingFlight = (
       requestKey: string,
       style: string | Readonly<Record<string, unknown>>,
@@ -566,13 +569,11 @@ export function useMapLibreBasemap(args: {
         void 0
       }
     }
-
     const clearBasemapVisibilityTimer = () => {
       if (!basemapVisibilityTimer) return
       clearTimeout(basemapVisibilityTimer)
       basemapVisibilityTimer = null
     }
-
     const markBasemapRenderable = () => {
       clearBasemapVisibilityTimer()
       setState((prev: BasemapResult) => (
@@ -581,7 +582,6 @@ export function useMapLibreBasemap(args: {
           : prev
       ))
     }
-
     const hasRecentBasemapSourceActivity = (): boolean => {
       return lastBasemapSourceActivityAtMs > 0 && Date.now() - lastBasemapSourceActivityAtMs <= BASEMAP_SOURCE_ACTIVITY_GRACE_MS
     }
@@ -859,7 +859,7 @@ export function useMapLibreBasemap(args: {
             enableLabels: true,
             enableBuildings: true,
             enableAttribution: true,
-            isCurrent: () => !cancelled,
+            isCurrent: () => !cancelled && readMapLibreProviderOnline(),
           })
           if (cancelled) {
             try {
@@ -1240,7 +1240,7 @@ export function useMapLibreBasemap(args: {
     )
     const liveFlightBootstrapStyle = readLiveFlightBootstrapStyle()
     reconcileMapLibreFlightBootstrap({
-      bootstrapStyle: liveFlightBootstrapStyle,
+      bootstrapStyle: liveFlightBootstrapStyle, requireBootstrapStyle: !providerOnline,
       hasExactFlightOverlay: candidate => {
         const overlay = readFlightGeoOverlay()
         const expectedCamera = createFlightGeoOverlayMapLibreCamera(

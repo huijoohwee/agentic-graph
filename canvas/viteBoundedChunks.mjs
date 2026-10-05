@@ -318,7 +318,9 @@ export function boundedChunksPlugin() {
         return assignment.get(id)
       } }
     },
-    async generateBundle(_options, bundle) {
+    // Vite prunes CSS-only JavaScript during later generateBundle hooks. Capture
+    // the surviving graph after every generation hook and normal disk rewrite.
+    writeBundle: { order: 'post', sequential: true, handler(_options, bundle) {
       const chunks = Object.values(bundle).filter(item => item.type === 'chunk')
       assertChunkGraphAcyclic(chunks)
       const membership = new Map(chunks.flatMap(chunk => Object.entries(chunk.modules)))
@@ -331,7 +333,7 @@ export function boundedChunksPlugin() {
         components: dependencyComponents(graph).map(ids => ({ renderedLength: ids.reduce((size, id) => size + membership.get(id).renderedLength, 0), ids })),
         graph: Object.fromEntries(graph),
       }
-    },
+    } },
     closeBundle: { order: 'post', sequential: true, async handler() {
       if (!outDir) return
       const files = await inspectBuiltJavaScript(outDir)

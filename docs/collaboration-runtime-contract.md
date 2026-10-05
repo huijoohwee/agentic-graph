@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 89
+contract_version: 90
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -83,7 +83,7 @@ ci_scopes:
     roots: ["canvas/viteBoundedChunks.mjs", "scripts/__tests__/vite-build-asset-namespace.test.mjs"]
     commands: [["node", "--test", "scripts/__tests__/vite-build-asset-namespace.test.mjs"]]
   geospatial_provider:
-    roots: ["gympgrph/src/features/geospatial/mapLibreProviderStyle.ts", "gympgrph/src/features/geospatial/useMapLibreBasemap.ts", "canvas/src/__tests__/flightSimMapLibreProviderStyleLoad.test.ts", "canvas/src/__tests__/flightSimMapLibreProviderStyleHandoff.test.ts", "canvas/src/__tests__/flightSimMapLibreOfflineStyle.test.ts"]
+    roots: ["gympgrph/src/features/geospatial/mapLibreProviderStyle.ts", "gympgrph/src/features/geospatial/useMapLibreBasemap.ts", "gympgrph/src/features/geospatial/mapLibreFlightBootstrap.ts", "canvas/src/__tests__/flightSimMapLibreProviderStyleLoad.test.ts", "canvas/src/__tests__/flightSimMapLibreProviderStyleHandoff.test.ts", "canvas/src/__tests__/flightSimMapLibreOfflineStyle.test.ts"]
     commands: [["npm", "run", "smoke:prepare"], ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/flightSimMapLibreProviderStyleLoad.test.ts", "canvas/src/__tests__/flightSimMapLibreProviderStyleHandoff.test.ts", "canvas/src/__tests__/flightSimMapLibreOfflineStyle.test.ts"]]
   workspace_project_canvas:
     roots: ["canvas/src/features/workspace-project/", "canvas/viteWorkspaceProject.ts", "canvas/viteWorkspaceArtifactBridge.ts", "canvas/src/features/panels/views/HistoryView.tsx", "canvas/src/__tests__/workspaceProjectPanel.test.tsx", "canvas/src/__tests__/workspaceProjectBridge.test.ts", "canvas/src/__tests__/workspaceCrossViewSync.test.tsx", "canvas/src/__tests__/storyboardWidgetMediaRecoveryBudget.test.tsx"]
