@@ -486,9 +486,8 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-PR1560 merged; historical 29a passes eleven plans, first offline-open and 200% zoom. Parser 3573451f passes 195 cases. The f64 macOS trace attributes 3.96/4.88 s to WebGL readback.
-55ba964c broadens visible 3D pixel budgeting; its 21 focused checks passed. Provider CI on 76effde nevertheless hit its unchanged 60 s import deadline: all requests settled, zero page errors, 137 main-thread long tasks/56.5 s, with 390–420 ms frames. Adaptation waited too long to lower DPR.
-76effde's bound macOS build and desktop/emulated-mobile spatial+aviation offline acceptance pass; largest JS 495,688 B. Current scope is 148,746/150,000 B; plus 13 native repairs 166,585 B and plus 15 167,402 B fail the broad limit. Added initial upper bound 39,524/75,000 B passes; broad 150 kB gate stays open.
-Native successor lowers visible Three DPR after two consecutive >100 ms frames; focused 16 renderer lifecycle checks pass. Provider verification remains pending. OS pin 784b169 is merged; 44 Graph checks and five installed cache/config checks pass. Build/import limits remain 60/300/60 s, 4 GiB; AS1 300 s. No new modules/dependencies.
-124201d's UI assertions passed but its config guard failed; it is not combined proof. Release requires exact CI/integration receipts. iPhone SKIP/KIV; AS3/AS4 and commercial gates remain. No promotion authority.
-ADR-004 records the current broad byte failure; no scoped pass claims overall readiness.
+PR1560 merged; 29a passed 11 plans, offline-open and 200% zoom; parser 3573451f passed 195 cases. Historical f64/Mac trace: 3.96/4.88 s WebGL readback; 55ba964c passed 21 checks. CI 76effde timed out at the 60 s import limit: settled requests, zero page errors, 137 long tasks/56.5 s, 390–420 ms frames; DPR reacted late.
+
+76effde passed bound Mac build and desktop/emulated-mobile offline checks; largest JS 495,688 B. Scoped 148,746/150,000 and initial upper 39,524/75,000 pass; native +13/+15 (166,585/167,402) fail. Successor lowers visible Three DPR after two >100 ms frames; 16 lifecycle tests pass; provider pending.
+
+OS 784b169 merged; 44 Graph and five package checks pass. Caps 4 GiB; build/import 60/300/60 s; AS1 300 s; no deps. 124201d UI passed, config failed. Require exact CI receipts. iPhone KIV; AS3/4, commercial and promotion gates remain. ADR-004 retains broad byte failure; no overall-readiness claim.
