@@ -341,7 +341,7 @@ Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-read
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
 | ER1 | e424 standard passes; e55 stops on obsolete eager-precache assertion in reserved Python offline test | Clean canonical-origin docs input uses contract pin 1d3e803 (`pinned-docs-input-1d3e803.json`); full-app/suite parity unproved |
-| ER2 | Parser producer f0107ea passes ten native affected plans, 121 source/42 sequence tests and typecheck; PR 1560 published | Provider gate/protected integration pending; source-error toast remains in pre-producer 083 zoom proof |
+| ER2 | Parser producer f0107ea passes ten native affected plans, 121 source/42 sequence tests and typecheck; PR 1560 published | Integration Gate passes (run 37259875188); exact merge approval/closeout pending; pre-producer 083 retains the source-error toast |
 | ER3 | b639 Save: 3 entities/185 facts/3 sources; 262,899 B; `evidence-pack-b639ba42.json` | Exact saved bytes match cf1/38f2; 38f2 offline reimport retained |
 | ER4 | 083 pages build/PWA authority pass: 38 initial JS/3,320,816 B; largest JS 495,688 B | Complete conservative feature 148,042 B ≤150,000; added initial bound 20,881 B ≤75,000 (`evidence-complete-byte-bound-plus-native-offline-083bed2.json`) |
 | ER5 | 083 diagnostic: native import terminal after 29.16 s; exact source persisted; first offline open succeeds, query focus cancels during a source reset | `aviation-offline-083bed2-import-diagnostic-1/`; zero page errors/offline remote requests; 6 input/24 source-authority tests pass; final journey open |
