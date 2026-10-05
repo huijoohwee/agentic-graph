@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client'
 import { resolveCanvasSurfaceOwnership } from '@/lib/canvas/canvasSurfaceOwnershipRuntime'
 import {
   createThreeFrameResolutionBudget,
+  shouldAdaptThreeFrameResolution,
   resolveThreeRendererLifecycleKey,
   resolveThreeCanvasSurfaceLifecycle,
   shouldMountThreeRenderer,
@@ -357,4 +358,57 @@ test('XR resolution excludes paused, hidden and immersive frames and resets acro
   assert.equal(budget.sample(1 / 60, 2, 2, true), null, 'new resolution limits start a fresh window')
   const low = createThreeFrameResolutionBudget()
   for (let frame = 0; frame < 20; frame += 1) assert.equal(low.sample(0.2, 0.25, 0.25, true), null)
+})
+
+test('visible rendering recovers from consecutive multi-second frame pressure', () => {
+  const budget = createThreeFrameResolutionBudget()
+  assert.equal(budget.sample(1.06, 1, 1, true), null, 'one stall preserves pixel detail')
+  assert.equal(budget.sample(1.06, 1, 1, true), 0.75, 'repeated stalls reduce presented pixel work')
+  assert.equal(budget.sample(1.06, 0.75, 1, true), null)
+  assert.equal(budget.sample(1.06, 0.75, 1, true), 0.5)
+  for (let frame = 0; frame < 10; frame += 1) {
+    assert.equal(budget.sample(1.06, 0.5, 1, true), null, 'severe pressure retains the quality floor')
+  }
+})
+
+test('an isolated long pause cannot contaminate the ordinary frame-pressure window', () => {
+  const budget = createThreeFrameResolutionBudget()
+  for (const gap of [1.06, 10]) {
+    assert.equal(budget.sample(gap, 1, 1, true), null)
+    for (let frame = 0; frame < 120; frame += 1) assert.equal(budget.sample(1 / 60, 1, 1, true), null)
+  }
+})
+
+test('frame-pressure streaks cannot cross ineligible frames or renderer ceiling changes', () => {
+  const budget = createThreeFrameResolutionBudget()
+  assert.equal(budget.sample(1.06, 1, 1, true), null)
+  assert.equal(budget.sample(1.06, 1, 1, false), null)
+  assert.equal(budget.sample(1.06, 1, 1, true), null)
+  assert.equal(budget.sample(1.06, 2, 2, true), null)
+  assert.equal(budget.sample(1.06, 2, 2, true), 1.5)
+})
+
+test('visible ordinary 3D shares the pixel budget while immersive, demand, hidden and recording views do not', () => {
+  const active = { presenting: false, frameLoop: 'always' as const, recording: false, visible: true }
+  assert.equal(shouldAdaptThreeFrameResolution(active), true)
+  for (const change of [{ presenting: true }, { frameLoop: 'demand' as const }, { frameLoop: 'never' as const },
+    { recording: true }, { visible: false }]) {
+    assert.equal(shouldAdaptThreeFrameResolution({ ...active, ...change }), false)
+  }
+})
+
+test('visibility and frame-loop resets discard a pending stall without restoring full resolution', () => {
+  const budget = createThreeFrameResolutionBudget()
+  budget.sample(1.06, 1, 1, true)
+  budget.reset()
+  assert.equal(budget.sample(10, 1, 1, true), null, 'a resume gap is the first fresh sample')
+  assert.equal(budget.sample(1 / 60, 1, 1, true), null)
+  budget.sample(1.06, 1, 1, true)
+  assert.equal(budget.sample(1.06, 1, 1, true), 0.75)
+  budget.reset()
+  assert.equal(budget.sample(1 / 60, 0.75, 1, true), null, 'reset preserves admitted Canvas quality')
+  const low = createThreeFrameResolutionBudget()
+  for (let frame = 0; frame < 20; frame += 1) {
+    assert.equal(low.sample(1.06, 0.25, 1, true), null, 'pressure never raises an already lower resolution')
+  }
 })

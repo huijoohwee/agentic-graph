@@ -82,27 +82,44 @@ export function resolveThreeSceneFrameLoop(input: Readonly<{
   return !input.immersiveMedia && (input.paused || (input.savedObjectView && !input.gameplay)) ? 'demand' : 'always'
 }
 
+export function shouldAdaptThreeFrameResolution(input: Readonly<{
+  presenting: boolean; frameLoop: 'always' | 'demand' | 'never'; recording: boolean; visible: boolean
+}>): boolean {
+  return !input.presenting && input.frameLoop === 'always' && !input.recording && input.visible
+}
+
 /** Pixel work follows sustained frame pressure; simulation and authored state remain untouched. */
 export function createThreeFrameResolutionBudget() {
-  let elapsed = 0, frames = 0, fastWindows = 0, ceiling = 0
+  let elapsed = 0, frames = 0, fastWindows = 0, ceiling = 0, longFrames = 0
   let target: number | null = null
-  const reset = () => { elapsed = 0; frames = 0; fastWindows = 0; target = null; ceiling = 0 }
+  const reset = () => { elapsed = 0; frames = 0; fastWindows = 0; target = null; ceiling = 0; longFrames = 0 }
+  const reduce = () => {
+    if (target !== null) target = Math.min(target, Math.max(Math.min(0.5, ceiling), Math.floor(target * 3) / 4))
+    fastWindows = 0
+  }
   return {
+    reset,
     sample(delta: number, current: number, maximum: number, eligible: boolean): number | null {
-      if (!eligible || !Number.isFinite(delta) || delta <= 0 || delta > 1
+      if (!eligible || !Number.isFinite(delta) || delta <= 0
         || !Number.isFinite(current) || current <= 0 || !Number.isFinite(maximum) || maximum <= 0) {
         reset()
         return null
       }
       if (maximum !== ceiling) { reset(); ceiling = maximum }
       target ??= Math.min(current, maximum)
+      if (delta > 1) {
+        // A resume/GC pause is not sustained pressure; repeated visible stalls are.
+        elapsed = 0; frames = 0; fastWindows = 0
+        if (++longFrames >= 2) { reduce(); longFrames = 0 }
+        return target === current ? null : target
+      }
+      longFrames = 0
       elapsed += delta
       frames += 1
       if (elapsed >= 1 && frames >= 8) {
         const average = elapsed / frames
         if (average > 1 / 30) {
-          target = Math.max(Math.min(0.5, maximum), Math.floor(target * 3) / 4)
-          fastWindows = 0
+          reduce()
         } else if (average < 0.018) {
           if (++fastWindows >= 10) { target = Math.min(maximum, target + 0.25); fastWindows = 0 }
         } else fastWindows = 0
