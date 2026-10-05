@@ -40,12 +40,15 @@ import { resetGraphStoreForTests, useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForReactCondition, waitForTasks } from '@/tests/lib/reactRootHarness'
 import * as nativeMaterializationRegressions from './sourceFilesRuntimeMaterialization.test'
+import { readSourceGeospatialState } from '@/features/evidence-analysis/geospatialSource'
 
 const repoRoot = resolve(process.cwd(), '..')
 const seedSource = readFileSync(
   resolve(repoRoot, FLIGHT_SIM_DEMO_REPO_REL_PATH),
   'utf8',
 )
+// Automatic practice tests explicitly remove Recorded intent; the canonical seed remains unchanged.
+const practiceSource = seedSource.replace(/^source_geospatial:\r?\n(?:[ \t]+.*\r?\n)*/m, '')
 const physicsSeedSource = readFileSync(
   resolve(repoRoot, XR_PHYSICS_DEMO_REPO_REL_PATH),
   'utf8',
@@ -185,6 +188,7 @@ async function withAutomaticFlightSource(run: (args: {
   dom.window.document.body.append(container)
   const root = createRoot(container)
   resetGraphStoreForTests()
+  useGraphStore.setState({ uiToasts: [] })
   resetFlightSimRuntimeForTests()
   completeSourceFilesBootstrap()
   const activePath = `/${FLIGHT_SIM_DEMO_REPO_REL_PATH}`
@@ -202,7 +206,8 @@ async function withAutomaticFlightSource(run: (args: {
     return nativeSource.id
   }
   try {
-    await run({ root, sourceId: setSource(seedSource), setSource })
+    assert.equal(Object.hasOwn(frontmatter(practiceSource), 'source_geospatial'), false)
+    await run({ root, sourceId: setSource(practiceSource), setSource })
   } finally {
     await unmountReactRoot(root)
     await waitForTasks()
@@ -212,7 +217,7 @@ async function withAutomaticFlightSource(run: (args: {
   }
 }
 
-test('automatic Flight entry waits for the actual native SourceFile parser publication', { timeout: 15_000 }, async () => {
+test('automatic practice entry waits for the actual native SourceFile parser publication', { timeout: 15_000 }, async () => {
   await withAutomaticFlightSource(async ({ root, sourceId }) => {
     await mountReactRoot(root, React.createElement(FlightSimRunReadyDemoRuntime))
     assert.equal(readFlightSimSnapshot().runtimeError, null)
@@ -226,7 +231,7 @@ test('automatic Flight entry waits for the actual native SourceFile parser publi
     const parsedSource = useGraphStore.getState().sourceFiles.find(file => file.id === sourceId)
     assert.ok(sawLoading)
     assert.equal(parsedSource?.status, 'parsed')
-    assert.equal(parsedSource?.text, seedSource)
+    assert.equal(parsedSource?.text, practiceSource)
     assert.ok(parsedSource?.parsedGraphData?.nodes.length)
     await waitForReactCondition(() => Boolean(readFlightSimSnapshot().runtimeError), { describe: () => 'parsed source to reach native WebGL admission' })
     assert.match(readFlightSimSnapshot().runtimeError || '', /WebGL/)
@@ -247,10 +252,10 @@ test('automatic Flight entry reports parse and exact-source errors and recovers 
     } finally { await act(async () => { clearSourceFilesDocumentIntent(intentKey) }) }
     await act(async () => { useGraphStore.getState().updateSourceFile(sourceId, { enabled: false, status: 'idle' }) })
     assert.match(useGraphStore.getState().uiToasts[0]?.message || '', /exact enabled active SourceFile/)
-    await act(async () => { useGraphStore.getState().updateSourceFile(sourceId, { enabled: true, text: `${seedSource}\n# Source drift` }) })
+    await act(async () => { useGraphStore.getState().updateSourceFile(sourceId, { enabled: true, text: `${practiceSource}\n# Source drift` }) })
     assert.match(useGraphStore.getState().uiToasts[0]?.message || '', /exact enabled active SourceFile/)
     await act(async () => {
-      useGraphStore.getState().updateSourceFile(sourceId, { text: seedSource })
+      useGraphStore.getState().updateSourceFile(sourceId, { text: practiceSource })
       await parseAndApplySourceFile(sourceId, { applyComposedGraph: false })
     })
     await waitForReactCondition(() => Boolean(readFlightSimSnapshot().runtimeError), { describe: () => 'repaired exact source to launch' })
@@ -274,7 +279,7 @@ test('automatic Flight entry cancels a pending launch on source lifecycle or tex
     })
     assert.equal(readFlightSimSnapshot().runtimeError, null)
     let replacementId = ''
-    await act(async () => { replacementId = setSource(`${seedSource}\n# New exact source generation`) })
+    await act(async () => { replacementId = setSource(`${practiceSource}\n# New exact source generation`) })
     assert.equal(readFlightSimSnapshot().runtimeError, null)
     await act(async () => { await parseAndApplySourceFile(replacementId, { applyComposedGraph: false }) })
     await waitForReactCondition(() => Boolean(readFlightSimSnapshot().runtimeError), { describe: () => 'replacement parsed source to launch' })
@@ -290,8 +295,53 @@ async function prepareHeadlessFlightSource(sourceId: string) {
   renderer.getContext = (() => ({ isContextLost: () => false })) as never
   document.body.append(renderer)
   await parseAndApplySourceFile(sourceId, { applyComposedGraph: false })
-  await useGraphStore.getState().setActiveMarkdownDocument({ name: `/${FLIGHT_SIM_DEMO_REPO_REL_PATH}`, text: seedSource, applyToGraph: true, forceApplyToGraph: true, applyViewPreset: false })
+  await useGraphStore.getState().setActiveMarkdownDocument({ name: `/${FLIGHT_SIM_DEMO_REPO_REL_PATH}`, text: practiceSource, applyToGraph: true, forceApplyToGraph: true, applyViewPreset: false })
 }
+
+test('Recorded source intent blocks automatic practice before pending or invalid evidence can settle', { timeout: 15_000 }, async () => {
+  await withAutomaticFlightSource(async ({ root, setSource }) => {
+    const previousFetch = globalThis.fetch
+    let finishScene: (() => void) | undefined, sceneRequests = 0
+    globalThis.fetch = (async (input, options) => {
+      if (!String(input).includes('/evidence-analysis/fixtures/')) return previousFetch(input, options)
+      sceneRequests++
+      return new Promise<Response>(resolve => {
+        finishScene = () => resolve(new Response('', { status: 503 }))
+        options?.signal?.addEventListener('abort', finishScene, { once: true })
+      })
+    }) as typeof fetch
+    const assertNoPractice = (scene: ReturnType<typeof readXrMotionReferenceRuntime>, quiet = false) => {
+      assert.equal(readFlightSimSnapshot().active, false)
+      assert.equal(readFlightSimSnapshot().runtimeError, null)
+      const toasts = useGraphStore.getState().uiToasts
+      assert.equal(toasts.some(toast => toast.id === 'flight-sim:run-ready-launch:error'), false, JSON.stringify(toasts))
+      if (quiet) assert.equal(toasts.length, 0)
+      assert.equal(readXrMotionReferenceRuntime(), scene, 'Recorded entry must not hydrate the practice XR scene')
+    }
+    try {
+      const recordedId = setSource(seedSource)
+      await parseAndApplySourceFile(recordedId, { applyComposedGraph: false })
+      const scene = readXrMotionReferenceRuntime()
+      await mountReactRoot(root, React.createElement(FlightSimRunReadyDemoRuntime))
+      await waitForReactCondition(() => sceneRequests > 0, { describe: () => 'authored scene fetch pending' })
+      assert.equal(readSourceGeospatialState().loading, true); assertNoPractice(scene, true)
+      await act(async () => { finishScene?.(); await waitForTasks(2) })
+      assert.match(readSourceGeospatialState().error, /503/); assertNoPractice(scene)
+      for (const text of [seedSource.replace('source_geospatial:\n  schema: "source-geospatial-config/v1"\n  scenePath: "/evidence-analysis/fixtures/scene-wsss-v1.json"', 'source_geospatial: null'), practiceSource.replace('---\n', '---\ninvalid: [\n')]) {
+        await act(async () => {
+          const id = setSource(text)
+          await parseAndApplySourceFile(id, { applyComposedGraph: false })
+          await waitForTasks(2)
+        })
+        assertNoPractice(scene)
+      }
+      globalThis.fetch = previousFetch
+      await act(async () => { const id = setSource(practiceSource); await parseAndApplySourceFile(id, { applyComposedGraph: false }) })
+      await waitForReactCondition(() => Boolean(readFlightSimSnapshot().runtimeError), { describe: () => 'explicit practice source to reach WebGL admission' })
+      assert.match(readFlightSimSnapshot().runtimeError || '', /WebGL/)
+    } finally { finishScene?.(); globalThis.fetch = previousFetch }
+  })
+})
 
 test('automatic Flight source refresh preserves the selected or closed panel', { timeout: 15_000 }, async () => {
   await withAutomaticFlightSource(async ({ root, sourceId }) => {

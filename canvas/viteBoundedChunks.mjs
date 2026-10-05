@@ -94,7 +94,7 @@ export function factorVitePreloadPrefixes(code, originalMap = null) {
   return mappedRewrite(edited, originalMap)
 }
 
-/** Pool primitive values and ordinary data keys after minification; preserve module and eval scope. */
+/** Pool primitive values, data keys and member names after minification; preserve module and eval scope. */
 export function poolEvidenceStringValues(code, fileName = 'chunk.js') {
   const ast = parseAst(code), names = new Set(), literals = new Map(), pending = [[ast, null, '', false]]
   let unsafe = false
@@ -103,6 +103,14 @@ export function poolEvidenceStringValues(code, fileName = 'chunk.js') {
     if (node.type === 'Identifier') names.add(node.name)
     if ((node.type === 'Identifier' && /^(eval|Function)$/.test(node.name))
       || (node.type === 'Literal' && /^(eval|Function)$/.test(node.value))) unsafe = true
+    if (!excluded && node.type === 'MemberExpression' && !node.computed && node.property.type === 'Identifier') {
+      const separator = code.slice(node.object.end, node.property.start)
+      if (separator === '.' || separator === '?.') {
+        const group = literals.get(node.property.name) || []
+        group.push({ start: node.object.end, end: node.property.end, pooledKey: true, memberPrefix: separator === '?.' ? '?.' : '' })
+        literals.set(node.property.name, group)
+      }
+    }
     if (!excluded && node.type === 'Property' && parent?.type === 'ObjectExpression'
       && !node.computed && !node.method && !node.shorthand && node.kind === 'init') {
       const value = node.key.type === 'Identifier' ? node.key.name : node.key.value
@@ -124,15 +132,17 @@ export function poolEvidenceStringValues(code, fileName = 'chunk.js') {
   if (unsafe) return null
   const edited = new MagicString(code), declarations = []
   let serial = 0
-  for (const [value, nodes] of literals) {
+  for (const [value, nodes] of [...literals].sort((a, b) => b[1].length - a[1].length)) {
     if (nodes.length < 2) continue
-    let name
-    do { name = '$' + (serial++).toString(36) } while (names.has(name))
+    let name, nextSerial = serial
+    do { name = '$' + (nextSerial++).toString(36) } while (names.has(name))
     const declaration = `${name}=${JSON.stringify(value)}`
-    const saving = nodes.reduce((sum, node) => sum + Buffer.byteLength(code.slice(node.start, node.end)) - name.length - (node.pooledKey ? 2 : 0), 0)
+    const replacement = node => node.pooledKey ? `${node.memberPrefix || ''}[${name}]` : name
+    const saving = nodes.reduce((sum, node) => sum + Buffer.byteLength(code.slice(node.start, node.end)) - replacement(node).length, 0)
     if (saving <= Buffer.byteLength(declaration) + 8) continue
+    serial = nextSerial
     declarations.push(declaration)
-    for (const node of nodes) edited.overwrite(node.start, node.end, node.pooledKey ? `[${name}]` : name)
+    for (const node of nodes) edited.overwrite(node.start, node.end, replacement(node))
   }
   if (!declarations.length) return null
   let start = 0

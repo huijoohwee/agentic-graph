@@ -19,6 +19,7 @@ import { findComposedSourceFileByPath } from '@/features/source-files/composedSo
 import { isFlightSimRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
+import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
 
 const subscribeGeospatialMode = (listener: () => void): (() => void) => (
   onGeospatialModeChanged(() => listener())
@@ -49,7 +50,12 @@ export function FlightSimRunReadyDemoRuntime() {
     readGeospatialOverlayEnabledPreference,
     readGeospatialOverlayEnabledPreference,
   )
-  const active = isFlightSimRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
+  const active = React.useMemo(() => {
+    if (!isFlightSimRunReadyDemoActive(markdownDocumentName, markdownDocumentText)) return false
+    const parsed = parseMarkdownFrontmatter(splitMarkdownLines(String(markdownDocumentText || '')))
+    // Authored Recorded intent fences practice before asynchronous evidence loading.
+    return parsed.warnings.length === 0 && !Object.prototype.hasOwnProperty.call(parsed.meta, 'source_geospatial')
+  }, [markdownDocumentName, markdownDocumentText])
   const [launchAttempt, setLaunchAttempt] = React.useState(0)
   const ownsDocumentLaunchRef = React.useRef(false)
   const panelLaunchSourceRef = React.useRef<readonly [string | null, string | undefined] | null>(null)

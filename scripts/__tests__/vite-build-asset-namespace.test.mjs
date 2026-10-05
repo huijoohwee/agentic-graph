@@ -455,3 +455,47 @@ test('pooled ordinary object keys preserve descriptors, key order, prototypes an
   assert.deepEqual(descriptors(transformed.special), descriptors(original.special))
   assert.equal(new transformed.C()[key](), new original.C()[key]()); assert.equal(transformed.read({ [key]: 3 }), original.read({ [key]: 3 }))
 })
+
+
+test('pooled member suffixes preserve receivers, mutations, optional evaluation, super and namespaces', async () => {
+  const property = 'repeatedLongPropertyName', method = 'repeatedLongMethodName'
+  const namespace = `data:text/javascript;base64,${Buffer.from(`export const ${property}=31`).toString('base64')}`
+  const source = `import * as ns from ${JSON.stringify(namespace)};export function run(){
+    const trace=[];let value=2;const object={tag:7,get ${property}(){trace.push("get");return value},set ${property}(v){trace.push("set");value=v},${method}(x){return this.tag+x}};
+    const out=[object.${property},object.${method}(3),object?.${method}(4),object.${method}?.(5)];
+    out.push(object.${property}++,++object.${property});object.${property}+=3;out.push(object.${property});
+    const missing=null;out.push(missing?.${property},missing?.${method}(trace.push("should-not-run")),delete missing?.${property});
+    class Base{get ${property}(){return this.tag} ${method}(){return this.tag+1}}class Child extends Base{#privateField=8;constructor(){super();this.tag=20}read(){return [super.${property},super.${method}(),this.#privateField]}}
+    out.push(...new Child().read(),ns.${property},ns.${property},ns.${property});
+    try{missing.${property}}catch(error){out.push(error instanceof TypeError)};
+    try{ns.${property}=0}catch(error){out.push(error instanceof TypeError)};
+    out.push(delete object.${property},Object.hasOwn(object,"${property}"));
+    const thrower={get ${property}(){throw new RangeError("getter")}};try{thrower.${property}}catch(error){out.push(error.name)};
+    return {out,trace};}
+    export const excluded=o=>(o).${property}+o /* keep */ .${property};`
+  const next = poolEvidenceStringValues(source)
+  assert.ok(next && Buffer.byteLength(next.code) < Buffer.byteLength(source))
+  assert.match(next.code, /object\[\$[a-z0-9]+\]\(3\)/); assert.match(next.code, /missing\?\.\[\$[a-z0-9]+\]/)
+  assert.ok(next.code.includes('this.#privateField')); assert.ok(next.code.includes(`(o).${property}+o /* keep */ .${property}`))
+  const load = code => import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)
+  const [original, transformed] = await Promise.all([load(source), load(next.code)])
+  assert.deepEqual(transformed.run(), original.run())
+  const marker = 'return {out,trace}', position = code => { const lines = code.slice(0, code.indexOf(marker)).split('\n'); return { line: lines.length, column: lines.at(-1).length } }
+  const originalPosition = originalPositionFor(new TraceMap(next.map), position(next.code))
+  assert.equal(originalPosition.line, position(source).line); assert.equal(originalPosition.column, position(source).column)
+  assert.equal(poolEvidenceStringValues(source + ';globalThis.Function("return 1")()'), null)
+})
+
+
+test('pool names prioritize repeated use and do not consume names for rejected candidates', async () => {
+  const frequent = 'frequently repeated profitable primitive', rare = 'rare but very long profitable primitive'
+  const rejected = [...'abcdefghijklmnopqrstuvwxyz'].flatMap(value => Array(10).fill(value))
+  const values = [...Array(5).fill(frequent), ...Array(2).fill(rare), ...rejected]
+  for (const reserved of ['', 'const $0=99;']) {
+    const source = `${reserved}export const values=${JSON.stringify(values)};`, next = poolEvidenceStringValues(source)
+    assert.ok(next.code.startsWith(`;const $${reserved ? '1' : '0'}=${JSON.stringify(frequent)}`))
+    assert.equal(poolEvidenceStringValues(source).code, next.code, 'equal-frequency order must be deterministic')
+    const module = await import(`data:text/javascript;base64,${Buffer.from(next.code).toString('base64')}`)
+    assert.deepEqual(module.values, values)
+  }
+})
