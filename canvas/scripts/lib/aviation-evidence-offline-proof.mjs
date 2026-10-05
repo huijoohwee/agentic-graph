@@ -4,6 +4,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import yaml from 'js-yaml'
 import { executeEvidence } from '../../src/features/evidence-analysis/tools/executeEvidence.mjs'
+import { findEvidenceOperation } from '../../src/features/evidence-analysis/tools/evidenceCatalog.mjs'
 
 const { equal, deepEqual: same, ok, match, notEqual } = assert
 const sourcePath = 'docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md'
@@ -36,8 +37,10 @@ async function storedSource(page) {
     return matches
   }, localPath)
 }
-async function press(button, page, retain = false) {
-  await button.scrollIntoViewIfNeeded(); await button.focus(); await button.press('Enter')
+async function press(button, page, retain = false, touch = false) {
+  await button.scrollIntoViewIfNeeded()
+  if (touch) await button.tap()
+  else { await button.focus(); await button.press('Enter') }
   if (!retain) return
   const handle = await button.elementHandle()
   try { await page.waitForFunction(element => element?.isConnected && !element.disabled, handle) }
@@ -114,7 +117,11 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
   for (const width of [1024, 390]) {
     const started = performance.now(), context = await browser.newContext({ viewport: { width, height: 900 }, isMobile: width === 390, hasTouch: width === 390, reducedMotion: 'reduce', acceptDownloads: true })
     let page, failed = false, offlineAt = null, openedAt = null, openCount = 0, remoteCount = 0, offlineRemoteCount = 0
-    const errors = [], requests = [], remote = [], marks = []
+    const errors = [], requests = [], remote = [], marks = [], primaryActions = []
+    const activate = async (button, retain = false) => {
+      const name = await button.getAttribute('aria-label') || (await button.innerText()).trim()
+      await press(button, page, retain, width === 390); primaryActions.push(name)
+    }
     const mark = name => { marks.push({ name, elapsedMs: Math.round(performance.now() - started) }) }
     try {
       const external = url => /^https?:$/.test(url.protocol) && url.origin !== origin
@@ -174,39 +181,51 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
       equal(await text(page, 'Canvas source unavailable').count(), 0)
       await role(panel, 'Authored example', 'combobox').selectOption(observed.id)
       const load = role(panel, 'Load labelled example')
-      await press(load, page, true)
+      await activate(load, true)
       same(await detail(panel, 'Complete inspection record'), record)
       await text(panel, '3 entities · 185 facts · 3 sources').waitFor()
-      await press(role(panel, `Inspect original source for ${factId}`), page, true)
+      await activate(role(panel, `Inspect original source for ${factId}`), true)
       same(await detail(panel, 'Exact original source and reference'), original)
       const sourceMs = Math.round(performance.now() - started); ok(sourceMs <= 300000)
       await label(panel, 'Explicit UTC time').fill(observed.atUtc)
-      await press(role(panel, 'Run read-only query'), page, true)
+      await activate(role(panel, 'Run read-only query'), true)
       const firstReplay = await detail(panel, 'Complete typed result')
       same(firstReplay, await replay(observed.atUtc))
-      await press(role(panel, 'Run read-only query'), page, true)
+      const toolNames = ['aviation.inspect', 'aviation.replay'].map(operation => findEvidenceOperation(operation).webName)
+      await page.waitForFunction(names => names.every(name => navigator.modelContext?.tools?.some(tool => tool.name === name && typeof tool.execute === 'function')), toolNames)
+      const browserTools = await bounded(() => page.evaluate(async ({ names, inspectArgs, replayArgs }) => {
+        const tools = navigator.modelContext.tools
+        const invoke = (name, input) => tools.find(tool => tool.name === name).execute(input)
+        return { context: document.documentElement.dataset.kgWebmcpContext, hostContext: document.documentElement.dataset.kgWebmcpHostContext,
+          inspect: await invoke(names[0], inspectArgs), replay: await invoke(names[1], replayArgs) }
+      }, { names: toolNames, inspectArgs: args, replayArgs: { ...args, entityId: observed.entityId, atUtc: observed.atUtc } }), 30000)
+      same(browserTools.inspect, record); same(browserTools.replay, firstReplay)
+      equal(browserTools.context, 'fallback-readable') // Chromium exercises the application's readable fallback, not a native host API.
+      const browserToolParity = { names: toolNames, context: browserTools.context, hostContext: browserTools.hostContext,
+        inspect: true, replay: true, responseType: 'typed-object', nativeBrowserApi: 'not-tested' }
+      await activate(role(panel, 'Run read-only query'), true)
       same(await detail(panel, 'Complete typed result'), firstReplay)
-      await press(role(panel, 'Next moment'), page, true)
+      await activate(role(panel, 'Next moment'), true)
       equal(await label(panel, 'Explicit UTC time').inputValue(), nextUtc)
       same(await detail(panel, 'Complete typed result'), await replay(nextUtc))
       const table = await tableProof(panel, page, record.facts.map(fact => fact.id))
-      await press(role(panel, 'Prepare verifiable export'), page, true)
+      await activate(role(panel, 'Prepare verifiable export'), true)
       const downloadReady = page.waitForEvent('download')
-      await role(panel, 'Save evidence-pack.json', 'link').click()
+      await activate(role(panel, 'Save evidence-pack.json', 'link'))
       const download = await downloadReady, savedPath = join(output, `aviation-pack-${width}.json`)
       await download.saveAs(savedPath); const saved = await readFile(savedPath, 'utf8')
       await text(panel, 'Inspect or copy export JSON').click()
       equal(saved, await label(panel, 'Exact export JSON').inputValue()); equal(saved, pack.text)
-      await press(role(panel, 'Remove record'), page)
+      await activate(role(panel, 'Remove record'))
       await label(panel, 'Import local JSON or matching evidence pack').setInputFiles(savedPath)
       await page.waitForFunction(() => document.querySelector('[data-kg-evidence-status]')?.textContent?.startsWith('Accepted result is bound'))
       same(await detail(panel, 'Complete inspection record'), record)
       const routeStart = performance.now()
-      await role(panel, 'Route comparison').click()
+      await activate(role(panel, 'Route comparison'))
       await role(panel, 'Authored example', 'combobox').selectOption(route.id)
-      await press(load, page, true)
+      await activate(load, true)
       const routes = await detail(panel, 'Complete typed result'); same(routes, benchmark)
-      await press(role(panel, 'Run read-only query'), page, true)
+      await activate(role(panel, 'Run read-only query'), true)
       same(await detail(panel, 'Complete typed result'), routes)
       await role(panel, 'Limitations', 'heading').waitFor()
       const routeMs = Math.round(performance.now() - routeStart); ok(routeMs <= 120000)
@@ -218,7 +237,8 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
       const result = { revision, tree, width, sourcePath, sourceSha256: hash(source), firstInstalledNavigationOffline: true,
         installation, importCompletion, replayRepeatIdentical: true, sourceMs, routeMs, table, sourceReference: '/facts/0', utc: [observed.atUtc, nextUtc],
         pack: { file: savedPath, bytes: Buffer.byteLength(saved), sha256: hash(saved), executorParity: true, reimportParity: true },
-        routeRepeatIdentical: true, keyboardFocusRetained: true, reducedMotion: true, nativeBrowserZoom: 'not-tested',
+        routeRepeatIdentical: true, primaryActionInput: width === 390 ? 'emulated-touch' : 'keyboard', primaryActions,
+        primaryActionFocusRetained: true, tableKeyboardNavigation: true, browserToolParity, reducedMotion: true, nativeBrowserZoom: 'not-tested',
         pageErrors: errors, remoteCount, offlineRemoteCount, blockedRemoteRequests: remote, marks, productionAuthority: false }
       results.push(result); await writeFile(join(output, `aviation-first-offline-${width}.json`), JSON.stringify(result, null, 2) + '\n')
     } catch (error) {
