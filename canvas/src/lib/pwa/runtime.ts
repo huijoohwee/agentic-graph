@@ -1,6 +1,7 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { readAgenticGraphSourceRevision } from '@/features/runtime-identity/agentic-graph-runtime-identity'
 import { registerCanonicalServiceWorker } from '@/lib/pwa/serviceWorkerRegistrationOwner'
+import { isExplicitOfflineWorkspace } from '@/lib/routing/queryParams'
 import {
   installServiceWorkerRevisionUpdateOwner,
   readActiveServiceWorkerSourceRevision,
@@ -136,7 +137,9 @@ export function installPwaRuntime(): void {
   }
   window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
 
-  if (import.meta.env.PROD && 'serviceWorker' in window.navigator) {
+  // The explicit installation route already has a controlling worker. Registering
+  // again also performs an update fetch, even when every application byte is local.
+  if (import.meta.env.PROD && 'serviceWorker' in window.navigator && !isExplicitOfflineWorkspace()) {
     void registerCanonicalServiceWorker({
       serviceWorkerTarget: window.navigator.serviceWorker,
       scopePath: import.meta.env.BASE_URL,
