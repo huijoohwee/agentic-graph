@@ -7,8 +7,8 @@ import { readCanvasGridRenderConfigFromSchema } from '@/lib/canvas/canvasGridCon
 
 /** Reuse the canvas grid, including toolbar Fit/reset and SVG replacement. */
 export function SequenceCanvasGrid({ rootRef, hostRef, svg }: {
-  rootRef: React.RefObject<HTMLDivElement | null>
-  hostRef: React.RefObject<HTMLDivElement | null>
+  rootRef: React.RefObject<HTMLElement | null>
+  hostRef: React.RefObject<HTMLElement | null>
   svg: string
 }) {
   const schema = useGraphStore(state => state.schema)

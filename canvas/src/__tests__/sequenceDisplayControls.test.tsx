@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { JSDOM } from 'jsdom'
+import { initJsdomHarness } from '../tests/lib/jsdomHarness'
+import { bindSequenceCanvasInteractions } from '../features/sequence/sequenceCanvasInteractions'
 import { applyCanvasViewSelection } from '../components/toolbar/canvasViewActions'
 import { buildCanvasViewOptions, getCanvasViewRendererOptions } from '../components/toolbar/canvasViewMenu'
 import type { CanvasViewModelState, CanvasViewOptionId } from '../components/toolbar/canvasViewTypes'
@@ -195,7 +197,7 @@ for (const [layout, render] of [['connections', sequenceTopologySvg], ['lifeline
     assert.equal(fingerprints.size, 4, 'the control changes geometry rather than only a shape attribute')
   })
 
-  test(`${layout} shared Port Handles toggle adds passive visible handles and removes them`, () => {
+  test(`${layout} shared Port Handles toggle adds named participant targets and removes them`, () => {
     const state = stateFor('sequence'), before = JSON.stringify(shapeModel)
     const enable = actionsFor(state); enable.apply('control:portHandles')
     const enabled = { ...state, schema: enable.calls[0]!.value as typeof state.schema }
@@ -208,9 +210,12 @@ for (const [layout, render] of [['connections', sequenceTopologySvg], ['lifeline
         assert.deepEqual([...new Set(handles.map(handle => handle.getAttribute('data-kg-port-handle')))].sort(), ['bottom', 'left', 'right', 'top'])
         for (const handle of handles) {
           assert.ok(attribute(handle, 'r') > 0)
-          assert.equal(handle.getAttribute('aria-hidden'), 'true')
-          assert.equal(handle.getAttribute('pointer-events'), 'none')
-          assert.equal(handle.hasAttribute('tabindex'), false, 'presentation handles cannot become an authored edit affordance')
+          assert.equal(handle.hasAttribute('aria-hidden'), false)
+          assert.equal(handle.getAttribute('pointer-events'), 'all')
+          assert.equal(handle.hasAttribute('tabindex'), false, 'ports share the participant keyboard control')
+          assert.equal(handle.getAttribute('role'), 'img', 'ports describe participant geometry without adding nested buttons')
+          const participant = shapeModel.participants.find(item => item.id === person.getAttribute('data-sequence-participant'))!
+          assert.equal(handle.getAttribute('aria-label'), `${participant.label}: ${handle.getAttribute('data-kg-port-handle')} connection port. Select or move participant.`)
         }
       }
       assert.deepEqual([...dom.window.document.querySelectorAll('[data-sequence-event]')].map(event => event.getAttribute('data-sequence-event')), eventIds)
@@ -282,5 +287,56 @@ for (const [layout, render] of [['connections', sequenceTopologySvg], ['lifeline
         }
       } finally { dom.window.close() }
     }
+  })
+}
+
+
+for (const [layout, render] of [['connections', sequenceTopologySvg], ['lifelines', sequenceNativeSvg]] as const) {
+  test(`${layout} port hit targets and participant keyboard focus reuse the existing control`, () => {
+    const env = initJsdomHarness(), host = document.createElement('section')
+    document.body.append(host)
+    // The shared harness pins activeElement to body; use the native getter for this focus regression.
+    Reflect.deleteProperty(env.dom.window.document, 'activeElement')
+    const ids = Array.from({ length: 3 }, (_, index) => `Node${index}`)
+    const model = parseSequence(['sequenceDiagram', ...ids.map(id => `participant ${id}`),
+      ...ids.slice(1).map((id, index) => `${ids[index]}->>${id}: Message ${index + 1}`)].join('\n'))
+    const authored = JSON.stringify(model), schema = structuredClone(defaultSchema)
+    schema.behavior.allowNodeDrag = true
+    schema.behavior.snapGrid = { enabled: false, size: 10 }
+    schema.behavior.helperLines = { enabled: false }
+    schema.behavior.portHandles = { enabled: true }
+    // Keep free movement inside the lifeline spacing constraint as well as the connection layout.
+    const positions = Object.fromEntries(ids.map((id, index) => [id, { x: 120 + index * 400, y: 112 }]))
+    host.innerHTML = render(model, { schema, positions })
+    const person = host.querySelector<SVGElement>('[data-sequence-participant]')!, id = person.getAttribute('data-sequence-participant')!
+    const handle = person.querySelector('[data-kg-port-handle]')!
+    const origin = { x: attribute(person, 'data-sequence-x'), y: attribute(person, 'data-sequence-y') }
+    const commits: Array<{ id: string; point: { x: number; y: number } }> = []
+    const captured = new Set<number>()
+    host.setPointerCapture = pointerId => { captured.add(pointerId) }
+    host.hasPointerCapture = pointerId => captured.has(pointerId)
+    host.releasePointerCapture = pointerId => { captured.delete(pointerId) }
+    const binding = bindSequenceCanvasInteractions({ host, model, mermaid: false, layout,
+      schema: () => schema, onCommit: (participantId, point) => commits.push({ id: participantId, point }) })
+    const pointer = (target: EventTarget, type: string, delta: number) => {
+      const event = new env.dom.window.MouseEvent(type, { bubbles: true, cancelable: true, button: 0,
+        clientX: attribute(handle, 'cx') + delta, clientY: attribute(handle, 'cy') })
+      Object.defineProperties(event, { pointerId: { value: 1 }, pointerType: { value: 'mouse' }, isPrimary: { value: true } })
+      target.dispatchEvent(event)
+      return event
+    }
+    try {
+      assert.equal(pointer(handle, 'pointerdown', 0).defaultPrevented, true)
+      assert.deepEqual([...captured], [1])
+      pointer(env.dom.window, 'pointerup', 20)
+      assert.deepEqual(commits, [{ id, point: { x: origin.x + 20, y: origin.y } }])
+      person.focus()
+      assert.equal(document.activeElement, person, 'the participant retains the single keyboard focus target')
+      person.dispatchEvent(new env.dom.window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }))
+      assert.deepEqual(commits, [{ id, point: { x: origin.x + 20, y: origin.y } }, { id, point: { x: origin.x + 30, y: origin.y } }])
+      assert.equal(captured.size, 0)
+      assert.equal(JSON.stringify(model), authored, 'port gestures never create connections or mutate authored sequence data')
+      assert.deepEqual([...host.querySelectorAll('[data-sequence-event]')].map(event => event.getAttribute('data-sequence-event')), model.events.map(event => event.id))
+    } finally { binding.dispose(); host.remove(); env.restore() }
   })
 }

@@ -31,7 +31,7 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
   const graphData = useActiveGraphRenderData(active)
   const selection = useGraphStore(useShallow(state => ({ node: state.selectedNodeId, edge: state.selectedEdgeId,
     nodes: state.selectedNodeIds, edges: state.selectedEdgeIds })))
-  const rootRef = React.useRef<HTMLDivElement>(null), hostRef = React.useRef<HTMLDivElement>(null)
+  const rootRef = React.useRef<HTMLElement>(null), hostRef = React.useRef<HTMLElement>(null)
   const playbackRef = React.useRef<ReturnType<typeof createSequenceSvgPlayback> | null>(null)
   const [reducedMotion, setReducedMotion] = React.useState(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   const renderId = React.useId().replace(/[^a-zA-Z0-9]/g, '')
@@ -174,14 +174,14 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
     state.setSelectionSource('canvas')
     if (id) sequence.selectEvent(id)
   }
-  return <div className="sequence-flow sequence-canvas" aria-label={mermaid ? 'Sequence Diagram (Mermaid)' : 'Sequence Diagram'}>
-    <CanvasViewContainer sizing="inset" overlay><div className="sequence-canvas-chrome"><div className="sequence-canvas-header"><div className="sequence-canvas-status" role="status"><span className="sequence-canvas-eyebrow">Authored rehearsal · {model.participants.length} participants · {model.events.length} events</span><span className="sequence-canvas-current">{model.diagnostics.length ? 'Sequence source needs correction' : `${transport.playing ? 'Playing' : 'Paused'}${current ? ` · ${current.ordinal}. ${current.label}` : ''}`}</span></div>
-    <div className="sequence-layout-controls" role="group" aria-label="Sequence layout">{!mermaid && <><button aria-pressed={layout === 'connections'} onClick={() => setLayout('connections')}>Connections</button><button aria-pressed={layout === 'lifelines'} onClick={() => setLayout('lifelines')}>Lifelines</button></>}<button disabled={!Object.keys(positions).length} onClick={() => setArrangement({ key: arrangementKey, positions: EMPTY_POSITIONS })}>Reset arrangement</button></div>
-    </div>
+  return <section className="sequence-flow sequence-canvas" aria-label={mermaid ? 'Sequence Diagram (Mermaid)' : 'Sequence Diagram'}>
+    <CanvasViewContainer sizing="inset" overlay><header className="sequence-canvas-chrome"><section className="sequence-canvas-header" aria-label="Sequence playback and layout"><output className="sequence-canvas-status" aria-label="Sequence playback status"><span className="sequence-canvas-eyebrow">Authored rehearsal · {model.participants.length} participants · {model.events.length} events</span><span className="sequence-canvas-current">{model.diagnostics.length ? 'Sequence source needs correction' : `${transport.playing ? 'Playing' : 'Paused'}${current ? ` · ${current.ordinal}. ${current.label}` : ''}`}</span></output>
+    <section className="sequence-layout-controls" role="group" aria-label="Sequence layout">{!mermaid && <><button aria-pressed={layout === 'connections'} onClick={() => setLayout('connections')}>Connections</button><button aria-pressed={layout === 'lifelines'} onClick={() => setLayout('lifelines')}>Lifelines</button></>}<button disabled={!Object.keys(positions).length} onClick={() => setArrangement({ key: arrangementKey, positions: EMPTY_POSITIONS })}>Reset arrangement</button></section>
+    </section>
     {model.diagnostics.map((d, index) => <p key={index} role="alert">Line {d.line}: {d.message}</p>)}
     {rendered.key === renderKey && rendered.error && <p role="alert">{rendered.error}</p>}
-    </div></CanvasViewContainer>
-    <div ref={rootRef} className="sequence-canvas-viewport"><SequenceCanvasGrid rootRef={rootRef} hostRef={hostRef} svg={svg} /><div ref={hostRef} className="sequence-svg-host" data-notation-theme={mermaid ? mermaidTheme : undefined}
+    </header></CanvasViewContainer>
+    <section ref={rootRef} className="sequence-canvas-viewport" aria-label="Sequence canvas viewport"><SequenceCanvasGrid rootRef={rootRef} hostRef={hostRef} svg={svg} /><section ref={hostRef} className="sequence-svg-host" role="group" aria-label="Sequence diagram content" data-notation-theme={mermaid ? mermaidTheme : undefined}
       onPointerDownCapture={event => {
         participantPointerRef.current = Boolean(event.target instanceof Element && event.target.closest('[data-sequence-participant]'))
         if (event.button === 0 && event.isPrimary) select(event, true)
@@ -193,6 +193,6 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
         if (event.detail > 0 && participantGesture) return
         if (event.detail === 0 || event.target instanceof Element && event.target.closest('[data-sequence-event]')) select(event)
       }}
-      onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { select(event); event.preventDefault() } }} dangerouslySetInnerHTML={{ __html: svg }} /></div>
-  </div>
+      onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { select(event); event.preventDefault() } }} dangerouslySetInnerHTML={{ __html: svg }} /></section>
+  </section>
 }
