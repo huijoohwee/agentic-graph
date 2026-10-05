@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.29"
-revision: "0.4.29"
+version: "0.4.30"
+revision: "0.4.30"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.29"
-tad_revision: "0.4.29"
-adr_revision: "0.4.29"
-mvp_revision: "0.4.29"
-gtm_revision: "0.4.29"
+prd_revision: "0.4.30"
+tad_revision: "0.4.30"
+adr_revision: "0.4.30"
+mvp_revision: "0.4.30"
+gtm_revision: "0.4.30"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -25,7 +25,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-import-readiness"
 agent_id: "codex-root"
-source_revision: "955e27cf17730e2b058dde00cbf5baf3a1e9b803"
+source_revision: "8a21f5ad8b04458badf54170fd7abd47323511ab"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm — reference implementation
 
-`aviation-swarm@0.4.29` hardens eligible aviation evidence Must workflows:
+`aviation-swarm@0.4.30` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -340,7 +340,7 @@ Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-read
 
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
-| ER1 | Convergence 171/171, ownership 13/13, Canvas; Evidence UI 57/57. 955e import-proof 24/24, contract 24/24, validation 14/14 | All ten native `ci:affected` plans must pass on the final publication candidate; its exact receipt owns that verdict |
+| ER1 | Convergence 171/171, ownership 13/13, Canvas; Evidence UI 57/57. Import-proof 24/24; shared-build integrity 20/20, routing/contract 39/39 | All eleven native `ci:affected` plans must pass on the final publication candidate; its exact receipt owns that verdict |
 | ER2 | PR 1560 merged e551c50c; native closeout/alignment 534b213 complete | Integration Gate 37259875188 passes; producer ten plans, 121 source/42 sequence checks pass |
 | ER3 | 1fcc desktop/mobile export: 3 entities/185 facts/3 sources; 262,899 B; executor/reimport parity | `aviation-offline-1fcc35b/acceptance.json`; exact originals/replay and browser fallback inspect/replay parity |
 | ER4 | fbff build passes; 1,670 JS, largest 495,688 B; host 28,466,743 B | Scoped feature 148,218 B/initial 20,874 B pass. Including eleven native owners: 163,436 B fails 150 kB; initial 36,092 B. `diagnostic-byte-audit-fbff8d6.md`; CI focus failure retained |
@@ -410,7 +410,7 @@ Audience projections must preserve qualified source joins, hypotheses and the ac
 
 | Roadmap | Reuse / exit | Active bound or external wait | Stop / next owner action |
 |---|---|---|---|
-| R0 current Must readiness | G1–G8; ER1–ER11 | MVP verification ceiling; replan after two no-progress attempts | Engineering: ten native plans then publication; protected integration waits for receipt |
+| R0 current Must readiness | G1–G8; ER1–ER11 | MVP verification ceiling; replan after two no-progress attempts | Engineering: eleven native plans then publication; protected integration waits for receipt |
 | R1 priced review discovery | Existing EXP-1 then EXP-3; ≥3/10 pain accounts, ≥1/2 genuine paid acceptances | External wait: authorized access/response; recheck on response, no completion ETA | Two declined offers → revise/stop; Product owns consent/outreach authority |
 | R2 bounded exposure | G3/G4/G6/G8; AS3 and qualified rights/labels | ≤4 active hours, ≤4 modules/30 KiB, 3 cycles after admission | Unknown datum/coverage remains unknown; disable extension on regression |
 | R3 scenario costing | G3/G6/G8; AS4 and buyer/model inputs | Separate ≤4-hour sprint, same caps; no inferred grant | Stop without qualified units/currency/model; preserve distance comparison |
@@ -418,7 +418,7 @@ Audience projections must preserve qualified source joins, hypotheses and the ac
 
 ## ADLC and release — reference implementation
 
-Intent: `/fix #aviation-import-readiness @codex`. PR1560 integrated; repairs through 1fcc retain source guards, serialize cold imports, settle owned toasts, gate evidence controls on readiness and yield review keys in both XR handlers. Contract v95 owns affected checks; historical failures remain retained.
+Intent: `/fix #aviation-import-readiness @codex`. PR1560 integrated; canonical parser identity, cold imports, evidence readiness and XR review keys retain native owners. Contract v96 owns checks; historical failures remain retained.
 Changed candidates need bound proof; source integration and production remain separate.
 
 **AS-D6 · Lane & deploy boundary · flowchart LR · version 2.** Source and delivery each require their own receipt.
@@ -441,7 +441,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.29 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.30 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -451,7 +451,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.29`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.30`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -486,9 +486,9 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-Development: PR1560 integrated. f897 bounds Python restore retry before publication. 1de632b aligns actual parser name/hash with canonical workspace identity, removes duplicate parsing and retains graph/revision/presets. ER1 binds checks; ER3–ER7 are historical.
+Development: PR1560 integrated. 1de632b aligns parser name/hash with canonical workspace identity, avoids duplicate parsing and retains graph/revision/presets. ER1 binds checks; ER3–ER7 are historical.
 Cold bootstrap ≤30 s; import ≤60 s requires exact source/success; AS1 ≤300 s.
-Production Release: ten native plans and protected integration need exact receipts. Contract v95 allows 600 s for one build plus four cold contexts, retaining journey deadlines. Native publication stops at provider handoff.
-Build: 1cd stays within 4 GiB; spatial offline and desktop aviation assertions passed before receipt assembly failed. 955e binds the import result; both consumers have static no-undef checks. Import/review limits remain 60/30 s. Final CI pending.
+Production Release: eleven native plans and protected integration need exact receipts. Contract v96 shares one fresh, source/environment/dependency/output-bound build across three browser checks. Each verifies before/after its journey; no stale-result reuse or raised deadlines. Publication stops at provider handoff.
+Build: d3a spatial/aviation cold checks passed at 1024/390. Python offline hit 300 s after a 179 s third rebuild, without an assertion failure. 8a21 removes that repetition; final combined CI pending. Heap cap 4 GiB; import/review limits 60/30 s.
 Runtime: no deployment/promotion grant or receipt. Physical iPhone SKIP/KIV; real-label and commercial gates remain. AS3/AS4 stay conditional.
 ADR-004 scoped bytes pass at fbff; combined native repairs fail 150 kB. Rebind final build/CI/bytes with thirteen native owners; no broader readiness claim.
