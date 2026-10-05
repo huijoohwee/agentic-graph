@@ -1,7 +1,7 @@
 import React from 'react'
 import { agentRunInspectionJson } from './agentRunImport'
 import { useAgentRunInspection, useAgentRunWorkspace } from './agentRunInspectionStore'
-import { agentMissionWorkspace, resolveAgentMissionSource } from './agentMissionWorkspace'
+import { agentMissionWorkspace, agentMissionSourceDocument, resolveAgentMissionSource } from './agentMissionWorkspace'
 import { record, spanRows, numberLabel, sourceLink, traceResources, resourceLabels, workflowSourceLink } from './missionControlProjection'
 import { jsonToMarkdownPreferTable } from '@/features/markdown/jsonToMarkdown'
 import { useMarkdownPreviewTokens } from '@/features/markdown/ui/useMarkdownPreviewTokens'
@@ -17,10 +17,8 @@ export function useAgentRunWorkspaceDocument() {
   const codebase = useAgentMissionCodebaseIndex(inspection?.trace)
   const projection = React.useMemo(() => agentMissionWorkspace(inspection?.trace, codebase.data), [inspection?.trace, codebase.data])
   const sourcePath = workspace ? resolveAgentMissionSource(inspection?.trace, workspace.source, codebase.data, projection) : null
-  const reference = sourcePath ? projection.references.get(sourcePath) : undefined
-  const json = reference ? JSON.stringify(reference, null, 2)
-    : sourcePath === projection.manifestPath && inspection?.trace.workflowManifest ? inspection.trace.workflowManifest.text
-    : inspection ? agentRunInspectionJson(inspection.trace, inspection.spanId, inspection.expiresAt)
+  const sourceDocument = agentMissionSourceDocument(inspection?.trace, sourcePath, codebase.data)
+  const json = sourceDocument ? sourceDocument.text : inspection ? agentRunInspectionJson(inspection.trace, inspection.spanId, inspection.expiresAt)
       : JSON.stringify({ schema: 'agent-run-inspection/v1', authority: false, expiresAt: null, selectedSpanId: null, trace: null }, null, 2)
   const markdown = React.useMemo(() => {
     if (!inspection) return '# Agent Mission\n\nNo observation loaded. Open Dashboard to import a run or connect the runtime.\n'

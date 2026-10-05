@@ -17,7 +17,7 @@ export function usePanelStack(
 ) {
   const base = resolvePanelStackBaseZIndex(baseZ)
   useLayoutEffect(() => active ? panelStack.register(id, base) : undefined, [id, base, active])
-  const snapshot = useCallback(() => panelStack.getZIndex(id, base), [id, base])
+  const snapshot = useCallback(() => active ? panelStack.getZIndex(id, base) : base, [active, base, id])
   const zIndex = useSyncExternalStore(panelStack.subscribe, snapshot, snapshot)
   const activate = useCallback((event: SyntheticEvent<HTMLElement>) => {
     if (active && ownsEvent(event)) panelStack.bringToFront(id)
