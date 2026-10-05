@@ -2,8 +2,8 @@
 title: "Agent-Ready Surface Contract"
 id: "md:agentic-graph-agent-ready-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.29.1"
-date: "2026-10-05"
+version: "1.29.2"
+date: "2026-10-06"
 lang: "en-US"
 owner: "cloudflare.pages.agent-ready.surface"
 local_rung: "spec-complete"
@@ -21,13 +21,13 @@ worktree_id: "device-0232231d4a19--canvas-observability-host"
 agent_id: "codex-canvas-observability"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
-previous_document_version: "1.29.0"
-prd_revision: "1.29.1"
-tad_revision: "1.29.1"
-adr_revision: "1.29.1"
-mvp_revision: "1.29.1"
-gtm_revision: "1.29.1"
+reviewed_source_revision: "d9578552b10bf62d4f7a247b57ec6183b0a5f6c8"
+previous_document_version: "1.29.1"
+prd_revision: "1.29.2"
+tad_revision: "1.29.2"
+adr_revision: "1.29.2"
+mvp_revision: "1.29.2"
+gtm_revision: "1.29.2"
 ---
 
 # Agent-Ready Surface Contract
@@ -362,20 +362,20 @@ Experience observations, current VCC execution and buyer/payment evidence are un
 
 ## Native observability composition — reference implementation
 
-Five roles join `PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM@1.29.1` for this bounded increment.
+Five roles join `PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM@1.29.2` for this bounded increment.
 
 **PRD / O-1.** An operator must trace observed agent work to its exact codebase and evidence across explicitly selected repositories. The existing development entry opened an unrelated saved export. The accepted scope shows only the native Mission Dashboard, including its built-in Explore codebase · D3 and source evidence. A separate source tree, editor, standalone canvas and other application surfaces are excluded. Preserve repository selection, no fabricated run/causal edge, visible missing/stale/partial provenance, and separate repository, revision, tree and snapshot identities.
 
-**TAD / O-1.** `canvas/observability.html` and `canvas/vite.observability.config.ts` compose the existing `AgentMissionOverview` and `AgenticOsMissionControl` dashboard owners. The dashboard owns D3 rendering, native styling, and evidence controls. `agentMissionSourceDocument` reuses exact archive bytes at `/.workspace/<encoded-workflow-id>/agent-mission.manifest.json`; this is a virtual document, never a copied manifest or filesystem scan. The host receives only a bounded repository allowlist and explicit workspace root. Native archive readers and deterministic ingestion retain ownership. The native index builder has a session-only inspection option with no workspace initialization, active reference or workflow binding; persistence callers keep their original serialized contract and lazy-load storage. Existing OS execution/evidence and Graph indexing/presentation remain separate owners.
+**TAD / O-1.** `canvas/observability.html` and `canvas/vite.observability.config.ts` compose the existing `AgentMissionOverview` and `AgenticOsMissionControl` dashboard owners. The dashboard owns D3 rendering, native styling, and evidence controls. `agentMissionSourceDocument` reuses exact archive bytes at `/.workspace/<encoded-workflow-id>/agent-mission.manifest.json`; this is a virtual document, never a copied manifest or filesystem scan. The host receives only a bounded repository allowlist and explicit workspace root. A consumer may attach `buildRevision` only to the Graph repository row; it must be an exact commit SHA, binds a CI build to that source, and is omitted from the browser-facing manifest. Local development may still select its current local Graph checkout. Build-only manifest loading may tolerate absent sibling directories because this target compiles presentation assets only; the serving host remains strict and rejects selection of unavailable repositories, traversal and symlink escapes. Native archive readers and deterministic ingestion retain ownership. The native index builder has a session-only inspection option with no workspace initialization, active reference or workflow binding; persistence callers keep their original serialized contract and lazy-load storage. Existing OS execution/evidence and Graph indexing/presentation remain separate owners.
 
 **ADR / O-1.** A separate entry avoids changes to other active tasks' main-app configuration and avoids mounting provider execution or remote grammar hydration. Local presentation preferences may persist; observing evidence never runs, grades, repairs or promotes a workflow. Native Node owns deferred host imports because the Vite configuration runner closes before requests arrive. Clusters carry no implied execution relationship. Strict impact uses explicit source context; missing/mismatched repository or revision cannot fall back to path matching. Fresh archive reads clear missing indexes, and dashboard children remount on immutable trace identity. WebMCP and `/`, `@`, `#` dispatch remain unavailable in this entry; native capability ownership is preserved without invented aliases.
 
-**MVP / O-1.** Canvas supplies the default four-repository allowlist; other roots use the same neutral schema. Selection cancels/discards older replies. Build output includes a Graph-owned revision/dirty-state/configuration-digest asset inventory; consumers verify hashes and <500 kB chunks. No new graph store, renderer, palette, hosted service or paid model is introduced. The initial 25-minute/12-module bound was refreshed to 40 active minutes/20 modules for the requested manifest/dashboard narrowing; authored files remain <600 lines. External ownership/release waits have no assumed completion time.
+**MVP / O-1.** Canvas supplies the default four-repository allowlist; other roots use the same neutral schema. Selection cancels/discards older replies. Build output includes a Graph-owned revision/dirty-state/configuration-digest asset inventory; consumers verify hashes and <500 kB chunks. Consumer CI checks out only the declared exact Graph revision and builds the native dashboard entry; absent siblings are not fetched or treated as evidence, and the local serving host still requires selected repositories to exist. No new graph store, renderer, palette, hosted service or paid model is introduced. The initial 25-minute/12-module bound was refreshed to 40 active minutes/20 modules for the requested manifest/dashboard narrowing; authored files remain <600 lines. External ownership/release waits have no assumed completion time.
 
-**Checks / O-1.** Host/provenance/session checks passed 15/15; native mission workspace lifecycle/context menu 2/2; retained-index fidelity 1/1; workflow archive/stages 10/10; mission projection/WebMCP regression 4/4; authored-state readiness 1/1; final native TypeScript check passed. Live desktop verified the dashboard, exact virtual manifest, 443 indexed sources and native D3 with 200 nodes/103 edges; no separate source tree/editor/canvas is shown. A fresh archive read without an index cleared prior graph evidence, and switching to Commerce cleared the prior mission before loading its own archive. Mobile and clean-candidate browser smoke remain unverified. Static build failed the unchanged <500 kB gate on a 988,324-byte MapLibre chunk; readmission of its loader owner was rejected for overlap with `aviation-build-ci-identity`. No cap waiver or replacement renderer was used. Source bases: Graph `b27429d9676c1ec57fd4f361c2b96b1d2fd16824`, Canvas `9feb73844b93810ed0370c96ecb5743c3754e72f`.
+**Checks / O-1.** On the earlier candidate, host/provenance/session checks passed 15/15; native mission workspace lifecycle/context menu 2/2; retained-index fidelity 1/1; workflow archive/stages 10/10; mission projection/WebMCP regression 4/4; authored-state readiness 1/1; and native TypeScript check passed. Its live desktop showed the dashboard, exact virtual manifest, 443 indexed sources and native D3 with 200 nodes/103 edges; no separate source tree/editor/canvas was shown. The prior clean candidate `169eb0bd22953de37e6e8bed6beb03d55db9be17` passed integration preludes, Vite/PWA build, chunk hygiene and source-conflict checks, but its affected stage was blocked because another Graph worktree owned validation (`blocked-tests-already-running`); that is not a test pass. This successor adds exact-build-pin and build-only missing-sibling handling, and requires a fresh affected check before publication. Mobile and clean-candidate browser smoke remain unverified. No cap waiver or replacement renderer was used. Source bases: Graph `3ee4d1307207072ae012bc6992c63b9381fc662d`, Canvas `9feb73844b93810ed0370c96ecb5743c3754e72f`.
 
 **GTM / O-1.** Hypothesis: maintainers value a shorter path from failed run to exact affected source and proof. Measure time to one source-bound explanation with the local workspace before pricing an assisted pilot. Willingness to pay, saved time and revenue remain unmeasured. No outreach, payment or deployment is part of this implementation.
 
 **Readiness repair / O-1.** PR #1568's Integration Gate passed its standard plan but timed out before Mission checkpoints in the authored-workspace readiness wait. Semantic readiness must not depend on animation frames: the existing helper uses bounded timer polling while retaining the bootstrap, synchronization, history and exact-source predicates and the original deadline. `node --test canvas/scripts/lib/mission-authored-state-readiness.test.mjs` passed 2/2 in normal and disabled-animation-frame modes, rejecting incomplete and mismatched source states while preserving timeout diagnostics and page-close failure. This proves frame-independent semantic readiness; it does not establish that frame starvation caused the observed CI timeout. The repair is bounded to the helper, its test and this plan, with no new dependency.
 
-**Handoff / O-1.** Local dashboard functionality is implemented; source publication and artifact readiness remain separate pending stages. The native readiness successor retains the published host candidate. The MapLibre fix remains in another active owner and must integrate before static artifact consumption can pass. Canvas PR #955 also needs its exact Graph source supplied to the CI build and passing dependency checks. Protected integration, full Mission smoke and production remain unverified. Rollback restores the preceding admitted source and exact generated bundle; no source/evidence datastore migration is introduced.
+**Handoff / O-1.** Local dashboard functionality is implemented; source publication and artifact readiness remain separate pending stages. This native readiness successor is based on Graph `3ee4d1307207072ae012bc6992c63b9381fc662d`; it still needs its affected owner checks, immutable publication, exact-head provider checks, and protected integration. Canvas PR #955's successor now reads an exact Graph revision from the workspace allowlist and checks out that native source for its build. Set the pin to Graph's protected merge revision before Canvas publication; dependency-security and artifact-size checks must also pass. Protected integration, full Mission smoke and production remain unverified. Rollback restores the preceding admitted source and exact generated bundle; no source/evidence datastore migration is introduced.
