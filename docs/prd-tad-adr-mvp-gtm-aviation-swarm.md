@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.8"
-revision: "0.4.8"
+version: "0.4.9"
+revision: "0.4.9"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.8"
-tad_revision: "0.4.8"
-adr_revision: "0.4.8"
-mvp_revision: "0.4.8"
-gtm_revision: "0.4.8"
+prd_revision: "0.4.9"
+tad_revision: "0.4.9"
+adr_revision: "0.4.9"
+mvp_revision: "0.4.9"
+gtm_revision: "0.4.9"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -25,7 +25,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-import-readiness"
 agent_id: "codex-root"
-source_revision: "072614155c522b86cf0205abf33b9c9a4b0e82ac"
+source_revision: "2ddfe50b5468e07b68d5f8fe6a057ed8658a1110"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm
 
-`aviation-swarm@0.4.8` hardens eligible aviation evidence Must workflows:
+`aviation-swarm@0.4.9` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -43,7 +43,7 @@ consumes [aviation-evidence-layer@0.4.2](aviation-evidence/prd-tad-adr-mvp-gtm.m
 owner, its eleven acceptance thresholds, rights records, financial model, or execution backlog.
 Import race fences/stages, primary-first Geo/lazy SVG, bounded bundles and XR projections extend native
 owners. Local imports survive seed refresh and stay visible. Async controls retain eligible focus.
-Automatic JS precache follows static imports; explicit Offline Studio keeps its full closure.
+Automatic JS precache follows static imports; installed packs resolve before background revalidation.
 No package, provider, model or store is added.
 
 ## Scope and grounding — reference implementation
@@ -314,7 +314,7 @@ Decision: extend native owners, no second runtime. Import stages expose pending 
 stale continuation. Geo defers SVG until selection/failure; XR narrows subscriptions without freezing
 simulation. Root basename collisions retain bytes; provenance controls visibility, not deletion.
 Automatic precache uses build graph membership, preserving required vendor chunks; deferred modules
-remain runtime-cached or explicitly installed. Revisit on failure/buyer evidence.
+remain runtime-cached or explicitly installed. Installed pack responses bypass background revalidation. Revisit on failure/buyer evidence.
 
 ### ADR-S2 Distance, evidence and operational feasibility stay distinct
 
@@ -335,7 +335,7 @@ distance-only output; neither a quote nor a commitment follows from a scenario.
 
 The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md](workspace-seeds/agentic-graph-game-flight-sim-demo.md).
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
-One checkout; new files <600 lines, plan ≤40 KiB, no spend/packages. Cache repair: ≤20 active minutes, four files, ≤15 KiB added, zero client JS. One emitted-worker build; combined smoke after parser adoption. Merge/budget waits: recheck on decision, no ETA.
+One checkout; new files <600 lines, plan ≤40 KiB, no spend/packages. Cache repair: ≤30 active minutes, six files, ≤15 KiB added, zero client JS. Two emitted-worker builds; combined smoke after parser adoption. Merge/budget waits: recheck on decision, no ETA.
 Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-readiness/`.
 
 | Evidence | Check / recorded result | Scope and limit |
@@ -343,10 +343,10 @@ Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-read
 | ER1 | 072614155 standard partition passes in 107.91 s (`validation-standard-072614155.json`); ten retention regressions/typecheck pass | Full-app remains failed on 1f3802. Selected checks do not establish suite or production parity |
 | ER2 | 1f3802 import completes at 6.443 s; review stays disabled: “Active document source changed during materialization (workspace import publication).” `first-offline-1f3802/failure-diagnostics.json` | 1,113 requests settled; no network failure. Earlier provider refresh failures retained; concurrent parser writer not captured |
 | ER3 | b639 native Save: 3 entities/185 facts/3 sources; 262,899 B, SHA-256 `09c6904154ef854656712de87c21511e630fca076c456c0ac7cfc58d473da729` | Saved bytes equal prior cf1/38f2 packs. 38f2 offline reimport retained; `evidence-pack-b639ba42.json` is the actual new download |
-| ER4 | Retained 1f3802 initial static closure: 37 JS/3,433,047 B; framework/router 181,956 B. Automatic static-only JS precache implemented; registered regression passes | Static bytes are not transfer proof. Emitted-worker inventory required. Whole-host total served JS≤150,000 B remains unchanged pending explicit scope decision |
+| ER4 | 2ddfe50 build passes: entry and precache match 37 JS/3,433,398 B; all 1,761 full-pack assets hash-verified. Largest JS 495,688 B; `static-precache-inventory-2ddfe50.json` | Static inventory, not transfers. Whole-host JS≤150,000 B fails; added≤75,000 B unmeasured. No scope waiver |
 | ER5 | 1f3802 commits actual Flight acceptance at 1024/390: disconnect before first installed navigation, evidence/route/export/focus and worker request checks | Helper not reached: preceding spatial import fails (ER2). b639 first offline-open failure remains unclosed; no recovery reload counted |
 | ER6 | 38f2 390×844 offline + reduced-motion: import, UTC step, repeat route query, keyboard focus and zero horizontal overflow pass; 18 focus UI tests pass | `aviation-mobile-route-38f2aa043.json`; cf1 200% CSS zoom passes (not native browser zoom). Physical iPhone SKIP/KIV; startup blocked |
-| ER7 | fca5200 custom worker precedes ordinary precache with verified-pack authority. Six installed/uninstalled missing/corrupt-cache cases pass; installed cases emit zero worker fetches | Exact emitted-worker SHA `d6a542256e35b6138f88a41d46d605fb39e518f4b88ff12c13880e501f6c636c`; retained-build behavior proof, not full UI fidelity |
+| ER7 | 2ddfe50 six emitted-worker model cases pass; deferred modules attempt one background fetch. Verified-first runtime handling now passes four owner tests; emitted recheck pending | `emitted-worker-cache-proof-2ddfe50.json` binds worker hash and 1,761-member installation. Model proof is not UI acceptance |
 | ER8 | Root-retention regression plus nine related checks and typecheck pass. Live 5196 import→Editor→Refresh retains selected root source; example loads 3 entities/185 facts/3 sources (`live-root-retention.png`) | Generic basename deletion removed; explicit local projection retained. Real IndexedDB covers missing/corrupt provenance and reopen. Reload retains source but fails at `async source read`; dev-only proof |
 | ER9 | Six Geo checks pass. Built 160831d: zero SVG requests/mounts during activation; blocked SVG stays local and reload recovers (`geo-primary-built-160831d.json`, `geo-recovery-built-160831d.json`) | Unchanged-source browser proof; selection restored to MapLibre |
 | ER10 | XR tests 2/2: five unrelated writes and five Flight advances each change commits 5→0; motion retained. Build 6 keeps the same connected WebGL canvas through History open/close, zero removals | Unchanged-source proof; counts are test measurements, retention is actual UI evidence |
@@ -419,7 +419,7 @@ Audience projections must preserve qualified source joins, hypotheses and the ac
 ## ADLC and release — reference implementation
 
 PRs 1547/1550 are immutable; PR 1551 fixes the latter’s path failure. PRs 1553/1554 retain failed provider checks. b639 local checks pass, but aviation first-open fails. Intent: `/fix #aviation-import-readiness @codex`.
-Startup PR 1555 is adopted. Parser/contract PR 1558 freezes `62e8d17`; local ten partitions pass, provider gate and protected integration pending. It includes PRs 1556/1557 and IndexedDB-family enrollment. After adoption, admit the cache helper/test/config to the shared CI owner; preserve its existing checks.
+Startup PR 1555 is adopted. Parser/contract PR 1558 freezes `62e8d17`; ten local partitions pass; provider gate fails at mission readiness. Owner diagnosis and protected integration pending. It includes PRs 1556/1557 and IndexedDB-family enrollment. After adoption, enroll cache helper/config/worker/tests in shared CI; preserve existing checks.
 Changed candidates need bound proof; source integration and production remain separate.
 
 **AS-D6 · Lane & deploy boundary · flowchart LR · version 2.** Source and delivery each require their own receipt.
@@ -442,7 +442,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.8 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.9 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -452,7 +452,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.8`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.9`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -491,10 +491,10 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 ER1–ER11 bind proof; AS1/AS2/AS5 and delivery need separate acceptance.
 
 1f3802 standard passes; full-app fails at materialization (ER2). Root retention passes checks/live refresh;
-reload fails at async read (ER8). Adopt parser repair/CI enrollment natively, then verify first offline-open
-and emitted-worker behavior against the exact candidate.
-No unchanged full-CI retry or waiver. iPhone remains SKIP/KIV.
-Whole-host total served JS≤150 kB awaits explicit scope decision; no silent exception. Real-label,
-full guideline acceptance remains separate. Recheck on source/input/profile drift.
-Source, protected integration and production need separate receipts; AS3/AS4 retain input/rights/buyer gates.
-Preserve originals/concurrent work; no new spend/packages or revenue claim.
+reload fails at async read (ER8). Adopt parser repair/CI enrollment natively; verify first offline-open.
+Static precache membership passes; verify emitted deferred-worker requests after the new guard.
+No unchanged CI retry; iPhone SKIP/KIV.
+Whole-host JS≤150 kB needs a scope decision; real-label/guideline acceptance stays separate.
+Recheck on source/input/profile drift.
+Source/integration/production need separate receipts; AS3/AS4 retain input/rights/buyer gates.
+Preserve original/concurrent work; no spend/packages or revenue claim.
