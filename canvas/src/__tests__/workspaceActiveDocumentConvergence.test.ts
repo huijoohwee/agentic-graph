@@ -31,6 +31,7 @@ function deferred<T>() {
 
 async function fixture(run: (f: {
   initial: SourceFile[]; request: Request; applications: Document[]; reads: string[]; writes: string[]
+  nativeDocumentApply: ReturnType<typeof useGraphStore.getState>['setActiveMarkdownDocument']
   read: (operation: (number: number) => Promise<string | null>) => void
   start: (publish?: () => void) => ReturnType<typeof materializeActiveWorkspaceEntryIntoSourceFiles>
 }) => Promise<void>) {
@@ -61,7 +62,7 @@ async function fixture(run: (f: {
     } })
   useMarkdownExplorerStore.getState().setActivePath(path)
   try {
-    await run({ initial, request, applications, reads, writes, read: operation => { read = operation },
+    await run({ initial, request, applications, reads, writes, nativeDocumentApply: graph.setActiveMarkdownDocument, read: operation => { read = operation },
       start: (publish = () => useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: text })) => {
         const pending = materializeActiveWorkspaceEntryIntoSourceFiles(request)
         // The passive resolver has yielded without finding this newly imported source.
@@ -315,13 +316,22 @@ const bootstrapChanges = ['disabled append', 'edited existing', 'removed existin
   'selection during retry', 'preset during retry', 'second append during retry',
   'changed persisted bytes', 'deleted persisted bytes', 'persisted read error'] as const
 
-for (const change of bootstrapChanges) test(`unapplied graph bootstrap settles only a bounded disabled append: ${change}`, async () => fixture(async f => {
+for (const prior of ['absent', 'exact present', 'other path', 'longer suffix path', 'existing draft', 'unnamed whitespace', 'unnamed exact bytes'] as const) for (const change of bootstrapChanges) {
+  if (!['absent', 'exact present'].includes(prior) && change !== 'disabled append') continue
+  test(`unapplied graph bootstrap with ${prior} document settles only a bounded disabled append: ${change}`, async () => fixture(async f => {
   const previousSource = loadWorkspaceSourceIndex()[path] || null
   setWorkspaceEntrySource(path, { kind: 'local', originalName: 'new-local-document.md' })
   f.initial.push({ id: 'bootstrap-active', name, text, enabled: true, status: 'idle',
     source: { kind: 'local', path: `workspace:${path}` } })
   Object.assign(f.request, { applyToGraph: true, premergedSourceFiles: f.initial, sourcesByPath: {} })
-  useGraphStore.setState({ markdownDocumentName: null, markdownDocumentText: '', markdownDocumentApplyViewPreset: true })
+  const priorName = prior === 'absent' || prior.startsWith('unnamed') ? null
+    : prior === 'other path' ? 'notes/other.md' : prior === 'longer suffix path' ? `other/${name}` : name
+  const priorText = prior === 'absent' ? '' : prior === 'unnamed whitespace' ? ' \n' : prior === 'existing draft' ? '# Existing unsaved draft\n' : text
+  useGraphStore.setState({ markdownDocumentName: priorName, markdownDocumentText: priorText, markdownDocumentApplyViewPreset: true,
+    setActiveMarkdownDocument: async payload => {
+      f.applications.push({ markdownDocumentName: payload.name, markdownDocumentText: payload.text })
+      return f.nativeDocumentApply(payload)
+    } })
   const entered = deferred<void>(), release = deferred<void>()
   const persistedReadError = new Error('Persisted bootstrap read failed')
   let publicationReads = 0, before: SourceFile[] = [], concurrent: SourceFile[] = []
@@ -332,8 +342,8 @@ for (const change of bootstrapChanges) test(`unapplied graph bootstrap settles o
     if (state.sourceFiles.find(file => file.id === 'bootstrap-active')?.status !== 'parsed') return text
     publicationReads++
     if (publicationReads === 1) {
-      assert.equal(state.markdownDocumentName, null, 'the parser must finish before any document is published')
-      assert.equal(state.markdownDocumentText, '')
+      assert.equal(state.markdownDocumentName, priorName, 'native parsing must preserve the prior document before publication')
+      assert.equal(state.markdownDocumentText, priorText)
       assert.deepEqual(f.applications, [])
       before = state.sourceFiles
       entered.resolve()
@@ -371,7 +381,7 @@ for (const change of bootstrapChanges) test(`unapplied graph bootstrap settles o
     const document = useGraphStore.getState()
     release.resolve()
     const result = await settled, current = useGraphStore.getState()
-    if (change === 'disabled append') {
+    if (change === 'disabled append' && (prior === 'absent' || prior === 'exact present')) {
       assert.equal(result.error, null)
       assert.ok(result.proof && isMaterializedWorkspaceSourceProofCurrent(result.proof))
       assert.deepEqual(f.applications, [{ markdownDocumentName: name, markdownDocumentText: text }])
@@ -398,7 +408,40 @@ for (const change of bootstrapChanges) test(`unapplied graph bootstrap settles o
     setWorkspaceEntrySource(path, previousSource)
   }
 }))
+}
 
+test('unapplied bootstrap retry rejects a false return after native document publication', async () => fixture(async f => {
+  const previousSource = loadWorkspaceSourceIndex()[path] || null
+  setWorkspaceEntrySource(path, { kind: 'local', originalName: 'new-local-document.md' })
+  f.initial.push({ id: 'bootstrap-active', name, text, enabled: true, status: 'idle', source: { kind: 'local', path: `workspace:${path}` } })
+  Object.assign(f.request, { applyToGraph: true, premergedSourceFiles: f.initial, sourcesByPath: {} })
+  const appended: SourceFile = { id: 'post-publication-import', name: 'later.md', text: '# Later import\n',
+    enabled: false, status: 'idle', source: { kind: 'local', path: 'workspace:/notes/later.md' } }
+  let published: ReturnType<typeof useGraphStore.getState> | null = null
+  useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: text, markdownDocumentApplyViewPreset: true,
+    setActiveMarkdownDocument: async payload => {
+      f.applications.push({ markdownDocumentName: payload.name, markdownDocumentText: payload.text })
+      const previousRevision = useGraphStore.getState().markdownDocumentApplyRevision
+      const pending = f.nativeDocumentApply(payload)
+      if (f.applications.length === 1) useGraphStore.setState({ sourceFiles: [...useGraphStore.getState().sourceFiles, appended] })
+      await pending
+      const current = useGraphStore.getState()
+      assert.ok(current.markdownDocumentApplyRevision > previousRevision, 'the native document owner really published an effect')
+      if (!published) published = current
+      return false // The setter contract can fail after publishing; false does not prove an untouched document.
+    } })
+  try {
+    const result = await f.start(() => {}).then(proof => ({ proof, error: null }), error => ({ proof: null, error }))
+    assert.deepEqual({ rejected: stale(result.error), applications: f.applications.length, noProof: result.proof === null },
+      { rejected: true, applications: 1, noProof: true }, 'an application that already started cannot be retried')
+    const current = useGraphStore.getState()
+    assert.equal(Object.is(current.sourceFiles, published!.sourceFiles), true); assert.equal(Object.is(current.sourceFiles.at(-1), appended), true)
+    assert.equal(Object.is(current.graphData, published!.graphData), true); assert.equal(current.markdownDocumentApplyRevision, published!.markdownDocumentApplyRevision)
+    assert.equal(current.markdownDocumentName, name); assert.equal(current.markdownDocumentText, text)
+    assert.equal(current.markdownDocumentApplyViewPreset, true); assert.equal(useMarkdownExplorerStore.getState().activePath, path)
+    assert.deepEqual(f.writes, [])
+  } finally { setWorkspaceEntrySource(path, previousSource) }
+}))
 
 async function canonicalWorkspaceParseFixture(label: string, paused: boolean, run: (f: {
   file: SourceFile; fs: WorkspaceFs; entry: WorkspaceEntry; calls: { name: string; text: string }[]; statuses: string[]

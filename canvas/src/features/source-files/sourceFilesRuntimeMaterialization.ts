@@ -56,7 +56,7 @@ export async function reapplyActiveWorkspaceMarkdownDocument(args?: {
   activeWorkspaceEntriesSnapshot?: WorkspaceEntry[]
   expectedSourceText?: string
   applyToGraph?: boolean
-}): Promise<boolean> {
+}, onBeforeApply?: () => void): Promise<boolean> {
   const explorerActivePathAtStart = resolveMaterializedWorkspaceActivePath({ explorerActivePath: useMarkdownExplorerStore.getState().activePath })
   const activePath = resolveMaterializedWorkspaceActivePath({ activePathOverride: args?.activePathOverride ?? null,
     explorerActivePath: explorerActivePathAtStart })
@@ -95,6 +95,7 @@ export async function reapplyActiveWorkspaceMarkdownDocument(args?: {
   ) {
     return false
   }
+  onBeforeApply?.()
   return !!(await applyActiveMarkdownDocumentPayload({
     setActiveMarkdownDocument: store.setActiveMarkdownDocument,
     name: activeDocumentKey,
@@ -307,11 +308,11 @@ export function isMaterializedWorkspaceSourceProofCurrent(proof: MaterializedWor
 }
 async function settleMaterializedDocument(args: NonNullable<Parameters<typeof reapplyActiveWorkspaceMarkdownDocument>[0]>, explorerAtStart: WorkspacePath | null): Promise<MaterializedWorkspaceSourceProof> {
   const activePath = args.activePathOverride!
-  let before = useGraphStore.getState()
-  const applied = await reapplyActiveWorkspaceMarkdownDocument(args)
+  let before = useGraphStore.getState(), applicationStarted = false
+  const applied = await reapplyActiveWorkspaceMarkdownDocument(args, () => { applicationStarted = true })
   let current = useGraphStore.getState()
-  if (!applied && args.applyToGraph === true && args.expectedSourceText !== undefined
-    && !hasMaterializedActivePathDrifted(activePath, explorerAtStart) && canRetryUnappliedBootstrapDocument(before, current)) {
+  if (!applicationStarted && !applied && args.applyToGraph === true && args.expectedSourceText !== undefined
+    && !hasMaterializedActivePathDrifted(activePath, explorerAtStart) && canRetryUnappliedBootstrapDocument(before, current, { activePath, expectedSourceText: args.expectedSourceText })) {
     const proof = captureMaterializedWorkspaceSourceProof(activePath), fs = args.fs || await getWorkspaceFs()
     if (await fs.readFileText(activePath) !== args.expectedSourceText || !isMaterializedWorkspaceSourceProofCurrent(proof)) throw staleMaterialization()
     before = current
@@ -332,7 +333,6 @@ async function settleMaterializedDocument(args: NonNullable<Parameters<typeof re
     || (args.expectedSourceText !== undefined && current.markdownDocumentText !== args.expectedSourceText))) throw staleMaterialization()
   return captureMaterializedWorkspaceSourceProof(activePath)
 }
-
 type GraphOwningActiveWorkspaceSourceFilesArgs = {
   activePath: WorkspacePath
   fs: WorkspaceFs

@@ -1,6 +1,6 @@
 import type { GraphData } from '@/lib/graph/types'
 import type { SourceFile } from '@/hooks/store/types'
-import { matchesMarkdownDocumentPath } from 'grph-shared/markdown/documentPath'
+import { matchesMarkdownDocumentPath, normalizeMarkdownDocumentPath } from 'grph-shared/markdown/documentPath'
 import { isMarkdownLikeFileName } from 'grph-shared/markdown/mermaidInput'
 import {
   incrementParsedGraphRevision,
@@ -199,8 +199,12 @@ export function readGraphImportConvergedSource(args: {
 export function canRetryUnappliedBootstrapDocument(
   before: MaterializationSourceSnapshot & { markdownDocumentApplyViewPreset?: boolean },
   current: MaterializationSourceSnapshot & { markdownDocumentApplyViewPreset?: boolean },
+  requested: { activePath: string; expectedSourceText: string },
 ): boolean {
-  if (before.markdownDocumentName || before.markdownDocumentText
+  const priorPath = normalizeMarkdownDocumentPath(before.markdownDocumentName)
+  const requestedDocument = !!priorPath && priorPath === normalizeMarkdownDocumentPath(requested.activePath)
+    && before.markdownDocumentText === requested.expectedSourceText
+  if (((before.markdownDocumentName || before.markdownDocumentText) && !requestedDocument)
     || current.markdownDocumentName !== before.markdownDocumentName || current.markdownDocumentText !== before.markdownDocumentText
     || current.markdownDocumentApplyViewPreset !== before.markdownDocumentApplyViewPreset
     || !before.sourceFiles.length || current.sourceFiles.length <= before.sourceFiles.length
