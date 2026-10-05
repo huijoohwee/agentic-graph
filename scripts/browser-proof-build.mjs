@@ -124,7 +124,8 @@ async function sourceInputs(root, environment, readDocs, context) {
     dependency: inventory(root, dependencies, context, { directories: true, dependencyLinks: true, workspaces }),
     environmentDigest: digest(JSON.stringify(env)), executable: hashFile(realpathSync.native(process.execPath), context), node: process.version, platform: process.platform, arch: process.arch,
     producerSha256: hashFile(fileURLToPath(import.meta.url), context).sha256 }
-  if (readGit(root, ['rev-parse', 'HEAD']).trim() !== sourceIdentity.checkoutRevision || readGit(root, ['status', '--porcelain=v1', '--untracked-files=all']).trim()) throw Error('Build source changed during snapshot')
+  if (JSON.stringify(browserProofSourceIdentity(root, environment)) !== JSON.stringify(sourceIdentity)
+    || readGit(root, ['status', '--porcelain=v1', '--untracked-files=all']).trim()) throw Error('Build source changed during snapshot')
   return { identity, workspaces }
 }
 function generatedDependencies(root, workspaces, context) {

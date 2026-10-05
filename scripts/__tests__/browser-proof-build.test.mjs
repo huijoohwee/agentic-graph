@@ -90,6 +90,18 @@ test('synthetic merge refuses output named only for the checkout revision', asyn
   assert.equal(existsSync(f.receipt), false)
 })
 
+test('synthetic merge refuses event drift inside post-build and consumer snapshots', async t => {
+  const f = mergeFixture(t); await f.produce()
+  const drift = () => f.setEvent({ pull_request: { ...f.event.pull_request, head: { sha: f.base } } })
+  await assert.rejects(() => f.verify({ readDocs: async () => { drift(); return f.readDocs() } }))
+  f.setEvent(f.event); let reads = 0
+  await assert.rejects(f.produce({ readDocs: async () => {
+    if (++reads === 2) drift()
+    return f.readDocs()
+  } }))
+  assert.equal(existsSync(f.receipt), false)
+})
+
 test('fresh build binds exact inputs and outputs', async t => {
   const f = fixture(t), receipt = await f.produce(), verified = await f.verify()
   assert.equal(receipt.authority, false); assert.equal(verified.revision, f.git('rev-parse', 'HEAD'))
