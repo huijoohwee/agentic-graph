@@ -224,14 +224,14 @@ export function testSourceFilesBootstrapGuardsSafariStorageSyncHotPath() {
   if (!text.includes('activeWorkspaceEntriesSnapshot: readReusableWorkspaceEntriesSnapshot(hydratedWorkspaceEntries)')) {
     throw new Error('expected source files rematerialization path to pass the hydrated active-entry snapshot directly into materialization instead of forcing a second snapshot read')
   }
-  if (!text.includes('premergedSourceFiles: runtimeMerged')) {
-    throw new Error('expected source files rematerialization path to pass the already-merged active source-files snapshot directly into shared materialization')
+  if (!text.includes('sourceFilesSnapshot: baseline.sourceFiles, sourcesByPath')) {
+    throw new Error('expected deferred rematerialization to pass its guarded baseline and source provenance to the sole publication owner')
   }
   if (!text.includes('fs: reusableWorkspaceFsRef.current || undefined')) {
     throw new Error('expected active-path materialization to reuse cached workspace fs instance instead of refetching per switch')
   }
-  if (!text.includes('workspaceEntries: reusableWorkspaceEntriesRef.current')) {
-    throw new Error('expected active-path materialization to reuse cached workspace entries instead of full listEntries hot-path reload')
+  if (!text.includes('const entriesCache = reusableWorkspaceEntriesRef.current') || !text.includes('workspaceEntries: entriesCache') || !text.includes('if (reusableWorkspaceEntriesRef.current === entriesCache)')) {
+    throw new Error('expected deferred materialization to reuse a captured entry cache and preserve later replacement or invalidation')
   }
   if (!text.includes('activeWorkspaceEntriesSnapshot: request.workspaceEntriesSnapshot')) {
     throw new Error('expected active-path switch materialization to pass the cached active-entry snapshot from the queued request directly into the shared materialization helper')
@@ -268,4 +268,3 @@ export function testSourceFilesBootstrapGuardsSafariStorageSyncHotPath() {
     throw new Error('expected active workspace entry cache to stay bounded by entry count and total text size')
   }
 }
-

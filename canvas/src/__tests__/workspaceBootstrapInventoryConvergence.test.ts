@@ -1,3 +1,5 @@
+import './sourceFilesWorkspaceRematerializationRace.test'
+import './workspaceActiveDocumentConvergence.test'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'

@@ -172,8 +172,8 @@ export function testWorkspaceBootstrapActivePathRematerializeAvoidsImplicitGraph
   if (!bootstrapStartupText.includes('buildActiveWorkspaceRuntimeSourceFilesSnapshot({')) {
     throw new Error('expected source files bootstrap startup to reuse the shared active runtime source-files shaping helper')
   }
-  if (!bootstrapText.includes('buildActiveWorkspaceRuntimeSourceFilesSnapshot({')) {
-    throw new Error('expected source files bootstrap rematerialization to reuse the shared active runtime source-files shaping helper')
+  if (!bootstrapText.includes('const proof = await materializeActiveWorkspaceEntryIntoSourceFiles({') || !bootstrapText.includes('return proof.sourceFiles')) {
+    throw new Error('expected deferred rematerialization to publish through the guarded owner and return its actual source snapshot')
   }
   if (!bootstrapStartupText.includes('premergedSourceFiles: context.mergedSourceFiles')) {
     throw new Error('expected source files bootstrap startup to pass the already-merged active source-files snapshot from the dedicated startup context directly into shared materialization')
