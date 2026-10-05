@@ -162,6 +162,7 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
       mark('import-complete')
       let panel = await evidencePanel(page)
       await text(panel, config.title).waitFor()
+      equal(await text(page, 'Canvas source unavailable').count(), 0)
       same(await bounded(() => storedSource(page)), [source])
       await page.waitForFunction(() => !!navigator.serviceWorker?.controller, undefined, { timeout: 60000 })
       await text(panel, 'Offline Studio').click()
@@ -244,7 +245,9 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
     } catch (error) {
       failed = true
       const failure = { revision, tree, width, sourcePath, sourceSha256: hash(source), error: String(error?.stack || error).slice(0, 2000), marks, errors, requests, remote, remoteCount, offlineRemoteCount, openCount, offlineAt, openedAt }
-      try { failure.browser = await bounded(() => page.evaluate(() => ({ url: location.href, online: navigator.onLine, text: document.body.innerText.slice(0, 16000), worker: navigator.serviceWorker?.controller?.scriptURL }))) } catch { failure.browser = 'unavailable' }
+      try { failure.browser = await bounded(() => page.evaluate(() => ({ url: location.href, online: navigator.onLine, text: document.body.innerText.slice(0, 16000), worker: navigator.serviceWorker?.controller?.scriptURL,
+        evidenceStatus: document.querySelector('[data-kg-evidence-status]')?.textContent,
+        focus: { tag: document.activeElement?.tagName, label: document.activeElement?.getAttribute('aria-label'), text: document.activeElement?.textContent?.slice(0, 160) } }))) } catch { failure.browser = 'unavailable' }
       await writeFile(join(output, `aviation-first-offline-${width}-failure.json`), JSON.stringify(failure, null, 2) + '\n').catch(() => {})
       if (page) await bounded(() => page.screenshot({ path: join(output, `aviation-first-offline-${width}-failure.png`), fullPage: true })).catch(() => {})
       throw error
