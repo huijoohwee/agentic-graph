@@ -178,7 +178,7 @@ export const bindGroupsDrag = <T extends GraphGroup>(args: {
     if (dragActivated && args.simulation) {
       args.simulation.alphaTarget(0)
       if (readLayoutMode(args.schema) === 'radial') args.simulation.stop()
-      const tick = args.simulation.on('tick'); if (typeof tick === 'function') tick()
+      const tick = args.simulation.on('tick'); if (typeof tick === 'function') tick.call(args.simulation)
     }
     endForceTune?.(); endForceTune = null
     resetDragState()

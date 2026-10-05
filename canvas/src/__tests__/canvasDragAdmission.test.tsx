@@ -27,7 +27,7 @@ function fixture() {
 }
 
 function graphDrag(kind: 'node' | 'edge' | 'group', explicitGroup = true) {
-  const f = fixture(), a = { id: 'A', type: 'Node', label: 'A', x: 20, y: 30 }, b = { id: 'B', type: 'Node', label: 'B', x: 70, y: 80 }
+  const f = fixture(), a = { id: 'A', type: 'Node', label: 'A', properties: {}, x: 20, y: 30 }, b = { id: 'B', type: 'Node', label: 'B', properties: {}, x: 70, y: 80 }
   const simulation = d3.forceSimulation([a, b]).stop(), svg = f.win.document.querySelector('svg')!
   let commits = 0, selections = 0
   const target = svg.querySelector(kind === 'node' ? 'circle' : kind === 'edge' ? 'path' : 'text')!
@@ -114,7 +114,7 @@ test('D3 group cancellation restores every member preview and prior fixed coordi
     f.mouse(f.target, 'mousedown', 20, 30); f.mouse(f.win, 'mousemove', 50, 60)
     assert.deepEqual([f.a.x, f.a.y, f.b.x, f.b.y], [50, 60, 100, 110])
     f.space(true); f.mouse(f.win, 'mouseup', 50, 60)
-    assert.deepEqual(f.a, { id: 'A', type: 'Node', label: 'A', x: 20, y: 30, fx: 12, fy: 13, vx: 2, vy: 3, index: 0 })
+    assert.deepEqual(f.a, { id: 'A', type: 'Node', label: 'A', properties: {}, x: 20, y: 30, fx: 12, fy: 13, vx: 2, vy: 3, index: 0 })
     assert.deepEqual([f.b.x, f.b.y], [70, 80]); assert.equal(f.commits, 0)
   } finally { f.restore() }
 })

@@ -20,7 +20,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import type { Canvas2dRendererId } from '@/lib/config.render'
 import { useRootThemeMode } from '@/features/panels/views/preview-panel/ui/mermaidConfig'
 import { bindSequenceGraph, measureSequenceGraph } from './sequenceCanvasSelection'
-import { activateMultiNodeSelectModeForShift, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
+import { activateMultiNodeSelectModeForShift } from '@/lib/canvas/nodeSelectionGesture'
 import './SequenceFlow.css'
 
 const EMPTY_POSITIONS: Record<string, SequenceParticipantPoint> = Object.freeze({})
@@ -59,6 +59,7 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
   const [arranging, setArranging] = React.useState(false)
   const interactionsRef = React.useRef<ReturnType<typeof bindSequenceCanvasInteractions> | null>(null)
   const focusParticipantRef = React.useRef<string | null>(null)
+  const participantPointerRef = React.useRef(false)
   const renderPositions = mermaid ? EMPTY_POSITIONS : positions
   const card = React.useMemo(() => resolveCanvasAspectRatioSize({ defaultWidth: 192, mode: aspectMode }), [aspectMode])
   React.useEffect(() => {
@@ -166,19 +167,12 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
     const participant = target.closest('[data-sequence-participant]')?.getAttribute('data-sequence-participant')
     if (participantOnly && !participant) return
     if (!id && !participant) return
+    if (participant && !id) { sequence.selectParticipant(participant, event); return }
     const state = useGraphStore.getState()
-    const mode = activateMultiNodeSelectModeForShift({ mode: state.schema.behavior?.selectMode, shiftKey: event.shiftKey,
+    activateMultiNodeSelectModeForShift({ mode: state.schema.behavior?.selectMode, shiftKey: event.shiftKey,
       setSelectMode: value => state.setBehavior({ selectMode: value }) })
     state.setSelectionSource('canvas')
     if (id) sequence.selectEvent(id)
-    else if (participant) {
-      const node = bindSequenceGraph(model, state.graphData)?.participants.get(participant)
-      if (node) {
-        const gesture = resolveNodeSelectionGesture({ mode, shiftKey: event.shiftKey, metaKey: event.metaKey, ctrlKey: event.ctrlKey })
-        if (gesture === 'toggle') state.toggleNodeSelectionAdditive(node.id)
-        else state.selectNode(node.id)
-      }
-    }
   }
   return <div className="sequence-flow sequence-canvas" aria-label={mermaid ? 'Sequence Diagram (Mermaid)' : 'Sequence Diagram'}>
     <CanvasViewContainer sizing="inset" overlay><div className="sequence-canvas-chrome"><div className="sequence-canvas-header"><div className="sequence-canvas-status" role="status"><span className="sequence-canvas-eyebrow">Authored rehearsal · {model.participants.length} participants · {model.events.length} events</span><span className="sequence-canvas-current">{model.diagnostics.length ? 'Sequence source needs correction' : `${transport.playing ? 'Playing' : 'Paused'}${current ? ` · ${current.ordinal}. ${current.label}` : ''}`}</span></div>
@@ -188,8 +182,17 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
     {rendered.key === renderKey && rendered.error && <p role="alert">{rendered.error}</p>}
     </div></CanvasViewContainer>
     <div ref={rootRef} className="sequence-canvas-viewport"><SequenceCanvasGrid rootRef={rootRef} hostRef={hostRef} svg={svg} /><div ref={hostRef} className="sequence-svg-host" data-notation-theme={mermaid ? mermaidTheme : undefined}
-      onPointerDownCapture={event => { if (event.button === 0 && event.isPrimary) select(event, true) }}
-      onClick={event => { if (event.detail === 0 || event.target instanceof Element && event.target.closest('[data-sequence-event]')) select(event) }}
+      onPointerDownCapture={event => {
+        participantPointerRef.current = Boolean(event.target instanceof Element && event.target.closest('[data-sequence-participant]'))
+        if (event.button === 0 && event.isPrimary) select(event, true)
+      }}
+      onClick={event => {
+        // Shared selection zoom can reframe before pointerup; a participant gesture
+        // must not activate the message that subsequently moves beneath the pointer.
+        const participantGesture = participantPointerRef.current; participantPointerRef.current = false
+        if (event.detail > 0 && participantGesture) return
+        if (event.detail === 0 || event.target instanceof Element && event.target.closest('[data-sequence-event]')) select(event)
+      }}
       onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { select(event); event.preventDefault() } }} dangerouslySetInnerHTML={{ __html: svg }} /></div>
   </div>
 }

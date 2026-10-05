@@ -1,6 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { JSDOM } from 'jsdom'
+import React, { act } from 'react'
+import { createRoot } from 'react-dom/client'
+import { initJsdomHarness } from '../tests/lib/jsdomHarness'
+import { useGraphStore } from '../hooks/useGraphStore'
+import { defaultSchema } from '../lib/graph/schema'
+import { useSequenceDocument } from '../features/sequence/useSequenceDocument'
 import type { GraphData, GraphNode } from '../lib/graph/types'
 import { parseSequence } from '../features/sequence/sequenceModel'
 import { projectSequenceGraph } from '../features/sequence/sequenceGraphProjection'
@@ -84,4 +90,38 @@ test('selection geometry removes pan/zoom, includes arranged bounds and never mu
     content.lastElementChild!.remove()
     assert.equal(measureSequenceGraph(svg, model, graph), null)
   } finally { dom.window.close() }
+})
+
+test('participant and inspector selections share canonical store semantics and reject a replaced source', async () => {
+  const env = initJsdomHarness(), previous = useGraphStore.getState()
+  const host = document.createElement('div'); document.body.append(host)
+  const root = createRoot(host), graph = project()
+  let api: ReturnType<typeof useSequenceDocument> | undefined
+  function Harness() { api = useSequenceDocument(); return null }
+  try {
+    useGraphStore.setState({ graphData: graph, markdownDocumentText: `\x60\x60\x60mermaid\n${source}\n\x60\x60\x60`, markdownDocumentName: 'generated.md',
+      markdownDocumentSourceUrl: null, markdownDocumentApplyRevision: previous.markdownDocumentApplyRevision + 1,
+      schema: structuredClone(defaultSchema), selectedNodeId: null, selectedEdgeId: null, selectedGroupId: null,
+      selectedNodeIds: [], selectedEdgeIds: [], selectedGroupIds: [] })
+    await act(async () => root.render(<Harness/>))
+    await act(async () => api!.selectParticipant('P0'))
+    assert.deepEqual(useGraphStore.getState().selectedNodeIds, [graph.nodes[0]!.id])
+    await act(async () => api!.selectParticipant('P1', { shiftKey: true }))
+    assert.deepEqual(useGraphStore.getState().selectedNodeIds, [graph.nodes[0]!.id, graph.nodes[1]!.id])
+    await act(async () => api!.selectParticipant('P2'))
+    assert.deepEqual(useGraphStore.getState().selectedNodeIds, [graph.nodes[2]!.id], 'plain activation replaces a multi selection')
+    await act(async () => api!.selectEvent(api!.model.events[4]!.id))
+    assert.equal(useGraphStore.getState().selectedEdgeId, graph.edges[4]!.id)
+    await act(async () => api!.selectParticipant('P3'))
+    assert.deepEqual(useGraphStore.getState().selectedEdgeIds, [])
+    const retained = api!, before = useGraphStore.getState()
+    await act(async () => {
+      useGraphStore.setState({ markdownDocumentText: 'Replacement source', markdownDocumentApplyRevision: before.markdownDocumentApplyRevision + 1 })
+      retained.selectParticipant('P4', { shiftKey: true })
+      retained.selectEvent(retained.model.events[0]!.id)
+      assert.deepEqual(useGraphStore.getState().selectedNodeIds, before.selectedNodeIds)
+      assert.deepEqual(useGraphStore.getState().selectedEdgeIds, before.selectedEdgeIds)
+      assert.equal(useGraphStore.getState().schema, before.schema, 'stale modifier gesture cannot mutate the new schema')
+    })
+  } finally { await act(async () => root.unmount()); useGraphStore.setState(previous, true); env.restore() }
 })

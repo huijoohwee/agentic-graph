@@ -114,7 +114,7 @@ export const nodeDragBehavior = (
         if (dragActivated && structured) simulation.stop()
         if (!commit && initialPosition) {
           Object.assign(activeNode, initialPosition)
-          const tick = simulation.on('tick'); if (typeof tick === 'function') tick()
+          const tick = simulation.on('tick'); if (typeof tick === 'function') tick.call(simulation)
         }
         activeNode = null; initialPosition = null
       }
@@ -356,7 +356,7 @@ export const edgeDragBehavior = (
       }
       if (!commit) {
         for (const { node, position } of initialPositions) Object.assign(node, position)
-        const tick = simulation.on('tick'); if (typeof tick === 'function') tick()
+        const tick = simulation.on('tick'); if (typeof tick === 'function') tick.call(simulation)
       }
       initialPositions = []
       sourceNode = undefined
