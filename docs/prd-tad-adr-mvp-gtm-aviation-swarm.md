@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.38"
-revision: "0.4.38"
+version: "0.4.39"
+revision: "0.4.39"
 date: "2026-10-06"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.38"
-tad_revision: "0.4.38"
-adr_revision: "0.4.38"
-mvp_revision: "0.4.38"
-gtm_revision: "0.4.38"
+prd_revision: "0.4.39"
+tad_revision: "0.4.39"
+adr_revision: "0.4.39"
+mvp_revision: "0.4.39"
+gtm_revision: "0.4.39"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -25,7 +25,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-render-frame-budget"
 agent_id: "codex-root"
-source_revision: "2faa8bb9b218b18f34346a086cb872db8bb55876"
+source_revision: "22893aad9884915c716b4ce2e23e30180efd2c39"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -343,15 +343,15 @@ Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-read
 | ER1 | Convergence 171/171, ownership 13/13, Canvas; Evidence UI 57/57. Import-proof 24/24; shared-build integrity 25/25, routing/contract 39/39 | All eleven native `ci:affected` plans must pass on the final publication candidate; its exact receipt owns that verdict |
 | ER2 | PR 1560 merged e551c50c; native closeout/alignment 534b213 complete | Integration Gate 37259875188 passes; producer ten plans, 121 source/42 sequence checks pass |
 | ER3 | 1fcc desktop/mobile export: 3 entities/185 facts/3 sources; 262,899 B; executor/reimport parity | `aviation-offline-1fcc35b/acceptance.json`; exact originals/replay and browser fallback inspect/replay parity |
-| ER4 | 2faa build: 1,666 JS resources, max 495,688 B; bundle 1,644 chunks/25,453,734 B; startup static closure 3,325,209 B/38 chunks | 150,000 B startup target fails. Last attributed feature+native audit: fbff 163,436/150,000 B; current exclusive feature is 131,401 B, so refresh attribution. `diagnostic-byte-audit-fbff8d6.md` |
-| ER5 | 2faa cold offline and aviation flows pass at 1024/390; 185 read-only rows, four pages, repeated replay/route identical | First value 31.883/23.966 s; offline reload 4.346/3.115 s; aviation source 53.620/48.181 s, route 0.869/0.500 s; pack 262,899 B; no offline external request/error/overflow; touch Three deferred |
+| ER4 | 22893 build: 1,668 JS files, max 495,688 B; static first-load closure 3,325,629 B/38 chunks | 150,000 B feature+native target remains open: last matched audit fbff 163,436 B; refresh current attribution. `diagnostic-byte-audit-fbff8d6.md` |
+| ER5 | 22893 combined spatial/aviation offline passes at 1024/390; 185 rows/four pages; exact replay/route/pack parity | First value 41.769/22.138 s; install 18.307/10.393 s; reload 5.256/3.113 s; aviation import 31.101/20.435 s, source 58.178/40.643 s, route 1.130/0.542 s; pack 262,899 B; zero offline requests/errors/overflow; mobile Three deferred. `full-app-22893/acceptance.json` |
 | ER6 | 1fcc native 200% zoom: readable record/source/replay/route, focus/scroll pass; 121 control observations ≥44 px | `native-product-zoom-1fcc35b/manual-readability-review.json` binds six screenshots; zero source/page errors. Physical iPhone SKIP/KIV |
 | ER7 | 2faa worker suite 10/10: exact current revision falls through to network with only an older pack; unknown revisions remain fail-closed | Persistent-profile scene request returned 200 from service-worker network fallback; three aircraft loaded in MapLibre canvas; no fallback image |
 | ER8 | Root-retention and nine related checks pass; live import→Editor→Refresh retains source. IndexedDB covers missing/corrupt provenance/reopen | Earlier `live-root-retention.png` and `live-parser-432cc531.png`; ER5 supplies current cold proof |
 | ER9 | Six Geo checks pass. Built 160831d: zero SVG requests/mounts during activation; blocked SVG stays local and reload recovers (`geo-primary-built-160831d.json`, `geo-recovery-built-160831d.json`) | 2faa live preview also renders one MapLibre canvas; selection restored to MapLibre |
 | ER10 | XR tests 2/2: five unrelated writes and five Flight advances each change commits 5→0; motion retained. Build 6 keeps the same connected WebGL canvas through History open/close, zero removals | Unchanged-source proof; counts are test measurements, retention is actual UI evidence |
 | ER11 | 392fa static Mermaid: 6/6 render at 390 px, 16 px labels, all scroll endpoints reachable, page width 390 | `diagram-render-392fa379c/`: exact source hashes, screenshots, zero model/API calls; static artifact, not full canvas UI acceptance |
-| ER12 | Live 360×800: editor layer z100003; app toolbar z100004. Real source-row + Close clicks work; desktop Launch remains clickable | Local browser; physical device separate |
+| ER12 | 22893 live UI: editor z300; Launch, Source Files and Timeline pass at 1024/390 | `full-app-22893/review-{1024,390}.png`; emulated mobile; device separate |
 
 Repeated offline AS2: 77,757.706 m versus 71,188.231 m, difference 6,569.475 m, conditional band
 [6,541.475,6,597.475] m with limitations. AS1 inspected `/facts/0`, UTC 02:25:30.000Z→02:25:30.574Z.
@@ -487,6 +487,6 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-PR1560 merged; parser passed 195 cases. WebGL: 3.96/4.88 s; CI: 137 tasks/56.5 s and 390–420 ms frames.
+PR1560 merged; parser passed 195 cases. Full-app 22893 passes spatial edit/undo, aviation inspect/replay/export and offline install/reopen at 1024/390; 185 facts, four pages, 262,899B pack. First value 41.769/22.138s; reload 5.256/3.113s; aviation source 58.178/40.643s. MapLibre primary and XR canvas retention proven.
 
-2faa build passed 4GiB (84.1s compile; pre/post 20.8s/84,691/1.873GB and 4.3s/3,903/304MB; 86,507 hits). Offline spatial/aviation passes at 1024/390; artifacts: `.workspace/.artifacts/aviation-swarm-readiness/{bundle-graph-2faa8bb-final.json,spatial-full-app-2faa8bb-final/}`. Startup 3,325,209B/38 chunks; feature+native 163,436B; both exceed 150,000B. SW scene 200; MapLibre renders. Linux CI, iPhone, AS3/4, rights, buyer economics and promotion remain open. OS `a49`: 17 cache tests/evals pass; 683 files/7,669,851B cold/warm 559/321ms, CPU 134/42ms; warm avoids 7,669,851B reread. One source scan; no end-to-end CI savings proved. Production/deploy unclaimed.
+Build 22893: static closure 3,325,629B/38 chunks, max 495,688B; 150,000B feature+native attribution remains open. Artifacts: `.workspace/.artifacts/aviation-swarm-readiness/full-app-22893/`. Linux CI, iPhone, AS3/4, rights, buyer economics and promotion remain open. OS `a49`: 17 cache tests/evals pass; 683 files/7,669,851B cold/warm 559/321ms, CPU 134/42ms; warm avoids 7,669,851B reread. One source scan; no end-to-end CI savings proved. Production/deploy unclaimed.
