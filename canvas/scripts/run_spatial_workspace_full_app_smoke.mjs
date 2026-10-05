@@ -180,15 +180,9 @@ try {
     assert.equal(response.status(), 200)
     await review.getByRole('button', { name: 'Preview +1 m on X', exact: true }).waitFor({ timeout: 60000 })
     assert.equal(await storedSource(page), undone, 'offline reload retains source and receipt bytes')
-    // The spatial review controls belong to the restored Markdown workspace. Dismiss an
-    // obstructing Timeline panel, but keep that workspace open for the offline review.
+    // The spatial review controls belong to the restored Timeline. Keep that panel open
+    // while checking offline review; closing it would unmount the controls under test.
     const reloadNavigationActions = []
-    const timelinePanel = page.getByRole('complementary', { name: 'Strybldr Timeline', exact: true })
-    if (await timelinePanel.isVisible()) {
-      await timelinePanel.getByRole('button', { name: 'Close', exact: true }).click()
-      await timelinePanel.waitFor({ state: 'hidden', timeout: 30000 })
-      reloadNavigationActions.push('Close restored Timeline overlay')
-    }
     await page.waitForFunction(() => { const fieldset = document.querySelector('[data-kg-spatial-review] fieldset'); return fieldset && !fieldset.disabled })
     collector.mark('Offline review enabled')
     await quickPreview.click(); await review.getByRole('button', { name: 'Cancel proposal', exact: true }).click()
