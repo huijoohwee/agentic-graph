@@ -3,7 +3,6 @@ import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useLocation } from 'react-router-dom'
 import { VerticalResizeSeparatorHr } from '@/components/ui/VerticalResizeSeparatorHr'
-import { FloatingPanelCloseButton } from '@/components/ui/FloatingPanel'
 import { CanvasSyncRuntime } from '@/features/canvas/CanvasSyncRuntime'
 import { CanvasHotkeysRuntime } from '@/features/canvas/CanvasHotkeysRuntime'
 import { useCanvasWorkspacePaneRuntime } from '@/features/canvas/useCanvasWorkspacePaneRuntime'
@@ -35,8 +34,7 @@ import { Z_INDEX_PANEL_STACK_MAX_BASE } from '@/lib/ui/zIndex'
 
 import { CanvasStartupRuntimes } from '@/features/canvas/CanvasStartupRuntimes'
 
-// Keep the close affordance and app toolbar reachable without raising the editor surface.
-const WORKSPACE_EDITOR_CLOSE_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 3
+// Keep the app toolbar reachable without raising the editor surface.
 const WORKSPACE_EDITOR_TOOLBAR_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 4
 
 const ToolbarLazy = React.lazy(() => import('@/components/Toolbar'))
@@ -135,12 +133,10 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
   const activePath = useMarkdownExplorerStore(s => s.activePath)
   const workspaceEditorOverlayOpen = isWorkspaceEditorOverlayOpen({ workspaceViewMode, workspaceCanvasPaneOpen })
   const workspaceCanvasPaneVisible = workspaceEditorOverlayOpen && workspaceCanvasPaneOpen
-  const toolbarHeaderLayerClassName = workspaceEditorOverlayOpen
-    ? 'z-[100004]'
-    : toolbarHeaderElevated ? 'z-[420]' : 'z-[290]'
-  const closeWorkspaceEditor = React.useCallback(() => {
-    setWorkspaceViewState({ mode: 'canvas', paneOpen: false })
-  }, [setWorkspaceViewState])
+  const toolbarHeaderLayerClassName = toolbarHeaderElevated ? 'z-[420]' : 'z-[290]'
+  const toolbarHeaderLayerStyle = workspaceEditorOverlayOpen
+    ? { zIndex: WORKSPACE_EDITOR_TOOLBAR_Z_INDEX }
+    : undefined
   React.useEffect(() => {
     setToolbarHeaderElevated(canvasToolbarDockSpansViewport)
   }, [canvasToolbarDockSpansViewport, workspaceCanvasPaneVisible])
@@ -277,6 +273,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
               <header
                 ref={toolbarHeaderRef}
                 className={`absolute inset-0 pointer-events-none ${toolbarHeaderLayerClassName}`}
+                style={toolbarHeaderLayerStyle}
                 aria-label="Workspace Toolbar Header"
                 data-kg-workspace-toolbar-layer={toolbarHeaderElevated ? 'above-editor' : 'under-editor'}
               >
@@ -354,7 +351,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
                     <section
                       ref={editorOverlayRef}
                       hidden={!workspaceEditorOverlayOpen}
-                      className="absolute inset-0 pointer-events-none z-[300]"
+                      className="absolute inset-0 pointer-events-none"
                       aria-label="Workspace editor overlay shell"
                       onPointerDown={() => setToolbarHeaderElevated(false)}
                     >
@@ -384,21 +381,6 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
                     </section>
                   ) : null}
 
-                  {workspaceEditorOverlayOpen && !liveCanvasHeroOwnsWorkspace ? (
-                    <div
-                      className="absolute pointer-events-auto"
-                      style={{
-                        zIndex: WORKSPACE_EDITOR_CLOSE_Z_INDEX,
-                        left: `calc(${workspacePaneBoundaryCss} - 48px)`,
-                        top: 'calc(env(safe-area-inset-top, 0px) + 4.5rem)',
-                      }}
-                    >
-                      <FloatingPanelCloseButton
-                        label="Close Workspace editor"
-                        onClose={closeWorkspaceEditor}
-                      />
-                    </div>
-                  ) : null}
                 </section>
               </section>
             </main>

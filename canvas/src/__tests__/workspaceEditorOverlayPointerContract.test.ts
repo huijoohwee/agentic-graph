@@ -148,17 +148,16 @@ export function testWorkspaceEditorOverlayDoesNotShrinkCanvasViewport() {
     throw new Error('expected Canvas page to render workspace editor in an absolute overlay shell')
   }
   if (
-    !text.includes('className="absolute inset-0 pointer-events-none z-[300]"') ||
-    !text.includes('const WORKSPACE_EDITOR_CLOSE_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 3') ||
-    !text.includes('zIndex: WORKSPACE_EDITOR_CLOSE_Z_INDEX') ||
-    !text.includes('label="Close Workspace editor"') ||
-    !text.includes('onClose={closeWorkspaceEditor}') ||
-    !text.includes("setWorkspaceViewState({ mode: 'canvas', paneOpen: false })")
+    !text.includes('className="absolute inset-0 pointer-events-none"') ||
+    !text.includes('const WORKSPACE_EDITOR_TOOLBAR_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 4') ||
+    !text.includes('style={toolbarHeaderLayerStyle}')
   ) {
-    throw new Error('expected only the Workspace close affordance to elevate above the bounded floating-panel stack')
+    throw new Error('expected the Workspace editor surface to avoid an elevated stacking context while the app toolbar stays reachable')
   }
-  if (!text.includes("workspaceEditorOverlayOpen\n    ? 'z-[100004]'")) {
-    throw new Error('expected the app toolbar to remain reachable above the Workspace editor surface')
+  if (!workspaceToolbarText.includes('const WORKSPACE_EDITOR_HEADER_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 3') ||
+    !workspaceToolbarText.includes('className="relative"') ||
+    !workspaceToolbarText.includes('style={workspaceViewMode === \'editor\' ? { zIndex: WORKSPACE_EDITOR_HEADER_Z_INDEX } : undefined}')) {
+    throw new Error('expected only the narrow Workspace toolbar wrapper to elevate above bounded floating panels')
   }
   if (!text.includes('layout="full"')) {
     throw new Error('expected Canvas viewport to remain in full layout while workspace editor overlay is active')
@@ -231,9 +230,6 @@ export function testWorkspaceEditorOverlayDoesNotShrinkCanvasViewport() {
   }
   if (!workspaceToolbarText.includes('closeWorkspaceView({')) {
     throw new Error('expected workspace close action to reuse the shared close helper for residue cleanup')
-  }
-  if (!workspaceToolbarText.includes("workspaceViewMode !== 'editor' ? (")) {
-    throw new Error('expected the overlay-level close affordance to replace the Workspace toolbar duplicate in editor mode')
   }
   const closeButtonIndex = workspaceToolbarText.indexOf('data-kg-workspace-toolbar-close="1"')
   const controlsIndex = workspaceToolbarText.indexOf('<CollapsibleToolbar')
