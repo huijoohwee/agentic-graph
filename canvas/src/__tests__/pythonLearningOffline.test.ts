@@ -159,7 +159,10 @@ test('upgrade retains the last complete pack when the current pack was evicted o
 test('declared public members are revision-bound offline and tampering fails closed', async () => {
   const file = 'example/fixtures/source.json', env = environment()
   await env.publish(first, undefined, { [file]: '{"version":1}' }); await env.ownerFor(first).request('install')
-  await env.publish(second, undefined, { [file]: '{"version":2}' }); const two = env.ownerFor(second); await two.request('install')
+  await env.publish(second, undefined, { [file]: '{"version":2}' }); const two = env.ownerFor(second)
+  assert.equal(await two.owner.__agLearningOffline!.read({ url: scope + file + '?revision=' + second, mode: 'cors' }), null,
+    'a current online revision falls through to network when only an older offline pack is installed')
+  await two.request('install')
   const read = (revision: string, path = file) => two.owner.__agLearningOffline!.read({ url: scope + path + '?revision=' + revision, mode: 'cors' })
   const before = env.calls(); env.downloads.clear()
   assert.equal(await (await read(first)).text(), '{"version":1}'); assert.equal(await (await read(second)).text(), '{"version":2}')
