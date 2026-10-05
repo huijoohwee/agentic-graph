@@ -364,15 +364,17 @@ export function MarkdownWorkspaceToolbar({
         ) : (
           <span className="sr-only">Workspace editor</span>
         )}
-        <button
-          type="button"
-          className={`${TOOLBAR_BUTTON_CLASSNAME} shrink-0`}
-          title={UI_LABELS.close}
-          data-kg-workspace-toolbar-close="1"
-          onClick={closeEditorWorkspace}
-        >
-          <X className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} />
-        </button>
+        {workspaceViewMode !== 'editor' ? (
+          <button
+            type="button"
+            className={`${TOOLBAR_BUTTON_CLASSNAME} shrink-0`}
+            title={UI_LABELS.close}
+            data-kg-workspace-toolbar-close="1"
+            onClick={closeEditorWorkspace}
+          >
+            <X className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} />
+          </button>
+        ) : null}
         <CollapsibleToolbar forceExpanded={isTouchToolbarViewport} className={`kg-toolbar kg-markdown-workspace-toolbar-controls kg-workspace-toolbar-controls ${uiToolbarRowScrollClassName} gap-1`} ariaLabel="Markdown view controls">
         <menu className={`${uiToolbarRowScrollListClassName} gap-1`} aria-label="Layout mode">
           <li className="kg-workspace-pane-toggles-item list-none">
