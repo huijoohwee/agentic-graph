@@ -37,7 +37,7 @@ export function XrSubjectTransformEditor() {
     useGraphStore.getState().pushUiToast({ id: 'xr:timeline:transform', kind: result.ok ? 'success' : 'error', message: result.message })
     return result
   }
-  const spatialReview = <details className="shrink-0 p-2">
+  const spatialReview = <details open className="shrink-0 p-2">
     <summary className="cursor-pointer text-xs font-semibold">Scene change review</summary>
     <SpatialWorkspaceReview />
   </details>

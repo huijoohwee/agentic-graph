@@ -272,7 +272,7 @@ for (const cancellation of ['escape', 'lost-capture'] as const) {
         else pointer(env, capture(), 'lostpointercapture', 74)
       })
       await new Promise<void>(resolve => env.dom.window.setTimeout(resolve, 0))
-      await act(async () => { click(2) })
+      await act(async () => { pointer(env, target('lane'), 'pointerdown', 24, 2, false); click(2) })
       assert.deepEqual(clicks, ['lane'], 'another pointer neither loses its command nor consumes the canceled pointer fence')
       await act(async () => { pointer(env, env.dom.window, 'pointermove', 100); pointer(env, env.dom.window, 'pointerup', 100); click(1) })
       assert.deepEqual(seeks, [0.6], 'a canceled gesture cannot resume seeking')

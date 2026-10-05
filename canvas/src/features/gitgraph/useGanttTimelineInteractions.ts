@@ -251,10 +251,13 @@ export function useGanttTimelineInteractions(args: {
       event.stopImmediatePropagation()
       clickCleanupRef.current?.()
     }
+    const clearRestartedPointer = (event: PointerEvent) => {
+      if (event.pointerId === state.pointerId) clearClick()
+    }
     const clearClick = () => {
       state.capture.removeEventListener('click', suppressClick, true)
       window.removeEventListener('pointerup', finishCancelledPointer)
-      window.removeEventListener('pointerdown', clearClick, true)
+      window.removeEventListener('pointerdown', clearRestartedPointer, true)
       if (clickTimer !== undefined) window.clearTimeout(clickTimer)
       if (clickCleanupRef.current === clearClick) clickCleanupRef.current = null
     }
@@ -276,7 +279,7 @@ export function useGanttTimelineInteractions(args: {
         if (cancelled) {
           awaitingPointerUp = true
           window.addEventListener('pointerup', finishCancelledPointer)
-          window.addEventListener('pointerdown', clearClick, true)
+          window.addEventListener('pointerdown', clearRestartedPointer, true)
         } else clickTimer = window.setTimeout(clearClick, 0)
       } else clearClick()
     }
