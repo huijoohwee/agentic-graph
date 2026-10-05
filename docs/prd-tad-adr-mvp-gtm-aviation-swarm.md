@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.24"
-revision: "0.4.24"
+version: "0.4.25"
+revision: "0.4.25"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.24"
-tad_revision: "0.4.24"
-adr_revision: "0.4.24"
-mvp_revision: "0.4.24"
-gtm_revision: "0.4.24"
+prd_revision: "0.4.25"
+tad_revision: "0.4.25"
+adr_revision: "0.4.25"
+mvp_revision: "0.4.25"
+gtm_revision: "0.4.25"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -25,7 +25,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-import-readiness"
 agent_id: "codex-root"
-source_revision: "f897c8e8725c3a7f7431a710cd8a3539f8bd7aaf"
+source_revision: "08a9ad3afe000ec341115a0eaef71773255fbcbe"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm — reference implementation
 
-`aviation-swarm@0.4.24` hardens eligible aviation evidence Must workflows:
+`aviation-swarm@0.4.25` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -441,7 +441,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.24 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.25 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -451,7 +451,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.24`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.25`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -486,8 +486,9 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-Development: PR1560 integrated. At 99c92d4, eight native plans passed; Python restore failed before lesson execution. f897 admits one exact persisted non-Markdown restore before importer publication; later effects forbid retry. ER1 binds focused checks. ER3–ER7 are historical; final candidate receipts own refreshed verdicts.
+Development: PR1560 integrated. At 99c92d4, eight native plans passed; Python restore failed before lesson execution. f897 admits one exact persisted non-Markdown restore before importer publication; later effects forbid retry. ER1 binds focused checks. ER3–ER7 are historical; final receipts own new verdicts.
 Cold bootstrap stays ≤30 s; total-import harness ≤60 s requires terminal success/exact source; AS1 ≤300 s.
 Production Release: ten native plans and protected integration need exact receipts. Contract v94 allows 600 s for one build plus four cold contexts, retaining journey deadlines. Native publication stops at provider handoff.
+Build: 2c81148 exhausted heap during gzip reporting; optional reporting is disabled. Raw-byte gates remain.
 Runtime: no deployment/promotion grant or receipt. Physical iPhone SKIP/KIV; real-label and commercial gates remain. AS3/AS4 stay conditional.
 ADR-004 passed at 1fcc; its 161,084 B including native repairs failed 150 kB. Final byte receipt must rebind the successor. No broader readiness claim. Preserve concurrent work and historical failures.
