@@ -55,7 +55,7 @@ export function useWorkspaceImportActions(args: {
     setActiveMarkdownDocument,
   } = args.ctx
   React.useEffect(() => () => {
-    if (importWaitRef.current) { importJobRef.current += 1; importWaitRef.current.abort() }
+    if (importWaitRef.current) { importWaitRef.current.abort(); importJobRef.current += 1 }
   }, [getFs, importJobRef])
 
   const setImportStage = React.useCallback((jobId: number, label: string) => {
@@ -68,9 +68,13 @@ export function useWorkspaceImportActions(args: {
     const controller = new AbortController()
     importWaitRef.current = controller
     setImportStage(jobId, 'Preparing workspace before import')
+    const ownsStatus = status.captureStatusOwnership()
+    controller.signal.addEventListener('abort', () => {
+      if (importJobRef.current === jobId && ownsStatus()) status.setStatusInfo('Import cancelled')
+    }, { once: true })
     try { await waitForSourceFilesBootstrap({ signal: controller.signal }); return controller }
     catch (error) { if (importWaitRef.current === controller) importWaitRef.current = null; throw error }
-  }, [importJobRef, setImportStage])
+  }, [importJobRef, setImportStage, status])
 
   const hydratePendingImportedPaths = React.useCallback(async (fs: WorkspaceFs, createdPaths: string[]) => {
     for (const path of createdPaths || []) {

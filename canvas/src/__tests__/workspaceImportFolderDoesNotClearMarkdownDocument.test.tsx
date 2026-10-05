@@ -36,7 +36,7 @@ export async function testWorkspaceFolderSelectionDoesNotClearMarkdownDocument()
     const store = useGraphStore.getState()
     store.setMarkdownDocument('seed.md', '# Seed\n\nHello')
 
-    root.render(React.createElement(MarkdownWorkspace))
+    await act(async () => root!.render(React.createElement(MarkdownWorkspace)))
 
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('timeout waiting for initial render')), 750) as unknown as number
@@ -65,7 +65,7 @@ export async function testWorkspaceFolderSelectionDoesNotClearMarkdownDocument()
     }
   } finally {
     try {
-      root?.unmount()
+      await act(async () => root?.unmount())
     } catch {
       void 0
     }

@@ -153,7 +153,8 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
           const toast = document.querySelector('[data-kg-toast-id="markdown-workspace-status"]')
           const message = toast?.querySelector('[data-kg-toast-message]')?.textContent?.trim() || ''
           return /^(Imported\b|Import failed:)/.test(message) ? { message, role: toast.getAttribute('role') } : false
-        }, undefined, { timeout: 30000 }).then(async handle => {
+        // Cold imports may first consume the bounded 30-second source bootstrap wait.
+        }, undefined, { timeout: 60000 }).then(async handle => {
           try { return await handle.jsonValue() } finally { await handle.dispose() }
         }),
         fileChooser.setFiles({ name: localPath.split('/').at(-1), mimeType: 'text/markdown', buffer: Buffer.from(source) }),

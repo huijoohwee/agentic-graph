@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { completeSourceFilesBootstrap } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { captureEvidenceSource, isEvidenceSourceCurrent, validateEvidenceConfiguration } from '../evidenceSource'
 import { JsonDetails, VolumeResult, ReplayResult, RecordResult } from './EvidenceResults'
 import EvidencePanel from '../EvidencePanel'
@@ -87,6 +88,46 @@ test('inspection disclosure exposes the complete shared typed record beyond the 
     await act(async () => { details.open = true; details.dispatchEvent(new env.dom.window.Event('toggle')) })
     assert.deepEqual(JSON.parse(details.querySelector('pre')!.textContent!), record)
   } finally { await act(async () => root.unmount()); env.restore() }
+})
+test('evidence actions wait for source bootstrap even when a provisional source is parsed', async () => {
+  const restore = saveSource(), env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)
+  try {
+    installSource(); await act(async () => root.render(<EvidencePanel />))
+    const load = () => [...container.querySelectorAll('button')].find(element => element.textContent === 'Load labelled example')!
+    assert.equal(load().disabled, true)
+    assert.equal(container.querySelector<HTMLInputElement>('input[type="file"]')!.disabled, true)
+    await act(async () => completeSourceFilesBootstrap())
+    assert.equal(load().disabled, false)
+    assert.equal(container.querySelector<HTMLInputElement>('input[type="file"]')!.disabled, false)
+  } finally { completeSourceFilesBootstrap(); await act(async () => root.unmount()); restore(); env.restore() }
+})
+test('an action at the source commit survives source-reset ordering', async () => {
+  const restore = saveSource(), env = initJsdomHarness(), doc = env.dom.window.document
+  Reflect.deleteProperty(doc, 'activeElement')
+  const container = doc.body.appendChild(doc.createElement('main')), root = createRoot(container), oldFetch = globalThis.fetch
+  const fixture = readFileSync(new URL('../../../../public/evidence-analysis/fixtures/aviation-synthetic-v1.json', import.meta.url))
+  let signal: AbortSignal | undefined, respond!: (response: Response) => void
+  globalThis.fetch = ((_path, init) => { signal = init?.signal as AbortSignal; return new Promise<Response>(resolve => { respond = resolve }) }) as typeof fetch
+  function FirstAction({ inspect = false }: { inspect?: boolean }) {
+    React.useLayoutEffect(() => {
+      const target = inspect ? container.querySelector<HTMLButtonElement>('button[aria-label^="Inspect original source for"]')
+        : [...container.querySelectorAll('button')].find(element => element.textContent === 'Load labelled example')
+      assert.ok(target && !target.disabled)
+      target.focus(); target.click(); target.blur()
+    }, [inspect])
+    return <EvidencePanel />
+  }
+  try {
+    installSource(); await act(async () => root.render(<FirstAction />))
+    assert.equal(signal?.aborted, false, 'the first committed action is not retired by a delayed initialization effect')
+    await act(async () => respond(new Response(fixture)))
+    await settle(() => container.textContent!.includes('Accepted result is bound'))
+    await act(async () => useGraphStore.setState({ sourceFiles: useGraphStore.getState().sourceFiles.map(file => ({ ...file, status: 'loading' })) }))
+    await act(async () => { installSource(); root.render(<FirstAction inspect />) })
+    await settle(() => container.textContent!.includes('Exact original source and reference'))
+    const inspect = container.querySelector<HTMLButtonElement>('button[aria-label^="Inspect original source for"]')!
+    assert.equal(doc.activeElement, inspect, 'recovery keeps the new operation and its eligible focus')
+  } finally { await act(async () => root.unmount()); globalThis.fetch = oldFetch; restore(); env.restore() }
 })
 test('a late example response cannot admit data or replace status after an authored source change', async () => {
   const restoreSource = saveSource(), env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)

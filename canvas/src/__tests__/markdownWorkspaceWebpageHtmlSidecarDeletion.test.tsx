@@ -96,6 +96,7 @@ export async function testActiveSourceDeletionSettlesWritesAndClearsSelection() 
   const lastLoadedRef = { current: { path, text: 'original' } as { path: string; text: string } | null }
   function Harness() {
     actions = useWorkspaceMutationActions({ core: { status: {
+      captureStatusOwnership: () => { throw Error('Deletion must not capture import status ownership') },
       setStatusInfo: value => { events.push(value); if (value === 'Deleted') deleted() }, setStatusWarning: () => {}, setStatusError: value => { throw Error(value) },
       setStatusProgress: () => {}, clearStatus: () => {}, buildWebpageImportStageLabel: () => '',
     } }, ctx: { getFs: async () => fs, refresh: async () => ({ entries: await fs.listEntries(), sourcesByPath: {} }),

@@ -29,13 +29,12 @@ import { activateStrybldrImportSurface } from '@/features/strybldr/strybldrImpor
 
 const DEFAULT_WORKSPACE_STATUS_TOAST_ID = 'markdown-workspace-status'
 
-const lastToastSigById = new Map<string, string>()
+const lastToastById = new Map<string, { signature: string; owner: object }>()
 
 const shouldSkipToast = (id: string, sig: string): boolean => {
-  const prev = lastToastSigById.get(id)
-  if (prev === sig) return true
-  lastToastSigById.set(id, sig)
-  return false
+  const prev = lastToastById.get(id)
+  lastToastById.set(id, { signature: sig, owner: {} })
+  return prev?.signature === sig
 }
 
 export function shouldForceDocumentSemanticModeForImport(nameForParse: string): boolean {
@@ -169,13 +168,20 @@ export function useWorkspaceStatusHelpers(opts?: { toastId?: string }): StatusHe
     } catch {
       void 0
     }
-    lastToastSigById.delete(toastId)
+    lastToastById.delete(toastId)
+  }, [toastId])
+
+  const captureStatusOwnership = React.useCallback(() => {
+    const owner = lastToastById.get(toastId)?.owner
+    const toast = useGraphStore.getState().uiToasts.find(value => value.id === toastId)
+    return () => !!owner && !!toast && lastToastById.get(toastId)?.owner === owner
+      && useGraphStore.getState().uiToasts.includes(toast)
   }, [toastId])
 
   // Consumers bind asynchronous workspace jobs to this owner. A fresh wrapper
   // on every render cancels and restarts indexing when indexing updates state.
-  return React.useMemo(() => ({ setStatusInfo, setStatusWarning, setStatusError, setStatusProgress, clearStatus, buildWebpageImportStageLabel }),
-    [setStatusInfo, setStatusWarning, setStatusError, setStatusProgress, clearStatus, buildWebpageImportStageLabel])
+  return React.useMemo(() => ({ setStatusInfo, setStatusWarning, setStatusError, setStatusProgress, clearStatus, buildWebpageImportStageLabel, captureStatusOwnership }),
+    [setStatusInfo, setStatusWarning, setStatusError, setStatusProgress, clearStatus, buildWebpageImportStageLabel, captureStatusOwnership])
 }
 
 export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): {

@@ -1,5 +1,6 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { useSourceFilesBootstrapSnapshot } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { LearningOfflineControls } from '@/features/python-learning/LearningOfflineControls'
 import { captureEvidenceSource, isEvidenceSourceCurrent, type EvidenceKind, type EvidenceExample, type EvidenceSourceCapture } from './evidenceSource'
@@ -27,13 +28,15 @@ function argsFor(kind: EvidenceKind, inputs: string[], entityId: string, atUtc: 
   return { bundle: inputs[0], entityId, ...(kind === 'route' ? {} : { atUtc }) }
 }
 export default function EvidencePanel() {
+  const readiness = useSourceFilesBootstrapSnapshot()
   const documentName = useGraphStore(state => state.markdownDocumentName)
   const documentText = useGraphStore(state => state.markdownDocumentText)
   const sourceFiles = useGraphStore(state => state.sourceFiles)
   const source = React.useMemo(() => {
+    if (readiness.phase !== 'ready') return { capture: null, error: readiness.error || 'Preparing the source workspace…' }
     try { return { capture: captureEvidenceSource(), error: '' } }
     catch (error) { return { capture: null, error: error instanceof Error ? error.message : String(error) } }
-  }, [documentName, documentText, sourceFiles])
+  }, [documentName, documentText, sourceFiles, readiness.phase, readiness.error])
   const capture = source.capture
   const [kind, setKind] = React.useState<EvidenceKind>('record')
   const [exampleId, setExampleId] = React.useState('')
@@ -84,7 +87,7 @@ export default function EvidencePanel() {
     if (downloadUrl.current) URL.revokeObjectURL(downloadUrl.current)
     downloadUrl.current = null; setPrepared(null)
   }, [])
-  React.useEffect(() => { generation.current++; cancelRead(); discardFocus(); setBusy(false); setDetail(null); release(); setStatus(source.error || 'Current source configuration ready. Choose an example or import permitted JSON.') }, [capture?.documentName, capture?.documentText, capture?.sourceId, capture?.sourceRevision, source.error, release, cancelRead, discardFocus])
+  React.useLayoutEffect(() => { generation.current++; cancelRead(); discardFocus(); setBusy(false); setDetail(null); release(); setStatus(source.error || 'Current source configuration ready. Choose an example or import permitted JSON.') }, [capture?.documentName, capture?.documentText, capture?.sourceId, capture?.sourceRevision, source.error, release, cancelRead, discardFocus])
   React.useEffect(() => () => { generation.current++; cancelRead(); discardFocus(); if (downloadUrl.current) URL.revokeObjectURL(downloadUrl.current) }, [cancelRead, discardFocus])
   const live = (token: number, owner: EvidenceSourceCapture) => token === generation.current && isEvidenceSourceCurrent(owner)
   function selectKind(next: EvidenceKind) {

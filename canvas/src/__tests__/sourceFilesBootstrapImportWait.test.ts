@@ -8,6 +8,7 @@ import { waitForSourceFilesBootstrap } from '@/features/source-files/waitForSour
 import { beginSourceFilesDocumentIntent, completeSourceFilesBootstrap, failSourceFilesDocumentIntent,
   readSourceFilesBootstrapSnapshot } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { useWorkspaceImportActions } from '@/features/markdown-workspace/useWorkspaceFileActions/importActions'
+import { useWorkspaceStatusHelpers } from '@/features/markdown-workspace/useWorkspaceFileActions/core'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -115,7 +116,13 @@ test('mounted import hooks serialize cold imports, retain selected bytes and can
       openedPath: null, activeDocumentKey: '', setActiveText: () => {}, setEntries: () => {}, lastLoadedRef: { current: null },
       setActiveMarkdownDocument: async () => true,
     }
-    function Harness() { actions = useWorkspaceImportActions({ core, ctx }); return null }
+    function Harness() {
+      const status = useWorkspaceStatusHelpers()
+      core.status = { ...status, setStatusProgress: (...args) => { statuses.push(args[0]); status.setStatusProgress(...args) },
+        setStatusInfo: (...args) => { statuses.push(args[0]); status.setStatusInfo(...args) },
+        setStatusError: (...args) => { statuses.push(args[0]); status.setStatusError(...args) } }
+      actions = useWorkspaceImportActions({ core, ctx }); return null
+    }
     const render = () => act(async () => root.render(React.createElement(strict ? React.StrictMode : React.Fragment, null, React.createElement(Harness))))
     await render()
     const fixture = { fs, statuses, ctx, core, render, calls: () => calls, actions: () => actions,
@@ -138,9 +145,16 @@ test('mounted import hooks serialize cold imports, retain selected bytes and can
     const strictJob = start(strict.actions().handleImportLocalFiles([file('strict.md')]))
     const racedJob = start(raced.actions().handleImportLocalFiles([file('raced.md')]))
     const replacedJob = start(replaced.actions().handleImportLocalFiles([file('replaced.md')]))
+    const currentToast = () => useGraphStore.getState().uiToasts.find(value => value.id === 'markdown-workspace-status')
+    const newestToast = currentToast()
+    assert.equal(newestToast?.busy, true)
     await unmounted.unmount(); await strict.unmount()
+    assert.equal(currentToast(), newestToast, 'older hook cleanup cannot overwrite newer identical progress')
     replaced.ctx.getFs = async () => { assert.fail('replacement workspace must not receive the old selection') }
     await replaced.render()
+    const cancelled = currentToast()
+    assert.equal(cancelled?.message, 'Import cancelled'); assert.equal(cancelled?.busy, false)
+    assert.equal(cancelled?.dismissible, true); assert.equal(typeof cancelled?.expiresAtMs, 'number')
     await Promise.all([unmountedJob, strictJob, replacedJob])
     for (const fixture of [newest, retained, unmounted, strict, raced, replaced]) {
       assert.equal(fixture.calls(), 0)
