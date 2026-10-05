@@ -1,4 +1,4 @@
-import { verifyBrowserProofBuild } from '../../scripts/browser-proof-build.mjs'
+import { browserProofSourceIdentity, verifyBrowserProofBuild } from '../../scripts/browser-proof-build.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -15,7 +15,7 @@ import { createSmokeDiagnostics, collectSmokeDiagnostics, installSmokeDiagnostic
 
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
-const revision = git('rev-parse', 'HEAD'), tree = git('rev-parse', 'HEAD^{tree}')
+const { revision, checkoutRevision, tree } = browserProofSourceIdentity(root)
 assert.equal(git('status', '--porcelain'), '', 'Acceptance requires a clean, committed candidate')
 const buildEnvironment = { ...process.env }
 let verifiedBuild = null
@@ -210,9 +210,9 @@ try {
   activePage = null; activeCollector = null
   const aviationResults = await runAviationEvidenceOfflineProof({ browser, origin, root, output, revision, tree })
   assert.equal(git('status', '--porcelain'), '')
-  assert.equal(git('rev-parse', 'HEAD'), revision)
+  assert.equal(git('rev-parse', 'HEAD'), checkoutRevision)
   if (verifiedBuild) assert.deepEqual(await verifyBrowserProofBuild(root, { environment: buildEnvironment }), verifiedBuild)
-  await writeFile(join(output, 'acceptance.json'), JSON.stringify({ schema: 'agentic-graph.spatial-full-app-acceptance/v1', revision, tree,
+  await writeFile(join(output, 'acceptance.json'), JSON.stringify({ schema: 'agentic-graph.spatial-full-app-acceptance/v1', revision, checkoutRevision, tree,
     verifiedBuild, productionAuthority: false, humanParticipants: 0, modelTokens: 0, results, aviationResults }, null, 2) + '\n')
 } catch (error) {
   failed = true

@@ -8,6 +8,7 @@ import { readRuntimeDocsSources } from './runtime-docs-sources.mjs'
 import { resolveAgenticCanvasOsDocsRoot, resolveAgenticCanvasOsDocsRevision } from '../mcp/agentic-canvas-os-docs-runtime.js'
 import { AGENT_HISTORY_MANIFEST } from '../mcp/agentic-os-doc-sources.mjs'
 import { executionEnvironment, readGit, validationGitConfiguration } from '../node_modules/agentic-os/bin/agentic-os-test-inputs.mjs'
+import { resolveValidationCi } from '../node_modules/agentic-os/bin/agentic-os-validation.mjs'
 
 const SCHEMA = 'agentic-graph/browser-proof-build/v1', COMMAND = ['npm', 'run', 'pages:build']
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..'), RECEIPT = '.tmp/browser-proof-build/receipt.json'
@@ -91,11 +92,26 @@ async function docsInput(root, environment, context) {
   return { docsRoot, revision, manifest: hashFile(resolve(docsRoot, '../..', AGENT_HISTORY_MANIFEST), context),
     digest: digest(JSON.stringify(records.map(record => [record.filePath, record.sourcePath, digest(record.bytes)]))) }
 }
+/** Runtime labels may name an authored head inside an exact, equal-tree provider merge. */
+export function browserProofSourceIdentity(root = ROOT, environment = process.env) {
+  const checkoutRevision = readGit(root, ['rev-parse', 'HEAD']).trim()
+  const tree = readGit(root, ['rev-parse', 'HEAD^{tree}']).trim()
+  const revision = environment.AGENTIC_OS_SOURCE_REVISION || checkoutRevision
+  if (!/^[a-f0-9]{40}$/.test(revision) || /^0+$/.test(revision)) throw Error('Invalid build runtime revision')
+  if (revision !== checkoutRevision) {
+    const checkout = resolveValidationCi(root, environment)
+    const parents = readGit(root, ['show', '-s', '--format=%P', checkoutRevision]).trim().split(' ')
+    if (checkout.checkout !== 'pull-request-merge' || checkout.head !== checkoutRevision
+      || parents.length !== 2 || parents[0] !== checkout.base || parents[1] !== revision
+      || readGit(root, ['rev-parse', revision + '^{tree}']).trim() !== tree)
+      throw Error('Build runtime revision differs from verified checkout identity')
+  }
+  return { revision, checkoutRevision, tree }
+}
 async function sourceInputs(root, environment, readDocs, context) {
   if (realpathSync.native(root) !== root || resolve(readGit(root, ['rev-parse', '--show-toplevel']).trim()) !== root) throw Error('Build proof requires a canonical repository root')
   if (readGit(root, ['status', '--porcelain=v1', '--untracked-files=all']).trim()) throw Error('Build proof requires clean source')
-  const revision = readGit(root, ['rev-parse', 'HEAD']).trim(), tree = readGit(root, ['rev-parse', 'HEAD^{tree}']).trim()
-  if (environment.AGENTIC_OS_SOURCE_REVISION && environment.AGENTIC_OS_SOURCE_REVISION !== revision) throw Error('Build runtime revision differs from HEAD')
+  const sourceIdentity = browserProofSourceIdentity(root, environment)
   const tracked = readGit(root, ['ls-files', '-z']).split('\0').filter(Boolean)
   const extras = ['.npmrc', 'canvas/.npmrc', 'package-lock.json', ...['', 'canvas/'].flatMap(prefix => ['.env', '.env.local', '.env.production', '.env.production.local'].map(name => prefix + name))].filter(path => existsSync(join(root, path)))
   hashFile(join(root, 'package.json'), context)
@@ -103,12 +119,12 @@ async function sourceInputs(root, environment, readDocs, context) {
   const workspaces = (packageJson.workspaces || []).map(safe)
   const dependencies = ['node_modules', ...workspaces.map(path => path + '/node_modules')].filter(path => existsSync(join(root, path)))
   const env = executionEnvironment(environment); delete env.AGENTIC_OS_COMMAND_ANCESTRY
-  const identity = { docs: await readDocs(root, environment, context), revision, tree, branch: readGit(root, ['branch', '--show-current']).trim(),
+  const identity = { docs: await readDocs(root, environment, context), ...sourceIdentity, branch: readGit(root, ['branch', '--show-current']).trim(),
     source: inventory(root, [...tracked, ...extras], context), configurationDigest: digest(validationGitConfiguration(root)),
     dependency: inventory(root, dependencies, context, { directories: true, dependencyLinks: true, workspaces }),
     environmentDigest: digest(JSON.stringify(env)), executable: hashFile(realpathSync.native(process.execPath), context), node: process.version, platform: process.platform, arch: process.arch,
     producerSha256: hashFile(fileURLToPath(import.meta.url), context).sha256 }
-  if (readGit(root, ['rev-parse', 'HEAD']).trim() !== revision || readGit(root, ['status', '--porcelain=v1', '--untracked-files=all']).trim()) throw Error('Build source changed during snapshot')
+  if (readGit(root, ['rev-parse', 'HEAD']).trim() !== sourceIdentity.checkoutRevision || readGit(root, ['status', '--porcelain=v1', '--untracked-files=all']).trim()) throw Error('Build source changed during snapshot')
   return { identity, workspaces }
 }
 function generatedDependencies(root, workspaces, context) {
@@ -175,7 +191,7 @@ export async function verifyBrowserProofBuild(root = ROOT, { environment = proce
   if (JSON.stringify(current.identity) !== JSON.stringify(receipt.identity)) throw Error('Verified browser build inputs differ')
   if (JSON.stringify(generatedDependencies(root, current.workspaces, context)) !== JSON.stringify(receipt.generatedDependencies)) throw Error('Verified browser build generated dependencies differ')
   if (JSON.stringify(artifacts(root, current.identity.revision, context)) !== JSON.stringify(receipt.artifacts)) throw Error('Verified browser build artifacts differ')
-  return { revision: current.identity.revision, tree: current.identity.tree, artifactDigest: receipt.artifacts.digest }
+  return { revision: current.identity.revision, checkoutRevision: current.identity.checkoutRevision, tree: current.identity.tree, artifactDigest: receipt.artifacts.digest }
 }
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
   if (process.argv.length !== 2) throw Error('Browser proof build accepts no arguments')

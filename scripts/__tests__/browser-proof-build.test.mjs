@@ -22,15 +22,73 @@ function fixture(t) {
   put('.tmp/docs.md', 'external admitted document')
   const readDocs = async () => ({ digest: hash(readFileSync(join(root, '.tmp/docs.md'))) })
   const environment = { PATH: process.env.PATH, NODE_OPTIONS: '--max-old-space-size=4096' }
-  const build = () => {
+  const build = (revision = git('rev-parse', 'HEAD')) => {
     put('shared/dist/index.js', 'generated dependency')
-    const files = [['index.html', '<script src="assets/pythonWorker-test.js"></script>'], ['assets/pythonWorker-test.js', 'worker'], ['sw.js', 'worker router'], ['agentic-graph-service-worker-revision.js', git('rev-parse', 'HEAD')]]
+    const files = [['index.html', '<script src="assets/pythonWorker-test.js"></script>'], ['assets/pythonWorker-test.js', 'worker'], ['sw.js', 'worker router'], ['agentic-graph-service-worker-revision.js', revision]]
     for (const [path, text] of files) put('canvas/dist/' + path, text)
-    put(`canvas/dist/learning-offline-manifest-${git('rev-parse', 'HEAD')}.json`, JSON.stringify({ schema: 'python-learning-offline/v1', revision: git('rev-parse', 'HEAD'), files: files.slice(0, 2).map(([path, text]) => ({ path, bytes: Buffer.byteLength(text), sha256: hash(text) })) }))
+    put(`canvas/dist/learning-offline-manifest-${revision}.json`, JSON.stringify({ schema: 'python-learning-offline/v1', revision, files: files.slice(0, 2).map(([path, text]) => ({ path, bytes: Buffer.byteLength(text), sha256: hash(text) })) }))
   }
   return { root, environment, git, put, build, readDocs, receipt: join(root, '.tmp/browser-proof-build/receipt.json'),
     produce: options => produceBrowserProofBuild({ root, environment, readDocs, runBuild: build, observe: () => {}, ...options }), verify: options => verifyBrowserProofBuild(root, { environment, readDocs, ...options }) }
 }
+
+function mergeFixture(t, { changedTree = false, reverseParents = false } = {}) {
+  const f = fixture(t), base = f.git('rev-parse', 'HEAD')
+  f.put('source.js', 'export default 2\n'); f.git('add', '.'); f.git('commit', '-qm', 'authored source')
+  const revision = f.git('rev-parse', 'HEAD'), tree = f.git('rev-parse', 'HEAD^{tree}')
+  const parents = reverseParents ? [revision, base] : [base, revision]
+  const checkout = f.git('commit-tree', changedTree ? base + '^{tree}' : tree, '-p', parents[0], '-p', parents[1], '-m', 'provider merge')
+  f.git('checkout', '--detach', '-q', checkout)
+  const event = { pull_request: { base: { sha: base }, head: { sha: revision } } }
+  const setEvent = value => f.put('.tmp/event.json', JSON.stringify(value))
+  setEvent(event)
+  const environment = { ...f.environment, GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request',
+    GITHUB_EVENT_PATH: join(f.root, '.tmp/event.json'), GITHUB_SHA: checkout, AGENTIC_OS_SOURCE_REVISION: revision }
+  return { ...f, base, revision, tree, checkout, event, setEvent, environment,
+    produce: options => f.produce({ environment, runBuild: () => f.build(revision), ...options }),
+    verify: options => f.verify({ environment, ...options }) }
+}
+
+test('synthetic merge keeps checkout identity and verifies the authored runtime namespace', async t => {
+  const f = mergeFixture(t), receipt = await f.produce()
+  assert.equal(receipt.identity.revision, f.revision)
+  assert.equal(receipt.identity.checkoutRevision, f.checkout)
+  assert.equal(receipt.identity.tree, f.tree)
+  const before = await f.verify(), after = await f.verify()
+  assert.deepEqual(before, after)
+  assert.equal(before.revision, f.revision); assert.equal(before.checkoutRevision, f.checkout)
+})
+
+for (const [name, options, mutate] of [
+  ['unequal source tree', { changedTree: true }, () => {}],
+  ['reversed parents', { reverseParents: true }, () => {}],
+  ['missing CI context', {}, f => { delete f.environment.GITHUB_ACTIONS }],
+  ['wrong provider checkout', {}, f => { f.environment.GITHUB_SHA = f.revision }],
+  ['wrong event head', {}, f => f.setEvent({ pull_request: { ...f.event.pull_request, head: { sha: f.base } } })],
+  ['wrong event base', {}, f => f.setEvent({ pull_request: { ...f.event.pull_request, base: { sha: f.revision } } })],
+  ['unrelated same-tree revision', {}, f => { f.environment.AGENTIC_OS_SOURCE_REVISION = f.git('commit-tree', f.tree, '-m', 'unrelated') }],
+]) test('synthetic merge rejects ' + name + ' before compilation', async t => {
+  const f = mergeFixture(t, options); mutate(f); let builds = 0
+  await assert.rejects(f.produce({ runBuild: () => { builds++ } }))
+  assert.equal(builds, 0); assert.equal(existsSync(f.receipt), false)
+})
+
+test('synthetic merge revalidates event identity during and after a build', async t => {
+  const f = mergeFixture(t); await f.produce()
+  f.setEvent({ pull_request: { ...f.event.pull_request, head: { sha: f.base } } })
+  await assert.rejects(() => f.verify())
+  f.setEvent(f.event)
+  await assert.rejects(f.produce({ runBuild: () => {
+    f.build(f.revision); f.setEvent({ pull_request: { ...f.event.pull_request, base: { sha: f.revision } } })
+  } }))
+  assert.equal(existsSync(f.receipt), false)
+})
+
+test('synthetic merge refuses output named only for the checkout revision', async t => {
+  const f = mergeFixture(t)
+  await assert.rejects(f.produce({ runBuild: () => f.build() }), /output incomplete/)
+  assert.equal(existsSync(f.receipt), false)
+})
 
 test('fresh build binds exact inputs and outputs', async t => {
   const f = fixture(t), receipt = await f.produce(), verified = await f.verify()
@@ -59,7 +117,7 @@ for (const [name, mutate, expected] of [
 test('environment/revision drift fails; native ancestry is transport', async t => {
   const f = fixture(t); await f.produce()
   await assert.rejects(() => f.verify({ environment: { ...f.environment, VITE_BASE_PATH: '/' } }), /inputs differ/)
-  await assert.rejects(() => f.verify({ environment: { ...f.environment, AGENTIC_OS_SOURCE_REVISION: 'a'.repeat(40) } }), /differs from HEAD/)
+  await assert.rejects(() => f.verify({ environment: { ...f.environment, AGENTIC_OS_SOURCE_REVISION: 'a'.repeat(40) } }), /blocked-validation-ci-context/)
   assert.ok(await f.verify({ environment: { ...f.environment, AGENTIC_OS_COMMAND_ANCESTRY: '["transport"]' } }))
 })
 
