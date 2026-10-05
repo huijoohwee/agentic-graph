@@ -16,7 +16,7 @@ import {
 } from '@/features/parsers/canvasFrontmatterSurfaceTransition'
 import { isFrontmatterFlowGraph } from '@/lib/graph/frontmatterMode'
 import type { WorkspaceEntry, WorkspaceFs, WorkspacePath } from './types'
-import { normalizeWorkspacePath, workspaceDocumentKey } from './path'
+import { normalizeWorkspacePath } from './path'
 import {
   resolveWorkspaceSourceIndexSnapshot,
   type WorkspaceSourceIndex,
@@ -29,7 +29,7 @@ import {
 } from '@/features/source-files/applyComposedGraphFromSourceFiles'
 import { resolveWorkspaceSourceRootPaths } from '@/features/workspace-fs/workspaceSourceRoots'
 import { readWorkspaceSourceFilesDocsOnlySetting } from '@/lib/workspace/workspaceStoreSyncSettings'
-import { buildSourceFileParseIdentityHash } from '@/features/source-files/sourceFileParseIdentity'
+import { buildSourceFileParseIdentityHash, resolveSourceFileParseInput } from '@/features/source-files/sourceFileParseIdentity'
 import { areSourceFileRecordsEqual, buildSourceFileLifecycleState, normalizeSourceFiles } from '@/features/source-files/sourceFileParsedState'
 import { resolveWorkspaceSourceFileInlineText } from './workspaceInlineText'
 import {
@@ -279,7 +279,7 @@ export async function applyWorkspaceImportToCanvas(args: {
       assertCurrent()
     }
     if (!text.trim()) continue
-    const nameForParse = workspaceDocumentKey(path)
+    const parseInput = resolveSourceFileParseInput({ ...current, text })
     const allowLargeLuminaCanvasParse =
       path.toLowerCase().endsWith('.json') &&
       text.length > WORKSPACE_IMPORT_AUTO_PARSE_MAX_FILE_CHARS &&
@@ -293,31 +293,10 @@ export async function applyWorkspaceImportToCanvas(args: {
     if (text.length > WORKSPACE_IMPORT_AUTO_PARSE_MAX_FILE_CHARS && !allowLargeLuminaCanvasParse) continue
     if (text.length > remainingChars && !allowLargeLuminaCanvasParse) continue
 
-    const textHash = buildSourceFileParseIdentityHash({
-      cacheNamespace: `workspace-import:${path}`,
-      name: workspaceDocumentKey(path),
-      text,
-    })
-    if (current.parsedGraphData && String(current.parsedTextHash || '') === textHash) {
-      // Keep Source File text in sync even when parsed graph/hash are already up to date.
-      if (String(current.text || '') !== text) {
-        ensureNext()[idx] = {
-          ...current,
-          text: resolveWorkspaceSourceFileInlineText(text),
-        }
-      }
-      continue
-    }
-
-    remainingFiles -= 1
-    remainingChars -= text.length
-
-    const nativeTextHash = buildSourceFileParseIdentityHash({
-      cacheNamespace: `source-file:${current.id}`, name: current.name, text,
-    })
+    const textHash = buildSourceFileParseIdentityHash(parseInput)
     const nativeParserId = typeof current.parsedParserId === 'string' ? current.parsedParserId.trim() : ''
-    const reuseNativeParse = current.name === nameForParse && current.text === text
-      && current.status === 'parsed' && !!nativeParserId && current.parsedTextHash === nativeTextHash
+    const reuseNativeParse = current.text === text
+      && current.status === 'parsed' && !!nativeParserId && current.parsedTextHash === textHash
       && !!current.parsedGraphData
       && ((current.parsedGraphData.nodes?.length || 0) > 0 || (current.parsedGraphData.edges?.length || 0) > 0)
     let res: Awaited<ReturnType<typeof loadGraphDataFromTextViaParser>> | null = null
@@ -325,9 +304,11 @@ export async function applyWorkspaceImportToCanvas(args: {
     if (reuseNativeParse) {
       res = { graphData: current.parsedGraphData, parserId: nativeParserId }
     } else {
+      remainingFiles -= 1
+      remainingChars -= text.length
       try {
         res = await runInIdle(
-          () => loadGraphDataFromTextViaParser(nameForParse, text, { applyToStore: false }),
+          () => loadGraphDataFromTextViaParser(parseInput.name, text, { applyToStore: false }),
           { timeoutMs: allowLargeLuminaCanvasParse ? 2500 : 650 },
         )
       } catch {
@@ -369,7 +350,7 @@ export async function applyWorkspaceImportToCanvas(args: {
         ...buildSourceFileLifecycleState({
           status: 'parsed',
           parserId,
-          textHash: reuseNativeParse ? nativeTextHash : textHash,
+          textHash,
           graphData,
           ...(reuseNativeParse ? { previousState: current, preserveExistingRevision: true } : {}),
         }),

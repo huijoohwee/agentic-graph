@@ -7,10 +7,13 @@ import { materializeActiveWorkspaceEntryIntoSourceFiles, isMaterializedWorkspace
 import { invalidateCachedWorkspaceActiveEntrySnapshot } from '@/features/source-files/workspaceActiveEntryCache'
 import type { SourceFile } from '@/hooks/store/types'
 import type { WorkspaceEntry, WorkspaceFs } from '@/features/workspace-fs/types'
+import { composeGraphFromSourceLayers } from '@/lib/graph/sourceLayers'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import { loadWorkspaceSourceIndex, setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import { ensureBuiltInParsersRegistered } from '@/features/parsers/ensure'
 import { listParsers, registerParser } from '@/features/parsers/registry'
+import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
+import { parseAndApplySourceFile, refreshPersistedSourceFilesForCurrentParseIdentity } from '@/features/source-files/sourceFilesParseRuntime'
 import { buildSourceFileParseIdentityHash } from '@/features/source-files/sourceFileParseIdentity'
 
 const path = '/notes/new-local-document.md'
@@ -177,7 +180,7 @@ test('non-Markdown graph import never retries after equivalent source publicatio
   const activePath = '/notes/published.py', activeName = 'notes/published.py', body = 'print(1)\n'
   const file: SourceFile = { id: 'published-python', name: activeName, text: body, enabled: true, status: 'parsed',
     source: { kind: 'local', path: `workspace:${activePath}` }, parsedParserId: 'python', parsedGraphRevision: 0,
-    parsedTextHash: buildSourceFileParseIdentityHash({ cacheNamespace: 'source-file:published-python', name: activeName, text: body }),
+    parsedTextHash: buildSourceFileParseIdentityHash({ cacheNamespace: `workspace-import:${activePath}`, name: activeName, text: body }),
     parsedGraphData: { type: 'Graph', nodes: [{ id: 'python-module', label: 'published', type: 'module', properties: {} }], edges: [] } }
   const sources = [file], entry: WorkspaceEntry = { path: activePath, parentPath: '/notes', name: 'published.py', kind: 'file', text: body, updatedAtMs: 1 }
   let reads = 0, publications = 0
@@ -393,5 +396,135 @@ for (const change of bootstrapChanges) test(`unapplied graph bootstrap settles o
   } finally {
     release.resolve(); await settled
     setWorkspaceEntrySource(path, previousSource)
+  }
+}))
+
+
+async function canonicalWorkspaceParseFixture(label: string, paused: boolean, run: (f: {
+  file: SourceFile; fs: WorkspaceFs; entry: WorkspaceEntry; calls: { name: string; text: string }[]; statuses: string[]
+  entered: Promise<void>; secondEntered: Promise<void>; release: () => void; source: () => SourceFile; import: () => Promise<unknown>
+}) => Promise<void>) {
+  const graph = useGraphStore.getState(), explorer = useMarkdownExplorerStore.getState(), env = initJsdomHarness()
+  ensureBuiltInParsersRegistered()
+  const parser = listParsers().find(value => String(value.id) === 'markdown')!
+  const activePath = `/notes/nested/${label}/same.md`, body = `---\nkgCanvas2dRenderer: "sequence"\n---\n# Canonical ${label}\n\nPreserve graph source paths.\n`
+  const file: SourceFile = { id: `canonical-${label}`, name: 'same.md', text: body, enabled: true, status: 'idle',
+    source: { kind: 'local', path: `workspace:${activePath}` } }
+  const entry: WorkspaceEntry = { path: activePath, parentPath: activePath.slice(0, activePath.lastIndexOf('/')), name: file.name, kind: 'file', text: body, updatedAtMs: 1 }
+  const fs: WorkspaceFs = { ensureSeed: async () => false, listEntries: async () => [entry], readFileText: async () => body,
+    writeFileText: async () => assert.fail('no source writes'), createFile: async () => '/unused', createFolder: async () => '/unused', deleteEntry: async () => undefined }
+  const entered = deferred<void>(), secondEntered = deferred<void>(), gate = deferred<void>(), calls: { name: string; text: string }[] = [], statuses: string[] = []
+  registerParser({ ...parser, parseAsync: async (name, text) => { calls.push({ name, text }); entered.resolve(); if (calls.length === 2) secondEntered.resolve(); if (paused) await gate.promise
+    return parser.parseAsync ? parser.parseAsync(name, text) : parser.parse(name, text) } })
+  useGraphStore.setState({ sourceFiles: [file], markdownDocumentName: activePath.slice(1), markdownDocumentText: body,
+    workspaceViewMode: 'canvas', workspaceCanvasPaneOpen: false, canvasRenderMode: '2d', canvas2dRenderer: 'd3' })
+  useMarkdownExplorerStore.getState().setActivePath(activePath)
+  const source = () => useGraphStore.getState().sourceFiles.find(value => value.id === file.id)!
+  const stop = useGraphStore.subscribe(() => { const current = source(); if (current && statuses.at(-1) !== current.status) statuses.push(current.status) })
+  try { await run({ file, fs, entry, calls, statuses, entered: entered.promise, secondEntered: secondEntered.promise, release: () => gate.resolve(), source,
+    import: () => applyWorkspaceImportToCanvas({ fs, createdPaths: [activePath], opts: { applyToGraph: true, skipComposedGraphApply: true,
+      premergedSourceFiles: useGraphStore.getState().sourceFiles, workspaceEntries: [entry], sourcesByPath: {} } }) }) }
+  finally { gate.resolve(); stop(); registerParser(parser); useGraphStore.setState(graph, true); useMarkdownExplorerStore.setState(explorer, true); env.restore() }
+}
+const canonicalWorkspaceHash = (file: SourceFile) => {
+  const path = file.source!.path!.slice('workspace:'.length)
+  return buildSourceFileParseIdentityHash({ cacheNamespace: `workspace-import:${path}`, name: path.slice(1), text: file.text })
+}
+
+for (const order of ['import-first', 'native-first'] as const) test(`nested basename ${order} keeps one canonical parse through both owners`, async () => canonicalWorkspaceParseFixture(order, false, async f => {
+  if (order === 'import-first') await f.import()
+  else await parseAndApplySourceFile(f.file.id, { applyComposedGraph: false })
+  const parsed = f.source()
+  assert.equal(parsed.status, 'parsed'); assert.equal(parsed.name, 'same.md')
+  assert.deepEqual(f.calls, [{ name: f.entry.path.slice(1), text: f.file.text }], 'actual parser receives canonical source path, not display basename')
+  assert.equal(parsed.parsedTextHash, canonicalWorkspaceHash(f.file))
+  assert.ok(parsed.parsedGraphData?.nodes.length)
+  f.statuses.length = 0
+  if (order === 'native-first') await f.import()
+  await refreshPersistedSourceFilesForCurrentParseIdentity()
+  await parseAndApplySourceFile(f.file.id, { applyComposedGraph: false })
+  assert.equal(f.calls.length, 1, 'import, persisted refresh and demand parsing reuse one real parser result')
+  assert.ok(!f.statuses.includes('loading'), `unchanged source must not lose readiness: ${f.statuses}`)
+  assert.equal(f.source().parsedGraphData, parsed.parsedGraphData, 'cached graph IDs and metadata are retained exactly')
+  assert.equal(f.source().parsedGraphRevision, parsed.parsedGraphRevision)
+  assert.equal(f.source().parsedTextHash, parsed.parsedTextHash); assert.equal(f.source().name, 'same.md')
+  assert.equal(useGraphStore.getState().canvas2dRenderer, 'sequence', 'reuse still applies authored import policy')
+}))
+
+for (const change of ['display name', 'source path', 'source URL', 'text'] as const) test(`canonical pending parse rejects ${change} drift before graph publication`, async () => canonicalWorkspaceParseFixture(`drift-${change.replaceAll(' ', '-')}`, true, async f => {
+  const pending = parseAndApplySourceFile(f.file.id, { applyComposedGraph: false })
+  try {
+    await Promise.race([f.entered, pending.then(() => assert.fail('expected a deferred real parser'))])
+    const current = f.source(), changed: SourceFile = { ...current,
+      ...(change === 'display name' ? { name: 'renamed.md' } : {}),
+      ...(change === 'source path' ? { source: { kind: 'local', path: 'workspace:/other/same.md' } } : {}),
+      ...(change === 'source URL' ? { source: { kind: 'url', path: current.source!.path, url: 'https://example.test/new-provenance.md' } } : {}),
+      ...(change === 'text' ? { text: '# New authored text\n' } : {}) }
+    useGraphStore.setState({ sourceFiles: [changed] }); f.release(); await pending
+    assert.equal(f.source(), changed, 'stale completion cannot replace the current source object')
+    assert.equal(f.source().parsedGraphData, undefined); assert.equal(f.source().parsedGraphRevision, undefined)
+    assert.equal(f.calls.length, 1)
+  } finally { f.release(); await pending }
+}))
+
+
+test('canonical pending parse does not join a renamed source solely because its canonical hash matches', async () => canonicalWorkspaceParseFixture('pending-name-join', true, async f => {
+  const first = parseAndApplySourceFile(f.file.id, { applyComposedGraph: false })
+  let second: Promise<void> = Promise.resolve()
+  try {
+    await Promise.race([f.entered, first.then(() => assert.fail('first native parse did not enter'))])
+    useGraphStore.setState({ sourceFiles: [{ ...f.source(), name: 'renamed.md' }] })
+    second = parseAndApplySourceFile(f.file.id, { applyComposedGraph: false })
+    await Promise.race([f.secondEntered, second.then(() => assert.fail('renamed request incorrectly joined stale work'))])
+    f.release(); await Promise.all([first, second])
+    assert.equal(f.calls.length, 2)
+    assert.ok(f.calls.every(call => call.name === f.entry.path.slice(1)))
+    assert.equal(f.source().name, 'renamed.md'); assert.equal(f.source().status, 'parsed')
+    assert.equal(f.source().parsedTextHash, canonicalWorkspaceHash(f.file))
+  } finally { f.release(); await Promise.all([first, second]) }
+}))
+
+
+for (const kind of ['local', 'url'] as const) test(`non-workspace ${kind} source retains its native parser name and ID hash`, async () => canonicalWorkspaceParseFixture(`native-${kind}`, false, async f => {
+  const file: SourceFile = { ...f.file, source: kind === 'url' ? { kind, url: 'https://example.test/authored.md' } : { kind, path: 'same.md' } }
+  useGraphStore.setState({ sourceFiles: [file] })
+  await parseAndApplySourceFile(file.id, { applyComposedGraph: false })
+  const parsed = f.source(), expected = buildSourceFileParseIdentityHash({ cacheNamespace: `source-file:${file.id}`, name: file.name, text: file.text })
+  assert.equal(parsed.status, 'parsed'); assert.equal(parsed.parsedTextHash, expected)
+  assert.deepEqual(f.calls, [{ name: file.name, text: file.text }])
+  f.statuses.length = 0; await refreshPersistedSourceFilesForCurrentParseIdentity()
+  assert.equal(f.calls.length, 1); assert.ok(!f.statuses.includes('loading')); assert.equal(f.source().parsedGraphData, parsed.parsedGraphData)
+}))
+
+test('same-basename sibling sources retain distinct canonical inputs and composed graph IDs', async () => canonicalWorkspaceParseFixture('siblings', false, async f => {
+  const sibling: SourceFile = { ...f.file, id: 'canonical-sibling', source: { kind: 'local', path: 'workspace:/other/nested/same.md' } }
+  useGraphStore.setState({ sourceFiles: [f.file, sibling] })
+  await parseAndApplySourceFile(f.file.id, { applyComposedGraph: false }); await parseAndApplySourceFile(sibling.id, { applyComposedGraph: false })
+  const files = useGraphStore.getState().sourceFiles
+  assert.deepEqual(f.calls.map(call => call.name), [f.entry.path.slice(1), 'other/nested/same.md'])
+  assert.notEqual(files[0].parsedTextHash, files[1].parsedTextHash)
+  assert.ok(files.every(file => file.status === 'parsed' && file.name === 'same.md'))
+  const composed = composeGraphFromSourceLayers({ layers: files }).graphData
+  assert.equal(new Set(composed.nodes.map(node => node.id)).size, composed.nodes.length)
+  assert.deepEqual(new Set(composed.nodes.map(node => node.metadata?.sourceLayerId)), new Set([f.file.id, sibling.id]))
+  assert.deepEqual(new Set(composed.nodes.map(node => node.metadata?.documentPath)), new Set([f.entry.path.slice(1), 'other/nested/same.md']))
+}))
+
+test('cached workspace batch does not consume the fresh parser byte allowance', async () => canonicalWorkspaceParseFixture('cached-budget', false, async f => {
+  const body = '# Cached source\n' + 'x'.repeat(45000)
+  const cached: SourceFile[] = Array.from({ length: 12 }, (_, index) => {
+    const file: SourceFile = { id: `cached-budget-${index}`, name: `cached-${index}.md`, text: body, enabled: true, status: 'parsed',
+      source: { kind: 'local', path: `workspace:/notes/cache/cached-${index}.md` }, parsedParserId: 'markdown', parsedGraphRevision: 4,
+      parsedGraphData: { type: 'Graph', nodes: [{ id: `cached-${index}`, label: 'Cached', type: 'Thing', properties: {} }], edges: [] } }
+    file.parsedTextHash = canonicalWorkspaceHash(file); return file
+  })
+  useGraphStore.setState({ sourceFiles: [...cached, f.file] })
+  await applyWorkspaceImportToCanvas({ fs: f.fs, createdPaths: [...cached.map(file => file.source!.path!.slice('workspace:'.length)), f.entry.path],
+    opts: { applyToGraph: true, skipComposedGraphApply: true, premergedSourceFiles: useGraphStore.getState().sourceFiles, sourcesByPath: {} } })
+  assert.equal(f.source().status, 'parsed', 'the fresh file after more than 500 kB of cache hits still reaches its real parser')
+  assert.deepEqual(f.calls, [{ name: f.entry.path.slice(1), text: f.file.text }])
+  for (const file of cached) {
+    const current = useGraphStore.getState().sourceFiles.find(value => value.id === file.id)!
+    assert.equal(current.parsedGraphData, file.parsedGraphData); assert.equal(current.parsedGraphRevision, file.parsedGraphRevision)
   }
 }))
