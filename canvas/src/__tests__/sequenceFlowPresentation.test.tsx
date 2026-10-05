@@ -8,6 +8,7 @@ import { parseSequence, sequenceTimedEvents } from '../features/sequence/sequenc
 import { sequenceNativeSvg } from '../features/sequence/sequenceNativeSvg'
 import { sequenceTopologySvg } from '../features/sequence/sequenceTopologySvg'
 import { bindSequenceSvg, createSequenceSvgPlayback } from '../features/sequence/sequenceSvgBinding'
+import { resolveSequenceCanvasLayout, constrainSequenceParticipantPosition } from '../features/sequence/sequenceCanvasLayout'
 
 type Box = { x: number; y: number; width: number; height: number }
 const boxOf = (element: Element): Box => Object.fromEntries(
@@ -185,7 +186,7 @@ for (const { name, width, height, left, right, top, bottom } of [
   { name: 'desktop', width: 1280, height: 800, left: 240, right: 380, top: 64, bottom: 200 },
   { name: 'mobile', width: 390, height: 844, left: 0, right: 130, top: 56, bottom: 280 },
 ]) {
-  test(`${name} mounted sequence viewport reserves visible Inspector, Timeline and toolbar space`, async () => {
+  for (const sizing of ['full', 'inset'] as const) test(`${name} shared canvas ${sizing} sizing survives overlay changes`, async () => {
     const { CanvasViewContainer } = await import('../components/CanvasViewContainer')
     const env = initJsdomHarness()
     const rectangles = new Map<Element, DOMRect>()
@@ -232,24 +233,28 @@ for (const { name, width, height, left, right, top, bottom } of [
       const element = host.querySelector<HTMLElement>('[data-kg-canvas-view-container]')!
       return Object.fromEntries(['left', 'right', 'top', 'bottom'].map(edge => [edge, Number.parseFloat(element.style.getPropertyValue(edge))]))
     }
+    const expected = (value: Record<string, number>) => sizing === 'inset' ? value : { left: 0, right: 0, top: 0, bottom: 0 }
     try {
-      await act(async () => root.render(<CanvasViewContainer sizing="inset" overlay>
-        <div aria-label="Sequence chart"><button aria-label="Canvas Toolbar">Internal chart control</button></div>
+      await act(async () => root.render(<CanvasViewContainer sizing={sizing} overlay>
+        <div aria-label="Canvas content"><button aria-label="Canvas Toolbar">Internal chart control</button></div>
       </CanvasViewContainer>))
-      assert.deepEqual(insets(), { left, right, top, bottom }, 'chart bounds exclude actual visible workspace chrome')
-      assert.ok(host.querySelector('[aria-label="Sequence chart"]'), 'the chart remains mounted while its available area changes')
+      assert.deepEqual(insets(), expected({ left, right, top, bottom }), 'chart bounds exclude actual visible workspace chrome')
+      const content = host.querySelector('[aria-label="Canvas content"]')!
+      assert.ok(content)
+      assert.equal(host.querySelector('[data-kg-canvas-view-container]')!.getAttribute('data-kg-canvas-view-container'), sizing)
       await flush(() => inspector.setAttribute('aria-hidden', 'true'))
-      assert.deepEqual(insets(), { left, right: 0, top, bottom }, 'hidden Inspector gives its width back')
+      assert.deepEqual(insets(), expected({ left, right: 0, top, bottom }), 'hidden Inspector gives its width back')
       await flush(() => { rectangles.set(timeline, rect(0, height - 180, width, 180)); notifyResize() })
-      assert.deepEqual(insets(), { left, right: 0, top, bottom: 180 }, 'Timeline resize updates the existing chart frame')
+      assert.deepEqual(insets(), expected({ left, right: 0, top, bottom: 180 }), 'Timeline resize updates the existing chart frame')
       await flush(() => timeline.remove())
-      assert.deepEqual(insets(), { left, right: 0, top, bottom: 0 }, 'closed Timeline releases its reserved height')
+      assert.deepEqual(insets(), expected({ left, right: 0, top, bottom: 0 }), 'closed Timeline releases its reserved height')
       await flush(() => inspector.removeAttribute('aria-hidden'))
-      assert.deepEqual(insets(), { left, right, top, bottom: 0 }, 'reopened Inspector is measured again')
+      assert.deepEqual(insets(), expected({ left, right, top, bottom: 0 }), 'reopened Inspector respects the selected sizing policy')
+      assert.equal(host.querySelector('[aria-label="Canvas content"]'), content, 'overlay changes retain the mounted renderer')
     } finally {
       await act(async () => root.unmount())
       env.restore()
-      assert.equal(disconnected, true, 'unmount disconnects panel measurements')
+      assert.equal(disconnected, sizing === 'inset', 'only inset mode owns panel measurements, and unmount disconnects them')
       assert.equal(frames.size, 0, 'unmount cancels pending frame work')
     }
   })
@@ -354,3 +359,241 @@ for (const [layout, render] of [['lifelines', sequenceNativeSvg], ['connections'
     } finally { projection.dispose(); dom.window.close() }
   })
 }
+
+for (const [layout, render] of [['lifelines', sequenceNativeSvg], ['connections', sequenceTopologySvg]] as const) {
+  test(`${layout} shared Aspect dimensions and participant movement preserve authored identity`, () => {
+    const model = parseSequence('sequenceDiagram\nactor A as Reader\nparticipant B as Index\nA->>B: Read\nB-->>A: Result\nA->>A: Retry\nNote over A,B: Observe')
+    const authored = JSON.stringify(model)
+    for (const aspectMode of ['16:9', '9:16'] as const) {
+      const initial = resolveSequenceCanvasLayout(model, layout, { aspectMode })
+      const point = constrainSequenceParticipantPosition(model, layout, 'A', { x: -100, y: 420 }, { aspectMode })
+      const options = { aspectMode, positions: { A: point } }
+      const dom = new JSDOM(`<main>${render(model, { aspectMode })}</main><aside>${render(model, options)}</aside>`)
+      try {
+        const before = dom.window.document.querySelector('main')!, after = dom.window.document.querySelector('aside')!
+        const people = [...after.querySelectorAll('[data-sequence-participant]')]
+        for (const person of people) {
+          const card = boxOf(person.querySelector('.sequence-participant')!)
+          const ratio = aspectMode === '16:9' ? 16 / 9 : 9 / 16
+          assert.ok(Math.abs(card.height - card.width / ratio) <= 1, 'participant and actor cards share the selected Aspect')
+          assert.ok(card.width > 0 && card.height > 0)
+        }
+        const ids = (host: Element) => [...host.querySelectorAll('[data-sequence-event]')].map(event => event.getAttribute('data-sequence-event'))
+        assert.deepEqual(ids(after), model.events.map(event => event.id))
+        assert.deepEqual(ids(after), ids(before), 'reflow preserves each authored occurrence and its order')
+        const firstPath = (host: Element) => host.querySelector('.sequence-message')!.getAttribute('d')
+        assert.notEqual(firstPath(after), firstPath(before), 'connections reroute to the moved participant')
+        assert.equal(Number(after.querySelector('[data-sequence-participant="A"]')!.getAttribute('data-sequence-x')), point.x)
+        assert.equal(Number(after.querySelector('[data-sequence-participant="B"]')!.getAttribute('data-sequence-x')), initial.positions.B!.x)
+        assert.deepEqual([...after.querySelectorAll('[data-sequence-event]')].map(event => event.getAttribute('aria-label')),
+          [...before.querySelectorAll('[data-sequence-event]')].map(event => event.getAttribute('aria-label')))
+      } finally { dom.window.close() }
+    }
+    assert.equal(JSON.stringify(model), authored, 'arrangement never rewrites parsed source, text or event identities')
+  })
+}
+
+test('lifeline arrangement retains authored order and rejects invalid participant positions', () => {
+  const model = parseSequence('sequenceDiagram\nparticipant A\nparticipant B\nparticipant C\nA->>C: Read')
+  for (const aspectMode of ['16:9', '9:16'] as const) {
+    const options = { aspectMode }, current = resolveSequenceCanvasLayout(model, 'lifelines', options)
+    for (const x of [-100000, 100000]) {
+      const point = constrainSequenceParticipantPosition(model, 'lifelines', 'B', { x, y: 999 }, options)
+      assert.equal(point.y, current.positions.B!.y, 'lifeline headers keep their shared authored row')
+      assert.ok(point.x - current.card.width / 2 > current.positions.A!.x + current.card.width / 2)
+      assert.ok(point.x + current.card.width / 2 < current.positions.C!.x - current.card.width / 2)
+    }
+  }
+  assert.throws(() => constrainSequenceParticipantPosition(model, 'connections', 'Missing', { x: 1, y: 2 }), /active document/)
+  assert.throws(() => resolveSequenceCanvasLayout(model, 'connections', { positions: { A: { x: NaN, y: 0 } } }), /finite/)
+})
+
+test('sequence grid uses shared schema and redraws for programmatic zoom and SVG replacement', async () => {
+  const env = initJsdomHarness(), priorObserver = globalThis.MutationObserver
+  globalThis.MutationObserver = env.dom.window.MutationObserver
+  const { SequenceCanvasGrid } = await import('../features/sequence/SequenceCanvasGrid')
+  const { useGraphStore } = await import('../hooks/useGraphStore')
+  const { select, zoom, zoomIdentity } = await import('d3')
+  const original = useGraphStore.getState(), frames = new Map<number, FrameRequestCallback>()
+  let nextFrame = 0, draws = 0
+  globalThis.requestAnimationFrame = env.dom.window.requestAnimationFrame = callback => { frames.set(++nextFrame, callback); return nextFrame }
+  globalThis.cancelAnimationFrame = env.dom.window.cancelAnimationFrame = id => { frames.delete(id) }
+  const nativeContext = env.dom.window.HTMLCanvasElement.prototype.getContext
+  env.dom.window.HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: Parameters<typeof nativeContext>) {
+    const context = nativeContext.apply(this, args) as CanvasRenderingContext2D
+    context.clearRect = () => { draws++ }
+    return context
+  } as typeof nativeContext
+  const frame = document.createElement('div'), host = document.createElement('div'), mount = document.createElement('div')
+  document.body.append(frame); frame.append(host, mount)
+  frame.getBoundingClientRect = () => new env.dom.window.DOMRect(0, 0, 500, 400)
+  const markup = '<svg><g data-kg-svg-zoom-content="1"></g></svg>'
+  host.innerHTML = markup
+  const root = createRoot(mount), props = { rootRef: { current: frame }, hostRef: { current: host }, svg: markup }
+  const schema = (enabled: boolean) => ({ ...original.schema, behavior: { ...original.schema.behavior,
+    canvasGrid: { enabled }, snapGrid: { enabled: false, size: [20, 50] as [number, number] } } })
+  const flush = async (action: () => void) => {
+    await act(async () => { action(); await Promise.resolve() })
+    for (let n = 0; n < 3; n++) await act(async () => {
+      const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback(0)); await Promise.resolve()
+    })
+  }
+  try {
+    useGraphStore.setState({ schema: schema(false) })
+    await flush(() => root.render(<SequenceCanvasGrid {...props} />))
+    assert.equal(mount.querySelector('canvas'), null)
+    await flush(() => useGraphStore.setState({ schema: schema(true) }))
+    const grid = mount.querySelector('[data-kg-canvas-grid-overlay-surface="sequence"]')!
+    assert.ok(grid)
+    assert.equal(grid.getAttribute('data-kg-canvas-grid-size-x'), '20')
+    assert.equal(grid.getAttribute('data-kg-canvas-grid-size-y'), '50')
+    assert.ok(draws > 0, 'enabling the shared grid paints the mounted canvas')
+    const beforeZoom = draws, svg = host.querySelector('svg')!
+    const behavior = zoom<SVGSVGElement, unknown>().extent([[0, 0], [500, 400]])
+      .on('zoom', event => svg.querySelector('g')!.setAttribute('transform', String(event.transform)))
+    await flush(() => select(svg).call(behavior.transform, zoomIdentity.translate(30, 15).scale(2)))
+    assert.ok(draws > beforeZoom, 'toolbar-style zoom repaints without a pointer event')
+    const beforeReplacement = draws
+    await flush(() => { host.innerHTML = markup })
+    assert.ok(draws > beforeReplacement, 'replacement SVG resets grid to the new transform')
+    await flush(() => useGraphStore.setState({ schema: schema(false) }))
+    assert.equal(mount.querySelector('canvas'), null)
+  } finally {
+    await act(async () => root.unmount())
+    assert.equal(frames.size, 0, 'unmount cancels pending grid work')
+    useGraphStore.setState(original); globalThis.MutationObserver = priorObserver; env.restore()
+  }
+})
+
+type InteractionScene = {
+  host: HTMLElement
+  initialMarkup: string
+  commits: Array<{ id: string; point: { x: number; y: number } }>
+  captured: Set<number>
+  binding: { dispose(): void; refresh(): void }
+  pointer(type: string, x: number, y: number, altKey?: boolean, pointerId?: number): MouseEvent
+  key(value: string, options?: KeyboardEventInit): boolean
+  flush(): void
+  geometry(): Array<Array<string | null>>
+}
+async function interactionScene(check: (scene: InteractionScene) => void, helpers = false, arrange = true) {
+  const env = initJsdomHarness(), frames = new Map<number, FrameRequestCallback>()
+  const { bindSequenceCanvasInteractions } = await import('../features/sequence/sequenceCanvasInteractions')
+  const { defaultSchema } = await import('../lib/graph/schema')
+  let nextFrame = 0
+  globalThis.requestAnimationFrame = env.dom.window.requestAnimationFrame = callback => { frames.set(++nextFrame, callback); return nextFrame }
+  globalThis.cancelAnimationFrame = env.dom.window.cancelAnimationFrame = id => { frames.delete(id) }
+  const model = parseSequence('sequenceDiagram\nparticipant A\nparticipant B\nA->>B: Read\nB-->>A: Result'), authored = JSON.stringify(model)
+  const host = document.createElement('main'); document.body.append(host)
+  const positions = { A: { x: 100, y: 100 }, B: { x: 400, y: 250 } }
+  host.innerHTML = sequenceTopologySvg(model, { positions })
+  const commits: Array<{ id: string; point: { x: number; y: number } }> = [], errors: Error[] = []
+  const initialMarkup = host.innerHTML
+  const captured = new Set<number>(); host.setPointerCapture = id => { captured.add(id) }; host.hasPointerCapture = id => captured.has(id); host.releasePointerCapture = id => { captured.delete(id) }
+  const binding = bindSequenceCanvasInteractions({ host, model, mermaid: false, layout: 'connections', positions, canArrange: () => arrange,
+    schema: () => ({ ...defaultSchema, behavior: { ...defaultSchema.behavior,
+      snapGrid: { enabled: !helpers, size: [20, 50] }, helperLines: { enabled: helpers } } }),
+    onCommit: (id, point) => commits.push({ id, point }), onError: error => errors.push(error) })
+  const person = host.querySelector('[data-sequence-participant="A"]')!
+  const pointer = (type: string, x: number, y: number, altKey = false, pointerId = 1) => {
+    const event = new env.dom.window.MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, altKey })
+    Object.defineProperties(event, { pointerId: { value: pointerId }, pointerType: { value: 'mouse' }, isPrimary: { value: pointerId === 1 } })
+    ;(type === 'pointerdown' ? person : type === 'lostpointercapture' ? host : env.dom.window).dispatchEvent(event); return event
+  }
+  const key = (value: string, options: KeyboardEventInit = {}) => person.dispatchEvent(new env.dom.window.KeyboardEvent('keydown', { key: value, bubbles: true, cancelable: true, ...options }))
+  const flush = () => { const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback(0)) }
+  const geometry = () => [...host.querySelectorAll('[data-sequence-participant], .sequence-message')].map(element => [element.getAttribute('transform'), element.getAttribute('d')])
+  try {
+    check({ host, initialMarkup, commits, captured, binding, pointer, key, flush, geometry })
+    assert.deepEqual(errors, [])
+    assert.equal(JSON.stringify(model), authored, 'drag and keyboard arrangement preserve every authored byte and identity')
+  } finally { binding.dispose(); assert.equal(frames.size, 0); assert.equal(captured.size, 0, 'pointer capture is released'); env.restore() }
+}
+
+test('participant drag previews routes and commits once using shared tuple snapping or Alt bypass', async () => {
+  for (const alt of [false, true]) await interactionScene(({ pointer, flush, commits, geometry }) => {
+    const before = geometry()
+    pointer('pointerdown', 100, 100, alt); pointer('pointermove', 131, 176, alt); flush()
+    assert.equal(pointer('pointerdown', 400, 250, false, 2).defaultPrevented, true, 'active arrangement consumes a second pointer before viewport pan')
+    assert.equal(commits.length, 0, 'preview does not commit')
+    assert.notDeepEqual(geometry(), before, 'preview moves the participant and its connections')
+    pointer('pointerup', 131, 176, alt)
+    assert.deepEqual(commits, [{ id: 'A', point: alt ? { x: 131, y: 176 } : { x: 140, y: 200 } }])
+    pointer('pointerup', 131, 176, alt); assert.equal(commits.length, 1)
+  })
+  await interactionScene(({ pointer, commits, captured, geometry, flush }) => { const before = geometry(); assert.equal(pointer('pointerdown', 100, 100).defaultPrevented, false); assert.equal(captured.size, 0); pointer('pointermove', 131, 176); flush(); pointer('pointerup', 131, 176); assert.deepEqual(commits, []); assert.deepEqual(geometry(), before, 'Pan or Space-pan retains the gesture'); }, false, false)
+})
+
+test('participant keyboard movement uses shared grid axes, Shift and Alt without intercepting shortcuts', async () => {
+  for (const [keyName, options, point] of [
+    ['ArrowRight', {}, { x: 120, y: 100 }], ['ArrowDown', { shiftKey: true }, { x: 100, y: 600 }],
+    ['ArrowRight', { altKey: true }, { x: 110, y: 100 }], ['ArrowRight', { ctrlKey: true }, null],
+  ] as const) await interactionScene(({ host, key, commits }) => {
+    const foreign = host.cloneNode(true) as HTMLElement; document.body.append(foreign); foreign.querySelector('[data-sequence-participant="A"]')!.dispatchEvent(new document.defaultView!.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true })); foreign.remove(); assert.deepEqual(commits, [], 'another mounted SVG cannot move this source')
+    key(keyName, options); assert.deepEqual(commits, point ? [{ id: 'A', point }] : [])
+  })
+})
+
+test('participant alignment guides snap visibly and clear on cancellation and configuration refresh', async () => {
+  for (const cancel of ['Escape', 'pointercancel', 'lostpointercapture', 'refresh', 'dispose'] as const) {
+    await interactionScene(({ host, initialMarkup, pointer, key, flush, commits, geometry, binding }) => {
+      const before = geometry()
+      pointer('pointerdown', 100, 100); pointer('pointermove', 131, 247); flush()
+      assert.ok(host.querySelector('[data-kg-layer="alignment-guides"] line'), 'nearby participant alignment produces visible shared guides')
+      if (cancel === 'Escape') key('Escape')
+      else if (cancel === 'pointercancel' || cancel === 'lostpointercapture') pointer(cancel, 131, 247)
+      else binding[cancel]()
+      if (cancel === 'dispose') assert.equal(host.innerHTML, initialMarkup, 'dispose restores exact unbound markup')
+      else assert.deepEqual(geometry(), before, `${cancel} restores pre-drag geometry`)
+      assert.equal(host.querySelectorAll('[data-kg-layer="alignment-guides"] line').length, 0)
+      pointer('pointerup', 131, 247); assert.deepEqual(commits, [])
+    }, true)
+  }
+  await interactionScene(({ pointer, flush, commits }) => {
+    pointer('pointerdown', 100, 100); pointer('pointermove', 131, 247); flush(); pointer('pointerup', 131, 247)
+    assert.deepEqual(commits, [{ id: 'A', point: { x: 131, y: 250 } }], 'helper alignment snaps to the stationary center')
+  }, true)
+})
+
+test('replaced SVG cannot receive a stale participant gesture or commit', async () => {
+  await interactionScene(({ host, pointer, flush, commits }) => {
+    pointer('pointerdown', 100, 100); pointer('pointermove', 131, 176)
+    host.innerHTML = '<svg aria-label="Replacement source"><text>Retained</text></svg>'
+    const replacement = host.innerHTML
+    flush(); pointer('pointerup', 131, 176)
+    assert.equal(host.innerHTML, replacement); assert.deepEqual(commits, [])
+  })
+})
+
+test('notation arrangement rebinds headers, lifelines, activations and frames without changing source IDs', async () => {
+  const { bindSequenceCanvasInteractions } = await import('../features/sequence/sequenceCanvasInteractions')
+  const { defaultSchema } = await import('../lib/graph/schema')
+  const model = parseSequence('sequenceDiagram\nparticipant A\nparticipant B\nA->>B: Read\nA->>A: Retry\nNote over A,B: Observe'), authored = JSON.stringify(model)
+  const people = ['A', 'B'].map((id, index) => `<g data-et="participant" data-id="${id}"><rect x="${50 + index * 300}" width="100" height="20"/><text>${id}</text></g><line data-et="life-line" data-id="${id}" x1="${100 + index * 300}" x2="${100 + index * 300}"/><g class="actor-bottom" name="${id}"><rect/></g>`).join('')
+  const messages = '<line class="messageLine0" x1="100" x2="400" y1="100" y2="100"/><text class="messageText">Read</text><path class="messageLine0" d="M100,140H130V160H100"/><text class="messageText">Retry</text><g data-et="note"><rect x="75" width="350" height="40"/><text>Observe</text></g>'
+  withNotation(people + '<rect class="activation0" x="95" width="10"/><line class="loopLine" x1="50" x2="450"/>' + messages, host => {
+    bindSequenceSvg(host, model, true)
+    const baseline = host.innerHTML, ids = () => [...host.querySelectorAll('[data-sequence-event]')].map(element => element.getAttribute('data-sequence-event'))
+    const commits: Array<{ id: string; point: { x: number; y: number } }> = []
+    const options = { host, model, mermaid: true, layout: 'lifelines' as const,
+      schema: () => ({ ...defaultSchema, behavior: { ...defaultSchema.behavior, snapGrid: { enabled: false, size: 10 }, helperLines: { enabled: false } } }),
+      onCommit: (id: string, point: { x: number; y: number }) => commits.push({ id, point }) }
+    let binding = bindSequenceCanvasInteractions(options)
+    try {
+      const person = host.querySelector('[data-et="participant"][data-id="A"]')!
+      person.dispatchEvent(new host.ownerDocument.defaultView!.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }))
+      assert.deepEqual(commits, [{ id: 'A', point: { x: 110, y: 10 } }])
+      assert.equal(host.querySelector('.sequence-message')!.getAttribute('x1'), '110')
+      for (const selector of ['[data-et="life-line"][data-id="A"]', '.actor-bottom[name="A"]', '.activation0']) assert.equal(host.querySelector(selector)!.getAttribute('transform'), 'translate(10,0)')
+      assert.equal(host.querySelector('.loopLine')!.getAttribute('x1'), '60')
+      assert.deepEqual(ids(), model.events.map(event => event.id))
+      binding.dispose(); assert.equal(host.innerHTML, baseline, 'dispose restores the notation baseline exactly')
+      binding = bindSequenceCanvasInteractions({ ...options, positions: { A: commits[0]!.point } })
+      assert.equal(host.querySelector('.sequence-message')!.getAttribute('x1'), '110', 'cached markup reapplies committed local arrangement once')
+      assert.deepEqual(ids(), model.events.map(event => event.id))
+      assert.equal(commits.length, 1, 'rebind itself makes no extra user commit')
+      assert.equal(JSON.stringify(model), authored)
+    } finally { binding.dispose() }
+    assert.equal(host.innerHTML, baseline)
+  })
+})
