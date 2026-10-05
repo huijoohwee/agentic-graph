@@ -34,8 +34,8 @@ import { Z_INDEX_PANEL_STACK_MAX_BASE } from '@/lib/ui/zIndex'
 
 import { CanvasStartupRuntimes } from '@/features/canvas/CanvasStartupRuntimes'
 
-// The editor owns its surface while the app toolbar remains above it.
-const WORKSPACE_EDITOR_SURFACE_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 3
+// Keep the editor above rendered canvas surfaces, below the minimap (420) and panel stack (>=420).
+const WORKSPACE_EDITOR_SURFACE_Z_INDEX = 300
 const WORKSPACE_EDITOR_TOOLBAR_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 4
 
 const ToolbarLazy = React.lazy(() => import('@/components/Toolbar'))

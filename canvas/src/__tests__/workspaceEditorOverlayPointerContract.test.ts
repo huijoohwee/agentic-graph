@@ -1,5 +1,5 @@
 import { resolveRepoSourcePath } from '@/tests/lib/repoTestData'
-import { resolveFloatingPanelZIndex } from '@/lib/ui/zIndex'
+import { resolveFloatingPanelZIndex, Z_INDEX_PANEL_STACK_MAX_BASE } from '@/lib/ui/zIndex'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { resolveStoryboardWidgetVisibleViewport } from '@/components/FlowCanvas/applyZoomRequestNative'
@@ -149,7 +149,8 @@ export function testWorkspaceEditorOverlayDoesNotShrinkCanvasViewport() {
   }
   if (
     !text.includes('className="absolute inset-0 pointer-events-none"') ||
-    !text.includes('const WORKSPACE_EDITOR_SURFACE_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 3') ||
+    !text.includes('const WORKSPACE_EDITOR_SURFACE_Z_INDEX = 300') ||
+    !(300 < 420 && 420 < Z_INDEX_PANEL_STACK_MAX_BASE) ||
     !text.includes('style={{ zIndex: WORKSPACE_EDITOR_SURFACE_Z_INDEX }}') ||
     !text.includes('const WORKSPACE_EDITOR_TOOLBAR_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 4') ||
     !text.includes('style={toolbarHeaderLayerStyle}')
