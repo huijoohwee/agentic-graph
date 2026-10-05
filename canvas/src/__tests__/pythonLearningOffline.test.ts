@@ -7,9 +7,50 @@ import { join } from 'node:path'
 import { installLearningOfflineOwner, createPythonLearningOfflinePlugin, offlinePrecacheEntries } from '../../vitePythonLearningOffline.mjs'
 import authoredPublicAssets from '../features/evidence-analysis/profiles/offline-assets.json'
 import { buildPwaRuntimeCachingRules } from '../../vitePwaRuntimeCachePolicy'
+import { readSequenceProofSource } from '../../scripts/lib/sequence-rehearsal-proof.mjs'
 
 const scope = 'https://local.test/app/', prefix = 'kg-python-learning-v1-%2Fapp%2F-', first = '1'.repeat(40), second = '2'.repeat(40)
 const digest = async (bytes: Uint8Array) => Buffer.from(await webcrypto.subtle.digest('SHA-256', bytes)).toString('hex')
+
+test('sequence proof imports the validated bytes after external files change, including recovery and invalid input', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'sequence-proof-input-'))
+  const code = 'sequenceDiagram\nparticipant Alpha\nparticipant Beta\nAlpha->>Beta: Ping\nBeta-->>Alpha: Pong\n'
+  const stress = 'sequenceDiagram\n' + Array.from({ length: 20 }, (_, index) => `participant P${index}\n`).join('')
+    + Array.from({ length: 200 }, (_, index) => `P${index % 20}->>P${(index + 1) % 20}: Signal ${index}\n`).join('')
+  type Upload = { name: string; mimeType: string; buffer: Buffer }
+  const uploads: { payload: string | Upload; bytes: Buffer }[] = []
+  const chooser = { async setFiles(payload: string | Upload) {
+    uploads.push({ payload, bytes: typeof payload === 'string' ? await readFile(payload) : Buffer.from(payload.buffer) })
+  } }
+  try {
+    for (const [name, authored, valid] of [
+      ['source.md', code, true], ['stress.md', stress, true],
+      ['invalid.md', 'sequenceDiagram\nparticipant Alpha\nunsupported fixture statement\n', false],
+    ] as const) {
+      const path = join(directory, name), original = Buffer.from(`# Original 雪\n\n\`\`\`mermaid\n${authored}\`\`\`\n`)
+      await writeFile(path, original)
+      const source = await readSequenceProofSource(path, { valid })
+      const serialized = JSON.stringify(source)
+      assert.equal(serialized.includes('"type":"Buffer"'), false, 'input bytes must not enter serialized receipts')
+      assert.equal(source.digest, await digest(original)); assert.equal(source.bytes, original.length)
+      await writeFile(path, Buffer.from(original.toString().replace('Original 雪', 'Replaced outside sequence')))
+      const imported = name === 'stress.md' ? { ...source, traceOutput: directory } : source
+      for (const phase of name === 'source.md' ? ['source', 'recovery'] : [name]) {
+        await imported.importInto(chooser)
+        const upload = uploads.at(-1)!
+        assert.deepEqual(upload.bytes, original, `${phase} must use the exact validated full document`)
+        assert.equal(await digest(upload.bytes), source.digest)
+        assert.notEqual(typeof upload.payload, 'string', 'the picker must not reopen the external path')
+        const payload = upload.payload as Upload
+        assert.equal(payload.name, name); assert.equal(payload.mimeType, 'text/markdown')
+        payload.buffer.fill(0)
+      }
+      assert.equal(JSON.stringify(source), serialized, 'upload consumers cannot mutate the retained input or metadata')
+    }
+    assert.equal(uploads.length, 4, 'source, recovery, stress and invalid imports all use the retained input')
+  } finally { await rm(directory, { recursive: true, force: true }) }
+})
+
 class CacheFixture {
   values = new Map<string, Response>()
   constructor(private failure: () => boolean) {}

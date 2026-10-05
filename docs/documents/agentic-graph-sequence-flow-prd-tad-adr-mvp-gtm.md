@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.57"
-prd_revision: "1.3.57"
-tad_revision: "1.3.57"
-adr_revision: "1.3.57"
-mvp_revision: "1.3.57"
-gtm_revision: "1.3.57"
+version: "1.3.58"
+prd_revision: "1.3.58"
+tad_revision: "1.3.58"
+adr_revision: "1.3.58"
+mvp_revision: "1.3.58"
+gtm_revision: "1.3.58"
 date: "2026-10-05"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,7 +31,7 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.57**. This closure lane restores seven retained offline owners under a native eight-path reservation, including this plan. The existing PWA registration suppresses automatic update requests on the explicit offline route; immutable revision assets use the existing cache policy. The browser proof consumes three external Markdown inputs and binds source bytes, installation, cache precedence, synchronized event selection, invalid-input recovery and frame measurements to one frozen build. No demo is embedded in the repository.
+All five roles join **SEQUENCE-FLOW-001@1.3.58**. This closure lane restores seven retained offline owners under a native eight-path reservation, including this plan. The existing PWA registration suppresses automatic update requests on the explicit offline route; immutable revision assets use the existing cache policy. The browser proof consumes three external Markdown inputs and binds source bytes, installation, cache precedence, synchronized event selection, invalid-input recovery and frame measurements to one frozen build. Each validated input retains its bounded bytes privately and supplies a fresh copy to the native file chooser, including recovery; later edits to the external path cannot change the imported content under an earlier digest. Receipts omit the captured buffer. No demo is embedded in the repository.
 [PR #1559](https://github.com/huijoohwee/agentic-graph/pull/1559), exact `0f7ac8125af0f4f8945dd08b97b2c3faa02ec9c7`, passed all ten native plans in 352.26 seconds and its required provider Integration Gate on October 5 at 09:39:04 SGT. It integrated as `45a27725a9a5f8ee97b2bc444bfd7194b14b2b82` at 09:39:15 SGT. Native closeout verifies all fourteen changed paths; approved canonical synchronization and lane quarantine completed at 09:54 SGT. Branches, objects and recovery bytes are retained. Source completion is not production delivery.
 That protected source includes the original participant/message presentation, panel-aware framing and cached SVG playback from PR #1557; spatial-helper enrollment from PR #1556; parser/materialization guards and IndexedDB enrollment from PR #1558; and bounded mission-readiness diagnostics. Earlier PR #1558 failed its provider mission readiness wait. Preserve that failure: the later green run establishes neither its cause nor a diagnostic runtime fix. Deadlines, retry counts, source authority and error identity remain unchanged.
 The shared runtime owner has adopted the protected parser source and received native contract write admission after this lane's predecessor was unmounted. Its first offline document opening now reaches the recorded view; newly observed map-style requests remain its source-owned repair. The seven sequence/PWA restoration paths are disjoint from that work. Prepare them now, then adopt only the exact shared protected revision, enroll the remaining CI changes through native admission and run final combined acceptance. Earlier shared failures remain retained and no failed gate is waived.
@@ -49,7 +49,7 @@ import it through normal workspace controls; do not store its path, source or sp
 runtime code, fixtures or tests. Independent generic regression cases exercise the contract.
 No outside implementation, assets, hosted rendering service or dependency enters this change.
 
-The retained preparation at `e278802a56410eecdb824e0057cc7dffde009df2` preserves the seven offline files. Recovery patch SHA-256 `8974ded31533b3a61ab4f2c00246a27fb17298ed87fb87e6536c9d9d66c8c522` applies cleanly to this protected base, with 60,030 added source bytes. This sprint estimates 20 active minutes and caps restoration/focused checks at 30 active minutes, eleven eventual changed files and 96 KiB added source. Its current admission is only eight paths; contract, command-selection expectations and worker-test changes require later native readmission after the shared handoff. The restored Python/registration family passes 98/98 focused cases and all three proof scripts pass syntax checking. These preparation checks do not establish combined browser acceptance. Two restored proof modules run only in validation. The existing PWA startup owner adds an offline guard; the existing worker cache policy adds one bounded route. No dependencies, paid service or demo fixtures are added. Preserve enhanced visual and startup owners; the previous twenty-two-file/180 KiB ceiling is historical, not this lane's write grant. Shared integration and provider checks are external waits with status-change rechecks.
+The retained preparation at `e278802a56410eecdb824e0057cc7dffde009df2` preserves the seven offline files. Recovery patch SHA-256 `8974ded31533b3a61ab4f2c00246a27fb17298ed87fb87e6536c9d9d66c8c522` applies cleanly to this protected base, with 60,030 added source bytes. This sprint estimates 20 active minutes and caps restoration/focused checks at 30 active minutes, eleven eventual changed files and 96 KiB added source. Its current admission is only eight paths; contract, command-selection expectations and worker-test changes require later native readmission after the shared handoff. The initial restored Python/registration family passes 98/98 focused cases and all three proof scripts pass syntax checking. Independent review identified the path-read/import race: the file-replacement regression fails before the captured-buffer repair and passes afterward, including recovery, stress, invalid input and upload-buffer mutation. The complete Python/registration family then passes 99/99 cases. These preparation checks do not establish combined browser acceptance. Two restored proof modules run only in validation. The existing PWA startup owner adds an offline guard; the existing worker cache policy adds one bounded route. No dependencies, paid service or demo fixtures are added. Preserve enhanced visual and startup owners; the previous twenty-two-file/180 KiB ceiling is historical, not this lane's write grant. Shared integration and provider checks are external waits with status-change rechecks.
 Historical shared retention candidate `072614155c522b86cf0205abf33b9c9a4b0e82ac` keeps an explicit root-local import through seed refresh and a page reload. Its native standard plan passes, and a live import/refresh retains three entities, 185 facts and three sources. Its recorded reload reports a distinct `async source read` materialization failure; retain that raw failure and do not repeat the unchanged full-app proof. Contract v86 selects the existing `workspaceFs.indexedDb.` family, covering the current persistence cases and the registered root-local retention case when that shared candidate is adopted. Final readiness requires their combined source and exact-build proof.
 Keep files below 600 lines and chunks below 500 kB; load feature UI only on demand.
 The demonstration remains external; the browser proof accepts its path explicitly at invocation. External CI/review waits
@@ -425,7 +425,7 @@ V1–V9 pass and a pilot shows the omitted behavior matters. No second roadmap.
 
 ## GTM
 
-Current 1.3.57 restores offline recovery on the protected visual/parser source. The predecessor is source-complete with approved local synchronization and quarantine; this lane still requires shared protected adoption and final combined acceptance. Complete Q1–Q9 and exact build/release evidence before
+Current 1.3.58 restores offline recovery on the protected visual/parser source. The predecessor is source-complete with approved local synchronization and quarantine; this lane still requires shared protected adoption and final combined acceptance. Complete Q1–Q9 and exact build/release evidence before
 offering production readiness; focused passes and offline controls do not prove installation, delivery, buyer value or revenue.
 
 Hypothesis H1: a reachable technical team lead values a reviewed reusable interaction
@@ -466,7 +466,7 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.57. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.58. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 

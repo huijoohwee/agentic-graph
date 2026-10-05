@@ -48,7 +48,8 @@ export async function readSequenceProofSource(sourcePath, { valid = true } = {})
     assert.deepEqual(sequencePlaybackEvents(model), [], 'Invalid authored input must not be playable')
     diagnosticText(text)
   }
-  return { path, name: basename(path), bytes: bytes.length, digest: sha256(bytes), code, model, extract, diagnosticText }
+  return { path, name: basename(path), bytes: bytes.length, digest: sha256(bytes), code, model, extract, diagnosticText,
+    importInto: fileChooser => fileChooser.setFiles({ name: basename(path), mimeType: 'text/markdown', buffer: Buffer.from(bytes) }) }
 }
 
 const invoke = async (page, name, input = {}) => {
@@ -84,7 +85,7 @@ async function importSource(page, source, { closeEditor = true } = {}) {
   await page.getByRole('button', { name: 'Launch', exact: true }).click()
   const chooser = page.waitForEvent('filechooser')
   await page.getByRole('button', { name: 'Import local files', exact: true }).click()
-  await (await chooser).setFiles(source.path)
+  await source.importInto(await chooser)
   await expect.poll(async () => (await inspectDocument(page)).canonicalPath?.endsWith(source.name), { timeout: 60000 }).toBe(true)
   await invoke(page, 'control_local_canvas_view', { optionId: 'surface:2d' })
   await invoke(page, 'control_local_canvas_view', { optionId: 'renderer:sequence' })
@@ -377,7 +378,7 @@ async function sourceInvalidationProof(page, source, validSourceDigest) {
   await expect(timeline(page).getByRole('button', { name: 'Pause playback', exact: true })).toBeVisible()
   const playingTime = await currentTime(page).textContent()
   assert.ok(parseFloat(playingTime) > 0, 'The old source must still be playing immediately before import')
-  await fileChooser.setFiles(source.path)
+  await source.importInto(fileChooser)
   await expect.poll(async () => (await inspectDocument(page)).canonicalPath?.endsWith(source.name), { timeout: 60000 }).toBe(true)
   const canonicalPath = (await inspectDocument(page)).canonicalPath
   let expectedDiagnostics
