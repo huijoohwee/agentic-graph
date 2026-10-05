@@ -9,9 +9,9 @@ test('authored readiness gates startup and selected sources while allowing unsel
     const page = await browser.newPage()
     const modules = {
       '/src/features/source-files/sourceFilesBootstrapReadiness.ts':
-        'export const readSourceFilesBootstrapReady = () => window.__fixture.bootstrap',
+        'export const readSourceFilesBootstrapReady = () => window.__fixture.bootstrap; export const readSourceFilesBootstrapSnapshot = () => window.__fixture.bootstrapSnapshot',
       '/src/lib/workspace/workspaceSeedSyncRuntime.ts':
-        'export const readWorkspaceSeedSyncRuntimeSnapshot = () => ({ activeTaskCount: window.__fixture.tasks })',
+        'export const readWorkspaceSeedSyncRuntimeSnapshot = () => ({ activeTaskCount: window.__fixture.tasks, suspensionCount: 2 })',
       '/src/hooks/useGraphStore.ts':
         'export const useGraphStore = { getState: () => { window.__fixture.reads++; return window.__fixture } }',
       '/src/features/markdown-explorer/store.ts':
@@ -55,5 +55,41 @@ test('authored readiness gates startup and selected sources while allowing unsel
     await page.evaluate(() => { window.__fixture.historyIndex = 0 })
     await emptyPending
     assert.equal(emptySettled, true, 'A ready unselected root does not require a synthetic source')
+    await page.evaluate(() => {
+      Object.assign(window.__fixture, { tasks: 1, history: [], graphData: { nodes: [], edges: [] }, path: '/docs/owned.md',
+        bootstrapSnapshot: { phase: 'error', basePhase: 'ready', documentIntentPhase: 'error', error: 'parser rejected PRIVATE_AUTHORED_BYTES' },
+        sourceFiles: Array.from({ length: 10 }, (_, i) => ({ id: 'source-' + i, status: 'loading',
+          text: 'PRIVATE_AUTHORED_BYTES', source: { path: 'workspace:/docs/owned.md' } })) })
+    })
+    const originalWait = page.waitForFunction.bind(page)
+    let observedError, onWaitStarted = () => {}
+    page.waitForFunction = async (...args) => {
+      onWaitStarted()
+      try { return await originalWait(...args) } catch (error) { observedError = error; throw error }
+    }
+    await assert.rejects(waitForAuthoredWorkspaceSource(page, 250), error => {
+      assert.equal(error, observedError)
+      assert.equal(error.name, 'TimeoutError')
+      const value = error.readinessSnapshot
+      assert.deepEqual([value.sync, value.history, value.graph], [{ activeTaskCount: 1, suspensionCount: 2 },
+        { index: 0, length: 0 }, { present: true, nodes: 0, edges: 0 }])
+      assert.deepEqual([value.bootstrap.phase, value.bootstrap.error.category, value.activePath], ['error', 'source-parse', '/docs/owned.md'])
+      assert.deepEqual([value.matchingCount, value.matching.length, value.matching[0].status], [10, 8, 'loading'])
+      assert.equal(JSON.stringify(value).includes('PRIVATE_AUTHORED_BYTES'), false)
+      return true
+    })
+    const waiting = new Promise(resolve => { onWaitStarted = resolve })
+    const closed = assert.rejects(waitForAuthoredWorkspaceSource(page, 10000), error => {
+      assert.equal(error, observedError); assert.equal(error.readinessSnapshot, undefined); return true
+    })
+    await waiting; await page.close(); await closed
+    const originalEvaluate = page.evaluate.bind(page)
+    page.evaluate = async (...args) => {
+      try { return await originalEvaluate(...args) } catch (error) { observedError = error; throw error }
+    }
+    await assert.rejects(waitForAuthoredWorkspaceSource(page), error => {
+      assert.equal(error, observedError)
+      assert.equal(error.readinessSnapshot, undefined); return true
+    })
   } finally { await browser.close() }
 })

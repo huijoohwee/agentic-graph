@@ -310,14 +310,27 @@ export async function applyWorkspaceImportToCanvas(args: {
     remainingFiles -= 1
     remainingChars -= text.length
 
+    const nativeTextHash = buildSourceFileParseIdentityHash({
+      cacheNamespace: `source-file:${current.id}`, name: current.name, text,
+    })
+    const nativeParserId = typeof current.parsedParserId === 'string' ? current.parsedParserId.trim() : ''
+    const reuseNativeParse = current.name === nameForParse && current.text === text
+      && current.status === 'parsed' && !!nativeParserId && current.parsedTextHash === nativeTextHash
+      && !!current.parsedGraphData
+      && ((current.parsedGraphData.nodes?.length || 0) > 0 || (current.parsedGraphData.edges?.length || 0) > 0)
     let res: Awaited<ReturnType<typeof loadGraphDataFromTextViaParser>> | null = null
-    try {
-      res = await runInIdle(
-        () => loadGraphDataFromTextViaParser(nameForParse, text, { applyToStore: false }),
-        { timeoutMs: allowLargeLuminaCanvasParse ? 2500 : 650 },
-      )
-    } catch {
-      res = null
+    // Native parsing owns this exact identity; reuse its result through the same import policy below.
+    if (reuseNativeParse) {
+      res = { graphData: current.parsedGraphData, parserId: nativeParserId }
+    } else {
+      try {
+        res = await runInIdle(
+          () => loadGraphDataFromTextViaParser(nameForParse, text, { applyToStore: false }),
+          { timeoutMs: allowLargeLuminaCanvasParse ? 2500 : 650 },
+        )
+      } catch {
+        res = null
+      }
     }
     // Keep authority errors outside the parser fallback so the original rejection survives.
     assertCurrent()
@@ -354,8 +367,9 @@ export async function applyWorkspaceImportToCanvas(args: {
         ...buildSourceFileLifecycleState({
           status: 'parsed',
           parserId,
-          textHash,
+          textHash: reuseNativeParse ? nativeTextHash : textHash,
           graphData,
+          ...(reuseNativeParse ? { previousState: current, preserveExistingRevision: true } : {}),
         }),
       }
       parsedCount += 1

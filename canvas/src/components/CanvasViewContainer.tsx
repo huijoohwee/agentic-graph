@@ -4,7 +4,7 @@ import {
   subscribeCanvasContainerSizing,
 } from '@/lib/canvas/canvasContainerSizing'
 
-const OVERLAYS = '[data-kg-workspace-left-pane="1"], [data-kg-floating-panel-root="true"], .MainPanelContainer'
+const OVERLAYS = '[data-kg-workspace-left-pane="1"], [data-kg-floating-panel-root="true"], .MainPanelContainer, .kg-canvas-bottom-panel'
 const CHROME = `${OVERLAYS}, [data-kg-workspace-visible-viewport-occluder], [aria-label="Canvas Toolbar"]`
 
 /** One sizing owner for all renderers. Editor and panel overlays remain on the full workspace. */
