@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.65"
-prd_revision: "1.3.65"
-tad_revision: "1.3.65"
-adr_revision: "1.3.65"
-mvp_revision: "1.3.65"
-gtm_revision: "1.3.65"
+version: "1.3.66"
+prd_revision: "1.3.66"
+tad_revision: "1.3.66"
+adr_revision: "1.3.66"
+mvp_revision: "1.3.66"
+gtm_revision: "1.3.66"
 date: "2026-10-05"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,10 +31,11 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.65**. This increment makes the existing Display Controls truthful for both sequence renderers and reuses native participant geometry. It does not add a second menu or claim every control can render notation. One capability resolver supplies disabled reasons to the shared menu and rejects unavailable actions before baseline unlock or mutation. Native Connections/Lifelines consume the existing Node Sizing, Shape Paths and Port Handles owners through one participant SVG helper; remove the parser's forced rectangle and duplicated card markup. Authored source, event identity, ordering and rehearsal semantics remain unchanged.
+All five roles join **SEQUENCE-FLOW-001@1.3.66**. This successor preserves published Display Controls candidate `660f5707f8ad51b16a385ebff5ea5d0fc610e5e6` and fixes interaction-owner conflicts. Reuse the shared canvas viewport, drag admission, constraints, selection targets and zoom request policies. Sequence participants and events bind to canonical graph identities and measured presentation geometry; remove competing generic SVG label selection on this surface. Keep the existing eighteen Display Controls and their capability resolver. Native and notation adapters retain their authored-order constraints; D3 simulation, Flow and 3D input adapters keep distinct responsibilities. No demo source or fixed demo path enters runtime or validation code.
 This lane starts at protected `e551c50c7ad74a99af8a3169409aff36d31642bf`. [PR #1560](https://github.com/huijoohwee/agentic-graph/pull/1560), exact `f0107ea3633a554fb36816c71d1e8d231e0ea40d`, passed all ten local native plans, 121 source and 42 sequence cases, and the required provider Integration Gate before merging at 11:55 SGT on October 5. Canonical synchronization and preserved quarantine completed at 12:00 SGT with source-complete/delivery-pending status; that producer is unmounted. Its historical twenty-five-path reservation is not this lane's write grant. Recovery bytes, branches and objects remain retained; the receipt's `preservationSatisfied=false` is not rewritten as verified preservation authority.
 The seven offline owners remain deferred in complete prepared candidate `d04b4c7cf3f7f4702b4dfa0300f3fd5255acefcb`. They are not restored by this display-control increment. The final combined successor must adopt the shared runtime's exact protected revision, reconcile the retained registration/cache/proof owners and preserve newer protected fixes. Its proof consumes three external Markdown inputs, privately captures immutable bytes and supplies fresh native chooser copies; no demonstration or default external path enters repository code or tests.
-Current bounds: estimate 30 active minutes, 30-minute active cap, thirteen admitted changed paths and a fourteen-path final ceiling, 64 KiB added source, files below 600 lines and emitted chunks below 500 kB. The only new always-loaded runtime code is the approximately 28-line pure capability resolver imported by existing toolbar owners; it imports no feature runtime. Participant rendering stays inside the existing lazy sequence adapter. No dependency, paid service or new feature loader is introduced. Broader combined readiness retains its separate twenty-eight-path/184 KiB ceiling and requires fresh native admission; it is not included in this sprint.
+Current bounds: estimate and cap 45 active minutes, thirty-six admitted changed paths, 192 KiB changed content including moved code, runtime files below 600 lines and emitted chunks below 500 kB. Split the existing 857-line SVG viewport hook and 879-line canvas store into focused owners without a second engine. Shared drag admission and automatic selection intent add only small pure checks to existing always-loaded owners; sequence identity and measurement stay in the lazy renderer. No dependency, paid service or feature loader is introduced. Existing oversized source-contract test owners receive only bounded extraction-reference maintenance. Broader combined offline readiness retains separate admission and acceptance; it is not established by this interaction increment.
+Planned validation: generated graphs and SVGs exercise selection identity, repeated labels, mode persistence, pin/manual zoom, measured geometry, Pan/Space/disabled drag, axis constraints and mid-gesture cancellation. Run affected native checks and an actual-document browser walkthrough using caller-supplied inputs. Canonical seed documents remain their existing authority; no new test embeds demonstration text or paths. Update exact evidence after checks; no readiness claim precedes proof.
 [PR #1559](https://github.com/huijoohwee/agentic-graph/pull/1559), exact `0f7ac8125af0f4f8945dd08b97b2c3faa02ec9c7`, passed all ten native plans in 352.26 seconds and its required provider Integration Gate on October 5 at 09:39:04 SGT. It integrated as `45a27725a9a5f8ee97b2bc444bfd7194b14b2b82` at 09:39:15 SGT. Native closeout verifies all fourteen changed paths; approved canonical synchronization and lane quarantine completed at 09:54 SGT. Branches, objects and recovery bytes are retained. Source completion is not production delivery.
 That protected source includes the original participant/message presentation, panel-aware framing and cached SVG playback from PR #1557; spatial-helper enrollment from PR #1556; parser/materialization guards and IndexedDB enrollment from PR #1558; and bounded mission-readiness diagnostics. Earlier PR #1558 failed its provider mission readiness wait. Preserve that failure: the later green run establishes neither its cause nor a diagnostic runtime fix. Deadlines, retry counts, source authority and error identity remain unchanged.
 The shared aviation owner has adopted e551 and remains the sole writer of its runtime repairs. Its latest `ae74` candidate reportedly passes the first offline-opening segment, then fails a later UI-reset check; this is peer-reported partial evidence, not a full runtime pass or protected handoff. Preserve the earlier cold-import and table-keyboard failures. The shared runtime's protected release, final combined sequence acceptance and production activation remain pending. Keep the shared Python authored-asset assertion and latest contract enrollment when the seven deferred offline paths are eventually reconciled; no failed gate is waived.
@@ -55,7 +56,7 @@ Intent: explain ordered interactions and branch-specific playback using existing
 Directive: preserve authored bytes/event identity, bound invalid input and verify the existing runtime.
 Role/action/outcome: maintainer / repairs and checks / a reviewable production-readiness candidate.
 Browser and build evidence below is bounded; final affected validation and protected release receipts remain separate.
-Invocation: `/refactor #sequence-display-controls @codex-sequence-runtime`.
+Invocation: `/refactor #canvas-interaction-controls @codex-sequence-runtime`.
 
 Use native owners and original product UI. The user-supplied demonstration stays external:
 import it through normal workspace controls; do not store its path, source or specimen in
@@ -222,7 +223,7 @@ and recorded OS pin `1d3e803f9c28c33ab41f3bf6755e760426e1c956` are historical id
 | C7 [canvasViewInvocationContract.mjs](../../canvas/src/lib/canvas/canvasViewInvocationContract.mjs), `CANVAS_VIEW_CONTROL_OPTION_IDS`; [canvasViewWebMcpTools.ts](../../canvas/src/features/agent-ready/canvasViewWebMcpTools.ts) | Both renderer IDs already use the existing browser-local canvas-view route. No additional discovery registry or sequence playback tool is introduced. | `canvasViewWebMcpTools.test.ts`; Q8 current browser/tool parity |
 | Design [panelTypography.ts](../../canvas/src/lib/ui/panelTypography.ts), `usePanelTypography`; [theme-tokens.ts](../../canvas/src/lib/ui/theme-tokens.ts) | Existing panel and transport owners supply typography, shared controls and tokens. Retain mobile containment and keyboard/reduced-motion acceptance. | Q7; shared panel/transport checks |
 
-Current Display Controls reuse at 1.3.65 is grounded in [canvasDisplayControlCapabilities.ts](../../canvas/src/lib/canvas/canvasDisplayControlCapabilities.ts), [canvasViewMenu.ts](../../canvas/src/components/toolbar/canvasViewMenu.ts) and [canvasViewActions.ts](../../canvas/src/components/toolbar/canvasViewActions.ts). The shared menu keeps its existing eighteen rows. A single capability result controls explanatory disabled state and the matching action guard; existing non-sequence, 3D/geospatial and Minimap policies remain authoritative.
+Current Display Controls reuse at 1.3.66 is grounded in [canvasDisplayControlCapabilities.ts](../../canvas/src/lib/canvas/canvasDisplayControlCapabilities.ts), [canvasViewMenu.ts](../../canvas/src/components/toolbar/canvasViewMenu.ts) and [canvasViewActions.ts](../../canvas/src/components/toolbar/canvasViewActions.ts). The shared menu keeps its existing eighteen rows. A single capability result controls explanatory disabled state and the matching action guard; existing non-sequence, 3D/geospatial and Minimap policies remain authoritative.
 
 | Existing controls | Native Connections/Lifelines | Mermaid notation | Owner and limit |
 |---|---|---|---|
@@ -356,7 +357,7 @@ the notation/SVG seam; it contains no duplicated parser, store or authority logi
 Extraction into a new shared package waits for two inspected consumers and an actual
 portability need. Consequence: the bounded parser subset and exact SVG event mapping need
 behavioral tests. Revisit on unsupported grammar, mapping instability or two consumers.
-At 1.3.65, reuse the canonical Display Controls menu and one capability resolver in menu/actions rather than duplicate control lists or silently mutate unsupported settings. Guard unavailable actions before baseline unlock. Reuse shared node dimensions, shape paths and ports in one native participant SVG helper, deleting the forced parser rectangle and duplicated card markup. Consequence: the two sequence renderers expose an honest bounded capability set; eighteen visible rows are not eighteen implemented notation features. Revisit only when an existing renderer owner gains the missing capability.
+At 1.3.66, reuse the canonical Display Controls menu and one capability resolver in menu/actions rather than duplicate control lists or silently mutate unsupported settings. Guard unavailable actions before baseline unlock. Reuse shared node dimensions, shape paths and ports in one native participant SVG helper, deleting the forced parser rectangle and duplicated card markup. Consequence: the two sequence renderers expose an honest bounded capability set; eighteen visible rows are not eighteen implemented notation features. Revisit only when an existing renderer owner gains the missing capability.
 At 1.3.43, fix parser allocation, source identity/scalar locations and native target allocation
 at these existing owners. Preserve current-participant IDs and accessible SVG descendants;
 independent generic tests replace the external demonstration dependency.
@@ -449,7 +450,7 @@ V1–V9 pass and a pilot shows the omitted behavior matters. No second roadmap.
 
 ## GTM
 
-Current 1.3.65 improves the existing Display Controls without expanding the product offer: native shape/ports use shared owners, and unsupported renderer controls are visibly unavailable. The protected predecessor is source-complete; the seven offline owners remain deferred. This bounded control increment still needs its own native/browser gates, while production readiness needs shared protected adoption and final combined acceptance. Complete Q1–Q9 and exact build/release evidence before
+Current 1.3.66 improves the existing Display Controls without expanding the product offer: native shape/ports use shared owners, and unsupported renderer controls are visibly unavailable. The protected predecessor is source-complete; the seven offline owners remain deferred. This bounded control increment still needs its own native/browser gates, while production readiness needs shared protected adoption and final combined acceptance. Complete Q1–Q9 and exact build/release evidence before
 offering production readiness; focused passes and offline controls do not prove installation, delivery, buyer value or revenue.
 
 Hypothesis H1: a reachable technical team lead values a reviewed reusable interaction
@@ -490,7 +491,7 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.65. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.66. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 
@@ -528,7 +529,7 @@ The offline successor preserves that published candidate and its protected ances
 
 | Current evidence | Result and practical limit |
 |---|---|
-| Display Controls 1.3.65 | Prior snapshot: 40/40 presentation, fifteen new, 57/57 full sequence in 4.56 seconds, and pre-padding Canvas typecheck passed. The final shared port-padding/extrema regression raises selection to 41 presentation / 58 full, sixteen new; targeted port checks pass 2/2, refreshed full native result pending. Bounded development review retains eight event IDs through shape changes and observes sixteen/thirty-two handles in native Connections/Lifelines and full 1098×952 bounds in both renderers. One resolver rejects unsupported actions before baseline unlock; native sizing/shape/ports keep their shared owners. Thirteen paths remain under the fourteen-path/64 KiB cap. Final candidate browser/native CI gates and production readiness remain pending. |
+| Display Controls 1.3.66 | Prior snapshot: 40/40 presentation, fifteen new, 57/57 full sequence in 4.56 seconds, and pre-padding Canvas typecheck passed. The final shared port-padding/extrema regression raises selection to 41 presentation / 58 full, sixteen new; targeted port checks pass 2/2, refreshed full native result pending. Bounded development review retains eight event IDs through shape changes and observes sixteen/thirty-two handles in native Connections/Lifelines and full 1098×952 bounds in both renderers. One resolver rejects unsupported actions before baseline unlock; native sizing/shape/ports keep their shared owners. Thirteen paths remain under the fourteen-path/64 KiB cap. Final candidate browser/native CI gates and production readiness remain pending. |
 | Protected source closeout | PR #1560 exact `f0107ea3633a554fb36816c71d1e8d231e0ea40d` integrated as `e551c50c7ad74a99af8a3169409aff36d31642bf`; canonical current and native source-complete/quarantined are verified. Cleanup is verified, while preservationSatisfied remains false in the receipt. This does not complete the current display-control lane or final delivery. |
 | Current shared dependency | Peer reports `ae74` reaches first offline open but later fails UI reset. Retain earlier import/publication and table-keyboard failures. This partial observation supplies no protected handoff, exact combined sequence acceptance or deployment authority. |
 | Startup selection | Existing bootstrap coordinator retries only proven path supersession with fresh source/index snapshots; unsaved or filesystem-stale bytes and genuine failures still reject. Empty initial document identity is not an unsaved edit. Six focused cases pass after baseline failures. |
