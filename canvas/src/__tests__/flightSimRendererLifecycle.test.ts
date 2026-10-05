@@ -348,13 +348,13 @@ test('XR resolution bounds sustained pixel work and recovers only after sustaine
 
 test('XR resolution excludes paused, hidden and immersive frames and resets across renderer changes', () => {
   const budget = createThreeFrameResolutionBudget()
-  for (let frame = 0; frame < 7; frame += 1) assert.equal(budget.sample(0.2, 1, 1, true), null)
-  assert.equal(budget.sample(0.2, 1, 1, false), null)
-  assert.equal(budget.sample(0.2, 1, 1, true), null, 'ineligible frames reset the measurement window')
+  for (let frame = 0; frame < 7; frame += 1) assert.equal(budget.sample(1 / 60, 1, 1, true), null)
+  assert.equal(budget.sample(1 / 60, 1, 1, false), null)
+  assert.equal(budget.sample(1 / 60, 1, 1, true), null, 'ineligible frames reset the measurement window')
   for (const delta of [Number.NaN, Number.POSITIVE_INFINITY, 0, -1, 2]) {
     assert.equal(budget.sample(delta, 1, 1, true), null)
   }
-  for (let frame = 0; frame < 8; frame += 1) budget.sample(0.2, 1, 1, true)
+  for (let frame = 0; frame < 8; frame += 1) budget.sample(1 / 60, 1, 1, true)
   assert.equal(budget.sample(1 / 60, 2, 2, true), null, 'new resolution limits start a fresh window')
   const low = createThreeFrameResolutionBudget()
   for (let frame = 0; frame < 20; frame += 1) assert.equal(low.sample(0.2, 0.25, 0.25, true), null)
@@ -369,6 +369,15 @@ test('visible rendering recovers from consecutive multi-second frame pressure', 
   for (let frame = 0; frame < 10; frame += 1) {
     assert.equal(budget.sample(1.06, 0.5, 1, true), null, 'severe pressure retains the quality floor')
   }
+})
+
+test('two sustained 400ms visible frames reduce resolution before another render window', () => {
+  const budget = createThreeFrameResolutionBudget()
+  assert.equal(budget.sample(0.4, 1, 1, true), null, 'one slow frame preserves detail')
+  assert.equal(budget.sample(0.4, 1, 1, true), 0.75, 'consecutive slow frames reduce pixel work promptly')
+  assert.equal(budget.sample(0.4, 0.75, 1, true), null)
+  assert.equal(budget.sample(0.4, 0.75, 1, true), 0.5)
+  for (let frame = 0; frame < 10; frame += 1) assert.equal(budget.sample(0.4, 0.5, 1, true), null)
 })
 
 test('an isolated long pause cannot contaminate the ordinary frame-pressure window', () => {

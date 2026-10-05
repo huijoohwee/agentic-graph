@@ -90,9 +90,9 @@ export function shouldAdaptThreeFrameResolution(input: Readonly<{
 
 /** Pixel work follows sustained frame pressure; simulation and authored state remain untouched. */
 export function createThreeFrameResolutionBudget() {
-  let elapsed = 0, frames = 0, fastWindows = 0, ceiling = 0, longFrames = 0
+  let elapsed = 0, frames = 0, fastWindows = 0, ceiling = 0, slowFrames = 0
   let target: number | null = null
-  const reset = () => { elapsed = 0; frames = 0; fastWindows = 0; target = null; ceiling = 0; longFrames = 0 }
+  const reset = () => { elapsed = 0; frames = 0; fastWindows = 0; target = null; ceiling = 0; slowFrames = 0 }
   const reduce = () => {
     if (target !== null) target = Math.min(target, Math.max(Math.min(0.5, ceiling), Math.floor(target * 3) / 4))
     fastWindows = 0
@@ -107,13 +107,13 @@ export function createThreeFrameResolutionBudget() {
       }
       if (maximum !== ceiling) { reset(); ceiling = maximum }
       target ??= Math.min(current, maximum)
-      if (delta > 1) {
-        // A resume/GC pause is not sustained pressure; repeated visible stalls are.
+      if (delta > 0.1) {
+        // One slow frame is transient; two consecutive >100ms frames show sustained pixel pressure.
         elapsed = 0; frames = 0; fastWindows = 0
-        if (++longFrames >= 2) { reduce(); longFrames = 0 }
+        if (++slowFrames >= 2) { reduce(); slowFrames = 0 }
         return target === current ? null : target
       }
-      longFrames = 0
+      slowFrames = 0
       elapsed += delta
       frames += 1
       if (elapsed >= 1 && frames >= 8) {

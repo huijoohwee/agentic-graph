@@ -486,9 +486,9 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-PR1560 merged; historical 29a passes eleven plans, first offline-open and 200% zoom. Parser 3573451f passes 195 cases. The f64 trace attributes 3.96/4.88 s to WebGL readback.
-55ba964c adapts visible 3D and repeated severe stalls; resets samples across visibility/frame-loop changes. Quality, session/recording exclusions and recovery remain; 21 checks pass.
-124201d UI assertions pass but unrelated branch tracking invalidates its final input guard: no combined pass. 12d1e8b consumes merged OS343/784b169 package/docs pins for scoped configuration and bounded caches; 44 Graph checks pass.
-One bound build serves three browser consumers. Seven files, 20 KiB diff; no new modules/dependencies. Limits: 60/300/60 s build, 4 GiB heap, 60 s import, 300 s AS1. Fresh browser/CI receipts bind the final commit.
-Release needs exact CI/integration receipts. iPhone SKIP/KIV; AS3/AS4 and commercial gates remain. No promotion receipt.
-ADR-004: historical 29a scoped 148,746 bytes pass; plus thirteen native repairs 166,376 fails 150 kB. Historical proof grants no broader readiness.
+PR1560 merged; historical 29a passes eleven plans, first offline-open and 200% zoom. Parser 3573451f passes 195 cases. The f64 macOS trace attributes 3.96/4.88 s to WebGL readback.
+55ba964c broadens visible 3D pixel budgeting; its 21 focused checks passed. Provider CI on 76effde nevertheless hit its unchanged 60 s import deadline: all requests settled, zero page errors, 137 main-thread long tasks/56.5 s, with 390–420 ms frames. Adaptation waited too long to lower DPR.
+76effde's bound macOS build and desktop/emulated-mobile spatial+aviation offline acceptance pass; largest JS 495,688 B. Current scope is 148,746/150,000 B; plus 13 native repairs 166,585 B and plus 15 167,402 B fail the broad limit. Added initial upper bound 39,524/75,000 B passes; broad 150 kB gate stays open.
+Native successor lowers visible Three DPR after two consecutive >100 ms frames; focused 16 renderer lifecycle checks pass. Provider verification remains pending. OS pin 784b169 is merged; 44 Graph checks and five installed cache/config checks pass. Build/import limits remain 60/300/60 s, 4 GiB; AS1 300 s. No new modules/dependencies.
+124201d's UI assertions passed but its config guard failed; it is not combined proof. Release requires exact CI/integration receipts. iPhone SKIP/KIV; AS3/AS4 and commercial gates remain. No promotion authority.
+ADR-004 records the current broad byte failure; no scoped pass claims overall readiness.
