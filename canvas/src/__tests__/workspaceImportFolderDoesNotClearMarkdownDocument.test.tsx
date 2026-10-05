@@ -13,6 +13,7 @@ import type { UseWorkspaceFileActionsArgs } from '@/features/markdown-workspace/
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { loadWorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import { runLaunchImportLocalFiles } from '@/lib/toolbar/launchImportDispatch'
+import { completeSourceFilesBootstrap } from '@/features/source-files/sourceFilesBootstrapReadiness'
 
 export async function testWorkspaceFolderSelectionDoesNotClearMarkdownDocument() {
   await testImportActivatesOnlyAfterRefreshAndSynchronization()
@@ -74,6 +75,7 @@ export async function testWorkspaceFolderSelectionDoesNotClearMarkdownDocument()
 }
 
 async function testImportActivatesOnlyAfterRefreshAndSynchronization() {
+  completeSourceFilesBootstrap()
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   const { restore: restoreDom } = initJsdomHarness()
   const previousGraph = useGraphStore.getState(), previousExplorer = useMarkdownExplorerStore.getState()

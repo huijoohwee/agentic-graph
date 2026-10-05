@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.20"
-revision: "0.4.20"
+version: "0.4.21"
+revision: "0.4.21"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.20"
-tad_revision: "0.4.20"
-adr_revision: "0.4.20"
-mvp_revision: "0.4.20"
-gtm_revision: "0.4.20"
+prd_revision: "0.4.21"
+tad_revision: "0.4.21"
+adr_revision: "0.4.21"
+mvp_revision: "0.4.21"
+gtm_revision: "0.4.21"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm
 
-`aviation-swarm@0.4.20` hardens eligible aviation evidence Must workflows:
+`aviation-swarm@0.4.21` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -311,7 +311,7 @@ operational claim; K5 bounded work/rights. Existing tools pass; AS3/AS4 stay gat
 fails K2/K5, mandatory cloud inference fails K1/K3, ungranted licensed feeds fail K1/rights. Manual
 review remains the baseline. Native reuse improves reproducibility/reuse cost; buyer/WTP value is unknown.
 Decision: extend native owners, no second runtime. Import stages expose pending work; job fences stop
-stale continuation. Geo defers SVG until selection/failure; XR narrows subscriptions without freezing
+stale continuation. Cold UI imports wait for initial workspace readiness; errors remain visible. Geo defers SVG until selection/failure; XR yields focusable review keys and narrows subscriptions without freezing
 simulation. Root basename collisions retain bytes; provenance controls visibility, not deletion.
 Automatic precache uses build graph membership, preserving required vendor chunks; deferred modules
 remain runtime-cached or explicitly installed. Installed pack responses bypass background revalidation. Revisit on failure/buyer evidence.
@@ -335,16 +335,16 @@ distance-only output; neither a quote nor a commitment follows from a scenario.
 
 The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md](workspace-seeds/agentic-graph-game-flight-sim-demo.md).
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
-Plan ≤40 KiB; new files <600 lines; no spend/packages. Next: ≤15 active minutes, ≤3 files/4 KiB; combine merged parser with final offline/CI gates.
+Plan ≤40 KiB; new files <600 lines; no spend/packages. Current: ≤30 active minutes, ≤8 modules/21 KiB; serialize cold imports and yield review keys, then combined offline/CI gates.
 Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-readiness/`.
 
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
-| ER1 | e424 standard passes; e55 stops on obsolete eager-precache assertion in reserved Python offline test | Clean canonical-origin docs input uses contract pin 1d3e803 (`pinned-docs-input-1d3e803.json`); full-app/suite parity unproved |
+| ER1 | f4df770 repairs explicit-offline membership assertion: Python offline 10/10 pass | Pinned docs input 1d3e803; combined ten-plan CI pending |
 | ER2 | PR 1560 merged e551c50c; native closeout and aviation alignment 534b213 complete. Producer: ten native plans, 121 source/42 sequence tests and typecheck pass | Integration Gate run 37259875188 passes; combined offline/CI proof pending |
 | ER3 | b639 Save: 3 entities/185 facts/3 sources; 262,899 B; `evidence-pack-b639ba42.json` | Exact saved bytes match cf1/38f2; 38f2 offline reimport retained |
-| ER4 | 083 pages build/PWA authority pass: 38 initial JS/3,320,816 B; largest JS 495,688 B | Complete conservative feature 148,042 B ≤150,000; added initial bound 20,881 B ≤75,000 (`evidence-complete-byte-bound-plus-native-offline-083bed2.json`) |
-| ER5 | 083 diagnostic: native import terminal after 29.16 s; exact source persisted; first offline open succeeds, query focus cancels during a source reset | `aviation-offline-083bed2-import-diagnostic-1/`; zero page errors/offline remote requests; 6 input/24 source-authority tests pass; final journey open |
+| ER4 | 3133878 pages build/PWA authority pass; initial JS 3,323,350 B; largest JS 495,688 B | ADR-004 feature 148,095 B; added initial 20,868 B. Broader parser/native-owner diagnostic 154,417 B exceeds 150 kB; no unrestricted pass (`final-byte-audit-3133878.md`) |
+| ER5 | 313 first offline-open/replay parity passes, journey fails table arrows; another cold run fails import publication guard | 313 bounded inactive-append repair: 43 regressions pass. Non-pausing trace identifies XR key interception; cold UI import/XR checks 10/10 pass; frozen proof pending |
 | ER6 | 083 native 200% zoom: record/original/replay/route parity, readable text and table focus pass; provenance link 30 px fails (44 px fix verified in live dev) | `native-product-zoom-083bed2-v4/`; known source error retained. Earlier 390 offline/route proof retained; final touch/zoom rerun pending. Physical iPhone SKIP/KIV |
 | ER7 | 083: six emitted-worker cases pass. Installed static/deferred requests make zero fetches; ordinary behavior retained | `emitted-worker-cache-proof-083bed2.json` binds current worker/manifest; valid metadata and missing/corrupt members. Model proof, not UI acceptance |
 | ER8 | Root-retention regression plus nine related checks and typecheck pass. Live 5196 import→Editor→Refresh retains selected root source; example loads 3 entities/185 facts/3 sources (`live-root-retention.png`) | Generic basename deletion removed; explicit local projection retained. Real IndexedDB covers missing/corrupt provenance and reopen. 432cc531 live reopen/example passes; primary Singapore map renders (`live-parser-432cc531.png`). Dev-only proof |
@@ -442,7 +442,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.20 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.21 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -452,7 +452,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.20`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.21`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -490,12 +490,12 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ER1–ER11 bind proof; AS1/AS2/AS5 and delivery need separate acceptance.
 
-083 build/byte/worker gates pass; parser/source-reset and final native/UI acceptance remain.
-AEL ADR-004 separates native host and feature bytes; the former whole-host 150 kB reading was wrong.
-Complete feature bound is 148,042 B; conservative feature-added initial is 20,881 B.
-Baseline 8e77: 6,981,425 B; 083: 3,320,816 B; net −3,660,609 B. Whole host: 28,446,079 B.
-`evidence-added-initial-bound-083bed2.json` and the complete bound bind final bytes/maps/dependencies.
-Rebind after source drift; byte acceptance does not imply first-offline/UI readiness.
+PR1560 protected merge e551c50c and native alignment 534b213 are complete.
+3133878 fixes bounded inactive bootstrap appends; genuine stale source errors remain.
+Cold import serialization and XR review-key fixes require final frozen UI/CI/byte proof.
+ADR-004 feature bound 148,095 B passes; broader native/parser diagnostic 154,417 B does not.
+Baseline initial 6,981,425 B; 313 initial 3,323,350 B; whole host 28,462,384 B.
+Six emitted-worker cases pass (`emitted-worker-cache-proof-3133878.json`). Rebind on drift.
 Map 30 and transport parity 11 pass; final touch/browser replay proof pending. iPhone SKIP/KIV.
 Real-label/guideline acceptance stays separate; recheck on drift.
 Source/integration/production need separate receipts; AS3/AS4 retain input/rights/buyer gates.

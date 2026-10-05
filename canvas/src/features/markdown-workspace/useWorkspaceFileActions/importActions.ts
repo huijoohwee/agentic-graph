@@ -30,6 +30,7 @@ import { inferCorpusMediaKind } from '@/features/queryable-corpus/corpusGraph'
 import { registerStrybldrImageFiles } from '@/features/strybldr/strybldrImageFileRegistry'
 import { registerVideoSequenceSourceFiles } from '@/components/timeline/videoSequenceSourceRegistry'
 import { activateStrybldrImportSurface } from '@/features/strybldr/strybldrImportSurface'
+import { waitForSourceFilesBootstrap } from '@/features/source-files/waitForSourceFilesBootstrap'
 
 const loadWorkspaceImportRuntimeActions = (): Promise<typeof import('./importRuntimeActions')> => import('./importRuntimeActions')
 
@@ -42,6 +43,7 @@ export function useWorkspaceImportActions(args: {
   ctx: WorkspaceImportActionsCtx
 }) {
   const { importJobRef, status, focusAfterImport } = args.core
+  const importWaitRef = React.useRef<AbortController | null>(null)
   const {
     getFs,
     refresh,
@@ -52,11 +54,21 @@ export function useWorkspaceImportActions(args: {
     lastLoadedRef,
     setActiveMarkdownDocument,
   } = args.ctx
+  React.useEffect(() => () => { importJobRef.current += 1; importWaitRef.current?.abort() }, [getFs, importJobRef])
 
   const setImportStage = React.useCallback((jobId: number, label: string) => {
     if (importJobRef.current !== jobId) return
     status.setStatusProgress(label, null, null, null, null, { busy: true })
   }, [importJobRef, status])
+
+  const waitForImport = React.useCallback(async (jobId: number) => {
+    importWaitRef.current?.abort()
+    const controller = new AbortController()
+    importWaitRef.current = controller
+    setImportStage(jobId, 'Preparing workspace before import')
+    try { await waitForSourceFilesBootstrap({ signal: controller.signal }) }
+    finally { if (importWaitRef.current === controller) importWaitRef.current = null }
+  }, [importJobRef, setImportStage])
 
   const hydratePendingImportedPaths = React.useCallback(async (fs: WorkspaceFs, createdPaths: string[]) => {
     for (const path of createdPaths || []) {
@@ -209,7 +221,10 @@ export function useWorkspaceImportActions(args: {
       let bridgeResult: WorkspaceBridgeImportResult = { handled: true }
       status.setStatusProgress('Importing', 0, snapshot.length)
       try {
+        await waitForImport(jobId)
+        if (importJobRef.current !== jobId) return bridgeResult
         const fs = await getFs()
+        if (importJobRef.current !== jobId) return bridgeResult
         await fs.ensureSeed()
         await ensureWorkspaceFolderTreeIfMissing({ fs, folderPath: WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH })
         if (!(await fs.listEntries()).some(entry => entry.path === WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH && entry.kind === 'folder')) {
@@ -260,7 +275,7 @@ export function useWorkspaceImportActions(args: {
         return { ...bridgeResult, error }
       }
     },
-    [finalizeWorkspaceImportCommit, focusAfterImport, formatWorkspaceImportSummary, getFs, importJobRef, resolveWorkspaceImportApplyToGraph, setImportStage, status],
+    [finalizeWorkspaceImportCommit, focusAfterImport, formatWorkspaceImportSummary, getFs, importJobRef, resolveWorkspaceImportApplyToGraph, setImportStage, status, waitForImport],
   )
 
   const handleImportLocalImages = React.useCallback(
@@ -284,7 +299,10 @@ export function useWorkspaceImportActions(args: {
       const jobId = (importJobRef.current += 1)
       let bridgeResult: WorkspaceBridgeImportResult = { handled: true }
       try {
+        await waitForImport(jobId)
+        if (importJobRef.current !== jobId) return bridgeResult
         const fs = await getFs()
+        if (importJobRef.current !== jobId) return bridgeResult
         await fs.ensureSeed()
         const importRuntime = await loadWorkspaceImportRuntimeActions()
         const res = importRuntime.normalizeWorkspaceImportResult(await runWorkspaceFsChangedBatch(() => {
@@ -321,7 +339,7 @@ export function useWorkspaceImportActions(args: {
         return { ...bridgeResult, error }
       }
     },
-    [finalizeWorkspaceImportCommit, focusAfterImport, formatWorkspaceImportSummary, getFs, importJobRef, resolveWorkspaceImportApplyToGraph, status],
+    [finalizeWorkspaceImportCommit, focusAfterImport, formatWorkspaceImportSummary, getFs, importJobRef, resolveWorkspaceImportApplyToGraph, status, waitForImport],
   )
 
   const handleImportUrl = React.useCallback(
@@ -343,7 +361,10 @@ export function useWorkspaceImportActions(args: {
       status.setStatusProgress(importKindLabel, null, null, null, null, { busy: true })
       useGraphStore.getState().pushUiLog({ kind: 'neutral', message: `Import URL started: ${url}`, source: 'workspace:importUrl' })
       try {
+        await waitForImport(jobId)
+        if (importJobRef.current !== jobId) return bridgeResult
         const fs = await getFs()
+        if (importJobRef.current !== jobId) return bridgeResult
         await fs.ensureSeed()
         const importRuntime = await loadWorkspaceImportRuntimeActions()
         const maxImportLogRows = 59
@@ -455,7 +476,7 @@ export function useWorkspaceImportActions(args: {
         return errorResult
       }
     },
-    [finalizeWorkspaceImportCommit, focusAfterImport, formatWorkspaceImportSummary, getFs, importJobRef, status],
+    [finalizeWorkspaceImportCommit, focusAfterImport, formatWorkspaceImportSummary, getFs, importJobRef, status, waitForImport],
   )
 
   return { handleImportLocalFiles, handleImportLocalImages, handleImportLocalFolder, handleImportUrl }
