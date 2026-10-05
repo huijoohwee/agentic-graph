@@ -9,6 +9,9 @@ import type { SourceFile } from '@/hooks/store/types'
 import type { WorkspaceEntry, WorkspaceFs } from '@/features/workspace-fs/types'
 import { hashStringToHex } from '@/lib/hash/stringHash'
 import { loadWorkspaceSourceIndex, setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
+import { ensureBuiltInParsersRegistered } from '@/features/parsers/ensure'
+import { listParsers, registerParser } from '@/features/parsers/registry'
+import { buildSourceFileParseIdentityHash } from '@/features/source-files/sourceFileParseIdentity'
 
 const path = '/notes/new-local-document.md'
 const name = 'notes/new-local-document.md'
@@ -85,6 +88,117 @@ for (const prior of ['absent', 'different'] as const) test(`passive source read 
   assert.ok(f.reads.every(requested => requested === path))
   assert.deepEqual(f.writes, [])
 }))
+
+const graphImportChanges = ['absent', 'different', 'exact', 'same-path draft', 'unnamed draft', 'unnamed whitespace', 'edited document',
+  'selection', 'source edit', 'source addition', 'source lifecycle', 'duplicate ID', 'duplicate path',
+  'persisted mismatch', 'persisted deletion', 'persisted read error', 'verification edit', 'verification selection',
+  'verification inventory', 'verification preset', 'second exact publication'] as const
+for (const change of graphImportChanges) test(`non-Markdown graph import retains exact document authority: ${change}`, async () => {
+  const graph = useGraphStore.getState(), explorer = useMarkdownExplorerStore.getState(), env = initJsdomHarness()
+  const activePath = '/notes/learning.py', activeName = 'notes/learning.py', body = 'print(42)\n'
+  const file: SourceFile = { id: 'python-convergence', name: activeName, text: body, enabled: true, status: 'idle',
+    source: { kind: 'local', path: `workspace:${activePath}` } }
+  const sources = [file], entered = deferred<void>(), release = deferred<void>(), failure = new Error('Persisted Python read failed')
+  const accept = ['absent', 'different', 'exact'].includes(change)
+  let reads = 0, parses = 0, idleCalls = 0, authoritative = useGraphStore.getState()
+  const idle = Object.getOwnPropertyDescriptor(globalThis, 'requestIdleCallback')
+  Object.defineProperty(globalThis, 'requestIdleCallback', { configurable: true, value: (callback: () => void) => {
+    idleCalls++
+    queueMicrotask(() => {
+      if (idleCalls === 2 && change === 'second exact publication') {
+        useGraphStore.setState({ markdownDocumentName: activePath }); authoritative = useGraphStore.getState()
+      }
+      callback()
+    })
+    return idleCalls
+  } })
+  ensureBuiltInParsersRegistered()
+  const parsers = listParsers(), parser = parsers.find(value => String(value.id) === 'python')!
+  for (const spec of parsers) registerParser(spec === parser ? { ...parser,
+    parseAsync: async (name, text) => { parses++; entered.resolve(); await release.promise; return parser.parse(name, text) } } : spec)
+  const entry: WorkspaceEntry = { path: activePath, parentPath: '/notes', name: 'learning.py', kind: 'file', text: body, updatedAtMs: 1 }
+  const fs: WorkspaceFs = { ensureSeed: async () => false, listEntries: async () => [entry], readFileText: async () => {
+    reads++
+    if (change === 'persisted read error') throw failure
+    if (change === 'verification edit') useGraphStore.setState({ markdownDocumentText: 'newer editor bytes\n' })
+    if (change === 'verification selection') useMarkdownExplorerStore.getState().setActivePath('/notes/other.py')
+    if (change === 'verification inventory') useGraphStore.setState({ sourceFiles: sources.slice() })
+    if (change === 'verification preset') useGraphStore.setState({ markdownDocumentApplyViewPreset: true })
+    authoritative = useGraphStore.getState()
+    return change === 'persisted mismatch' ? 'print(43)\n' : change === 'persisted deletion' ? null : body
+  }, writeFileText: async () => assert.fail('materialization cannot write source'), createFile: async () => '/unused',
+    createFolder: async () => '/unused', deleteEntry: async () => assert.fail('materialization cannot delete source') }
+  useGraphStore.setState({ sourceFiles: sources, markdownDocumentName: ['absent', 'unnamed draft', 'unnamed whitespace'].includes(change) ? null
+    : change === 'same-path draft' || change === 'exact' ? activeName : 'previous.md',
+    markdownDocumentText: change === 'absent' ? '' : change === 'unnamed whitespace' ? ' \n' : change === 'exact' ? body : '# Prior document or draft\n',
+    markdownDocumentApplyViewPreset: false })
+  useMarkdownExplorerStore.getState().setActivePath(activePath)
+  const operation = materializeActiveWorkspaceEntryIntoSourceFiles({ activePathOverride: activePath, fs, applyToGraph: true,
+    premergedSourceFiles: sources, activeWorkspaceEntriesSnapshot: [entry], sourcesByPath: {} })
+  const settled = operation.then(proof => ({ proof, error: null }), error => ({ proof: null, error }))
+  try {
+    const boundary = await Promise.race([entered.promise.then(() => 'parser'), settled.then(() => 'settled')])
+    if (boundary === 'parser') {
+      useGraphStore.setState({ markdownDocumentName: activeName, markdownDocumentText: change === 'edited document' ? 'print(99)\n' : body })
+      if (change === 'selection') useMarkdownExplorerStore.getState().setActivePath('/notes/other.py')
+      if (change === 'source edit' || change === 'source lifecycle') useGraphStore.setState({ sourceFiles: [{ ...file,
+        ...(change === 'source edit' ? { text: 'print(99)\n' } : { status: 'loading' as const }) }] })
+      if (change === 'source addition' || change === 'duplicate ID' || change === 'duplicate path') useGraphStore.setState({ sourceFiles: [file,
+        { ...file, id: change === 'duplicate ID' ? file.id : 'another', source: change === 'duplicate path' ? file.source : { kind: 'local', path: 'workspace:/notes/another.py' } }] })
+    }
+    authoritative = useGraphStore.getState()
+    release.resolve()
+    const result = await settled, current = useGraphStore.getState()
+    if (accept) {
+      assert.equal(result.error, null)
+      assert.ok(result.proof && isMaterializedWorkspaceSourceProofCurrent(result.proof))
+      assert.equal(current.markdownDocumentName, activeName); assert.equal(current.markdownDocumentText, body)
+      assert.equal(current.sourceFiles[0].text, body); assert.equal(current.sourceFiles[0].status, 'parsed')
+      assert.equal(parses, 1); assert.equal(reads, change === 'exact' ? 0 : 1)
+      assert.equal(idleCalls, change === 'exact' ? 1 : 2, 'only an admitted convergence restarts import, reusing its completed parser result')
+    } else {
+      assert.ok(change === 'persisted read error' ? result.error === failure : stale(result.error), String(result.error))
+      assert.equal(current.sourceFiles, authoritative.sourceFiles)
+      assert.equal(current.markdownDocumentName, authoritative.markdownDocumentName)
+      assert.equal(current.markdownDocumentText, authoritative.markdownDocumentText)
+      assert.equal(current.markdownDocumentApplyViewPreset, authoritative.markdownDocumentApplyViewPreset)
+      assert.equal(current.graphData, authoritative.graphData); assert.equal(current.canvas2dRenderer, authoritative.canvas2dRenderer)
+      assert.equal(useMarkdownExplorerStore.getState().activePath, change === 'selection' || change === 'verification selection' ? '/notes/other.py' : activePath)
+      assert.ok(parses <= 1 && reads <= 1 && idleCalls <= 2, 'a second drift cannot retry or reparse')
+      if (change === 'second exact publication') { assert.equal(reads, 1); assert.equal(idleCalls, 2) }
+    }
+  } finally { release.resolve(); await settled; for (const spec of parsers) registerParser(spec)
+    if (idle) Object.defineProperty(globalThis, 'requestIdleCallback', idle); else Reflect.deleteProperty(globalThis, 'requestIdleCallback')
+    useGraphStore.setState(graph, true); useMarkdownExplorerStore.setState(explorer, true); env.restore() }
+})
+
+test('non-Markdown graph import never retries after equivalent source publication retains its array', async () => {
+  const graph = useGraphStore.getState(), explorer = useMarkdownExplorerStore.getState(), env = initJsdomHarness()
+  const activePath = '/notes/published.py', activeName = 'notes/published.py', body = 'print(1)\n'
+  const file: SourceFile = { id: 'published-python', name: activeName, text: body, enabled: true, status: 'parsed',
+    source: { kind: 'local', path: `workspace:${activePath}` }, parsedParserId: 'python', parsedGraphRevision: 0,
+    parsedTextHash: buildSourceFileParseIdentityHash({ cacheNamespace: 'source-file:published-python', name: activeName, text: body }),
+    parsedGraphData: { type: 'Graph', nodes: [{ id: 'python-module', label: 'published', type: 'module', properties: {} }], edges: [] } }
+  const sources = [file], entry: WorkspaceEntry = { path: activePath, parentPath: '/notes', name: 'published.py', kind: 'file', text: body, updatedAtMs: 1 }
+  let reads = 0, publications = 0
+  const fs: WorkspaceFs = { ensureSeed: async () => false, listEntries: async () => [entry], readFileText: async () => { reads++; return body },
+    writeFileText: async () => assert.fail('no source writes'), createFile: async () => '/unused', createFolder: async () => '/unused', deleteEntry: async () => undefined }
+  useGraphStore.setState({ sourceFiles: sources, markdownDocumentName: 'previous.md', markdownDocumentText: '# Previous',
+    markdownDocumentApplyViewPreset: false, setSourceFiles: next => {
+      graph.setSourceFiles(next); publications++
+      assert.equal(useGraphStore.getState().sourceFiles, sources, 'equivalent native publication retains the original array')
+      useGraphStore.setState({ markdownDocumentName: activeName, markdownDocumentText: body })
+    } })
+  useMarkdownExplorerStore.getState().setActivePath(activePath)
+  try {
+    await assert.rejects(materializeActiveWorkspaceEntryIntoSourceFiles({ activePathOverride: activePath, fs, applyToGraph: true,
+      premergedSourceFiles: sources, activeWorkspaceEntriesSnapshot: [entry], sourcesByPath: {} }), stale)
+    assert.equal(publications, 1); assert.equal(reads, 0, 'publication is not read-only merely because its source array is unchanged')
+    assert.equal(useGraphStore.getState().markdownDocumentText, body)
+    assert.equal(useGraphStore.getState().graphData, graph.graphData)
+    assert.equal(useGraphStore.getState().canvas2dRenderer, graph.canvas2dRenderer)
+  } finally { useGraphStore.setState(graph, true); useMarkdownExplorerStore.setState(explorer, true); env.restore() }
+})
 
 test('passive convergence discards stale prepared active and inactive entries', async () => fixture(async f => {
   f.request.workspaceEntries = f.initial.map(file => ({ path: file.source!.path!.slice('workspace:'.length), parentPath: '/notes',

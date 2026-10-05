@@ -45,7 +45,7 @@ type ApplyWorkspaceImportToCanvasOpts = {
   sourcesByPath?: WorkspaceSourceIndex
   removedPaths?: WorkspacePath[]
   premergedSourceFiles?: SourceFile[]
-  assertCurrent?: () => void
+  assertCurrent?: (phase: 'read' | 'publication') => void
 }
 
 type ApplyWorkspaceImportToCanvasResult = {
@@ -149,14 +149,16 @@ export async function applyWorkspaceImportToCanvas(args: {
 
   const store = useGraphStore.getState()
   let expectedSourceFiles = store.sourceFiles
+  let phase: 'read' | 'publication' = 'read'
   const staleImport = () => Object.assign(new Error('Active document source changed during materialization (workspace import publication).'),
     { code: 'SOURCE_FILES_MATERIALIZATION_STALE', retryable: false })
-  const assertCurrent = () => {
-    args.opts?.assertCurrent?.()
+  const assertCurrent = (nextPhase = phase) => {
+    phase = nextPhase
+    args.opts?.assertCurrent?.(phase)
     if (useGraphStore.getState().sourceFiles !== expectedSourceFiles) throw staleImport()
   }
   const publishSourceFiles = (files: SourceFile[]) => {
-    assertCurrent()
+    assertCurrent('publication')
     const normalized = normalizeSourceFiles(files)
     store.setSourceFiles(normalized)
     const published = useGraphStore.getState().sourceFiles
@@ -413,7 +415,7 @@ export async function applyWorkspaceImportToCanvas(args: {
         scheduleApplyComposedGraphFromSourceFiles()
       }
     }
-    assertCurrent()
+    assertCurrent('publication')
     applyInteractiveImportModes({
       graphData: preferredInteractiveImportGraphData,
       frontmatterOnlyDoc: sawFrontmatterOnlyDoc,
@@ -426,7 +428,7 @@ export async function applyWorkspaceImportToCanvas(args: {
   if (merged !== existing || existing.length !== existingAll.length) {
     publishSourceFiles(merged)
     if (preferredInteractiveImportRawText || preferredInteractiveImportGraphData || sawFrontmatterOnlyDoc) {
-      assertCurrent()
+      assertCurrent('publication')
       applyInteractiveImportModes({
         graphData: preferredInteractiveImportGraphData,
         frontmatterOnlyDoc: sawFrontmatterOnlyDoc,
@@ -438,7 +440,7 @@ export async function applyWorkspaceImportToCanvas(args: {
     return { sourceFilesUpdated: true, enabledCount, parsedCount: 0 }
   }
   if (preferredInteractiveImportRawText || preferredInteractiveImportGraphData || sawFrontmatterOnlyDoc) {
-    assertCurrent()
+    assertCurrent('publication')
     applyInteractiveImportModes({
       graphData: preferredInteractiveImportGraphData,
       frontmatterOnlyDoc: sawFrontmatterOnlyDoc,

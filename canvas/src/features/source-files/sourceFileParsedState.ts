@@ -178,6 +178,23 @@ export function canSkipActiveWorkspaceSourceFilesRematerialization(args: { sourc
 }
 
 type MaterializationSourceSnapshot = MaterializationDocument & { sourceFiles: SourceFile[] }
+/** A graph import may restart before publication after the native editor adopts its exact non-Markdown source. */
+export function readGraphImportConvergedSource(args: {
+  activePath: string; activeSourcePath: string; before: MaterializationSourceSnapshot; current: MaterializationSourceSnapshot
+}): SourceFile | null {
+  const { activePath, activeSourcePath, before, current } = args
+  if (isMarkdownLikeFileName(activePath) || current.sourceFiles !== before.sourceFiles) return null
+  const active = current.sourceFiles.filter(file => file.source?.path === activeSourcePath), file = active[0]
+  if (active.length !== 1 || !file?.enabled || !file.id || !file.text.trim()
+    || current.sourceFiles.filter(value => value.id === file.id).length !== 1
+    || !matchesMarkdownDocumentPath(activePath, file.name)
+    || !current.markdownDocumentName || !matchesMarkdownDocumentPath(activePath, current.markdownDocumentName)
+    || current.markdownDocumentText !== file.text) return null
+  const priorName = String(before.markdownDocumentName || '').trim()
+  if (priorName ? matchesMarkdownDocumentPath(activePath, priorName) && before.markdownDocumentText !== file.text
+    : !!String(before.markdownDocumentText || '')) return null
+  return file
+}
 /** A cold document read may restart after an unrelated, inactive append; existing records remain authoritative. */
 export function canRetryUnappliedBootstrapDocument(
   before: MaterializationSourceSnapshot & { markdownDocumentApplyViewPreset?: boolean },
