@@ -70,6 +70,8 @@ async function tableProof(panel, page, expected) {
   await table.focus()
   const overflow = await table.evaluate(element => element.scrollWidth > element.clientWidth + 1)
   if (overflow) {
+    for (let index = 0; index < 64; index++) await page.keyboard.press('ArrowLeft')
+    await page.waitForFunction(() => document.querySelector('[aria-label="Original fact table"]').scrollLeft <= 1, undefined, { timeout: 3000 })
     for (let index = 0; index < 64; index++) await page.keyboard.press('ArrowRight')
     await page.waitForFunction(() => { const el = document.querySelector('[aria-label="Original fact table"]'); return el.scrollLeft >= el.scrollWidth - el.clientWidth - 2 }, undefined, { timeout: 3000 })
     for (let index = 0; index < 64; index++) await page.keyboard.press('ArrowLeft')
