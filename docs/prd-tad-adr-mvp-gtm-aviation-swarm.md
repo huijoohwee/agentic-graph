@@ -41,10 +41,10 @@ Operational exposure and flight-cost calculation remain unimplemented.
 **agentic-graph** owns code and documentation. This implementation
 consumes [aviation-evidence-layer@0.4.2](aviation-evidence/prd-tad-adr-mvp-gtm.md); it does not replace that
 owner, its eleven acceptance thresholds, rights records, financial model, or execution backlog.
-This successor adds import race fences/stages, primary-first Geo/lazy SVG, bounded bundles and XR surface
-projections. Explicit local imports survive seed refresh and remain in SourceFiles/Explorer. Async
-controls preserve eligible keyboard focus. Automatic JS precache follows emitted static imports;
-explicit Offline Studio retains its full closure. No package, provider, model or store is added.
+Import race fences/stages, primary-first Geo/lazy SVG, bounded bundles and XR projections extend native
+owners. Local imports survive seed refresh and stay visible. Async controls retain eligible focus.
+Automatic JS precache follows static imports; explicit Offline Studio keeps its full closure.
+No package, provider, model or store is added.
 
 ## Scope and grounding — reference implementation
 
@@ -490,9 +490,9 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ER1–ER11 bind proof; AS1/AS2/AS5 and delivery need separate acceptance.
 
-1f3802 standard passes; full-app fails at bootstrap/import materialization (ER2). Local root-retention
-repair passes checks/live Editor refresh; online reload still fails at async read (ER8). Adopt parser repair and
-CI enrollment through native receipts, then run exact-candidate first-offline and emitted-worker proof.
+1f3802 standard passes; full-app fails at materialization (ER2). Root retention passes checks/live refresh;
+reload fails at async read (ER8). Adopt parser repair/CI enrollment natively, then verify first offline-open
+and emitted-worker behavior against the exact candidate.
 No unchanged full-CI retry or waiver. iPhone remains SKIP/KIV.
 Whole-host total served JS≤150 kB awaits explicit scope decision; no silent exception. Real-label,
 full guideline acceptance remains separate. Recheck on source/input/profile drift.
