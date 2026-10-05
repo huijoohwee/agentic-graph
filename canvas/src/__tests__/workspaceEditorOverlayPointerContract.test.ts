@@ -147,6 +147,12 @@ export function testWorkspaceEditorOverlayDoesNotShrinkCanvasViewport() {
   if (!text.includes('aria-label="Workspace editor overlay shell"')) {
     throw new Error('expected Canvas page to render workspace editor in an absolute overlay shell')
   }
+  if (
+    !text.includes('const WORKSPACE_EDITOR_OVERLAY_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 3') ||
+    !text.includes('style={{ zIndex: WORKSPACE_EDITOR_OVERLAY_Z_INDEX }}')
+  ) {
+    throw new Error('expected Workspace editor controls to stay above the bounded floating-panel stack')
+  }
   if (!text.includes('layout="full"')) {
     throw new Error('expected Canvas viewport to remain in full layout while workspace editor overlay is active')
   }
