@@ -84,7 +84,7 @@ ci_scopes:
     commands: [["node", "--test", "scripts/__tests__/vite-build-asset-namespace.test.mjs"]]
   geospatial_provider:
     roots: ["gympgrph/src/features/geospatial/mapLibreProviderStyle.ts", "gympgrph/src/features/geospatial/useMapLibreBasemap.ts", "canvas/src/__tests__/flightSimMapLibreProviderStyleLoad.test.ts", "canvas/src/__tests__/flightSimMapLibreProviderStyleHandoff.test.ts", "canvas/src/__tests__/flightSimMapLibreOfflineStyle.test.ts"]
-    commands: [["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/flightSimMapLibreProviderStyleLoad.test.ts", "canvas/src/__tests__/flightSimMapLibreProviderStyleHandoff.test.ts", "canvas/src/__tests__/flightSimMapLibreOfflineStyle.test.ts"]]
+    commands: [["npm", "run", "smoke:prepare"], ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/flightSimMapLibreProviderStyleLoad.test.ts", "canvas/src/__tests__/flightSimMapLibreProviderStyleHandoff.test.ts", "canvas/src/__tests__/flightSimMapLibreOfflineStyle.test.ts"]]
   workspace_project_canvas:
     roots: ["canvas/src/features/workspace-project/", "canvas/viteWorkspaceProject.ts", "canvas/viteWorkspaceArtifactBridge.ts", "canvas/src/features/panels/views/HistoryView.tsx", "canvas/src/__tests__/workspaceProjectPanel.test.tsx", "canvas/src/__tests__/workspaceProjectBridge.test.ts", "canvas/src/__tests__/workspaceCrossViewSync.test.tsx", "canvas/src/__tests__/storyboardWidgetMediaRecoveryBudget.test.tsx"]
     commands:

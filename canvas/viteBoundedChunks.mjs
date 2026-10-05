@@ -2,6 +2,7 @@ import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 import MagicString from 'magic-string'
+import remapping from '@jridgewell/remapping'
 import { parseAst } from 'rollup/parseAst'
 import { parse } from 'acorn'
 import { analyze } from 'eslint-scope'
@@ -34,6 +35,62 @@ export async function finalizeChunkReport(report, directory) {
     addedInitialBytes: null,
   }
   return report
+}
+
+// The late CSS cleanup changes generated columns; retain exact JS output and original sources.
+export function removeInlinedStylesheetDepsFromViteMapDeps(code, inlinedCssFileNames, originalMap = null) {
+  if (!inlinedCssFileNames.size || !code.includes('__vite__mapDeps')) return null
+  const helper = /const __vite__mapDeps=\(i,m=__vite__mapDeps,d=\(m\.f\|\|\(m\.f=(\[[^\]]*\])\)\)\)=>i\.map\(i=>d\[i\]\);/.exec(code)
+  if (!helper) return null
+  let deps
+  try { deps = JSON.parse(helper[1]) } catch { return null }
+  if (!Array.isArray(deps) || !deps.every(dep => typeof dep === 'string')) return null
+  const indexes = new Map(), kept = []
+  deps.forEach((dep, index) => {
+    if (!inlinedCssFileNames.has(dep.trim().replace(/\\/g, '/').replace(/^\.\//, '').split(/[?#]/)[0])) {
+      indexes.set(index, kept.length); kept.push(dep)
+    }
+  })
+  if (kept.length === deps.length) return null
+  const edited = new MagicString(code), arrayStart = helper.index + helper[0].indexOf(helper[1])
+  edited.overwrite(arrayStart, arrayStart + helper[1].length, JSON.stringify(kept))
+  for (const match of code.matchAll(/__vite__mapDeps\(\[([0-9,\s]*)\]\)/g)) {
+    const values = match[1].split(',').map(value => value.trim()).filter(Boolean).map(value => Number.parseInt(value, 10))
+    if (!values.every(value => Number.isInteger(value) && value >= 0)) continue
+    const next = values.map(value => indexes.get(value)).filter(value => typeof value === 'number')
+    edited.overwrite(match.index, match.index + match[0].length, `__vite__mapDeps([${next.join(',')}])`)
+  }
+  let map = null
+  if (originalMap) {
+    const shift = edited.generateMap({ hires: true, source: originalMap.file || 'chunk.js' })
+    map = Object.assign(shift, remapping([shift, originalMap], () => null))
+    map.file = originalMap.file
+    if (originalMap.debugId) map.debugId = originalMap.debugId
+  }
+  return { code: edited.toString(), map }
+}
+
+export function rewriteInlinedStylesheetPreloads(output, inlinedCssFileNames, bundle) {
+  const next = removeInlinedStylesheetDepsFromViteMapDeps(output.code, inlinedCssFileNames, output.map)
+  if (!next) return false
+  const mapAsset = next.map && bundle[output.sourcemapFileName]
+  if (next.map && mapAsset?.type !== 'asset') throw new Error(`Missing emitted source map: ${output.fileName}`)
+  output.code = next.code
+  if (next.map) { output.map = next.map; mapAsset.source = next.map.toString() }
+  return true
+}
+
+export async function rewriteInlinedStylesheetPreloadsOnDisk(output, inlinedCssFileNames, bundle, directory) {
+  const file = path.resolve(directory, output.fileName), code = await readFile(file, 'utf8')
+  if (!removeInlinedStylesheetDepsFromViteMapDeps(code, inlinedCssFileNames)) return false
+  const mapFile = output.sourcemapFileName && path.resolve(directory, output.sourcemapFileName)
+  const map = output.map ? JSON.parse(await readFile(mapFile, 'utf8')) : null
+  const current = { ...output, code, map }
+  if (!rewriteInlinedStylesheetPreloads(current, inlinedCssFileNames, bundle)) return false
+  if (current.map) await writeFile(mapFile, current.map.toString())
+  await writeFile(file, current.code)
+  Object.assign(output, current)
+  return true
 }
 
 /** Dependency-first SCCs. Iterative traversal also handles large editor graphs. */

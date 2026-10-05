@@ -1,4 +1,4 @@
-import { boundedChunksPlugin } from './viteBoundedChunks.mjs'
+import { boundedChunksPlugin, rewriteInlinedStylesheetPreloads, rewriteInlinedStylesheetPreloadsOnDisk } from './viteBoundedChunks.mjs'
 import { createPwaPrecacheAdmission } from './vitePwaPrecacheAdmission.mjs'
 import { createRemoteFetchHandler } from './viteRemoteFetch'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
@@ -305,56 +305,6 @@ const filterModulePreloadDependencies = (deps: string[]): string[] =>
     !isInlinedHtmlEntryStylesheetModulePreloadDependency(dep),
   )
 
-const parseViteMapDepsArray = (arrayLiteral: string): string[] | null => {
-  try {
-    const value = JSON.parse(arrayLiteral)
-    if (!Array.isArray(value)) return null
-    return value.every(item => typeof item === 'string') ? value : null
-  } catch {
-    return null
-  }
-}
-
-const rewriteViteMapDepsCalls = (code: string, indexMap: Map<number, number>): string =>
-  code.replace(/__vite__mapDeps\(\[([0-9,\s]*)\]\)/g, (call, indexesRaw) => {
-    const indexes = String(indexesRaw || '')
-      .split(',')
-      .map(value => value.trim())
-      .filter(Boolean)
-      .map(value => Number.parseInt(value, 10))
-    if (!indexes.every(index => Number.isInteger(index) && index >= 0)) return call
-    const nextIndexes = indexes
-      .map(index => indexMap.get(index))
-      .filter((index): index is number => typeof index === 'number')
-    return `__vite__mapDeps([${nextIndexes.join(',')}])`
-  })
-
-const removeInlinedStylesheetDepsFromViteMapDeps = (code: string, inlinedCssFileNames: Set<string>): string => {
-  if (!inlinedCssFileNames.size || !code.includes('__vite__mapDeps')) return code
-  const helperPattern = /const __vite__mapDeps=\(i,m=__vite__mapDeps,d=\(m\.f\|\|\(m\.f=(\[[^\]]*\])\)\)\)=>i\.map\(i=>d\[i\]\);/
-  const helperMatch = code.match(helperPattern)
-  if (!helperMatch || typeof helperMatch.index !== 'number') return code
-  const deps = parseViteMapDepsArray(helperMatch[1])
-  if (!deps || deps.length === 0) return code
-
-  const indexMap = new Map<number, number>()
-  const nextDeps: string[] = []
-  let removed = false
-  deps.forEach((dep, index) => {
-    if (inlinedCssFileNames.has(normalizeModulePreloadDependencyPath(dep))) {
-      removed = true
-      return
-    }
-    indexMap.set(index, nextDeps.length)
-    nextDeps.push(dep)
-  })
-  if (!removed) return code
-
-  const nextHelper = helperMatch[0].replace(helperMatch[1], JSON.stringify(nextDeps))
-  const withHelper = `${code.slice(0, helperMatch.index)}${nextHelper}${code.slice(helperMatch.index + helperMatch[0].length)}`
-  return rewriteViteMapDepsCalls(withHelper, indexMap)
-}
-
 const resolveBundleOutputDir = (options: { dir?: string | null; file?: string | null }): string => {
   const dir = String(options.dir || '').trim()
   if (dir) return path.isAbsolute(dir) ? dir : path.resolve(__dirname, dir)
@@ -400,8 +350,7 @@ const inlineHtmlStylesheetAssetsPlugin = (): Plugin => {
       if (inlinedCssFileNames.size) {
         for (const output of Object.values(bundle)) {
           if (!output || output.type !== 'chunk') continue
-          const nextCode = removeInlinedStylesheetDepsFromViteMapDeps(output.code, inlinedCssFileNames)
-          if (nextCode !== output.code) output.code = nextCode
+          rewriteInlinedStylesheetPreloads(output, inlinedCssFileNames, bundle)
         }
       }
 
@@ -420,14 +369,7 @@ const inlineHtmlStylesheetAssetsPlugin = (): Plugin => {
         if (!output || output.type !== 'chunk') continue
         const fileName = String(output.fileName || '')
         if (!fileName.endsWith('.js')) continue
-        const filePath = path.resolve(outDir, fileName)
-        try {
-          const code = await fs.readFile(filePath, 'utf8')
-          const nextCode = removeInlinedStylesheetDepsFromViteMapDeps(code, inlinedCssFileNames)
-          if (nextCode !== code) await fs.writeFile(filePath, nextCode)
-        } catch {
-          void 0
-        }
+        await rewriteInlinedStylesheetPreloadsOnDisk(output, inlinedCssFileNames, bundle, outDir)
       }
       for (const fileName of inlinedCssFileNames) {
         try {

@@ -6,11 +6,14 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { rollup } from 'rollup'
+import MagicString from 'magic-string'
+import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping'
 import { spawnSync } from 'node:child_process'
 import {
   assertBuiltJavaScriptBudget, assertChunkGraphAcyclic, boundedChunksPlugin, dependencyComponents,
   extractDeferredParserFactories, extractStaticPayload, inspectBuiltJavaScript, partitionModuleGraph,
-  finalizeChunkReport, isEvidenceRuntimeModule,
+  finalizeChunkReport, isEvidenceRuntimeModule, removeInlinedStylesheetDepsFromViteMapDeps,
+  rewriteInlinedStylesheetPreloads, rewriteInlinedStylesheetPreloadsOnDisk,
 } from '../../canvas/viteBoundedChunks.mjs'
 
 import {
@@ -273,4 +276,41 @@ test('the locked Mermaid parser retains native parse output after factory and gr
     assert.equal(snapshot(await transformed.parse(type, source)), snapshot(await original.parse(type, source)))
   }
   await assert.rejects(transformed.parse('pie', 'pie\n"invalid" : nope'))
+})
+
+
+test('late preload cleanup preserves exact JS and original map positions in bundle and disk phases', async t => {
+  const deps = ['./assets/index-A.css', 'assets/runtime.js', 'assets/other.js']
+  const source = `const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=${JSON.stringify(deps)})))=>i.map(i=>d[i]);export const before="é";\nconst values=__vite__mapDeps([0,1,2]);export const after="𝒜";\n`
+  const expected = source.replace(JSON.stringify(deps), JSON.stringify(deps.slice(1))).replace('__vite__mapDeps([0,1,2])', '__vite__mapDeps([0,1])')
+  const removed = new Set(['assets/index-A.css']), directory = fs.mkdtempSync(path.join(os.tmpdir(), 'agentic-preload-map-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const position = (code, word) => { const prefix = code.slice(0, code.indexOf(word)), lines = prefix.split('\n'); return { line: lines.length, column: lines.at(-1).length } }
+  for (const phase of ['bundle', 'disk']) {
+    const map = new MagicString(source).generateMap({ source: '/original.ts', file: 'entry.js', includeContent: true, hires: true })
+    const chunk = { type: 'chunk', fileName: 'entry.js', sourcemapFileName: 'entry.js.map', code: source, map }
+    const asset = { type: 'asset', fileName: 'entry.js.map', source: map.toString() }, bundle = { 'entry.js': chunk, 'entry.js.map': asset }
+    if (phase === 'bundle') assert.equal(rewriteInlinedStylesheetPreloads(chunk, removed, bundle), true)
+    else {
+      fs.writeFileSync(path.join(directory, chunk.fileName), source); fs.writeFileSync(path.join(directory, asset.fileName), asset.source)
+      assert.equal(await rewriteInlinedStylesheetPreloadsOnDisk(chunk, removed, bundle, directory), true)
+      assert.equal(fs.readFileSync(path.join(directory, chunk.fileName), 'utf8'), expected)
+      assert.equal(fs.readFileSync(path.join(directory, asset.fileName), 'utf8'), asset.source)
+      assert.equal(await rewriteInlinedStylesheetPreloadsOnDisk(chunk, removed, bundle, directory), false)
+    }
+    assert.equal(chunk.code, expected)
+    assert.equal(asset.source, chunk.map.toString())
+    const traced = new TraceMap(JSON.parse(asset.source))
+    assert.deepEqual(traced.sourcesContent, [source])
+    for (const word of ['before', 'after', 'é', '𝒜']) {
+      const original = originalPositionFor(traced, position(expected, word))
+      assert.deepEqual({ source: original.source, line: original.line, column: original.column }, { source: '/original.ts', ...position(source, word) })
+    }
+    assert.equal(rewriteInlinedStylesheetPreloads(chunk, removed, bundle), false)
+    assert.equal(typeof chunk.map.toUrl(), 'string')
+  }
+  assert.equal(removeInlinedStylesheetDepsFromViteMapDeps(source, removed).code, expected)
+  assert.equal(removeInlinedStylesheetDepsFromViteMapDeps('plain()', removed), null)
+  assert.throws(() => rewriteInlinedStylesheetPreloads({ fileName: 'entry.js', code: source,
+    map: new MagicString(source).generateMap({ source: 'source.ts', hires: true }) }, removed, {}), /Missing emitted source map/)
 })
