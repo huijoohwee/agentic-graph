@@ -2,8 +2,8 @@
 title: "Agent-Ready Surface Contract"
 id: "md:agentic-graph-agent-ready-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.28.2"
-date: "2026-09-16"
+version: "1.29.0"
+date: "2026-10-05"
 lang: "en-US"
 owner: "cloudflare.pages.agent-ready.surface"
 local_rung: "spec-complete"
@@ -17,17 +17,17 @@ companion: "docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.compani
 runtime_companion: "docs/documents/agentic-graph-agent-ready-prd-tad-adr-mvp-gtm.runtime.md"
 frontmatter_contract: "required"
 continuity_id: "PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM"
-worktree_id: "device-cba000d3779d--planning-v27"
-agent_id: "codex-01a0940a"
+worktree_id: "device-0232231d4a19--canvas-observability-host"
+agent_id: "codex-canvas-observability"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
 previous_document_version: "1.28.0"
-prd_revision: "1.28.2"
-tad_revision: "1.28.2"
-adr_revision: "1.28.2"
-mvp_revision: "1.28.2"
-gtm_revision: "1.28.2"
+prd_revision: "1.29.0"
+tad_revision: "1.29.0"
+adr_revision: "1.29.0"
+mvp_revision: "1.29.0"
+gtm_revision: "1.29.0"
 ---
 
 # Agent-Ready Surface Contract
@@ -358,3 +358,22 @@ Use the stated persona and pain hypothesis to test one priced pilot in the exist
 
 Source review is bounded to repository `7fb85741121d8c2886027e4a630d013ba91c1027`. Confirmed: these referenced artifacts exist at that revision: [`canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs), [`canvas/src/features/agent-ready/webMcpRuntime.ts`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/features/agent-ready/webMcpRuntime.ts), [`canvas/src/main.tsx`](https://github.com/huijoohwee/agentic-graph/blob/7fb85741121d8c2886027e4a630d013ba91c1027/canvas/src/main.tsx). Their existence does not confirm every behavior asserted by the specification.
 Experience observations, current VCC execution and buyer/payment evidence are unverified here. This is a bounded planning update, not a full-guideline conformance verdict; historical conformance percentages above apply only to their recorded profile and revision.
+
+
+## Native observability composition — reference implementation
+
+Five roles join `PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM@1.29.0` for this bounded increment.
+
+**PRD / O-1.** An operator must trace observed agent work to its exact codebase and evidence across explicitly selected repositories. The existing development entry opened an unrelated saved export. The accepted scope shows only the native Mission Dashboard, including its built-in Explore codebase · D3 and source evidence. A separate source tree, editor, standalone canvas and other application surfaces are excluded. Preserve repository selection, no fabricated run/causal edge, visible missing/stale/partial provenance, and separate repository, revision, tree and snapshot identities.
+
+**TAD / O-1.** `canvas/observability.html` and `canvas/vite.observability.config.ts` compose the existing `AgentMissionOverview` and `AgenticOsMissionControl` dashboard owners. The dashboard owns D3 rendering, native styling, and evidence controls. `agentMissionSourceDocument` reuses exact archive bytes at `/.workspace/<encoded-workflow-id>/agent-mission.manifest.json`; this is a virtual document, never a copied manifest or filesystem scan. The host receives only a bounded repository allowlist and explicit workspace root. Native archive readers and deterministic ingestion retain ownership. The native index builder has a session-only inspection option with no workspace initialization, active reference or workflow binding; persistence callers keep their original serialized contract and lazy-load storage. Existing OS execution/evidence and Graph indexing/presentation remain separate owners.
+
+**ADR / O-1.** A separate entry avoids changes to other active tasks' main-app configuration and avoids mounting provider execution or remote grammar hydration. Local presentation preferences may persist; observing evidence never runs, grades, repairs or promotes a workflow. Native Node owns deferred host imports because the Vite configuration runner closes before requests arrive. Clusters carry no implied execution relationship. Strict impact uses explicit source context; missing/mismatched repository or revision cannot fall back to path matching. Fresh archive reads clear missing indexes, and dashboard children remount on immutable trace identity. WebMCP and `/`, `@`, `#` dispatch remain unavailable in this entry; native capability ownership is preserved without invented aliases.
+
+**MVP / O-1.** Canvas supplies the default four-repository allowlist; other roots use the same neutral schema. Selection cancels/discards older replies. Build output includes a Graph-owned revision/dirty-state/configuration-digest asset inventory; consumers verify hashes and <500 kB chunks. No new graph store, renderer, palette, hosted service or paid model is introduced. The initial 25-minute/12-module bound was refreshed to 40 active minutes/20 modules for the requested manifest/dashboard narrowing; authored files remain <600 lines. External ownership/release waits have no assumed completion time.
+
+**Checks / O-1.** Host/provenance/session checks passed 15/15; native mission workspace lifecycle/context menu 2/2; retained-index fidelity 1/1; workflow archive/stages 10/10; mission projection/WebMCP regression 4/4; authored-state readiness 1/1; final native TypeScript check passed. Live desktop verified the dashboard, exact virtual manifest, 443 indexed sources and native D3 with 200 nodes/103 edges; no separate source tree/editor/canvas is shown. A fresh archive read without an index cleared prior graph evidence, and switching to Commerce cleared the prior mission before loading its own archive. Mobile and clean-candidate browser smoke remain unverified. Static build failed the unchanged <500 kB gate on a 988,324-byte MapLibre chunk; readmission of its loader owner was rejected for overlap with `aviation-build-ci-identity`. No cap waiver or replacement renderer was used. Source bases: Graph `b27429d9676c1ec57fd4f361c2b96b1d2fd16824`, Canvas `9feb73844b93810ed0370c96ecb5743c3754e72f`.
+
+**GTM / O-1.** Hypothesis: maintainers value a shorter path from failed run to exact affected source and proof. Measure time to one source-bound explanation with the local workspace before pricing an assisted pilot. Willingness to pay, saved time and revenue remain unmeasured. No outreach, payment or deployment is part of this implementation.
+
+**Handoff / O-1.** Local dashboard functionality is implemented; source publication and artifact readiness are separate pending stages. Complete final checks and native RELEASE; the MapLibre owner must resolve the admitted capability boundary before static artifact consumption can pass. Production and protected-main runtime readiness require separate receipts. Rollback restores the preceding admitted source and exact generated bundle; no source/evidence datastore migration is introduced.

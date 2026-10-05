@@ -1,7 +1,5 @@
 import type { GraphData } from '@/lib/graph/types'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
-import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
-import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
 import { retainedAgentGraphDocumentIdentity, isReadOnlyAgentGraphProjection } from './agentGraphProjectionPolicy'
 import { normalizeAgentGraphObservation } from '../../../../contracts/agent-graph-observation.mjs'
 
@@ -26,12 +24,14 @@ async function write(fs: WorkspaceFs, path: string, value: unknown) {
   const previous = await fs.readFileText(path)
   if (previous === text) return
   const split = path.lastIndexOf('/'), parentPath = path.slice(0, split)
+  const { ensureWorkspaceFolderTreeIfMissing } = await import('@/features/workspace-fs/ensureFolderTreeIfMissing')
   await ensureWorkspaceFolderTreeIfMissing({ fs, folderPath: parentPath })
   if (previous === null) await fs.createFile({ parentPath, name: path.slice(split + 1), text, mirrorToHost: false })
   else await fs.writeFileText(path, text, { mirrorToHost: false })
 }
 
-export function buildAgentGraphWorkspaceIndex(graph: GraphData, projectionPath: string): WorkspaceCodebaseIndex {
+export function buildAgentGraphWorkspaceIndex(graph: GraphData, projectionPath: string,
+  { retention }: { retention?: 'session' } = {}): WorkspaceCodebaseIndex {
   const identity = graph.metadata?.agentGraphProjection as Record<string, unknown> | undefined
   const retained = retainedAgentGraphDocumentIdentity(projectionPath)
   if (!identity || !isReadOnlyAgentGraphProjection(graph) || identity.complete !== true || !retained
@@ -42,10 +42,11 @@ export function buildAgentGraphWorkspaceIndex(graph: GraphData, projectionPath: 
     counts: identity.counts, complete: identity.complete,
     projection: { path: projectionPath, renderer: 'd3', readOnly: true, complete: identity.projectionComplete,
       truncated: identity.projectionTruncated, limit: identity.projectionLimit,
-      loadedNodes: graph.nodes.length, loadedEdges: graph.edges.length },
+      loadedNodes: graph.nodes.length, loadedEdges: graph.edges.length,
+      ...(retention === 'session' ? { retention: 'session' } : {}) },
     traversal: { graphId: retained.graphId, expectedSnapshotDigest: retained.snapshotDigest },
     observation: normalizeAgentGraphObservation(identity.observation) ?? null,
-    observationBasis: 'first-retained-import',
+    observationBasis: retention === 'session' ? 'session-import' : 'first-retained-import',
     evaluation: { status: 'unobserved', evidence: null },
   }
   const path = `${ROOT}/${retained.graphId.slice(9)}/${retained.snapshotDigest}.manifest.json`
@@ -54,6 +55,7 @@ export function buildAgentGraphWorkspaceIndex(graph: GraphData, projectionPath: 
 
 /** Reuses the native snapshot and retained D3 projection. No parsing or graph copies. */
 export async function retainAgentGraphWorkspaceIndex(graph: GraphData, projectionPath: string, { activate = true } = {}) {
+  const { getWorkspaceFs } = await import('@/features/workspace-fs/workspaceFs')
   const fs = await getWorkspaceFs(), index = buildAgentGraphWorkspaceIndex(graph, projectionPath)
   return serialize(fs, async () => {
     // Preserve the first measured import for this exact snapshot. Subsequent runs have their own observations.
@@ -65,6 +67,7 @@ export async function retainAgentGraphWorkspaceIndex(graph: GraphData, projectio
 }
 
 export async function readActiveAgentGraphWorkspaceIndex(snapshotPath?: string): Promise<WorkspaceCodebaseIndex | null> {
+  const { getWorkspaceFs } = await import('@/features/workspace-fs/workspaceFs')
   const fs = await getWorkspaceFs(), referenceText = snapshotPath ? JSON.stringify({ path: snapshotPath }) : await fs.readFileText(ACTIVE)
   if (!referenceText) return null
   if (referenceText.length > MAX_BYTES) throw Error('Codebase index reference exceeds its workspace budget')
@@ -92,6 +95,8 @@ export async function readActiveAgentGraphWorkspaceIndex(snapshotPath?: string):
 /** A workflow retains only a reference to the shared index, never its graph or private run trace. */
 export async function bindAgentGraphWorkspaceIndex(workflowId: string, index: WorkspaceCodebaseIndex,
   { isCurrent }: { isCurrent?: () => boolean } = {}) {
+  if ((index.value.projection as { retention?: string } | undefined)?.retention === 'session') throw Error('Session indexes cannot bind a retained workflow reference')
+  const { getWorkspaceFs } = await import('@/features/workspace-fs/workspaceFs')
   const fs = await getWorkspaceFs()
   const path = `/.workspace/${encodeURIComponent(workflowId)}/codebase-index.ref.json`
   const value = { schema: 'agentic-graph-codebase-index-reference/v1', authority: false, workflowId,
