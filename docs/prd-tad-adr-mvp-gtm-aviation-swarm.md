@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.11"
-revision: "0.4.11"
+version: "0.4.12"
+revision: "0.4.12"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.11"
-tad_revision: "0.4.11"
-adr_revision: "0.4.11"
-mvp_revision: "0.4.11"
-gtm_revision: "0.4.11"
+prd_revision: "0.4.12"
+tad_revision: "0.4.12"
+adr_revision: "0.4.12"
+mvp_revision: "0.4.12"
+gtm_revision: "0.4.12"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -25,7 +25,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-import-readiness"
 agent_id: "codex-root"
-source_revision: "e5b12cdfd2469af31e16d8c60b51967916f0c683"
+source_revision: "d51d89475852dc862ee6fbb7b4740171c3b0d1ba"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm
 
-`aviation-swarm@0.4.11` hardens eligible aviation evidence Must workflows:
+`aviation-swarm@0.4.12` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -136,7 +136,7 @@ Native limits: original ≤499,999 B; profile ≤10 entities/5,000 facts/20 sour
 ≤12,000 B; combined tool input ≤2,000,000 B; export pack ≤2,000,000 B. Pack/input envelopes are not
 JavaScript chunks. New files <600 lines; oversized owners shrink; emitted JS/MJS <500,000 B.
 ER4 binds emitted bytes; transfer proof remains open. Target ≤30 KiB lazy JS, zero initial growth/packages;
-Prior Geo boundary cut 68,143 B. GeoJSON now imports its existing pure parser directly; new byte delta pending.
+Prior Geo boundary cut 68,143 B. Direct pure GeoJSON import saves another 51,724 B initially; four checks pass.
 Current hardening: `readEvidenceExamples` admits all paths before I/O, aborts superseded reads and
 applies one 15-second deadline to the whole batch (test/config bound 1–30,000 ms). Late bodies cancel;
 cleanup never waits on a broken stream. Panel source/view/remove/unmount changes cancel pending assets
@@ -343,10 +343,10 @@ Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-read
 | ER1 | e5b12cd standard partition passes in 93.01 s (`validation-standard-e5b12cd.json`); ten retention regressions/typecheck pass | Full-app remains failed on 1f3802. Selected checks do not establish suite or production parity |
 | ER2 | 1f3802 import completes at 6.443 s; review stays disabled: “Active document source changed during materialization (workspace import publication).” `first-offline-1f3802/failure-diagnostics.json` | 1,113 requests settled; no network failure. Earlier provider refresh failures retained; concurrent parser writer not captured |
 | ER3 | b639 native Save: 3 entities/185 facts/3 sources; 262,899 B, SHA-256 `09c6904154ef854656712de87c21511e630fca076c456c0ac7cfc58d473da729` | Saved bytes equal prior cf1/38f2 packs. 38f2 offline reimport retained; `evidence-pack-b639ba42.json` is the actual new download |
-| ER4 | 8c44d25 build/typecheck pass: entry and precache match 37 JS/3,433,392 B; all 1,761 full-pack assets hash-verified. Largest JS 495,688 B; `static-precache-inventory-8c44d25.json` | Static inventory, not transfers. Whole-host JS≤150,000 B fails; added≤75,000 B unmeasured. No scope waiver |
+| ER4 | d51d894 build/typecheck pass: entry/precache 37 JS/3,381,668 B (−51,724); 1,778 pack members verified; largest JS 495,688 B. `static-precache-inventory-d51d894.json` | Total emitted JS increased 38,298 B. Static inventory, not transfers; total≤150,000 B fails, added≤75,000 B unmeasured |
 | ER5 | 1f3802 commits actual Flight acceptance at 1024/390: disconnect before first installed navigation, evidence/route/export/focus and worker request checks | Helper not reached: preceding spatial import fails (ER2). b639 first offline-open failure remains unclosed; no recovery reload counted |
 | ER6 | 38f2 390×844 offline + reduced-motion: import, UTC step, repeat route query, keyboard focus and zero horizontal overflow pass; 18 focus UI tests pass | `aviation-mobile-route-38f2aa043.json`; cf1 200% CSS zoom passes (not native browser zoom). Physical iPhone SKIP/KIV; startup blocked |
-| ER7 | 8c44d25: four owner tests and six emitted-worker cases pass. Installed static/deferred requests make zero fetches; ordinary behavior retained | `emitted-worker-cache-proof-8c44d25.json` binds worker hash/full installation. Valid metadata; missing/corrupt member coverage. Model proof, not UI acceptance |
+| ER7 | d51d894: six emitted-worker cases pass; four unchanged owner tests retained. Installed static/deferred requests make zero fetches; ordinary behavior retained | `emitted-worker-cache-proof-d51d894.json` binds worker hash/full installation. Valid metadata; missing/corrupt member coverage. Model proof, not UI acceptance |
 | ER8 | Root-retention regression plus nine related checks and typecheck pass. Live 5196 import→Editor→Refresh retains selected root source; example loads 3 entities/185 facts/3 sources (`live-root-retention.png`) | Generic basename deletion removed; explicit local projection retained. Real IndexedDB covers missing/corrupt provenance and reopen. Reload retains source but fails at `async source read`; dev-only proof |
 | ER9 | Six Geo checks pass. Built 160831d: zero SVG requests/mounts during activation; blocked SVG stays local and reload recovers (`geo-primary-built-160831d.json`, `geo-recovery-built-160831d.json`) | Unchanged-source browser proof; selection restored to MapLibre |
 | ER10 | XR tests 2/2: five unrelated writes and five Flight advances each change commits 5→0; motion retained. Build 6 keeps the same connected WebGL canvas through History open/close, zero removals | Unchanged-source proof; counts are test measurements, retention is actual UI evidence |
@@ -419,7 +419,7 @@ Audience projections must preserve qualified source joins, hypotheses and the ac
 ## ADLC and release — reference implementation
 
 PRs 1547/1550 are immutable; PR 1551 fixes the latter’s path failure. PRs 1553/1554 retain failed provider checks. b639 local checks pass, but aviation first-open fails. Intent: `/fix #aviation-import-readiness @codex`.
-Startup PR 1555 adopted. Parser PR 1558 (`62e8d17`) passes ten local partitions but fails provider mission readiness. Diagnostics successor owns contract v87; integration pending. PR 1558 includes 1556/1557 and IndexedDB enrollment. After adoption, enroll cache helper/config/worker/tests in CI; retain existing checks.
+Startup PR 1555 adopted. Parser PR 1558 failed provider mission readiness. Diagnostic successor PR 1559 (`0f7ac81`, contract v87) passes ten local plans; provider gate/integration pending. It retains earlier parser/visual/IndexedDB changes. After adoption, enroll cache helper/config/worker/tests in CI; retain existing checks.
 Changed candidates need bound proof; source integration and production remain separate.
 
 **AS-D6 · Lane & deploy boundary · flowchart LR · version 2.** Source and delivery each require their own receipt.
@@ -442,7 +442,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.11 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.12 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -452,7 +452,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.11`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.12`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
