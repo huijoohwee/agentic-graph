@@ -53,7 +53,7 @@ export async function closeFloatingPanel(
 }
 
 export async function closePanelRegion(region, targetPage) {
-  const closeButton = region.getByRole('button', { name: 'Close', exact: true })
+  const closeButton = region.locator('[data-kg-workspace-toolbar-close="1"]')
   try {
     await closeButton.click({ timeout: 5000 })
   } catch {
@@ -63,5 +63,6 @@ export async function closePanelRegion(region, targetPage) {
       await targetPage.keyboard.press('Escape')
     }
   }
-  await region.waitFor({ state: 'detached', timeout: 30000 })
+  // Canvas retains the warmed editor shell for cheap reopen; closing hides it.
+  await region.waitFor({ state: 'hidden', timeout: 30000 })
 }
