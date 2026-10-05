@@ -34,6 +34,20 @@ async function settle(predicate: () => boolean) {
   while (!predicate() && Date.now() < deadline) await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)) })
   assert.ok(predicate(), 'UI operation completed within the bounded test wait')
 }
+const coldStartupTest = 'evidence actions wait for source bootstrap even when a provisional source is parsed'
+test.beforeEach(context => { if (context.name !== coldStartupTest) completeSourceFilesBootstrap() })
+test(coldStartupTest, async () => {
+  const restore = saveSource(), env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)
+  try {
+    installSource(); await act(async () => root.render(<EvidencePanel />))
+    const load = () => [...container.querySelectorAll('button')].find(element => element.textContent === 'Load labelled example')!
+    assert.equal(load().disabled, true)
+    assert.equal(container.querySelector<HTMLInputElement>('input[type="file"]')!.disabled, true)
+    await act(async () => completeSourceFilesBootstrap())
+    assert.equal(load().disabled, false)
+    assert.equal(container.querySelector<HTMLInputElement>('input[type="file"]')!.disabled, false)
+  } finally { completeSourceFilesBootstrap(); await act(async () => root.unmount()); restore(); env.restore() }
+})
 test('authored configuration is isolated and rejects hidden fields, duplicate examples and remote assets', () => {
   const input = structuredClone(config), accepted = validateEvidenceConfiguration(input)
   input.examples[0].label = 'changed'
@@ -88,18 +102,6 @@ test('inspection disclosure exposes the complete shared typed record beyond the 
     await act(async () => { details.open = true; details.dispatchEvent(new env.dom.window.Event('toggle')) })
     assert.deepEqual(JSON.parse(details.querySelector('pre')!.textContent!), record)
   } finally { await act(async () => root.unmount()); env.restore() }
-})
-test('evidence actions wait for source bootstrap even when a provisional source is parsed', async () => {
-  const restore = saveSource(), env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)
-  try {
-    installSource(); await act(async () => root.render(<EvidencePanel />))
-    const load = () => [...container.querySelectorAll('button')].find(element => element.textContent === 'Load labelled example')!
-    assert.equal(load().disabled, true)
-    assert.equal(container.querySelector<HTMLInputElement>('input[type="file"]')!.disabled, true)
-    await act(async () => completeSourceFilesBootstrap())
-    assert.equal(load().disabled, false)
-    assert.equal(container.querySelector<HTMLInputElement>('input[type="file"]')!.disabled, false)
-  } finally { completeSourceFilesBootstrap(); await act(async () => root.unmount()); restore(); env.restore() }
 })
 test('an action at the source commit survives source-reset ordering', async () => {
   const restore = saveSource(), env = initJsdomHarness(), doc = env.dom.window.document
