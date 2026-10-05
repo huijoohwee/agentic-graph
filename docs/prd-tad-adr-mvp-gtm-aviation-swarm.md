@@ -486,7 +486,7 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-Development: PR1560 integrated. f897 bounds Python restore retry before publication. 1de632b aligns actual parser name/hash with canonical workspace identity, removes duplicate parsing and retains graph/revision/presets. Rename/provenance fences remain; cached entries consume no parse budget. ER1 binds checks; ER3–ER7 are historical.
+Development: PR1560 integrated. f897 bounds Python restore retry before publication. 1de632b aligns actual parser name/hash with canonical workspace identity, removes duplicate parsing and retains graph/revision/presets. ER1 binds checks; ER3–ER7 remain historical.
 Cold bootstrap ≤30 s; import ≤60 s requires exact source/success; AS1 ≤300 s.
 Production Release: ten native plans and protected integration need exact receipts. Contract v94 allows 600 s for one build plus four cold contexts, retaining journey deadlines. Native publication stops at provider handoff.
 Build: gzip reporting disabled; fbff/8598 build within 4 GiB. Offline Inspect focus/detail failures retained. Live trace proves duplicate parsing caused availability resets; final CI must verify the owner repair.
