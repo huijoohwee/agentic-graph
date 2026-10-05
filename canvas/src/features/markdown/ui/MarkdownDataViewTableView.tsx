@@ -1,4 +1,3 @@
-import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import React from 'react'
 import type { MarkdownDataView } from './markdownDataViewModel'
 import type { MarkdownDataViewColumnType } from './markdownDataViewColumnType'
@@ -14,7 +13,7 @@ import { Plus, Type } from 'lucide-react'
 import { ColumnHeaderMenu } from '@/components/ui/ColumnHeaderMenu'
 import { workspaceTablePreferencesStore } from '@/features/workspace-table/workspaceTablePreferencesStore'
 import { splitMultiValues } from '@/features/markdown/ui/markdownDataViewValueUtils'
-import { UI_RESPONSIVE_ACTION_ROW_CLASSNAME, UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_MENU_PANEL_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_TABLE_FRAME_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_TABLE_PROGRESS_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_TABLE_VALUE_CLASSNAME, UI_RESPONSIVE_ELEMENT_ROW_CLASSNAME, UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME, UI_RESPONSIVE_MENU_ICON_ACTION_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
+import { UI_RESPONSIVE_ACTION_ROW_CLASSNAME, UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_MENU_PANEL_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_TABLE_PROGRESS_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_TABLE_VALUE_CLASSNAME, UI_RESPONSIVE_ELEMENT_ROW_CLASSNAME, UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME, UI_RESPONSIVE_MENU_ICON_ACTION_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { UI_TEXT_TRUNCATE } from '@/lib/ui/textLayout'
 import { uiToolbarRowScrollClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { readMarkdownSigilDisplayText } from '@/lib/markdown/markdownSigil'
@@ -29,7 +28,7 @@ import { MarkdownDataViewColumnResizeHandle } from './MarkdownDataViewColumnResi
 import { MarkdownDataViewColumnsTableView } from './MarkdownDataViewColumnsTableView'
 import { MarkdownDataViewCellSelectPopover } from './MarkdownDataViewCellSelectPopover'
 import { MARKDOWN_DATA_VIEW_DEFAULT_COLUMN_WIDTH_PX, readMarkdownDataViewDefaultColumnWidth } from './markdownDataViewColumnSizing'
-import { MARKDOWN_DATA_VIEW_TABLE_STICKY_HEADER_CLASSNAME } from './markdownDataViewTableClasses'
+import { MarkdownDataViewTableCore, dataViewTableHeaderClassName, dataViewTableCellClassName, MARKDOWN_DATA_VIEW_TABLE_INITIAL_RENDER_ROW_LIMIT, MARKDOWN_DATA_VIEW_TABLE_RENDER_ROW_INCREMENT } from './MarkdownDataViewTableCore'
 import {
   MARKDOWN_DATA_VIEW_TABLE_CELL_PREVIEW_CHAR_LIMIT,
   readMarkdownDataViewTableCellDisplayText,
@@ -76,8 +75,7 @@ const safeLinkHref = (raw: string): string | null => {
   if (lower.startsWith('http://') || lower.startsWith('https://') || lower.startsWith('mailto:')) return v
   return null
 }
-export const MARKDOWN_DATA_VIEW_TABLE_INITIAL_RENDER_ROW_LIMIT = 32
-export const MARKDOWN_DATA_VIEW_TABLE_RENDER_ROW_INCREMENT = 32
+export { MARKDOWN_DATA_VIEW_TABLE_INITIAL_RENDER_ROW_LIMIT, MARKDOWN_DATA_VIEW_TABLE_RENDER_ROW_INCREMENT } from './MarkdownDataViewTableCore'
 const MARKDOWN_DATA_VIEW_HIERARCHY_COLUMN_WIDTH_PX = 64
 export const MARKDOWN_DATA_VIEW_FIELD_COLUMN_ID = '__field'
 export { MARKDOWN_DATA_VIEW_TABLE_CELL_PREVIEW_CHAR_LIMIT, readMarkdownDataViewTableCellPreviewText }
@@ -289,15 +287,20 @@ export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTab
     )
   }
   return (
-    <section className={`${UI_RESPONSIVE_DATA_VIEW_TABLE_FRAME_CLASSNAME} isolate`} aria-label="Table view">
-      <table className={`${tableSizeClassName} table-fixed border-separate border-spacing-0 text-xs`} style={tableStyle}>
-        <colgroup>
-          {hasNestedRowHierarchy ? <col style={{ width: MARKDOWN_DATA_VIEW_HIERARCHY_COLUMN_WIDTH_PX }} /> : null}
-          {visibleColumnMeta.map(({ col }) => <col key={col.id} style={{ width: readColumnWidth(col.id, readMarkdownDataViewDefaultColumnWidth(col.name)) }} />)}
-          {canMutate && props.onAddColumn ? <col style={{ width: 52 }} /> : null}
-        </colgroup>
-        <thead className={`${MARKDOWN_DATA_VIEW_TABLE_STICKY_HEADER_CLASSNAME} sticky top-0 z-30 isolate ${UI_THEME_TOKENS.table.headerBg} ${UI_THEME_TOKENS.table.text}`}>
-          <tr>
+    <MarkdownDataViewTableCore
+      columns={[
+        ...(hasNestedRowHierarchy ? [{ id: '__hierarchy', width: MARKDOWN_DATA_VIEW_HIERARCHY_COLUMN_WIDTH_PX }] : []),
+        ...visibleColumnMeta.map(({ col }) => ({ id: `field:${col.id}`, width: readColumnWidth(col.id, readMarkdownDataViewDefaultColumnWidth(col.name)) })),
+        ...(canMutate && props.onAddColumn ? [{ id: '__add', width: 52 }] : []),
+      ]}
+      rows={visibleNestedRowStates}
+      rowKey={({ row }) => row.id}
+      rowDepth={({ depth }) => depth}
+      selectedRowId={props.selectedRowId}
+      onActivateRow={onActivateRow}
+      tableClassName={tableSizeClassName}
+      tableStyle={tableStyle}
+      renderHeader={() => <>
             {hasNestedRowHierarchy ? (
               <th aria-label="Nested row hierarchy" className={`${headerPaddingClassName} relative z-[31] w-16 border-b ${UI_THEME_TOKENS.table.cellBorder} ${UI_THEME_TOKENS.table.headerBg}`}>
                 <MarkdownDataViewNestedRowsBulkToggle collapsed={areAllNestedRowsCollapsed} onToggle={toggleAllNestedRows} />
@@ -316,7 +319,7 @@ export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTab
               return (
               <th
                 key={c.id}
-                className={`${headerPaddingClassName} relative z-[31] text-left font-semibold border-b ${UI_THEME_TOKENS.table.cellBorder} ${UI_THEME_TOKENS.table.headerBg}`}
+                className={dataViewTableHeaderClassName(headerPaddingClassName)}
               >
                 <section className="flex min-w-0 items-center gap-2 overflow-hidden">
                   <ColumnHeaderPropertyTypeMenu
@@ -379,7 +382,7 @@ export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTab
             })}
             {canMutate && props.onAddColumn ? (
               <th
-                className={`${headerPaddingClassName} relative z-[31] text-left font-semibold border-b ${UI_THEME_TOKENS.table.cellBorder} ${UI_THEME_TOKENS.table.headerBg}`}
+                className={dataViewTableHeaderClassName(headerPaddingClassName)}
               >
                 <MarkdownDataViewAddColumnMenu
                   ariaLabel="Add column"
@@ -391,28 +394,10 @@ export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTab
                 />
               </th>
             ) : null}
-          </tr>
-        </thead>
-        <tbody className={UI_THEME_TOKENS.table.text}>
-          {visibleNestedRowStates.map(({ row: r, depth: rowDepth, childCount }) => {
-            const isNestedRowCollapsed = collapsedNestedRowIds.has(r.id)
-            return <tr
-              key={r.id}
-              className={[`${UI_THEME_TOKENS.table.rowHoverHighlight} transition-colors`, onActivateRow ? 'cursor-pointer' : '', uiSelectedRowStateClassName(props.selectedRowId === r.id)].join(' ')}
-              aria-selected={props.selectedRowId === undefined ? undefined : props.selectedRowId === r.id}
-              tabIndex={onActivateRow ? 0 : undefined}
-              onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onActivateRow?.(r.id) } }}
-              data-kg-markdown-data-view-row-nested-depth={String(rowDepth)}
-              onClick={
-                onActivateRow
-                  ? (e) => {
-                      const el = e.target as HTMLElement | null
-                      if (el?.closest('input,select,textarea,button')) return
-                      onActivateRow(r.id)
-                    }
-                  : undefined
-              }
-            >
+      </>}
+      renderCells={({ row: r, depth: rowDepth, childCount }) => {
+        const isNestedRowCollapsed = collapsedNestedRowIds.has(r.id)
+        return <>
               {hasNestedRowHierarchy ? (
                 <MarkdownDataViewHierarchyCell cellPaddingClassName={cellPaddingClassName} depth={rowDepth} childCount={childCount} collapsed={isNestedRowCollapsed} scope="row" onToggle={() => toggleNestedRow(r.id)} />
               ) : null}
@@ -423,7 +408,7 @@ export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTab
                 const uiType = (columnTypesById && columnTypesById[c.id]) || defaultColumnTypeForInferredKind(c.kind)
                 const baseKind = columnTypeToBaseKind(uiType)
                 const isEditing = editing?.rowId === r.id && editing?.colId === c.id
-                const cellBase = `${cellPaddingClassName} overflow-hidden border-b ${UI_THEME_TOKENS.table.cellBorder} align-top`
+                const cellBase = dataViewTableCellClassName(cellPaddingClassName)
                 if (isEditing) {
                   const isSelect = baseKind === 'select' && uiType !== 'checkbox'
                   const isCheckbox = uiType === 'checkbox'
@@ -531,8 +516,9 @@ export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTab
               {canMutate && props.onAddColumn ? (
                 <td className={`${headerPaddingClassName} border-b ${UI_THEME_TOKENS.table.cellBorder}`} />
               ) : null}
-            </tr>
-          })}
+        </>
+      }}
+      afterRows={<>
           {canMutate && props.onNewRecord ? (
             <tr>
               <td
@@ -566,8 +552,8 @@ export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTab
               </td>
             </tr>
           ) : null}
-        </tbody>
-      </table>
+      </>}
+    >
       <MarkdownDataViewCellSelectPopover
         editingMeta={editingMeta}
         placement={workspaceCellSelectPanelPlacement}
@@ -579,6 +565,6 @@ export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTab
         setEditingNull={() => setEditing(null)}
         onUpdateCell={onUpdateCell}
       />
-    </section>
+    </MarkdownDataViewTableCore>
   )
 })
