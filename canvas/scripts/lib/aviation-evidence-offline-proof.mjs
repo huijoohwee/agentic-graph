@@ -53,10 +53,11 @@ async function detail(panel, title) {
 async function evidencePanel(page) {
   const close = role(page.locator('[aria-label="Markdown view controls"]'), 'Close')
   if (await close.isVisible()) await close.click()
-  await page.locator('[data-kg-flight-sim-hydration="ready"] [data-kg-flight-training-score]').waitFor()
-  const disclosure = page.locator('details[data-kg-flight-evidence="1"]')
-  if (!await disclosure.evaluate(element => element.open)) await press(disclosure.locator('summary'), page)
-  return role(page, 'Native evidence and analysis', 'region')
+  const recorded = role(page, 'Recorded flight evidence', 'region')
+  await recorded.waitFor()
+  const panel = role(recorded, 'Native evidence and analysis', 'region')
+  await panel.waitFor()
+  return panel
 }
 async function tableProof(panel, page, expected) {
   const table = role(panel, 'Original fact table', 'region')
