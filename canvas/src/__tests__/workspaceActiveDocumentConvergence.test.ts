@@ -8,6 +8,7 @@ import { invalidateCachedWorkspaceActiveEntrySnapshot } from '@/features/source-
 import type { SourceFile } from '@/hooks/store/types'
 import type { WorkspaceEntry, WorkspaceFs } from '@/features/workspace-fs/types'
 import { hashStringToHex } from '@/lib/hash/stringHash'
+import { loadWorkspaceSourceIndex, setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 
 const path = '/notes/new-local-document.md'
 const name = 'notes/new-local-document.md'
@@ -190,4 +191,93 @@ test('passive convergence does not retry a second source-read drift', async () =
   assert.equal(useGraphStore.getState().markdownDocumentText, '# Newer requested edit\n')
   assert.deepEqual(f.applications, [])
   assert.deepEqual(f.writes, [])
+}))
+
+const bootstrapChanges = ['disabled append', 'edited existing', 'removed existing', 'reordered existing', 'parsed graph replacement',
+  'duplicate ID', 'duplicate path', 'enabled append', 'document draft', 'preset', 'selection', 'second append',
+  'selection during retry', 'preset during retry', 'second append during retry',
+  'changed persisted bytes', 'deleted persisted bytes', 'persisted read error'] as const
+
+for (const change of bootstrapChanges) test(`unapplied graph bootstrap settles only a bounded disabled append: ${change}`, async () => fixture(async f => {
+  const previousSource = loadWorkspaceSourceIndex()[path] || null
+  setWorkspaceEntrySource(path, { kind: 'local', originalName: 'new-local-document.md' })
+  f.initial.push({ id: 'bootstrap-active', name, text, enabled: true, status: 'idle',
+    source: { kind: 'local', path: `workspace:${path}` } })
+  Object.assign(f.request, { applyToGraph: true, premergedSourceFiles: f.initial, sourcesByPath: {} })
+  useGraphStore.setState({ markdownDocumentName: null, markdownDocumentText: '', markdownDocumentApplyViewPreset: true })
+  const entered = deferred<void>(), release = deferred<void>()
+  const persistedReadError = new Error('Persisted bootstrap read failed')
+  let publicationReads = 0, before: SourceFile[] = [], concurrent: SourceFile[] = []
+  const appended: SourceFile = { id: 'later-disabled-import', name: 'later.md', text: '# Later local import\n',
+    enabled: false, status: 'idle', source: { kind: 'local', path: 'workspace:/notes/later.md' } }
+  f.read(async () => {
+    const state = useGraphStore.getState()
+    if (state.sourceFiles.find(file => file.id === 'bootstrap-active')?.status !== 'parsed') return text
+    publicationReads++
+    if (publicationReads === 1) {
+      assert.equal(state.markdownDocumentName, null, 'the parser must finish before any document is published')
+      assert.equal(state.markdownDocumentText, '')
+      assert.deepEqual(f.applications, [])
+      before = state.sourceFiles
+      entered.resolve()
+      await release.promise
+    }
+    if ((publicationReads === 2 && change === 'second append') || (publicationReads === 3 && change === 'second append during retry')) {
+      concurrent = [...concurrent, { ...appended, id: 'second-import', name: 'second.md',
+        source: { kind: 'local', path: 'workspace:/notes/second.md' } }]
+      useGraphStore.setState({ sourceFiles: concurrent })
+    }
+    if (publicationReads === 2) {
+      if (change === 'changed persisted bytes') return '# Newer saved document\n'
+      if (change === 'deleted persisted bytes') return null
+      if (change === 'persisted read error') throw persistedReadError
+    }
+    if (publicationReads === 3 && change === 'selection during retry') useMarkdownExplorerStore.getState().setActivePath('/notes/new-selection.md')
+    if (publicationReads === 3 && change === 'preset during retry') useGraphStore.setState({ markdownDocumentApplyViewPreset: false })
+    return text
+  })
+  const settled = f.start(() => {}).then(proof => ({ proof, error: null }), error => ({ proof: null, error }))
+  try {
+    await Promise.race([entered.promise, settled.then(result => assert.fail(`expected post-parser read, received ${String(result.error)}`))])
+    concurrent = [...before, appended]
+    if (change === 'edited existing') concurrent[0] = { ...before[0], text: '# New unsaved source bytes\n' }
+    if (change === 'removed existing') concurrent.splice(0, 1)
+    if (change === 'reordered existing') [concurrent[0], concurrent[1]] = [concurrent[1], concurrent[0]]
+    if (change === 'parsed graph replacement') concurrent[0] = { ...before[0], parsedGraphData: { type: 'Graph', nodes: [], edges: [] } }
+    if (change === 'duplicate ID') concurrent[concurrent.length - 1] = { ...appended, id: before[0].id }
+    if (change === 'duplicate path') concurrent[concurrent.length - 1] = { ...appended, source: before[0].source }
+    if (change === 'enabled append') concurrent[concurrent.length - 1] = { ...appended, enabled: true }
+    useGraphStore.setState({ sourceFiles: concurrent })
+    if (change === 'document draft') useGraphStore.setState({ markdownDocumentText: '# Unsaved document draft\n' })
+    if (change === 'preset') useGraphStore.setState({ markdownDocumentApplyViewPreset: false })
+    if (change === 'selection') useMarkdownExplorerStore.getState().setActivePath('/notes/new-selection.md')
+    const document = useGraphStore.getState()
+    release.resolve()
+    const result = await settled, current = useGraphStore.getState()
+    if (change === 'disabled append') {
+      assert.equal(result.error, null)
+      assert.ok(result.proof && isMaterializedWorkspaceSourceProofCurrent(result.proof))
+      assert.deepEqual(f.applications, [{ markdownDocumentName: name, markdownDocumentText: text }])
+      assert.equal(current.markdownDocumentText, text)
+      assert.equal(current.sourceFiles.length, concurrent.length)
+      assert.equal(current.sourceFiles.find(file => file.id === appended.id), appended)
+      for (const file of before.filter(file => !file.enabled)) assert.equal(current.sourceFiles.find(value => value.id === file.id), file)
+      assert.equal(publicationReads, 3, 'one interrupted read, one fresh-byte fence and exactly one retry')
+    } else {
+      if (change === 'persisted read error') assert.equal(result.error, persistedReadError)
+      else assert.ok(stale(result.error), String(result.error))
+      assert.equal(current.sourceFiles, concurrent, 'new inventory remains authoritative on rejection')
+      assert.equal(current.markdownDocumentName, document.markdownDocumentName)
+      assert.equal(current.markdownDocumentText, document.markdownDocumentText)
+      assert.equal(current.markdownDocumentApplyViewPreset, change === 'preset during retry' ? false : document.markdownDocumentApplyViewPreset)
+      assert.deepEqual(f.applications, [], 'a rejected attempt must not publish a document')
+      assert.equal(publicationReads, change.includes('during retry') ? 3
+        : ['second append', 'changed persisted bytes', 'deleted persisted bytes', 'persisted read error'].includes(change) ? 2 : 1,
+      'the exact targeted read must reject without another retry')
+    }
+    assert.deepEqual(f.writes, [])
+  } finally {
+    release.resolve(); await settled
+    setWorkspaceEntrySource(path, previousSource)
+  }
 }))

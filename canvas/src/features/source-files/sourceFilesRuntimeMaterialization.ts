@@ -15,7 +15,7 @@ import { readWorkspaceSourceFilesDocsOnlySetting } from '@/lib/workspace/workspa
 import { hashStringToHexSharedContentCached } from '@/lib/hash/textHashCache'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import { isFrontmatterOnlyDoc } from '@/lib/markdown/frontmatter'
-import { areSourceFileRecordsEqual, buildSourceFileLifecycleState, canSkipActiveWorkspaceSourceFilesRematerialization, hasExpectedMaterializationSourceText,
+import { areSourceFileRecordsEqual, buildSourceFileLifecycleState, canRetryUnappliedBootstrapDocument, canSkipActiveWorkspaceSourceFilesRematerialization, hasExpectedMaterializationSourceText,
   ensureActiveWorkspaceSourceFileEnabled, hasMaterializationDocumentDrifted, readColdStartMaterializationSource, readPassiveMaterializationDocumentText, sameMaterializationSourceIdentities } from '@/features/source-files/sourceFileParsedState'
 import { readActiveWorkspaceSourceFileFallbackText, readWorkspaceActiveDocumentResolvedText, resolveActiveWorkspaceEntriesSnapshot } from '@/features/source-files/sourceFilesRuntimeActive'
 export { sameMaterializationSourceIdentities } from '@/features/source-files/sourceFileParsedState'
@@ -27,8 +27,7 @@ export function shouldProactivelyReapplyActiveWorkspaceMarkdownDocument(args: {
   markdownDocumentApplyViewPreset?: boolean
 }): boolean {
   const activePath = normalizeWorkspacePath(args.activePath)
-  if (!activePath || !isMarkdownLikeFileName(activePath)) return false
-  return true
+  return !!activePath && isMarkdownLikeFileName(activePath)
 }
 
 const readActiveWorkspaceEntryInlineText = (args: {
@@ -81,7 +80,7 @@ export async function reapplyActiveWorkspaceMarkdownDocument(args?: {
   const nextText = await readWorkspaceActiveDocumentResolvedText({ activePath, currentText, fs: args?.fs })
   if (args?.expectedSourceText !== undefined && nextText !== args.expectedSourceText) throw staleMaterialization()
   const latestStore = useGraphStore.getState()
-  if (latestStore.sourceFiles !== store.sourceFiles
+  if (latestStore.sourceFiles !== store.sourceFiles || latestStore.markdownDocumentApplyViewPreset !== store.markdownDocumentApplyViewPreset
     || hasMaterializationDocumentDrifted(activePath, store, latestStore, nextText)) return false
   if (!shouldCommitResolvedActiveMarkdownText({
     activePath,
@@ -315,9 +314,18 @@ export function isMaterializedWorkspaceSourceProofCurrent(proof: MaterializedWor
     && !hasMaterializedActivePathDrifted(proof.activePath, proof.explorerActivePath)
 }
 async function settleMaterializedDocument(args: NonNullable<Parameters<typeof reapplyActiveWorkspaceMarkdownDocument>[0]>, explorerAtStart: WorkspacePath | null): Promise<MaterializedWorkspaceSourceProof> {
-  const activePath = args.activePathOverride!, before = useGraphStore.getState()
-  await reapplyActiveWorkspaceMarkdownDocument(args)
-  const current = useGraphStore.getState()
+  const activePath = args.activePathOverride!
+  let before = useGraphStore.getState()
+  const applied = await reapplyActiveWorkspaceMarkdownDocument(args)
+  let current = useGraphStore.getState()
+  if (!applied && args.applyToGraph === true && args.expectedSourceText !== undefined
+    && !hasMaterializedActivePathDrifted(activePath, explorerAtStart) && canRetryUnappliedBootstrapDocument(before, current)) {
+    const proof = captureMaterializedWorkspaceSourceProof(activePath), fs = args.fs || await getWorkspaceFs()
+    if (await fs.readFileText(activePath) !== args.expectedSourceText || !isMaterializedWorkspaceSourceProofCurrent(proof)) throw staleMaterialization()
+    before = current
+    await reapplyActiveWorkspaceMarkdownDocument({ ...args, fs })
+    current = useGraphStore.getState()
+  }
   const documentOwnedRecord = (file: SourceFile) => args.applyToGraph === true && file.status === 'error'
     && file.source?.path === resolveWorkspaceSourcePathKey(activePath) && file.name === workspaceDocumentKey(activePath)
     && current.markdownDocumentName === file.name && current.markdownDocumentText === file.text && isFrontmatterOnlyDoc(file.text)
