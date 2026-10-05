@@ -298,7 +298,7 @@ export function VideoSequenceTimelineRuler({
           data-kg-gantt-timeline-zoom={String(timelineZoom)}
         >
         <section className="timeline-video-sequence-ruler-axis" aria-label="Timeline time ruler" data-kg-video-sequence-ruler-axis="1" onPointerDown={onRulerPointerDown}>
-          <VideoSequenceTimelineRulerTicks displayTicks={timelineAxisTicks} onSeek={minutes => onSelectRowPosition(selectedRowKey, Math.min(maxMinutes, minutes))} />
+          <VideoSequenceTimelineRulerTicks displayTicks={timelineAxisTicks} onSeek={maxMinutes > 0 ? minutes => onSelectRowPosition(selectedRowKey, Math.min(maxMinutes, minutes)) : undefined} />
           {timeRulerOverlay}
           <TimelinePlayhead maxMinutes={maxMinutes} positionMinutes={maxMinutes * playheadPercent / 100} frameRate={mediaFrameRate} onSeek={minutes => onSelectRowPosition(selectedRowKey, minutes)}
             className="timeline-transport-playhead-marker timeline-video-sequence-ruler-playhead-marker"
