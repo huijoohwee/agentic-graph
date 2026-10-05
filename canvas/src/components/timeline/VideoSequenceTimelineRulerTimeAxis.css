@@ -22,8 +22,8 @@
   overflow: hidden;
   align-items: center;
   padding-inline: 8px;
-  border-bottom: 1px solid rgb(226 232 240 / 1);
-  background: rgb(255 255 255 / 0.96);
+  border-bottom: var(--kg-surface-border);
+  background: var(--kg-panel-bg);
   pointer-events: auto;
 }
 
@@ -44,28 +44,31 @@
   height: var(--kg-video-sequence-axis-height);
   justify-content: flex-start;
   gap: 0;
-  padding-bottom: 0;
-  color: var(--kg-text-tertiary, rgb(107 114 128 / 1));
+  min-width: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: linear-gradient(var(--kg-border), var(--kg-border)) center 3px / 1px 5px no-repeat;
+  cursor: pointer;
+  pointer-events: auto;
+  color: var(--kg-text-secondary);
   font-family: var(--kg-font-mono);
   font-size: var(--kg-text-xs);
   font-variant-numeric: tabular-nums;
   line-height: var(--kg-text-xs-line);
 }
 
-.timeline-transport-ruler--video-sequence .timeline-transport-ruler-tick-line {
-  top: 3px;
-  bottom: auto;
-  height: 5px;
-  border-left: 1px solid color-mix(in srgb, var(--kg-text-tertiary, #6b7280) 18%, transparent);
+button.timeline-transport-ruler-tick:hover:not(:disabled) {
+  background-color: var(--kg-panel-bg-hover);
+  color: var(--kg-text-primary);
 }
-
-.timeline-transport-ruler--video-sequence .timeline-transport-ruler-tick:not([data-kg-video-sequence-major-tick="1"]) .timeline-transport-ruler-tick-line {
-  border-left-color: color-mix(in srgb, var(--kg-text-tertiary, #6b7280) 12%, transparent);
+button.timeline-transport-ruler-tick:focus-visible {
+  outline: 2px solid var(--kg-focus-ring);
+  outline-offset: -2px;
 }
-
-.timeline-transport-ruler--video-sequence .timeline-transport-ruler-tick[data-kg-video-sequence-major-tick="1"] .timeline-transport-ruler-tick-line {
-  border-left-width: 2px;
-  border-left-color: color-mix(in srgb, var(--kg-text-tertiary, #6b7280) 34%, transparent);
+button.timeline-transport-ruler-tick:disabled { cursor: default; }
+.timeline-transport-ruler--video-sequence .timeline-transport-ruler-tick[data-kg-video-sequence-major-tick="1"] {
+  background-size: 2px 5px;
 }
 
 .timeline-transport-ruler--video-sequence .timeline-transport-ruler-tick-label {

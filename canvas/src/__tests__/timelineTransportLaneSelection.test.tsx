@@ -17,11 +17,11 @@ export function load(url, context, next) {
 
 const text = (reply: string) => `\`\`\`mermaid
 sequenceDiagram
-actor A as Customer
-participant B as Web Shop
-participant C as Bank
-A->>B: Place order
-B->>C: Authorize
+actor A as Reader
+participant B as Index
+participant C as Archive
+A->>B: Find item
+B->>C: Read entry
 C-->>B: ${reply}
 \`\`\``
 
@@ -53,12 +53,12 @@ test('sequence ruler shares native whole-row selection and seeking', { timeout: 
   const key = (node: HTMLElement, key: string) => act(async () => { node.dispatchEvent(new env.dom.window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })) })
   const position = () => sequence.transport.playbackPosition
   try {
-    store.setState({ markdownDocumentText: text('Approved'), markdownDocumentName: 'lanes.md', markdownDocumentSourceUrl: '', markdownTokensPath: '', markdownDocumentApplyRevision: 24687 })
+    store.setState({ markdownDocumentText: text('Found'), markdownDocumentName: 'lanes.md', markdownDocumentSourceUrl: '', markdownTokensPath: '', markdownDocumentApplyRevision: 24687 })
     await act(async () => root.render(<Harness />))
     selected(['A', 'B'])
     assert.equal(button('C').type, 'button')
     assert.equal(button('C').tabIndex, 0)
-    assert.equal(button('C').getAttribute('aria-label'), 'Select Bank timeline lane')
+    assert.equal(button('C').getAttribute('aria-label'), 'Select Archive timeline lane')
     await click(button('C')); selected(['C'])
     assert.equal(position(), 0)
     await click(button('workflow')); selected(['workflow'])
@@ -68,10 +68,10 @@ test('sequence ruler shares native whole-row selection and seeking', { timeout: 
     await click(button('workflow'))
     await key(lane('C', 'row').querySelector<HTMLElement>('[data-sequence-timeline-event]')!, 'Enter')
     selected(['B', 'C']); assert.equal(position(), 1000)
-    assert.equal(sequence.current?.label, 'Authorize')
+    assert.equal(sequence.current?.label, 'Read entry')
     assert.equal(host.querySelectorAll('button button').length, 0)
     await click(button('workflow'))
-    await act(async () => store.setState({ markdownDocumentText: text('Declined'), markdownDocumentApplyRevision: 24688 }))
+    await act(async () => store.setState({ markdownDocumentText: text('Missing'), markdownDocumentApplyRevision: 24688 }))
     selected(['A', 'B']); assert.equal(position(), 0)
   } finally {
     await act(async () => root.unmount())

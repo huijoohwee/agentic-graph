@@ -15,6 +15,7 @@ import './canvasDragAdmission.test'
 import './sequenceCanvasSelection.test'
 import './svgSurfaceRuntime.test'
 import './zoomSelectionModePersistence.test'
+import './timelineSharedAffordances.test'
 
 const controlIds = [
   'control:richMedia', 'control:nodeShape', 'control:clusterShape', 'control:portHandles',

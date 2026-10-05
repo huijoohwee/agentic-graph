@@ -1,3 +1,4 @@
+import { assertXrPanelTimelineSurfaceContracts } from './xrTimelineSurfaceContractAssertions'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { resolveXrPanelRuntimeStack, resolveXrPanelSourceProfile } from '@/features/three/xrPanelModel'
@@ -58,7 +59,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   const spatialCaptureTools = readSource('features', 'three', 'xrSpatialCaptureTools.ts')
   const bottomPanel = readSource('features', 'strybldr', 'StrybldrTimelineBottomPanel.tsx')
   const timelineBottomPanel = readSource('features', 'gitgraph', 'TimelineBottomPanelView.tsx')
-  const xrCameraMotion = ['XrCameraMotionSection.tsx', 'XrTimelineSceneStageControls.tsx', 'XrTimelineRehearsalControls.tsx'].map(file => readSource('features', 'three', file)).join('\n')
+  const xrCameraMotion = ['XrCameraMotionSection.tsx', 'XrTimelineSceneStageControls.tsx', 'XrTimelineRehearsalControls.tsx', 'XrTimelineInsertedLanes.tsx'].map(file => readSource('features', 'three', file)).join('\n')
   const xrAnimationPanel = readSource('features', 'three', 'XrAnimationFloatingPanelView.tsx')
   const motionControlPanel = readSource('features', 'three', 'MotionControlFloatingPanelView.tsx')
   const motionCaptureProjection = readSource('features', 'three', 'MotionCapturePlatformProjection.tsx')
@@ -66,7 +67,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   const motionControlTargetCards = readSource('features', 'three', 'MotionControlTargetCards.tsx')
   const motionControlTargetRuntime = readSource('features', 'three', 'motionControlTargetRuntime.ts')
   const motionControlAgentReadyContract = readSource('features', 'agent-ready', 'motionControlAgentReadyContract.mjs')
-  const floatingPanel = readSource('lib', 'toolbar', 'ToolbarToolMenu.impl.tsx')
+  const floatingPanel = readSource('lib', 'toolbar', 'ToolbarToolMenu.impl.tsx') + readSource('features', 'toolbar', 'FloatingPanelViewTabs.tsx')
   const floatingXrSceneViews = readSource('lib', 'toolbar', 'FloatingPanelXrSceneViews.tsx')
   const viewport = readSource('components', 'CanvasViewport.tsx')
   const floatingTypes = readSource('hooks', 'store', 'store-types', 'graph-state-chat-import.ts')
@@ -102,36 +103,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   for (const staleMarker of ['FloatingPanel XR', 'activateCanvasGraphSurfaceMode', 'data-kg-xr-panel-open-timeline', 'XrPhysicsPlayground', 'data-kg-xr-panel-physics', 'XR_PHYSICS_CONTROLLER_MODES', 'XrCameraFramingSection', 'StrybldrCameraFramingSection']) {
     if (spatialAssetTools.includes(staleMarker)) throw new Error(`expected Media 3D spatial tools to remove stale ${staleMarker}`)
   }
-  for (const marker of ['XrCameraMotionSection', 'canvas3dMode']) {
-    if (!timelineBottomPanel.includes(marker)) throw new Error(`expected BottomPanel Timeline to own XR motion through ${marker}`)
-  }
-  for (const marker of ['<StrybldrCameraFramingSection />', '<XrShootCameraSection />']) {
-    if (!cameraFloatingProjection.includes(marker)) throw new Error(`expected FloatingPanel Camera to expose ${marker}`)
-  }
-  if (cameraFloatingProjection.includes('<XrCameraMotionSection')) {
-    throw new Error('expected FloatingPanel Camera to leave XR motion and transport in BottomPanel Timeline')
-  }
-  for (const marker of ['data-kg-xr-timeline-player="1"', 'data-kg-xr-timeline-player-controls="1"', 'data-kg-xr-timeline-control-lane="scene-clip"', 'data-kg-xr-timeline-control-bar="scene-clip"', 'data-kg-xr-timeline-shot-target="scene-clip"', 'aria-label="XR timeline scene or 3D object shot target"', 'renderXrSceneStageClipOverlay', "selectedTimelineLaneId !== 'scene'", 'data-kg-xr-motion-scene-controls="click-appear"', 'data-kg-xr-motion-scene-control-strip="click-appear"', 'className="timeline-transport-clip-controls xr-timeline-scene-stage-control"', 'style={sceneEditorStyle}', 'renderClipOverlay={renderXrSceneStageClipOverlay}', 'data-kg-xr-motion-stage-field="scene-clip"', '<PanelSelect', 'className="xr-timeline-scene-stage-select"', 'data-kg-xr-motion-stage-select="scene-clip"', 'data-kg-xr-motion-stage-select-lane="scene"', 'onValueChange={selectedValueInput => applyStage(selectedValueInput)}', '<option key={preset.id} value={preset.id}>', 'data-kg-xr-motion-stage-summary="scene-clip"', 'xr-timeline-scene-stage-summary-chip', 'XR_MOTION_REFERENCE_STAGE_PRESETS.map(preset => (', 'type XrTimelineLaneSelection', 'type XrTimelineLaneBarDragState', 'XR_TIMELINE_LANE_DRAG_THRESHOLD_PX', 'resolveVideoSequenceRulerInsetPixelMetrics', 'beginTimelineLaneBarDrag', 'activateTimelineLaneBarClick', 'selectSimulationTimelineLaneSurface', 'data-kg-xr-timeline-lane-drag="scrub"', 'data-kg-xr-timeline-lane-dragging={', 'useXrTimelineLaneSelection', 'selectedTimelineLaneId', 'setSelectedTimelineLaneId', 'selectSceneTimelineLane', 'selectObjectTimelineLane', 'selectSimulationTimelineLane', 'selectCameraTimelineLane', 'selected: simulationTimelineLaneSelected', 'selected: cameraTimelineLaneSelected', "selectRowKey: 'xr-lane:simulation'", 'selectRowKey: `xr-lane:object:${target.id}`', "selectRowKey: 'xr-lane:camera'", "simulationTimelineLaneSelected && 'timeline-transport-track-clip--selected'", "selected && 'timeline-transport-track-clip--selected'", "cameraTimelineLaneSelected && 'timeline-transport-track-clip--selected'", 'data-kg-xr-timeline-lane-affordance="simulation"', 'data-kg-xr-timeline-lane-affordance="camera"', 'data-kg-xr-timeline-lane-selected={simulationTimelineLaneSelected ?', 'data-kg-xr-timeline-lane-hit-target="simulation"', 'data-kg-xr-timeline-lane-hit-target="camera"', 'data-kg-xr-shot-target-lane', 'data-kg-xr-shot-target-bar', 'data-kg-xr-simulation-lane-label="1"', 'data-kg-xr-simulation-lane="1"', 'data-kg-xr-simulation-bar="full-scene"', 'openSimulationWorkbench', 'data-kg-xr-camera-lane-bar="1"', 'data-kg-xr-timeline-playhead-control="scene-clip"', 'data-kg-xr-timeline-playhead-input="scene-clip"', 'aria-label="XR timeline playhead seconds"', 'data-kg-xr-timeline-seconds-control="time-axis"', 'aria-label="XR timeline seconds"', 'data-kg-xr-timeline-fps-control="time-axis"', 'aria-label="XR timeline FPS"', '<TimelineTransportTimeAxisClip', '<CameraMotionMarkRetime', 'layout="lane"', '<GanttTimelineTransportPanel', 'timelineInsertedLanes={[', 'timeAxisControls={', 'data-kg-xr-choreography-shared-axis-rail="camera"', 'data-kg-xr-timeline-transport="reused-gantt-player"']) {
-    if (!xrCameraMotion.includes(marker)) throw new Error(`expected BottomPanel XR Timeline to expose ${marker}`)
-  }
-  for (const forbiddenPresetLane of ['compatibleSharedAssetPresets.map(preset => {', 'data-kg-xr-shared-asset-preset-lane={preset.id}', 'data-kg-xr-shared-asset-preset-lane-label={preset.id}', "id: `xr-preset:${preset.id}`"]) {
-    if (xrCameraMotion.includes(forbiddenPresetLane)) throw new Error(`expected XR animation presets to stay tied to individual XR asset lanes, found ${forbiddenPresetLane}`)
-  }
-  for (const forbidden of ['supplementalLanes={', "id: 'xr-control'", "id: 'xr-asset-control'", 'stage-output', 'selectedStagePreset', 'activeStagePreset', 'sceneStagePickerOpen', 'applySceneClipStage', 'SCENE · {', 'data-kg-xr-motion-stage-options="scene-clip"', 'data-kg-xr-motion-stage-option={preset.id}', 'aria-haspopup="listbox"', 'data-kg-xr-motion-scene-controls="compact"', 'data-kg-xr-motion-scene-controls="expanded"', 'data-kg-xr-motion-scene-control-row=', 'xr-timeline-scene-stage-row', 'xr-timeline-scene-stage-button', 'xr-timeline-scene-stage-options', 'xr-timeline-scene-stage-option', 'data-kg-xr-timeline-shot-target="individual-lane"', 'data-kg-xr-timeline-consolidated-lane="stage-output-ruler"', 'data-kg-xr-motion-stage-buttons="1"', 'data-kg-xr-motion-stage-button={preset.id}', 'data-kg-xr-motion-stage-select="1"', 'data-kg-xr-motion-stage-field="1"', 'data-kg-xr-timeline-playhead-control="1"', 'data-kg-xr-motion-stage-summary="1"', 'data-kg-xr-timeline-control-lane="shared-asset"', 'data-kg-xr-timeline-control-lane-label="shared-asset"', '<XrSharedAssetControls surface="timeline"', 'data-kg-xr-shared-asset-layout="timeline-lane"']) {
-    if (xrCameraMotion.includes(forbidden)) throw new Error(`expected BottomPanel XR Timeline to use inserted lanes without stale stage chip controls ${forbidden}`)
-  }
-  for (const marker of [
-    'subscribeXrNativeControllerDemo',
-    "nativeController.phase !== 'off'",
-    'readSharedXrNativeControllerDemoFrame().bodies.length',
-    "nativeControllerActive ? 'native-controller' : 'scene'",
-    'data-kg-xr-simulation-runtime={simulationRuntime}',
-  ]) {
-    if (!xrCameraMotion.includes(marker)) throw new Error(`expected Timeline Simulation to project the active native controller runtime through ${marker}`)
-  }
-  if (!xrCameraMotion.includes("controlLocalXrScene({ action: 'stage'") || xrCameraMotion.includes('setXrMotionReferenceStage(')) {
-    throw new Error('expected Timeline stage changes to reuse the guarded, persisted scene/physics mutation owner')
-  }
+  assertXrPanelTimelineSurfaceContracts({ timelineBottomPanel, cameraFloatingProjection, xrCameraMotion })
   for (const duplicate of ['data-kg-animation-runtime-controls="shared-xr"', 'aria-label="Animation cast target"', 'aria-label="Animation playhead seconds"']) {
     if (xrAnimationPanel.includes(duplicate)) throw new Error(`expected FloatingPanel Animation to remove duplicate Timeline control ${duplicate}`)
   }

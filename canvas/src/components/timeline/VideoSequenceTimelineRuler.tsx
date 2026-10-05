@@ -42,8 +42,7 @@ export type VideoSequenceTimelineClipOverlayRenderArgs = {
 }
 export type VideoSequenceTimelineClipOverlayRenderer = (args: VideoSequenceTimelineClipOverlayRenderArgs) => React.ReactNode
 const VIDEO_SEQUENCE_RESIZE_MODE_LABELS: Record<Extract<MermaidGanttBarDragMode, 'resize-start' | 'resize-end'>, string> = {
-  'resize-end': 'end',
-  'resize-start': 'start',
+  'resize-end': 'end', 'resize-start': 'start',
 }
 const VIDEO_SEQUENCE_THUMBNAIL_WINDOW_EPSILON = 0.001
 const VIDEO_SEQUENCE_DENSE_FBF_MAX_DURATION_MINUTES = 1.25 / 60
@@ -51,9 +50,7 @@ const VIDEO_SEQUENCE_SOURCE_CONTENT_LANES = new Set<VideoSequenceTimelineLaneId>
 const VIDEO_SEQUENCE_OPERATION_CONTENT_LANES = new Set<VideoSequenceTimelineLaneId>(['mask', 'grade', 'audio'])
 const VIDEO_SEQUENCE_GENERATED_FRAME_CONTENT_LANES = new Set<VideoSequenceTimelineLaneId>(['fbf'])
 const WORKFLOW_TIMELINE_DISPLAY_LANES: readonly VideoSequenceTimelineDisplayLane[] = [{
-  id: 'workflow',
-  label: 'Workflow',
-  semanticId: 'video',
+  id: 'workflow', label: 'Workflow', semanticId: 'video',
 }]
 function resolveVideoSequenceThumbnailWindow(args: {
   span: MermaidGanttTimelineTaskSpan
@@ -301,7 +298,7 @@ export function VideoSequenceTimelineRuler({
           data-kg-gantt-timeline-zoom={String(timelineZoom)}
         >
         <section className="timeline-video-sequence-ruler-axis" aria-label="Timeline time ruler" data-kg-video-sequence-ruler-axis="1" onPointerDown={onRulerPointerDown}>
-          <VideoSequenceTimelineRulerTicks displayTicks={timelineAxisTicks} />
+          <VideoSequenceTimelineRulerTicks displayTicks={timelineAxisTicks} onSeek={minutes => onSelectRowPosition(selectedRowKey, Math.min(maxMinutes, minutes))} />
           {timeRulerOverlay}
           <TimelinePlayhead maxMinutes={maxMinutes} positionMinutes={maxMinutes * playheadPercent / 100} frameRate={mediaFrameRate} onSeek={minutes => onSelectRowPosition(selectedRowKey, minutes)}
             className="timeline-transport-playhead-marker timeline-video-sequence-ruler-playhead-marker"
@@ -313,13 +310,14 @@ export function VideoSequenceTimelineRuler({
         </section>
         <section
           ref={contentRef}
+          aria-label="Timeline lanes and clips"
           className="timeline-transport-ruler-content timeline-video-sequence-ruler-content"
           style={{ minHeight: bodyMinHeight } as React.CSSProperties}
           data-kg-gantt-timeline-ruler-content="1"
           data-kg-video-sequence-ruler-body="1"
           onPointerDown={onRulerPointerDown}
         >
-        <svg className="timeline-video-sequence-motion-vector" aria-hidden="true" focusable="false" preserveAspectRatio="none" viewBox="0 0 100 10" data-kg-animation-svg-attribute-target="1">
+        <svg className="timeline-video-sequence-motion-vector" role="img" aria-label="Timeline motion path" preserveAspectRatio="none" viewBox="0 0 100 10" data-kg-animation-svg-attribute-target="1">
           <path
             d={animationState.vectorMorph.pathSample}
             fill="none"
@@ -391,6 +389,11 @@ export function VideoSequenceTimelineRuler({
             && !thumbnailSamples.length
             ? buildVideoSequenceTimelineFrameSamples({ sampleCount: Math.max(4, Math.round(durationMinutes * 1.1)), seedText: `${span.label} ${span.raw} nested` })
             : []
+          const sampleSurfaceProps = {
+            type: 'button' as const,
+            onClick: () => onSelectRowKey(span.rowKey),
+            onPointerDown: editable ? (event: React.PointerEvent<HTMLElement>) => onTrackPointerStart(event, span, 'move') : undefined,
+          }
           const clipStartLabel = formatClipTime(startMinutes)
           const clipEndLabel = formatClipTime(startMinutes + durationMinutes)
           const denseFbfClip = lane === 'fbf' && !verticalMarker && (durationMinutes <= VIDEO_SEQUENCE_DENSE_FBF_MAX_DURATION_MINUTES || widthPercent < 3.5)
@@ -451,7 +454,7 @@ export function VideoSequenceTimelineRuler({
               )}
               <VideoSequenceFrameSampleRail samples={semanticFrameSamples} span={span} />
               {frameSamples.length ? (
-                <section className="timeline-video-sequence-clip-frame-strip" aria-hidden="true" data-kg-video-sequence-clip-frames="1">
+                <button {...sampleSurfaceProps} className="timeline-video-sequence-clip-frame-strip" aria-label={`Select ${span.label} generated frame preview`} data-kg-video-sequence-clip-frames="1">
                   {frameSamples.map((sample, frameIndex) => (
                     <span
                       key={`frame:${span.rowKey}:${frameIndex}`}
@@ -462,10 +465,10 @@ export function VideoSequenceTimelineRuler({
                       } as React.CSSProperties}
                     />
                   ))}
-                </section>
+                </button>
               ) : null}
               {cueSamples.length ? (
-                <section className="timeline-video-sequence-clip-cues" aria-hidden="true" data-kg-video-sequence-clip-cues="1">
+                <button {...sampleSurfaceProps} className="timeline-video-sequence-clip-cues" aria-label={`Select ${span.label} generated cue preview`} data-kg-video-sequence-clip-cues="1">
                   {cueSamples.map((sample, cueIndex) => (
                     <span
                       key={`cue:${span.rowKey}:${cueIndex}`}
@@ -476,10 +479,10 @@ export function VideoSequenceTimelineRuler({
                       }}
                     />
                   ))}
-                </section>
+                </button>
               ) : null}
               {waveformSamples.length ? (
-                <section className="timeline-video-sequence-audio-waveform" aria-hidden="true" data-kg-video-sequence-audio-waveform="1">
+                <button {...sampleSurfaceProps} className="timeline-video-sequence-audio-waveform" aria-label={`Select ${span.label} audio waveform`} data-kg-video-sequence-audio-waveform="1">
                   {waveformSamples.map((sample, sampleIndex) => (
                     <span
                       key={`waveform:${span.rowKey}:${sampleIndex}`}
@@ -487,12 +490,12 @@ export function VideoSequenceTimelineRuler({
                       style={{ height: `${Math.max(4, sample / 4)}px` }}
                     />
                   ))}
-                </section>
+                </button>
               ) : null}
               {clipOverlay}
               {lane === 'audio' && !verticalMarker ? <VideoSequenceAudioDbControl label={span.label} rowKey={span.rowKey} /> : null}
               {keyframeSamples.length ? (
-                <section className="timeline-video-sequence-keyframe-strip" aria-label={`${span.label} keyframes`} data-kg-video-sequence-keyframes="1">
+                <button {...sampleSurfaceProps} className="timeline-video-sequence-keyframe-strip" aria-label={`Select ${span.label} keyframes`} data-kg-video-sequence-keyframes="1">
                   {keyframeSamples.map(keyframe => (
                     <span
                       key={`keyframe:${span.rowKey}:${keyframe.offset}`}
@@ -504,10 +507,10 @@ export function VideoSequenceTimelineRuler({
                       data-kg-video-sequence-keyframe-value={keyframe.value}
                     />
                   ))}
-                </section>
+                </button>
               ) : null}
               {morphSamples.length ? (
-                <section className="timeline-video-sequence-morph-strip" aria-label={`${span.label} vector morph samples`} data-kg-video-sequence-vector-morph="1" data-kg-video-sequence-vector-morph-boolean-ops={animationState.vectorMorph.booleanOperations.join(' ')} data-kg-video-sequence-vector-morph-path={animationState.vectorMorph.interpolatedPath} data-kg-video-sequence-vector-morph-shapes={animationState.vectorMorph.shapeFamilies.join(' ')}>
+                <button {...sampleSurfaceProps} className="timeline-video-sequence-morph-strip" aria-label={`Select ${span.label} vector morph samples`} data-kg-video-sequence-vector-morph="1" data-kg-video-sequence-vector-morph-boolean-ops={animationState.vectorMorph.booleanOperations.join(' ')} data-kg-video-sequence-vector-morph-path={animationState.vectorMorph.interpolatedPath} data-kg-video-sequence-vector-morph-shapes={animationState.vectorMorph.shapeFamilies.join(' ')}>
                   {morphSamples.map((sample, sampleIndex) => (
                     <span
                       key={`morph:${span.rowKey}:${sampleIndex}`}
@@ -515,10 +518,10 @@ export function VideoSequenceTimelineRuler({
                       style={{ '--kg-video-sequence-morph-node': `${sample}%` } as React.CSSProperties}
                     />
                   ))}
-                </section>
+                </button>
               ) : null}
               {textSamples.length ? (
-                <section className="timeline-video-sequence-text-strip" aria-label={`${span.label} text animation ranges`} data-kg-video-sequence-text-animation="1" data-kg-video-sequence-text-keyframes={animationState.text.keyframes.length} data-kg-video-sequence-text-properties={animationState.text.properties.join(' ')} data-kg-video-sequence-text-scopes={animationState.text.scopes.join(' ')}>
+                <button {...sampleSurfaceProps} className="timeline-video-sequence-text-strip" aria-label={`Select ${span.label} text animation ranges`} data-kg-video-sequence-text-animation="1" data-kg-video-sequence-text-keyframes={animationState.text.keyframes.length} data-kg-video-sequence-text-properties={animationState.text.properties.join(' ')} data-kg-video-sequence-text-scopes={animationState.text.scopes.join(' ')}>
                   {textSamples.map((sample, sampleIndex) => (
                     <span
                       key={`text:${span.rowKey}:${sampleIndex}`}
@@ -526,17 +529,17 @@ export function VideoSequenceTimelineRuler({
                       style={{ '--kg-video-sequence-text-range': `${sample}%` } as React.CSSProperties}
                     />
                   ))}
-                </section>
+                </button>
               ) : null}
               {nestedSamples.length ? (
-                <section className="timeline-video-sequence-nested-strip" aria-label={`${span.label} nested animation composite`} data-kg-video-sequence-nested-composite-strip="1">
+                <button {...sampleSurfaceProps} className="timeline-video-sequence-nested-strip" aria-label={`Select ${span.label} nested animation composite`} data-kg-video-sequence-nested-composite-strip="1">
                   {nestedSamples.map((sample, sampleIndex) => (
                     <span key={`nested:${span.rowKey}:${sampleIndex}`} className="timeline-video-sequence-nested-frame" style={{ '--kg-video-sequence-nested-frame': `${sample}%`, '--kg-video-sequence-nested-phase': `${(sampleIndex % 3) + 1}` } as React.CSSProperties} />
                   ))}
-                </section>
+                </button>
               ) : null}
               {(canEditTrack?.(span.rowKey, 'resize-start') ?? editable) ? <button type="button" className="timeline-transport-track-handle timeline-transport-track-handle--start" aria-label={`Resize ${span.label} start`} data-kg-gantt-timeline-track-drag-mode="resize-start" title={`Trim ${span.label} start`} onPointerDown={event => onTrackPointerStart(event, span, 'resize-start')}>
-                <span className="timeline-transport-track-handle-grip" aria-hidden="true" />
+                <svg className="timeline-transport-track-handle-grip" role="img" aria-label="Trim handle" viewBox="0 0 6 16"><path d="M2 2v12M4 2v12" stroke="currentColor" /></svg>
                 {activeResizeMode === 'resize-start' ? <span className="timeline-video-sequence-trim-guide">{VIDEO_SEQUENCE_RESIZE_MODE_LABELS[activeResizeMode]}</span> : null}
               </button> : null}
               <button type="button" className="timeline-transport-track-clip-move" aria-label={`${editable ? 'Move' : 'Select'} ${span.label}`} data-kg-gantt-timeline-track-drag-mode={editable ? 'move' : undefined} onClick={() => onSelectRowKey(span.rowKey)} onPointerDown={editable ? event => onTrackPointerStart(event, span, 'move') : undefined}>
@@ -548,7 +551,7 @@ export function VideoSequenceTimelineRuler({
                 ) : null}
                 {!verticalMarker && !workflowProjection ? <VideoSequenceTimelineClipMeta compact={compactTimelineBar} durationLabel={formatClipTime(durationMinutes)} durationMinutes={durationMinutes} sourceWindow={thumbnailWindow} /> : null}
               </button>
-              {(canEditTrack?.(span.rowKey, 'resize-end') ?? editable) ? <button type="button" className="timeline-transport-track-handle timeline-transport-track-handle--end" aria-label={`Resize ${span.label} end`} data-kg-gantt-timeline-track-drag-mode="resize-end" title={`Trim ${span.label} end`} onPointerDown={event => onTrackPointerStart(event, span, 'resize-end')}><span className="timeline-transport-track-handle-grip" aria-hidden="true" />
+              {(canEditTrack?.(span.rowKey, 'resize-end') ?? editable) ? <button type="button" className="timeline-transport-track-handle timeline-transport-track-handle--end" aria-label={`Resize ${span.label} end`} data-kg-gantt-timeline-track-drag-mode="resize-end" title={`Trim ${span.label} end`} onPointerDown={event => onTrackPointerStart(event, span, 'resize-end')}><svg className="timeline-transport-track-handle-grip" role="img" aria-label="Trim handle" viewBox="0 0 6 16"><path d="M2 2v12M4 2v12" stroke="currentColor" /></svg>
                 {activeResizeMode === 'resize-end' ? <span className="timeline-video-sequence-trim-guide">{VIDEO_SEQUENCE_RESIZE_MODE_LABELS[activeResizeMode]}</span> : null}
               </button> : null}
             </article>
@@ -576,7 +579,7 @@ export function VideoSequenceTimelineRuler({
                       key={`${scope.id}:${sampleIndex}`}
                       className="timeline-video-sequence-ruler-scope-bar"
                       style={{ '--kg-video-sequence-scope-bar': `${sample}%` } as React.CSSProperties}
-                      aria-hidden="true"
+                      role="img" aria-label={`${scope.label} sample ${sampleIndex + 1}: ${sample}%`}
                     />
                   ))}
                 </section>
