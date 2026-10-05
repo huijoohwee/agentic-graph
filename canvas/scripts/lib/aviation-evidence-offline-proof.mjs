@@ -190,6 +190,7 @@ export async function runAviationEvidenceOfflineProof({ browser, origin, root, o
       const sourceMs = Math.round(performance.now() - started); ok(sourceMs <= 300000)
       await label(panel, 'Explicit UTC time').fill(observed.atUtc)
       await activate(role(panel, 'Run read-only query'), true)
+      await text(panel, 'Explicit query completed against the retained originals.').waitFor()
       const firstReplay = await detail(panel, 'Complete typed result')
       same(firstReplay, await replay(observed.atUtc))
       const toolNames = ['aviation.inspect', 'aviation.replay'].map(operation => findEvidenceOperation(operation).webName)
