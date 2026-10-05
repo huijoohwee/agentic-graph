@@ -1,4 +1,5 @@
 import { boundedChunksPlugin } from './viteBoundedChunks.mjs'
+import { createPwaPrecacheAdmission } from './vitePwaPrecacheAdmission.mjs'
 import { createRemoteFetchHandler } from './viteRemoteFetch'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'; import tailwindcss from '@tailwindcss/vite'
@@ -6364,6 +6365,7 @@ function applyWorkspaceInitializationDocsAbsRootDefault(command: string): string
 }
 
 export default defineConfig(({ command, mode }) => {
+  const precacheAdmission = createPwaPrecacheAdmission()
   const workspaceInitializationDocsAbsRoot = applyWorkspaceInitializationDocsAbsRootDefault(command); const fileEnv = loadEnv(mode, __dirname, ''); const agenticGraphStorageDevProxyTarget = resolveAgenticGraphStorageDevProxyTarget({ processEnv: process.env, fileEnv })
   const grphSharedAliasRoot = path.resolve(
     __dirname,
@@ -6498,7 +6500,7 @@ export default defineConfig(({ command, mode }) => {
     stripMermaidArchitectureDetectorPlugin,
     stripMermaidCoseBilkentLayoutPlugin,
     react(),
-    inlineHtmlStylesheetAssetsPlugin(), createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision), createPythonLearningOfflinePlugin(runtimeIdentity.sourceRevision, offlinePublicAssets),
+    inlineHtmlStylesheetAssetsPlugin(), precacheAdmission.plugin, createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision), createPythonLearningOfflinePlugin(runtimeIdentity.sourceRevision, offlinePublicAssets),
     VitePWA({
       registerType: 'autoUpdate', strategies: 'injectManifest', srcDir: '.', filename: 'sw.ts',
       injectRegister: null,
@@ -6566,8 +6568,8 @@ export default defineConfig(({ command, mode }) => {
       },
       injectManifest: {
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, additionalManifestEntries: offlinePrecacheEntries(offlinePublicAssets),
-        globPatterns: ['manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,css,woff,woff2,ttf}'],
-        globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js', 'assets/**/three-webgpu-*.js', 'assets/**/createWebGpuRenderer-*.js'],
+        globPatterns: ['manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,mjs,cjs,css,woff,woff2,ttf}'],
+        manifestTransforms: [precacheAdmission.manifestTransform],
       },
     }),
     ...(command === 'build' ? [] : [

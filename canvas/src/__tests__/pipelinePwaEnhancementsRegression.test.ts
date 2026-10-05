@@ -1,5 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import assert from 'node:assert/strict'
+import { createPwaPrecacheAdmission } from '../../vitePwaPrecacheAdmission.mjs'
 
 const readUtf8 = (filePath: string): string => {
   try {
@@ -29,13 +31,16 @@ export function testLoaderPerfFinalizesFallbackAndEarlyReturns() {
   }
 }
 
-export function testPwaShellPrecachesHashedAssetsAndCachesLocalJson() {
+export async function testPwaShellPrecachesHashedAssetsAndCachesLocalJson() {
   const filePath = path.resolve(process.cwd(), 'vite.config.ts')
   const text = readUtf8(filePath)
   const worker = readUtf8(path.resolve(process.cwd(), 'sw.ts'))
   const policy = readUtf8(path.resolve(process.cwd(), 'vitePwaRuntimeCachePolicy.ts'))
-  if (!text.includes("assets/**/*.{js,css,woff,woff2,ttf}")) {
-    throw new Error('Expected PWA precache glob to include all hashed asset chunks, not only entry bundles')
+  if (!text.includes("assets/**/*.{js,mjs,cjs,css,woff,woff2,ttf}")
+    || !text.includes('manifestTransforms: [precacheAdmission.manifestTransform]')
+    || !text.includes('inlineHtmlStylesheetAssetsPlugin(), precacheAdmission.plugin')
+    || !text.includes("export default defineConfig(({ command, mode }) => {\n  const precacheAdmission = createPwaPrecacheAdmission()")) {
+    throw new Error('Expected each build to admit automatic JavaScript precache from the emitted static graph')
   }
   if (text.includes("globPatterns: ['index.html'") || !text.includes("strategies: 'injectManifest'")
     || /NavigationRoute|createHandlerBoundToURL/.test(worker)) {
@@ -48,9 +53,34 @@ export function testPwaShellPrecachesHashedAssetsAndCachesLocalJson() {
   if (/addEventListener\(['"](?:install|activate)['"]/.test(chatWorkerText)) {
     throw new Error('Expected the imported chat worker to leave install and activate ownership to VitePWA')
   }
-  if (!text.includes("globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js'")) {
-    throw new Error('Expected PWA precache to keep oversized Monaco and Mermaid bundles on runtime cache only')
-  }
+  assert.equal(/globIgnores:.*(?:monaco|mermaid|three-webgpu)/.test(text), false, 'Required static chunks cannot be excluded by vendor name')
+  const chunk = (fileName: string, imports: string[] = [], isEntry = false, dynamicImports: string[] = []) =>
+    ({ type: 'chunk', fileName, imports, isEntry, dynamicImports })
+  const nodes = [chunk('assets/entry.js', ['assets/shared.mjs', 'assets/mermaid-static.js'], true, ['assets/mermaid-lazy.js']),
+    chunk('assets/shared.mjs', ['assets/cycle.cjs']), chunk('assets/cycle.cjs', ['assets/shared.mjs']),
+    chunk('assets/mermaid-static.js'), chunk('assets/mermaid-lazy.js', ['assets/shared.mjs']),
+    chunk('assets/monaco-lazy.js'), { type: 'asset', fileName: 'assets/pythonWorker.js' }]
+  const bundle = Object.fromEntries(nodes.map(node => [node.fileName, node]))
+  const entries = [...nodes.map(node => ({ url: node.fileName, revision: 'hash' })),
+    { url: 'assets/style.css', revision: 'css' }, { url: 'assets/font.woff2', revision: 'font' },
+    { url: 'evidence-analysis/fixtures/example.json', revision: 'source' }]
+  const admission = createPwaPrecacheAdmission()
+  await assert.rejects(admission.manifestTransform(entries), /before a successful/)
+  admission.plugin.generateBundle.handler({}, bundle)
+  const admitted = await admission.manifestTransform(entries)
+  assert.deepEqual(admitted.manifest, entries.filter(entry => !['assets/mermaid-lazy.js', 'assets/monaco-lazy.js', 'assets/pythonWorker.js'].includes(entry.url)))
+  assert.deepEqual(admitted.warnings, [])
+  await assert.rejects(admission.manifestTransform(entries.filter(entry => entry.url !== 'assets/mermaid-static.js')), /absent from manifest/)
+  await assert.rejects(admission.manifestTransform([...entries, entries[0]]), /duplicate required/)
+  await assert.rejects(admission.manifestTransform([{}]), /URL is missing/)
+  assert.throws(() => admission.plugin.generateBundle.handler({}, { lazy: chunk('assets/lazy.js') }), /entry roots/)
+  await assert.rejects(admission.manifestTransform(entries), /before a successful/)
+  assert.throws(() => admission.plugin.generateBundle.handler({}, { main: chunk('assets/main.js', ['assets/missing.js'], true) }), /required emitted/)
+  admission.plugin.generateBundle.handler({}, { main: chunk('assets/next.js', [], true) })
+  assert.deepEqual((await admission.manifestTransform([{ url: 'assets/next.js' }, ...entries])).manifest.map(entry => entry.url),
+    ['assets/next.js', 'assets/style.css', 'assets/font.woff2', 'evidence-analysis/fixtures/example.json'])
+  admission.plugin.buildStart()
+  await assert.rejects(admission.manifestTransform(entries), /before a successful/)
   if (!policy.includes("request.destination === 'worker'")) {
     throw new Error('Expected PWA runtime cache to include worker assets for lazy parser/editor surfaces')
   }
