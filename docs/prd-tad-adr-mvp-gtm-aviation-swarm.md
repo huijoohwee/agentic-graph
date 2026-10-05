@@ -486,8 +486,8 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-PR1560 merged; 29a passed 11 plans, offline-open and 200% zoom; parser 3573451f passed 195 cases. Historical f64/Mac trace: 3.96/4.88 s WebGL readback; 55ba964c passed 21 checks. CI 76effde timed out at the 60 s import limit: settled requests, zero page errors, 137 long tasks/56.5 s, 390–420 ms frames; DPR reacted late.
+PR1560 merged; 29a passed 11 plans, offline-open/200% zoom; parser 3573451f passed 195 cases. Historical f64/Mac trace: 3.96/4.88 s WebGL readback; 55ba passed 21 checks. CI 76effde timed out at 60 s import despite settled requests/zero page errors: 137 long tasks/56.5 s, 390–420 ms frames; DPR reacted late.
 
-76effde passed bound Mac build and desktop/emulated-mobile offline checks; largest JS 495,688 B. Scoped 148,746/150,000 and initial upper 39,524/75,000 pass; native +13/+15 (166,585/167,402) fail. Successor lowers visible Three DPR after two >100 ms frames; 16 lifecycle tests pass; provider pending.
+0d26b53 verified local build passed 4 GiB phase caps (17.9/76.5/5.3 s); largest JS 495,688 B. Browser spatial+aviation offline acceptance passed at 1024/390: first value 41.4/20.9 s, cold reload/parity, zero errors; touch Three deferred. Feature 148,746/150,000 and initial 20,868/75,000 pass; +13 native 166,585 and +15 XR 167,403 exceed 150 kB. Emitted JS host 28,474,731 B also misses broad cap; combined initial 39,525/75,000 passes. Linux provider CI pending.
 
-OS 784b169 merged; 44 Graph and five package checks pass. Caps 4 GiB; build/import 60/300/60 s; AS1 300 s; no deps. 124201d UI passed, config failed. Require exact CI receipts. iPhone KIV; AS3/4, commercial and promotion gates remain. ADR-004 retains broad byte failure; no overall-readiness claim.
+OS 784b169 merged; 44 Graph and five package checks pass. Caps: 4 GiB; build/import 60/300/60 s; AS1 300 s; no deps. 124201d UI passed, config failed. Exact CI receipts required. iPhone KIV; AS3/4, commercial and promotion gates remain. ADR-004 retains broad byte failure; no overall-readiness claim.
