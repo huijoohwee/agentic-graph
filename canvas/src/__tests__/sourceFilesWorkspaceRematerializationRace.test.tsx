@@ -30,7 +30,7 @@ async function fixture(run: (value: {
   const initial: SourceFile[] = [
     { id: 'active', name, text: '# Earlier workspace text\n', enabled: true, status: 'idle', source: { kind: 'local', path: `workspace:${path}` } },
     { id: 'retained', name: 'retained.md', text: '# Retained authored text\n', enabled: false, status: 'parsed',
-      parsedTextHash: 'retained-old', parsedParserId: 'markdown', parsedGraphData: { nodes: [], edges: [] },
+      parsedTextHash: 'retained-old', parsedParserId: 'markdown', parsedGraphData: { type: 'Graph' as const, nodes: [], edges: [] },
       source: { kind: 'local', path: 'workspace:/notes/retained.md' } },
   ]
   const blocked = deferred<void>(), entered = deferred<void>(), published: SourceFile[][] = [], applications: string[] = []
@@ -80,7 +80,7 @@ for (const change of ['import', 'authored edit', 'parsed graph'] as const) test(
   await f.schedule(f.initial); await f.entered
   const later = change === 'import' ? [...f.initial, { ...f.initial[1]!, id: 'new-import', name: 'import.md', source: { kind: 'local' as const, path: 'local:import.md' } }]
     : f.initial.map(file => file.id !== 'retained' ? file : { ...file, ...(change === 'authored edit'
-      ? { text: '# Newer unsaved source bytes\n' } : { parsedGraphData: { nodes: [], edges: [] } }) })
+      ? { text: '# Newer unsaved source bytes\n' } : { parsedGraphData: { type: 'Graph' as const, nodes: [], edges: [] } }) })
   useGraphStore.setState({ sourceFiles: later })
   const document = useGraphStore.getState().markdownDocumentText
   f.release(); await f.drain()
@@ -135,7 +135,7 @@ test('unchanged workspace bytes do not reuse a proof after the active source is 
 
 
 test('already-stale caller parsed graph cannot pass a same-hash source admission', async () => fixture(async f => {
-  const stale = f.initial.map(file => file.id === 'retained' ? { ...file, parsedGraphData: { nodes: [], edges: [] } } : file)
+  const stale = f.initial.map(file => file.id === 'retained' ? { ...file, parsedGraphData: { type: 'Graph' as const, nodes: [], edges: [] } } : file)
   f.release(); await f.schedule(stale); await f.drain()
   assert.equal(useGraphStore.getState().sourceFiles, f.initial)
   assert.deepEqual(f.published, []); assert.deepEqual(f.applications, [])

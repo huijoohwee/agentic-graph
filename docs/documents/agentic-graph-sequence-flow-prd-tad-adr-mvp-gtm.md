@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.63"
-prd_revision: "1.3.63"
-tad_revision: "1.3.63"
-adr_revision: "1.3.63"
-mvp_revision: "1.3.63"
-gtm_revision: "1.3.63"
+version: "1.3.64"
+prd_revision: "1.3.64"
+tad_revision: "1.3.64"
+adr_revision: "1.3.64"
+mvp_revision: "1.3.64"
+gtm_revision: "1.3.64"
 date: "2026-10-05"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,7 +31,7 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.63**. This source producer reuses shared canvas controls and repairs source publication across eighteen changed paths. Its native twenty-five-path reservation stays intact until protected integration and closeout. The complete prepared candidate `d04b4c7cf3f7f4702b4dfa0300f3fd5255acefcb` preserves all seven offline owners; those seven paths are restored to protected-base bytes in this producer, because their strict worker checks require the shared runtime dependency. The retained PWA registration guard and immutable-asset cache policy return in the final combined successor after that protected handoff. The retained final browser proof consumes three external Markdown inputs and binds source bytes, installation, cache precedence, synchronized event selection, invalid-input recovery and frame measurements to one frozen build. Each validated input retains its bounded bytes privately and supplies a fresh copy to the native file chooser, including recovery; later edits to the external path cannot change the imported content under an earlier digest. Receipts omit the captured buffer. No demo is embedded in the repository.
+All five roles join **SEQUENCE-FLOW-001@1.3.64**. This source producer reuses shared canvas controls and repairs source publication across eighteen changed paths. Its native twenty-five-path reservation stays intact until protected integration and closeout. The complete prepared candidate `d04b4c7cf3f7f4702b4dfa0300f3fd5255acefcb` preserves all seven offline owners; those seven paths are restored to protected-base bytes in this producer, because their strict worker checks require the shared runtime dependency. The retained PWA registration guard and immutable-asset cache policy return in the final combined successor after that protected handoff. The retained final browser proof consumes three external Markdown inputs and binds source bytes, installation, cache precedence, synchronized event selection, invalid-input recovery and frame measurements to one frozen build. Each validated input retains its bounded bytes privately and supplies a fresh copy to the native file chooser, including recovery; later edits to the external path cannot change the imported content under an earlier digest. Receipts omit the captured buffer. No demo is embedded in the repository.
 [PR #1559](https://github.com/huijoohwee/agentic-graph/pull/1559), exact `0f7ac8125af0f4f8945dd08b97b2c3faa02ec9c7`, passed all ten native plans in 352.26 seconds and its required provider Integration Gate on October 5 at 09:39:04 SGT. It integrated as `45a27725a9a5f8ee97b2bc444bfd7194b14b2b82` at 09:39:15 SGT. Native closeout verifies all fourteen changed paths; approved canonical synchronization and lane quarantine completed at 09:54 SGT. Branches, objects and recovery bytes are retained. Source completion is not production delivery.
 That protected source includes the original participant/message presentation, panel-aware framing and cached SVG playback from PR #1557; spatial-helper enrollment from PR #1556; parser/materialization guards and IndexedDB enrollment from PR #1558; and bounded mission-readiness diagnostics. Earlier PR #1558 failed its provider mission readiness wait. Preserve that failure: the later green run establishes neither its cause nor a diagnostic runtime fix. Deadlines, retry counts, source authority and error identity remain unchanged.
 The shared runtime owner has adopted the protected parser source and received native contract write admission after this lane's predecessor was unmounted. Its first offline document opening now reaches the recorded view; newly observed map-style requests remain its source-owned repair. The Python offline-test owner now also needs a coordinated assertion update for the shared precache declaration change. Preserve all seven deferred paths at the complete candidate above; first integrate and close this source producer, then release native ownership for the shared dependency. Adopt only its exact protected revision, reconcile retained offline changes without replacing newer owners, enroll remaining CI changes and run final combined acceptance. Earlier shared failures remain retained and no failed gate is waived.
@@ -44,6 +44,7 @@ The completed-import presentation proof at `135f4ca22ac84a052e717074d411dd3c632e
 
 A source review identifies a separate unguarded writer in useSourceFilesWorkspaceRuntime: rematerialization captures inventory, awaits workspace hydration, then publishes a merge from the old inventory before entering the guarded owner. That schedule can replace an intervening import, edit or parsed graph. The follow-up estimates 12 active minutes, caps at 20 active minutes, two additional source/test paths and 16 KiB added source. The duplicate publication is removed in favor of the existing guarded materializer, with source/document/selection/lifecycle checks across outer awaits. Deferred source-index cache publication and the duplicate filesystem-signature skip are removed. A hydrated entry-cache refresh requires both a current successful proof and unchanged ownership of the captured entry reference; a newer replacement survives. Existing parent/bootstrap and materializer caches keep their responsibilities. Cached source-index provenance is read without publishing its cache and passed to the guarded owner. A deferred mounted-hook test fails on the prior lost import and the repaired family passes 14/14, covering newer edits/imports/same-hash parsed graphs, equivalent caller arrays, disabled active source recovery, URL provenance, fresh follow-up requests and late cache replacement/invalidation. Outer-await cancellation prevents delegation and cache publication; cancellation inside already-started materialization keeps its existing boundary. The existing CI suite imports its focused companion; the earlier combined entry passes 118/118 cases, and final native validation includes three additional cache regressions. No new runtime owner or dependency is introduced; the removed duplicate merge offsets the small guard additions. Independent final review finds no remaining source blocker. This repair does not claim attribution to the separate shared-candidate failure without runtime evidence.
 The first native producer check at `010b5f2ce97c127e6c1894bf55e1f529e507c678` rejected an outdated architecture assertion requiring the removed duplicate builder in the deferred hook. Three existing architecture-test owners now require delegation to the guarded materializer, forbid a second builder or setter in the deferred hook, and require captured entry-cache ownership; behavioral race coverage is retained. Its failed receipt remains preserved, and the corrected exact head requires fresh native validation.
+Native validation at `981d3c12baf7ac8982f2c15297e6f1e6924fa524` passes 121 source and 42 sequence cases. Its first typecheck times out at the existing five-minute deadline during an overlapping build; the serialized retry completes with three synthetic graph fixtures missing the required Graph type. The fixtures now include that discriminator without changing assertions or runtime code. Both failed receipts are retained; the corrected exact head requires the full affected gate.
 Final candidate readiness requires the complete evidence matrix below; earlier proof keeps its original limits.
 
 Context: an existing sequence view and shared Timeline shown in the supplied screenshot.
@@ -434,7 +435,7 @@ V1–V9 pass and a pilot shows the omitted behavior matters. No second roadmap.
 
 ## GTM
 
-Current 1.3.63 restores offline recovery on the protected visual/parser source. The predecessor is source-complete with approved local synchronization and quarantine; this lane still requires shared protected adoption and final combined acceptance. Complete Q1–Q9 and exact build/release evidence before
+Current 1.3.64 restores offline recovery on the protected visual/parser source. The predecessor is source-complete with approved local synchronization and quarantine; this lane still requires shared protected adoption and final combined acceptance. Complete Q1–Q9 and exact build/release evidence before
 offering production readiness; focused passes and offline controls do not prove installation, delivery, buyer value or revenue.
 
 Hypothesis H1: a reachable technical team lead values a reviewed reusable interaction
@@ -475,7 +476,7 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.63. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.64. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 
