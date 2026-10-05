@@ -143,11 +143,13 @@ export const AG_TOKEN_DEFS: readonly KgTokenDef[] = tokenValues.map(value => {
     ...(name === 'panel-action-bg-hover' ? { references: { dark: 'canvas-accent', black: 'canvas-accent' } } : {}) }
 })
 
-export const buildKgTokensCssText = (theme: KgTheme, options: { selector?: string } = {}): string =>
-  renderKgTokensCss(AG_TOKEN_DEFS, theme, options.selector ?? (
+export const buildKgTokensCssText = (theme: KgTheme, options: { selector?: string } = {}): string => {
+  const selector = options.selector ?? (
     theme === 'black' ? ":root[data-theme='dark'][data-dark-variant='black']"
       : theme === 'dark' ? ":root[data-theme='dark']" : ':root'
-  ), true)
+  )
+  return renderKgTokensCss(AG_TOKEN_DEFS, theme, selector, true, { inheritLayout: theme !== 'light' && selector !== ':root' })
+}
 
 export const getKgThemeFromDom = (): KgTheme => {
   if (typeof document === 'undefined') return 'light'

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { assertWorkspaceToolbarBoundaryStyle } from './canvasToolbarDockResponsiveContract.test'
 
 export function testEmbeddedEditorShellPassesActiveToMarkdownWorkspace() {
   const p = resolve(process.cwd(), 'src', 'components', 'EmbeddedEditorShell.tsx')
@@ -15,10 +16,8 @@ export function testWorkspaceOpenCanvasToolbarDoesNotCoverEditorPaneControls() {
   if (!text.includes('UI_RESPONSIVE_CANVAS_WORKSPACE_TOOLBAR_DOCK_CLASSNAME')) {
     throw new Error('expected workspace-open canvas toolbar to use its shared responsive dock owner')
   }
-  if (
-    !text.includes('style={workspaceToolbarBoundaryStyle}') ||
-    !text.includes('canvasToolbarDockSpansViewport ? undefined : { left: workspacePaneBoundaryCss }')
-  ) {
+  assertWorkspaceToolbarBoundaryStyle(text)
+  if (!text.includes('canvasToolbarDockSpansViewport ? undefined : { left: workspacePaneBoundaryCss }')) {
     throw new Error('expected workspace-open canvas toolbar to keep the desktop pane boundary and span the mobile viewport')
   }
 }

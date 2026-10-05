@@ -1,6 +1,6 @@
 import React from 'react'
 import { createPortal } from 'react-dom'
-import { resolveMainPanelZIndex } from '@/lib/ui/zIndex'
+import { usePanelStack } from '@/lib/ui/usePanelStack'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
@@ -10,11 +10,15 @@ import HeaderActions from './HeaderActions'
 
 export function MainPanelLayer({ style, ...props }: React.ComponentPropsWithoutRef<'section'>) {
   const floatingPanelZIndex = useGraphStore(s => s.floatingPanelZIndex)
+  const panelStack = usePanelStack('main', floatingPanelZIndex)
   const layer = <section
     {...props}
+    data-kg-panel-layer="main"
+    onPointerDownCapture={event => { panelStack.onPointerDownCapture(event); props.onPointerDownCapture?.(event) }}
+    onFocusCapture={event => { panelStack.onFocusCapture(event); props.onFocusCapture?.(event) }}
     data-kg-canvas-pointer-ignore="1"
     data-kg-canvas-wheel-ignore="1"
-    style={{ ...style, zIndex: resolveMainPanelZIndex(floatingPanelZIndex) }}
+    style={{ ...style, zIndex: panelStack.zIndex }}
   />
   return typeof document !== 'undefined' && document.body ? createPortal(layer, document.body) : layer
 }
@@ -72,7 +76,7 @@ export default function MainPanelFrame({
   )
 
   return (
-    <MainPanelContainer ariaLabel={ariaLabel} className={collapsed ? 'h-auto' : 'h-full'}>
+    <MainPanelContainer minimized={collapsed} ariaLabel={ariaLabel} className={collapsed ? 'h-auto' : 'h-full'}>
       <section className="flex h-full min-w-0 max-w-full flex-col overflow-hidden" aria-label={ariaLabel}>
         <TabHeader
           collapsed={collapsed}
