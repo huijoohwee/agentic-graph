@@ -1,12 +1,12 @@
 ---
 title: "Sequence views and synchronized flow rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.3.54"
-prd_revision: "1.3.54"
-tad_revision: "1.3.54"
-adr_revision: "1.3.54"
-mvp_revision: "1.3.54"
-gtm_revision: "1.3.54"
+version: "1.3.55"
+prd_revision: "1.3.55"
+tad_revision: "1.3.55"
+adr_revision: "1.3.55"
+mvp_revision: "1.3.55"
+gtm_revision: "1.3.55"
 date: "2026-10-05"
 lang: "en-US"
 owner: "Graph product maintainers"
@@ -31,7 +31,9 @@ lifecycle_status: "implementation-in-progress"
 
 ## Identity, scope and authority
 
-All five roles join **SEQUENCE-FLOW-001@1.3.54**. This source-loading successor coordinates graph bootstrap with the existing per-source parser, retaining importer modes, composition, resource limits and publication guards. It addresses a source inventory reference changing during an awaited read or parse without accepting changed authored input. An existing retry may join the exact active parser before capturing its fresh inventory; retry counts, cold persisted-byte checks and final proof fences remain intact. Exact canonical-name native results may enter the existing importer policy without another parser job; different parser names retain their distinct fallback identity. The enrolled convergence companion passes 82/82 cases, including real deferred parsing, importer cache identity, multi-source composition and source-drift rejection. All 45 existing registered bootstrap checks, five IndexedDB persistence checks and the Flight enter/exit ownership property pass. The retained original-owner baseline fails 12 of its 80 cases; final candidate-bound affected/build/browser proof remains required. An explicit bootstrap path may precede Explorer selection; the existing path-authority rule still rejects a different selection. For frontmatter-only documents with no graph content, settlement accepts only the document setter’s exact error-to-idle patch on the canonical active record; unrelated lifecycle, source and document changes remain rejected. Nonempty graph-source parsing failures stop before document or preset publication. Blank, frontmatter-only and non-Markdown inputs retain the existing importer policy.
+All five roles join **SEQUENCE-FLOW-001@1.3.55**. This successor makes the failing mission readiness boundary observable without changing its four readiness terms, deadline or retry count. The original timeout remains the failure; one bounded diagnostic reports bootstrap state, outstanding synchronization tasks, history/graph presence and selected-source membership without authored content. Contract v87 enrolls the existing helper and its regression in the mission scope.
+The published source-loading repair coordinates graph bootstrap with the existing per-source parser, retaining importer modes, composition, resource limits and publication guards. It addresses a source inventory reference changing during an awaited read or parse without accepting changed authored input. An existing retry may join the exact active parser before capturing its fresh inventory; retry counts, cold persisted-byte checks and final proof fences remain intact. Exact canonical-name native results may enter the existing importer policy without another parser job; different parser names retain their distinct fallback identity. The enrolled convergence companion passes 82/82 cases, including real deferred parsing, importer cache identity, multi-source composition and source-drift rejection. All 45 existing registered bootstrap checks, five IndexedDB persistence checks and the Flight enter/exit ownership property pass. The retained original-owner baseline fails 12 of its 80 cases; final candidate-bound affected/build/browser proof remains required. An explicit bootstrap path may precede Explorer selection; the existing path-authority rule still rejects a different selection. For frontmatter-only documents with no graph content, settlement accepts only the document setter’s exact error-to-idle patch on the canonical active record; unrelated lifecycle, source and document changes remain rejected. Nonempty graph-source parsing failures stop before document or preset publication. Blank, frontmatter-only and non-Markdown inputs retain the existing importer policy.
+The source-loading candidate is immutable in [PR #1558](https://github.com/huijoohwee/agentic-graph/pull/1558), exact `62e8d17bef56443a18dcc8dfca4d1617b96e1fab`. Native validation passed ten partitions in 302.74 seconds; provider standard checks also passed, but its mission browser timed out before the first checkpoint on October 5 at 08:54 SGT. The failure artifact binds the synthetic provider revision to the same source tree. Local fixture routing disables HTTP caching; the provider uses its native unselected response and normal caching. These responses are intended equivalent, but timing differs. The prior log omitted which readiness condition failed, so no parser or build defect is inferred and no deadline is increased. Preserve that failure; final runtime acceptance remains unproven.
 The visual predecessor is immutable in [PR #1557](https://github.com/huijoohwee/agentic-graph/pull/1557), exact `89a4ab55f2e8e4d4a9ade5d19d895cf3489866c1`. All ten native affected plans passed in 281.37 seconds, including the 199.18-second shared-container browser regression; eight partitions had no selected checks. Fourteen focused presentation tests and bounded desktop/mobile/reduced-motion checks pass. Provider integration remains pending. Preserve its panel-aware framing, original participant/message cards and cached SVG playback owners during subsequent offline recovery.
 The preceding two-file CI enrollment is immutable in [PR #1556](https://github.com/huijoohwee/agentic-graph/pull/1556), exact `6a5790366516bac7e6dc526c15b3f794a6b081fb`: native affected checks passed in 54.37 seconds and both provider checks passed. Exact protected integration remains pending. Contract v85 enrolls the two extracted spatial helpers without changing commands, thresholds or fallback.
 The six-file startup producer remains immutable at `7c6438edc49321a48778e96a803a5d47b52da442` in [PR #1552](https://github.com/huijoohwee/agentic-graph/pull/1552), integrated as `201835c8c69e2d1c53a25b978312c955a82e4af7`. Its ten native owner checks, required provider gate and 92 focused checks pass; native closeout confirms the six-path projection.
@@ -43,14 +45,14 @@ Intent: explain ordered interactions and branch-specific playback using existing
 Directive: preserve authored bytes/event identity, bound invalid input and verify the existing runtime.
 Role/action/outcome: maintainer / repairs and checks / a reviewable production-readiness candidate.
 Browser and build evidence below is bounded; final affected validation and protected release receipts remain separate.
-Invocation: `/fix #sequence-source-parser-readiness @codex-sequence-runtime`.
+Invocation: `/fix #sequence-mission-readiness-diagnostics @codex-sequence-runtime`.
 
 Use native owners and original product UI. The user-supplied demonstration stays external:
 import it through normal workspace controls; do not store its path, source or specimen in
 runtime code, fixtures or tests. Independent generic regression cases exercise the contract.
 No outside implementation, assets, hosted rendering service or dependency enters this change.
 
-The retained complete preparation at `e278802a56410eecdb824e0057cc7dffde009df2` preserves the 12-scenario late-selection correction and offline acceptance work. This repair estimates 30 active minutes and caps work at 45 active minutes/five files/40 KiB added bytes, with no dependencies, new module or spend. Reuse the admitted materializer, importer, enrolled convergence tests, CI contract and this specification. The eventual combined planning ceiling remains twenty-one files/180 KiB. Restore only the seven remaining offline files and three selective CI hunks after the shared protected dependency; preserve the enhanced visual files and spatial-helper enrollment. Provider checks, integration and shared adoption are external waits with status-change rechecks.
+The retained complete preparation at `e278802a56410eecdb824e0057cc7dffde009df2` preserves the 12-scenario late-selection correction and offline acceptance work. This diagnostic repair estimates 20 active minutes and caps work at 30 active minutes/four files/12 KiB added bytes, with no dependencies, new module or spend. Reuse the existing mission readiness helper, its regression, CI contract and this specification. The eventual combined planning ceiling remains twenty-one files/180 KiB. Restore only the seven remaining offline files and three selective CI hunks after the shared protected dependency; preserve the enhanced visual files and spatial-helper enrollment. Provider checks, integration and shared adoption are external waits with status-change rechecks.
 The shared retention candidate `072614155c522b86cf0205abf33b9c9a4b0e82ac` keeps an explicit root-local import through seed refresh and a page reload. Its native standard plan passes, and a live import/refresh retains three entities, 185 facts and three sources. Reload still reports a distinct `async source read` materialization failure; retain that raw failure and do not repeat the unchanged full-app proof. Contract v86 selects the existing `workspaceFs.indexedDb.` family, covering the current persistence cases and the registered root-local retention case when that shared candidate is adopted. Final readiness requires their combined source and exact-build proof.
 Keep files below 600 lines and chunks below 500 kB; load feature UI only on demand.
 The demonstration remains external; the browser proof accepts its path explicitly at invocation. External CI/review waits
@@ -426,7 +428,7 @@ V1–V9 pass and a pilot shows the omitted behavior matters. No second roadmap.
 
 ## GTM
 
-Current 1.3.54 coordinates source loading while retaining the published sequence presentation and cached playback projection. Both startup producers are protected; the helper enrollment is green but awaits integration, and shared-runtime integration plus final combined acceptance remain required. Complete Q1–Q9 and exact build/release evidence before
+Current 1.3.55 diagnoses the provider mission-readiness failure while retaining the source-loading repair, the published sequence presentation and cached playback projection. Both startup producers are protected; the helper enrollment is green but awaits integration, and shared-runtime integration plus final combined acceptance remain required. Complete Q1–Q9 and exact build/release evidence before
 offering production readiness; focused passes and offline controls do not prove installation, delivery, buyer value or revenue.
 
 Hypothesis H1: a reachable technical team lead values a reviewed reusable interaction
@@ -467,7 +469,7 @@ capital expenditure or external provider enrollment is authorized.
 
 ## From-0-to-1 coverage and next checks
 
-Join: SEQUENCE-FLOW-001@1.3.54. **0**: requested capabilities plus inspected reusable
+Join: SEQUENCE-FLOW-001@1.3.55. **0**: requested capabilities plus inspected reusable
 owners and unresolved buyer/runtime evidence. **1**: one accepted local interaction
 handoff, followed separately by one evidenced $1 collection and repeat-use observation.
 
