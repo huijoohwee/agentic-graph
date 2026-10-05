@@ -80,6 +80,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
   viewerInlineEditActiveRef: React.MutableRefObject<boolean>
   lastLoadedRef: React.MutableRefObject<MarkdownWorkspaceLoadedSnapshot | null>
   entries: WorkspaceEntry[]
+  sourcesByPath: WorkspaceSourceIndex
   setEntries: React.Dispatch<React.SetStateAction<WorkspaceEntry[]>>
   setSourcesByPath: React.Dispatch<React.SetStateAction<WorkspaceSourceIndex>>
   setLoading: React.Dispatch<React.SetStateAction<boolean>>
@@ -526,8 +527,9 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     return projectWorkspaceEntriesToSourceFilesExplorer(
       args.entries,
       resolveWorkspaceSourceRootPaths({ chatLocalStorageRootPath }),
+      args.sourcesByPath,
     )
-  }, [args.entries, chatLocalStorageRootPath, workspaceSyncSettingsRev])
+  }, [args.entries, args.sourcesByPath, chatLocalStorageRootPath, workspaceSyncSettingsRev])
 
   const filteredEntries = React.useMemo(() => {
     const q = String(args.search || '').trim().toLowerCase()

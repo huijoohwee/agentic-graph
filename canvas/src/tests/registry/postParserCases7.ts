@@ -295,6 +295,7 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["sourceFiles.cloudSync.localCloudIndicatorClick","@/__tests__/sourceFileCloudSync.test","testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUploadsOnClick"],
   ["sourceFiles.cloudSync.repositoryAuthority","@/__tests__/sourceFileCloudSync.test","testSourceFileCloudTargetsRespectDocumentRepositoryAuthority"],
   ["workspaceFs.indexedDb.reopen","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceFileTextPersistsAcrossFsReinit"],
+  ["workspaceFs.indexedDb.rootLocalImport","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceRootLocalImportSurvivesSeedRefreshAndReload"],
   ["workspaceFs.indexedDb.concurrentMigration","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceIndexedDbConcurrentMigrationAndStaleRows"],
   ["workspaceFs.indexedDb.invalidLegacy","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceIndexedDbMigrationPreservesExistingAndInvalidBytes"],
   ["workspaceFs.indexedDb.writeFailure","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceIndexedDbWriteFailureAndMigrationRetry"],
