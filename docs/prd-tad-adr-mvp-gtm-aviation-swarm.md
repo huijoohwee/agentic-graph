@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.37"
-revision: "0.4.37"
+version: "0.4.38"
+revision: "0.4.38"
 date: "2026-10-06"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.37"
-tad_revision: "0.4.37"
-adr_revision: "0.4.37"
-mvp_revision: "0.4.37"
-gtm_revision: "0.4.37"
+prd_revision: "0.4.38"
+tad_revision: "0.4.38"
+adr_revision: "0.4.38"
+mvp_revision: "0.4.38"
+gtm_revision: "0.4.38"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -29,7 +29,7 @@ source_revision: "2faa8bb9b218b18f34346a086cb872db8bb55876"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
-  - "agentic-os@784b16948a80ed63dfb185bf1d9d7d4559d176d1:guides/SYSTEM-PROMPT-RUNTIME.md"
+  - "agentic-os@a49b6144750cc5af3a127872a012be09eb8c19e0:guides/SYSTEM-PROMPT-RUNTIME.md"
 ---
 
 # Aviation Swarm — reference implementation
@@ -44,7 +44,7 @@ owner, its eleven acceptance thresholds, rights records, financial model, or exe
 Import race fences/stages, primary-first Geo/lazy SVG, bounded bundles and XR projections extend native
 owners. Local imports survive seed refresh and stay visible. Async controls retain eligible focus.
 Automatic precache follows static imports; deferred fixtures join only explicit offline installation.
-No package, provider, model or store is added.
+No new package, provider, model or store is added.
 
 ## Scope and grounding — reference implementation
 
@@ -486,6 +486,6 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-PR1560 merged; parser fix passed 195 cases. Historical WebGL readback was 3.96/4.88 s; CI once saw 137 long tasks/56.5 s and 390–420 ms frames.
+PR1560 merged; parser passed 195 cases. WebGL: 3.96/4.88 s; CI: 137 tasks/56.5 s and 390–420 ms frames.
 
-Exact 2faa build passed the 4 GiB cap: compiler 84.1 s; preflight hashed 84,691 files/1.873 GB in 20.8 s; post-build rechecked 3,903 files/304 MB in 4.3 s with 86,507 cache hits. Cold offline spatial/aviation smoke passes 1024/390. Evidence is under `.workspace/.artifacts/aviation-swarm-readiness/{bundle-graph-2faa8bb-final.json,spatial-full-app-2faa8bb-final/}`. Startup is 3,325,209 B/38 chunks against 150,000 B; the last attributed feature+native total is 163,436 B against 150,000 B. Live stale-profile scene response is 200 via the service worker; MapLibre renders. Linux provider CI has no green receipt; physical iPhone, AS3/4, rights, buyer/economics and promotion gates remain open. Agentic OS cache/eval checks pass; no OS code delta was needed. No production readiness or deployment claim.
+2faa build passed 4 GiB: compile 84.1 s; preflight 84,691/1.873 GB, 20.8 s; postflight 3,903/304 MB, 4.3 s and 86,507 cache hits. Spatial/aviation offline smoke passes 1024/390; evidence: `.workspace/.artifacts/aviation-swarm-readiness/{bundle-graph-2faa8bb-final.json,spatial-full-app-2faa8bb-final/}`. Startup is 3,325,209 B/38 chunks vs 150,000 B; feature+native attribution is 163,436 B vs 150,000 B. Live stale-profile scene returns 200 through the service worker; MapLibre renders. Linux provider CI lacks green receipt; iPhone, AS3/4, rights, buyer/economics and promotion gates remain open. Agentic OS a49 cache/evals pass; 3-sample 2,056-file scan medians cold/warm 340/269 ms, CPU 130/51 ms, 0 additional warm 256 KiB buffer. This reader benchmark does not establish end-to-end CI savings. Production readiness and deployment are not claimed.
