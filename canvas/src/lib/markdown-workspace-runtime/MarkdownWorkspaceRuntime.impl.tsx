@@ -53,6 +53,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
   const chatWorkspaceStreamingPath = useGraphStore(s => s.chatWorkspaceStreamingPath || null)
   const setGraphRagWorkflowJsonText = useGraphStore(s => s.setGraphRagWorkflowJsonText)
   const workspaceCanvasPaneOpen = useGraphStore(s => s.workspaceCanvasPaneOpen)
+  const setBottomSurfaceCollapsed = useGraphStore(s => s.setBottomSurfaceCollapsed)
   const canvasWorkspaceSyncMode = useGraphStore(s => s.canvasWorkspaceSyncMode)
   const canvas2dRenderer = useGraphStore(s => s.canvas2dRenderer)
   const graphNodes = useGraphStore(s => ((s.graphData as GraphData | null)?.nodes as GraphNode[] | undefined) || EMPTY_GRAPH_NODES)
@@ -184,11 +185,12 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
   React.useEffect(() => {
     const wasOpen = wasWorkspaceEditorOverlayOpenRef.current
     wasWorkspaceEditorOverlayOpenRef.current = workspaceEditorOverlayOpen
+    if (workspaceEditorOverlayOpen) setBottomSurfaceCollapsed(true)
     if (!workspaceEditorOverlayOpen || wasOpen) return
     setLayoutMode('split')
     setExplorerOpen(true)
     setSidebarWidthPx(resolveWorkspaceExplorerDefaultWidthPx({ minPx: SIDEBAR_MIN_PX, maxPx: SIDEBAR_MAX_PX }))
-  }, [workspaceEditorOverlayOpen])
+  }, [setBottomSurfaceCollapsed, workspaceEditorOverlayOpen])
   const widgetState = useMarkdownWorkspaceWidgetMode({
     active,
     graphNodes,
