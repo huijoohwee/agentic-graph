@@ -34,7 +34,8 @@ import { Z_INDEX_PANEL_STACK_MAX_BASE } from '@/lib/ui/zIndex'
 
 import { CanvasStartupRuntimes } from '@/features/canvas/CanvasStartupRuntimes'
 
-// Keep the app toolbar reachable without raising the editor surface.
+// The editor owns its surface while the app toolbar remains above it.
+const WORKSPACE_EDITOR_SURFACE_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 3
 const WORKSPACE_EDITOR_TOOLBAR_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 4
 
 const ToolbarLazy = React.lazy(() => import('@/components/Toolbar'))
@@ -352,6 +353,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
                       ref={editorOverlayRef}
                       hidden={!workspaceEditorOverlayOpen}
                       className="absolute inset-0 pointer-events-none"
+                      style={{ zIndex: WORKSPACE_EDITOR_SURFACE_Z_INDEX }}
                       aria-label="Workspace editor overlay shell"
                       onPointerDown={() => setToolbarHeaderElevated(false)}
                     >

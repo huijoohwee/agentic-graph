@@ -29,7 +29,6 @@ import {
   uiToolbarRowScrollListClassName,
 } from '@/features/toolbar/ui/toolbarStyles'
 import { closeWorkspaceView } from '@/features/workspace-table/workspaceTableSsot'
-import { Z_INDEX_PANEL_STACK_MAX_BASE } from '@/lib/ui/zIndex'
 import {
   DEFAULT_MARKDOWN_WORKSPACE_PANE_AVAILABILITY,
   DEFAULT_MARKDOWN_WORKSPACE_PANE_VISIBILITY,
@@ -43,8 +42,6 @@ import {
   MarkdownWorkspaceDisplayMenu,
   MarkdownWorkspacePresentationNavMenu,
 } from '@/features/markdown-workspace/MarkdownWorkspaceToolbarInlineMenus'
-
-const WORKSPACE_EDITOR_HEADER_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 3
 
 const MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME = UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME
 
@@ -356,10 +353,6 @@ export function MarkdownWorkspaceToolbar({
   const showDocumentVersionGraphToggle = typeof setDocumentVersionGraphOpen === 'function'
 
   return (
-      <div
-        className="relative"
-        style={workspaceViewMode === 'editor' ? { zIndex: WORKSPACE_EDITOR_HEADER_Z_INDEX } : undefined}
-      >
       <WorkspaceHeaderRow className="kg-markdown-workspace-panel-toolbar-row kg-markdown-workspace-toolbar-row !py-0" ariaLabel="Markdown toolbar row">
         <button type="button" className={`shrink-0 rounded border px-2 py-1 ${panelTypography.microLabelClass}`} onClick={() => openDocumentInsights('price')}>
           Document insights
@@ -545,6 +538,5 @@ export function MarkdownWorkspaceToolbar({
         </menu>
         </CollapsibleToolbar>
       </WorkspaceHeaderRow>
-      </div>
   )
 }

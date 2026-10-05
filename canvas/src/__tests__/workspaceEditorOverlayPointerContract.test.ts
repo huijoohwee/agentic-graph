@@ -149,15 +149,16 @@ export function testWorkspaceEditorOverlayDoesNotShrinkCanvasViewport() {
   }
   if (
     !text.includes('className="absolute inset-0 pointer-events-none"') ||
+    !text.includes('const WORKSPACE_EDITOR_SURFACE_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 3') ||
+    !text.includes('style={{ zIndex: WORKSPACE_EDITOR_SURFACE_Z_INDEX }}') ||
     !text.includes('const WORKSPACE_EDITOR_TOOLBAR_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 4') ||
     !text.includes('style={toolbarHeaderLayerStyle}')
   ) {
-    throw new Error('expected the Workspace editor surface to avoid an elevated stacking context while the app toolbar stays reachable')
+    throw new Error('expected the Workspace editor surface to stack over the canvas while the app toolbar stays above it')
   }
-  if (!workspaceToolbarText.includes('const WORKSPACE_EDITOR_HEADER_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 3') ||
-    !workspaceToolbarText.includes('className="relative"') ||
-    !workspaceToolbarText.includes('style={workspaceViewMode === \'editor\' ? { zIndex: WORKSPACE_EDITOR_HEADER_Z_INDEX } : undefined}')) {
-    throw new Error('expected only the narrow Workspace toolbar wrapper to elevate above bounded floating panels')
+  if (!workspaceToolbarText.includes('data-kg-workspace-toolbar-close="1"') ||
+    workspaceToolbarText.includes("workspaceViewMode !== 'editor' ? (")) {
+    throw new Error('expected the Workspace close control to remain in its semantic toolbar region in editor mode')
   }
   if (!text.includes('layout="full"')) {
     throw new Error('expected Canvas viewport to remain in full layout while workspace editor overlay is active')
