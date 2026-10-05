@@ -2,7 +2,7 @@
 title: "Agent-Ready Surface Contract"
 id: "md:agentic-graph-agent-ready-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.29.3"
+version: "1.29.4"
 date: "2026-10-06"
 lang: "en-US"
 owner: "cloudflare.pages.agent-ready.surface"
@@ -21,13 +21,13 @@ worktree_id: "device-0232231d4a19--canvas-observability-host"
 agent_id: "codex-canvas-observability"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "aedf470977a05c296aec9f7013dbfcf50491cfb2"
-previous_document_version: "1.29.2"
-prd_revision: "1.29.3"
-tad_revision: "1.29.3"
-adr_revision: "1.29.3"
-mvp_revision: "1.29.3"
-gtm_revision: "1.29.3"
+reviewed_source_revision: "9e678b953f330400a0f764498516fe9879830e63"
+previous_document_version: "1.29.3"
+prd_revision: "1.29.4"
+tad_revision: "1.29.4"
+adr_revision: "1.29.4"
+mvp_revision: "1.29.4"
+gtm_revision: "1.29.4"
 ---
 
 # Agent-Ready Surface Contract
@@ -372,10 +372,10 @@ Five roles join `PLAN-AGENTIC-GRAPH-AGENT-READY-PRD-TAD-ADR-MVP-GTM@1.29.2` for 
 
 **MVP / O-1.** Canvas supplies the default four-repository allowlist; other roots use the same neutral schema. Selection cancels/discards older replies. Build output includes a Graph-owned revision/dirty-state/configuration-digest asset inventory; consumers verify hashes and <500 kB chunks. Consumer CI checks out only the declared exact Graph revision and builds the native dashboard entry; absent siblings are not fetched or treated as evidence, and the local serving host still requires selected repositories to exist. The full Editor Workspace stays above Canvas panels; while it is open, the BottomPanel does not capture pointer input and resumes the shared click-to-front stack when the workspace closes. No new graph store, renderer, palette, hosted service or paid model is introduced. The initial 25-minute/12-module bound was refreshed to 40 active minutes/20 modules for the requested manifest/dashboard narrowing; authored files remain <600 lines. External ownership/release waits have no assumed completion time.
 
-**Checks / O-1.** On the earlier candidate, host/provenance/session checks passed 15/15; native mission workspace lifecycle/context menu 2/2; retained-index fidelity 1/1; workflow archive/stages 10/10; mission projection/WebMCP regression 4/4; authored-state readiness 1/1; and native TypeScript check passed. Its live desktop showed the dashboard, exact virtual manifest, 443 indexed sources and native D3 with 200 nodes/103 edges; no separate source tree/editor/canvas was shown. The clean source candidate `aedf470977a05c296aec9f7013dbfcf50491cfb2` passed the exact Mission browser smoke on mobile and desktop, including full Editor Workspace open/close, Canvas selection, Dashboard D3, trace import, private model disposal and return. The panel-order regression has a focused hook test; toolbar, layering and BottomPanel owner contracts passed 3/3. The preceding exact candidate's standard affected plan passed but extended Mission smoke failed because the BottomPanel resize handle covered Editor Workspace controls. This change puts the BottomPanel at its established background layer and removes it from the interactive stack only while the full editor overlay is active. The next clean integration gate must still pass the affected plans and build before publication. No cap waiver or replacement renderer was used. Source bases: Graph `3ee4d1307207072ae012bc6992c63b9381fc662d`, Canvas `9feb73844b93810ed0370c96ecb5743c3754e72f`.
+**Checks / O-1.** On the earlier candidate, host/provenance/session checks passed 15/15; native mission workspace lifecycle/context menu 2/2; retained-index fidelity 1/1; workflow archive/stages 10/10; mission projection/WebMCP regression 4/4; authored-state readiness 1/1; and native TypeScript check passed. Its live desktop showed the dashboard, exact virtual manifest, 443 indexed sources and native D3 with 200 nodes/103 edges; no separate source tree/editor/canvas was shown. The panel fix passed the exact Mission browser smoke on mobile and desktop, including full Editor Workspace open/close, Canvas selection, Dashboard D3, trace import, private model disposal and return. Its focused panel-stack hook test passed 7/7; toolbar, layering and BottomPanel owner contracts passed 3/3. Exact clean candidate `9e678b953f330400a0f764498516fe9879830e63` passed `npm run ci:integration`; the native receipt `validation-b4702175cc32411fab730ca0` records outcome `passed`, 10/10 affected plans, a green standard plan and green extended Mission browser plan, with no cost regressions. The preceding candidate's extended smoke exposed the BottomPanel resize handle covering Editor Workspace controls; while the full editor overlay is active, the BottomPanel now stays at its established background layer and leaves the interactive stack. Local source checks do not replace exact-head provider checks or source integration. No cap waiver or replacement renderer was used. Source bases: Graph `3ee4d1307207072ae012bc6992c63b9381fc662d`, Canvas `9feb73844b93810ed0370c96ecb5743c3754e72f`.
 
 **GTM / O-1.** Hypothesis: maintainers value a shorter path from failed run to exact affected source and proof. Measure time to one source-bound explanation with the local workspace before pricing an assisted pilot. Willingness to pay, saved time and revenue remain unmeasured. No outreach, payment or deployment is part of this implementation.
 
 **Readiness repair / O-1.** PR #1568's Integration Gate passed its standard plan but timed out before Mission checkpoints in the authored-workspace readiness wait. Semantic readiness must not depend on animation frames: the existing helper uses bounded timer polling while retaining the bootstrap, synchronization, history and exact-source predicates and the original deadline. `node --test canvas/scripts/lib/mission-authored-state-readiness.test.mjs` passed 2/2 in normal and disabled-animation-frame modes, rejecting incomplete and mismatched source states while preserving timeout diagnostics and page-close failure. This proves frame-independent semantic readiness; it does not establish that frame starvation caused the observed CI timeout. The repair is bounded to the helper, its test and this plan, with no new dependency.
 
-**Handoff / O-1.** Local dashboard functionality and the mobile/desktop Mission browser smoke are implemented and verified at the recorded source revision; the exact candidate still requires the clean affected integration gate, immutable publication, exact-head provider checks and authorized source integration. Canvas PR #955's successor reads an exact Graph revision from the workspace allowlist and checks out that native source for its build. Set the pin to Graph's integrated source revision before Canvas publication; dependency-security and artifact-size checks must also pass. Production remains outside this task. Rollback restores the preceding admitted source and exact generated bundle; no source/evidence datastore migration is introduced.
+**Handoff / O-1.** Local dashboard functionality, the mobile/desktop Mission browser smoke and the full clean `ci:integration` gate are green at the recorded source revision. Immutable publication, exact-head provider checks and authorized source integration remain pending. Canvas PR #955's successor reads an exact Graph revision from the workspace allowlist and checks out that native source for its build. Set the pin to Graph's integrated source revision before Canvas publication; dependency-security and artifact-size checks must also pass. Production remains outside this task. Rollback restores the preceding admitted source and exact generated bundle; no source/evidence datastore migration is introduced.
