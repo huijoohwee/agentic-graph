@@ -1,18 +1,23 @@
 import { readGeospatialModeEnabled } from '@/features/geospatial/gympgrphBridge'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import type { ZoomRequestOptions } from '@/lib/zoom/requests'
 
 type RuntimeZoomAction = 'in' | 'out' | 'reset' | 'selection'
 type RuntimeFitIntent = 'fitToView' | 'fitToScreen'
 
-export async function dispatchRuntimeZoomAction(type: RuntimeZoomAction): Promise<void> {
+export async function dispatchRuntimeZoomAction(type: RuntimeZoomAction, options?: Pick<ZoomRequestOptions, 'origin'>): Promise<void> {
   const store = useGraphStore.getState()
+  const automaticSelection = options?.origin === 'selectionMode'
+  if (automaticSelection && (type !== 'selection' || store.viewPinned || !store.zoomToSelectionMode)) return
   if (store.canvasRenderMode === '2d') {
-    store.requestZoom(type)
+    store.requestZoom(type, options)
     return
   }
   const geospatialEnabled = await readGeospatialModeEnabled().catch(() => false)
+  const current = useGraphStore.getState()
+  if (automaticSelection && (current.viewPinned || !current.zoomToSelectionMode)) return
   if (geospatialEnabled) {
-    store.requestZoom(type)
+    store.requestZoom(type, options)
     return
   }
   store.requestThreeCamera(type)
@@ -40,8 +45,8 @@ export async function dispatchRuntimeFitIntent(intent: RuntimeFitIntent): Promis
   store.requestZoom('fit', { intent })
 }
 
-export function dispatchRuntimeZoomActionSoon(type: RuntimeZoomAction): void {
-  void dispatchRuntimeZoomAction(type)
+export function dispatchRuntimeZoomActionSoon(type: RuntimeZoomAction, options?: Pick<ZoomRequestOptions, 'origin'>): void {
+  void dispatchRuntimeZoomAction(type, options)
 }
 
 export function dispatchRuntimeFitToViewSoon(): void {

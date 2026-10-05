@@ -10,11 +10,13 @@ import { dispatchRuntimeFitIntentSoon, dispatchRuntimeZoomActionSoon } from '@/l
 import { isStoryboardCanvas2dRenderer } from '@/lib/config.render'
 import { buildOverlayTopologyLayoutSignature } from '@/lib/storyboardWidget/overlayTopologyLayoutSignature'
 
+type AutoZoomGraph = { graphData: GraphData | null; graphDataRevision: number; graphLayoutSignature?: string }
+
 export function useAutoZoomModes2d(args: {
   viewportW: number
   viewportH: number
   paused?: boolean
-  getGraph?: () => { graphData: GraphData | null; graphDataRevision: number } | null
+  getGraph?: () => AutoZoomGraph | null
 }) {
   const arrayEq = (a: unknown, b: unknown): boolean => {
     const aa = Array.isArray(a) ? a : []
@@ -27,11 +29,13 @@ export function useAutoZoomModes2d(args: {
   }
 
   const scheduleFitRef = React.useRef<(() => void) | null>(null)
+  const scheduleSelectionRef = React.useRef<(() => void) | null>(null)
   const dimsRef = React.useRef({ viewportW: args.viewportW, viewportH: args.viewportH })
   React.useEffect(() => {
     dimsRef.current = { viewportW: args.viewportW, viewportH: args.viewportH }
     const schedule = scheduleFitRef.current
     if (schedule) schedule()
+    scheduleSelectionRef.current?.()
   }, [args.viewportH, args.viewportW])
 
   const pausedRef = React.useRef<boolean>(!!args.paused)
@@ -41,12 +45,13 @@ export function useAutoZoomModes2d(args: {
 
   const lastFitSigRef = React.useRef<string | null>(null)
   const lastAutoZoomSelRef = React.useRef<string | null>(null)
-  const graphOverrideRef = React.useRef<(() => { graphData: GraphData | null; graphDataRevision: number } | null) | null>(null)
+  const graphOverrideRef = React.useRef<(() => AutoZoomGraph | null) | null>(null)
   React.useEffect(() => {
     graphOverrideRef.current = typeof args.getGraph === 'function' ? args.getGraph : null
     lastFitSigRef.current = null
     const schedule = scheduleFitRef.current
     if (schedule) schedule()
+    scheduleSelectionRef.current?.()
   }, [args.getGraph])
 
   React.useEffect(() => {
@@ -93,9 +98,9 @@ export function useAutoZoomModes2d(args: {
           }),
         }
         const schema = state.schema as GraphSchema | null
-        const graphLayoutSignature = isStoryboardCanvas2dRenderer(state.canvas2dRenderer)
+        const graphLayoutSignature = override?.graphLayoutSignature || (isStoryboardCanvas2dRenderer(state.canvas2dRenderer)
           ? buildOverlayTopologyLayoutSignature(graphData)
-          : ''
+          : '')
         const fitGraphDataRevision = graphLayoutSignature ? 0 : graphDataRevision
         const visibilityFrameKey = graphLayoutSignature ? '' : state.workspaceGraphMutationBlockKey
         const sig = buildAutoFitToScreenSignature({
@@ -171,15 +176,21 @@ export function useAutoZoomModes2d(args: {
 
   React.useEffect(() => {
     if (pausedRef.current) {
+      scheduleSelectionRef.current = null
       lastAutoZoomSelRef.current = null
       return
     }
     let rafId: number | null = null
+    let coveredByPendingRequest = false
     const schedule = () => {
       if (pausedRef.current) return
+      const request = useGraphStore.getState().zoomRequest
+      coveredByPendingRequest ||= request?.type === 'selection' && request.origin === 'selectionMode'
       if (rafId != null) return
       rafId = requestAnimationFrame(() => {
         rafId = null
+        const alreadyRequested = coveredByPendingRequest
+        coveredByPendingRequest = false
         if (pausedRef.current) return
         const state = useGraphStore.getState()
         if (isWorkspaceGraphMutationBlocked(state)) return
@@ -200,11 +211,11 @@ export function useAutoZoomModes2d(args: {
         if (!zoomOnSelection) return
         const override = graphOverrideRef.current ? graphOverrideRef.current() : null
         const graphData = override?.graphData ?? state.graphData
-        const graphLayoutSignature = isStoryboardCanvas2dRenderer(state.canvas2dRenderer)
+        const graphLayoutSignature = override?.graphLayoutSignature || (isStoryboardCanvas2dRenderer(state.canvas2dRenderer)
           ? buildOverlayTopologyLayoutSignature(graphData)
-          : ''
+          : '')
         const graphDataRevision = graphLayoutSignature ? 0 : (override?.graphDataRevision ?? state.graphDataRevision)
-        const key = buildAutoZoomSelectionSignature({
+        const selectionKey = buildAutoZoomSelectionSignature({
           graphDataRevision,
           graphLayoutSignature,
           selectedNodeId: state.selectedNodeId,
@@ -214,12 +225,15 @@ export function useAutoZoomModes2d(args: {
           selectedEdgeIds: state.selectedEdgeIds,
           selectedGroupIds: state.selectedGroupIds,
         })
-        if (!key) return
+        if (!selectionKey) return
+        const key = `${selectionKey}|${dimsRef.current.viewportW}x${dimsRef.current.viewportH}`
         if (lastAutoZoomSelRef.current === key) return
         lastAutoZoomSelRef.current = key
-        dispatchRuntimeZoomActionSoon('selection')
+        if (!alreadyRequested) dispatchRuntimeZoomActionSoon('selection', { origin: 'selectionMode' })
       })
     }
+    scheduleSelectionRef.current = schedule
+    schedule()
     const unsub = useGraphStore.subscribe(
       s => ({
         canvas2dRenderer: s.canvas2dRenderer,
@@ -252,6 +266,7 @@ export function useAutoZoomModes2d(args: {
     )
     return () => {
       unsub()
+      scheduleSelectionRef.current = null
       if (rafId != null) cancelAnimationFrame(rafId)
     }
   }, [args.paused])

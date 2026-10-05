@@ -18,6 +18,7 @@ import {
 type ZoomModeSelectProps = {
   iconSizeClass: string
   iconStrokeWidth: number
+  /** Compatibility prop; the store mode setter owns initial selection zoom publication. */
   onZoomSelection?: () => void
 }
 
@@ -43,7 +44,7 @@ type ZoomOption = {
   enableHint?: string
 }
 
-export function ZoomModeSelect({ iconSizeClass, iconStrokeWidth, onZoomSelection }: ZoomModeSelectProps) {
+export function ZoomModeSelect({ iconSizeClass, iconStrokeWidth }: ZoomModeSelectProps) {
   const {
     currentZoomScale,
     viewPinned,
@@ -188,9 +189,8 @@ export function ZoomModeSelect({ iconSizeClass, iconStrokeWidth, onZoomSelection
       }
       const next = !zoomToSelectionMode
       setZoomToSelectionMode(next)
-      if (next && onZoomSelection) onZoomSelection()
     },
-    [fitToViewDisabled, handleFitToView, onZoomSelection, requestZoom, requestZoomTransform, setFitToScreenMode, setZoomToSelectionMode, toggleFitToScreenMode, toggleViewPinned, zoomToSelectionMode],
+    [fitToViewDisabled, handleFitToView, requestZoom, requestZoomTransform, setFitToScreenMode, setZoomToSelectionMode, toggleFitToScreenMode, toggleViewPinned, zoomToSelectionMode],
   )
 
   const isOptionActive = React.useCallback(

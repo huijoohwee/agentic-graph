@@ -13,6 +13,9 @@ import {
   type RectBounds,
 } from '@/lib/canvas/groupContainment'
 import { readCanvasDragIntentThresholdPx } from '@/lib/canvas/dragIntent'
+import { isCanvasObjectDragAllowed } from '@/lib/canvas/dragIntent'
+import { constrainCanvasDraggedPoint2d } from '@/lib/canvas/overlayInteractions2d'
+import { isSpacePanHeld } from '@/lib/canvas/space-pan'
 import {
   selectSubFlowParentDropTarget,
   type SubFlowDropCandidate,
@@ -50,9 +53,17 @@ export const bindGroupsDrag = <T extends GraphGroup>(args: {
   applyComputedToGroup: (group: T, computed: GroupLayoutCacheEntry, selectedGroupId: string) => void
   commitGroupBounds: (groupId: string, bounds: GroupBounds) => void
 }) => {
-  const behavior = args.schema.behavior as unknown as { allowGroupDrag?: unknown }
-  const groupsConfig = args.schema.layout?.groups as unknown as { draggable?: unknown } | undefined
-  if (behavior?.allowGroupDrag === false || groupsConfig?.draggable === false) return
+  const initialSchema = useGraphStore.getState().schema
+  const readSchema = () => useGraphStore.getState().schema === initialSchema ? args.schema : useGraphStore.getState().schema
+  const allowed = (event?: { button?: number; ctrlKey?: boolean; isPrimary?: boolean }) => {
+    const schema = readSchema()
+    const behavior = schema.behavior as typeof schema.behavior & { allowGroupDrag?: boolean }
+    const groups = schema.layout?.groups as { draggable?: boolean } | undefined
+    return isCanvasObjectDragAllowed({ pointerMode: useGraphStore.getState().canvasPointerMode2d, spacePanHeld: isSpacePanHeld(),
+      allowDrag: behavior.allowGroupDrag !== false && groups?.draggable !== false,
+      constraint: schema.behavior.dragConstraint, event })
+  }
+  let activeGroup: T | null = null, originalGroupBounds: unknown
 
   let dragNodes: GraphNode[] = []
   let frozen = false
@@ -63,7 +74,7 @@ export const bindGroupsDrag = <T extends GraphGroup>(args: {
   let dragStartClientY = Number.NaN
   let dragBoundsRef: GroupBounds | null = null
   let dragBoundsStart: GroupBounds | null = null
-  let dragStartNodePosById = new Map<string, { x: number; y: number }>()
+  let dragStartNodePosById = new Map<string, { x: number; y: number; fx?: number | null; fy?: number | null; vx?: number; vy?: number }>()
   let dragDeltaClamp: DeltaClamp | null = null
   let dragRawDx = 0
   let dragRawDy = 0
@@ -141,6 +152,7 @@ export const bindGroupsDrag = <T extends GraphGroup>(args: {
     }
   }
   const resetDragState = () => {
+    activeGroup = null
     dragNodes = []
     dragStartNodePosById = new Map()
     dragDeltaClamp = null
@@ -155,6 +167,21 @@ export const bindGroupsDrag = <T extends GraphGroup>(args: {
     dragStartClientX = Number.NaN
     dragStartClientY = Number.NaN
     dragZoomK = 1
+  }
+  const cancelGroupDrag = () => {
+    if (!activeGroup) return
+    if (dragBoundsOnly) {
+      ;(activeGroup as unknown as { bounds?: unknown }).bounds = originalGroupBounds
+      args.applyComputedToGroup(activeGroup, args.computeBoundsAndLabel(activeGroup), activeGroup.id)
+    }
+    for (const node of dragNodes) Object.assign(node, dragStartNodePosById.get(node.id))
+    if (dragActivated && args.simulation) {
+      args.simulation.alphaTarget(0)
+      if (readLayoutMode(args.schema) === 'radial') args.simulation.stop()
+      const tick = args.simulation.on('tick'); if (typeof tick === 'function') tick()
+    }
+    endForceTune?.(); endForceTune = null
+    resetDragState()
   }
   const activateGroupDrag = (event: d3.D3DragEvent<SVGElement, T, T>, group: T) => {
     if (dragActivated) return
@@ -194,6 +221,7 @@ export const bindGroupsDrag = <T extends GraphGroup>(args: {
       dragStartNodePosById.set(String(node.id), {
         x: typeof node.x === 'number' && Number.isFinite(node.x) ? node.x : 0,
         y: typeof node.y === 'number' && Number.isFinite(node.y) ? node.y : 0,
+        fx: node.fx, fy: node.fy, vx: node.vx, vy: node.vy,
       })
     }
     dragDeltaClamp = computeNestedDragClamp(group, args.computeBoundsAndLabel(group))
@@ -254,13 +282,16 @@ export const bindGroupsDrag = <T extends GraphGroup>(args: {
   }
 
   const dragBehavior = d3.drag<SVGElement, T>()
+    .filter(event => allowed(event))
     .on('start', (event, group) => {
+      if (!allowed()) return
       const sourceEvent = (event as unknown as { sourceEvent?: { stopPropagation?: () => void } }).sourceEvent
       sourceEvent?.stopPropagation?.()
       args.setSelectionSource('canvas')
       args.selectGroup(group.id)
       const source = sourceEvent && typeof sourceEvent === 'object' ? sourceEvent as Record<string, unknown> : null
       resetDragState()
+      activeGroup = group; originalGroupBounds = (group as unknown as { bounds?: unknown }).bounds
       dragThresholdPx = readCanvasDragIntentThresholdPx(source?.pointerType)
       dragStartClientX = typeof source?.clientX === 'number' ? source.clientX : Number.NaN
       dragStartClientY = typeof source?.clientY === 'number' ? source.clientY : Number.NaN
@@ -268,6 +299,8 @@ export const bindGroupsDrag = <T extends GraphGroup>(args: {
       if (!(dragThresholdPx > 0)) activateGroupDrag(event, group)
     })
     .on('drag', (event, group) => {
+      if (activeGroup !== group) return
+      if (!allowed()) { cancelGroupDrag(); return }
       if (!dragActivated && dragThresholdPx > 0) {
         const sourceEvent = (event as unknown as { sourceEvent?: unknown }).sourceEvent
         const source = sourceEvent && typeof sourceEvent === 'object' ? sourceEvent as Record<string, unknown> : null
@@ -290,9 +323,11 @@ export const bindGroupsDrag = <T extends GraphGroup>(args: {
       if (dx === 0 && dy === 0) return
       dragRawDx += dx
       dragRawDy += dy
-      const delta = dragDeltaClamp
+      const clamped = dragDeltaClamp
         ? clampDelta({ clamp: dragDeltaClamp, dx: dragRawDx, dy: dragRawDy })
         : { dx: dragRawDx, dy: dragRawDy }
+      const constrained = constrainCanvasDraggedPoint2d({ baseX: 0, baseY: 0, x: clamped.dx, y: clamped.dy, constraint: readSchema().behavior.dragConstraint })
+      const delta = { dx: constrained.x, dy: constrained.y }
       if (dragBoundsOnly && dragBoundsRef && dragBoundsStart) {
         dragBoundsRef.x = dragBoundsStart.x + delta.dx
         dragBoundsRef.y = dragBoundsStart.y + delta.dy
@@ -318,6 +353,8 @@ export const bindGroupsDrag = <T extends GraphGroup>(args: {
       }
     })
     .on('end', event => {
+      if (!activeGroup) return
+      if (!allowed() || event.sourceEvent?.type === 'touchcancel') { cancelGroupDrag(); return }
       const group = event.subject as unknown as T
       if (dragActivated && dragBoundsOnly && dragBoundsRef) {
         const id = String(group.id || '').trim()

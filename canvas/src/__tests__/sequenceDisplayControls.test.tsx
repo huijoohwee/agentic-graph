@@ -10,6 +10,11 @@ import { defaultSchema } from '../lib/graph/schema'
 import { parseSequence } from '../features/sequence/sequenceModel'
 import { sequenceNativeSvg } from '../features/sequence/sequenceNativeSvg'
 import { sequenceTopologySvg } from '../features/sequence/sequenceTopologySvg'
+// Keep shared interaction regressions enrolled in the existing sequence CI entry.
+import './canvasDragAdmission.test'
+import './sequenceCanvasSelection.test'
+import './svgSurfaceRuntime.test'
+import './zoomSelectionModePersistence.test'
 
 const controlIds = [
   'control:richMedia', 'control:nodeShape', 'control:clusterShape', 'control:portHandles',

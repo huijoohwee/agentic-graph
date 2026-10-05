@@ -457,7 +457,7 @@ export async function testGanttPanelRoutingUsesSharedGitGraphMermaidUtilities() 
   const selectionHelperText = readSource('lib', 'diagram', 'diagramRowSelection.ts')
   const mermaidSelectionText = readSource('lib', 'mermaid', 'mermaidDiagramSelection.ts')
   const gitGraphSelectionText = readSource('lib', 'mermaid', 'mermaidGitGraphSelection.ts')
-  const svgSurfaceZoomRuntimeText = readSource('components', 'GraphCanvas', 'hooks', 'useSvgSurfaceZoomRuntime.ts')
+  const svgSurfaceZoomRuntimeText = ['useSvgSurfaceZoomRuntime.ts', 'svgSurfaceGeometry.ts', 'svgSurfaceSelection.ts'].map(file => readSource('components', 'GraphCanvas', 'hooks', file)).join('\n')
   const ganttBarInteractionText = readSource('lib', 'mermaid', 'mermaidGanttBarInteraction.ts')
   if (!floatingTypeText.includes("| 'gantt'") || !floatingTypeText.includes("| 'timeline'")) {
     throw new Error('expected FloatingPanelView to include first-class Gantt and Timeline views')

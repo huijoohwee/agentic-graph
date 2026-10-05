@@ -4,6 +4,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { readYamlFrontmatterMermaidCode, extractYamlFrontmatterHeaderBlock, readYamlFrontmatterValue } from '@/lib/markdown/frontmatter'
 import { parseSequence, sequencePlaybackEvents, sequenceTimedEvents, sequenceEventAtTime } from './sequenceModel'
 import { useTimelineDocumentTransportController, useTimelineTransportStoreBinding } from '@/components/timeline/timelineTransport'
+import { bindSequenceGraph } from './sequenceCanvasSelection'
 
 // Branch choices and explicit marker selection are transient; the graph store owns the sole playhead.
 const EMPTY_CHOICES: Record<string, string> = {}
@@ -86,6 +87,9 @@ export function useSequenceDocument() {
     const projected = sequenceTimedEvents(sequencePlaybackEvents(model, nextChoices))
     const index = projected.findIndex(entry => entry.id === id)
     if (index < 0) return
+    const state = useGraphStore.getState()
+    const edge = bindSequenceGraph(model, state.graphData)?.events.get(id)
+    if (edge) state.selectEdge(edge.id)
     branchState = { key: model.key, choices: nextChoices, selectedId: id }
     binding.setTimelineTransportState({ documentKey: `${model.key}:${JSON.stringify(nextChoices)}`, position: projected[index]!.startMs, playing: false })
     listeners.forEach(listener => listener())
@@ -94,5 +98,5 @@ export function useSequenceDocument() {
   const current = !transport.playing && selected && selected.startMs === transport.playbackPosition
     ? selected : sequenceEventAtTime(events, transport.playbackPosition)
   return { code, model, mermaidTheme, events, choices, documentKey, duration, transport, chooseBranch, selectEvent,
-    current, revision: source.revision }
+    current, sourceIsCurrent, revision: source.revision }
 }

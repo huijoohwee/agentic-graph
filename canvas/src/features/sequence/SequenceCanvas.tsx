@@ -19,6 +19,8 @@ import { useTimelineTransportPlayback } from '@/components/timeline/timelineTran
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { Canvas2dRendererId } from '@/lib/config.render'
 import { useRootThemeMode } from '@/features/panels/views/preview-panel/ui/mermaidConfig'
+import { bindSequenceGraph, measureSequenceGraph } from './sequenceCanvasSelection'
+import { activateMultiNodeSelectModeForShift, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 import './SequenceFlow.css'
 
 const EMPTY_POSITIONS: Record<string, SequenceParticipantPoint> = Object.freeze({})
@@ -27,6 +29,8 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
   const sequence = useSequenceDocument()
   const { model, events, duration, current, transport, documentKey } = sequence
   const graphData = useActiveGraphRenderData(active)
+  const selection = useGraphStore(useShallow(state => ({ node: state.selectedNodeId, edge: state.selectedEdgeId,
+    nodes: state.selectedNodeIds, edges: state.selectedEdgeIds })))
   const rootRef = React.useRef<HTMLDivElement>(null), hostRef = React.useRef<HTMLDivElement>(null)
   const playbackRef = React.useRef<ReturnType<typeof createSequenceSvgPlayback> | null>(null)
   const [reducedMotion, setReducedMotion] = React.useState(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -50,6 +54,8 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
   const arrangementKey = `${model.key}:${mermaid}:${layout}:${aspectMode}`
   const [arrangement, setArrangement] = React.useState<{key: string; positions: Record<string, SequenceParticipantPoint>}>({ key: '', positions: EMPTY_POSITIONS })
   const positions = arrangement.key === arrangementKey ? arrangement.positions : EMPTY_POSITIONS
+  const readRenderGraph = React.useCallback((svgElement: SVGSVGElement, data: typeof graphData) =>
+    measureSequenceGraph(svgElement, model, data), [model, positions, aspectMode, layout, mermaid])
   const [arranging, setArranging] = React.useState(false)
   const interactionsRef = React.useRef<ReturnType<typeof bindSequenceCanvasInteractions> | null>(null)
   const focusParticipantRef = React.useRef<string | null>(null)
@@ -89,7 +95,17 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
     catch (error) { setRendered({ key: renderKey, svg: '', error: error instanceof Error ? error.message : 'Sequence binding failed' }) }
   }, [svg, model, mermaid, renderKey])
   useSvgSurfaceZoomRuntime({ active, rootRef, svgHostRef: hostRef, svgMarkup: svg, rendererId,
-    graphData, graphDataRevision: sequence.revision, svgSurfaceKey: svgKey })
+    graphData, graphDataRevision: sequence.revision, svgSurfaceKey: svgKey, readRenderGraph, rendererOwnsSelection: true })
+  React.useEffect(() => {
+    if (!hostRef.current) return
+    const binding = bindSequenceGraph(model, graphData)
+    const nodes = new Set([selection.node, ...(selection.nodes || [])]), edges = new Set([selection.edge, ...(selection.edges || [])])
+    for (const element of hostRef.current.querySelectorAll('[data-sequence-participant], [data-sequence-event]')) {
+      const participant = binding?.participants.get(element.getAttribute('data-sequence-participant') || '')
+      const event = binding?.events.get(element.getAttribute('data-sequence-event') || '')
+      element.setAttribute('data-sequence-selected', String(Boolean(participant && nodes.has(participant.id) || event && edges.has(event.id))))
+    }
+  }, [svg, model, graphData, selection])
   React.useLayoutEffect(() => {
     if (!active || !svg || !hostRef.current) return
     const host = hostRef.current
@@ -142,9 +158,27 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
   React.useEffect(() => {
     if (active && rendered.key === renderKey && rendered.error && transport.playing) transport.setTransportPlaying(false)
   }, [active, rendered, renderKey, transport])
-  const select = (target: EventTarget | null) => {
-    const id = target instanceof Element ? target.closest('[data-sequence-event]')?.getAttribute('data-sequence-event') : null
+  const select = (event: React.MouseEvent | React.KeyboardEvent, participantOnly = false) => {
+    if (event.defaultPrevented || !sequence.sourceIsCurrent() || isSpacePanHeld() || useGraphStore.getState().canvasPointerMode2d === 'pan') return
+    const target = event.target
+    if (!(target instanceof Element)) return
+    const id = target.closest('[data-sequence-event]')?.getAttribute('data-sequence-event')
+    const participant = target.closest('[data-sequence-participant]')?.getAttribute('data-sequence-participant')
+    if (participantOnly && !participant) return
+    if (!id && !participant) return
+    const state = useGraphStore.getState()
+    const mode = activateMultiNodeSelectModeForShift({ mode: state.schema.behavior?.selectMode, shiftKey: event.shiftKey,
+      setSelectMode: value => state.setBehavior({ selectMode: value }) })
+    state.setSelectionSource('canvas')
     if (id) sequence.selectEvent(id)
+    else if (participant) {
+      const node = bindSequenceGraph(model, state.graphData)?.participants.get(participant)
+      if (node) {
+        const gesture = resolveNodeSelectionGesture({ mode, shiftKey: event.shiftKey, metaKey: event.metaKey, ctrlKey: event.ctrlKey })
+        if (gesture === 'toggle') state.toggleNodeSelectionAdditive(node.id)
+        else state.selectNode(node.id)
+      }
+    }
   }
   return <div className="sequence-flow sequence-canvas" aria-label={mermaid ? 'Sequence Diagram (Mermaid)' : 'Sequence Diagram'}>
     <CanvasViewContainer sizing="inset" overlay><div className="sequence-canvas-chrome"><div className="sequence-canvas-header"><div className="sequence-canvas-status" role="status"><span className="sequence-canvas-eyebrow">Authored rehearsal · {model.participants.length} participants · {model.events.length} events</span><span className="sequence-canvas-current">{model.diagnostics.length ? 'Sequence source needs correction' : `${transport.playing ? 'Playing' : 'Paused'}${current ? ` · ${current.ordinal}. ${current.label}` : ''}`}</span></div>
@@ -153,6 +187,9 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
     {model.diagnostics.map((d, index) => <p key={index} role="alert">Line {d.line}: {d.message}</p>)}
     {rendered.key === renderKey && rendered.error && <p role="alert">{rendered.error}</p>}
     </div></CanvasViewContainer>
-    <div ref={rootRef} className="sequence-canvas-viewport"><SequenceCanvasGrid rootRef={rootRef} hostRef={hostRef} svg={svg} /><div ref={hostRef} className="sequence-svg-host" data-notation-theme={mermaid ? mermaidTheme : undefined} onClick={event => select(event.target)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(event.target) } }} dangerouslySetInnerHTML={{ __html: svg }} /></div>
+    <div ref={rootRef} className="sequence-canvas-viewport"><SequenceCanvasGrid rootRef={rootRef} hostRef={hostRef} svg={svg} /><div ref={hostRef} className="sequence-svg-host" data-notation-theme={mermaid ? mermaidTheme : undefined}
+      onPointerDownCapture={event => { if (event.button === 0 && event.isPrimary) select(event, true) }}
+      onClick={event => { if (event.detail === 0 || event.target instanceof Element && event.target.closest('[data-sequence-event]')) select(event) }}
+      onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { select(event); event.preventDefault() } }} dangerouslySetInnerHTML={{ __html: svg }} /></div>
   </div>
 }

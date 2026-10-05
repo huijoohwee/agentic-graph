@@ -66,7 +66,7 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   const gitGraphCanvasText = readFileSync(resolve(root, 'components', 'MermaidGitGraphCanvas.tsx'), 'utf8')
   const gitGraphFloatingPanelText = readFileSync(resolve(root, 'features', 'gitgraph', 'GitGraphFloatingPanelView.tsx'), 'utf8')
   const gitGraphDocumentHookText = readFileSync(resolve(root, 'features', 'gitgraph', 'useMermaidGitGraphDocument.ts'), 'utf8')
-  const svgSurfaceZoomRuntimeText = readFileSync(resolve(root, 'components', 'GraphCanvas', 'hooks', 'useSvgSurfaceZoomRuntime.ts'), 'utf8')
+  const svgSurfaceZoomRuntimeText = ['useSvgSurfaceZoomRuntime.ts', 'svgSurfaceGeometry.ts', 'svgSurfaceSelection.ts'].map(file => readFileSync(resolve(root, 'components', 'GraphCanvas', 'hooks', file), 'utf8')).join('\n')
 
   if (!renderConfigText.includes('export const getCanvas2dSurfaceId')) {
     throw new Error('expected shared renderer surface helper in config.render')
@@ -545,7 +545,7 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   if (rendererGraphTopologySummaryText.includes('grid grid-cols-2 gap-x-3 gap-y-1 text-xs')) {
     throw new Error('expected renderer topology stats to avoid fixed mobile two-column grid literals')
   }
-  if (!threeControlsText.includes('const req = threeCameraRequest') || !/if \(store.canvasRenderMode === '2d'\) \{\s*store.requestZoom\(type\)\s*return/.test(readFileSync(resolve(root, 'lib', 'canvas', 'runtimeZoomDispatch.ts'), 'utf8'))) {
+  if (!threeControlsText.includes('const req = threeCameraRequest') || !/if \(store.canvasRenderMode === '2d'\) \{\s*store.requestZoom\(type, options\)\s*return/.test(readFileSync(resolve(root, 'lib', 'canvas', 'runtimeZoomDispatch.ts'), 'utf8'))) {
     throw new Error('expected the shared zoom dispatcher to route 2D requests before Three camera controls')
   }
   if (
