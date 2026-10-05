@@ -1,6 +1,7 @@
 import type { GraphData } from '@/lib/graph/types'
 import type { SourceFile } from '@/hooks/store/types'
 import { matchesMarkdownDocumentPath } from 'grph-shared/markdown/documentPath'
+import { isMarkdownLikeFileName } from 'grph-shared/markdown/mermaidInput'
 import {
   incrementParsedGraphRevision,
   resolveParsedGraphRevision,
@@ -148,6 +149,25 @@ export function hasMaterializationDocumentDrifted(activePath: string | null, bef
   return changed && !converged
 }
 
+export function ensureActiveWorkspaceSourceFileEnabled(args: {
+  sourceFiles: SourceFile[]
+  activeSourcePath: string
+}): SourceFile[] {
+  const list = Array.isArray(args.sourceFiles) ? args.sourceFiles : []
+  if (list.length === 0) return list
+  let changed = false
+  const next = list.map(file => {
+    if (!file) return file
+    const sourcePath = String(file.source?.path || '')
+    if (!sourcePath.startsWith('workspace:') || sourcePath !== args.activeSourcePath) return file
+    if (file.enabled === true) return file
+    changed = true
+    return { ...file, enabled: true }
+  })
+  return changed ? next : list
+}
+
+
 export function canSkipActiveWorkspaceSourceFilesRematerialization(args: { sourceFiles: SourceFile[]; activeSourcePath: string }): boolean {
   const list = Array.isArray(args.sourceFiles) ? args.sourceFiles : []
   if (!args.activeSourcePath || list.length === 0) return false
@@ -183,6 +203,32 @@ export function readColdStartMaterializationSource(args: {
     || args.preparedSourceFiles!.filter(file => file.id === active[0]!.id).length !== 1
     || active[0]!.text !== current.markdownDocumentText || !sameMaterializationSourceIdentities(active, prepared)) return null
   return active[0]!
+}
+
+/** A passive first-open may join an independently published local document, never an existing draft. */
+export function readPassiveMaterializationDocumentText(args: {
+  applyToGraph?: boolean; activePath: string | null; activeSourcePath: string; documentKey: string
+  initial: MaterializationSourceSnapshot; before: MaterializationSourceSnapshot; current: MaterializationSourceSnapshot
+  requestedSourceFiles: SourceFile[]
+}): string | undefined {
+  const { initial, before, current, activePath } = args
+  const priorName = String(initial.markdownDocumentName || '').trim()
+  if (args.applyToGraph === true || !activePath || !isMarkdownLikeFileName(activePath) || !args.documentKey
+    || !initial.sourceFiles.length || before.sourceFiles !== initial.sourceFiles
+    || args.requestedSourceFiles !== before.sourceFiles || current.sourceFiles !== before.sourceFiles
+    || initial.markdownDocumentName !== before.markdownDocumentName || initial.markdownDocumentText !== before.markdownDocumentText
+    || (priorName ? matchesMarkdownDocumentPath(activePath, priorName) : !!initial.markdownDocumentText)
+    || current.markdownDocumentName !== args.documentKey || typeof current.markdownDocumentText !== 'string'
+    || current.sourceFiles.some(file => file.source?.path === args.activeSourcePath)) return undefined
+  // Ambiguous identities cannot authorize a later active-file merge.
+  const ids = new Set<string>(), paths = new Set<string>()
+  for (const file of current.sourceFiles) {
+    const path = String(file.source?.path || '')
+    if (!file.id || ids.has(file.id) || (path && paths.has(path))) return undefined
+    ids.add(file.id)
+    if (path) paths.add(path)
+  }
+  return current.markdownDocumentText
 }
 
 export function hasExpectedMaterializationSourceText(sourceFiles: SourceFile[], activeSourcePath: string, expectedText: string | undefined): boolean {

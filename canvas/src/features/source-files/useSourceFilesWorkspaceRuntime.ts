@@ -2,16 +2,17 @@ import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import {
-  buildActiveWorkspaceRuntimeSourceFilesSnapshot, buildMaterializedWorkspaceActivePathKey, buildMaterializedWorkspaceForceIncludePaths,
+  buildMaterializedWorkspaceActivePathKey, buildMaterializedWorkspaceForceIncludePaths,
   hydrateWorkspaceEntriesInlineText, materializeActiveWorkspaceEntryIntoSourceFiles, readWorkspaceActiveEntrySnapshot,
   readReusableWorkspaceEntriesSnapshot, resolveMaterializedWorkspaceActivePath,
 } from '@/features/source-files/sourceFilesRuntimeShared'
+import { areSourceFileRecordsEqual } from '@/features/source-files/sourceFileParsedState'
+import { isMaterializedWorkspaceSourceProofCurrent } from '@/features/source-files/sourceFilesRuntimeMaterialization'
 import { resolveWorkspaceSourceRootPaths } from '@/features/workspace-fs/workspaceSourceRoots'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { subscribeWorkspaceFsChanged } from '@/features/workspace-fs/workspaceFsEvents'
 import { isWebsiteImportExplorerUpdate } from '@/features/workspace-fs/websiteImportRefreshGuard'
 import { resolveWorkspaceSourceIndexSnapshot } from '@/features/workspace-fs/sourceIndex'
-import { buildWorkspaceEntriesSemanticKey } from '@/features/workspace-fs/workspaceEntriesSemanticKey'
 import { invalidateCachedWorkspaceActiveEntrySnapshot } from '@/features/source-files/workspaceActiveEntryCache'
 import { createWorkspaceSeedSyncDeferredScheduler } from '@/lib/workspace/workspaceSeedSyncDeferredScheduler'
 import { beginWorkspaceSeedSyncTask, runWorkspaceSeedSyncTask } from '@/lib/workspace/workspaceSeedSyncRuntime'
@@ -76,7 +77,6 @@ export function useSourceFilesWorkspaceRuntime({
   const activePathMaterializeInFlightRef = React.useRef(false)
   const queuedActivePathMaterializeRef = React.useRef<ActivePathMaterializationRequest | null>(null)
   const pendingEnsureSeedMutationRequestRef = React.useRef<WorkspaceFsMutationRequest | null>(null)
-  const lastWorkspaceEntriesSignatureRef = React.useRef('')
   const hasWorkspaceRematerializeCandidates = React.useCallback((
     sourceFiles?: ReturnType<typeof useGraphStore.getState>['sourceFiles'],
   ): boolean => {
@@ -105,57 +105,47 @@ export function useSourceFilesWorkspaceRuntime({
     sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
   }): Promise<ReturnType<typeof useGraphStore.getState>['sourceFiles']> => {
     const sourceFilesSnapshot = readCallerOwnedSourceFilesSnapshot(args?.sourceFilesSnapshot)
-    const fs = await readReusableWorkspaceFs()
-    const activePath = resolveMaterializedWorkspaceActivePath({ explorerActivePath: useMarkdownExplorerStore.getState().activePath })
-    if (!activePath) return sourceFilesSnapshot
-    const forceIncludePaths = buildMaterializedWorkspaceForceIncludePaths({ activePathOverride: activePath })
-    const workspaceEntries = await readWorkspaceActiveEntrySnapshot({
-      fs,
-      activePath,
-      workspaceEntries: reusableWorkspaceEntriesRef.current,
-    })
-    const hydratedWorkspaceEntries = await hydrateWorkspaceEntriesInlineText({ fs, workspaceEntries, forceIncludePaths })
-    const signature = buildWorkspaceEntriesSemanticKey({
-      entries: hydratedWorkspaceEntries,
-      docsOnly: workspaceSourceFilesDocsOnly,
-      forceIncludePaths,
-      forceIncludeOnly: true,
-      workspaceSourceRootPaths: resolveWorkspaceSourceRootPaths({
-        chatLocalStorageRootPath: useGraphStore.getState().chatLocalStorageRootPath,
-      }),
-    })
-    if (signature === lastWorkspaceEntriesSignatureRef.current) return sourceFilesSnapshot
-    lastWorkspaceEntriesSignatureRef.current = signature
-    const sourcesByPath = readReusableWorkspaceSourceIndexSnapshot()
-    reusableWorkspaceEntriesRef.current = readReusableWorkspaceEntriesSnapshot(hydratedWorkspaceEntries)
-    reusableWorkspaceSourcesByPathRef.current = sourcesByPath
-    const existing = sourceFilesSnapshot
-    const {
-      runtimeSourceFiles,
-    } = buildActiveWorkspaceRuntimeSourceFilesSnapshot({
-      activePath,
-      existingSourceFiles: existing,
-      workspaceEntries: hydratedWorkspaceEntries,
-      sourcesByPath: sourcesByPath || undefined,
-      workspaceDocsOnly: workspaceSourceFilesDocsOnly,
-      workspaceSourceRootPaths: resolveWorkspaceSourceRootPaths({
-        chatLocalStorageRootPath: useGraphStore.getState().chatLocalStorageRootPath,
-      }),
-    })
-    const runtimeMerged = runtimeSourceFiles
-    if (runtimeMerged !== existing) {
-      useGraphStore.getState().setSourceFiles(runtimeMerged)
+    const baseline = useGraphStore.getState(), explorerPath = useMarkdownExplorerStore.getState().activePath
+    const lifecycle = workspaceSeedSyncLifecycleAbortControllerRef.current
+    const stale = () => Object.assign(new Error('Workspace rematerialization source authority changed.'),
+      { code: 'SOURCE_FILES_MATERIALIZATION_STALE', retryable: false })
+    const assertCurrent = () => {
+      const current = useGraphStore.getState()
+      if (lifecycle.signal.aborted || lifecycle !== workspaceSeedSyncLifecycleAbortControllerRef.current
+        || current.sourceFiles !== baseline.sourceFiles || useMarkdownExplorerStore.getState().activePath !== explorerPath
+        || current.markdownDocumentName !== baseline.markdownDocumentName || current.markdownDocumentText !== baseline.markdownDocumentText
+        || current.markdownDocumentApplyViewPreset !== baseline.markdownDocumentApplyViewPreset) throw stale()
     }
-    await materializeActiveWorkspaceEntryIntoSourceFiles({
-      activePathOverride: activePath,
-      fs,
-      activeWorkspaceEntriesSnapshot: readReusableWorkspaceEntriesSnapshot(hydratedWorkspaceEntries),
-      sourceFilesSnapshot: runtimeMerged,
-      sourcesByPath,
-      premergedSourceFiles: runtimeMerged,
+    // A caller may retain a distinct but fully equivalent array; graph-cache drift is not equivalent.
+    if (sourceFilesSnapshot.length !== baseline.sourceFiles.length
+      || sourceFilesSnapshot.some((file, index) => !areSourceFileRecordsEqual(file, baseline.sourceFiles[index]))) throw stale()
+    assertCurrent()
+    const activePath = resolveMaterializedWorkspaceActivePath({ explorerActivePath: explorerPath })
+    if (!activePath) return baseline.sourceFiles
+    const fs = await readReusableWorkspaceFs()
+    assertCurrent()
+    const forceIncludePaths = buildMaterializedWorkspaceForceIncludePaths({ activePathOverride: activePath })
+    const entriesCache = reusableWorkspaceEntriesRef.current
+    const workspaceEntries = await readWorkspaceActiveEntrySnapshot({
+      fs, activePath, workspaceEntries: entriesCache,
     })
-    return runtimeMerged
-  }, [readCallerOwnedSourceFilesSnapshot, readReusableWorkspaceFs, readReusableWorkspaceSourceIndexSnapshot, reusableWorkspaceEntriesRef, reusableWorkspaceSourcesByPathRef, workspaceSourceFilesDocsOnly])
+    assertCurrent()
+    const hydratedWorkspaceEntries = await hydrateWorkspaceEntriesInlineText({ fs, workspaceEntries, forceIncludePaths })
+    assertCurrent()
+    // The index cache stays owned by bootstrap; a deferred return cannot revive invalidation.
+    const sourcesByPath = resolveWorkspaceSourceIndexSnapshot(reusableWorkspaceSourcesByPathRef.current || undefined)
+    assertCurrent()
+    // Publication belongs to the guarded materializer, never this deferred hydration callback.
+    const proof = await materializeActiveWorkspaceEntryIntoSourceFiles({
+      activePathOverride: activePath, fs,
+      activeWorkspaceEntriesSnapshot: readReusableWorkspaceEntriesSnapshot(hydratedWorkspaceEntries),
+      sourceFilesSnapshot: baseline.sourceFiles, sourcesByPath,
+    })
+    if (!proof || lifecycle.signal.aborted || lifecycle !== workspaceSeedSyncLifecycleAbortControllerRef.current
+      || !isMaterializedWorkspaceSourceProofCurrent(proof)) throw stale()
+    if (reusableWorkspaceEntriesRef.current === entriesCache) reusableWorkspaceEntriesRef.current = readReusableWorkspaceEntriesSnapshot(hydratedWorkspaceEntries)
+    return proof.sourceFiles
+  }, [readCallerOwnedSourceFilesSnapshot, readReusableWorkspaceFs, reusableWorkspaceEntriesRef, reusableWorkspaceSourcesByPathRef, workspaceSeedSyncLifecycleAbortControllerRef])
 
   const isWorkspaceSourceRootMutationPath = React.useCallback((path: string): boolean => {
     if (!path) return false
@@ -415,7 +405,6 @@ export function useSourceFilesWorkspaceRuntime({
       }
       scheduleWorkspaceRematerialize()
     }
-    lastWorkspaceEntriesSignatureRef.current = ''
     scheduleWorkspaceRematerialize()
     const unsubscribe = subscribeWorkspaceFsChanged(detail => {
       const request = resolveWorkspaceFsMutationRequest(detail)

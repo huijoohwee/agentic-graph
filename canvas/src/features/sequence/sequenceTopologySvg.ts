@@ -1,39 +1,17 @@
 import type { SequenceModel } from './sequenceModel'
 import { sequenceSvgEscape as escape, sequenceParticipantLabel } from './sequencePresentation'
+import { resolveSequenceCanvasLayout, sequenceCanvasTextPreview as preview, sequenceCanvasTextWidth as textWidth, type SequenceCanvasLayoutOptions } from './sequenceCanvasLayout'
 
 type Point = { x: number; y: number }
 type Box = Point & { width: number; height: number }
-const CARD_WIDTH = 184, CARD_HEIGHT = 76, BADGE_HEIGHT = 60, GAP = 12
+const BADGE_HEIGHT = 60, GAP = 12
 const intersects = (a: Box, b: Box) => Math.abs(a.x - b.x) < (a.width + b.width) / 2 + GAP && Math.abs(a.y - b.y) < (a.height + b.height) / 2 + GAP
-const Segmenter = (Intl as typeof Intl & { Segmenter?: new () => { segment(text: string): Iterable<{ segment: string }> } }).Segmenter
-const segmenter = Segmenter ? new Segmenter() : null
-const graphemes = (text: string): string[] => {
-  if (segmenter) return Array.from(segmenter.segment(text), entry => entry.segment)
-  const result: string[] = []
-  for (const character of text) {
-    if (result.length && (/^[\p{M}\p{Emoji_Modifier}\u200d\ufe0e\ufe0f]$/u.test(character) || result[result.length - 1]!.endsWith('\u200d'))) result[result.length - 1] += character
-    else result.push(character)
-  }
-  return result
-}
-const textWidth = (text: string, size: number) => graphemes(text).reduce((sum, character) => sum + size * (/^[\x00-\x7f]$/.test(character) ? .56 : 1), 0)
-const preview = (text: string, width: number, size: number): string => {
-  if (textWidth(text, size) <= width) return text
-  let visible = ''
-  for (const character of graphemes(text)) {
-    if (textWidth(visible + character + '…', size) > width) break
-    visible += character
-  }
-  return visible.trimEnd() + '…'
-}
 
 /** Compact, deterministic placement; every authored occurrence keeps its own reachable target. */
-export function sequenceTopologySvg(model: SequenceModel): string {
-  const columns = Math.max(1, Math.min(4, Math.ceil(Math.sqrt(model.participants.length))))
-  const points = new Map(model.participants.map((person, index) => {
-    const row = Math.floor(index / columns), column = row % 2 ? columns - 1 - index % columns : index % columns
-    return [person.id, { x: 108 + column * 380, y: 54 + row * 220 }]
-  }))
+export function sequenceTopologySvg(model: SequenceModel, options: SequenceCanvasLayoutOptions = {}): string {
+  const { card, positions } = resolveSequenceCanvasLayout(model, 'connections', options)
+  const CARD_WIDTH = card.width, CARD_HEIGHT = card.height
+  const points = new Map(Object.entries(positions))
   const occupied: Box[] = [...points.values()].map(point => ({ ...point, width: CARD_WIDTH, height: CARD_HEIGHT }))
   const bounds = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity }
   const include = (point: Point, padding = 16) => {
@@ -106,7 +84,7 @@ export function sequenceTopologySvg(model: SequenceModel): string {
     const glyph = person.actor
       ? '<circle cx="0" cy="-5" r="4"/><path d="M-8 10C-8 0 8 0 8 10"/>'
       : '<rect x="-8" y="-9" width="16" height="18" rx="3"/><path d="M-4-3H4M-4 3H4"/>'
-    return `<g data-sequence-participant="${escape(person.id)}"><title>${escape(person.label)}</title><rect x="${left}" y="${point.y - CARD_HEIGHT / 2}" width="${CARD_WIDTH}" height="${CARD_HEIGHT}" rx="14" class="sequence-participant"/><g transform="translate(${left + 24},${point.y - 14})" class="sequence-participant-glyph" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">${glyph}</g><text x="${left + 42}" y="${point.y - 11}" text-anchor="start" font-size="10" class="sequence-participant-type">${person.actor ? 'ACTOR' : 'PARTICIPANT'}</text><text x="${point.x}" y="${point.y + 17}" font-size="14" class="sequence-participant-name">${escape(name)}</text></g>`
+    return `<g data-sequence-participant="${escape(person.id)}" data-sequence-x="${point.x}" data-sequence-y="${point.y}" data-sequence-width="${CARD_WIDTH}" data-sequence-height="${CARD_HEIGHT}" role="button" tabindex="0" aria-label="Move participant: ${escape(person.label)}"><title>${escape(person.label)}</title><rect x="${left}" y="${point.y - CARD_HEIGHT / 2}" width="${CARD_WIDTH}" height="${CARD_HEIGHT}" rx="14" class="sequence-participant"/><g transform="translate(${left + 24},${point.y - 14})" class="sequence-participant-glyph" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">${glyph}</g><text x="${left + 42}" y="${point.y - 11}" text-anchor="start" font-size="10" class="sequence-participant-type">${person.actor ? 'ACTOR' : 'PARTICIPANT'}</text><text x="${point.x}" y="${point.y + 17}" font-size="14" class="sequence-participant-name">${escape(name)}</text></g>`
   }).join('')
   // One shared vector clip keeps every route beneath every label while preserving local path bindings.
   const rectangle = (left: number, top: number, right: number, bottom: number) => `M${left},${top}H${right}V${bottom}H${left}Z`
