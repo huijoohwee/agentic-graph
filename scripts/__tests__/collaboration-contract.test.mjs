@@ -209,7 +209,7 @@ test('canonical contract is valid and selects deduplicated affected checks', asy
   assert.deepEqual(plan.scopes, ['evidence_analysis', 'agent_mission_control', 'dependencies', 'canvas', 'storage_parent_child_browser', 'runtime', 'xrpl_paid_resource', 'documentation'])
   assert.deepEqual(plan.unmatchedPaths, [])
   assert.deepEqual(plan.commands, [...contract.ci_scopes.evidence_analysis.commands,
-    ...contract.ci_command_expansions.find(item => item.command.join(' ') === 'npm run agent-mission:check').steps,
+    ...contract.ci_command_expansions.find(item => item.command.join(' ') === 'npm run agent-mission:check').steps, ['node', '--test', 'canvas/scripts/lib/mission-authored-state-readiness.test.mjs'],
     canvasCheck,
     ...runtimeCommands,
     ['npm', '--prefix', 'canvas', 'run', 'test:storage-parent-child-browser-smoke'],
@@ -331,7 +331,7 @@ test('affected XR review expands the composite gate and runs the shared check on
   )
   assert.ok(!plan.commands.some(command => command.join(' ') === 'npm run xr-v2:review-ready'))
   assert.deepEqual(plan.commands, [
-    ...contract.ci_command_expansions.find(item => item.command.join(' ') === 'npm run agent-mission:check').steps,
+    ...contract.ci_command_expansions.find(item => item.command.join(' ') === 'npm run agent-mission:check').steps, ['node', '--test', 'canvas/scripts/lib/mission-authored-state-readiness.test.mjs'],
     canvasCheck,
     ...runtimeCommands,
     ['npm', '--prefix', 'canvas', 'run', 'test:storage-parent-child-browser-smoke'],
