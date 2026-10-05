@@ -25,7 +25,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-import-readiness"
 agent_id: "codex-root"
-source_revision: "1f3802abad2188e987a7d74ef2578566bc9aa0aa"
+source_revision: "4b3a632b5ce62574922f376912fbdb35fdfa1fae"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -345,7 +345,7 @@ Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-read
 | ER5 | 1f3802 commits actual Flight acceptance at 1024/390: disconnect before first installed navigation, evidence/route/export/focus and worker request checks | Helper not reached: preceding spatial import fails (ER2). b639 first offline-open failure remains unclosed; no recovery reload counted |
 | ER6 | 38f2 390×844 offline + reduced-motion: import, UTC step, repeat route query, keyboard focus and zero horizontal overflow pass; 18 focus UI tests pass | `aviation-mobile-route-38f2aa043.json`; cf1 200% CSS zoom passes (not native browser zoom). Physical iPhone SKIP/KIV; startup blocked |
 | ER7 | fca5200 custom worker precedes ordinary precache with verified-pack authority. Six installed/uninstalled missing/corrupt-cache cases pass; installed cases emit zero worker fetches | Exact emitted-worker SHA `d6a542256e35b6138f88a41d46d605fb39e518f4b88ff12c13880e501f6c636c`; retained-build behavior proof, not full UI fidelity |
-| ER8 | Root-retention regression plus nine related checks and typecheck pass. Live 5196 import→Editor→Refresh retains selected root source; example loads 3 entities/185 facts/3 sources (`live-root-retention.png`) | Generic basename deletion removed; explicit local projection retained. Real IndexedDB covers missing/corrupt provenance and reopen. Dev proof only; XR-specific migration unchanged |
+| ER8 | Root-retention regression plus nine related checks and typecheck pass. Live 5196 import→Editor→Refresh retains selected root source; example loads 3 entities/185 facts/3 sources (`live-root-retention.png`) | Generic basename deletion removed; explicit local projection retained. Real IndexedDB covers missing/corrupt provenance and reopen. Reload retains source but fails at `async source read`; dev-only proof |
 | ER9 | Six Geo checks pass. Built 160831d: zero SVG requests/mounts during activation; blocked SVG stays local and reload recovers (`geo-primary-built-160831d.json`, `geo-recovery-built-160831d.json`) | Unchanged-source browser proof; selection restored to MapLibre |
 | ER10 | XR tests 2/2: five unrelated writes and five Flight advances each change commits 5→0; motion retained. Build 6 keeps the same connected WebGL canvas through History open/close, zero removals | Unchanged-source proof; counts are test measurements, retention is actual UI evidence |
 | ER11 | 392fa static Mermaid: 6/6 render at 390 px, 16 px labels, all scroll endpoints reachable, page width 390 | `diagram-render-392fa379c/`: exact source hashes, screenshots, zero model/API calls; static artifact, not full canvas UI acceptance |
@@ -440,7 +440,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.4 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.7 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -489,7 +489,7 @@ Unchecked finding families have no zero-count claim. Authoring coverage does not
 ER1–ER11 bind proof; AS1/AS2/AS5 and delivery require separate acceptance.
 
 1f3802 standard passes; full-app fails at bootstrap/import materialization (ER2). Local root-retention
-repair passes focused checks and live Editor refresh (ER8). Next: adopt the parser owner repair and
+repair passes checks/live Editor refresh; online reload still fails at async read (ER8). Adopt parser repair and
 CI enrollment through native receipts, then run exact-candidate combined first-offline proof.
 No unchanged full-CI retry or waiver. iPhone remains SKIP/KIV.
 Whole-host 150 kB awaits the human scope decision; no feature-only reinterpretation. Real-label,
