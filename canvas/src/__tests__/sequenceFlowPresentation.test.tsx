@@ -1,10 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { JSDOM } from 'jsdom'
-import { parseSequence } from '../features/sequence/sequenceModel'
+import React, { act } from 'react'
+import { createRoot } from 'react-dom/client'
+import { initJsdomHarness } from '../tests/lib/jsdomHarness'
+import { parseSequence, sequenceTimedEvents } from '../features/sequence/sequenceModel'
 import { sequenceNativeSvg } from '../features/sequence/sequenceNativeSvg'
 import { sequenceTopologySvg } from '../features/sequence/sequenceTopologySvg'
-import { bindSequenceSvg } from '../features/sequence/sequenceSvgBinding'
+import { bindSequenceSvg, createSequenceSvgPlayback } from '../features/sequence/sequenceSvgBinding'
 
 type Box = { x: number; y: number; width: number; height: number }
 const boxOf = (element: Element): Box => Object.fromEntries(
@@ -135,6 +138,123 @@ function withNotation(markup: string, check: (host: HTMLElement) => void) {
   finally { globalThis.document = priorDocument; dom.window.close() }
 }
 
+test('connections distinguish authored messages from step metadata without losing full accessible labels', () => {
+  const participant = '資料庫 Café 👩🏽‍💻 with a deliberately long descriptive name'
+  const longLabel = 'Transmit <draft> & "résumé" 👩🏽‍💻 ' + '情報'.repeat(40)
+  const model = parseSequence([
+    'sequenceDiagram', `participant A as ${participant}`, 'participant B as Worker',
+    'A->>B: Save item', 'B-->>A: Save item', 'A-)B: [queue] Enqueue',
+    `A->>A: ${longLabel}`, `Note over A,B: ${'👩🏽‍💻'.repeat(30)}`,
+  ].join('\n'))
+  assert.deepEqual(model.diagnostics, [])
+  const dom = new JSDOM(sequenceTopologySvg(model))
+  try {
+    const targets = [...dom.window.document.querySelectorAll('[data-sequence-event]')]
+    assert.deepEqual(targets.map(target => target.getAttribute('data-sequence-event')), model.events.map(event => event.id))
+    for (const [index, target] of targets.entries()) {
+      const event = model.events[index]!
+      const message = target.querySelector('.sequence-event-label')!
+      const metadata = target.querySelector('.sequence-event-meta')!
+      assert.ok(message?.textContent, `step ${event.ordinal}: authored text is visible`)
+      assert.ok(metadata?.textContent?.includes(String(event.ordinal)), 'ordinal is independently visible')
+      assert.ok(metadata.textContent?.includes(event.protocol || event.kind), 'protocol or message kind is secondary metadata')
+      assert.ok(target.getAttribute('aria-label')?.includes(event.label), 'accessible name retains the complete authored message')
+      assert.ok(target.querySelector('title')?.textContent?.includes(event.label), 'hover text retains the complete authored message')
+      assert.equal(target.getAttribute('role'), 'button')
+      assert.equal(target.getAttribute('tabindex'), '0')
+    }
+    assert.equal(targets[0]!.querySelector('.sequence-event-label')!.textContent, 'Save item')
+    assert.equal(targets[1]!.querySelector('.sequence-event-label')!.textContent, 'Save item')
+    assert.notEqual(targets[0]!.getAttribute('data-sequence-event'), targets[1]!.getAttribute('data-sequence-event'))
+    for (const index of [3, 4]) {
+      const visible = targets[index]!.querySelector('.sequence-event-label')!.textContent!
+      assert.ok(visible.endsWith('…'), 'overflow is explicitly signalled')
+      assert.ok(model.events[index]!.label.startsWith(visible.slice(0, -1)), 'preview preserves authored order')
+      assert.doesNotMatch(visible, /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u, 'no split surrogate pairs')
+    }
+    const emojiPreview = targets[4]!.querySelector('.sequence-event-label')!.textContent!.slice(0, -1)
+    assert.equal(emojiPreview.replaceAll('👩🏽‍💻', ''), '', 'emoji clusters are not split by truncation')
+    const person = dom.window.document.querySelector('[data-sequence-participant="A"]')!
+    assert.equal(person.querySelector('title')!.textContent, participant)
+    assert.ok(person.querySelector('.sequence-participant-name')!.textContent!.includes('資料庫'))
+    assert.equal(dom.window.document.querySelector('draft'), null, 'authored markup remains escaped text')
+  } finally { dom.window.close() }
+})
+
+for (const { name, width, height, left, right, top, bottom } of [
+  { name: 'desktop', width: 1280, height: 800, left: 240, right: 380, top: 64, bottom: 200 },
+  { name: 'mobile', width: 390, height: 844, left: 0, right: 130, top: 56, bottom: 280 },
+]) {
+  test(`${name} mounted sequence viewport reserves visible Inspector, Timeline and toolbar space`, async () => {
+    const { CanvasViewContainer } = await import('../components/CanvasViewContainer')
+    const env = initJsdomHarness()
+    const rectangles = new Map<Element, DOMRect>()
+    const rect = (x: number, y: number, w: number, h: number) => new env.dom.window.DOMRect(x, y, w, h)
+    const frameRect = rect(0, 0, width, height)
+    const prototype = env.dom.window.HTMLElement.prototype
+    prototype.getBoundingClientRect = function () {
+      if (this.getAttribute('aria-label') === 'Canvas Toolbar' && this.closest('[data-kg-canvas-container-frame]')) return frameRect
+      return this.hasAttribute('data-kg-canvas-container-frame') ? frameRect : rectangles.get(this) || rect(0, 0, 0, 0)
+    }
+    prototype.getClientRects = function () {
+      const items = this.hidden ? [] : [this.getBoundingClientRect()]
+      return Object.assign(items, { item: (index: number) => items[index] || null }) as unknown as DOMRectList
+    }
+    const frames = new Map<number, FrameRequestCallback>()
+    let nextFrame = 0
+    env.dom.window.requestAnimationFrame = callback => { frames.set(++nextFrame, callback); return nextFrame }
+    env.dom.window.cancelAnimationFrame = id => { frames.delete(id) }
+    let notifyResize = () => {}, disconnected = false
+    globalThis.ResizeObserver = class {
+      constructor(callback: ResizeObserverCallback) { notifyResize = () => callback([], this) }
+      observe() {}
+      unobserve() {}
+      disconnect() { disconnected = true }
+    }
+    const panel = (attributes: Record<string, string>, bounds: DOMRect) => {
+      const element = document.createElement('aside')
+      for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value)
+      rectangles.set(element, bounds); document.body.append(element)
+      return element
+    }
+    if (left) panel({ 'data-kg-workspace-left-pane': '1' }, rect(0, top, left, height - top - bottom))
+    const inspector = panel({ 'data-kg-floating-panel-root': 'true' }, rect(width - right, top, right, height - top - bottom))
+    const timeline = panel({ class: 'kg-canvas-bottom-panel' }, rect(0, height - bottom, width, bottom))
+    panel({ 'aria-label': 'Canvas Toolbar' }, rect(0, 0, width, top))
+    const host = document.createElement('div'); document.body.append(host)
+    const root = createRoot(host)
+    const flush = async (change: () => void) => act(async () => {
+      change(); await Promise.resolve()
+      const pending = [...frames.values()]; frames.clear()
+      for (const callback of pending) callback(0)
+    })
+    const insets = () => {
+      const element = host.querySelector<HTMLElement>('[data-kg-canvas-view-container]')!
+      return Object.fromEntries(['left', 'right', 'top', 'bottom'].map(edge => [edge, Number.parseFloat(element.style.getPropertyValue(edge))]))
+    }
+    try {
+      await act(async () => root.render(<CanvasViewContainer sizing="inset" overlay>
+        <div aria-label="Sequence chart"><button aria-label="Canvas Toolbar">Internal chart control</button></div>
+      </CanvasViewContainer>))
+      assert.deepEqual(insets(), { left, right, top, bottom }, 'chart bounds exclude actual visible workspace chrome')
+      assert.ok(host.querySelector('[aria-label="Sequence chart"]'), 'the chart remains mounted while its available area changes')
+      await flush(() => inspector.setAttribute('aria-hidden', 'true'))
+      assert.deepEqual(insets(), { left, right: 0, top, bottom }, 'hidden Inspector gives its width back')
+      await flush(() => { rectangles.set(timeline, rect(0, height - 180, width, 180)); notifyResize() })
+      assert.deepEqual(insets(), { left, right: 0, top, bottom: 180 }, 'Timeline resize updates the existing chart frame')
+      await flush(() => timeline.remove())
+      assert.deepEqual(insets(), { left, right: 0, top, bottom: 0 }, 'closed Timeline releases its reserved height')
+      await flush(() => inspector.removeAttribute('aria-hidden'))
+      assert.deepEqual(insets(), { left, right, top, bottom: 0 }, 'reopened Inspector is measured again')
+    } finally {
+      await act(async () => root.unmount())
+      env.restore()
+      assert.equal(disconnected, true, 'unmount disconnects panel measurements')
+      assert.equal(frames.size, 0, 'unmount cancels pending frame work')
+    }
+  })
+}
+
 test('notation participant highlighting uses source identities when display aliases are identical', () => {
   const model = parseSequence('sequenceDiagram\nparticipant Left as Worker\nparticipant Right as Worker\nLeft->>Right: Repeated\nRight-->>Left: Repeated\nNote over Left: Repeated')
   const participants = ['Left', 'Right'].map(id => `<g data-et="participant" data-id="${id}"><rect/><text>Worker</text></g><g data-et="life-line" data-id="${id}"><line/></g>`).join('')
@@ -164,3 +284,73 @@ test('notation rejects unknown participant or lifeline identities instead of hig
     })
   }
 })
+
+for (const [layout, render] of [['lifelines', sequenceNativeSvg], ['connections', sequenceTopologySvg]] as const) {
+  test(`${layout} playback preserves semantic selection without repeating static SVG mutations`, () => {
+    const model = parseSequence('sequenceDiagram\nparticipant Left\nparticipant Right\nLeft->>Right: Repeated\nRight-->>Left: Repeated')
+    const events = sequenceTimedEvents(model.events)
+    const dom = new JSDOM(`<main>${render(model)}</main>`)
+    const host = dom.window.document.querySelector('main')!
+    const groups = [...host.querySelectorAll('[data-sequence-event]')]
+    let lengthReads = 0
+    for (const path of host.querySelectorAll('.sequence-message')) {
+      Object.assign(path, {
+        getTotalLength: () => { lengthReads++; return 100 },
+        getPointAtLength: (distance: number) => ({ x: distance, y: distance / 2 }),
+      })
+    }
+    const projection = createSequenceSvgPlayback(host, events)
+    const mutations = new dom.window.MutationObserver(() => {})
+    mutations.observe(host, { attributes: true, childList: true, subtree: true })
+    try {
+      projection.update(events[0]!, 100, false)
+      const pulse = host.querySelector('[data-sequence-pulse]')!
+      assert.ok(pulse)
+      assert.equal(pulse.parentElement, groups[0])
+      assert.equal(pulse.getAttribute('cx'), '10')
+      assert.deepEqual(groups.map(group => group.getAttribute('aria-pressed')), ['true', 'false'])
+      assert.deepEqual(groups.map(group => group.getAttribute('data-sequence-state')), ['active', 'pending'])
+      mutations.takeRecords()
+      projection.update(events[0]!, 200, false)
+      const tick = mutations.takeRecords()
+      assert.equal(host.querySelector('[data-sequence-pulse]'), pulse, 'Continuous playback retains the same pulse')
+      assert.equal(pulse.getAttribute('cx'), '20')
+      assert.equal(lengthReads, 1, 'Geometry length is stable for this bound path')
+      assert.ok(tick.length > 0)
+      assert.ok(tick.every(change => change.type === 'attributes' && change.target === pulse && ['cx', 'cy'].includes(change.attributeName!)), 'Only pulse coordinates change within the same event')
+      projection.update(events[1]!, 1100, false)
+      assert.equal(host.querySelectorAll('[data-sequence-pulse]').length, 1)
+      assert.equal(host.querySelector('[data-sequence-pulse]')!.parentElement, groups[1])
+      assert.deepEqual(groups.map(group => group.getAttribute('aria-pressed')), ['false', 'true'])
+      assert.deepEqual(groups.map(group => group.getAttribute('data-sequence-state')), ['complete', 'active'])
+      projection.update(events[1]!, 1200, true)
+      assert.equal(host.querySelectorAll('[data-sequence-pulse]').length, 0, 'Reduced motion removes the moving projection')
+      assert.equal(groups[1]!.getAttribute('aria-pressed'), 'true', 'Textual selection survives reduced motion')
+      projection.update(events[1]!, 1300, false)
+      assert.equal(host.querySelectorAll('[data-sequence-pulse]').length, 1)
+      assert.equal(lengthReads, 2, 'Each stable path is measured only once')
+      projection.dispose(); mutations.takeRecords()
+      projection.update(events[0]!, 100, false)
+      assert.equal(mutations.takeRecords().length, 0, 'Disposed playback cannot mutate a stale source')
+      assert.equal(host.querySelectorAll('[data-sequence-pulse]').length, 0)
+    } finally { mutations.disconnect(); projection.dispose(); dom.window.close() }
+  })
+
+  test(`${layout} playback bindings cannot publish into a replaced SVG or select an excluded branch`, () => {
+    const model = parseSequence('sequenceDiagram\nparticipant Left\nparticipant Right\nLeft->>Right: Included\nRight-->>Left: Excluded')
+    const events = sequenceTimedEvents(model.events)
+    const dom = new JSDOM(`<main>${render(model)}</main>`)
+    const host = dom.window.document.querySelector('main')!
+    const projection = createSequenceSvgPlayback(host, events.slice(0, 1))
+    try {
+      projection.update(events[0]!, 100, true)
+      const excluded = host.querySelectorAll('[data-sequence-event]')[1]!
+      assert.equal(excluded.getAttribute('data-sequence-state'), 'skipped')
+      assert.equal(excluded.getAttribute('aria-pressed'), 'false')
+      host.innerHTML = render(model)
+      const original = host.innerHTML
+      projection.update(events[0]!, 300, false)
+      assert.equal(host.innerHTML, original, 'A replaced source requires a new binding')
+    } finally { projection.dispose(); dom.window.close() }
+  })
+}
