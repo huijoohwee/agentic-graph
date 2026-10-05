@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.31"
-revision: "0.4.31"
+version: "0.4.32"
+revision: "0.4.32"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.31"
-tad_revision: "0.4.31"
-adr_revision: "0.4.31"
-mvp_revision: "0.4.31"
-gtm_revision: "0.4.31"
+prd_revision: "0.4.32"
+tad_revision: "0.4.32"
+adr_revision: "0.4.32"
+mvp_revision: "0.4.32"
+gtm_revision: "0.4.32"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -25,7 +25,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-import-readiness"
 agent_id: "codex-root"
-source_revision: "c7faf175f3abd9875051570613c0cbe3bcd7d260"
+source_revision: "b139b3afe7c4c3b50230dc4e2923ddb7f1d979f8"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm — reference implementation
 
-`aviation-swarm@0.4.31` hardens eligible aviation evidence Must workflows:
+`aviation-swarm@0.4.32` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -441,7 +441,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.31 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.32 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -451,7 +451,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.31`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.32`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -486,9 +486,9 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-Development: PR1560 integrated. 1de632b aligns parser name/hash with canonical workspace identity, retaining graph/revision/presets. ER1 binds checks; ER3–ER7 are historical.
+Development: PR1560 integrated. Canonical parser identity, import fences and focus retention extend native owners. Protected b274 joins disjoint UI changes at b139; cf5 evidence is historical until refreshed verification.
 Cold bootstrap ≤30 s; import ≤60 s requires exact source/success; AS1 ≤300 s.
-Production Release: eleven native plans and protected integration need exact receipts. Contract v97 shares one source/environment/dependency/output-bound build across three browser checks; each verifies before/after. Publication stops at provider handoff.
-Build: 759 standard checks passed; shared producer hit 300 s during compilation, alongside unrelated branch-tracking drift. Its corrected envelope is 60 s input verification + unchanged 300 s compiler + 60 s output verification. Hash reuse is bounded to one invocation; phase metrics expose cost. Heap cap 4 GiB; browser/import/review limits unchanged; final combined CI pending.
+Production Release: cf5 passes all eleven native plans (1,055 s), first offline desktop/mobile-open, actual 200% zoom and worker cache checks. Contract v97 shares one verified build across three browser checks; refreshed candidate needs exact receipts before publication. Publication stops at provider handoff.
+Build: cf5 producer 116 s; compiler 89.5 s, output verification 5.7 s, 86,478 cache hits. Envelope: 60 s input + 300 s compiler + 60 s output; heap cap 4 GiB. Invocation-local bounded hashing preserves identity fences. Browser/import/review limits unchanged; earlier timeout/drift retained.
 Runtime: no deployment/promotion grant or receipt. Physical iPhone SKIP/KIV; real-label/commercial gates remain. AS3/AS4 stay conditional.
-ADR-004 scoped bytes pass at fbff; native repairs fail 150 kB. Rebind final build/CI/bytes with thirteen native owners; no broader readiness claim.
+ADR-004 cf5 scoped bytes 148,741 pass; with thirteen native repairs 166,371 fails 150 kB. Rebind refreshed build/CI/bytes; no broader readiness claim.
