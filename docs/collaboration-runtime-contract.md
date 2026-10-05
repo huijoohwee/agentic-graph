@@ -458,12 +458,9 @@ fallback_commands:
 This opening YAML frontmatter is the machine source of truth for collaboration grammar, local source identity, deployment isolation, and affected-scope CI selection. Runtime scripts parse it directly; workflow files must not duplicate its source registry or path-to-command mapping.
 The protected Git guideline and checker under `huijoohwee.github.io/scripts/` are an external advisory projection. This contract and its repository-owned executable checks remain `agentic-graph`'s collaboration source of truth. `agentic-graph` may consume the upstream rule intent and exact protected revision, but it must not copy that guideline, checker implementation, rule catalog, or fixtures into this repository.
 
-An exact-path CI scope may narrow only its own composite command when the complete
-normalized change set consists exclusively of declared repository-relative file
-paths. Other matching scopes still run normally. Any mixed, unknown, directory,
+An exact-path CI scope may narrow only its own composite command when the complete normalized change set consists exclusively of declared repository-relative file paths. Other matching scopes still run normally. Any mixed, unknown, directory,
 configuration, or source path falls back to the ordinary affected-scope plan.
-An exact test mapping may explicitly select `scope_local: true` when its command
-executes the complete named test and no runtime source changes are exempted.
+An exact test mapping may explicitly select `scope_local: true` when its command executes the complete named test and no runtime source changes are exempted.
 Every changed path within that scope must then have an exact mapping; changes in
 other scopes keep their own checks. Unmatched paths restore the broader matching
 scope commands as well as the ordinary fallback.
