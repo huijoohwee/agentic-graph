@@ -1,12 +1,12 @@
 ---
 title: "agentic-graph Agentic Commerce Platform — Agent Marketplace & Orchestration Hub plus Clean-Room Native Vendor Settlement Layer, with Platform Roadmap"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.0"
+version: "0.5.0"
 date: "2026-10-05"
 lang: "en-US"
 owner: "Solo Founder / AI Orchestrator"
 local_rung: "undocumented"
-readiness_scope: "GDV-D1 source implemented with bounded local checks; protected source and consumer/browser acceptance pending, no full parity"
+readiness_scope: "GDV-D1 retained; GSG-D1 shared guide source verified; protected integration and delivery separate"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
@@ -19,19 +19,19 @@ agent_id: "codex-commerce-data-view-embed"
 guideline_revision: "3.4.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/82835ac37d524643faa6b9703cb077ea9474ab15/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 reviewed_source_revision: "e551c50c7ad74a99af8a3169409aff36d31642bf"
-previous_document_version: "0.3.1"
-prd_revision: "0.4.0"
-tad_revision: "0.4.0"
-adr_revision: "0.4.0"
-mvp_revision: "0.4.0"
-gtm_revision: "0.4.0"
+previous_document_version: "0.4.0"
+prd_revision: "0.5.0"
+tad_revision: "0.5.0"
+adr_revision: "0.5.0"
+mvp_revision: "0.5.0"
+gtm_revision: "0.5.0"
 ---
 
 The prior [inherited specification](agentic-graph-agentic-commerce-platform-prd-tad-adr-mvp-gtm.md) remains byte-exact because the travel-commerce reused-interface evidence pins it. This planning successor supplies the current five-role structure; it does not replace the inherited interface baseline or renew its runtime evidence.
 
 # Reference implementation: agentic-graph Agentic Commerce Platform — Agent Marketplace & Orchestration Hub plus Clean-Room Native Vendor Settlement Layer, with Platform Roadmap
 
-This combined planning artifact joins `PLAN-AGENTIC-GRAPH-AGENTIC-COMMERCE-PLATFORM-PRD-TAD-ADR-MVP-GTM@0.4.0`. The new native data-view section below owns the 0.4.0 increment. Linked historical parts retain their 0.3.1 acceptance and evidence scope; this join does not renew those observations. Sections are split solely to keep each authored file below 600 lines. The links below preserve the original section anchors and locate the unchanged requirement/design/decision text plus the current MVP/GTM assessment.
+This combined planning artifact joins `PLAN-AGENTIC-GRAPH-AGENTIC-COMMERCE-PLATFORM-PRD-TAD-ADR-MVP-GTM@0.5.0`. The native reuse sections below own the 0.5.0 increment. Linked historical parts retain their 0.3.1 acceptance and evidence scope; this join does not renew those observations. Sections are split solely to keep each authored file below 600 lines. The links below preserve the original section anchors and locate the unchanged requirement/design/decision text plus the current MVP/GTM assessment.
 
 <a id="feature-agent-marketplace--orchestration-hub--domain-agnostic-commerce-substrate"></a>
 - [Feature: Agent Marketplace & Orchestration Hub — Domain-Agnostic Commerce Substrate](agentic-graph-agentic-commerce-platform-planning-prd-tad-adr-mvp-gtm.part-01.md#feature-agent-marketplace--orchestration-hub--domain-agnostic-commerce-substrate)
@@ -223,7 +223,7 @@ browser-local offers and an independent offer-table projection. The user explici
 **Directive GDV-D1:** reuse the native table and selected-record inspection inside Commerce.
 **Role / action / outcome:** Graph UI and Commerce integration owners extract and consume one
 portable native core so users keep the same table semantics without a second visual variant.
-All five roles in this section consume `PLAN-AGENTIC-GRAPH-AGENTIC-COMMERCE-PLATFORM-PRD-TAD-ADR-MVP-GTM@0.4.0`;
+All five roles in this section consume `PLAN-AGENTIC-GRAPH-AGENTIC-COMMERCE-PLATFORM-PRD-TAD-ADR-MVP-GTM@0.5.0`;
 the consumer joins `edge-commerce-agent-mvp@0.21.0`.
 
 ### PRD — native reuse
@@ -317,3 +317,54 @@ permitted action against the current UI; target ≤60 seconds to identify that a
 WTP and first-dollar collection remain unobserved and retain their existing Commerce owner.
 Source/browser proof establishes mechanisms only. No outreach, transaction, deployment or
 conversion uplift is authorized or claimed by this increment.
+
+## Shared floating setup guide — reference implementation
+
+### PRD
+
+GSG-D1: the operator requested the native FloatingPanel Sequence Diagram presentation for offer
+setup. Reuse it across native Graph and Commerce, preserving the existing table. A step selection
+only selects; Commerce retains its four-step readiness, exact saved revision and explicit acknowledgment.
+Acceptance: one shell/list owner, labeled nonmodal panel, keyboard entry/Escape/close, no duplicate
+callbacks, current-state updates, disabled busy actions, contained mobile scrolling and warm offline use.
+
+### TAD
+
+Move the existing toolbar shell into `components/ui/FloatingPanel.tsx:FloatingPanelShell`, with
+native header/content slots. `ToolbarToolMenu.impl.tsx` keeps its pin/minimize/drag/store controller.
+`SequenceInspectorView.tsx` renders controlled rows for both `SequenceInspector` and the bounded
+`sequenceGuideBrowserAdapter.tsx`; document parsing/playback and Graph offline controls stay native.
+The existing browser artifact reexports `mountSequenceGuide`, sharing React and generated source styles.
+Commerce supplies literal text, selection and action callbacks; no Graph store, network or persistence
+enters the portable closure. Mount/update/destroy validates before rendering; host owns return focus.
+
+### ADR
+
+One source owner, two consumers. Native `SequenceFlow.css` is read unchanged; another active lane
+owns its edits. No copied stylesheet, new theme or whole-application dependency. Canvas OS at
+`9feb73844b93810ed0370c96ecb5743c3754e72f` is a Graph-consuming product with design-check adapters,
+not a UI-library export. Retain Graph's shared presentation/tokens now. A later `agentic-canvas-os/ui`
+move must be a dependency-free ownership migration updating native and external consumers together.
+The guide has close/Escape; native pin/minimize/drag remain in the native controller, not portable parity.
+
+### MVP
+
+Combined user-expanded cap: 85 active minutes, ≤50 paths, ≤145 kB new authored additions,
+≤3 runtime modules across source and policy owners; 385,872 bytes of existing test guards relocated; files <600 lines and chunks <500,000 bytes. Zero new runtime dependency or paid service;
+on-demand browser loading. Check native regression, adapter bounds/lifecycle, deterministic closure,
+then Commerce focus/route/busy/offline/stale-review/reflow before a clean source pin and publication.
+Revert the guide projection and artifact pin together; no stored-draft migration. Source checks do not
+establish protected integration, production appearance or physical-device acceptance.
+
+### GTM
+
+Keep the existing setup/recovery service first-dollar path. Measure time to the next correct permitted
+action in the owning Commerce pilot; no observed buyer, demand, conversion or revenue claim is added.
+
+Verification: five guide tests, 39 native sequence tests, four retained table adapter tests and native
+TypeScript 5.8.3 check pass. Source-contract checks pass 19/23; all four failures reproduce at unchanged
+`a9a2e31` (data-view chips, workspace mode, workflow labels and touch guard). All 2,987 original guard
+operands survive the bounded test split; four delegation checks added, maximum test module536 lines.
+Commerce's focused keyboard/offline/stale/busy/late-load/200%-reflow checks pass against generated
+candidate assets. Byte-identical generation was observed; clean source pin and protected CI remain
+separate release gates. No source stylesheet was modified or independent visual variant created.

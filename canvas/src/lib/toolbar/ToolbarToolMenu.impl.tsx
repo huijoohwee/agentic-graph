@@ -1,4 +1,5 @@
 import React from 'react'
+import { FloatingPanelShell } from '@/components/ui/FloatingPanel'
 import { useShallow } from 'zustand/react/shallow'
 import { setMediaCatalogMode } from '@/features/command-menu/mediaCatalogModeRuntime'
 import { useOrchestratorPanelState } from '@/features/panels/hooks/useOrchestratorPanelState'
@@ -11,8 +12,6 @@ import { getIconSizeClass } from '@/lib/ui'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import {
   UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME,
-  UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME,
-  UI_RESPONSIVE_SAFE_VIEWPORT_PANEL_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { usePinnedLs } from '@/lib/ui/panelPinned'
@@ -300,17 +299,17 @@ export function ToolbarToolMenu({
 
 
   return (
-    <section className={floatingPanelRootClassName} style={floatingPanelRootStyle}>
-      <aside
-        ref={toolMenuCardRef}
-        className={`pointer-events-auto ModalContainer flex ${UI_RESPONSIVE_SAFE_VIEWPORT_PANEL_CLASSNAME} flex-col overflow-hidden p-0 ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.primary}`}
-        style={{ ...toolMenuCardStyle, ...(floatingPanelMinimized ? {} : floatingPanelSizeStyle) }}
-        data-kg-floating-panel-root="true"
-        data-kg-floating-panel-row-height={panelFormDensity.rowHeightPreset}
-        data-kg-floating-panel-field-line={panelFormDensity.fieldLineMode}
-      >
-        <section className={`px-2 py-1 flex ${floatingPanelMinimized ? '' : 'h-full'} ${UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME} min-w-0 flex-col gap-1`} aria-label="Floating panel">
-          <header className={`${uiToolbarRowScrollJustifyBetweenClassName} w-full gap-1 select-none sm:gap-2 ${!floatingPanelPinned ? 'cursor-move' : ''}`} onPointerDown={handleFloatingPanelPointerDown}>
+    <FloatingPanelShell
+      ref={toolMenuCardRef}
+      rootClassName={floatingPanelRootClassName}
+      rootStyle={floatingPanelRootStyle}
+      panelStyle={{ ...toolMenuCardStyle, ...(floatingPanelMinimized ? {} : floatingPanelSizeStyle) }}
+      minimized={floatingPanelMinimized}
+      pinned={floatingPanelPinned}
+      rowHeight={panelFormDensity.rowHeightPreset}
+      fieldLine={panelFormDensity.fieldLineMode}
+      onHeaderPointerDown={handleFloatingPanelPointerDown}
+      header={<>
             <FloatingPanelViewTabs
               view={floatingPanelView}
               onSelect={handleSelectView}
@@ -336,7 +335,8 @@ export function ToolbarToolMenu({
               onRestore={floatingPanelMinimized ? () => setFloatingPanelMinimized(false) : undefined}
               onClose={handleClose}
             />
-          </header>
+      </>}
+    >
           {!floatingPanelMinimized && <section className={floatingPanelBodyClassName} aria-label={UI_LABELS.floatingPanel}>
             <PanelFormDensityProvider value={panelFormDensity}>
             {floatingPanelView === 'propsPanel' && <FloatingPropsPanel />}
@@ -436,8 +436,6 @@ export function ToolbarToolMenu({
             )}
             </PanelFormDensityProvider>
           </section>}
-        </section>
-      </aside>
-    </section>
+    </FloatingPanelShell>
   )
 }

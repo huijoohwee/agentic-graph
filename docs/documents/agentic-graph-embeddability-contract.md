@@ -2,7 +2,7 @@
 title: "Reference implementation: agentic-graph Embeddability Contract"
 id: "md:agentic-graph-embeddability-contract"
 doc_type: "Implementation Contract"
-version: "1.2.0"
+version: "1.3.0"
 date: "2026-10-05"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -240,3 +240,20 @@ The portable component has bounded local implementation proof below; its consume
 | Source-owned frame and message contract | `spec-complete` | `undocumented` | local results are not attached | none | `VCC-EMBED-1` and `VCC-EMBED-2` gain satisfying local Evidence References |
 | Portable native component | `spec-complete` | `undocumented` | source implementation and local native/adapter checks complete; clean pin and host/browser proof pending | selected next increment | `VCC-EMBED-4` gains candidate-bound checks; deployment remains separate |
 | External framing | `spec-complete` | `undocumented` | no exact-revision live browser result or operator instruction | none | `VCC-EMBED-3` gains a delivery Evidence Reference through closed deploy boundaries |
+
+## Portable native sequence guide — reference implementation
+
+The existing browser artifact also exports `mountSequenceGuide(target, state)`, returning
+`update(fullState)` and idempotent `destroy()`. State carries bounded literal title/summary/status,
+items `{id, label, detail, meta, actionLabel, actionDisabled}`, selected ID, busy, optional notice,
+close label and selection/action/close callbacks. The adapter validates snapshots before mutation.
+`FloatingPanelShell` and `SequenceInspectorView` are consumed by the native toolbar/inspector too.
+Native sequence CSS and shared tokens remain authoritative; no host override or renderer copy.
+The portable adapter supplies initial heading focus and Escape; the host owns return/follow-up focus,
+late-load cancellation, route disposal, data revisions and action authorization. Busy disables
+selection/actions; close remains available. Destroy removes its root/listeners and never steals focus.
+No pin/drag/playback, document parser, Graph store or persistence is implied by this bounded guide.
+The additive `browserExports` manifest names both mounts; exact clean provenance and output hashes
+must bind the consumer pin. VCC-EMBED-5: native delegation, adapter validation/lifecycle and Commerce
+keyboard/mobile/offline/current-review checks bind the candidate. Five native guide tests, 39 sequence
+checks, native typecheck and focused Commerce browser checks pass; clean pin/protected CI remain gates.

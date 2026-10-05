@@ -1,6 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { UI_THEME_TOKENS } from 'grph-shared/ui/themeTokens'
+export { mountSequenceGuide } from '../../sequence/sequenceGuideBrowserAdapter'
 import {
   MarkdownDataViewTableCore,
   dataViewTableCellClassName,
