@@ -181,16 +181,36 @@ export function useAutoZoomModes2d(args: {
       return
     }
     let rafId: number | null = null
-    let coveredByPendingRequest = false
+    let coveredRequestKey: string | null = null
+    const readSelectionKey = (state: ReturnType<typeof useGraphStore.getState>): string | null => {
+      const override = graphOverrideRef.current ? graphOverrideRef.current() : null
+      const graphData = override?.graphData ?? state.graphData
+      const graphLayoutSignature = override?.graphLayoutSignature || (isStoryboardCanvas2dRenderer(state.canvas2dRenderer)
+        ? buildOverlayTopologyLayoutSignature(graphData)
+        : '')
+      const graphDataRevision = graphLayoutSignature ? 0 : (override?.graphDataRevision ?? state.graphDataRevision)
+      const selectionKey = buildAutoZoomSelectionSignature({
+        graphDataRevision,
+        graphLayoutSignature,
+        selectedNodeId: state.selectedNodeId,
+        selectedEdgeId: state.selectedEdgeId,
+        selectedGroupId: state.selectedGroupId,
+        selectedNodeIds: state.selectedNodeIds,
+        selectedEdgeIds: state.selectedEdgeIds,
+        selectedGroupIds: state.selectedGroupIds,
+      })
+      return selectionKey ? `${selectionKey}|${dimsRef.current.viewportW}x${dimsRef.current.viewportH}` : null
+    }
     const schedule = () => {
       if (pausedRef.current) return
-      const request = useGraphStore.getState().zoomRequest
-      coveredByPendingRequest ||= request?.type === 'selection' && request.origin === 'selectionMode'
+      const state = useGraphStore.getState(), request = state.zoomRequest
+      // A consumed request covers only the target observed while it was pending.
+      if (request?.type === 'selection' && request.origin === 'selectionMode') coveredRequestKey = readSelectionKey(state)
       if (rafId != null) return
       rafId = requestAnimationFrame(() => {
         rafId = null
-        const alreadyRequested = coveredByPendingRequest
-        coveredByPendingRequest = false
+        const alreadyRequestedKey = coveredRequestKey
+        coveredRequestKey = null
         if (pausedRef.current) return
         const state = useGraphStore.getState()
         if (isWorkspaceGraphMutationBlocked(state)) return
@@ -209,27 +229,11 @@ export function useAutoZoomModes2d(args: {
         const expansionEnabled = expansionCfg.enabled !== false
         const zoomOnSelection = expansionEnabled && expansionCfg.zoomOnSelection !== false
         if (!zoomOnSelection) return
-        const override = graphOverrideRef.current ? graphOverrideRef.current() : null
-        const graphData = override?.graphData ?? state.graphData
-        const graphLayoutSignature = override?.graphLayoutSignature || (isStoryboardCanvas2dRenderer(state.canvas2dRenderer)
-          ? buildOverlayTopologyLayoutSignature(graphData)
-          : '')
-        const graphDataRevision = graphLayoutSignature ? 0 : (override?.graphDataRevision ?? state.graphDataRevision)
-        const selectionKey = buildAutoZoomSelectionSignature({
-          graphDataRevision,
-          graphLayoutSignature,
-          selectedNodeId: state.selectedNodeId,
-          selectedEdgeId: state.selectedEdgeId,
-          selectedGroupId: state.selectedGroupId,
-          selectedNodeIds: state.selectedNodeIds,
-          selectedEdgeIds: state.selectedEdgeIds,
-          selectedGroupIds: state.selectedGroupIds,
-        })
-        if (!selectionKey) return
-        const key = `${selectionKey}|${dimsRef.current.viewportW}x${dimsRef.current.viewportH}`
+        const key = readSelectionKey(state)
+        if (!key) return
         if (lastAutoZoomSelRef.current === key) return
         lastAutoZoomSelRef.current = key
-        if (!alreadyRequested) dispatchRuntimeZoomActionSoon('selection', { origin: 'selectionMode' })
+        if (alreadyRequestedKey !== key) dispatchRuntimeZoomActionSoon('selection', { origin: 'selectionMode' })
       })
     }
     scheduleSelectionRef.current = schedule

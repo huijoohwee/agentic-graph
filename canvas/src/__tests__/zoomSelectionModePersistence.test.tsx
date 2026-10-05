@@ -188,3 +188,54 @@ test('automatic selection follows successive selections, geometry revisions and 
     useGraphStore.setState(previous, true); env.restore()
   }
 })
+
+for (const changed of ['selection', 'geometry', 'viewport'] as const) {
+  test(`queued selection coverage follows ${changed} changes before its frame`, async () => {
+    for (const consumed of [true, false]) {
+      const env = initJsdomHarness(), previous = useGraphStore.getState()
+      const priorRaf = globalThis.requestAnimationFrame, priorCancel = globalThis.cancelAnimationFrame
+      const frames = new Map<number, FrameRequestCallback>(); let frameId = 0
+      globalThis.requestAnimationFrame = callback => { frames.set(++frameId, callback); return frameId }
+      globalThis.cancelAnimationFrame = id => { frames.delete(id) }
+      const host = document.createElement('section'), root = createRoot(host); document.body.append(host)
+      const graphData = prepareStore(); let requests = 0
+      const unsubscribe = useGraphStore.subscribe(state => state.zoomRequest, value => { if (value) requests++ })
+      function Probe({ geometry = 'positions-1', width = 900 }: { geometry?: string; width?: number }) {
+        useAutoZoomModes2d({ viewportW: width, viewportH: 600,
+          getGraph: React.useCallback(() => ({ graphData, graphDataRevision: 7, graphLayoutSignature: geometry }), [geometry]),
+        })
+        return null
+      }
+      const flush = () => act(async () => {
+        for (let round = 0; round < 4 && frames.size; round++) {
+          const ready = [...frames.values()]; frames.clear()
+          for (const frame of ready) frame(round)
+          await Promise.resolve()
+        }
+        assert.equal(frames.size, 0)
+      })
+      try {
+        await act(async () => root.render(<Probe/>)); await flush()
+        useGraphStore.getState().setZoomToSelectionMode(true)
+        assert.equal(requests, 1)
+        if (consumed) useGraphStore.getState().clearZoomRequest()
+        if (changed === 'selection') useGraphStore.setState({ selectedNodeId: graphData.nodes[1]!.id })
+        if (changed === 'geometry') await act(async () => root.render(<Probe geometry="positions-2"/>))
+        if (changed === 'viewport') await act(async () => root.render(<Probe width={390}/>))
+        await flush()
+        assert.equal(requests, consumed ? 2 : 1, consumed
+          ? 'a consumed request cannot cover a newer target'
+          : 'a request still pending can cover the current target without another dispatch')
+        assert.equal(useGraphStore.getState().zoomToSelectionMode, true)
+        useGraphStore.getState().clearZoomRequest()
+        await flush()
+        assert.equal(requests, consumed ? 2 : 1, 'settled target does not dispatch again')
+      } finally {
+        unsubscribe(); await act(async () => root.unmount())
+        assert.equal(frames.size, 0)
+        globalThis.requestAnimationFrame = priorRaf; globalThis.cancelAnimationFrame = priorCancel
+        useGraphStore.setState(previous, true); env.restore()
+      }
+    }
+  })
+}

@@ -187,4 +187,3 @@ export const installSvgElementSelection = (args: SvgElementSelectionOptions & { 
     },
   }
 }
-
