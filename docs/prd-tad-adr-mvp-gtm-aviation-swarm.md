@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.22"
-revision: "0.4.22"
+version: "0.4.23"
+revision: "0.4.23"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.22"
-tad_revision: "0.4.22"
-adr_revision: "0.4.22"
-mvp_revision: "0.4.22"
-gtm_revision: "0.4.22"
+prd_revision: "0.4.23"
+tad_revision: "0.4.23"
+adr_revision: "0.4.23"
+mvp_revision: "0.4.23"
+gtm_revision: "0.4.23"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm — reference implementation
 
-`aviation-swarm@0.4.22` hardens eligible aviation evidence Must workflows:
+`aviation-swarm@0.4.23` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -418,7 +418,7 @@ Audience projections must preserve qualified source joins, hypotheses and the ac
 
 ## ADLC and release — reference implementation
 
-Intent: `/fix #aviation-import-readiness @codex`. PR1560 integrated; repairs through 1fcc retain source guards, serialize cold imports, settle owned toasts, gate evidence controls on readiness and yield review keys in both XR handlers. Contract v93 owns affected checks; historical failures remain retained.
+Intent: `/fix #aviation-import-readiness @codex`. PR1560 integrated; repairs through 1fcc retain source guards, serialize cold imports, settle owned toasts, gate evidence controls on readiness and yield review keys in both XR handlers. Contract v94 owns affected checks; historical failures remain retained.
 Changed candidates need bound proof; source integration and production remain separate.
 
 **AS-D6 · Lane & deploy boundary · flowchart LR · version 2.** Source and delivery each require their own receipt.
@@ -441,7 +441,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.22 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.23 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -451,7 +451,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.22`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.23`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -488,6 +488,6 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 Development: PR1560 integrated; 1fcc passes desktop/mobile-emulated first-offline and native 200% review. ER5/ER6 bind runtime bytes; rerun if owners change. Independent repair review found no actionable regression.
 Cold bootstrap remains bounded to 30 seconds. Harness total-import allowance is 60 seconds, requiring terminal success/exact source; AS1 remains ≤300 seconds.
-Production Release: ten native plans and protected integration require exact receipts; native publication stops at provider handoff.
+Production Release: ten native plans and protected integration need exact receipts. The build plus four cold contexts exceeded 300 s; v94 bounds that aggregate command to 600 s, preserving per-journey limits. Native publication stops at provider handoff.
 Runtime: no deployment/promotion authority or receipt. Physical iPhone SKIP/KIV; inherited real touchdown/notice labels and commercial validation remain open. AS3/AS4 retain gates.
 ADR-004 feature passes; 161,084 B including native repairs fails 150 kB. No broader readiness claim follows. Preserve concurrent work and prior failed receipts; recheck on drift.
