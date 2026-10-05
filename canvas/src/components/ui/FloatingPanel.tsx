@@ -1,6 +1,6 @@
 import React from 'react'
 import LucideX from 'lucide-react/dist/esm/icons/x.js'
-import { UI_THEME_TOKENS } from 'grph-shared/ui/themeTokens'
+import { UI_ICON_DEFAULTS, UI_THEME_TOKENS } from 'grph-shared/ui/themeTokens'
 import {
   UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME,
   UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME,
@@ -61,6 +61,9 @@ export type FloatingPanelShellProps = {
   pinned?: boolean
   rowHeight?: string
   fieldLine?: string
+  onPointerDownCapture?: React.PointerEventHandler<HTMLElement>
+  onFocusCapture?: React.FocusEventHandler<HTMLElement>
+  panelLayer?: string
   onHeaderPointerDown?: React.PointerEventHandler<HTMLElement>
   header: React.ReactNode
   children: React.ReactNode
@@ -69,15 +72,17 @@ export type FloatingPanelShellProps = {
 /** Shared native chrome; the caller retains positioning, view state and drag/pin control. */
 export const FloatingPanelShell = React.forwardRef<HTMLElement, FloatingPanelShellProps>(function FloatingPanelShell({
   rootClassName, rootStyle, panelStyle, ariaLabel = 'Floating panel', minimized = false,
-  pinned = true, rowHeight, fieldLine, onHeaderPointerDown, header, children,
+  pinned = true, rowHeight, fieldLine, onHeaderPointerDown, onPointerDownCapture, onFocusCapture, panelLayer, header, children,
 }, ref) {
-  return <section className={rootClassName} style={rootStyle}>
+  return <section className={rootClassName} style={rootStyle} data-kg-panel-layer={panelLayer}
+    onPointerDownCapture={onPointerDownCapture} onFocusCapture={onFocusCapture}>
     <aside ref={ref}
       className={`pointer-events-auto ModalContainer flex ${UI_RESPONSIVE_SAFE_VIEWPORT_PANEL_CLASSNAME} flex-col overflow-hidden p-0 ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.primary}`}
-      style={panelStyle} data-kg-floating-panel-root="true"
+      style={panelStyle} data-kg-floating-panel-root="true" data-kg-panel-minimized={minimized ? 'true' : undefined}
       data-kg-floating-panel-row-height={rowHeight} data-kg-floating-panel-field-line={fieldLine}>
-      <section className={`px-2 py-1 flex ${minimized ? '' : 'h-full'} ${UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME} min-w-0 flex-col gap-1`} aria-label={ariaLabel}>
-        <header className={`${uiToolbarRowScrollJustifyBetweenClassName} w-full gap-1 select-none sm:gap-2 ${!pinned ? 'cursor-move' : ''}`} onPointerDown={onHeaderPointerDown}>
+      <section className={`flex ${minimized ? '' : 'h-full'} min-w-0 flex-col gap-1`} style={{ padding: 'var(--kg-toolbar-compact-padding)' }} aria-label={ariaLabel}>
+        <header className={`${uiToolbarRowScrollJustifyBetweenClassName} ${UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME} w-full shrink-0 gap-1 select-none sm:gap-2 ${!pinned ? 'cursor-move' : ''}`}
+          style={{ '--kg-responsive-panel-header-row-min-height': 'var(--kg-control-height)' } as React.CSSProperties} onPointerDown={onHeaderPointerDown}>
           {header}
         </header>
         {children}
@@ -101,7 +106,7 @@ export type FloatingPanelCloseButtonProps = {
 
 /** Store-free close control shared by native and portable floating panels. */
 export function FloatingPanelCloseButton({
-  label, onClose, disabled = false, iconClassName = UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME, strokeWidth = 2,
+  label, onClose, disabled = false, iconClassName = UI_RESPONSIVE_DEFAULT_GLYPH_CLASSNAME, strokeWidth = UI_ICON_DEFAULTS.strokeWidth,
   colorClassName, hoverClassName, paddingClassName, minimal = false, suppressTitle = false,
 }: FloatingPanelCloseButtonProps) {
   const pointerActivated = React.useRef(false)
@@ -111,7 +116,7 @@ export function FloatingPanelCloseButton({
     onClose()
   }
   return <button type="button" aria-label={label} title={suppressTitle ? undefined : label} disabled={disabled}
-    className={`kg-icon-button group relative select-none rounded justify-center ${UI_THEME_TOKENS.button.iconControl} ${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME} ${paddingClassName?.trim() || UI_THEME_TOKENS.button.padding} ${disabled ? `${UI_THEME_TOKENS.button.disabledText} cursor-not-allowed pointer-events-none` : `${colorClassName?.trim() || UI_THEME_TOKENS.icon.color} ${minimal ? '' : hoverClassName?.trim() || UI_THEME_TOKENS.button.hoverBg}`} App-toolbar__btn min-h-11 min-w-11`}
+    className={`kg-icon-button group relative select-none rounded justify-center ${UI_THEME_TOKENS.button.iconControl} ${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME} ${paddingClassName?.trim() || UI_THEME_TOKENS.button.padding} ${disabled ? `${UI_THEME_TOKENS.button.disabledText} cursor-not-allowed pointer-events-none` : `${colorClassName?.trim() || UI_THEME_TOKENS.icon.color} ${minimal ? '' : hoverClassName?.trim() || UI_THEME_TOKENS.button.hoverBg}`} App-toolbar__btn`}
     onPointerDown={event => { pointerActivated.current = false; if (event.button === 0) event.preventDefault(); event.stopPropagation() }}
     onPointerUp={event => { event.stopPropagation(); if (disabled || event.button !== 0) return; pointerActivated.current = true; activate(event.currentTarget) }}
     onMouseDown={event => { if (event.button === 0) event.preventDefault(); event.stopPropagation() }}

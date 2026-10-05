@@ -51,7 +51,7 @@ export function testUiAppearanceSharedAuthority() {
   assert.doesNotMatch(read('features/graph-fields/ui/graphFieldIcons.tsx'), /strokeWidth = \d/)
 
   // Control selection uses the same owner, independent of record-row selection.
-  for (const file of ['features/toolbar/ui/toolbarStyles.ts', 'features/markdown/ui/codeblock/CodeAnnotationRows.tsx', 'lib/ui/dataViewToolbarButton.tsx']) {
+  for (const file of ['lib/ui/pinToggle.ts', 'features/toolbar/ui/toolbarStyles.ts', 'features/markdown/ui/codeblock/CodeAnnotationRows.tsx', 'lib/ui/dataViewToolbarButton.tsx']) {
     assert.match(read(file), /UI_THEME_TOKENS.button.selectedIcon/)
   }
   for (const file of ['components/IconButton.tsx', 'features/markdown/ui/codeblock/CodeAnnotationRows.tsx', 'features/markdown/ui/codeblock/ClipboardCopyButton.tsx', 'lib/ui/dataViewToolbarButton.tsx']) {
@@ -60,6 +60,11 @@ export function testUiAppearanceSharedAuthority() {
   }
   assert.match(UI_THEME_TOKENS.button.selectedIcon, /bg-blue-50/)
   assert.match(UI_THEME_TOKENS.button.selectedIcon, /dark:bg-blue-900\/20/)
+  const panel = read('components/ui/FloatingPanel.tsx')
+  assert.match(panel, /strokeWidth = UI_ICON_DEFAULTS.strokeWidth/)
+  assert.doesNotMatch(panel, /min-h-11|min-w-11/)
+  assert.match(panel, /padding: 'var\(--kg-toolbar-compact-padding\)'/)
+  assert.match(panel, /'--kg-responsive-panel-header-row-min-height': 'var\(--kg-control-height\)'/)
   assert.match(read('features/markdown/ui/codeblock/CodeAnnotationRows.tsx'), /aria-pressed=\{mode === 'render'\}/)
   assert.match(UI_THEME_TOKENS.border.outline, /--kg-surface-border-width,1px/)
   assert.match(read('styles/shared-borders.css'), /--kg-surface-border-width: 1px/)

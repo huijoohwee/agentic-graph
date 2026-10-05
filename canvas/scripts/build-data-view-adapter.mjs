@@ -56,6 +56,12 @@ collect(tokenModule)
 const { default: generated } = await import('data:text/javascript;base64,' + Buffer.from(tokenModule.outputFiles[0].text).toString('base64'))
   .catch(error => { throw new Error(`Native token generator failed: ${error.message}`) })
 const borders = await read('canvas/src/styles/shared-borders.css')
+const preserveAtRules = (rule, projected) => {
+  for (let parent = rule.parent; parent?.type === 'atrule'; parent = parent.parent) {
+    projected = parent.clone({ nodes: [projected] })
+  }
+  return projected.toString()
+}
 const borderTokens = []
 postcss.parse(borders).walkRules(rule => {
   if (!rule.selector.startsWith(':root')) return
@@ -68,22 +74,30 @@ tokenRules.walkRules(rule => {
   rule.selector += ', ' + rule.selector.replace(/:root((?:\[[^\]]+\])*)/g, (_, attributes) => attributes ? `:host(${attributes})` : ':host')
 })
 const indexCss = postcss.parse(await read('canvas/src/index.css'))
+const responsiveCss = postcss.parse(await read('canvas/src/styles/responsive-toolbar.css'))
 const viewportProperties = new Set(['--kg-safe-top', '--kg-safe-bottom', '--kg-safe-left', '--kg-safe-right',
-  '--kg-canvas-viewport-edge-gap', '--panel-bg-rgb', '--panel-opacity'])
-const viewportTokens = [], foundProperties = new Set()
-indexCss.walkRules(rule => {
-  if (!rule.selector.startsWith(':root')) return
-  const scoped = rule.clone({ nodes: [] })
-  rule.walkDecls(declaration => {
-    if (!viewportProperties.has(declaration.prop)) return
-    foundProperties.add(declaration.prop); scoped.append(declaration.clone())
+  '--kg-canvas-viewport-edge-gap', '--panel-bg-rgb', '--panel-opacity', '--kg-touch-target',
+  '--kg-toolbar-compact-pad-y', '--kg-toolbar-compact-pad-x', '--kg-toolbar-compact-padding', '--kg-toolbar-compact-surface-height'])
+const projectRootTokens = (source, properties) => {
+  const projected = [], found = new Set()
+  source.walkRules(rule => {
+    if (!rule.selectors.every(selector => /^:root(?:\[[^\]]+\])*$/.test(selector))) return
+    const scoped = rule.clone({ nodes: [] })
+    rule.walkDecls(declaration => {
+      if (!properties.has(declaration.prop)) return
+      found.add(declaration.prop); scoped.append(declaration.clone())
+    })
+    if (!scoped.nodes.length) return
+    scoped.selector += ', ' + rule.selector.replace(/:root((?:\[[^\]]+\])*)/g, (_, attributes) => attributes ? `:host(${attributes})` : ':host')
+    projected.push(preserveAtRules(rule, scoped))
   })
-  if (!scoped.nodes.length) return
-  scoped.selector += ', ' + rule.selector.replace(/:root((?:\[[^\]]+\])*)/g, (_, attributes) => attributes ? `:host(${attributes})` : ':host')
-  viewportTokens.push(scoped.toString())
-})
-assert.equal(foundProperties.size, viewportProperties.size, 'Native floating-panel viewport tokens missing')
-const tokens = [tokenRules.toString(), ...borderTokens, ...viewportTokens].join('\n')
+  assert.equal(found.size, properties.size, `Native root tokens missing: ${[...properties].filter(property => !found.has(property)).join(', ')}`)
+  return projected
+}
+// Match index.css import order: generated tokens, borders, responsive controls, then local root declarations.
+const controlTokens = projectRootTokens(responsiveCss, new Set(['--kg-control-height']))
+const viewportTokens = projectRootTokens(indexCss, viewportProperties)
+const tokens = [tokenRules.toString(), ...borderTokens, ...controlTokens, ...viewportTokens].join('\n')
 
 // Token-only sheet is safe for host applications. Layout/reset utilities stay in the ShadowRoot sheet.
 const tokenCss = (await esbuild.transform(tokens, { loader: 'css', minify: true, legalComments: 'inline' })).code
@@ -99,16 +113,14 @@ const projectRules = (source, accepts, required) => {
     const selectors = rule.selectors.filter(accepts)
     if (!selectors.length) return
     selectors.forEach(selector => selected.add(selector))
-    let projected = rule.clone({ selector: selectors.join(', ') }), parent = rule.parent
-    while (parent?.type === 'atrule') { projected = parent.clone({ nodes: [projected] }); parent = parent.parent }
-    rules.push(projected.toString())
+    rules.push(preserveAtRules(rule, rule.clone({ selector: selectors.join(', ') })))
   })
   assert(required.every(selector => selected.has(selector)), `Native CSS owner missing: ${required.filter(selector => !selected.has(selector)).join(', ')}`)
   return rules
 }
 const frameSelectors = ['.kg-data-view-table-frame', '.kg-safe-viewport-panel', '.kg-responsive-panel-header-row',
   '.kg-responsive-panel-header-actions', '.kg-row-scroll', '.kg-responsive-element-row', '.kg-icon-button', '.kg-default-glyph']
-nativeStyles.push(...projectRules(postcss.parse(await read('canvas/src/styles/responsive-toolbar.css')),
+nativeStyles.push(...projectRules(responsiveCss,
   selector => frameSelectors.some(base => selector === base || selector.startsWith(base + ' ')), frameSelectors))
 const shellSelectors = ['.ModalContainer', '.App-toolbar__btn']
 nativeStyles.push(...projectRules(indexCss, selector => shellSelectors.includes(selector), shellSelectors))

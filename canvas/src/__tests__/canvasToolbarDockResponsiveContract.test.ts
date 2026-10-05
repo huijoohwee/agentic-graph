@@ -1,9 +1,56 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
+import ts from 'typescript'
 
 const readUtf8 = (relativePath: string): string => fs.readFileSync(path.resolve(process.cwd(), relativePath), 'utf8')
 
+/** Follow the shared style on its actual dock; unrelated mentions cannot prove ownership. */
+export function assertWorkspaceToolbarBoundaryStyle(text: string) {
+  const source = ts.createSourceFile('Canvas.tsx', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const hasIdentifier = (node: ts.Node, name: string): boolean =>
+    ts.isIdentifier(node) && node.text === name || Boolean(ts.forEachChild(node, child => hasIdentifier(child, name)))
+  const docks: ts.JsxOpeningLikeElement[] = []
+  const visit = (node: ts.Node) => {
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && node.tagName.getText(source) === 'nav') {
+      const classes = node.attributes.properties.filter((attribute): attribute is ts.JsxAttribute =>
+        ts.isJsxAttribute(attribute) && attribute.name.getText(source) === 'className')
+      if (classes.some(attribute => attribute.initializer && ts.isJsxExpression(attribute.initializer)
+        && attribute.initializer.expression && hasIdentifier(attribute.initializer.expression, 'UI_RESPONSIVE_CANVAS_WORKSPACE_TOOLBAR_DOCK_CLASSNAME'))) docks.push(node)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  assert.equal(docks.length, 1, 'expected exactly one workspace toolbar nav using its shared responsive class owner')
+  const attributes = docks[0].attributes.properties
+  assert.equal(attributes.some(ts.isJsxSpreadAttribute), false, 'workspace toolbar attributes must not override the shared dock or style')
+  const styles = attributes.filter((attribute): attribute is ts.JsxAttribute =>
+    ts.isJsxAttribute(attribute) && attribute.name.getText(source) === 'style')
+  assert.equal(styles.length, 1, 'expected the workspace toolbar nav to apply its shared boundary style')
+  const initializer = styles[0].initializer
+  const expression = initializer && ts.isJsxExpression(initializer) ? initializer.expression : undefined
+  const isOwner = (node: ts.Node | undefined) => !!node && ts.isIdentifier(node) && node.text === 'workspaceToolbarBoundaryStyle'
+  const ownsBoundary = isOwner(expression) || !!expression && ts.isObjectLiteralExpression(expression)
+    && expression.properties.filter(ts.isSpreadAssignment).length === 1
+    && expression.properties.every(property => ts.isSpreadAssignment(property) ? isOwner(property.expression)
+      : ts.isPropertyAssignment(property) && (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)) && property.name.text === 'display')
+  assert.ok(ownsBoundary, 'expected the workspace toolbar nav to preserve its shared boundary style with only an optional display gate')
+}
+
 export function testCanvasToolbarDockResponsiveContract() {
+  const dock = (style: string) => `<nav className={UI_RESPONSIVE_CANVAS_WORKSPACE_TOOLBAR_DOCK_CLASSNAME} style={${style}} />`
+  for (const style of ['workspaceToolbarBoundaryStyle', "{ ...workspaceToolbarBoundaryStyle, display: paneVisible ? undefined : 'none' }"]) {
+    assertWorkspaceToolbarBoundaryStyle(dock(style))
+  }
+  for (const text of [
+    dock("{ display: 'none' }") + '<aside style={workspaceToolbarBoundaryStyle} />',
+    dock('{ ...workspaceToolbarBoundaryStyle, left: 0 }'),
+    dock('{ insetInlineStart: 0, ...workspaceToolbarBoundaryStyle }'),
+    dock('{ ...workspaceToolbarBoundaryStyle, ...otherStyle }'),
+    dock('workspaceToolbarBoundaryStyle').replace(' />', ' {...otherProps} />'),
+    dock('workspaceToolbarBoundaryStyle').replace('className={UI_RESPONSIVE_CANVAS_WORKSPACE_TOOLBAR_DOCK_CLASSNAME}', 'className="UI_RESPONSIVE_CANVAS_WORKSPACE_TOOLBAR_DOCK_CLASSNAME"'),
+    dock('workspaceToolbarBoundaryStyle') + dock('workspaceToolbarBoundaryStyle'),
+  ]) assert.throws(() => assertWorkspaceToolbarBoundaryStyle(text), 'boundary ownership must reject geometry overrides and decoy references')
   const canvasText = readUtf8('src/pages/Canvas.tsx')
   const canvasViewportText = readUtf8('src/components/CanvasViewport.tsx')
   const toolbarText = readUtf8('src/components/Toolbar.tsx')
@@ -26,10 +73,10 @@ export function testCanvasToolbarDockResponsiveContract() {
   if (!indexCssText.includes("@import './styles/responsive-canvas-toolbar.css';")) {
     throw new Error('expected index.css to load the focused responsive canvas toolbar stylesheet')
   }
+  assertWorkspaceToolbarBoundaryStyle(canvasText)
   if (
     !canvasText.includes("useMediaQuery('(max-width: 768px), (pointer: coarse)')") ||
-    !canvasText.includes('canvasToolbarDockSpansViewport ? undefined : { left: workspacePaneBoundaryCss }') ||
-    !canvasText.includes('style={workspaceToolbarBoundaryStyle}')
+    !canvasText.includes('canvasToolbarDockSpansViewport ? undefined : { left: workspacePaneBoundaryCss }')
   ) {
     throw new Error('expected editor-workspace canvas toolbar to keep desktop pane boundary and span the mobile viewport')
   }
