@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import test from 'node:test'
 import os from 'node:os'
@@ -9,6 +10,7 @@ import { spawnSync } from 'node:child_process'
 import {
   assertBuiltJavaScriptBudget, assertChunkGraphAcyclic, boundedChunksPlugin, dependencyComponents,
   extractDeferredParserFactories, extractStaticPayload, inspectBuiltJavaScript, partitionModuleGraph,
+  finalizeChunkReport, isEvidenceRuntimeModule,
 } from '../../canvas/viteBoundedChunks.mjs'
 
 import {
@@ -140,6 +142,33 @@ test('hygiene CLI rejects oversized copied ESM and CommonJS runtimes outside ass
 
 const moduleInfo = (importedIds = [], extra = {}) => ({ importedIds, dynamicallyImportedIds: [], code: 'x', ...extra })
 
+const evidenceModule = '/repo/canvas/src/features/evidence-analysis/core/fixture.mjs'
+test('evidence owners stay separate from host and preserve static versus lazy admission', () => {
+  const lazy = evidenceModule + '-lazy', adapter = '/repo/gympgrph/src/useSourceGeospatialLayers.ts'
+  const groups = partitionModuleGraph(new Map([
+    ['entry', moduleInfo([evidenceModule, adapter, 'host'], { isEntry: true, dynamicallyImportedIds: [lazy] })],
+    [evidenceModule, moduleInfo()], [adapter, moduleInfo()], ['host', moduleInfo()], [lazy, moduleInfo([evidenceModule])],
+  ]))
+  assert.notEqual(groups.get(evidenceModule), groups.get('host'))
+  assert.notEqual(groups.get(adapter), groups.get('host')); assert.notEqual(groups.get(lazy), groups.get(evidenceModule))
+  for (const file of ['evidenceAnalysisAgentReadyContract.mjs', 'evidenceAnalysisWebMcpTools.ts'])
+    assert.equal(isEvidenceRuntimeModule('/repo/canvas/src/features/agent-ready/' + file), true)
+  assert.equal(isEvidenceRuntimeModule('/repo/gympgrph/src/GeospatialHost.tsx'), false)
+  assert.throws(() => partitionModuleGraph(new Map([[evidenceModule, moduleInfo(['host'])], ['host', moduleInfo([evidenceModule])]])), /Mixed evidence\/host static cycle/)
+})
+
+test('feature reporting counts final UTF-8 bytes and hashes after preload rewriting', async t => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'evidence-final-bytes-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  fs.writeFileSync(path.join(directory, 'feature.js'), 'é/* late preload */')
+  const report = await finalizeChunkReport({ chunks: [{ file: 'feature.js', bytes: 1, modules: [{ id: evidenceModule }] }] }, directory)
+  assert.equal(report.chunks[0].generatedBytes, 1)
+  assert.equal(report.evidenceRuntime.exclusiveBytes, Buffer.byteLength('é/* late preload */'))
+  assert.equal(report.chunks[0].sha256, createHash('sha256').update('é/* late preload */').digest('hex'))
+  assert.equal(report.evidenceRuntime.addedInitialBytes, null)
+  await assert.rejects(finalizeChunkReport({ chunks: [{ file: 'feature.js', modules: [{ id: evidenceModule }, { id: 'host' }] }] }, directory), /Mixed evidence\/host emitted chunk/)
+})
+
 test('static cycles stay together through zero-render reexport barrels', () => {
   const infos = new Map([
     ['entry', moduleInfo(['a'], { isEntry: true })],
@@ -175,8 +204,9 @@ test('multiple application entries retain independent dynamic ownership', () => 
 
 test('actual emitted modules preserve side-effect order across intervening root sets', async t => {
   const sources = {
-    main: 'import "a";import "c";export const lazy=()=>import("e");',
-    a: 'globalThis.__agenticChunkTrace.push("a");',
+    main: `import ${JSON.stringify(evidenceModule)};import "c";export const lazy=()=>import("e");export const feature=()=>import(${JSON.stringify(evidenceModule + '-lazy')});`,
+    [evidenceModule]: 'globalThis.__agenticChunkTrace.push("a");',
+    [evidenceModule + '-lazy']: 'globalThis.__agenticChunkTrace.push("feature");',
     c: 'import "e";globalThis.__agenticChunkTrace.push("c");',
     e: 'globalThis.__agenticChunkTrace.push("e");',
   }
@@ -192,8 +222,10 @@ test('actual emitted modules preserve side-effect order across intervening root 
   t.after(() => { fs.rmSync(directory, { recursive: true, force: true }); delete globalThis.__agenticChunkTrace })
   for (const chunk of output) fs.writeFileSync(path.join(directory, chunk.fileName), chunk.code)
   globalThis.__agenticChunkTrace = []
-  await import(pathToFileURL(path.join(directory, output.find(chunk => chunk.isEntry).fileName)).href)
+  const entry = await import(pathToFileURL(path.join(directory, output.find(chunk => chunk.isEntry).fileName)).href)
   assert.deepEqual(globalThis.__agenticChunkTrace, ['a', 'e', 'c'])
+  await entry.feature()
+  assert.deepEqual(globalThis.__agenticChunkTrace, ['a', 'e', 'c', 'feature'])
 })
 
 test('published vendor string leaves preserve escapes and do not transform executable templates', async () => {

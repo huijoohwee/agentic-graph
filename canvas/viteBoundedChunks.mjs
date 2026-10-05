@@ -1,4 +1,5 @@
-import { mkdir, readdir, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 import MagicString from 'magic-string'
 import { parseAst } from 'rollup/parseAst'
@@ -9,6 +10,31 @@ import { isBuiltJavaScriptPath } from '../scripts/hygiene-built-chunk-budget.mjs
 const DATA_PREFIX = '\0agentic-graph-static-data:'
 const FACTORY_PREFIX = '\0agentic-graph-parser-factories:'
 const RAW_GROUP_BYTES = 220_000
+
+// Browser evidence owners introduced by cc40000f8; native Flight/host integrations remain shared.
+export const isEvidenceRuntimeModule = id => {
+  const file = id.replaceAll('\\', '/').split('?', 1)[0]
+  return /\/canvas\/src\/features\/evidence-analysis\//.test(file)
+    || /\/canvas\/src\/features\/agent-ready\/evidenceAnalysis(?:AgentReadyContract\.mjs|WebMcpTools\.ts)$/.test(file)
+    || /\/gympgrph\/(?:src\/useSourceGeospatialLayers\.ts|dist\/useSourceGeospatialLayers\.js)$/.test(file)
+}
+
+export async function finalizeChunkReport(report, directory) {
+  for (const chunk of report.chunks) {
+    const owners = new Set(chunk.modules.map(module => isEvidenceRuntimeModule(module.id)))
+    if (owners.size > 1) throw new Error(`Mixed evidence/host emitted chunk: ${chunk.file}`)
+    const bytes = await readFile(path.join(directory, chunk.file))
+    chunk.generatedBytes = chunk.bytes; chunk.bytes = bytes.length
+    chunk.sha256 = createHash('sha256').update(bytes).digest('hex')
+    chunk.evidenceOwned = owners.has(true)
+  }
+  report.evidenceRuntime = {
+    exclusiveBytes: report.chunks.filter(chunk => chunk.evidenceOwned).reduce((sum, chunk) => sum + chunk.bytes, 0),
+    scope: 'Owned modules/adapters only; shared integration deltas require a matched baseline.',
+    addedInitialBytes: null,
+  }
+  return report
+}
 
 /** Dependency-first SCCs. Iterative traversal also handles large editor graphs. */
 export function dependencyComponents(graph) {
@@ -70,6 +96,9 @@ export function partitionModuleGraph(infos, byteLimit = RAW_GROUP_BYTES) {
     // Multi-entry builds retain every label: another entry may load that leaf alone.
     const effectiveRoots = entries.length === 1 && roots[i].has(entries[0]) ? entries : [...roots[i]].sort()
     const ids = components[i], signature = JSON.stringify(effectiveRoots)
+    const owners = new Set(ids.map(isEvidenceRuntimeModule))
+    if (owners.size > 1) throw new Error(`Mixed evidence/host static cycle: ${ids.join(' -> ')}`)
+    const evidenceOwned = owners.has(true)
     const bytes = ids.reduce((sum, id) => sum + (infos.get(id).isIncluded === false ? 0 : Buffer.byteLength(infos.get(id).code || '')), 0)
     // Names retain existing lazy-vendor preload/cache policy; they never select membership.
     const kind = ids.every(id => /(?:monaco-editor|static-data:monaco)/.test(id)) ? 'monaco'
@@ -78,8 +107,8 @@ export function partitionModuleGraph(infos, byteLimit = RAW_GROUP_BYTES) {
       : ids.every(id => /\/node_modules\/three\/src\/(?:nodes\/|materials\/nodes\/|renderers\/(?:common|webgpu|webgl-fallback)\/)/.test(id)) ? 'three-webgpu'
       : ids.every(id => /\/node_modules\/(?:three|@react-three)\//.test(id)) ? 'three'
       : 'runtime'
-    if (!group || group.signature !== signature || group.bytes + bytes > byteLimit || group.kind !== kind) {
-      group = { name: `${kind}-${++serial}`, kind, signature, bytes: 0 }
+    if (!group || group.signature !== signature || group.bytes + bytes > byteLimit || group.kind !== kind || group.evidenceOwned !== evidenceOwned) {
+      group = { name: `${kind}-${++serial}`, kind, signature, evidenceOwned, bytes: 0 }
     }
     group.bytes += bytes
     for (const id of ids) assignment.set(id, group.name)
@@ -198,13 +227,13 @@ export function extractDeferredParserFactories(code, id) {
 
 /** Build-only graph partitioning and local payload leaves; no external runtime dependency. */
 export function boundedChunksPlugin() {
-  let assignment
+  let assignment, report
   let outDir
   const payloads = new Map()
   return {
     name: 'agentic-graph-bounded-chunks', apply: 'build',
     configResolved(config) { outDir = path.resolve(config.root, config.build.outDir) },
-    buildStart() { assignment = undefined; payloads.clear() },
+    buildStart() { assignment = undefined; report = undefined; payloads.clear() },
     resolveId(id) { if (id.startsWith(DATA_PREFIX) || id.startsWith(FACTORY_PREFIX)) return id },
     load(id) { return payloads.get(id) },
     transform(code, id) {
@@ -237,7 +266,7 @@ export function boundedChunksPlugin() {
       assertChunkGraphAcyclic(chunks)
       const membership = new Map(chunks.flatMap(chunk => Object.entries(chunk.modules)))
       const graph = new Map([...membership.keys()].map(id => [id, (this.getModuleInfo(id)?.importedIds || []).filter(dependency => membership.has(dependency))]))
-      const report = {
+      report = {
         schema: 'agentic-graph-bundle-graph/v1',
         chunks: chunks.map(chunk => ({ file: chunk.fileName, bytes: Buffer.byteLength(chunk.code), entry: chunk.isEntry,
           imports: chunk.imports, dynamicImports: chunk.dynamicImports,
@@ -245,17 +274,17 @@ export function boundedChunksPlugin() {
         components: dependencyComponents(graph).map(ids => ({ renderedLength: ids.reduce((size, id) => size + membership.get(id).renderedLength, 0), ids })),
         graph: Object.fromEntries(graph),
       }
-      const destination = process.env.AG_BUNDLE_REPORT_PATH
-      if (destination) {
-        if (!path.isAbsolute(destination)) throw new Error('Bundle report path must be absolute.')
-        await mkdir(path.dirname(destination), { recursive: true })
-        await writeFile(destination, JSON.stringify(report))
-      }
     },
     closeBundle: { order: 'post', sequential: true, async handler() {
       if (!outDir) return
       const files = await inspectBuiltJavaScript(outDir)
       assertBuiltJavaScriptBudget(files)
+      const destination = process.env.AG_BUNDLE_REPORT_PATH
+      if (destination && report) {
+        if (!path.isAbsolute(destination)) throw new Error('Bundle report path must be absolute.')
+        await mkdir(path.dirname(destination), { recursive: true })
+        await writeFile(destination, JSON.stringify(await finalizeChunkReport(report, outDir)))
+      }
       this.info(`JavaScript budget: ${files.length} files; largest ${files[0]?.bytes || 0} bytes (<500000).`)
     } },
   }

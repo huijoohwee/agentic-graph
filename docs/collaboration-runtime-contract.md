@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 88
+contract_version: 89
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -76,6 +76,15 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  verification_workspace:
+    roots: ["scripts/lib/git-verification-workspace.mjs", "scripts/__tests__/git-verification-workspace.test.mjs"]
+    commands: [["node", "--test", "scripts/__tests__/git-verification-workspace.test.mjs"]]
+  build_asset_budget:
+    roots: ["canvas/viteBoundedChunks.mjs", "scripts/__tests__/vite-build-asset-namespace.test.mjs"]
+    commands: [["node", "--test", "scripts/__tests__/vite-build-asset-namespace.test.mjs"]]
+  geospatial_provider:
+    roots: ["gympgrph/src/features/geospatial/mapLibreProviderStyle.ts", "gympgrph/src/features/geospatial/useMapLibreBasemap.ts", "canvas/src/__tests__/flightSimMapLibreProviderStyleLoad.test.ts", "canvas/src/__tests__/flightSimMapLibreProviderStyleHandoff.test.ts", "canvas/src/__tests__/flightSimMapLibreOfflineStyle.test.ts"]
+    commands: [["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/flightSimMapLibreProviderStyleLoad.test.ts", "canvas/src/__tests__/flightSimMapLibreProviderStyleHandoff.test.ts", "canvas/src/__tests__/flightSimMapLibreOfflineStyle.test.ts"]]
   workspace_project_canvas:
     roots: ["canvas/src/features/workspace-project/", "canvas/viteWorkspaceProject.ts", "canvas/viteWorkspaceArtifactBridge.ts", "canvas/src/features/panels/views/HistoryView.tsx", "canvas/src/__tests__/workspaceProjectPanel.test.tsx", "canvas/src/__tests__/workspaceProjectBridge.test.ts", "canvas/src/__tests__/workspaceCrossViewSync.test.tsx", "canvas/src/__tests__/storyboardWidgetMediaRecoveryBudget.test.tsx"]
     commands:
@@ -442,13 +451,9 @@ ci_command_expansions:
 fallback_commands:
   - ["npm", "run", "check"]
 ---
-
 # agentic-graph Collaboration Runtime Contract
-
 ## Authority
-
 This opening YAML frontmatter is the machine source of truth for collaboration grammar, local source identity, deployment isolation, and affected-scope CI selection. Runtime scripts parse it directly; workflow files must not duplicate its source registry or path-to-command mapping.
-
 The protected Git guideline and checker under `huijoohwee.github.io/scripts/` are an external advisory projection. This contract and its repository-owned executable checks remain `agentic-graph`'s collaboration source of truth. `agentic-graph` may consume the upstream rule intent and exact protected revision, but it must not copy that guideline, checker implementation, rule catalog, or fixtures into this repository.
 
 An exact-path CI scope may narrow only its own composite command when the complete
