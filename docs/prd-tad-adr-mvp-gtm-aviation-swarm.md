@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.36"
-revision: "0.4.36"
-date: "2026-10-05"
+version: "0.4.37"
+revision: "0.4.37"
+date: "2026-10-06"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.36"
-tad_revision: "0.4.36"
-adr_revision: "0.4.36"
-mvp_revision: "0.4.36"
-gtm_revision: "0.4.36"
+prd_revision: "0.4.37"
+tad_revision: "0.4.37"
+adr_revision: "0.4.37"
+mvp_revision: "0.4.37"
+gtm_revision: "0.4.37"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -23,9 +23,9 @@ load_policy: "on-demand"
 agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
-worktree_id: "agent/device-0232231d4a19/aviation-render-budget"
+worktree_id: "agent/device-0232231d4a19/aviation-render-frame-budget"
 agent_id: "codex-root"
-source_revision: "12d1e8b3164f5f8ccdd542d3155f4a44aa7bc6de"
+source_revision: "2faa8bb9b218b18f34346a086cb872db8bb55876"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm — reference implementation
 
-`aviation-swarm@0.4.36` hardens eligible aviation evidence Must workflows:
+`aviation-swarm@0.4.37` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -95,7 +95,7 @@ certified advice or live surveillance is provided.
 | AS2 Must: compare routes honestly | Same admitted routes/policy yield identical lengths, signed difference and conditional band; result explicitly excludes fuel, optimality and legal feasibility. Check `route-benchmark.test.mjs` plus live route exercise | G3/G8; AEL VCC-9 unchanged; ER1 core and ER6 live proof |
 | AS3 Should: bounded exposure | For supplied route/volume/time inputs, independently labelled fixtures cover intersecting, disjoint, boundary-touch, stale, absent datum and absent-source cases; 100% report a reason, sources and qualified scope. Proposed test is not yet invocable | G3/G4 extension; no implementation/evidence |
 | AS4 Could: scenario costing | Every line includes value or null, unit/currency, basis, source/model version and omissions. Reject currency/unit mixing, stale/negative/non-finite input; unknown never becomes zero. Proposed schema/arithmetic/parity suite | New bounded pure calculation only after ADR-S3 gate; unbuilt |
-| AS5 Must: accessible local review | Desktop and 390 CSS px complete AS1/AS2 with visible labels and controls; record layout/keyboard errors. Offline reload/save closes any restored Timeline overlay, then the source editor before review; physical-device proof uses inherited device acceptance, not viewport emulation | G8; AEL VCC-5/6 open; ER6/ER7 separate code checks from live acceptance |
+| AS5 Must: accessible local review | Desktop and 390 CSS px complete AS1/AS2 with visible labels and controls; record layout/keyboard errors. Keep Timeline open for offline spatial review because it owns the controls; verify source editing separately. Physical-device proof remains separate | G8; AEL VCC-5/6 open; ER6/ER7 separate code checks from live acceptance |
 
 `spec-complete` means VCCs exist, not that this artifact passes every guideline or the product is ready.
 ER5/ER6 pass local software journeys; inherited real-label/device gates remain. Local rung stays `spec-complete`;
@@ -335,7 +335,7 @@ distance-only output; neither a quote nor a commitment follows from a scenario.
 
 The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md](workspace-seeds/agentic-graph-game-flight-sim-demo.md).
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
-Next verification cycle: ≤20 active minutes/12,000 implementation tokens/3 iterations; replan after two no-progress attempts. ≤4 agents, one writer; runtime frozen, doc delta ≤4 KiB, plan ≤40 KiB, files <600 lines. No spend/packages. Historical authoring usage/cost unknown; serving models zero.
+Next verification cycle: ≤20 active minutes/12,000 implementation tokens/3 iterations; replan after two stalled attempts. One writer; runtime changes ≤2 modules/12 KiB, doc delta ≤4 KiB, plan ≤40 KiB, files <600 lines. No spend/packages. Reuse bounded hash caches; refresh on drift. Serving models zero.
 Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-readiness/`.
 
 | Evidence | Check / recorded result | Scope and limit |
@@ -343,12 +343,12 @@ Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-read
 | ER1 | Convergence 171/171, ownership 13/13, Canvas; Evidence UI 57/57. Import-proof 24/24; shared-build integrity 25/25, routing/contract 39/39 | All eleven native `ci:affected` plans must pass on the final publication candidate; its exact receipt owns that verdict |
 | ER2 | PR 1560 merged e551c50c; native closeout/alignment 534b213 complete | Integration Gate 37259875188 passes; producer ten plans, 121 source/42 sequence checks pass |
 | ER3 | 1fcc desktop/mobile export: 3 entities/185 facts/3 sources; 262,899 B; executor/reimport parity | `aviation-offline-1fcc35b/acceptance.json`; exact originals/replay and browser fallback inspect/replay parity |
-| ER4 | fbff build passes; 1,670 JS, largest 495,688 B; host 28,466,743 B | Scoped feature 148,218 B/initial 20,874 B pass. Including eleven native owners: 163,436 B fails 150 kB; initial 36,092 B. `diagnostic-byte-audit-fbff8d6.md`; CI focus failure retained |
-| ER5 | 1fcc fresh 1024/390 first installed navigation offline: source/original/replay, 185 facts, actual left→right→left keys, export/reimport and route repeat pass | Source TTV 55.482/42.771 s; route 0.682/0.527 s; no page errors/offline external requests; exact source retained. Touch emulation |
+| ER4 | 2faa build: 1,666 JS resources, max 495,688 B; bundle 1,644 chunks/25,453,734 B; startup static closure 3,325,209 B/38 chunks | 150,000 B startup target fails. Last attributed feature+native audit: fbff 163,436/150,000 B; current exclusive feature is 131,401 B, so refresh attribution. `diagnostic-byte-audit-fbff8d6.md` |
+| ER5 | 2faa cold offline and aviation flows pass at 1024/390; 185 read-only rows, four pages, repeated replay/route identical | First value 31.883/23.966 s; offline reload 4.346/3.115 s; aviation source 53.620/48.181 s, route 0.869/0.500 s; pack 262,899 B; no offline external request/error/overflow; touch Three deferred |
 | ER6 | 1fcc native 200% zoom: readable record/source/replay/route, focus/scroll pass; 121 control observations ≥44 px | `native-product-zoom-1fcc35b/manual-readability-review.json` binds six screenshots; zero source/page errors. Physical iPhone SKIP/KIV |
-| ER7 | 1fcc six worker cases pass: installed static/deferred members make zero fetches; missing/corrupt data fails closed; ordinary behavior retained | `emitted-worker-cache-proof-1fcc35b.json`; model proof complements ER5 installation |
+| ER7 | 2faa worker suite 10/10: exact current revision falls through to network with only an older pack; unknown revisions remain fail-closed | Persistent-profile scene request returned 200 from service-worker network fallback; three aircraft loaded in MapLibre canvas; no fallback image |
 | ER8 | Root-retention and nine related checks pass; live import→Editor→Refresh retains source. IndexedDB covers missing/corrupt provenance/reopen | Earlier `live-root-retention.png` and `live-parser-432cc531.png`; ER5 supplies current cold proof |
-| ER9 | Six Geo checks pass. Built 160831d: zero SVG requests/mounts during activation; blocked SVG stays local and reload recovers (`geo-primary-built-160831d.json`, `geo-recovery-built-160831d.json`) | Unchanged-source browser proof; selection restored to MapLibre |
+| ER9 | Six Geo checks pass. Built 160831d: zero SVG requests/mounts during activation; blocked SVG stays local and reload recovers (`geo-primary-built-160831d.json`, `geo-recovery-built-160831d.json`) | 2faa live preview also renders one MapLibre canvas; selection restored to MapLibre |
 | ER10 | XR tests 2/2: five unrelated writes and five Flight advances each change commits 5→0; motion retained. Build 6 keeps the same connected WebGL canvas through History open/close, zero removals | Unchanged-source proof; counts are test measurements, retention is actual UI evidence |
 | ER11 | 392fa static Mermaid: 6/6 render at 390 px, 16 px labels, all scroll endpoints reachable, page width 390 | `diagram-render-392fa379c/`: exact source hashes, screenshots, zero model/API calls; static artifact, not full canvas UI acceptance |
 
@@ -441,7 +441,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.36 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.37 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -451,7 +451,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.36`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.37`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -486,8 +486,6 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-PR1560 merged; 29a passed 11 plans, offline-open/200% zoom; parser 3573451f passed 195 cases. Historical f64/Mac trace: 3.96/4.88 s WebGL readback; 55ba passed 21 checks. CI 76effde timed out at 60 s import despite settled requests/zero page errors: 137 long tasks/56.5 s, 390–420 ms frames; DPR reacted late.
+PR1560 merged; parser fix passed 195 cases. Historical WebGL readback was 3.96/4.88 s; CI once saw 137 long tasks/56.5 s and 390–420 ms frames.
 
-0d26b53 verified local build passed 4 GiB phase caps (17.9/76.5/5.3 s); largest JS 495,688 B. Browser spatial+aviation offline acceptance passed at 1024/390: first value 41.4/20.9 s, cold reload/parity, zero errors; touch Three deferred. Feature 148,746/150,000 and initial 20,868/75,000 pass; +13 native 166,585 and +15 XR 167,403 exceed 150 kB. Emitted JS host 28,474,731 B also misses broad cap; combined initial 39,525/75,000 passes. Linux provider CI pending.
-
-OS 784b169 merged; 44 Graph and five package checks pass. Caps: 4 GiB; build/import 60/300/60 s; AS1 300 s; no deps. 124201d UI passed, config failed. Exact CI receipts required. iPhone KIV; AS3/4, commercial and promotion gates remain. ADR-004 retains broad byte failure; no overall-readiness claim.
+Exact 2faa build passed the 4 GiB cap: compiler 84.1 s; preflight hashed 84,691 files/1.873 GB in 20.8 s; post-build rechecked 3,903 files/304 MB in 4.3 s with 86,507 cache hits. Cold offline spatial/aviation smoke passes 1024/390. Evidence is under `.workspace/.artifacts/aviation-swarm-readiness/{bundle-graph-2faa8bb-final.json,spatial-full-app-2faa8bb-final/}`. Startup is 3,325,209 B/38 chunks against 150,000 B; the last attributed feature+native total is 163,436 B against 150,000 B. Live stale-profile scene response is 200 via the service worker; MapLibre renders. Linux provider CI has no green receipt; physical iPhone, AS3/4, rights, buyer/economics and promotion gates remain open. Agentic OS cache/eval checks pass; no OS code delta was needed. No production readiness or deployment claim.
