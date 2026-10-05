@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.35"
-revision: "0.4.35"
+version: "0.4.36"
+revision: "0.4.36"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.35"
-tad_revision: "0.4.35"
-adr_revision: "0.4.35"
-mvp_revision: "0.4.35"
-gtm_revision: "0.4.35"
+prd_revision: "0.4.36"
+tad_revision: "0.4.36"
+adr_revision: "0.4.36"
+mvp_revision: "0.4.36"
+gtm_revision: "0.4.36"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -25,16 +25,16 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-render-budget"
 agent_id: "codex-root"
-source_revision: "55ba964cd4570ded760e6760cb78dbdfb39ef6aa"
+source_revision: "12d1e8b3164f5f8ccdd542d3155f4a44aa7bc6de"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
-  - "agentic-os@44da26e7beb7d9aa5da271480f2e0ef34846dfaa:guides/SYSTEM-PROMPT-RUNTIME.md"
+  - "agentic-os@784b16948a80ed63dfb185bf1d9d7d4559d176d1:guides/SYSTEM-PROMPT-RUNTIME.md"
 ---
 
 # Aviation Swarm — reference implementation
 
-`aviation-swarm@0.4.35` hardens eligible aviation evidence Must workflows:
+`aviation-swarm@0.4.36` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -441,7 +441,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.35 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.36 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -451,7 +451,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.35`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.36`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -486,9 +486,9 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-PR1560 integrated. Historical 29a passes eleven local plans, first offline-open and 200% zoom. PR1569 builds; import exceeds 60 s with all 1,178 requests complete.
-3573451f preserves exact-path/bytes and pre-application retry fences; 195 cases pass. The f64 trace attributes 3.96/4.88 s to WebGL readback; instrumented local import passes, without provider parity.
-55ba964c extends pixel adaptation to 3D and repeated severe stalls; visibility/frame-loop transitions reset samples. Isolated pauses, immersive/recording exclusions, quality floor and slow recovery remain; 21 focused checks pass (1.16 s).
-Economy: one verified build for three browser consumers; invocation-local hash cache. Four-file diff cap 16 KiB; no new modules/dependencies. Build limits stay 60/300/60 s and 4 GiB heap; import 60 s, AS1 300 s. Browser/CI receipts bind the final commit externally.
-Release requires exact CI/integration receipts. OS cache retention merged in PR343. Physical iPhone SKIP/KIV; AS3/AS4 and commercial gates remain. No deployment/promotion receipt.
-ADR-004: historical 29a scoped 148,746 bytes pass; with thirteen native repairs 166,376 fails 150 kB. 29a byte/UI proof grants no broader readiness.
+PR1560 merged; historical 29a passes eleven plans, first offline-open and 200% zoom. Parser 3573451f passes 195 cases. The f64 trace attributes 3.96/4.88 s to WebGL readback.
+55ba964c adapts visible 3D and repeated severe stalls; resets samples across visibility/frame-loop changes. Quality, session/recording exclusions and recovery remain; 21 checks pass.
+124201d UI assertions pass but unrelated branch tracking invalidates its final input guard: no combined pass. 12d1e8b consumes merged OS343/784b169 package/docs pins for scoped configuration and bounded caches; 44 Graph checks pass.
+One bound build serves three browser consumers. Seven files, 20 KiB diff; no new modules/dependencies. Limits: 60/300/60 s build, 4 GiB heap, 60 s import, 300 s AS1. Fresh browser/CI receipts bind the final commit.
+Release needs exact CI/integration receipts. iPhone SKIP/KIV; AS3/AS4 and commercial gates remain. No promotion receipt.
+ADR-004: historical 29a scoped 148,746 bytes pass; plus thirteen native repairs 166,376 fails 150 kB. Historical proof grants no broader readiness.
