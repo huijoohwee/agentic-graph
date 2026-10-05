@@ -2,7 +2,7 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.18.0"
+version: "1.18.1"
 status: "Accepted and implemented"
 date: "2026-10-05"
 authors: ["airvio"]
@@ -44,7 +44,8 @@ apply that same order; nested visual content cannot establish a competing priori
 Minimized panel chrome consumes the native toolbar's control height, compact padding,
 surface height, border and island radius. MainPanel has one horizontally scrollable
 header when minimized. Existing icon size, stroke and selected-state utilities apply
-across all three panels; there is no minimized-panel icon or color variant.
+across all three panels. The shared icon owner renders selection and keyboard focus
+as blue background/glyphs without borders, browser outlines or hover rings.
 
 ## ADR
 
@@ -71,6 +72,9 @@ measure 38 px high, 8 px radius, 1 px border. Alternating pointer selection wins
 overlap hit-testing; Tab/Shift-Tab focus raises its panel. Six focused stack tests,
 TypeScript and three local browser-runtime tests pass. An additional toolbar-dock
 source-pattern check fails on unchanged Canvas.tsx; mobile parity remains unverified.
+
+Icon follow-up: live light/dark selected and keyboard-focus controls have no painted
+border or outline. Shared appearance audit, TypeScript and browser-runtime checks pass.
 
 ## GTM and rollback
 

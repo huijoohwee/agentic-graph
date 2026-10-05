@@ -105,11 +105,9 @@ export function getDataViewIconButtonClassName(options: DataViewIconClassNameOpt
   return cn(
     UI_RESPONSIVE_ACTION_ROW_CLASSNAME,
     readDataViewIconActionSizeClassName(size),
-    'justify-center border-transparent',
+    'justify-center',
     UI_THEME_TOKENS.button.iconControl,
-    UI_THEME_TOKENS.border.width,
-    UI_FOCUS_RING,
-    readDataViewToolbarVariantClassName(variant),
+    variant === 'primary' ? UI_THEME_TOKENS.button.selectedIcon : readDataViewToolbarVariantClassName(variant),
     options.disabled ? 'opacity-50 pointer-events-none' : undefined,
     options.className,
   )

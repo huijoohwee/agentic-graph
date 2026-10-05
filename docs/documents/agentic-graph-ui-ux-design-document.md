@@ -222,3 +222,11 @@ height, shared border and island-radius tokens. Native IconButton, HeaderActions
 and PanelViewTab own icon size, stroke and selected-state backgrounds. Do not add
 panel-specific replacements. Verify actual overlap hit targets and geometry in the
 live app; expanded typography and mobile touch targets remain source-owned.
+
+
+Toolbar and panel icon selection/focus use the shared primary blue background and
+glyph colors, with no border, browser outline or ring. `button.iconControl` owns
+keyboard focus for native and portable icons; `button.selectedIcon` owns selection.
+MainPanel tabs, FloatingPanel/BottomPanel tabs and pin controls delegate to these
+owners. Data-view icon actions reuse them; labeled field and row borders retain
+their existing semantics. Do not introduce per-panel focus or hover-ring variants.
