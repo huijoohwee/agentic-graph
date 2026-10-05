@@ -1,4 +1,6 @@
 import React from 'react'
+import { useShallow } from 'zustand/react/shallow'
+import { defaultSchema, type GraphSchema } from '@/lib/graph/schema'
 import { useSequenceDocument } from './useSequenceDocument'
 import { sequenceNativeSvg } from './sequenceNativeSvg'
 import { sequenceTopologySvg } from './sequenceTopologySvg'
@@ -34,6 +36,16 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
   const [rendered, setRendered] = React.useState({ key: '', svg: '', error: '' })
   const [layout, setLayout] = React.useState<'connections' | 'lifelines'>('connections')
   const schema = useGraphStore(state => state.schema)
+  const displaySettings = useGraphStore(useShallow(state => ({
+    nodeShapes: state.schema.nodeShapes, shape: state.schema.behavior?.nodeShapeMode,
+    ports: state.schema.behavior?.portHandles, selection: state.schema.three?.selection,
+  })))
+  const displaySchema = React.useMemo<GraphSchema>(() => ({ ...defaultSchema,
+    nodeShapes: displaySettings.nodeShapes,
+    behavior: { ...defaultSchema.behavior, nodeShapeMode: displaySettings.shape, portHandles: displaySettings.ports },
+    three: { ...defaultSchema.three, selection: displaySettings.selection },
+  }), [displaySettings])
+  const displayKey = mermaid ? '' : JSON.stringify(displaySettings)
   const aspectMode = readCanvasAspectRatioMode(useGraphStore(state => state.strybldrStoryboardCardAspectMode))
   const arrangementKey = `${model.key}:${mermaid}:${layout}:${aspectMode}`
   const [arrangement, setArrangement] = React.useState<{key: string; positions: Record<string, SequenceParticipantPoint>}>({ key: '', positions: EMPTY_POSITIONS })
@@ -50,7 +62,7 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
     return () => media.removeEventListener('change', update)
   }, [])
   const svgKey = `${model.key}:${mermaid}:${mermaidTheme}:${layout}:${aspectMode}`
-  const renderKey = `${svgKey}:${JSON.stringify(renderPositions)}`
+  const renderKey = `${svgKey}:${displayKey}:${JSON.stringify(renderPositions)}`
   React.useEffect(() => {
     if (!active || !model.code || model.diagnostics.length) return
     let disposed = false
@@ -60,7 +72,7 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
       try {
         const svg = mermaid
           ? postprocessMermaidSvg((await renderMermaidWithRuntime({ renderId: `sequence${renderId}`, code: model.code, config: { theme: mermaidTheme, securityLevel: 'strict', startOnLoad: false, sequence: { width: card.width, height: card.height } }, signal: lifetime.signal })).svg)
-          : { svg: layout === 'connections' ? sequenceTopologySvg(model, { aspectMode, positions: renderPositions }) : sequenceNativeSvg(model, { aspectMode, positions: renderPositions }), error: null }
+          : { svg: layout === 'connections' ? sequenceTopologySvg(model, { aspectMode, positions: renderPositions, schema: displaySchema }) : sequenceNativeSvg(model, { aspectMode, positions: renderPositions, schema: displaySchema }), error: null }
         if (svg.error) throw new Error(svg.error)
         if (!disposed) setRendered({ key: renderKey, svg: svg.svg, error: '' })
       } catch (error) {
@@ -69,7 +81,7 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
     }
     void run()
     return () => { disposed = true; lifetime.abort() }
-  }, [active, renderKey, model, mermaid, renderId, mermaidTheme, layout, aspectMode, card, renderPositions])
+  }, [active, renderKey, model, mermaid, renderId, mermaidTheme, layout, aspectMode, card, renderPositions, displaySchema])
   const svg = rendered.key === renderKey ? rendered.svg : ''
   React.useLayoutEffect(() => {
     if (!svg || !hostRef.current) return
@@ -85,7 +97,7 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
     try { interactions = bindSequenceCanvasInteractions({ host, model, mermaid, layout,
       schema: () => useGraphStore.getState().schema, positions,
       canArrange: () => useGraphStore.getState().canvasPointerMode2d !== 'pan' && !isSpacePanHeld(),
-      constrain: mermaid ? undefined : (id, point) => constrainSequenceParticipantPosition(model, layout, id, point, { aspectMode, positions }),
+      constrain: mermaid ? undefined : (id, point) => constrainSequenceParticipantPosition(model, layout, id, point, { aspectMode, positions, schema: displaySchema }),
       onInteractionChange: value => {
         if (value) { transport.setTransportPlaying(false); playbackRef.current?.dispose(); playbackRef.current = null }
         setArranging(value)
@@ -106,7 +118,7 @@ export function SequenceCanvas({ active, rendererId, mermaid = false }: { active
       focusParticipantRef.current = null
     }
     return () => { interactions.dispose(); if (interactionsRef.current === interactions) interactionsRef.current = null }
-  }, [active, svg, model, mermaid, layout, positions, aspectMode, arrangementKey, renderKey, transport.setTransportPlaying])
+  }, [active, svg, model, mermaid, layout, positions, aspectMode, displaySchema, arrangementKey, renderKey, transport.setTransportPlaying])
   React.useEffect(() => { interactionsRef.current?.refresh() }, [schema])
   React.useLayoutEffect(() => {
     if (!svg || !hostRef.current || arranging) return

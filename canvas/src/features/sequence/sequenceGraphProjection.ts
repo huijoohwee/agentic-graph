@@ -9,7 +9,7 @@ export function projectSequenceGraph(code: string, ctx: MermaidParserContext): v
   const nodeId = (id: string) => `sequence:${ctx.gid}:${scope}:participant:${id}`
   for (const p of model.participants) {
     ctx.ensureNode({ '@id': nodeId(p.id), '@type': 'MermaidNode', labels: ['MermaidNode'], name: p.label,
-      properties: { nodeName: p.id, label: p.label, mermaidDiagramId: ctx.diagramId, mermaidScope: ctx.diagramScope || 'block', sequenceParticipant: true, 'visual:shape': 'rect' },
+      properties: { nodeName: p.id, label: p.label, mermaidDiagramId: ctx.diagramId, mermaidScope: ctx.diagramScope || 'block', sequenceParticipant: true },
       metadata: ctx.mkMeta(ctx.startIndex + p.line - 1, ctx.startIndex + p.line - 1) })
     ctx.addRel(ctx.docId, 'hasMermaidNode', nodeId(p.id))
   }

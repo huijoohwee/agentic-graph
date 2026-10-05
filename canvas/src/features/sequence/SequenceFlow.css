@@ -4,7 +4,6 @@
 .sequence-svg-host { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
 .sequence-svg-host > svg { width: 100%; height: 100%; min-width: 0; min-height: 0; }
 .sequence-participant { fill: var(--sequence-card); stroke: var(--kg-border); stroke-width: 1.5; }
-.sequence-participant-glyph { color: var(--kg-canvas-accent); }
 .sequence-participant-type { fill: var(--sequence-muted); font-size: 10px; letter-spacing: 1px; }
 .sequence-participant-name { font-weight: 600; font-size: 14px; }
 .sequence-event-label { font-size: 14px; font-weight: 500; }
