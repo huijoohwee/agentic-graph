@@ -244,7 +244,7 @@ test('measured slow checks are isolated without raising their command timeout', 
   const contract = await readContract()
   const policy = JSON.parse(readFileSync(new URL('../../.agentic-os-validation.json', import.meta.url)))
   const isolated = contract.ci_command_timeout_overrides.filter(row => row.timeout_ms === contract.ci_command_timeout_ms)
-  assert.equal(isolated.length, 5)
+  assert.equal(isolated.length, 4)
   const combined = ['node', 'canvas/scripts/run_spatial_workspace_full_app_smoke.mjs', '--verified-build']
   assert.equal(resolveCiCommandTimeoutMs(combined, contract), 600000)
   const combinedGroups = partitionAffectedCommands([combined], contract)
@@ -268,6 +268,9 @@ test('browser checks share one fresh build and cannot reuse generated-input evid
   const contract = await readContract()
   const policy = JSON.parse(readFileSync(new URL('../../.agentic-os-validation.json', import.meta.url)))
   const build = ['node', 'scripts/browser-proof-build.mjs']
+  const { BUILD_PHASE_LIMITS } = await import('../browser-proof-build.mjs')
+  assert.deepEqual(BUILD_PHASE_LIMITS, { input: 60000, compile: 300000, output: 60000 })
+  assert.equal(resolveCiCommandTimeoutMs(build, contract), Object.values(BUILD_PHASE_LIMITS).reduce((sum, value) => sum + value, 0))
   const buildPartition = Object.entries(partitionAffectedCommands([build], contract)).find(([, commands]) => commands.length)[0]
   const buildId = `graph-${buildPartition}-plan`
   assert.equal(policy.checks.find(check => check.id === buildId).reuse, 'never')

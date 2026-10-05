@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, lstatSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, unlinkSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import test from 'node:test'
-import { produceBrowserProofBuild, verifyBrowserProofBuild } from '../browser-proof-build.mjs'
+import { BUILD_PHASE_LIMITS, produceBrowserProofBuild, verifyBrowserProofBuild } from '../browser-proof-build.mjs'
 const hash = text => createHash('sha256').update(text).digest('hex')
 function fixture(t) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'browser-build-proof-')))
@@ -28,8 +28,8 @@ function fixture(t) {
     for (const [path, text] of files) put('canvas/dist/' + path, text)
     put(`canvas/dist/learning-offline-manifest-${git('rev-parse', 'HEAD')}.json`, JSON.stringify({ schema: 'python-learning-offline/v1', revision: git('rev-parse', 'HEAD'), files: files.slice(0, 2).map(([path, text]) => ({ path, bytes: Buffer.byteLength(text), sha256: hash(text) })) }))
   }
-  return { root, environment, git, put, build, receipt: join(root, '.tmp/browser-proof-build/receipt.json'),
-    produce: options => produceBrowserProofBuild({ root, environment, readDocs, runBuild: build, ...options }), verify: options => verifyBrowserProofBuild(root, { environment, readDocs, ...options }) }
+  return { root, environment, git, put, build, readDocs, receipt: join(root, '.tmp/browser-proof-build/receipt.json'),
+    produce: options => produceBrowserProofBuild({ root, environment, readDocs, runBuild: build, observe: () => {}, ...options }), verify: options => verifyBrowserProofBuild(root, { environment, readDocs, ...options }) }
 }
 
 test('fresh build binds exact inputs and outputs', async t => {
@@ -113,3 +113,45 @@ test('manifest traversal fails', async t => {
     f.build(); f.put(`canvas/dist/learning-offline-manifest-${f.git('rev-parse', 'HEAD')}.json`, JSON.stringify({ schema: 'python-learning-offline/v1', revision: f.git('rev-parse', 'HEAD'), files: [{ path: '../outside', bytes: 0, sha256: hash('') }] }))
   } }), /Unsafe/)
 })
+
+
+test('producer caches unchanged bytes only inside its invocation and reports bounded phases', async t => {
+  const f = fixture(t), first = [], second = []
+  await f.produce({ observe: event => first.push(event) }); await f.produce({ observe: event => second.push(event) })
+  assert.deepEqual(BUILD_PHASE_LIMITS, { input: 60000, compile: 300000, output: 60000 })
+  assert.deepEqual(first.map(event => [event.phase, event.status]), ['pre-build-inputs', 'compiler', 'post-build-verification']
+    .flatMap(phase => [[phase, 'started'], [phase, 'completed']]))
+  const input = first[1], output = first[5]
+  assert.ok(input.readBytes > 0 && output.cacheHits > 0)
+  assert.ok(output.readBytes < input.readBytes, 'unchanged source/compiler bytes are not read twice')
+  assert.equal(second[1].readBytes, input.readBytes, 'a new invocation reads input bytes again')
+  for (const event of first) assert.ok(event.elapsedMs >= 0 && event.elapsedMs <= event.budgetMs)
+})
+
+test('same-size dependency mutation with restored mtime invalidates the invocation cache', async t => {
+  const f = fixture(t), file = join(f.root, 'node_modules/compiler/index.js'), fixedTime = 1000000000
+  utimesSync(file, fixedTime, fixedTime); const before = lstatSync(file, { bigint: true })
+  await assert.rejects(f.produce({ runBuild: async () => {
+    f.build(); await new Promise(resolve => setTimeout(resolve, 3))
+    f.put('node_modules/compiler/index.js', 'compiler-version-2'); utimesSync(file, fixedTime, fixedTime)
+    const after = lstatSync(file, { bigint: true })
+    assert.equal(after.size, before.size); assert.equal(after.mtimeNs, before.mtimeNs)
+    assert.notEqual(after.ctimeNs, before.ctimeNs)
+  } }), /inputs changed/)
+  assert.equal(existsSync(f.receipt), false)
+})
+
+for (const [phase, limit] of [['pre-build-inputs', 'input'], ['compiler', 'compile'], ['post-build-verification', 'output']]) {
+  test(`expired ${phase} refuses a success receipt and retains phase attribution`, async t => {
+    const f = fixture(t); await f.produce(); let clock = 0, reads = 0, builds = 0; const events = []
+    await assert.rejects(f.produce({ now: () => clock, observe: event => events.push(event),
+      readDocs: async () => {
+        reads++; if ((phase === 'pre-build-inputs' && reads === 1) || (phase === 'post-build-verification' && reads === 2))
+          clock += BUILD_PHASE_LIMITS[limit] + 1
+        return f.readDocs()
+      }, runBuild: () => { builds++; f.build(); if (phase === 'compiler') clock += BUILD_PHASE_LIMITS.compile + 1 },
+    }), new RegExp('phase timeout: ' + phase))
+    assert.equal(events.at(-1).phase, phase); assert.equal(events.at(-1).status, 'failed')
+    assert.equal(builds, phase === 'pre-build-inputs' ? 0 : 1); assert.equal(existsSync(f.receipt), false)
+  })
+}

@@ -2,12 +2,12 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 96
+contract_version: 97
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
   - command: ["node", "scripts/browser-proof-build.mjs"]
-    timeout_ms: 300000
+    timeout_ms: 420000
   - command: ["node", "canvas/scripts/run_agent_mission_browser_smoke.mjs"]
     timeout_ms: 900000
   - command: ["npm", "-C", "canvas", "run", "test:smoke:xr-v2:browser"]
@@ -521,7 +521,7 @@ Draft pull requests may omit the declaration while their scope is being formed. 
 - Dev CI never writes a Prod mirror. After protected `main` integration and exact localhost review, the release workflow may create one ephemeral production candidate; it cannot deploy or publish before exact-candidate human authorization.
 - Commands are arrays rather than shell strings, preventing shell interpolation and keeping execution provider-neutral.
 - Affected CI expands declared composite commands through `ci_command_expansions` before exact-argv deduplication. Verified expansions must exactly match the root package script and cannot omit npm lifecycle hooks; drift blocks selection. The manual focused command remains unchanged, while shared prerequisites such as `npm run check` execute once and each expanded component retains the canonical per-command timeout. The pinned agentic-os process runner bounds output, cancels process groups, and emits numeric progress every 30 seconds; progress never grants passing or release authority.
-- `ci_command_timeout_overrides` carries the rare longer-running commands that need a stricter per-command bound than the global default. XR browser smoke uses a 15-minute cap because first-run Playwright downloads can consume a material slice of CI time on fresh GitHub runners.
+- `ci_command_timeout_overrides` binds exceptional command budgets. Shared browser build: 60 s input verification + unchanged 300 s compiler + 60 s output verification = 420 s total; browser journey deadlines stay unchanged. XR smoke retains 15 minutes for first-run Playwright preparation.
 - Every affected-scope command has the canonical bounded timeout; non-terminating checks fail closed instead of freezing the gate.
 - Native validation runs the complete affected selection in disjoint checks: `standard` contains commands within `ci_command_timeout_ms`, and each command with a larger declared timeout owns a separate `extended-<command-digest>` check. Exact command digests bind these selectors to this contract without duplicating its command catalog. Every declared partition must appear exactly once in the native policy or execution fails before running checks. Each extended check requires the standard check; unselected commands do no work. Existing per-command limits and the 15-minute native check ceiling remain in force. The default source command runs every partition. CI exports the aggregate native receipt so the last result cannot hide an earlier failure.
 - Unknown changed paths fail safe through `fallback_commands`.
