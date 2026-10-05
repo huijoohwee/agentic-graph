@@ -6373,7 +6373,7 @@ export default defineConfig(({ command, mode }) => {
   build: {
     sourcemap: process.env.AG_BUILD_SOURCEMAP === '1' ? 'hidden' : false,
     minify: process.env.AG_LOW_MEM_BUILD === '1' ? false : 'esbuild',
-    reportCompressedSize: process.env.AG_LOW_MEM_BUILD === '1' ? false : true,
+    reportCompressedSize: false,
     modulePreload: {
       resolveDependencies: (_filename: string, deps: string[]) =>
         filterModulePreloadDependencies(deps),
