@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.30"
-revision: "0.4.30"
+version: "0.4.31"
+revision: "0.4.31"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.30"
-tad_revision: "0.4.30"
-adr_revision: "0.4.30"
-mvp_revision: "0.4.30"
-gtm_revision: "0.4.30"
+prd_revision: "0.4.31"
+tad_revision: "0.4.31"
+adr_revision: "0.4.31"
+mvp_revision: "0.4.31"
+gtm_revision: "0.4.31"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -25,7 +25,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-import-readiness"
 agent_id: "codex-root"
-source_revision: "8a21f5ad8b04458badf54170fd7abd47323511ab"
+source_revision: "c7faf175f3abd9875051570613c0cbe3bcd7d260"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm — reference implementation
 
-`aviation-swarm@0.4.30` hardens eligible aviation evidence Must workflows:
+`aviation-swarm@0.4.31` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -340,7 +340,7 @@ Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-read
 
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
-| ER1 | Convergence 171/171, ownership 13/13, Canvas; Evidence UI 57/57. Import-proof 24/24; shared-build integrity 20/20, routing/contract 39/39 | All eleven native `ci:affected` plans must pass on the final publication candidate; its exact receipt owns that verdict |
+| ER1 | Convergence 171/171, ownership 13/13, Canvas; Evidence UI 57/57. Import-proof 24/24; shared-build integrity 25/25, routing/contract 39/39 | All eleven native `ci:affected` plans must pass on the final publication candidate; its exact receipt owns that verdict |
 | ER2 | PR 1560 merged e551c50c; native closeout/alignment 534b213 complete | Integration Gate 37259875188 passes; producer ten plans, 121 source/42 sequence checks pass |
 | ER3 | 1fcc desktop/mobile export: 3 entities/185 facts/3 sources; 262,899 B; executor/reimport parity | `aviation-offline-1fcc35b/acceptance.json`; exact originals/replay and browser fallback inspect/replay parity |
 | ER4 | fbff build passes; 1,670 JS, largest 495,688 B; host 28,466,743 B | Scoped feature 148,218 B/initial 20,874 B pass. Including eleven native owners: 163,436 B fails 150 kB; initial 36,092 B. `diagnostic-byte-audit-fbff8d6.md`; CI focus failure retained |
@@ -441,7 +441,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.30 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.31 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
@@ -451,7 +451,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.30`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.31`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -486,9 +486,9 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-Development: PR1560 integrated. 1de632b aligns parser name/hash with canonical workspace identity, avoids duplicate parsing and retains graph/revision/presets. ER1 binds checks; ER3–ER7 are historical.
+Development: PR1560 integrated. 1de632b aligns parser name/hash with canonical workspace identity, retaining graph/revision/presets. ER1 binds checks; ER3–ER7 are historical.
 Cold bootstrap ≤30 s; import ≤60 s requires exact source/success; AS1 ≤300 s.
-Production Release: eleven native plans and protected integration need exact receipts. Contract v96 shares one fresh, source/environment/dependency/output-bound build across three browser checks. Each verifies before/after its journey; no stale-result reuse or raised deadlines. Publication stops at provider handoff.
-Build: d3a spatial/aviation cold checks passed at 1024/390. Python offline hit 300 s after a 179 s third rebuild, without an assertion failure. 8a21 removes that repetition; final combined CI pending. Heap cap 4 GiB; import/review limits 60/30 s.
-Runtime: no deployment/promotion grant or receipt. Physical iPhone SKIP/KIV; real-label and commercial gates remain. AS3/AS4 stay conditional.
-ADR-004 scoped bytes pass at fbff; combined native repairs fail 150 kB. Rebind final build/CI/bytes with thirteen native owners; no broader readiness claim.
+Production Release: eleven native plans and protected integration need exact receipts. Contract v97 shares one source/environment/dependency/output-bound build across three browser checks; each verifies before/after. Publication stops at provider handoff.
+Build: 759 standard checks passed; shared producer hit 300 s during compilation, alongside unrelated branch-tracking drift. Its corrected envelope is 60 s input verification + unchanged 300 s compiler + 60 s output verification. Hash reuse is bounded to one invocation; phase metrics expose cost. Heap cap 4 GiB; browser/import/review limits unchanged; final combined CI pending.
+Runtime: no deployment/promotion grant or receipt. Physical iPhone SKIP/KIV; real-label/commercial gates remain. AS3/AS4 stay conditional.
+ADR-004 scoped bytes pass at fbff; native repairs fail 150 kB. Rebind final build/CI/bytes with thirteen native owners; no broader readiness claim.
