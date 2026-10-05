@@ -118,7 +118,7 @@ test('mounted import hooks serialize cold imports, retain selected bytes and can
     function Harness() { actions = useWorkspaceImportActions({ core, ctx }); return null }
     const render = () => act(async () => root.render(React.createElement(strict ? React.StrictMode : React.Fragment, null, React.createElement(Harness))))
     await render()
-    const fixture = { fs, statuses, ctx, render, calls: () => calls, actions: () => actions,
+    const fixture = { fs, statuses, ctx, core, render, calls: () => calls, actions: () => actions,
       unmount: async () => { if (mounted) { mounted = false; await act(async () => root.unmount()); host.remove() } } }
     fixtures.push(fixture); return fixture
   }
@@ -168,6 +168,33 @@ test('mounted import hooks serialize cold imports, retain selected bytes and can
     assert.equal(readSourceFilesBootstrapSnapshot().phase, 'resolving')
     assert.equal(readyCalls, 1)
     assert.equal(replaced.statuses.at(-1), 'Import failed: Reached ready workspace')
+    const failedJob = replaced.core.importJobRef.current
+    await replaced.unmount()
+    assert.equal(replaced.core.importJobRef.current, failedJob, 'getFs rejection releases pending ownership')
+    const acquiring = await make()
+    let enteredFs!: () => void, releaseFs!: () => void
+    const fsEntered = new Promise<void>(resolve => { enteredFs = resolve }), fsGate = new Promise<void>(resolve => { releaseFs = resolve })
+    acquiring.ctx.getFs = async () => { enteredFs(); await fsGate; return acquiring.fs }
+    await acquiring.render()
+    const acquiringJob = start(acquiring.actions().handleImportLocalFiles([file('cancel-before-write.md')]))
+    await fsEntered; await acquiring.unmount(); releaseFs(); await acquiringJob
+    assert.equal((await acquiring.fs.listEntries()).filter(entry => entry.kind === 'file').length, 0)
+    for (const superseded of [false, true]) {
+      const running = await make()
+      let enteredRefresh!: () => void, releaseRefresh!: () => void, focused = 0
+      const refreshEntered = new Promise<void>(resolve => { enteredRefresh = resolve })
+      const refreshGate = new Promise<void>(resolve => { releaseRefresh = resolve })
+      running.ctx.refresh = async () => { enteredRefresh(); await refreshGate; return { entries: await running.fs.listEntries(), sourcesByPath: {} } }
+      running.core.focusAfterImport = async () => { focused++ }
+      await running.render()
+      const runningJob = start(running.actions().handleImportLocalFiles([file('running.md')]))
+      await refreshEntered; await running.unmount()
+      if (superseded) running.core.importJobRef.current++
+      releaseRefresh(); await runningJob
+      assert.equal(focused, superseded ? 0 : 1)
+      assert.equal(running.statuses.at(-1)?.startsWith('Imported 1'), !superseded,
+        'surface unmount preserves running import completion; a newer job still suppresses it')
+    }
   } finally {
     for (const fixture of fixtures) await fixture.unmount()
     await Promise.allSettled(jobs)

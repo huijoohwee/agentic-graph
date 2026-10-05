@@ -54,7 +54,9 @@ export function useWorkspaceImportActions(args: {
     lastLoadedRef,
     setActiveMarkdownDocument,
   } = args.ctx
-  React.useEffect(() => () => { importJobRef.current += 1; importWaitRef.current?.abort() }, [getFs, importJobRef])
+  React.useEffect(() => () => {
+    if (importWaitRef.current) { importJobRef.current += 1; importWaitRef.current.abort() }
+  }, [getFs, importJobRef])
 
   const setImportStage = React.useCallback((jobId: number, label: string) => {
     if (importJobRef.current !== jobId) return
@@ -66,8 +68,8 @@ export function useWorkspaceImportActions(args: {
     const controller = new AbortController()
     importWaitRef.current = controller
     setImportStage(jobId, 'Preparing workspace before import')
-    try { await waitForSourceFilesBootstrap({ signal: controller.signal }) }
-    finally { if (importWaitRef.current === controller) importWaitRef.current = null }
+    try { await waitForSourceFilesBootstrap({ signal: controller.signal }); return controller }
+    catch (error) { if (importWaitRef.current === controller) importWaitRef.current = null; throw error }
   }, [importJobRef, setImportStage])
 
   const hydratePendingImportedPaths = React.useCallback(async (fs: WorkspaceFs, createdPaths: string[]) => {
@@ -219,12 +221,14 @@ export function useWorkspaceImportActions(args: {
       if (snapshot.length === 0) return
       const jobId = (importJobRef.current += 1)
       let bridgeResult: WorkspaceBridgeImportResult = { handled: true }
+      let wait: AbortController | undefined
       status.setStatusProgress('Importing', 0, snapshot.length)
       try {
-        await waitForImport(jobId)
+        wait = await waitForImport(jobId)
         if (importJobRef.current !== jobId) return bridgeResult
         const fs = await getFs()
         if (importJobRef.current !== jobId) return bridgeResult
+        if (importWaitRef.current === wait) importWaitRef.current = null
         await fs.ensureSeed()
         await ensureWorkspaceFolderTreeIfMissing({ fs, folderPath: WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH })
         if (!(await fs.listEntries()).some(entry => entry.path === WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH && entry.kind === 'folder')) {
@@ -273,7 +277,7 @@ export function useWorkspaceImportActions(args: {
         const error = String((e as { message?: unknown })?.message ?? e)
         status.setStatusError(`Import failed: ${error}`)
         return { ...bridgeResult, error }
-      }
+      } finally { if (importWaitRef.current === wait) importWaitRef.current = null }
     },
     [finalizeWorkspaceImportCommit, focusAfterImport, formatWorkspaceImportSummary, getFs, importJobRef, resolveWorkspaceImportApplyToGraph, setImportStage, status, waitForImport],
   )
@@ -298,11 +302,13 @@ export function useWorkspaceImportActions(args: {
       if (snapshot.length === 0) return
       const jobId = (importJobRef.current += 1)
       let bridgeResult: WorkspaceBridgeImportResult = { handled: true }
+      let wait: AbortController | undefined
       try {
-        await waitForImport(jobId)
+        wait = await waitForImport(jobId)
         if (importJobRef.current !== jobId) return bridgeResult
         const fs = await getFs()
         if (importJobRef.current !== jobId) return bridgeResult
+        if (importWaitRef.current === wait) importWaitRef.current = null
         await fs.ensureSeed()
         const importRuntime = await loadWorkspaceImportRuntimeActions()
         const res = importRuntime.normalizeWorkspaceImportResult(await runWorkspaceFsChangedBatch(() => {
@@ -337,7 +343,7 @@ export function useWorkspaceImportActions(args: {
         const error = String((e as { message?: unknown })?.message ?? e)
         status.setStatusError(`Import failed: ${error}`)
         return { ...bridgeResult, error }
-      }
+      } finally { if (importWaitRef.current === wait) importWaitRef.current = null }
     },
     [finalizeWorkspaceImportCommit, focusAfterImport, formatWorkspaceImportSummary, getFs, importJobRef, resolveWorkspaceImportApplyToGraph, status, waitForImport],
   )
@@ -358,13 +364,15 @@ export function useWorkspaceImportActions(args: {
         : 'Importing URL'
       const jobId = (importJobRef.current += 1)
       let bridgeResult: WorkspaceBridgeImportResult = { handled: true }
+      let wait: AbortController | undefined
       status.setStatusProgress(importKindLabel, null, null, null, null, { busy: true })
       useGraphStore.getState().pushUiLog({ kind: 'neutral', message: `Import URL started: ${url}`, source: 'workspace:importUrl' })
       try {
-        await waitForImport(jobId)
+        wait = await waitForImport(jobId)
         if (importJobRef.current !== jobId) return bridgeResult
         const fs = await getFs()
         if (importJobRef.current !== jobId) return bridgeResult
+        if (importWaitRef.current === wait) importWaitRef.current = null
         await fs.ensureSeed()
         const importRuntime = await loadWorkspaceImportRuntimeActions()
         const maxImportLogRows = 59
@@ -474,7 +482,7 @@ export function useWorkspaceImportActions(args: {
         status.setStatusError(`Import failed: ${msg}`)
         useGraphStore.getState().pushUiLog({ kind: 'error', message: `Import URL failed: ${msg}`, source: 'workspace:importUrl' })
         return errorResult
-      }
+      } finally { if (importWaitRef.current === wait) importWaitRef.current = null }
     },
     [finalizeWorkspaceImportCommit, focusAfterImport, formatWorkspaceImportSummary, getFs, importJobRef, status, waitForImport],
   )
