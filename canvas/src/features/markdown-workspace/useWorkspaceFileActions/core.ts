@@ -314,6 +314,8 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
         jsonSourceText: opts?.jsonSourceText ?? null,
         setActiveMarkdownDocument: content.trim() ? setActiveMarkdownDocument : undefined,
       })
+      // Keep Explorer identity aligned before graph parsing yields to async owners.
+      setActivePathSafe(path)
       const shouldApplyToGraph =
         opts?.applyToGraph === true ||
         (opts?.applyToGraph !== false && shouldApplyImportedCanvasDocumentToGraph({ path: docKey || String(path || ''), text: content }))
@@ -326,6 +328,7 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
       applyImportedTextToGraph,
       getFs,
       lastLoadedRef,
+      setActivePathSafe,
       setActiveMarkdownDocument,
       setActiveText,
     ],
@@ -372,7 +375,6 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
         if (opts?.jobId != null && importJobRef.current !== opts.jobId) return
         await syncFocusedWorkspacePath(createdPath, opts)
         if (opts?.jobId != null && importJobRef.current !== opts.jobId) return
-        setActivePathSafe(createdPath)
       } catch (e) {
         if (opts?.jobId != null && importJobRef.current !== opts.jobId) return
         if (opts?.jobId != null) throw e

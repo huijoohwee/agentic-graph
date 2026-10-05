@@ -114,11 +114,14 @@ async function testImportActivatesOnlyAfterRefreshAndSynchronization() {
     setActiveText: text => { activeText = text }, setEntries: () => { entryUpdates++ }, lastLoadedRef: { current: null },
     setExpandedPaths: () => {}, setSelectionPathSafe: () => {},
     setActivePathSafe: path => {
-      if (!refreshed || !applied || !activeText.includes(marker)) throw new Error('activation preceded document synchronization')
+      if (!activeText.trim()) throw new Error('activation preceded document synchronization')
       focused++; useMarkdownExplorerStore.getState().setActivePath(path)
     },
     setActiveMarkdownDocument: async () => true,
     applyMarkdownDocumentToGraph: async () => {
+      if (focused < 1 || !activeText.trim() || !useMarkdownExplorerStore.getState().activePath) {
+        throw new Error('graph parsing must start after the document and Explorer path converge')
+      }
       applied++; enteredGraphApply?.(); if (graphApplyGate) await graphApplyGate
       if (failGraphApply) throw new Error('graph unavailable')
       return true
@@ -142,7 +145,7 @@ async function testImportActivatesOnlyAfterRefreshAndSynchronization() {
   try {
     useMarkdownExplorerStore.getState().setActivePath(null)
     unsubscribeSelection = useMarkdownExplorerStore.subscribe((state, previous) => {
-      if (state.activePath !== previous.activePath) selections.push(refreshed && applied > 0 && focused === 1 && activeText.includes(marker))
+      if (state.activePath !== previous.activePath) selections.push(refreshed && focused === 1 && activeText.includes(marker))
     })
     await act(async () => root.render(<Harness />))
     const file = new File([`---
@@ -219,15 +222,15 @@ flow:
       useMarkdownExplorerStore.getState().setActivePath(newerPath)
       activeText = '# Newer selection'
       await act(async () => { releaseGraphApply(); await bounded(job!, 'superseded focus completion') })
-      if (useMarkdownExplorerStore.getState().activePath !== newerPath || Number(focused) !== 1 || activeText !== '# Newer selection') {
+      if (useMarkdownExplorerStore.getState().activePath !== newerPath || Number(focused) !== 2 || activeText !== '# Newer selection') {
         throw new Error('superseded graph application must not restore an older imported file selection')
       }
     } finally { releaseGraphApply() }
     failRefresh = false; failGraphApply = true; graphApplyGate = null; enteredGraphApply = null
     const failedFocusFile = new File(['# Failed focus'], 'failed-focus.md', { type: 'text/markdown', lastModified: 4 })
     await act(async () => { job = importThroughLaunch(failedFocusFile); await bounded(job, 'failed focus') })
-    if (statuses.at(-1) !== 'Import failed: graph unavailable' || Number(focused) !== 1 || fallbackCalls !== 0) {
-      throw new Error('failed focus must report an error without a completion receipt or duplicate fallback import')
+    if (statuses.at(-1) !== 'Import failed: graph unavailable' || Number(focused) !== 3 || fallbackCalls !== 0) {
+      throw new Error(`failed focus must report an error without a completion receipt or duplicate fallback import: ${JSON.stringify({ status: statuses.at(-1), focused, fallbackCalls })}`)
     }
   } finally {
     releaseRefresh()
