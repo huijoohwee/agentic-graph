@@ -16,6 +16,8 @@ import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { createRafLatestScheduler } from '@/lib/react/rafLatestScheduler'
 import { pickZoomStateForView } from '@/lib/canvas/zoom-effective'
 import { pickInitialZoomTransform } from '@/lib/zoom/viewport'
+import { resolveWorkspaceVisibleViewport } from '@/lib/zoom/workspaceVisibleViewport'
+import { isWorkspaceEditorOverlayOpen } from '@/features/workspace-table/workspaceTableSsot'
 
 import { prepareSvgForInteractiveViewport, buildSvgSurfaceGraphData, svgSurfaceGraphLayoutSignature, readSvgSurfaceFitViewportRect, computeSvgSurfaceWideTimelineFitTransform, type SvgSurfaceFitMode, type SvgSurfaceRuntime } from './svgSurfaceGeometry'
 import { installSvgElementSelection, type SvgElementSelectionController, type SvgElementSelectionOptions } from './svgSurfaceSelection'
@@ -218,6 +220,7 @@ export function useSvgSurfaceZoomRuntime(args: UseSvgSurfaceZoomRuntimeArgs): { 
     height: viewportHeight,
     paused: !active,
     graphDataOverride: visualGraphData,
+    workspaceVisibleViewport: svgFitMode !== 'wideTimeline',
   })
 
   useAutoZoomModes2d({
@@ -275,6 +278,12 @@ export function useSvgSurfaceZoomRuntime(args: UseSvgSurfaceZoomRuntimeArgs): { 
       svg.call(zoom.transform as never, d3.zoomIdentity.translate(initial.x, initial.y).scale(initial.k))
     } else if (visualGraphData && viewportWidth > 80 && viewportHeight > 80) {
       const mode = readLayoutMode(effectiveSchema)
+      const fitViewport = svgFitMode === 'wideTimeline' ? null : resolveWorkspaceVisibleViewport({
+        viewportW: viewportWidth,
+        viewportH: viewportHeight,
+        workspaceEditorOverlayOpen: isWorkspaceEditorOverlayOpen(store),
+        surfaceElement: svgEl,
+      })
       const timelineFitted = svgFitMode === 'wideTimeline'
         ? (() => {
             const fitViewport = readSvgSurfaceFitViewportRect(svgEl, svgFitMode, {
@@ -290,7 +299,7 @@ export function useSvgSurfaceZoomRuntime(args: UseSvgSurfaceZoomRuntimeArgs): { 
             })
           })()
         : null
-      const fitted = timelineFitted || fitAllTransform(visualGraphData.nodes, viewportWidth, viewportHeight, {
+      const fitted = timelineFitted || fitAllTransform(visualGraphData.nodes, fitViewport?.width ?? viewportWidth, fitViewport?.height ?? viewportHeight, {
         ...readFitAllOptions({
           schema: effectiveSchema,
           mode,
@@ -301,7 +310,10 @@ export function useSvgSurfaceZoomRuntime(args: UseSvgSurfaceZoomRuntimeArgs): { 
       })
       svgEl.setAttribute('data-kg-svg-fit-mode', svgFitMode)
       svgEl.setAttribute('data-kg-svg-fit-policy', timelineFitted ? 'wideTimeline' : 'fitAll')
-      svg.call(zoom.transform as never, fitted)
+      const initialFit = fitViewport
+        ? d3.zoomIdentity.translate(fitted.x + fitViewport.left, fitted.y + fitViewport.top).scale(fitted.k)
+        : fitted
+      svg.call(zoom.transform as never, initialFit)
     } else {
       svg.call(zoom.transform as never, d3.zoomIdentity)
     }

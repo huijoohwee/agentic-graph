@@ -11,6 +11,7 @@ interface UseZoomEffectsProps {
   height: number
   paused?: boolean
   graphDataOverride?: GraphData | null
+  workspaceVisibleViewport?: boolean
 }
 
 export function useZoomEffects({
@@ -20,6 +21,7 @@ export function useZoomEffects({
   height,
   paused,
   graphDataOverride,
+  workspaceVisibleViewport,
 }: UseZoomEffectsProps) {
   const dimsRef = useRef({ width, height })
   useEffect(() => {
@@ -39,6 +41,7 @@ export function useZoomEffects({
         graphData: graphDataOverride !== undefined ? graphDataOverride : state.graphData,
         width: Math.max(1, Math.floor(dimsRef.current.width)),
         height: Math.max(1, Math.floor(dimsRef.current.height)),
+        workspaceVisibleViewport,
         selectedNodeId: state.selectedNodeId,
         selectedEdgeId: state.selectedEdgeId,
         selectedGroupId: state.selectedGroupId,
@@ -65,5 +68,5 @@ export function useZoomEffects({
       unsubZoomRequest()
       if (rafId != null) cancelAnimationFrame(rafId)
     }
-  }, [graphDataOverride, paused, svgRef, zoomRef])
+  }, [graphDataOverride, paused, svgRef, workspaceVisibleViewport, zoomRef])
 }
