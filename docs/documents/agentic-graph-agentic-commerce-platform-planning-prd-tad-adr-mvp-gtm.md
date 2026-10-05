@@ -362,9 +362,9 @@ Keep the existing setup/recovery service first-dollar path. Measure time to the 
 action in the owning Commerce pilot; no observed buyer, demand, conversion or revenue claim is added.
 
 Verification: five guide tests, 39 native sequence tests, four retained table adapter tests and native
-TypeScript 5.8.3 check pass. Source-contract checks pass 19/23; all four failures reproduce at unchanged
-`a9a2e31` (data-view chips, workspace mode, workflow labels and touch guard). All 2,987 original guard
-operands survive the bounded test split; four delegation checks added, maximum test module536 lines.
+TypeScript 5.8.3 check pass. Source-contract checks pass20/23; the three remaining failures reproduce at unchanged
+`a9a2e31` (workspace mode, workflow labels and touch guard). A native successor repairs the stale table-source fixture exposed by PR1564 CI; its exact selected suite passes15/15. All2,987 original guard
+operands survive the bounded test split; six delegation checks added, maximum test module536 lines.
 Commerce's focused keyboard/offline/stale/busy/late-load/200%-reflow checks pass against generated
 candidate assets. Byte-identical generation was observed; clean source pin and protected CI remain
 separate release gates. No source stylesheet was modified or independent visual variant created.
