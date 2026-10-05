@@ -34,11 +34,11 @@ source_docs:
 
 # Aviation Swarm
 
-`aviation-swarm@0.4.8` hardens the eligible Must workflows of the existing aviation evidence capability:
+`aviation-swarm@0.4.8` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
-**agentic-graph** owns implementation and documentation. This reference implementation
+**agentic-graph** owns code and documentation. This implementation
 consumes [aviation-evidence-layer@0.4.2](aviation-evidence/prd-tad-adr-mvp-gtm.md); it does not replace that
 owner, its eleven acceptance thresholds, rights records, financial model, or execution backlog.
 This successor adds import race fences/stages, primary-first Geo/lazy SVG, bounded bundles and XR surface
@@ -335,7 +335,7 @@ distance-only output; neither a quote nor a commitment follows from a scenario.
 
 The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md](workspace-seeds/agentic-graph-game-flight-sim-demo.md).
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
-One checkout; new files <600 lines, plan ≤40 KiB, no spend/packages. Current cache repair: ≤20 active minutes, four files, ≤15 KiB added; build-time helper adds no client JS. One emitted-worker build; defer combined smoke until parser adoption. External merge/budget waits: recheck on decision, no ETA.
+One checkout; new files <600 lines, plan ≤40 KiB, no spend/packages. Cache repair: ≤20 active minutes, four files, ≤15 KiB added, zero client JS. One emitted-worker build; combined smoke after parser adoption. Merge/budget waits: recheck on decision, no ETA.
 Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-readiness/`.
 
 | Evidence | Check / recorded result | Scope and limit |
@@ -484,11 +484,11 @@ native projection counts and static render pass; full diagram conformance is unm
 | `scenario-set-incomplete` | major | `venture-record-pitch-deck-business-plan--financial-model#5` — linked statements/scenarios | GTM | “populated scenarios and reconciled balance/cash statements remain incomplete” | Documentation change: populate existing model with dated inputs |
 | `unimplemented-guideline` | major | `autonomous-implementation-verification#3` — distinct evaluator | MVP / coverage | “Complete artifact-bearing-rule coverage and advisory count are unmeasured” | Locally reproducible check: independent full guideline evaluation before baseline |
 
-Unchecked finding families have no zero-count claim. Authoring coverage does not establish runtime readiness.
+Unchecked findings have no zero-count claim. Coverage does not establish runtime readiness.
 
 ## Handover
 
-ER1–ER11 bind proof; AS1/AS2/AS5 and delivery require separate acceptance.
+ER1–ER11 bind proof; AS1/AS2/AS5 and delivery need separate acceptance.
 
 1f3802 standard passes; full-app fails at bootstrap/import materialization (ER2). Local root-retention
 repair passes checks/live Editor refresh; online reload still fails at async read (ER8). Adopt parser repair and
