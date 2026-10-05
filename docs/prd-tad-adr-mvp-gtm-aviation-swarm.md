@@ -335,7 +335,7 @@ distance-only output; neither a quote nor a commitment follows from a scenario.
 
 The requested demo is [docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md](workspace-seeds/agentic-graph-game-flight-sim-demo.md).
 Its Practice Flight is synthetic; source-authored airport and historical tracks are separate context.
-Plan ≤40 KiB; new files <600 lines; no spend/packages. Next: ≤20 active minutes, ≤4 files/3 KiB; reuse build for corrected offline proof. Refresh on defects; CI enrollment awaits reservation release.
+Plan ≤40 KiB; new files <600 lines; no spend/packages. Next: ≤30 active minutes, ≤9 files/15 KiB; one combined build and one baseline fixture. New offline style defect requires correction; final checks pending.
 Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-readiness/`.
 
 | Evidence | Check / recorded result | Scope and limit |
@@ -344,7 +344,7 @@ Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-read
 | ER2 | 1f3802 import completes at 6.443 s; review stays disabled: “Active document source changed during materialization (workspace import publication).” `first-offline-1f3802/failure-diagnostics.json` | 1,113 requests settled; no network failure. Earlier provider refresh failures retained; concurrent parser writer not captured |
 | ER3 | b639 native Save: 3 entities/185 facts/3 sources; 262,899 B, SHA-256 `09c6904154ef854656712de87c21511e630fca076c456c0ac7cfc58d473da729` | Saved bytes equal prior cf1/38f2 packs. 38f2 offline reimport retained; `evidence-pack-b639ba42.json` is the actual new download |
 | ER4 | d51d894 build/typecheck pass: entry/precache 37 JS/3,381,668 B (−51,724); 1,778 pack members verified; largest JS 495,688 B. `static-precache-inventory-d51d894.json` | Host inventory, not feature attribution: exclusive aviation chunks 132,847 B; shared adapters and initial delta unproved |
-| ER5 | 1f3802 commits actual Flight acceptance at 1024/390: disconnect before first installed navigation, evidence/route/export/focus and worker request checks | 432cc531 spatial flow passes; aviation helper waits for absent practice HUD in recorded mode. Correct selector; first offline-open proof pending |
+| ER5 | 1f3802 commits actual Flight acceptance at 1024/390: disconnect before first installed navigation, evidence/route/export/focus and worker request checks | 432cc531 first offline navigation opens recorded evidence; zero page errors. Fix combobox selector and offline map style requests; remaining assertions pending |
 | ER6 | 38f2 390×844 offline + reduced-motion: import, UTC step, repeat route query, keyboard focus and zero horizontal overflow pass; 18 focus UI tests pass | `aviation-mobile-route-38f2aa043.json`; cf1 200% CSS zoom passes (not native browser zoom). Physical iPhone SKIP/KIV; startup blocked |
 | ER7 | d51d894: six emitted-worker cases pass; four unchanged owner tests retained. Installed static/deferred requests make zero fetches; ordinary behavior retained | `emitted-worker-cache-proof-d51d894.json` binds worker hash/full installation. Valid metadata; missing/corrupt member coverage. Model proof, not UI acceptance |
 | ER8 | Root-retention regression plus nine related checks and typecheck pass. Live 5196 import→Editor→Refresh retains selected root source; example loads 3 entities/185 facts/3 sources (`live-root-retention.png`) | Generic basename deletion removed; explicit local projection retained. Real IndexedDB covers missing/corrupt provenance and reopen. 432cc531 live reopen/example passes; primary Singapore map renders (`live-parser-432cc531.png`). Dev-only proof |
@@ -419,7 +419,7 @@ Audience projections must preserve qualified source joins, hypotheses and the ac
 ## ADLC and release — reference implementation
 
 PRs 1547/1550 are immutable; PR 1551 fixes the latter’s path failure. PRs 1553/1554 retain failed provider checks. b639 local checks pass, but aviation first-open fails. Intent: `/fix #aviation-import-readiness @codex`.
-Startup PR 1555 adopted. Parser PR 1559 merged green at `45a27725`; native disjoint adoption `432cc531` preserves 54 aviation paths. Contract v87 remains reserved pending owner closeout; enroll PWA roots/checks when released.
+Startup PR 1555 adopted. Parser PR 1559 merged green at `45a27725`; native disjoint adoption `432cc531` preserves 54 aviation paths. Native closeout released the reservation; contract v88 enrolls PWA roots/checks.
 Changed candidates need bound proof; source integration and production remain separate.
 
 **AS-D6 · Lane & deploy boundary · flowchart LR · version 2.** Source and delivery each require their own receipt.
@@ -494,7 +494,7 @@ Standard and spatial flows pass on adopted parser; recorded-demo helper correcti
 AEL ADR-004 separates native host and feature bytes. This plan's former whole-host 150 kB reading
 was an authoring error: measure feature served ≤150 kB and added initial ≤75 kB separately.
 Exclusive chunks alone do not prove either bound. Attribute adapters/shared code and bind a baseline.
-CI enrollment awaits reservation release. Physical iPhone SKIP/KIV.
+PWA roots/checks enrolled in contract v88; final checks pending. Physical iPhone SKIP/KIV.
 Real-label/guideline acceptance stays separate; recheck on drift.
 Source/integration/production need separate receipts; AS3/AS4 retain input/rights/buyer gates.
 Preserve original/concurrent work; no spend/packages or revenue claim.

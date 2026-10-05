@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 87
+contract_version: 88
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -198,10 +198,12 @@ ci_scopes:
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/features/evidence-analysis/ui/EvidenceUi.test.tsx", "canvas/src/features/evidence-analysis/ui/evidenceInput.test.ts"]
       - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "agentReady.webMcpRuntime.scope.budgets", "agentReady.webMcpRuntime.scope.workspace"]
   python_learning:
-    roots: ["canvas/src/features/python-learning/", "canvas/src/__tests__/pythonLearning", "canvas/scripts/run_python_learning_", "canvas/src/features/testing/PythonLearningSmokePage.tsx", "canvas/vitePythonLearningOffline.mjs", "canvas/viteServiceWorkerRevisionAuthority.mjs", "canvas/vitePwaRuntimeCachePolicy.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/features/agent-ready/webMcpToolRegistry.ts", "canvas/src/features/agent-ready/webMcpToolExposure.mjs"]
+    roots: ["canvas/src/features/python-learning/", "canvas/src/__tests__/pythonLearning", "canvas/scripts/run_python_learning_", "canvas/src/features/testing/PythonLearningSmokePage.tsx", "canvas/vitePythonLearningOffline.mjs", "canvas/viteServiceWorkerRevisionAuthority.mjs", "canvas/vitePwaRuntimeCachePolicy.ts", "canvas/vitePwaPrecacheAdmission.mjs", "canvas/vite.config.ts", "canvas/src/__tests__/pipelinePwaEnhancementsRegression.test.ts", "canvas/sw.ts", "scripts/__tests__/vite-service-worker-owner.test.mjs", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/features/agent-ready/webMcpToolRegistry.ts", "canvas/src/features/agent-ready/webMcpToolExposure.mjs"]
     commands:
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/pythonLearning.test.ts", "canvas/src/__tests__/pythonLearningLifecycle.test.ts", "canvas/src/__tests__/pythonLearningOffline.test.ts"]
       - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "agentReady.webMcpRuntime.scope.budgets", "agentReady.webMcpRuntime.scope.workspace"]
+      - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "pwa.shell.precachesHashedAssetsAndCachesLocalJson"]
+      - ["node", "--test", "scripts/__tests__/vite-service-worker-owner.test.mjs"]
       - ["node", "canvas/scripts/run_python_learning_browser_smoke.mjs"]
       - ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--build"]
   design_review:
