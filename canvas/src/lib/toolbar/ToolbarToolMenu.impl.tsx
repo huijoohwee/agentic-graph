@@ -18,6 +18,7 @@ import { usePinnedLs } from '@/lib/ui/panelPinned'
 import { uiToolbarRowScrollClassName, uiToolbarRowScrollJustifyBetweenClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { cn } from '@/lib/utils'
 import { resolveFloatingPanelZIndex } from '@/lib/ui/zIndex'
+import { usePanelStack } from '@/lib/ui/usePanelStack'
 import {
   FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS,
   resolveFloatingPanelWidthCss,
@@ -224,9 +225,8 @@ export function ToolbarToolMenu({
   const registerManagedHeaderActions = React.useCallback((actions: FloatingHeaderActions) => {
     setManagedHeaderActions(actions)
   }, [])
-  const floatingPanelRootStyle = React.useMemo(() => {
-    return { zIndex: resolveFloatingPanelZIndex(floatingPanelZIndex, floatingPanelPinned, workspaceEditorOverlayOpen) }
-  }, [floatingPanelPinned, floatingPanelZIndex, workspaceEditorOverlayOpen])
+  const panelStack = usePanelStack('floating', resolveFloatingPanelZIndex(floatingPanelZIndex, floatingPanelPinned, workspaceEditorOverlayOpen))
+  const floatingPanelRootStyle = { zIndex: panelStack.zIndex }
 
   const floatingPanelSizeStyle = React.useMemo(() => {
     return {
@@ -303,6 +303,9 @@ export function ToolbarToolMenu({
       ref={toolMenuCardRef}
       rootClassName={floatingPanelRootClassName}
       rootStyle={floatingPanelRootStyle}
+      panelLayer="floating"
+      onPointerDownCapture={panelStack.onPointerDownCapture}
+      onFocusCapture={panelStack.onFocusCapture}
       panelStyle={{ ...toolMenuCardStyle, ...(floatingPanelMinimized ? {} : floatingPanelSizeStyle) }}
       minimized={floatingPanelMinimized}
       pinned={floatingPanelPinned}

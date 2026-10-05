@@ -208,3 +208,17 @@ acyclic dependencies and migration of every existing consumer; its repository na
 Shared guidance provides a named nonmodal panel, a visible close target, initial keyboard focus,
 Escape callback and disposal. Hosts restore launcher focus on close or explicitly focus the target
 field on action; teardown must not override that target. A selected step is never an acknowledgment.
+
+
+## Shared panel selection and compact chrome
+
+MainPanel, FloatingPanel and BottomPanel use one bounded transient layer order.
+Selecting or focusing any panel raises that panel; capture handlers preserve child
+controls. Anchor menus and toasts retain their higher bands. Portable panel shells
+accept host callbacks and do not import the application store or policy.
+
+Minimized surfaces consume the toolbar control-height, compact padding, surface
+height, shared border and island-radius tokens. Native IconButton, HeaderActions
+and PanelViewTab own icon size, stroke and selected-state backgrounds. Do not add
+panel-specific replacements. Verify actual overlap hit targets and geometry in the
+live app; expanded typography and mobile touch targets remain source-owned.

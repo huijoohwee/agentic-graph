@@ -61,6 +61,9 @@ export type FloatingPanelShellProps = {
   pinned?: boolean
   rowHeight?: string
   fieldLine?: string
+  onPointerDownCapture?: React.PointerEventHandler<HTMLElement>
+  onFocusCapture?: React.FocusEventHandler<HTMLElement>
+  panelLayer?: string
   onHeaderPointerDown?: React.PointerEventHandler<HTMLElement>
   header: React.ReactNode
   children: React.ReactNode
@@ -69,12 +72,13 @@ export type FloatingPanelShellProps = {
 /** Shared native chrome; the caller retains positioning, view state and drag/pin control. */
 export const FloatingPanelShell = React.forwardRef<HTMLElement, FloatingPanelShellProps>(function FloatingPanelShell({
   rootClassName, rootStyle, panelStyle, ariaLabel = 'Floating panel', minimized = false,
-  pinned = true, rowHeight, fieldLine, onHeaderPointerDown, header, children,
+  pinned = true, rowHeight, fieldLine, onHeaderPointerDown, onPointerDownCapture, onFocusCapture, panelLayer, header, children,
 }, ref) {
-  return <section className={rootClassName} style={rootStyle}>
+  return <section className={rootClassName} style={rootStyle} data-kg-panel-layer={panelLayer}
+    onPointerDownCapture={onPointerDownCapture} onFocusCapture={onFocusCapture}>
     <aside ref={ref}
       className={`pointer-events-auto ModalContainer flex ${UI_RESPONSIVE_SAFE_VIEWPORT_PANEL_CLASSNAME} flex-col overflow-hidden p-0 ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.primary}`}
-      style={panelStyle} data-kg-floating-panel-root="true"
+      style={panelStyle} data-kg-floating-panel-root="true" data-kg-panel-minimized={minimized ? 'true' : undefined}
       data-kg-floating-panel-row-height={rowHeight} data-kg-floating-panel-field-line={fieldLine}>
       <section className={`flex ${minimized ? '' : 'h-full'} min-w-0 flex-col gap-1`} style={{ padding: 'var(--kg-toolbar-compact-padding)' }} aria-label={ariaLabel}>
         <header className={`${uiToolbarRowScrollJustifyBetweenClassName} ${UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME} w-full shrink-0 gap-1 select-none sm:gap-2 ${!pinned ? 'cursor-move' : ''}`}

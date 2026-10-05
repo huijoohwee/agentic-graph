@@ -1,3 +1,4 @@
+import { usePanelStack } from '@/lib/ui/usePanelStack'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import React from 'react'
 import { PanelViewTabs, PanelViewTab } from '@/features/panels/ui/PanelViewTabs'
@@ -58,6 +59,8 @@ export function StrybldrTimelineBottomPanel({
   initialView?: TimelineBottomPanelView
   workspaceEditorOverlayOpen?: boolean
 }) {
+  const floatingPanelZIndex = useGraphStore(s => s.floatingPanelZIndex)
+  const panelStack = usePanelStack('bottom', floatingPanelZIndex)
   const { panelTextClass } = usePanelTypography()
   const { active: warehouseInspectionActive } = useWarehouseInspectionMode()
   const rootLayerRef = React.useRef<HTMLElement | null>(null)
@@ -334,7 +337,7 @@ export function StrybldrTimelineBottomPanel({
     maxHeight: 'min(62dvh, 24rem)',
   }
   const panelHeightStyle = minimized
-    ? { height: 'var(--kg-toolbar-compact-surface-height)' }
+    ? { height: 'auto', minHeight: 'var(--kg-toolbar-compact-surface-height)' }
     : pinned ? expandedPinnedHeightStyle : expandedUnpinnedHeightStyle
   const panelPosition = position || getDefaultUnpinnedPosition()
   const layerStyle = React.useMemo(() => ({ left: workspaceLayerInsetLeft }), [workspaceLayerInsetLeft])
@@ -353,7 +356,11 @@ export function StrybldrTimelineBottomPanel({
   return (
     <section
       ref={rootLayerRef}
-      className="absolute inset-0 z-[230] pointer-events-none"
+      className="absolute inset-0 pointer-events-none"
+      style={{ zIndex: panelStack.zIndex }}
+      data-kg-panel-layer="bottom"
+      onPointerDownCapture={panelStack.onPointerDownCapture}
+      onFocusCapture={panelStack.onFocusCapture}
       aria-label="Timeline bottom panel root"
       data-kg-strybldr-bottom-timeline-root="canvas-viewport"
     >
@@ -382,6 +389,7 @@ export function StrybldrTimelineBottomPanel({
           data-kg-floating-panel-root="true"
           data-kg-canvas-overlay-drag-handle={!pinned && !minimized ? 'true' : undefined}
           data-kg-strybldr-bottom-timeline-panel="1"
+          data-kg-panel-minimized={minimized ? 'true' : undefined}
           data-kg-strybldr-bottom-timeline-minimized={minimized ? 'true' : 'false'}
           data-kg-strybldr-bottom-timeline-pinned={pinned ? 'true' : 'false'}
           data-kg-strybldr-bottom-timeline-drag-enabled={!pinned && !minimized ? 'true' : 'false'}
