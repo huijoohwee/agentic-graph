@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -42,7 +43,7 @@ import { mountReactRoot, unmountReactRoot, waitForReactCondition, waitForTasks }
 import * as nativeMaterializationRegressions from './sourceFilesRuntimeMaterialization.test'
 import { readSourceGeospatialState } from '@/features/evidence-analysis/geospatialSource'
 
-const repoRoot = resolve(process.cwd(), '..')
+const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const seedSource = readFileSync(
   resolve(repoRoot, FLIGHT_SIM_DEMO_REPO_REL_PATH),
   'utf8',
