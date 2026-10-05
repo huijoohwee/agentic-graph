@@ -195,3 +195,16 @@ output retain their separate visual semantics.
 | Toast lifetime | Avoid sticky noise | - [ ] Default auto-dismiss by TTL; allow persistent “loading” toasts only with explicit dismiss |
 | State transitions | Preserve causality | - [ ] For event transitions (loading → loaded/error), emit a new toast event and dismiss loading shortly after; forbid overwriting status so users miss the transition |
 | Cleanup | Avoid leaks | - [ ] Clear timers/listeners on unmount; forbid orphaned intervals/timeouts |
+
+## Shared floating guidance
+
+The toolbar floating shell and sequence rows each have one presentation owner:
+`components/ui/FloatingPanel.tsx:FloatingPanelShell` and
+`features/sequence/SequenceInspectorView.tsx`. Native Graph and the portable guide delegate to them;
+application controllers retain state, effects and authority. The portable artifact uses unchanged
+native sequence styles and shared appearance tokens, with no consumer stylesheet variant.
+Canvas OS is presently a product consumer. Moving UI ownership there requires a standalone export,
+acyclic dependencies and migration of every existing consumer; its repository name is not ownership.
+Shared guidance provides a named nonmodal panel, a visible close target, initial keyboard focus,
+Escape callback and disposal. Hosts restore launcher focus on close or explicitly focus the target
+field on action; teardown must not override that target. A selected step is never an acknowledgment.
