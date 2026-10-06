@@ -72,6 +72,12 @@ export async function closePanelRegion(region, targetPage) {
   try {
     await region.waitFor({ state: 'hidden', timeout: 10000 })
   } catch (error) {
+    const closeControl = await closeButton.first().evaluate(element => ({
+      html: element.outerHTML,
+      hidden: element instanceof HTMLElement ? element.hidden : null,
+      disabled: element instanceof HTMLButtonElement ? element.disabled : null,
+      rect: (() => { const box = element.getBoundingClientRect(); return { x: box.x, y: box.y, width: box.width, height: box.height } })(),
+    })).catch(() => null)
     const state = await targetPage.evaluate(async () => {
       const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
       const current = useGraphStore.getState()
@@ -81,6 +87,6 @@ export async function closePanelRegion(region, targetPage) {
         workspaceGraphMutationLayoutLockActive: current.workspaceGraphMutationLayoutLockActive,
       }
     }).catch(() => null)
-    throw new Error(`Workspace close left the editor shell visible: ${JSON.stringify(state)}`, { cause: error })
+    throw new Error(`Workspace close left the editor shell visible: ${JSON.stringify({ state, closeControl })}`, { cause: error })
   }
 }
