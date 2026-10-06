@@ -8,7 +8,8 @@ from playwright.sync_api import Page
 
 
 PRACTICE_SOURCE_WORKSPACE_PATH = (
-    "/flight-sim-practice/agentic-graph-game-flight-sim-demo-practice.md"
+    "/docs/workspace-seeds/flight-sim-practice/"
+    "agentic-graph-game-flight-sim-demo-practice.md"
 )
 PRACTICE_SOURCE_BASENAME = "agentic-graph-game-flight-sim-demo-practice.md"
 _FRONTMATTER_DELIMITER = re.compile(r"^---[ \t]*(?:\r?\n|$)")
@@ -166,6 +167,8 @@ def apply_and_verify_practice_source(
             "practiceWorkspaceByteIdentical",
             "activeDocumentByteIdentical",
         )
+    ) or not str(practice_application.get("documentName") or "").endswith(
+        PRACTICE_SOURCE_BASENAME
     ):
         raise AssertionError(
             "isolated practice source did not preserve canonical seed identity: "
