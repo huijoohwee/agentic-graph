@@ -153,9 +153,34 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(geoXrLayoutVerifier, /flight_panel\.locator\(\s*'\[data-kg-flight-sim-open="1"\]'/)
   assert.match(geoXrLayoutVerifier, /open_button\.click\(timeout=30_000\)/)
   assert.match(geoXrLayoutVerifier, /flight\.readFlightSimSnapshot\(\)\.active/)
+  const reportedGeoHandoffIndex = geoXrLayoutVerifier.indexOf(
+    'def prepare_reported_singapore_geo_handoff',
+  )
+  const sourceSurfaceCloseIndex = geoXrLayoutVerifier.indexOf(
+    'source_surface_transition = close_source_files_selection_surface(page)',
+    reportedGeoHandoffIndex,
+  )
+  assert.ok(
+    sourceSurfaceCloseIndex
+      < geoXrLayoutVerifier.indexOf('media_trigger.click(', reportedGeoHandoffIndex),
+    'the smoke must close the editor overlay before using the floating-panel tabs',
+  )
   assert.match(geoXrPresentationVerifier, /def restore_flight_sim_panel\(page: Page\) -> None:/)
   assert.match(geoXrPresentationVerifier, /state\.setFloatingPanelView\('flightSim'\)/)
   assert.match(geoXrPresentationVerifier, /\[data-kg-flight-sim-floating-panel="1"\]'.*wait_for\(/s)
+  const geoToolbarActivationIndex = geoXrPresentationVerifier.indexOf(
+    'ui_path = activate_geo_xr_from_toolbar(page)',
+  )
+  const sourceSurfaceReopenIndex = geoXrPresentationVerifier.indexOf(
+    'prepare_source_files_selection_surface(page)',
+    geoToolbarActivationIndex,
+  )
+  assert.ok(
+    geoToolbarActivationIndex < sourceSurfaceReopenIndex
+      && sourceSurfaceReopenIndex
+        < geoXrPresentationVerifier.indexOf('source_files_opened = True', geoToolbarActivationIndex),
+    'open Source Files only after toolbar tabs complete, then exercise four-view layout',
+  )
   assert.match(geoXrPresentationVerifier, /def verify_flight_geo_xr_city_handoff\(/)
   assert.match(geoXrPresentationVerifier, /regional_poi = require_city_regional_poi_contract\(page\)/)
   for (const regionalPoiProofRequirement of [

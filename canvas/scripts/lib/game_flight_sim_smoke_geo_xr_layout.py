@@ -6,6 +6,7 @@ from typing import Any
 from playwright.sync_api import Page
 
 from lib.game_flight_sim_smoke_source_selection import (
+    close_source_files_selection_surface,
     prepare_source_files_selection_surface,
 )
 
@@ -273,6 +274,7 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
 
 def prepare_reported_singapore_geo_handoff(page: Page) -> dict[str, Any]:
     prepare_source_files_selection_surface(page)
+    source_surface_transition = close_source_files_selection_surface(page)
     media_trigger = page.locator(
         '[data-kg-floating-panel-view-trigger="media"]'
     ).first
@@ -371,4 +373,5 @@ def prepare_reported_singapore_geo_handoff(page: Page) -> dict[str, Any]:
     return {
         "environment": observed,
         "flight": flight_observed,
+        "sourceSurfaceTransition": source_surface_transition,
     }
