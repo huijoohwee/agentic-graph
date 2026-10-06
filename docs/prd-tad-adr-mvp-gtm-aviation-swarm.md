@@ -487,6 +487,6 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-PR1560 merged; parser 195/195. `60901e3` bounds stale same-path retries to three attempts with exact persisted-byte checks; regression plus unsaved, failure, churn and abort guards pass.
+PR1560 merged (parser 195/195); `60901e3` caps stale retries at 3 with byte guards.
 
-150,000B feature+native attribution remains open (ER4); whole-host, physical iPhone, Linux CI, AS3/4 rights, buyer economics and protected promotion remain unproved. OS `a49`: 17 cache tests/evals pass; 683 files/7,669,851B cold/warm 559/321ms, CPU 134/42ms; warm avoids 7,669,851B reread. Single scan; end-to-end CI savings and deployment unproved.
+2026-10-06 a682165a: MapLibre + 3 tracks. Live UI (5173, 1280×720): one MapLibre canvas; no SVG fallback geometry/status/mount. Fallback admission 6/6 (pending startup stays primary-only; lazy boundary passes). Flight panel absent; geo-source guard blocks practice. Headless smoke 0/2 (WebGL=false); stale HUD marker, source lifecycle, training/negative gates fail. Publish held pre-effect: 7 unreserved paths; main+3; doctor hook closure missing. Open ER4 150kB, device/Linux, rights/economics, integration/deploy. OS a49: 683 files/7.67MB; 559→321ms, CPU134→42ms; warm avoids 7.67MB reads; CI gain unproved.
