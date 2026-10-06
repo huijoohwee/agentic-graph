@@ -540,6 +540,9 @@ export async function readValidatedFlightSimBrowserRunEvidence({
     || evidence?.candidate?.runtimeBranch !== candidateBranch
     || evidence?.source?.sha256 !== sourceSha256
     || evidence?.source?.authoredSeedSha256 !== sourceSha256
+    || evidence?.source?.canonicalRecordedSourceSha256 !== sourceSha256
+    || evidence?.source?.practiceSourcePath
+      !== '/flight-sim-practice/agentic-graph-game-flight-sim-demo-practice.md'
     || evidence?.source?.workspaceSourceSha256
       !== evidence?.source?.practiceSourceSha256
     || evidence?.source?.practiceSourceDerivedFromAuthoredSeed !== true

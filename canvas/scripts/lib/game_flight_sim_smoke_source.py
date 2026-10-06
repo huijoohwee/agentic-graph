@@ -53,6 +53,7 @@ def _read_source_identity(
     page: Page,
     expected_source_text: str,
     expected_workspace_source_text: str | None = None,
+    expected_workspace_path: str | None = None,
 ) -> dict[str, Any]:
     expected_workspace_text = (
         expected_source_text
@@ -61,7 +62,7 @@ def _read_source_identity(
     )
     return page.evaluate(
         """
-        async ({expectedSourceText, expectedWorkspaceSourceText}) => {
+        async ({expectedSourceText, expectedWorkspaceSourceText, expectedWorkspacePath}) => {
           const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
           const demos = await window.__kgFlightSimBrowserProof.importModule('workspaceRunReadyDemos')
           const runtime = await window.__kgFlightSimBrowserProof.importModule('flightSimRuntime')
@@ -70,7 +71,9 @@ def _read_source_identity(
           const seedBundle = await window.__kgFlightSimBrowserProof.importModule('workspaceCanonicalSeedBundle')
           const state = store.useGraphStore.getState()
           const workspace = await workspaceModule.getWorkspaceFs()
-          const sourcePath = `/${demos.FLIGHT_SIM_DEMO_REPO_REL_PATH}`
+          const sourcePath = expectedWorkspacePath
+            ? `/${String(expectedWorkspacePath).replace(/^\\/+/, '')}`
+            : `/${demos.FLIGHT_SIM_DEMO_REPO_REL_PATH}`
           const sourceText = await workspace.readFileText(sourcePath)
           const flightAdmissionSnapshot =
             flightAdmission.readFlightSimRunReadyDemoDiagnostic()
@@ -180,6 +183,7 @@ def _read_source_identity(
         {
             "expectedSourceText": expected_source_text,
             "expectedWorkspaceSourceText": expected_workspace_text,
+            "expectedWorkspacePath": expected_workspace_path,
         },
     )
 
@@ -541,8 +545,8 @@ def apply_and_verify_exact_authored_source(
         source_demo_id=SOURCE_DEMO_ID,
         expected_node_ids=EXPECTED_SOURCE_NODE_IDS,
         poll=_poll,
-        read_identity=lambda workspace_text: _read_source_identity(
-            page, expected_source_text, workspace_text
+        read_identity=lambda workspace_text, workspace_path: _read_source_identity(
+            page, expected_source_text, workspace_text, workspace_path
         ),
     )
     application["canonicalRecordedSourceFence"] = {

@@ -344,6 +344,8 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(evidenceValidator, /candidate\?\.runtimeRevision !== candidateHead/)
   assert.match(evidenceValidator, /candidate\?\.runtimeBranch !== candidateBranch/)
   assert.match(evidenceValidator, /source\?\.authoredSeedSha256 !== sourceSha256/)
+  assert.match(evidenceValidator, /source\?\.canonicalRecordedSourceSha256 !== sourceSha256/)
+  assert.match(evidenceValidator, /source\?\.practiceSourcePath[\s\S]*?flight-sim-practice/)
   assert.match(evidenceValidator, /source\?\.workspaceSourceSha256[\s\S]*?source\?\.practiceSourceSha256/)
   assert.match(evidenceValidator, /practiceSourceDerivedFromAuthoredSeed !== true/)
   assert.match(evidenceValidator, /canonicalRecordedSourceStayedInactive !== true/)

@@ -7,6 +7,10 @@ from typing import Any, Callable, Iterable
 from playwright.sync_api import Page
 
 
+PRACTICE_SOURCE_WORKSPACE_PATH = (
+    "/flight-sim-practice/agentic-graph-game-flight-sim-demo-practice.md"
+)
+PRACTICE_SOURCE_BASENAME = "agentic-graph-game-flight-sim-demo-practice.md"
 _FRONTMATTER_DELIMITER = re.compile(r"^---[ \t]*(?:\r?\n|$)")
 _RECORDED_SOURCE_KEY = re.compile(r"^source_geospatial:[ \t]*\r?\n$")
 
@@ -60,7 +64,7 @@ def apply_isolated_practice_source(
     """Apply a derived practice copy in the smoke browser's isolated WorkspaceFs."""
     return page.evaluate(
         """
-        async ({expectedSourceText, practiceSourceText}) => {
+        async ({expectedSourceText, practiceSourceText, practiceSourcePath}) => {
           const explorer = await window.__kgFlightSimBrowserProof.importModule('markdownExplorerStore')
           const materialization = await window.__kgFlightSimBrowserProof.importModule('sourceFilesRuntimeMaterialization')
           const workspaceModule = await window.__kgFlightSimBrowserProof.importModule('workspaceFs')
@@ -69,7 +73,8 @@ def apply_isolated_practice_source(
           const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
           const workspace = await workspaceModule.getWorkspaceFs()
           await workspace.ensureSeed()
-          const sourcePath = `/${demos.FLIGHT_SIM_DEMO_REPO_REL_PATH}`
+          const canonicalSourcePath = `/${demos.FLIGHT_SIM_DEMO_REPO_REL_PATH}`
+          const sourcePath = practiceSourcePath
           const sourceBasename = demos.FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME
           const authoredSeeds = await seedBundle.readCanonicalWorkspaceSeedBundleEntries()
           const authored = authoredSeeds.find(seed => {
@@ -81,7 +86,7 @@ def apply_isolated_practice_source(
           if (authored?.text !== expectedSourceText) {
             throw new Error('bundled canonical Flight seed changed before practice derivation')
           }
-          const canonicalWorkspaceText = await workspace.readFileText(sourcePath)
+          const canonicalWorkspaceText = await workspace.readFileText(canonicalSourcePath)
           if (canonicalWorkspaceText !== expectedSourceText) {
             throw new Error('WorkspaceFs canonical Flight seed changed before practice derivation')
           }
@@ -109,6 +114,7 @@ def apply_isolated_practice_source(
         {
             "expectedSourceText": expected_source_text,
             "practiceSourceText": practice_source_text,
+            "practiceSourcePath": PRACTICE_SOURCE_WORKSPACE_PATH,
         },
     )
 
@@ -122,7 +128,7 @@ def apply_and_verify_practice_source(
     source_demo_id: str,
     expected_node_ids: Iterable[str],
     poll: Callable[..., dict[str, Any]],
-    read_identity: Callable[[str | None], dict[str, Any]],
+    read_identity: Callable[[str | None, str | None], dict[str, Any]],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Prove canonical Recorded intent stays inactive before isolated practice."""
     practice_source_text = derive_flight_practice_source(expected_source_text)
@@ -131,7 +137,7 @@ def apply_and_verify_practice_source(
     ).hexdigest()
     recorded_source = poll(
         page,
-        lambda: read_identity(None),
+        lambda: read_identity(None, None),
         lambda value: (
             str(value.get("documentName") or "").endswith(source_basename)
             and value.get("demoId") == source_demo_id
@@ -167,10 +173,13 @@ def apply_and_verify_practice_source(
         )
     source = poll(
         page,
-        lambda: read_identity(practice_source_text),
+        lambda: read_identity(
+            practice_source_text,
+            PRACTICE_SOURCE_WORKSPACE_PATH,
+        ),
         lambda value: (
-            str(value.get("documentName") or "").endswith(source_basename)
-            and str(value.get("sourcePath") or "").endswith(source_basename)
+            str(value.get("documentName") or "").endswith(PRACTICE_SOURCE_BASENAME)
+            and str(value.get("sourcePath") or "").endswith(PRACTICE_SOURCE_BASENAME)
             and value.get("demoId") == source_demo_id
             and value.get("active") is True
             and value.get("flightAdmissionObserved") is True
@@ -190,7 +199,7 @@ def apply_and_verify_practice_source(
             and value.get("graphOwnedByDocument") is True
             and all((value.get("sourceContract") or {}).values())
             and str(value.get("graphDocumentName") or "").endswith(
-                source_basename
+                PRACTICE_SOURCE_BASENAME
             )
             and set(expected_node_ids).issubset(
                 set(value.get("graphNodeIds") or [])
@@ -202,6 +211,10 @@ def apply_and_verify_practice_source(
         label="authored canonical seed plus derived practice source materialization",
     )
     source["practiceSourceSha256"] = practice_source_sha256
+    source["practiceSourcePath"] = PRACTICE_SOURCE_WORKSPACE_PATH
+    source["canonicalRecordedSourceSha256"] = recorded_source.get(
+        "workspaceSourceSha256"
+    )
     source["practiceSourceDerivedFromAuthoredSeed"] = True
     source["canonicalRecordedSourceStayedInactive"] = (
         recorded_source.get("flightAdmissionActive") is False
