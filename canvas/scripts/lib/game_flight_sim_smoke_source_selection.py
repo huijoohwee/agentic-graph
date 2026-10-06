@@ -346,6 +346,21 @@ def verify_source_file_button_round_trip(
             f"Recorded Flight source selection replaced the shared XR Canvas: {flight_surface}"
         )
 
+    recorded_geo_context = poll(
+        page,
+        lambda: read_flight_hud_activation(page),
+        lambda value: (
+            value.get("geospatialModeEnabled") is True
+            and value.get("mapCanvasCount") == 1
+            and value.get("mapCanvasVisible") is True
+            and value.get("visibleMapCanvasCount") == 1
+            and value.get("hudCount") == 0
+            and (value.get("flight") or {}).get("active") is False
+        ),
+        label="Flight Source Files presents MapLibre Geo context before returning to Physics",
+        timeout_ms=20_000,
+    )
+
     physics_button.wait_for(state="visible", timeout=120_000)
     physics_button.click()
     restored = poll(
@@ -425,5 +440,6 @@ def verify_source_file_button_round_trip(
         "recordedFlightSource": recorded_source,
         "recordedFence": recorded_fence,
         "flightSurface": flight_surface,
+        "recordedGeoContext": recorded_geo_context,
         "physics": restored,
     }

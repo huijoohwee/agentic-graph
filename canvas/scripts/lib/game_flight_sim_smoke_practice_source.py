@@ -66,7 +66,7 @@ def apply_isolated_practice_source(
     expected_source_text: str,
     practice_source_text: str,
 ) -> dict[str, Any]:
-    """Apply a derived practice copy in the smoke browser's isolated WorkspaceFs."""
+    """Apply a derived practice copy only to the smoke browser's local WorkspaceFs."""
     return page.evaluate(
         """
         async ({expectedSourceText, practiceSourceText, practiceSourcePath}) => {
@@ -212,24 +212,35 @@ def apply_and_verify_practice_source(
             f"{practice_application}"
         )
     prepare_source_files_selection_surface(page)
+    refresh = page.get_by_role("button", name="Refresh", exact=True)
+    refresh.wait_for(state="visible", timeout=20_000)
     docs = page.get_by_role("button", name="Folder docs", exact=True)
+    docs.wait_for(state="visible", timeout=20_000)
+    # With the recorded seed selected, Refresh refreshes its remote source. Select
+    # the docs root so the same control refreshes the WorkspaceFs inventory.
+    docs.click()
+    refresh.click(timeout=5_000)
     seeds = page.get_by_role("button", name="Folder workspace-seeds", exact=True)
     practice_folder = page.get_by_role(
         "button", name="Folder flight-sim-practice", exact=True
     )
-    docs.wait_for(state="visible", timeout=120_000)
-    seeds.wait_for(state="visible", timeout=120_000)
-    if docs.get_attribute("aria-expanded") != "true":
-        docs.click()
-    if seeds.get_attribute("aria-expanded") != "true":
-        seeds.click()
-    practice_folder.wait_for(state="visible", timeout=120_000)
-    if practice_folder.get_attribute("aria-expanded") != "true":
-        practice_folder.click()
+    docs.wait_for(state="visible", timeout=20_000)
+    seeds.wait_for(state="visible", timeout=20_000)
+    def expand_folder_if_collapsed(name: str) -> None:
+        disclosure = page.get_by_role(
+            "button", name=f"Expand folder {name}", exact=True
+        )
+        if disclosure.count() and disclosure.first.is_visible():
+            disclosure.first.click(timeout=5_000)
+
+    expand_folder_if_collapsed("docs")
+    expand_folder_if_collapsed("workspace-seeds")
+    practice_folder.wait_for(state="visible", timeout=20_000)
+    expand_folder_if_collapsed("flight-sim-practice")
     practice_file = page.get_by_role(
         "button", name=f"File {PRACTICE_SOURCE_BASENAME}", exact=True
     )
-    practice_file.wait_for(state="visible", timeout=120_000)
+    practice_file.wait_for(state="visible", timeout=20_000)
     practice_file.click()
     practice_application["uiFileSelection"] = {
         "buttonName": f"File {PRACTICE_SOURCE_BASENAME}",
