@@ -37,6 +37,33 @@ test("native codebase projection starts from highly connected nodes and closes v
   assert.equal(tight.reason, "projection_byte_limit");
 });
 
+test("connected-first projection grows around its strongest hub before adding another component", async () => {
+  const nodes = [node("main"), ...Array.from({ length: 6 }, (_, index) => node(`main-leaf-${index}`)),
+    node("side"), ...Array.from({ length: 4 }, (_, index) => node(`side-leaf-${index}`))];
+  const edges = [...Array.from({ length: 6 }, (_, index) => edge(`main-${index}`, "main", `main-leaf-${index}`)),
+    ...Array.from({ length: 4 }, (_, index) => edge(`side-${index}`, "side", `side-leaf-${index}`))];
+  const snapshot = { pointer: { snapshotDigest: "b".repeat(64) }, manifest: {
+    graph: { nodes: nodes.length, edges: edges.length }, completeness: { complete: true },
+  } };
+  const projection = await projectAgentGraphSnapshot(snapshot, 5, {
+    projectionByteLimit: 450_000,
+    iterateSnapshotShards: async function* () { yield { repository: { repositoryId: "repository:test" }, shard: { nodes, edges } }; },
+  });
+  assert.deepEqual(new Set(projection.graphData.nodes.map(item => item.id)), new Set([
+    "node:main", "node:main-leaf-0", "node:main-leaf-1", "node:main-leaf-2", "node:main-leaf-3",
+  ]));
+  assert.equal(projection.graphData.edges.length, 4);
+});
+
+test("ingest applies the requested byte ceiling to its initial graph projection", async t => {
+  const fixture = await createFixture(t);
+  const byteLimit = 8_000;
+  const result = await ingestFixture(fixture, { projectionLimit: 1_000, projectionByteLimit: byteLimit });
+  assert.ok(Buffer.byteLength(JSON.stringify(result.projection.graphData)) <= byteLimit);
+  assert.equal(result.projection.reason, "projection_byte_limit");
+  assert.ok(result.projection.graphData.nodes.length > 0);
+});
+
 test("one-hop neighbor cursors load a connected node's remaining edges without duplicate pages", async t => {
   const fixture = await createFixture(t);
   const ingest = await ingestFixture(fixture, { projectionLimit: 4 });
