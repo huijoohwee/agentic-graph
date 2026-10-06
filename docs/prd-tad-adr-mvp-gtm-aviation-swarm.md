@@ -491,22 +491,26 @@ PR1560 merged (parser 195/195); `60901e3` caps stale retries at 3 with byte guar
 
 2026-10-06 f133fe3: Live UI shows the Geo+XR WSSS map, three observed tracks and Timeline. Prior DOM proof
 measured one MapLibre canvas and no SVG fallback geometry, status or mount. Geo fallback admission remains
-6/6; the Flight panel is absent because the geo-source guard blocks practice. `npm run check` passes
-TypeScript and its three local Vite-smoke contract tests. The production build succeeds in 49.66 s with
-150 precache entries (4,933.66 KiB); the largest JS chunk is 495,688 B (<500,000 B). ER4's 150,000 B
-feature+native threshold remains unproven.
+6/6. Focused HUD, renderer lifecycle, source-authority and MapLibre-offline tests pass 53/53. The Flight
+panel is absent because the geo-source guard blocks practice. `npm run check` passes TypeScript and its
+three local Vite-smoke contract tests. The production build succeeds in 49.66 s with 150 precache entries
+(4,933.66 KiB); the largest JS chunk is 495,688 B (<500,000 B). ER4's 150,000 B feature+native threshold
+remains unproven.
 
-The current `npm run ci:integration` run stops in `conflict:source`: its repository-wide source scan flags
-machine-specific paths in ignored `.tmp/` diagnostic files. Those retained files were preserved.
-`npm run ci:affected` stops before checks because selected workflow
+At runtime tree `f133fe3`, `npm run ci:integration` stopped in `conflict:source`: its repository-wide
+source scan flags machine-specific paths in ignored `.tmp/` diagnostic files. Those retained files were
+preserved. `npm run ci:affected` stopped before checks because selected workflow
 `workflow-7cccfb4e2a27a57e92e8881d48956e1a` still binds this member to revision
 `22893aad9884915c716b4ce2e23e30180efd2c39`, not `f133fe3b0d2748fec267ee311eb7c25c7f3d2373`; no
-current affected-check receipt exists.
+current affected-check receipt exists. `doc:sanity` also fails its repository-wide 600-line rule on
+three other documents (863, 726 and 1,366 lines); this PRD is below 600 lines and is not named by that
+check.
 
-The lane is clean, 126 commits ahead and 4 behind `origin/main`; seven changed paths remain outside its
-reservation. Parser-owner PR #1558 is open and conflicting with no checks; same-scope predecessor PR #1571
-is open with a failed 60 s workspace-import proof at `76effde`. No candidate PR or protected integration
-exists. Publish, deployment and production activation remain separate; their authorities and runtime
-receipts are absent. Open gates also include source lifecycle/HUD, training/negative-network provenance,
+At tested runtime commit `f133fe3`, the branch was 126 commits ahead and 4 behind `origin/main`; later
+commits in this lane update this PRD only. Seven changed paths remain outside its reservation. Parser-owner
+PR #1558 is open and conflicting with no checks; same-scope predecessor PR #1571 is open with a failed
+60 s workspace-import proof at `76effde`. No candidate PR or protected integration exists. Publish,
+deployment and production activation remain separate; their authorities and runtime
+receipts are absent. Open gates also include live Flight practice, training/negative-network provenance,
 offline CI, device/Linux, rights/economics, integration and deployment. OS bounded-cache timing remains
 local-only; CI savings are unproven.
