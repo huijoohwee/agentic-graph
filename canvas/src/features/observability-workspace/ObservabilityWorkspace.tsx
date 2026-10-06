@@ -42,6 +42,28 @@ async function inspectIndex(graph: GraphData, signal: AbortSignal): Promise<Miss
   // Logical native identity only: session inspection never initializes storage or binds workflow references.
   return { index: buildAgentGraphWorkspaceIndex(graph, path, { retention: 'session' }) }
 }
+async function mergeGraphNeighborhood(graph: GraphData, value: any, nodeId: string): Promise<GraphData> {
+  const identity = graph.metadata?.agentGraphProjection as Record<string, any> | undefined
+  if (!identity || identity.owner !== 'agent-graph-runtime' || identity.readOnly !== true
+    || value?.mode !== 'neighbors' || value.resolution?.id !== nodeId
+    || value.graphId !== identity.graphId || value.snapshotDigest !== identity.snapshotDigest
+    || !Array.isArray(value.traversal?.nodes) || !Array.isArray(value.traversal?.edges))
+    throw Error('Neighbor result did not match the selected native Graph snapshot and node')
+  const { validateGraphData } = await import('@/features/agent-graph/agentGraphCanvasProjectionBuilder')
+  const { styleAgentGraphEdge, styleAgentGraphNode } = await import('@/features/agent-graph/agentGraphVisualEvidence')
+  const incoming = validateGraphData({ context: 'agentic-graph-agent-graph-projection', type: 'Graph',
+    nodes: value.traversal.nodes, edges: value.traversal.edges }, identity.counts)
+  const nodes = new Map(graph.nodes.map(node => [node.id, node]))
+  for (const node of incoming.nodes) if (!nodes.has(node.id)) nodes.set(node.id, styleAgentGraphNode(node))
+  const edges = new Map(graph.edges.map(edge => [edge.id, edge]))
+  for (const edge of incoming.edges) if (!edges.has(edge.id)) edges.set(edge.id, styleAgentGraphEdge(edge))
+  if (nodes.size > 2_000 || edges.size > 5_000) throw Error('Native Graph view reached its 2,000-node or 5,000-link live cap')
+  const nodeList = [...nodes.values()], edgeList = [...edges.values()]
+  const truncated = nodeList.length < identity.counts.nodes || edgeList.length < identity.counts.edges
+  return validateGraphData({ ...graph, nodes: nodeList, edges: edgeList, metadata: { ...graph.metadata,
+    agentGraphProjection: { ...identity, projectionComplete: !truncated && identity.complete === true,
+      projectionTruncated: truncated, projectionReason: truncated ? 'connected-first-on-demand' : 'full_projection' } } }, identity.counts)
+}
 
 /** This entry owns only local selection; native Mission and D3 own every evidence view. */
 export default function ObservabilityWorkspace() {
@@ -50,16 +72,20 @@ export default function ObservabilityWorkspace() {
   const [busy, setBusy] = React.useState(false)
   const [spanId, setSpanId] = React.useState<string | null>(null)
   const pending = React.useRef<AbortController | null>(null), generation = React.useRef(0)
+  const expansionPending = React.useRef(new Set<AbortController>())
+  const observationRef = React.useRef<Observation | null>(null)
+  observationRef.current = observation
   React.useEffect(() => {
     const controller = new AbortController()
     void fetch('/observability-workspace.json', { signal: controller.signal }).then(json).then(value => {
       if (value.schema !== 'agentic-canvas-os/observability-workspace/v1' || value.readOnly !== true || !Array.isArray(value.repositories)) throw Error('Workspace configuration unavailable')
       setManifest(value)
     }).catch(error => { if (!controller.signal.aborted) setError(error.message) })
-    return () => { controller.abort(); pending.current?.abort(); generation.current++ }
+    return () => { controller.abort(); pending.current?.abort(); expansionPending.current.forEach(item => item.abort()); generation.current++ }
   }, [])
   const choose = (id: string) => {
-    pending.current?.abort(); generation.current++; setRepository(id); setObservation(null); setError(''); setBusy(false); setSpanId(null)
+    pending.current?.abort(); expansionPending.current.forEach(item => item.abort()); expansionPending.current.clear()
+    generation.current++; setRepository(id); setObservation(null); setError(''); setBusy(false); setSpanId(null)
   }
   const load = async (index: boolean) => {
     pending.current?.abort()
@@ -82,6 +108,29 @@ export default function ObservabilityWorkspace() {
     finally { if (current === generation.current) setBusy(false) }
   }
   const trace = observation?.trace, graph = observation?.graph
+  const expandNode = async (nodeId: string, afterEdgeId?: string) => {
+    const current = observationRef.current, currentGraph = current?.graph
+    const identity = currentGraph?.metadata?.agentGraphProjection as Record<string, any> | undefined
+    if (!currentGraph || !identity || repository === '') throw Error('Select and index a repository before expanding the graph')
+    const availableNodes = 2_000 - currentGraph.nodes.length, availableEdges = 5_000 - currentGraph.edges.length
+    if (availableNodes <= 0 || availableEdges <= 0) throw Error('Native Graph view reached its live cap; re-index to restart from highly connected nodes')
+    const controller = new AbortController(), currentGeneration = generation.current, request = requestFor(repository)
+    expansionPending.current.add(controller)
+    try {
+      const value = await json(await request('/graph-neighbors', { method: 'POST', signal: controller.signal,
+        headers: { 'content-type': 'application/json' }, body: JSON.stringify({ graphId: identity.graphId,
+          snapshotDigest: identity.snapshotDigest, from: nodeId, afterEdgeId, limit: Math.min(200, availableNodes, availableEdges) }) }))
+      if (currentGeneration !== generation.current || controller.signal.aborted) throw Error('Repository selection changed; discarded stale neighbors')
+      const latest = observationRef.current, latestIdentity = latest?.graph?.metadata?.agentGraphProjection as Record<string, any> | undefined
+      if (!latest?.graph || latestIdentity?.graphId !== identity.graphId || latestIdentity?.snapshotDigest !== identity.snapshotDigest)
+        throw Error('Selected graph snapshot changed; discarded stale neighbors')
+      const merged = await mergeGraphNeighborhood(latest.graph, value, nodeId), codebase = await inspectIndex(merged, controller.signal)
+      if (controller.signal.aborted || currentGeneration !== generation.current) throw Error('Repository selection changed; discarded stale neighbors')
+      const next = { ...latest, graph: merged, codebase }; observationRef.current = next; setObservation(next)
+      return { nextCursor: value.traversal.nextCursor ?? null,
+        nodes: merged.nodes.length - latest.graph.nodes.length, edges: merged.edges.length - latest.graph.edges.length }
+    } finally { expansionPending.current.delete(controller) }
+  }
   const retained = React.useMemo<MissionDashboardSnapshot | undefined>(() => trace ? {
     trace, schema: defaultSchema, codebase: observation?.codebase, graph: graph ?? undefined,
   } : undefined, [trace, graph, observation?.codebase])
@@ -105,7 +154,8 @@ export default function ObservabilityWorkspace() {
         {retained && <>
           <section aria-label="Mission dashboard" className="kg-dashboard-content min-w-0">
             <React.Suspense fallback={<p role="status">Loading native Mission…</p>}>
-              <MissionDashboard retained={retained} retainedSpanId={spanId} onRetainedSpan={setSpanId} provenance={observation.provenance} />
+              <MissionDashboard retained={retained} retainedSpanId={spanId} onRetainedSpan={setSpanId} provenance={observation.provenance}
+                onExpandNode={!busy && graph ? expandNode : undefined} />
             </React.Suspense>
           </section>
           {observation.sourceDirty && <p role="status" className="text-sm">The local index contains uncommitted source; no immutable Git revision is assigned.</p>}
