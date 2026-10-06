@@ -340,18 +340,18 @@ Private artifacts below: `$GITHUB_ROOT/.workspace/.artifacts/aviation-swarm-read
 
 | Evidence | Check / recorded result | Scope and limit |
 |---|---|---|
-| ER1 | Convergence 171/171, ownership 13/13, Canvas; Evidence UI 57/57. Import-proof 24/24; shared-build integrity 25/25, routing/contract 39/39 | All eleven native `ci:affected` plans must pass on the final publication candidate; its exact receipt owns that verdict |
+| ER1 | Convergence 171/171, ownership 13/13, Canvas; Evidence UI 57/57. Import-proof 24/24; shared-build integrity 25/25, routing/contract 39/39. Code tree `60901e3`: 47 standard + 7 selected extended affected checks pass | Protected eleven-workflow integration receipt remains separate; local checks do not authorize publication or production |
 | ER2 | PR 1560 merged e551c50c; native closeout/alignment 534b213 complete | Integration Gate 37259875188 passes; producer ten plans, 121 source/42 sequence checks pass |
 | ER3 | 1fcc desktop/mobile export: 3 entities/185 facts/3 sources; 262,899 B; executor/reimport parity | `aviation-offline-1fcc35b/acceptance.json`; exact originals/replay and browser fallback inspect/replay parity |
-| ER4 | 22893 build: 1,668 JS files, max 495,688 B; static first-load closure 3,325,629 B/38 chunks | 150,000 B feature+native target remains open: last matched audit fbff 163,436 B; refresh current attribution. `diagnostic-byte-audit-fbff8d6.md` |
-| ER5 | 22893 combined spatial/aviation offline passes at 1024/390; 185 rows/four pages; exact replay/route/pack parity | First value 41.769/22.138 s; install 18.307/10.393 s; reload 5.256/3.113 s; aviation import 31.101/20.435 s, source 58.178/40.643 s, route 1.130/0.542 s; pack 262,899 B; zero offline requests/errors/overflow; mobile Three deferred. `full-app-22893/acceptance.json` |
+| ER4 | 22893 build: 1,668 JS files, max 495,688 B; static first-load closure 3,325,629 B/38 chunks | 150,000 B feature+native gate remains open; last matched audit fbff was 163,436 B (+13,436); current attribution unmeasured. `diagnostic-byte-audit-fbff8d6.md` |
+| ER5 | `60901e3` Python + spatial/aviation offline proof passes at 1024/390; demo imported/replayed at both widths with zero page errors, offline remote requests or overflow | Python pack 1,781 files/28.5 MiB; install/reload 11.551/4.003 s. Spatial install/reload 15.519/4.770 s desktop, 11.401/3.157 s at 390; first value 37.083/19.374 s. Demo source `docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md`; `spatial-full-app-60901e3/acceptance.json`, `python-learning-offline-60901e3/evidence.json`; production authority false |
 | ER6 | 1fcc native 200% zoom: readable record/source/replay/route, focus/scroll pass; 121 control observations ≥44 px | `native-product-zoom-1fcc35b/manual-readability-review.json` binds six screenshots; zero source/page errors. Physical iPhone SKIP/KIV |
 | ER7 | 2faa worker suite 10/10: exact current revision falls through to network with only an older pack; unknown revisions remain fail-closed | Persistent-profile scene request returned 200 from service-worker network fallback; three aircraft loaded in MapLibre canvas; no fallback image |
 | ER8 | Root-retention and nine related checks pass; live import→Editor→Refresh retains source. IndexedDB covers missing/corrupt provenance/reopen | Earlier `live-root-retention.png` and `live-parser-432cc531.png`; ER5 supplies current cold proof |
 | ER9 | Six Geo checks pass. Built 160831d: zero SVG requests/mounts during activation; blocked SVG stays local and reload recovers (`geo-primary-built-160831d.json`, `geo-recovery-built-160831d.json`) | 2faa live preview also renders one MapLibre canvas; selection restored to MapLibre |
 | ER10 | XR tests 2/2: five unrelated writes and five Flight advances each change commits 5→0; motion retained. Build 6 keeps the same connected WebGL canvas through History open/close, zero removals | Unchanged-source proof; counts are test measurements, retention is actual UI evidence |
 | ER11 | 392fa static Mermaid: 6/6 render at 390 px, 16 px labels, all scroll endpoints reachable, page width 390 | `diagram-render-392fa379c/`: exact source hashes, screenshots, zero model/API calls; static artifact, not full canvas UI acceptance |
-| ER12 | 22893 live UI: editor z300; Launch, Source Files and Timeline pass at 1024/390 | `full-app-22893/review-{1024,390}.png`; emulated mobile; device separate |
+| ER12 | `60901e3` live demo import/replay and spatial offline UI pass desktop/390; focus and keyboard checks green | `spatial-full-app-60901e3/review-{1024,390}.png`; emulated mobile, physical device separate |
 
 Repeated offline AS2: 77,757.706 m versus 71,188.231 m, difference 6,569.475 m, conditional band
 [6,541.475,6,597.475] m with limitations. AS1 inspected `/facts/0`, UTC 02:25:30.000Z→02:25:30.574Z.
@@ -419,7 +419,7 @@ Audience projections must preserve qualified source joins, hypotheses and the ac
 
 ## ADLC and release — reference implementation
 
-Intent: `/fix #aviation-import-readiness @codex`. PR1560 integrated; canonical parser identity, cold imports, evidence readiness and XR review keys retain native owners. Contract v96 owns checks; historical failures remain retained.
+Intent: `/fix #aviation-import-readiness @codex`. PR1560 integrated; canonical parser identity, cold imports, evidence readiness and XR review keys retain native owners. Contract v97 owns checks; historical failures remain retained.
 Changed candidates need bound proof; source integration and production remain separate.
 
 **AS-D6 · Lane & deploy boundary · flowchart LR · version 2.** Source and delivery each require their own receipt.
@@ -487,6 +487,6 @@ Unchecked findings have no zero-count claim. Coverage does not establish runtime
 
 ## Handover — reference implementation
 
-PR1560 merged; parser passed 195 cases. Full-app 22893 passes spatial edit/undo, aviation inspect/replay/export and offline install/reopen at 1024/390; 185 facts, four pages, 262,899B pack. First value 41.769/22.138s; reload 5.256/3.113s; aviation source 58.178/40.643s. MapLibre primary and XR canvas retention proven.
+PR1560 merged; parser 195/195. `60901e3` bounds stale same-path retries to three attempts with exact persisted-byte checks; regression plus unsaved, failure, churn and abort guards pass.
 
-Build 22893: static closure 3,325,629B/38 chunks, max 495,688B; 150,000B feature+native attribution remains open. Artifacts: `.workspace/.artifacts/aviation-swarm-readiness/full-app-22893/`. Linux CI, iPhone, AS3/4, rights, buyer economics and promotion remain open. OS `a49`: 17 cache tests/evals pass; 683 files/7,669,851B cold/warm 559/321ms, CPU 134/42ms; warm avoids 7,669,851B reread. One source scan; no end-to-end CI savings proved. Production/deploy unclaimed.
+150,000B feature+native attribution remains open (ER4); whole-host, physical iPhone, Linux CI, AS3/4 rights, buyer economics and protected promotion remain unproved. OS `a49`: 17 cache tests/evals pass; 683 files/7,669,851B cold/warm 559/321ms, CPU 134/42ms; warm avoids 7,669,851B reread. Single scan; end-to-end CI savings and deployment unproved.
