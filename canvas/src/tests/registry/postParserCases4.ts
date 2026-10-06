@@ -357,6 +357,7 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["workspaceFs.bootstrap.materializesActiveWorkspaceEntryIntoParsedSourceFile","@/__tests__/workspaceSeedPersistence.test","testWorkspaceBootstrapMaterializesActiveWorkspaceEntryIntoParsedSourceFile"],
   ["workspaceFs.bootstrap.materialize.reusesProvidedWorkspaceSnapshot","@/__tests__/workspaceSeedPersistence.test","testWorkspaceBootstrapMaterializeReusesProvidedWorkspaceSnapshotWithoutExtraListEntries"],
   ["workspaceFs.bootstrap.materialize.retriesGraphOwnerAfterActivePathDrift","@/__tests__/workspaceBootstrapSourceAuthority.test","testWorkspaceBootstrapRetriesGraphOwningMaterializationAfterActivePathDrift"],
+  ["workspaceFs.bootstrap.materialize.retriesSamePathGraphAuthorityAfterPersistedConvergence","@/__tests__/workspaceBootstrapSourceAuthority.test","testWorkspaceBootstrapRetriesSamePathGraphAuthorityAfterPersistedConvergence"],
   ["workspaceFs.bootstrap.materialize.retriesInFlightSelectionSupersession","@/__tests__/workspaceBootstrapSourceAuthority.test","testWorkspaceBootstrapRetriesInFlightSelectionSupersession"],
   ["workspaceFs.bootstrap.materialize.preservesUnsavedDocuments","@/__tests__/workspaceBootstrapSourceAuthority.test","testWorkspaceBootstrapPreservesUnsavedDocumentsAcrossSupersession"],
   ["workspaceFs.bootstrap.materialize.keepsGenuineFailuresLoud","@/__tests__/workspaceBootstrapSourceAuthority.test","testWorkspaceBootstrapKeepsGenuineMaterializationFailuresLoud"],
