@@ -92,13 +92,60 @@ def apply_isolated_practice_source(
           if (canonicalWorkspaceText !== expectedSourceText) {
             throw new Error('WorkspaceFs canonical Flight seed changed before practice derivation')
           }
-          await workspace.writeFileText(sourcePath, practiceSourceText, {mirrorToHost: false})
+          const folderPath = sourcePath.slice(0, sourcePath.lastIndexOf('/'))
+          const parentPath = folderPath.slice(0, folderPath.lastIndexOf('/')) || '/'
+          const folderName = folderPath.slice(folderPath.lastIndexOf('/') + 1)
+          const fileName = sourcePath.slice(sourcePath.lastIndexOf('/') + 1)
+          let entries = await workspace.listEntries()
+          const parent = entries.find(entry => entry.path === parentPath)
+          if (!parent || parent.kind !== 'folder') {
+            throw new Error(`practice source parent folder is unavailable: ${parentPath}`)
+          }
+          const folder = entries.find(entry => entry.path === folderPath)
+          if (folder && folder.kind !== 'folder') {
+            throw new Error(`practice source parent path is not a folder: ${folderPath}`)
+          }
+          let practiceFolderMaterialized = folder?.kind === 'folder'
+          if (!folder) {
+            const createdFolderPath = await workspace.createFolder({
+              parentPath,
+              name: folderName,
+              mirrorToHost: false,
+            })
+            if (createdFolderPath !== folderPath) {
+              throw new Error(`practice folder was created at an unexpected path: ${createdFolderPath}`)
+            }
+            practiceFolderMaterialized = true
+          }
+          const existing = entries.find(entry => entry.path === sourcePath)
+          if (existing && existing.kind !== 'file') {
+            throw new Error(`practice source path is not a file: ${sourcePath}`)
+          }
+          let practiceFileMaterialized = existing?.kind === 'file'
+          if (existing) {
+            await workspace.writeFileText(sourcePath, practiceSourceText, {mirrorToHost: false})
+            practiceFileMaterialized = true
+          } else {
+            const createdPath = await workspace.createFile({
+              parentPath: folderPath,
+              name: fileName,
+              text: practiceSourceText,
+              mirrorToHost: false,
+              requireExactPath: true,
+            })
+            if (createdPath !== sourcePath) {
+              throw new Error(`practice source was created at an unexpected path: ${createdPath}`)
+            }
+            practiceFileMaterialized = true
+          }
           const workspaceText = await workspace.readFileText(sourcePath)
           return {
             canonicalSeedByteIdentical: authored?.text === expectedSourceText,
             canonicalWorkspaceBeforeDerivationByteIdentical:
               canonicalWorkspaceText === expectedSourceText,
             practiceWorkspaceByteIdentical: workspaceText === practiceSourceText,
+            practiceFolderMaterialized,
+            practiceFileMaterialized,
             sourcePath,
           }
         }
@@ -156,6 +203,8 @@ def apply_and_verify_practice_source(
             "canonicalSeedByteIdentical",
             "canonicalWorkspaceBeforeDerivationByteIdentical",
             "practiceWorkspaceByteIdentical",
+            "practiceFolderMaterialized",
+            "practiceFileMaterialized",
         )
     ):
         raise AssertionError(
@@ -168,18 +217,19 @@ def apply_and_verify_practice_source(
     practice_folder = page.get_by_role(
         "button", name="Folder flight-sim-practice", exact=True
     )
-    if seeds.count() == 0:
+    docs.wait_for(state="visible", timeout=120_000)
+    seeds.wait_for(state="visible", timeout=120_000)
+    if docs.get_attribute("aria-expanded") != "true":
         docs.click()
-        seeds.wait_for(state="visible", timeout=120_000)
-    if practice_folder.count() == 0:
+    if seeds.get_attribute("aria-expanded") != "true":
         seeds.click()
-        practice_folder.wait_for(state="visible", timeout=120_000)
+    practice_folder.wait_for(state="visible", timeout=120_000)
+    if practice_folder.get_attribute("aria-expanded") != "true":
+        practice_folder.click()
     practice_file = page.get_by_role(
         "button", name=f"File {PRACTICE_SOURCE_BASENAME}", exact=True
     )
-    if practice_file.count() == 0:
-        practice_folder.click()
-        practice_file.wait_for(state="visible", timeout=120_000)
+    practice_file.wait_for(state="visible", timeout=120_000)
     practice_file.click()
     practice_application["uiFileSelection"] = {
         "buttonName": f"File {PRACTICE_SOURCE_BASENAME}",
