@@ -8,6 +8,7 @@ import { createPagesMirrorFileOperations } from './pages-mirror-file-operations.
 import { buildAgentReadyHeaders } from './pages-mirror-headers.mjs'
 import { createPagesMirrorLegacyCleanup } from './pages-mirror-legacy-cleanup.mjs'
 import { buildAgenticGraphRedirects } from './production-pages-routing.mjs'
+import { offlinePrecacheEntries } from '../canvas/vitePythonLearningOffline.mjs'
 import {
   buildProductionRuntimeReadiness,
   findRuntimeReadinessPathsNeedingUpdate,
@@ -24,11 +25,43 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const joinRelativePath = (...parts) => parts.join('/')
 const joinToken = (...parts) => parts.join('')
 const joinKebab = (...parts) => parts.join('-')
+const importedServiceWorkerRootFiles = new Set(['agentic-graph-chat-stream-sw.js', 'agentic-graph-service-worker-revision.js'])
 const summaryList = (label, entries, formatter = entry => entry) => {
   if (entries.length === 0) return
   console.error(`  ${label} (${entries.length}):`)
   for (const entry of entries.slice(0, 20)) console.error(`  - ${formatter(entry)}`)
   if (entries.length > 20) console.error(`  - ... ${entries.length - 20} more`)
+}
+
+const publicManagedRootFiles = new Set([
+  'favicon.svg', 'index.html', 'agentic-graph-live-canvas-hero.md', 'llms.txt', 'manifest.webmanifest',
+  'settings-flow.json', 'sw.js', ...importedServiceWorkerRootFiles,
+])
+const isOfflinePublicAssetNamespace = relativePath =>
+  /^evidence-analysis\/fixtures\/[A-Za-z0-9._-]+\.(?:json|txt)$/.test(relativePath)
+const isPublicManagedRelativePath = (relativePath, offlineAssetPaths) => Boolean(relativePath)
+  && (relativePath.startsWith('assets/') || publicManagedRootFiles.has(relativePath)
+    || offlineAssetPaths.has(relativePath))
+const isPublicRouteManagedRelativePath = (relativePath, offlineAssetPaths) =>
+  isPublicManagedRelativePath(relativePath, offlineAssetPaths) || isOfflinePublicAssetNamespace(relativePath)
+
+export const buildOfflinePublicRoutePlan = ({
+  sourceFiles,
+  rootManagedPaths = [],
+  existingPublicFiles = [],
+  offlineAssetPaths = [],
+}) => {
+  const offlinePaths = new Set(offlineAssetPaths)
+  const sourcePathSet = new Set(sourceFiles)
+  const missing = [...offlinePaths].filter(relativePath => !sourcePathSet.has(relativePath))
+  if (missing.length) {
+    throw new Error(`Missing declared offline public assets from the build output: ${missing.join(', ')}`)
+  }
+  const copyPaths = sourceFiles.filter(relativePath => isPublicManagedRelativePath(relativePath, offlinePaths))
+  const managedSourcePaths = new Set([...copyPaths, ...rootManagedPaths])
+  const removePaths = existingPublicFiles.filter(relativePath =>
+    isPublicRouteManagedRelativePath(relativePath, offlinePaths) && !managedSourcePaths.has(relativePath))
+  return { copyPaths, removePaths }
 }
 
 export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
@@ -38,6 +71,12 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   const distDir = path.resolve(agenticGraphRoot, 'canvas', 'dist')
   const targetDir = path.resolve(mirrorRoot, 'content', 'agentic-graph')
   const publicRouteDir = path.resolve(mirrorRoot, 'agentic-graph')
+  const offlineAssetManifestPath = path.resolve(
+    agenticGraphRoot,
+    'canvas', 'src', 'features', 'evidence-analysis', 'profiles', 'offline-assets.json',
+  )
+  const offlineAssetManifest = JSON.parse(await fs.readFile(offlineAssetManifestPath, 'utf8'))
+  const offlinePublicAssetPaths = new Set(offlinePrecacheEntries(offlineAssetManifest).map(entry => entry.url))
   const redirectsPath = path.resolve(mirrorRoot, '_redirects')
   const headersPath = path.resolve(mirrorRoot, '_headers')
   const sourceRevision = String(process.env.AGENTIC_OS_SOURCE_REVISION || execFileSync(
@@ -45,11 +84,6 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   )).trim()
   if (!/^[0-9a-f]{40}$/.test(sourceRevision)) throw new Error('agentic-graph source revision must be an exact lowercase 40-character SHA')
 
-  const importedServiceWorkerRootFiles = new Set(['agentic-graph-chat-stream-sw.js', 'agentic-graph-service-worker-revision.js'])
-  const publicManagedRootFiles = new Set([
-    'favicon.svg', 'index.html', 'agentic-graph-live-canvas-hero.md', 'llms.txt', 'manifest.webmanifest',
-    'settings-flow.json', 'sw.js', ...importedServiceWorkerRootFiles,
-  ])
   const blockedRelativeRoots = new Set(['cesium', 'demo', 'examples', 'vendor/mermaid'])
   const blockedRelativeFiles = new Set(['_headers', '_redirects', 'unicorn-investors-test.json'])
   const preservedRelativeRoots = new Set(['imports'])
@@ -60,10 +94,9 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   }
   const isPreservedRelativePath = relativePath => Boolean(relativePath)
     && [...preservedRelativeRoots].some(root => relativePath === root || relativePath.startsWith(`${root}/`))
-  const isPublicManagedRelativePath = relativePath => Boolean(relativePath)
-    && (relativePath.startsWith('assets/') || publicManagedRootFiles.has(relativePath))
+  const isPublicManagedPath = relativePath => isPublicManagedRelativePath(relativePath, offlinePublicAssetPaths)
   const xrV2RuntimePaths = new Set(XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS)
-  const isBrowserRuntimeArtifactRelativePath = relativePath => isPublicManagedRelativePath(relativePath)
+  const isBrowserRuntimeArtifactRelativePath = relativePath => isPublicManagedPath(relativePath)
     || importedServiceWorkerRootFiles.has(relativePath)
     || xrV2RuntimePaths.has(relativePath)
     || /^workbox-[A-Za-z0-9_-]+\.js$/.test(relativePath)
@@ -106,6 +139,12 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
 
   const sourceFiles = await listFiles(distDir)
   const rootManagedSourceFiles = [{ rel: 'agentic-graph-live-canvas-hero.md', src: path.resolve(agenticGraphRoot, 'docs', 'documents', 'agentic-graph-live-canvas-hero.md') }]
+  const publicRoutePlan = buildOfflinePublicRoutePlan({
+    sourceFiles,
+    rootManagedPaths: rootManagedSourceFiles.map(entry => entry.rel),
+    existingPublicFiles: await existsDir(publicRouteDir) ? await listAllFiles(publicRouteDir) : [],
+    offlineAssetPaths: [...offlinePublicAssetPaths],
+  })
   const publishRootManagedSourceFiles = [
     { rel: '404.html', src: path.resolve(agenticGraphRoot, 'cloudflare', 'pages', '404.html') },
     { rel: 'README.md', src: path.resolve(agenticGraphRoot, 'README.md') },
@@ -138,19 +177,14 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     }
   }
   const publicFilesToCopy = []
-  for (const relativePath of sourceFiles) {
-    if (isPublicManagedRelativePath(relativePath) && await fileNeedsUpdate(path.resolve(distDir, relativePath), path.resolve(publicRouteDir, relativePath))) publicFilesToCopy.push(relativePath)
+  for (const relativePath of publicRoutePlan.copyPaths) {
+    if (await fileNeedsUpdate(path.resolve(distDir, relativePath), path.resolve(publicRouteDir, relativePath))) publicFilesToCopy.push(relativePath)
   }
   const publicRootManagedFilesToCopy = []
   for (const entry of rootManagedSourceFiles) {
     if (await plainFileNeedsUpdate(entry.src, path.resolve(publicRouteDir, entry.rel))) publicRootManagedFilesToCopy.push(entry)
   }
-  const publicFilesToRemove = []
-  if (await existsDir(publicRouteDir)) {
-    for (const relativePath of await listAllFiles(publicRouteDir)) {
-      if (isPublicManagedRelativePath(relativePath) && !sourceSet.has(relativePath)) publicFilesToRemove.push(relativePath)
-    }
-  }
+  const publicFilesToRemove = publicRoutePlan.removePaths
   const publishRootManagedFilesToCopy = []
   for (const entry of publishRootManagedSourceFiles) {
     if (await plainFileNeedsUpdate(entry.src, path.resolve(mirrorRoot, entry.rel))) publishRootManagedFilesToCopy.push(entry)
@@ -279,8 +313,8 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   await removeEmptyDirs(targetDir)
   await fs.mkdir(publicRouteDir, { recursive: true })
   let copiedPublicCount = 0
-  for (const relativePath of sourceFiles) {
-    if (isPublicManagedRelativePath(relativePath) && await copyIfChanged(path.resolve(distDir, relativePath), path.resolve(publicRouteDir, relativePath))) copiedPublicCount += 1
+  for (const relativePath of publicRoutePlan.copyPaths) {
+    if (await copyIfChanged(path.resolve(distDir, relativePath), path.resolve(publicRouteDir, relativePath))) copiedPublicCount += 1
   }
   for (const entry of rootManagedSourceFiles) {
     if (await plainFileNeedsUpdate(entry.src, path.resolve(publicRouteDir, entry.rel))) {
