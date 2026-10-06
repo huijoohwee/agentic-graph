@@ -27,6 +27,12 @@ if (process.argv.includes('--build')) execFileSync('npm', ['run', 'pages:build']
 let server, browser, page
 const errors = [], remote = [], assetFailures = [], consoleErrors = []
 const retain = (items, value) => { items.push(value); if (items.length > 40) items.shift() }
+async function closeBottomTimelineIfVisible(targetPage) {
+  const timeline = targetPage.locator('[data-kg-strybldr-bottom-timeline-panel="1"]')
+  if (!(await timeline.isVisible())) return
+  await timeline.getByRole('button', { name: 'Close', exact: true }).click()
+  await timeline.waitFor({ state: 'hidden', timeout: 10000 })
+}
 let phase = 'startup'
 try {
   await mkdir(output, { recursive: true })
@@ -61,6 +67,7 @@ try {
   await awaitVisibleSource(source)
   phase = 'imported-source-ready'
   await dismissVisibleFloatingPanel(page)
+  await closeBottomTimelineIfVisible(page)
   const awaitStoredSource = expected => page.waitForFunction(async value => {
     const name = (await indexedDB.databases()).find(database => database.name?.includes('kg:workspace-fs:indexeddb:v1'))?.name
     if (!name) return false
@@ -145,6 +152,7 @@ try {
   await python.waitFor({ timeout: 60000 })
   await awaitVisibleSource(changed)
   await dismissVisibleFloatingPanel(page)
+  await closeBottomTimelineIfVisible(page)
   if (await explorer.isChecked()) await explorer.uncheck()
   await blockToggle.check()
   await block.getByText('3', { exact: true }).waitFor({ timeout: 30000 })
