@@ -136,16 +136,20 @@ wrap(body.replace('1 known sources', '2 known sources')), wrap(body.replace('| n
 
     def test_exact_evidence_fixture_reads_are_local_and_read_only(self):
         origin = "http://localhost:4187"
-        fixture = "/evidence-analysis/fixtures/aviation-singapore-multitrack-v1.json"
-        for method in ("GET", "HEAD"):
-            self.assertTrue(request_is_proof_local_read(
-                SimpleNamespace(method=method, url=f"{origin}{fixture}?revision=abc"),
+        fixtures = (
+            "/evidence-analysis/fixtures/aviation-singapore-multitrack-v1.json",
+            "/evidence-analysis/fixtures/airport-wsss-source-v1.json",
+        )
+        for fixture in fixtures:
+            for method in ("GET", "HEAD"):
+                self.assertTrue(request_is_proof_local_read(
+                    SimpleNamespace(method=method, url=f"{origin}{fixture}?revision=abc"),
+                    "localhost:4187",
+                ))
+            self.assertFalse(request_is_proof_local_read(
+                SimpleNamespace(method="POST", url=f"{origin}{fixture}"),
                 "localhost:4187",
             ))
-        self.assertFalse(request_is_proof_local_read(
-            SimpleNamespace(method="POST", url=f"{origin}{fixture}"),
-            "localhost:4187",
-        ))
         self.assertFalse(request_is_proof_local_read(
             SimpleNamespace(method="GET", url=f"{origin}/evidence-analysis/fixtures/other.json"),
             "localhost:4187",

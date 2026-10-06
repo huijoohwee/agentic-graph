@@ -213,10 +213,13 @@ def run_flight_runtime_verifications(
         if (
             source.get("sha256") != expected_source_sha256
             or source.get("authoredSeedSha256") != expected_source_sha256
-            or source.get("workspaceSourceSha256") != expected_source_sha256
+            or source.get("workspaceSourceSha256")
+            != source.get("practiceSourceSha256")
+            or source.get("practiceSourceDerivedFromAuthoredSeed") is not True
+            or source.get("canonicalRecordedSourceStayedInactive") is not True
         ):
             raise AssertionError(
-                "disk, bundled, and WorkspaceFs source identities diverged: "
+                "canonical seed, Recorded fence, and isolated practice identities diverged: "
                 f"{source}"
             )
         return {

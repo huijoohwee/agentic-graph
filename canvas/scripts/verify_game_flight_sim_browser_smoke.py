@@ -456,7 +456,7 @@ def main() -> None:
             initial = playable_state["initial"]
             moved = desktop["moved"]
             evidence = {
-                "schema": "agentic-graph-flight-sim-browser-run/v5",
+                "schema": "agentic-graph-flight-sim-browser-run/v6",
                 "runIndex": RUN_INDEX,
                 "runCount": RUN_COUNT,
                 "candidate": {

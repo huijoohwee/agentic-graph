@@ -25,6 +25,7 @@ test('Flight browser proof activates only after applying the authored source', (
     missionVerifier,
     networkBoundary,
     previewPageVerifier,
+    practiceSource,
     runner,
     runtimePhases,
     sceneVerifier,
@@ -47,8 +48,8 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(runner, /indexSource\.includes\('\/@vite\/client'\)/)
   assert.match(runner, /devServerStartMode: 'vite-preview-runner'/)
   assert.match(runner, /productionBuild,/)
-  assert.match(evidenceValidator, /agentic-graph-flight-sim-browser-run\/v5/)
-  assert.match(runner, /agentic-graph-flight-sim-browser-proof\/v5/)
+  assert.match(evidenceValidator, /agentic-graph-flight-sim-browser-run\/v6/)
+  assert.match(runner, /agentic-graph-flight-sim-browser-proof\/v6/)
   assert.match(verifier, /target_url = f"\{BASE_URL\}\/\?kgFlightSimBrowserProof=1"/)
   assert.match(verifier, /json\.dumps\(evidence, indent=2, allow_nan=False\)/)
   for (const removedContradictoryRendererField of [
@@ -343,7 +344,13 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(evidenceValidator, /candidate\?\.runtimeRevision !== candidateHead/)
   assert.match(evidenceValidator, /candidate\?\.runtimeBranch !== candidateBranch/)
   assert.match(evidenceValidator, /source\?\.authoredSeedSha256 !== sourceSha256/)
-  assert.match(evidenceValidator, /source\?\.workspaceSourceSha256 !== sourceSha256/)
+  assert.match(evidenceValidator, /source\?\.workspaceSourceSha256[\s\S]*?source\?\.practiceSourceSha256/)
+  assert.match(evidenceValidator, /practiceSourceDerivedFromAuthoredSeed !== true/)
+  assert.match(evidenceValidator, /canonicalRecordedSourceStayedInactive !== true/)
+  assert.match(practiceSource, /derive_flight_practice_source/)
+  assert.match(practiceSource, /mirrorToHost: false/)
+  assert.match(practiceSource, /canonical Recorded Flight source remains practice-inactive/)
+  assert.match(practiceSource, /canonicalRecordedSourceStayedInactive/)
   assert.match(evidenceValidator, /inputProof\?\.touchInteraction\?\.runId[\s\S]*missionProof\?\.runId/)
   assert.match(evidenceValidator, /missionProof\?\.phase !== 'completed'/)
   assert.match(evidenceValidator, /missionProof\?\.transitions\?\.length !== 3/)
