@@ -407,10 +407,7 @@ async function ingestResolvedTransaction(
 
   let projection;
   try {
-    projection = await projectAgentGraphSnapshot(snapshot, args.projectionLimit, {
-      ...budget,
-      projectionByteLimit: args.projectionByteLimit,
-    });
+    projection = await projectAgentGraphSnapshot(snapshot, args.projectionLimit, { ...budget, projectionByteLimit: args.projectionByteLimit });
   } catch (error) {
     projection = unavailableProjection(snapshot, args.projectionLimit, args.projectionByteLimit);
   }
