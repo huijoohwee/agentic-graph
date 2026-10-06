@@ -290,12 +290,17 @@ def verify_source_file_button_round_trip(
     )
     flight_button.wait_for(state="visible", timeout=120_000)
     flight_button.click()
-    flight = poll(
+    recorded_source = poll(
         page,
         lambda: read_source_identity(page, expected_source_text),
         lambda value: (
             str(value.get("documentName") or "").endswith(flight_basename)
             and value.get("active") is True
+            and value.get("flightAdmissionObserved") is True
+            and value.get("flightAdmissionActive") is False
+            and value.get("flightRuntimeActive") is False
+            and value.get("authoredSeedHasRecordedSourceIntent") is True
+            and value.get("workspaceSourceHasRecordedSourceIntent") is True
             and value.get("authoredSeedByteIdentical") is True
             and value.get("workspaceSourceByteIdentical") is True
             and all((value.get("sourceContract") or {}).values())
@@ -303,9 +308,17 @@ def verify_source_file_button_round_trip(
             and value.get("renderMode") == "3d"
             and value.get("canvas3dMode") == "xr"
         ),
-        label="Flight Source Files button Geo+XR activation",
+        label="Flight Source Files button preserves canonical Recorded intent",
     )
-    wait_for_flight_hud_activation(page)
+    recorded_fence = read_flight_hud_activation(page)
+    if (
+        (recorded_fence.get("flight") or {}).get("active") is True
+        or recorded_fence.get("hudCount") != 0
+    ):
+        raise AssertionError(
+            "canonical Recorded Flight source unexpectedly entered practice: "
+            f"{recorded_fence}"
+        )
     flight_surface = page.evaluate(
         """
         () => {
@@ -330,7 +343,7 @@ def verify_source_file_button_round_trip(
         or flight_surface.get("rendererCanvasCount") != 1
     ):
         raise AssertionError(
-            f"Flight file click replaced the shared XR Canvas: {flight_surface}"
+            f"Recorded Flight source selection replaced the shared XR Canvas: {flight_surface}"
         )
 
     physics_button.wait_for(state="visible", timeout=120_000)
@@ -396,7 +409,8 @@ def verify_source_file_button_round_trip(
         label="Physics Source Files button restoration",
     )
     return {
-        "flight": flight,
+        "recordedFlightSource": recorded_source,
+        "recordedFence": recorded_fence,
         "flightSurface": flight_surface,
         "physics": restored,
     }
