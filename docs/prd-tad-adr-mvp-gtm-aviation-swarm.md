@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.41"
-revision: "0.4.41"
+version: "0.4.42"
+revision: "0.4.42"
 date: "2026-10-06"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.41"
-tad_revision: "0.4.41"
-adr_revision: "0.4.41"
-mvp_revision: "0.4.41"
-gtm_revision: "0.4.41"
+prd_revision: "0.4.42"
+tad_revision: "0.4.42"
+adr_revision: "0.4.42"
+mvp_revision: "0.4.42"
+gtm_revision: "0.4.42"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -25,7 +25,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-render-frame-budget"
 agent_id: "codex-root"
-source_revision: "4b332ef5cb2289243be4d1d46b0045f3b2d50716"
+source_revision: "288aa4a9e941ed5cb8dabb44a9fd3e494d9aef12"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm — reference implementation
 
-`aviation-swarm@0.4.41` hardens eligible aviation evidence Must workflows:
+`aviation-swarm@0.4.42` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -444,7 +444,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.41 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.42 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-06 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-06 |
@@ -454,7 +454,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.41`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.42`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -519,8 +519,8 @@ local-only; CI savings are unproven.
 
 ### 2026-10-06 · renderer fix and exact-lane closeout recheck
 
-At candidate worktree based on `4b332ef5cb2289243be4d1d46b0045f3b2d50716`, the renderer change removes failure-driven SVG mounting, its inset/resize measurement, and keeps SVG terrain behind explicit `2d-svg` selection. Pending MapLibre remains a loading state; confirmed failure reports unavailable. `npm run check` passes both linked-package TypeScript builds and three local Vite smoke-runtime tests. Four focused registry cases pass, including pending/unavailable semantics, explicit SVG mode, and no automatic SVG render on failed or blank MapLibre. The live dev UI at `http://127.0.0.1:5195/` renders the Singapore MapLibre basemap in Geospatial Mode. These are local development checks; no production bundle or production runtime is proven by this observation.
+At candidate commit `288aa4a9e941ed5cb8dabb44a9fd3e494d9aef12`, the renderer fix removes failure-driven SVG mounting and its resize/inset work; SVG terrain mounts only after explicit `2d-svg` selection. Pending MapLibre remains loading; confirmed failure reports unavailable. `npm run check` passes the linked-package builds, TypeScript and three local Vite smoke-runtime tests; four focused registry cases pass. Live UI at `http://127.0.0.1:5195/` renders Singapore through one visible MapLibre canvas, with zero Geo SVG fallback mounts. The source-file toast is visible because Flight Sim requires the exact enabled active SourceFile text. This is local development evidence; no production bundle or deployed runtime is proven.
 
-The current handoff has five modified paths (89 insertions, 107 deletions), including this PRD; it is not yet committed. `npm run ci:affected` previously failed closed before checks because selected workflow `workflow-7cccfb4e2a27a57e92e8881d48956e1a` binds the lane to `22893aad9884915c716b4ce2e23e30180efd2c39`; the current lane head was `4b332ef5cb2289243be4d1d46b0045f3b2d50716`. Its plan selects 11 broad checks, with no current affected-check receipt. `doc:sanity` fails only on three unrelated existing documents over 600 lines (863, 726 and 1,366); this PRD is below 600. Exact-lane reap reports 119 pending changes and no integration projection. Canonical hook-runtime setup is installed and `npm run doctor` passes hook and provider checks; doctor retains warnings for 257+ retained refs and deferred deep tracked-byte observation.
+The renderer code and tests are committed. The selected mission still binds to `22893aad9884915c716b4ce2e23e30180efd2c39`, and `npm run ci:affected` has no current receipt; its plan selects 11 checks. Native `release:common start ... --readmit --expected-head=288aa4a9e941ed5cb8dabb44a9fd3e494d9aef12` failed closed with `blocked-admission-unreserved-bytes`. The lane reserves 115 paths, while its `origin/main...HEAD` tree diff contains 119; seven exact paths are outside the reservation: `canvas/src/__tests__/workspaceBootstrapSourceAuthority.test.ts`, `canvas/src/features/source-files/sourceFilesBootstrapStartup.ts`, `canvas/src/tests/registry/postParserCases4.ts`, `docs/agentic-graph-design-document.md`, `docs/agentic-graph-technical-architecture.md`, `docs/agentic-graph-technical-architecture.settings.md`, and `docs/agentic-graph-workflow-document.md`. Preserve these bytes; no reservation override or PR publication was attempted. `doc:sanity` continues to fail only on three unrelated existing documents over 600 lines (863, 726 and 1,366); this PRD remains below 600.
 
-Provider state: PR [#1558](https://github.com/huijoohwee/agentic-graph/pull/1558) remains open and conflicting with no checks. Same-scope predecessor [#1571](https://github.com/huijoohwee/agentic-graph/pull/1571) is open at `76effde363e645f0a096660667bfa1cf92ff0225`; its Integration Gate failed because `workspace-import-proof` timed out after 60 seconds. The user selected this named lane as sole owner and authorized superseding #1571; this lane descends from that candidate and is 128 commits ahead and 6 behind `origin/main`. Next: commit and refresh the exact workflow binding, run all 11 required checks, publish this lane through the native publisher, then retire #1571 after the replacement is reviewable. Protected integration still needs its green receipt and the user's final merge approval. Production activation remains separately unauthorized; no deployment, mirror-sync, rollback, or cleanup receipt exists. Recheck on candidate, workflow, provider or authority changes. Completion check: one exact candidate, required checks green, protected integration receipt; production readback and rollback require separate authorization and receipts.
+Native exact-lane reap reports 120 pending changes and no integration projection. Completion status reports canonical and lane checkouts clean, but the lane cache head remains `737971d99780d4eb4c14bb33fb33f967e4019df4`, mission state is continuable, source integration is false, and closeout awaits cleanup. `release:common promote plan` rejects the unpublished lane. PR [#1571](https://github.com/huijoohwee/agentic-graph/pull/1571) remains open at `76effde363e645f0a096660667bfa1cf92ff0225`; its gate failed when workspace import proof timed out after 60 seconds. The user selected this named lane to supersede it; keep #1571 until a replacement is publishable and reviewable. PR [#1558](https://github.com/huijoohwee/agentic-graph/pull/1558) remains open and conflicting without checks. Next owner action: resolve ownership/admission of the seven out-of-reservation paths through the native lane authority, then refresh the exact mission, run affected checks and publish. Protected integration requires a green receipt and final merge approval. Production activation is separately unauthorized; deployment, mirror-sync, rollback, and cleanup receipts are absent.
