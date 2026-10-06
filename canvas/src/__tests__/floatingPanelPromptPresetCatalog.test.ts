@@ -8,6 +8,9 @@ import {
 } from '@/__tests__/fixtures/promptPresetCatalogFixture'
 import {
   isPromptPresetCatalogError,
+  FLIGHT_SIM_PROMPT_PRESET_INVOCATION,
+  FLIGHT_SIM_PROMPT_PRESET_MCP_TOOL,
+  FLIGHT_SIM_PROMPT_PRESET_SOURCE_PATH,
   loadPromptPreset,
   loadPromptPresetCatalog,
   PROMPT_PRESET_REQUIRED_IDS,
@@ -60,6 +63,34 @@ export async function testFloatingPanelChatPromptPresetCatalogLoadsChatAndMcpPre
       || entry.mcpToken !== preset.mcpToken
     ) {
       throw new Error(`expected ${entry.token} to insert its complete centralized prompt`)
+    }
+  }
+  const flightSimCatalog = promptCatalogMarkdown.replace('\n---\n\n# Prompt presets', [
+    '', '  - id: "flight-sim"', '    label: "Local Flight Simulator"',
+    '    slash_command: "/flight-sim-prompt-preset"', '    runtime_command: "/flight.sim"',
+    '    description: "Open the canonical local Flight Sim seed."', '    activation: "source-backed-canvas"',
+    '    invocation_modes: ["native-chat-response", "mcp-invocation"]',
+    '    chat_route: "active native shared runtime"',
+    `    mcp_tool: "${FLIGHT_SIM_PROMPT_PRESET_MCP_TOOL}"`,
+    '    mcp_token: "/flight.sim"', `    source_path: "${FLIGHT_SIM_PROMPT_PRESET_SOURCE_PATH}"`,
+    `    prompt: "${FLIGHT_SIM_PROMPT_PRESET_INVOCATION}"`,
+    '---', '', '# Prompt presets',
+  ].join('\n'))
+  await workspace.writeFileText(PROMPT_PRESET_CATALOG_WORKSPACE_PATH, flightSimCatalog)
+  const flightSim = await loadPromptPreset('flight-sim', workspace)
+  if (!flightSim.ok || flightSim.preset.prompt !== FLIGHT_SIM_PROMPT_PRESET_INVOCATION
+    || flightSim.preset.sourcePath !== FLIGHT_SIM_PROMPT_PRESET_SOURCE_PATH
+    || flightSim.preset.mcpTool !== FLIGHT_SIM_PROMPT_PRESET_MCP_TOOL) {
+    throw new Error(`Expected Flight Sim to use its source seed and native control tool, got ${JSON.stringify(flightSim)}`)
+  }
+  for (const drifted of [
+    flightSimCatalog.replace(FLIGHT_SIM_PROMPT_PRESET_SOURCE_PATH, '/docs/other-flight.md'),
+    flightSimCatalog.replace(FLIGHT_SIM_PROMPT_PRESET_INVOCATION, '/flight.sim @canvas #flight operation=start'),
+    flightSimCatalog.replace(FLIGHT_SIM_PROMPT_PRESET_MCP_TOOL, 'agentic-graph.agentic_canvas_os.docs.invoke'),
+  ]) {
+    await workspace.writeFileText(PROMPT_PRESET_CATALOG_WORKSPACE_PATH, drifted)
+    if (!isPromptPresetCatalogError(await loadPromptPresetCatalog(workspace))) {
+      throw new Error('Flight Sim preset path, operation, and tool binding must fail closed on drift')
     }
   }
   const extendedCatalogMarkdown = promptCatalogMarkdown.replace('\n---\n\n# Prompt presets', [
