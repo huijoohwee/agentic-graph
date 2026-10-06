@@ -475,7 +475,8 @@ def _read_source_activation_diagnostic(page: Page, observe: bool = False) -> dic
         async observe => {
           const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
           const demos = await window.__kgFlightSimBrowserProof.importModule('workspaceRunReadyDemos')
-          const [runtime, ready, geo, deadlines] = await Promise.all(['flightSimRuntime', 'sourceFilesBootstrapReadiness', 'gympgrphStore', 'flightSimDeadlineRuntime'].map(key => window.__kgFlightSimBrowserProof.importModule(key)))
+          const startup = await window.__kgFlightSimBrowserProof.importModule('canvasStartupDebug')
+          const [runtime, ready, geo, deadlines, flightAdmission] = await Promise.all(['flightSimRuntime', 'sourceFilesBootstrapReadiness', 'gympgrphStore', 'flightSimDeadlineRuntime'].map(key => window.__kgFlightSimBrowserProof.importModule(key)).concat(window.__kgFlightSimBrowserProof.importModule('flightSimRunReadyDemoRuntime')))
           if (observe && (!window.__kgFlightActivationObservation || window.__kgFlightActivationObservation.closed)) {
             const events = [], timers = []; let sawActive = false; const unsubs = []
             const capture = (sampleMap = false) => { try { if (observation.closed) return; if (events.length >= 20) { observation.close(); return }; const captureStartedAtMs = performance.now(); const flight = runtime.readFlightSimSnapshot()
@@ -504,6 +505,7 @@ def _read_source_activation_diagnostic(page: Page, observe: bool = False) -> dic
           return {
             activationObservation: window.__kgFlightActivationObservation?.events || [], observationStartedAtMs: window.__kgFlightActivationObservation?.startedAtMs ?? null, observationTruncated: window.__kgFlightActivationObservation?.events.length >= 20, deadlines: deadlines.readFlightSimDeadlineSnapshot(),
             documentName, documentTextLength: String(documentText || '').length,
+            startup: {runtimeMounted: startup.__canvasStartupDebug.runtimeMounted, sourceBootstrapMounted: startup.__canvasStartupDebug.sourceBootstrapMounted, hydrateRuns: startup.__canvasStartupDebug.sourceBootstrapHydrateRuns, flightAdmission: flightAdmission.readFlightSimRunReadyDemoDiagnostic()},
             active: demos.isFlightSimRunReadyDemoActive(documentName, documentText),
             activation: demos.diagnoseWorkspaceRunReadyDemoActivation(documentName, documentText),
             sourceFileCount: files.length, matchingSourceFileCount: matches.length,

@@ -7,6 +7,7 @@ import {
 } from '@/features/testing/flightSimBrowserProofBridge'
 
 const EXPECTED_MODULE_KEYS = Object.freeze([
+  'canvasStartupDebug',
   'cameraMcpRuntime',
   'cameraSourceMcpRuntime',
   'flightSimCameraRuntime',
@@ -15,6 +16,7 @@ const EXPECTED_MODULE_KEYS = Object.freeze([
   'flightSimMcpRuntime',
   'flightSimModel',
   'flightSimRuntime',
+  'flightSimRunReadyDemoRuntime',
   'flightSimSurfaceOwnershipStatus',
   'flightSimWebMcpTools',
   'geospatialModeBridge',

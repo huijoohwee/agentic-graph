@@ -27,6 +27,23 @@ const subscribeGeospatialMode = (listener: () => void): (() => void) => (
 
 const FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT = 2
 
+export type FlightSimRunReadyDemoDiagnostic = Readonly<{
+  active: boolean
+  bootstrapReady: boolean
+  launchAttempt: number
+  launchOwned: boolean
+  sourceError: string | null
+  sourceName: string | null
+  sourceReady: boolean
+  sourceStatus: string | null
+}>
+
+let lastFlightSimRunReadyDemoDiagnostic: FlightSimRunReadyDemoDiagnostic | null = null
+
+export function readFlightSimRunReadyDemoDiagnostic(): FlightSimRunReadyDemoDiagnostic | null {
+  return lastFlightSimRunReadyDemoDiagnostic
+}
+
 export function FlightSimRunReadyDemoRuntime() {
   const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
   const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
@@ -65,6 +82,21 @@ export function FlightSimRunReadyDemoRuntime() {
   const previousCanvasSurfaceRef = React.useRef<FlightSimPreviousCanvasSurface>(
     captureFlightSimPreviousCanvasSurface(),
   )
+
+  React.useLayoutEffect(() => {
+    if (import.meta.env?.VITE_AGENTIC_OS_FLIGHT_SIM_BROWSER_PROOF === '1') {
+      lastFlightSimRunReadyDemoDiagnostic = Object.freeze({
+        active,
+        bootstrapReady: sourceFilesBootstrapReady,
+        launchAttempt,
+        launchOwned: ownsDocumentLaunchRef.current,
+        sourceError,
+        sourceName: source?.name || null,
+        sourceReady,
+        sourceStatus: source?.status || null,
+      })
+    }
+  }, [active, launchAttempt, source?.name, source?.status, sourceError, sourceFilesBootstrapReady, sourceReady])
 
   React.useLayoutEffect(() => {
     const previousSource = launchSourceRef.current

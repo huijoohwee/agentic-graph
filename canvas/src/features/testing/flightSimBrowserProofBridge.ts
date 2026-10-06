@@ -1,4 +1,5 @@
 const MODULE_IMPORTERS = Object.freeze({
+  canvasStartupDebug: () => import('@/features/canvas/canvasStartupDebug'),
   cameraMcpRuntime: () => import('@/features/strybldr/cameraMcpRuntime'),
   cameraSourceMcpRuntime: () => import('@/features/strybldr/cameraSourceMcpRuntime'),
   flightSimCameraRuntime: () => import('@/features/game-flight-sim/flightSimCameraRuntime'),
@@ -7,6 +8,7 @@ const MODULE_IMPORTERS = Object.freeze({
   flightSimMcpRuntime: () => import('@/features/game-flight-sim/flightSimMcpRuntime'),
   flightSimModel: () => import('@/features/game-flight-sim/flightSimModel'),
   flightSimRuntime: () => import('@/features/game-flight-sim/flightSimRuntime'),
+  flightSimRunReadyDemoRuntime: () => import('@/features/canvas/FlightSimRunReadyDemoRuntime'),
   flightSimSurfaceOwnershipStatus: () => import('@/features/game-flight-sim/flightSimSurfaceOwnershipStatus'),
   flightSimWebMcpTools: () => import('@/features/agent-ready/flightSimWebMcpTools'),
   geospatialModeBridge: () => import('@/features/geospatial/gympgrphBridge'),
