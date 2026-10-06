@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.43"
-revision: "0.4.43"
+version: "0.4.44"
+revision: "0.4.44"
 date: "2026-10-06"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.43"
-tad_revision: "0.4.43"
-adr_revision: "0.4.43"
-mvp_revision: "0.4.43"
-gtm_revision: "0.4.43"
+prd_revision: "0.4.44"
+tad_revision: "0.4.44"
+adr_revision: "0.4.44"
+mvp_revision: "0.4.44"
+gtm_revision: "0.4.44"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -25,16 +25,16 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-render-frame-budget"
 agent_id: "codex-root"
-source_revision: "288aa4a9e941ed5cb8dabb44a9fd3e494d9aef12"
+source_revision: "be91dd15e9bf656ff1d3b4e3fa2ac9fea2bcd360"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
-  - "agentic-os@a49b6144750cc5af3a127872a012be09eb8c19e0:guides/SYSTEM-PROMPT-RUNTIME.md"
+  - "agentic-os@e1cf2c794ca8b8863cce20c267fbeae4639d2117:guides/SYSTEM-PROMPT-RUNTIME.md"
 ---
 
 # Aviation Swarm — reference implementation
 
-`aviation-swarm@0.4.43` hardens eligible aviation evidence Must workflows:
+`aviation-swarm@0.4.44` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -444,7 +444,7 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.43 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.44 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
 | PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-06 |
 | TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-06 |
@@ -454,7 +454,7 @@ sync, deployment, rollback and cleanup require separate authority and exact rece
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.43`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.44`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -524,3 +524,7 @@ At candidate commit `288aa4a9e941ed5cb8dabb44a9fd3e494d9aef12`, the renderer fix
 The renderer code and tests are committed. The selected mission still binds to `22893aad9884915c716b4ce2e23e30180efd2c39`, and `npm run ci:affected` has no current receipt; its plan selects 11 checks. Native `release:common start ... --readmit --expected-head=288aa4a9e941ed5cb8dabb44a9fd3e494d9aef12` failed closed with `blocked-admission-unreserved-bytes`. The lane reserves 115 paths, while its `origin/main...HEAD` tree diff contains 119; seven exact paths are outside the reservation: `canvas/src/__tests__/workspaceBootstrapSourceAuthority.test.ts`, `canvas/src/features/source-files/sourceFilesBootstrapStartup.ts`, `canvas/src/tests/registry/postParserCases4.ts`, `docs/agentic-graph-design-document.md`, `docs/agentic-graph-technical-architecture.md`, `docs/agentic-graph-technical-architecture.settings.md`, and `docs/agentic-graph-workflow-document.md`. Preserve these bytes; no reservation override or PR publication was attempted. `doc:sanity` continues to fail only on three unrelated existing documents over 600 lines (863, 726 and 1,366); this PRD remains below 600.
 
 Native exact-lane reap reports 120 pending changes and no integration projection. Completion status reports canonical and lane checkouts clean, but the lane cache head remains `737971d99780d4eb4c14bb33fb33f967e4019df4`, mission state is continuable, source integration is false, and closeout awaits cleanup. `release:common promote plan` rejects the unpublished lane. User disposition: preserve all seven out-of-reservation paths and hold this lane for native repository-authority repair; do not drop, rewrite, or publish them through this reservation. PR [#1571](https://github.com/huijoohwee/agentic-graph/pull/1571) remains open at `76effde363e645f0a096660667bfa1cf92ff0225`; its gate failed when workspace import proof timed out after 60 seconds. The user selected this named lane to supersede it; keep #1571 until a replacement is publishable and reviewable. PR [#1558](https://github.com/huijoohwee/agentic-graph/pull/1558) remains open and conflicting without checks. After authority repairs admission, refresh the exact mission, run affected checks and publish. Protected integration requires a green receipt and final merge approval. Production activation is separately unauthorized; deployment, mirror-sync, rollback, and cleanup receipts are absent.
+
+### 2026-10-06 · runtime dependency pin repair
+
+At candidate `be91dd1`, the runtime-readiness contract expected Agentic OS `a49b614` while the canonical OS checkout was `e1cf2c7`; the exact runtime check failed on that mismatch. The consumer package, lockfile, runtime contract and this PRD now pin `e1cf2c794ca8b8863cce20c267fbeae4639d2117`. OS source/runtime code is unchanged between the two refs; only migration and prompt-preset documentation differ. The targeted readiness check now passes with all dictionary tokens and zero paid calls/cost. A cold Chrome trace of the local Vite XR workspace measured LCP 6.725 s and CLS 0.01 across 250 development requests (~12.6 MB transferred); it is not the aviation demo or a production-bundle measurement. Production byte-budget, device, protected-integration, deployment, rollback and cleanup receipts remain open.
