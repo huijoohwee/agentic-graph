@@ -44,6 +44,11 @@ const isPublicManagedRelativePath = (relativePath, offlineAssetPaths) => Boolean
     || offlineAssetPaths.has(relativePath))
 const isPublicRouteManagedRelativePath = (relativePath, offlineAssetPaths) =>
   isPublicManagedRelativePath(relativePath, offlineAssetPaths) || isOfflinePublicAssetNamespace(relativePath)
+const xrV2RuntimePaths = new Set(XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS)
+
+export const isBrowserRuntimeArtifactRelativePath = relativePath => Boolean(relativePath)
+  && (relativePath.startsWith('assets/') || publicManagedRootFiles.has(relativePath)
+    || xrV2RuntimePaths.has(relativePath) || /^workbox-[A-Za-z0-9_-]+\.js$/.test(relativePath))
 
 export const buildOfflinePublicRoutePlan = ({
   sourceFiles,
@@ -94,12 +99,6 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   }
   const isPreservedRelativePath = relativePath => Boolean(relativePath)
     && [...preservedRelativeRoots].some(root => relativePath === root || relativePath.startsWith(`${root}/`))
-  const isPublicManagedPath = relativePath => isPublicManagedRelativePath(relativePath, offlinePublicAssetPaths)
-  const xrV2RuntimePaths = new Set(XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS)
-  const isBrowserRuntimeArtifactRelativePath = relativePath => isPublicManagedPath(relativePath)
-    || importedServiceWorkerRootFiles.has(relativePath)
-    || xrV2RuntimePaths.has(relativePath)
-    || /^workbox-[A-Za-z0-9_-]+\.js$/.test(relativePath)
   const {
     copyIfChanged, copyPlainFile, existsDir, fileNeedsUpdate, listAllFiles, listFiles, plainFileNeedsUpdate,
     productionRuntimeFunctionTargetBody, textFileNeedsUpdate, toPosixRel, writeTextFile,

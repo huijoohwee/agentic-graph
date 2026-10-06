@@ -7,7 +7,10 @@ import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { buildPagesMirrorAgentReadyPlan } from '../pages-mirror-agent-ready.mjs'
-import { buildOfflinePublicRoutePlan } from '../pages-mirror-sync.mjs'
+import {
+  buildOfflinePublicRoutePlan,
+  isBrowserRuntimeArtifactRelativePath,
+} from '../pages-mirror-sync.mjs'
 import { buildAgentReadyHeaders } from '../pages-mirror-headers.mjs'
 import { buildAgenticGraphRedirects } from '../production-pages-routing.mjs'
 import { offlinePrecacheEntries } from '../../canvas/vitePythonLearningOffline.mjs'
@@ -103,6 +106,10 @@ test('offline public fixtures are copied into the canonical service-worker scope
     offlineAssetPaths: offlinePaths,
   })
   assert.deepEqual(plan.copyPaths, sourceFiles)
+  assert.ok(offlinePaths.every(relativePath => plan.copyPaths.includes(relativePath)))
+  assert.equal(isBrowserRuntimeArtifactRelativePath(offlinePaths[0]), false)
+  assert.equal(isBrowserRuntimeArtifactRelativePath('assets/app.js'), true)
+  assert.equal(isBrowserRuntimeArtifactRelativePath('sw.js'), true)
   assert.deepEqual(plan.removePaths, ['evidence-analysis/fixtures/retired.json'])
   assert.throws(() => buildOfflinePublicRoutePlan({
     sourceFiles: ['index.html'],
