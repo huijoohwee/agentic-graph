@@ -11,15 +11,23 @@ const hostUrl = new URL('../../../gympgrph/src/GeospatialHost.tsx', import.meta.
 const svgUrl = new URL('../../../gympgrph/src/features/geospatial/SvgGeospatialFallback.tsx', import.meta.url)
 const recoveryUrl = new URL('../../../gympgrph/src/features/geospatial/RecoverableSvgFallback.tsx', import.meta.url)
 
-async function pendingIsNotFailure() {
-  const { hasUnavailableMapLibreBasemap } = await import(hostUrl.href)
+async function pendingAndFailuresDoNotSelectSvg() {
+  const { isMapLibreBasemapUnavailable } = await import(hostUrl.href)
   const pending = { map: null, basemapUnavailable: false, probe: { tilesLoaded: false }, mapError: null }
-  assert.equal(hasUnavailableMapLibreBasemap(pending), false, 'A runtime import in progress must not request SVG')
-  assert.equal(hasUnavailableMapLibreBasemap({ ...pending, map: {} }), false, 'An initializing map must not request SVG')
-  assert.equal(hasUnavailableMapLibreBasemap({ ...pending, mapError: '  ' }), false)
-  assert.equal(hasUnavailableMapLibreBasemap({ ...pending, mapError: 'WebGL unavailable' }), true, 'Confirmed initialization failure admits fallback')
-  assert.equal(hasUnavailableMapLibreBasemap({ ...pending, map: {}, basemapUnavailable: true }), true, 'Confirmed blank or offline basemap admits fallback')
-  assert.equal(hasUnavailableMapLibreBasemap({ ...pending, map: {}, probe: { tilesLoaded: true }, mapError: 'One tile failed' }), false, 'A renderable primary map survives non-fatal tile errors')
+  assert.equal(isMapLibreBasemapUnavailable(pending), false, 'A runtime import in progress remains pending')
+  assert.equal(isMapLibreBasemapUnavailable({ ...pending, map: {} }), false, 'An initializing map remains pending')
+  assert.equal(isMapLibreBasemapUnavailable({ ...pending, mapError: '  ' }), false)
+  assert.equal(isMapLibreBasemapUnavailable({ ...pending, mapError: 'WebGL unavailable' }), true, 'Confirmed initialization failure is reported as unavailable')
+  assert.equal(isMapLibreBasemapUnavailable({ ...pending, map: {}, basemapUnavailable: true }), true, 'A confirmed blank/offline basemap is reported as unavailable')
+  assert.equal(isMapLibreBasemapUnavailable({ ...pending, map: {}, probe: { tilesLoaded: true }, mapError: 'One tile failed' }), false, 'A renderable primary map survives non-fatal tile errors')
+}
+
+function mapLibreFailuresNeverRenderAnAutomaticSvgBasemap() {
+  const host = fs.readFileSync(hostUrl, 'utf8')
+  assert.doesNotMatch(host, /shouldOverlaySvgFallbackBasemap|showSvgFallback/)
+  assert.match(host, /const mapLibreUnavailable = mapLibreRuntimeEnabled && isMapLibreBasemapUnavailable\(basemap\)/)
+  assert.match(host, /\{basemap\.mapError \|\| 'Map basemap unavailable\.'\}/)
+  assert.match(host, /\{show2dSvgMode \? \(/, 'SVG terrain renders only when the user explicitly selects 2d-svg')
 }
 
 async function pendingHostRendersOnlyPrimary() {
@@ -134,7 +142,7 @@ async function packageHostSupportsTheCanvasLazyLoader() {
   }
 }
 
-const cases = [pendingIsNotFailure, pendingHostRendersOnlyPrimary, explicitSvgRetainsGeometryAndSemanticOwnership, fallbackAssetsStayBehindLazyBoundary, failedSvgLoadIsContainedAndReloadsOnlyOnRequest, packageHostSupportsTheCanvasLazyLoader]
+const cases = [pendingAndFailuresDoNotSelectSvg, mapLibreFailuresNeverRenderAnAutomaticSvgBasemap, pendingHostRendersOnlyPrimary, explicitSvgRetainsGeometryAndSemanticOwnership, fallbackAssetsStayBehindLazyBoundary, failedSvgLoadIsContainedAndReloadsOnlyOnRequest, packageHostSupportsTheCanvasLazyLoader]
 
 export async function testGeospatialFallbackAdmission() {
   for (const run of cases) await run()

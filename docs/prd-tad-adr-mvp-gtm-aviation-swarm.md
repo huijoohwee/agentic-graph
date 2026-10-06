@@ -1,18 +1,18 @@
 ---
 title: "Aviation Swarm — native evidence-led analysis"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.39"
-revision: "0.4.39"
+version: "0.4.41"
+revision: "0.4.41"
 date: "2026-10-06"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Aviation product function"
 continuity_id: "aviation-swarm"
-prd_revision: "0.4.39"
-tad_revision: "0.4.39"
-adr_revision: "0.4.39"
-mvp_revision: "0.4.39"
-gtm_revision: "0.4.39"
+prd_revision: "0.4.41"
+tad_revision: "0.4.41"
+adr_revision: "0.4.41"
+mvp_revision: "0.4.41"
+gtm_revision: "0.4.41"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -25,7 +25,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 secondary_render_surfaces: ["sequence"]
 worktree_id: "agent/device-0232231d4a19/aviation-render-frame-budget"
 agent_id: "codex-root"
-source_revision: "22893aad9884915c716b4ce2e23e30180efd2c39"
+source_revision: "4b332ef5cb2289243be4d1d46b0045f3b2d50716"
 source_docs:
   - "huijoohwee.github.io@82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md (3.4.0)"
   - "agentic-graph@cc40000f8827ea68192edbd42385a887f107a3b5:docs/aviation-evidence/prd-tad-adr-mvp-gtm.md (aviation-evidence-layer@0.4.2)"
@@ -34,7 +34,7 @@ source_docs:
 
 # Aviation Swarm — reference implementation
 
-`aviation-swarm@0.4.37` hardens eligible aviation evidence Must workflows:
+`aviation-swarm@0.4.41` hardens eligible aviation evidence Must workflows:
 **inspect what is known, reproduce a comparison, and explain what is still unknown.**
 Operational exposure and flight-cost calculation remain unimplemented.
 
@@ -145,9 +145,11 @@ and result-fenced, not abortable. Optional panorama/city controls mount only whe
 reset expansion; width fixes retain source owners. No analytical algorithm changes. `workspaceRefreshQueue.ts` settles callers after their queued pass, retaining fresh paired inventory and seed escalation. Later background passes cannot prolong an import wait.
 `useWorkspaceFileActions/importActions.ts` reports await stages and fences post-await mutations;
 `core.ts` fences graph/focus. Stale/failed native imports remain handled, preventing duplicate fallback;
-dispatched lower-owner effects are not rolled back. Geo treats null map/no error as pending and lazily
-loads `SvgGeospatialFallback.tsx` only for explicit SVG or confirmed failure, preserving geometry and
-semantics. `RecoverableSvgFallback.tsx` contains failure and offers explicit reload: browsers can cache failed imports until navigation. No automatic retry/reload. XR selects stable surface fields; frame/HUD owners remain live.
+dispatched lower-owner effects are not rolled back. Geo treats null map/no error as pending; a confirmed
+MapLibre failure reports an unavailable state and never paints an automatic SVG basemap. The heavier SVG
+terrain/projection renderer remains lazy and loads only after an explicit `2d-svg` selection.
+`RecoverableSvgFallback.tsx` contains chunk failure and offers explicit reload: browsers can cache failed
+imports until navigation. No automatic retry/reload. XR selects stable surface fields; frame/HUD owners remain live.
 AS3/AS4: separate ≤4-hour/4-module/30-KiB sprints after admission; ≤3 cycles, stop after two no-progress cycles.
 
 ### Invocation and shared-utility reuse
@@ -442,17 +444,17 @@ flowchart LR
 Source/data and commercial decisions gate dependent work; checks continue. Publication, integration,
 sync, deployment, rollback and cleanup require separate authority and exact receipts.
 
-| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.37 | RAO: scoped action → observed outcome | Updated |
+| PRD-TAD-ADR-MVP-GTM | CID at aviation-swarm@0.4.41 | RAO: scoped action → observed outcome | Updated |
 |---|---|---|---|
-| PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-04 |
-| TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-04 |
-| ADR | C: cost/exposure absent; I: preserve bounds; D: reject duplicate runtime | Architecture → disposition alternatives → ADR-S1–S3, unresolved value explicit | 2026-10-04 |
-| MVP | C: readiness gaps; I: reproducible demo; D: verify candidate | Engineering → tests/build/offline/Geo → ER1–ER10; final/device gates open | 2026-10-04 |
-| GTM | C: no payer evidence; I: nearest first dollar; D: consume existing experiments | Product → rank review before new services → unsent proposal, no revenue claim | 2026-10-04 |
+| PRD | C: Must acceptance gaps; I: bounded readiness; D: retain AS1–AS5 gates | Product → prioritize eligible Must hardening → AS3/AS4 remain conditional | 2026-10-06 |
+| TAD | C: import/early SVG/excess renders; I: reuse; D: fence/defer/project | Engineering → stages/fences, lazy SVG, XR projections → no package/analytical algorithm added | 2026-10-06 |
+| ADR | C: cost/exposure absent; I: preserve bounds; D: reject duplicate runtime | Architecture → disposition alternatives → ADR-S1–S3, unresolved value explicit | 2026-10-06 |
+| MVP | C: readiness gaps; I: reproducible demo; D: verify candidate | Engineering → tests/build/offline/Geo → ER1–ER10; final/device gates open | 2026-10-06 |
+| GTM | C: no payer evidence; I: nearest first dollar; D: consume existing experiments | Product → rank review before new services → unsent proposal, no revenue claim | 2026-10-06 |
 
 ## Coverage and findings
 
-Anchors join `aviation-swarm@0.4.37`; coverage is not readiness.
+Anchors join `aviation-swarm@0.4.41`; coverage is not readiness.
 
 | Domain | Decision / source section | Owner | Evidence or gap / next check |
 |---|---|---|---|
@@ -514,3 +516,11 @@ deployment and production activation remain separate; their authorities and runt
 receipts are absent. Open gates also include live Flight practice, training/negative-network provenance,
 offline CI, device/Linux, rights/economics, integration and deployment. OS bounded-cache timing remains
 local-only; CI savings are unproven.
+
+### 2026-10-06 · renderer fix and exact-lane closeout recheck
+
+At candidate worktree based on `4b332ef5cb2289243be4d1d46b0045f3b2d50716`, the renderer change removes failure-driven SVG mounting, its inset/resize measurement, and keeps SVG terrain behind explicit `2d-svg` selection. Pending MapLibre remains a loading state; confirmed failure reports unavailable. `npm run check` passes both linked-package TypeScript builds and three local Vite smoke-runtime tests. Four focused registry cases pass, including pending/unavailable semantics, explicit SVG mode, and no automatic SVG render on failed or blank MapLibre. The live dev UI at `http://127.0.0.1:5195/` renders the Singapore MapLibre basemap in Geospatial Mode. These are local development checks; no production bundle or production runtime is proven by this observation.
+
+The current handoff has five modified paths (89 insertions, 107 deletions), including this PRD; it is not yet committed. `npm run ci:affected` previously failed closed before checks because selected workflow `workflow-7cccfb4e2a27a57e92e8881d48956e1a` binds the lane to `22893aad9884915c716b4ce2e23e30180efd2c39`; the current lane head was `4b332ef5cb2289243be4d1d46b0045f3b2d50716`. Its plan selects 11 broad checks, with no current affected-check receipt. `doc:sanity` fails only on three unrelated existing documents over 600 lines (863, 726 and 1,366); this PRD is below 600. Exact-lane reap reports 119 pending changes and no integration projection. Canonical hook-runtime setup is installed and `npm run doctor` passes hook and provider checks; doctor retains warnings for 257+ retained refs and deferred deep tracked-byte observation.
+
+Provider state: PR [#1558](https://github.com/huijoohwee/agentic-graph/pull/1558) remains open and conflicting with no checks. Same-scope predecessor [#1571](https://github.com/huijoohwee/agentic-graph/pull/1571) is open at `76effde363e645f0a096660667bfa1cf92ff0225`; its Integration Gate failed because `workspace-import-proof` timed out after 60 seconds. The user selected this named lane as sole owner and authorized superseding #1571; this lane descends from that candidate and is 128 commits ahead and 6 behind `origin/main`. Next: commit and refresh the exact workflow binding, run all 11 required checks, publish this lane through the native publisher, then retire #1571 after the replacement is reviewable. Protected integration still needs its green receipt and the user's final merge approval. Production activation remains separately unauthorized; no deployment, mirror-sync, rollback, or cleanup receipt exists. Recheck on candidate, workflow, provider or authority changes. Completion check: one exact candidate, required checks green, protected integration receipt; production readback and rollback require separate authorization and receipts.

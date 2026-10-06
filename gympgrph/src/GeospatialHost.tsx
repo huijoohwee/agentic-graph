@@ -18,7 +18,6 @@ import { useFlightGeoOverlayMapLibrePresentation } from './features/geospatial/u
 import { useCityGeoOverlayMapLibrePresentation } from './features/geospatial/useCityGeoOverlayMapLibrePresentation.js'
 import { useGeospatialPresentationCameraOwner } from './features/geospatial/useGeospatialPresentationCameraOwner.js'
 import { useGeospatialCameraFitRuntime } from './features/geospatial/useGeospatialCameraFitRuntime.js'
-import { readGeoMapOcclusionPadding } from './geoMapViewport.js'
 import {
   readFlightGeoOverlay,
   subscribeFlightGeoOverlay,
@@ -57,7 +56,7 @@ import { useEnhancedGeospatialHostLayers } from './useEnhancedGeospatialHostLaye
 
 import SvgGeospatialFallback from './features/geospatial/RecoverableSvgFallback.js'
 
-export function hasUnavailableMapLibreBasemap(basemap: {
+export function isMapLibreBasemapUnavailable(basemap: {
   map: unknown
   basemapUnavailable: boolean
   probe: { tilesLoaded: boolean }
@@ -426,7 +425,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const show2dMapLibreClassic = active && geospatialViewMode === '2d'
   const show2dMapLibreModern = active && geospatialViewMode === '2d-modern'
   const show2dMapLibre = show2dMapLibreClassic || show2dMapLibreModern
-  const show2dSvgFallback = active && geospatialViewMode === '2d-svg'
+  const show2dSvgMode = active && geospatialViewMode === '2d-svg'
   const show3dClassic = active && geospatialViewMode === '3d'
   const show3dModern = active && geospatialViewMode === '3d-modern'
   const show3d = show3dClassic || show3dModern
@@ -436,9 +435,9 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const fitPadding = show3d ? 0 : 24
   const providerLabel = React.useMemo(() => {
     if (isGrabMapsPresetActive(effectiveTargetStyleUrl, geospatialViewMode)) return 'grabmaps'
-    if (show2dSvgFallback) return 'svg'
+    if (show2dSvgMode) return 'svg'
     return 'maplibre'
-  }, [effectiveTargetStyleUrl, geospatialViewMode, show2dSvgFallback])
+  }, [effectiveTargetStyleUrl, geospatialViewMode, show2dSvgMode])
   const snapshotGraphData = getSnapshotGraphData(props.snapshot)
   const snapshotGraphRevision = getSnapshotGraphRevision(props.snapshot)
   const selectedNodeIds = React.useMemo(() => getSnapshotSelectedNodeIds(props.snapshot), [props.snapshot])
@@ -881,56 +880,20 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     show2dMapLibre,
   ])
 
-  const shouldOverlaySvgFallbackBasemap = React.useMemo(() => {
-    if (!active) return false
-    if (!show2dMapLibre) return false
-    // Only overlay the SVG basemap when MapLibre itself is unavailable/failed.
-    // Avoid masking a healthy basemap during transient layer sync windows.
-    // A null map is pending until the runtime reports an error or unavailability.
-    const hasHardMapUnavailable = hasUnavailableMapLibreBasemap(basemap)
-    if (!hasHardMapUnavailable) return false
-    if (!basemapGraphDebug?.styleReady) return true
-    return !basemapGraphDebug.pointsLayer && !basemapGraphDebug.routesLayer && !basemapGraphDebug.clusterLayer
-  }, [active, basemap.basemapUnavailable, basemap.map, basemap.mapError, basemap.probe.tilesLoaded, basemapGraphDebug, show2dMapLibre])
-
-  const showSvgFallback = show2dSvgFallback || shouldOverlaySvgFallbackBasemap
-  const mapLibrePending = mapLibreRuntimeEnabled && !basemap.map && !hasUnavailableMapLibreBasemap(basemap)
+  const mapLibreUnavailable = mapLibreRuntimeEnabled && isMapLibreBasemapUnavailable(basemap)
+  const mapLibrePending = mapLibreRuntimeEnabled && !basemap.map && !mapLibreUnavailable
   const loadingStatus = (label: string) => (
     <output role="status" className={`absolute inset-0 z-[5] flex items-center justify-center pointer-events-none text-xs ${UI_THEME_TOKENS.text.secondary}`}>{label}</output>
   )
 
   React.useEffect(() => {
-    if (!mapLibreRuntimeEnabled || showSvgFallback) return
+    if (!mapLibreRuntimeEnabled) return
     return bindMapLibreCanvasSemanticOwner(basemap.map, props.semanticMediaOwner)
-  }, [basemap.map, mapLibreRuntimeEnabled, props.semanticMediaOwner, showSvgFallback])
+  }, [basemap.map, mapLibreRuntimeEnabled, props.semanticMediaOwner])
 
   const shouldShowMapLibreErrorOverlay = React.useMemo(() => {
-    if (!basemap.mapError) return false
-    if (!show2dMapLibre && !show3d) return true
-    return !basemap.map || basemap.basemapUnavailable || !basemap.probe.tilesLoaded
+    return (show2dMapLibre || show3d) && isMapLibreBasemapUnavailable(basemap)
   }, [basemap.basemapUnavailable, basemap.map, basemap.mapError, basemap.probe.tilesLoaded, show2dMapLibre, show3d])
-
-  const [svgOverlayInsetRight, setSvgOverlayInsetRight] = React.useState(12)
-  React.useEffect(() => {
-    if (!shouldOverlaySvgFallbackBasemap) return
-    const measure = () => {
-      const nextInsetRight = Math.max(
-        12,
-        readGeoMapOcclusionPadding(rootRef.current).right,
-      )
-      setSvgOverlayInsetRight(prev => (Math.abs(prev - nextInsetRight) > 1 ? nextInsetRight : prev))
-    }
-    measure()
-    if (typeof window === 'undefined') return
-    window.addEventListener('resize', measure)
-    return () => {
-      window.removeEventListener('resize', measure)
-    }
-  }, [shouldOverlaySvgFallbackBasemap])
-
-  const svgFallbackClassName = shouldOverlaySvgFallbackBasemap
-    ? 'absolute inset-0 z-[5] h-full w-full pointer-events-auto'
-    : 'absolute inset-0 h-full w-full pointer-events-auto'
 
   useGeospatialCameraFitRuntime({
     active,
@@ -1077,14 +1040,12 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
       style={{ width: '100%', height: '100%' }}
       data-kg-geo-xr-aerial-geography-boundary={flightOverlayActive ? 'not-rendered' : undefined}
     >
-      {showSvgFallback ? (
+      {show2dSvgMode ? (
         <SvgGeospatialFallback
           featureCollection={graphFeatureCollection}
           selectedFeatureCollection={selectedFeatureCollection}
-          className={svgFallbackClassName}
-          insetPadding={shouldOverlaySvgFallbackBasemap ? { top: 12, right: Math.max(220, svgOverlayInsetRight), bottom: 12, left: 12 } : undefined}
+          className="absolute inset-0 h-full w-full pointer-events-auto"
           semanticMediaOwner={props.semanticMediaOwner}
-          style={shouldOverlaySvgFallbackBasemap ? { transform: 'translateX(-220px)' } : undefined}
         />
       ) : null}
       {mapLibrePending ? loadingStatus('Loading map…') : null}
@@ -1134,7 +1095,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
       ) : null}
       {!debug && shouldShowMapLibreErrorOverlay ? (
         <output className={`absolute inset-0 flex items-center justify-center text-xs ${UI_THEME_TOKENS.panel.overlayBg} ${UI_THEME_TOKENS.text.secondary}`} aria-label="Geospatial map error">
-          {basemap.mapError}
+          {basemap.mapError || 'Map basemap unavailable.'}
         </output>
       ) : null}
     </main>

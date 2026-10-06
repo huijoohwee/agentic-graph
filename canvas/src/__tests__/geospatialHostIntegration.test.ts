@@ -232,12 +232,12 @@ export const testGeospatialOverlayHostSupportsMapLibreGlobeRenderer = () => {
   if (!text.includes('geospatialViewMode')) throw new Error('Expected host to read geospatialViewMode')
 }
 
-export const testGeospatialOverlayHostProvidesSvgFallbackBasemapAndDisablesDefaultMapLibreRuntime = async () => {
+export const testGeospatialOverlayHostProvidesExplicitSvgMapModeAndDisablesDefaultMapLibreRuntime = async () => {
   await (await import('./geospatialFallbackAdmission.test')).testGeospatialFallbackAdmission()
   const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
   const text = readUtf8(hostPath)
-  if (!text.includes('const show2dSvgFallback = active && geospatialViewMode === \'2d-svg\'')) {
-    throw new Error('Expected GeospatialOverlayHost to expose a dedicated 2D SVG fallback mode')
+  if (!text.includes('const show2dSvgMode = active && geospatialViewMode === \'2d-svg\'')) {
+    throw new Error('Expected GeospatialOverlayHost to expose a dedicated, explicitly selected 2D SVG mode')
   }
   if (!text.includes('const show3dModern = active && geospatialViewMode === \'3d-modern\'')) {
     throw new Error('Expected GeospatialOverlayHost to expose a dedicated 3D MapLibre Modern mode')
@@ -248,8 +248,11 @@ export const testGeospatialOverlayHostProvidesSvgFallbackBasemapAndDisablesDefau
   if (!text.includes('const mapLibreRuntimeEnabled = show2dMapLibre || show3d')) {
     throw new Error('Expected GeospatialOverlayHost runtime to enable MapLibre only for explicit 2D/3D MapLibre modes')
   }
-  if (!text.includes('<SvgGeospatialFallback')) {
-    throw new Error('Expected GeospatialOverlayHost to render the SVG fallback basemap')
+  if (!text.includes('{show2dSvgMode ? (') || !text.includes('<SvgGeospatialFallback')) {
+    throw new Error('Expected GeospatialOverlayHost to render SVG only for the explicitly selected 2D SVG mode')
+  }
+  if (text.includes('shouldOverlaySvgFallbackBasemap') || text.includes('showSvgFallback')) {
+    throw new Error('MapLibre failures must never select or render the SVG basemap automatically')
   }
 }
 
@@ -383,27 +386,24 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   }
 }
 
-export const testGeospatialOverlayHostDoesNotOverlaySvgFallbackOnHealthyMapLibreBasemap = () => {
+export const testGeospatialOverlayHostReportsMapLibreFailureWithoutSvgFallback = () => {
   const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
   const text = readUtf8(hostPath)
-  if (!text.includes('const hasRenderableMapLibreBasemap = !!basemap.map && !basemap.basemapUnavailable && basemap.probe.tilesLoaded')) {
-    throw new Error('Expected GeospatialOverlayHost SVG overlay gating to trust confirmed renderable MapLibre tiles')
+  if (!text.includes('isMapLibreBasemapUnavailable(basemap)')) {
+    throw new Error('Expected GeospatialOverlayHost to share explicit basemap availability state')
   }
-  if (!text.includes('|| (!hasRenderableMapLibreBasemap && !!String(basemap.mapError || \'\').trim())')) {
-    throw new Error('Expected GeospatialOverlayHost SVG overlay gating to treat map errors as hard failures only before renderable tiles are confirmed')
+  if (!text.includes("{basemap.mapError || 'Map basemap unavailable.'}")) {
+    throw new Error('Expected GeospatialOverlayHost to show a useful status when the primary basemap is unavailable')
   }
-  if (!text.includes('if (!hasHardMapUnavailable) return false')) {
-    throw new Error('Expected GeospatialOverlayHost to avoid SVG overlay on healthy MapLibre basemaps')
+  if (!text.includes('const mapLibrePending = mapLibreRuntimeEnabled && !basemap.map && !mapLibreUnavailable')) {
+    throw new Error('Expected pending MapLibre startup to stay in a loading state instead of failure handling')
   }
-  if (!text.includes('return !basemap.map || basemap.basemapUnavailable || !basemap.probe.tilesLoaded')) {
-    throw new Error('Expected GeospatialOverlayHost to avoid full-screen error overlays on renderable MapLibre basemaps')
-  }
-  if (text.includes('featureCount < 1')) {
-    throw new Error('Expected GeospatialOverlayHost SVG fallback basemap to render when MapLibre is unavailable even before geospatial features exist')
+  if (text.includes('shouldOverlaySvgFallbackBasemap') || text.includes('showSvgFallback')) {
+    throw new Error('Expected automatic failure-driven SVG basemap rendering to be removed')
   }
 }
 
-export const testGeospatialOverlayHostOverlaysSvgFallbackWhenMapLibreMountsBlank = () => {
+export const testGeospatialOverlayHostDoesNotOverlaySvgWhenMapLibreMountsBlank = () => {
   const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
   const hookPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useMapLibreBasemap.ts')
   const hostText = readUtf8(hostPath)
@@ -448,7 +448,10 @@ export const testGeospatialOverlayHostOverlaysSvgFallbackWhenMapLibreMountsBlank
     throw new Error('Expected blank-style fallback switching to stay scoped to GrabMaps, not active OpenFreeMap tile stacks')
   }
   if (!hostText.includes('basemap.basemapUnavailable')) {
-    throw new Error('Expected GeospatialHost SVG fallback overlay to cover MapLibre instances that mounted without renderable basemap tiles')
+    throw new Error('Expected GeospatialHost to report MapLibre instances that mounted without renderable basemap tiles')
+  }
+  if (!hostText.includes("{basemap.mapError || 'Map basemap unavailable.'}") || hostText.includes('shouldOverlaySvgFallbackBasemap')) {
+    throw new Error('A blank-mounted MapLibre host must display its unavailable status without drawing SVG terrain')
   }
 }
 
@@ -458,25 +461,25 @@ export const testGeospatialOverlayHostSvgFallbackRendersHighFidelitySvgBasemap =
   const text = readUtf8(hostPath)
   const terrainText = readUtf8(terrainPath)
   if (!text.includes("from './worldSvgBasemap.js'")) {
-    throw new Error('Expected GeospatialOverlayHost SVG fallback to import the generated inline terrain module')
+    throw new Error('Expected the explicit 2D SVG renderer to import the generated inline terrain module lazily')
   }
   if (!terrainText.includes('Generated from ./assets/simple-world-map-edit.svg')) {
     throw new Error('Expected inline terrain module to derive from the vendored high-fidelity SVG basemap asset')
   }
   if (!text.includes('HIGH_FIDELITY_WORLD_SVG_INNER')) {
-    throw new Error('Expected GeospatialOverlayHost SVG fallback to render sanitized inline terrain paths')
+    throw new Error('Expected the explicit 2D SVG renderer to render sanitized inline terrain paths')
   }
   if (!text.includes('dangerouslySetInnerHTML={{ __html: HIGH_FIDELITY_WORLD_SVG_INNER }}')) {
-    throw new Error('Expected GeospatialOverlayHost SVG fallback to place inline terrain inside the fallback surface')
+    throw new Error('Expected the explicit 2D SVG renderer to place inline terrain inside its map surface')
   }
   if (!text.includes('.kg-geo-fallback-terrain .st0') || !text.includes('.kg-geo-fallback-terrain .st1')) {
-    throw new Error('Expected GeospatialOverlayHost SVG fallback terrain to carry scoped SVG land styling')
+    throw new Error('Expected the explicit 2D SVG renderer terrain to carry scoped land styling')
   }
   if (!terrainText.includes('<path class="st0"') || !terrainText.includes('<path class="st1"')) {
     throw new Error('Expected inline terrain module to preserve high-fidelity land path geometry')
   }
   if (text.includes('HIGH_FIDELITY_WORLD_SVG_URL') || text.includes('<image') || text.includes('?raw')) {
-    throw new Error('Expected GeospatialOverlayHost SVG fallback to avoid nested external SVG images for terrain')
+    throw new Error('Expected the explicit 2D SVG renderer to avoid nested external SVG images for terrain')
   }
 }
 
@@ -500,7 +503,7 @@ export const testGeospatialOverlayHostSvgFallbackAppliesMaplikeVisualPolish = ()
   ]
   const missing = requiredSnippets.filter(snippet => !text.includes(snippet))
   if (missing.length) {
-    throw new Error(`Expected GeospatialOverlayHost SVG fallback to include refined MapLibre-like styling: ${missing.join(', ')}`)
+    throw new Error(`Expected the explicit 2D SVG renderer to include refined map styling: ${missing.join(', ')}`)
   }
 }
 
