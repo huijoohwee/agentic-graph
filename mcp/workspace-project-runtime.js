@@ -257,10 +257,30 @@ export const createWorkspaceProjectRuntime = ({ rootDir, env = process.env } = {
     return build(root);
   };
 
+  const planForApply = async (args, request) => {
+    const lock = path.join(request.workspaceRoot, ".workspace-project", ".writer.lock");
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      let current, transientError;
+      try { current = await plan(args); }
+      catch (error) {
+        if (!["STORAGE_UNAVAILABLE", "QUOTA_EXCEEDED"].includes(error.code)) throw error;
+        transientError = error;
+      }
+      if (current?.planDigest === args.planDigest) return current;
+      if (await statMaybe(lock)) fail("RESOURCE_BUSY", "Another local writer is changing the store; retain the draft and retry.");
+      if (attempt === 1) {
+        if (transientError) throw transientError;
+        fail("PLAN_STALE", "Plan digest is stale or does not bind this exact request.");
+      }
+    }
+    fail("STORAGE_UNAVAILABLE", "Local project plan could not be read safely.");
+  };
+
   const apply = async (args = {}) => {
-    const current = await plan(args);
+    const request = normalizeRequest(args);
+    const current = MUTATIONS.has(request.operation) ? await planForApply(args, request) : await plan(args);
     if (current.planDigest !== args.planDigest) fail("PLAN_STALE", "Plan digest is stale or does not bind this exact request.");
-    if (!MUTATIONS.has(current.operation)) return { ...current, schemaVersion: "agentic-graph-workspace-artifact-apply/v1", readBack: current.data };
+    if (!MUTATIONS.has(request.operation)) return { ...current, schemaVersion: "agentic-graph-workspace-artifact-apply/v1", readBack: current.data };
     if (args.operatorAuthorized !== true) fail("FORBIDDEN", "Checkpoint requires explicit operator authorization.");
     const ctx = await context(args);
     await fs.mkdir(ctx.storeRoot, { recursive: false, mode: 0o700 }).catch(error => { if (error.code !== "EEXIST") throw error; });

@@ -14,18 +14,33 @@ import { numberLabel, workflowSourceLink, type RunTrace, type TraceSpan } from '
 const GraphInspection = React.lazy(() => import('@/components/GraphCanvas/GraphCanvasInspection'))
 const button = `${UI_THEME_TOKENS.control.singleLine} inline-block rounded border text-xs disabled:opacity-50 ${UI_THEME_TOKENS.button.neutralMuted}`
 
-export function MissionGraphExplorer({ graph, span, onClear, provenance }: {
+export function MissionGraphExplorer({ graph, span, onClear, provenance, onExpandNode }: {
   graph: GraphData
   span: TraceSpan | null
   onClear?: () => void
   provenance?: AgentMissionProvenanceContext
+  onExpandNode?: (nodeId: string, afterEdgeId?: string) => Promise<{ nextCursor: string | null; nodes: number; edges: number }>
 }) {
   const [selected, setSelected] = React.useState<string | null>(graph.nodes[0]?.id ?? null), [search, setSearch] = React.useState('')
+  const [cursors, setCursors] = React.useState<Record<string, string | null>>({}), [expanding, setExpanding] = React.useState(false)
+  const [expansionStatus, setExpansionStatus] = React.useState('')
   const lookup = React.useMemo(() => getCachedGraphLookup({ cacheScope: 'mission-codebase', graphData: graph }), [graph])
   const impact = React.useMemo(() => agentMissionSpanImpact(span, graph, provenance), [span, graph, provenance])
   React.useEffect(() => { if (span) setSelected(impact.nodeIds[0] ?? null) }, [span, impact])
   const node = selected ? lookup?.nodeById.get(selected) : null
   const edges = selected ? lookup?.incidentEdgesByNodeId.get(selected) ?? [] : []
+  const hasExpansionPage = selected ? Object.hasOwn(cursors, selected) : false
+  const nextCursor = selected ? cursors[selected] : undefined
+  const expand = async () => {
+    if (!selected || !onExpandNode || expanding) return
+    setExpanding(true); setExpansionStatus('')
+    try {
+      const result = await onExpandNode(selected, nextCursor ?? undefined)
+      setCursors(current => ({ ...current, [selected]: result.nextCursor }))
+      setExpansionStatus(`${result.nodes} nodes and ${result.edges} relationships loaded${result.nextCursor ? ' · more neighbors available' : ' · direct neighbors complete'}.`)
+    } catch (error) { setExpansionStatus(error instanceof Error ? error.message : 'Neighbor expansion unavailable.') }
+    finally { setExpanding(false) }
+  }
   return <section aria-label="Codebase traversal and context" className="min-w-0 space-y-3 pt-3">
     <div role="status" aria-label="Codebase context" tabIndex={0} className={`rounded border p-3 text-xs ${WIDGET_SELECTION_SURFACE_CLASS_NAME}`}><p>{span ? `Selected span: ${span.operation}` : 'Codebase context'}</p><p>{impact.reason}</p>
       {span && onClear && <button className={`${button} mt-2`} onClick={onClear}>Clear span focus</button>}
@@ -37,6 +52,13 @@ export function MissionGraphExplorer({ graph, span, onClear, provenance }: {
       {graph.nodes.filter(item => `${item.label} ${item.properties['corpus:sourcePath'] ?? ''}`.toLowerCase().includes(search.toLowerCase())).slice(0, 20).map(item =>
         <li key={item.id}><button type="button" className={button} onClick={() => setSelected(item.id)}>{item.label}</button></li>)}
     </ul>}
+    {onExpandNode && <div className="flex flex-wrap items-center gap-2 text-xs">
+      <button type="button" className={button} disabled={!selected || expanding || hasExpansionPage && nextCursor === null} onClick={() => void expand()}>
+        {expanding ? 'Loading neighbors…' : hasExpansionPage ? nextCursor ? 'Load more neighbors' : 'Neighbors loaded' : 'Expand selected node'}
+      </button>
+      <span>One hop · up to 200 relationships · exact snapshot</span>
+      {expansionStatus && <span role="status">{expansionStatus}</span>}
+    </div>}
     <React.Suspense fallback={<p role="status">Loading D3…</p>}><GraphInspection graph={graph} selectedNodeId={span && !impact.nodeIds.length ? null : selected} onSelect={setSelected}
       highlightedNodeIds={impact.nodeIds} highlightedEdgeIds={impact.edgeIds}
       label="Codebase knowledge graph" description="Indexed sources, symbols and relationships; select a node to inspect source evidence" /></React.Suspense>
@@ -83,8 +105,8 @@ export function AgentMissionDashboardSummary({ trace, codebase, exploring, onExp
       </li>
       <li className="min-w-0 rounded border border-violet-500/40 p-3">
         <p className="text-xs text-violet-500">02 · TRAVERSE & CONTEXTUALIZE</p><h4 className="font-semibold">Source knowledge graph</h4>
-        <p className="py-1 text-xs">{data ? `${model.loadedNodes} nodes · ${model.loadedEdges} links in D3${model.truncated ? ' · Bounded projection' : ''}` : 'No graph projection available'}</p>
-        <p className="pb-2 text-xs">Select nodes and follow source-backed relationship explanations.</p>
+        <p className="py-1 text-xs">{data ? `${model.loadedNodes} of ${model.nodes} nodes · ${model.loadedEdges} of ${model.edges} links${model.truncated ? ' · Connected-first projection' : ' · Complete projection'}` : 'No graph projection available'}</p>
+        <p className="pb-2 text-xs">Start with highly connected nodes, then load exact-snapshot neighbors on demand.</p>
         <button className={button} title={exploring ? 'Hide codebase explorer' : 'Explore codebase · D3'} disabled={!data} aria-expanded={exploring} onClick={onExplore}>{exploring ? 'Hide codebase explorer' : 'Explore codebase · D3'}</button>
       </li>
       <li className="min-w-0 rounded border border-emerald-500/40 p-3">
@@ -99,11 +121,12 @@ export function AgentMissionDashboardSummary({ trace, codebase, exploring, onExp
 }
 
 /** Native Mission presentation for read-only hosts; no dashboard editor or execution control is mounted. */
-export default function AgentMissionDashboardView({ retained, retainedSpanId, onRetainedSpan, provenance }: {
+export default function AgentMissionDashboardView({ retained, retainedSpanId, onRetainedSpan, provenance, onExpandNode }: {
   retained: MissionDashboardSnapshot
   retainedSpanId?: string | null
   onRetainedSpan?: (id: string | null) => void
   provenance?: AgentMissionProvenanceContext
+  onExpandNode?: (nodeId: string, afterEdgeId?: string) => Promise<{ nextCursor: string | null; nodes: number; edges: number }>
 }) {
   const [exploring, setExploring] = React.useState(false), [selectedSource, setSelectedSource] = React.useState<string | null>(null)
   const codebase = { data: retained.codebase }, trace = retained.trace
@@ -112,7 +135,7 @@ export default function AgentMissionDashboardView({ retained, retainedSpanId, on
   return <section aria-label="Mission evidence loop" className="min-w-0 space-y-3">
     <AgentMissionDashboardSummary trace={trace} codebase={codebase} exploring={exploring} onExplore={() => setExploring(value => !value)}
       embedded onOpenFile={setSelectedSource} />
-    {exploring && retained.graph && <MissionGraphExplorer graph={retained.graph} span={selectedSpan} onClear={() => onRetainedSpan?.(null)} provenance={provenance} />}
+    {exploring && retained.graph && <MissionGraphExplorer graph={retained.graph} span={selectedSpan} onClear={() => onRetainedSpan?.(null)} provenance={provenance} onExpandNode={onExpandNode} />}
     {exploring && !retained.graph && <p role="status">This mission has no retained D3 projection.</p>}
     {sourceDocument && <details className={`rounded border p-3 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}`}>
       <summary className="cursor-pointer text-sm font-semibold">{sourceDocument.path}</summary>

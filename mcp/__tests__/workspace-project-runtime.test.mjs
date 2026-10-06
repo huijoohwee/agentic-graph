@@ -146,6 +146,20 @@ test("separate runtime processes preserve the losing draft and never silently ov
   await assert.rejects(runtime.apply(stale), { code: "VERSION_CONFLICT" });
 });
 
+test("apply returns typed contention while another writer owns a changing store", async t => {
+  const { root, runtime } = await fixture(t);
+  const base = await write(runtime, root, [{ path: "draft.md", content: "base\n" }]);
+  const request = { operation: "project-checkpoint", workspaceRoot: root, path: "demo",
+    expectedVersion: base.version, files: [{ path: "draft.md", content: "keep this draft\n" }] };
+  const planned = await runtime.plan(request);
+  const lock = path.join(root, ".workspace-project", ".writer.lock");
+  await fs.mkdir(lock);
+  await fs.writeFile(path.join(lock, "in-flight-object"), Buffer.alloc(500000));
+  await assert.rejects(runtime.apply({ ...planned.request, planDigest: planned.planDigest, operatorAuthorized: true }),
+    { code: "RESOURCE_BUSY" });
+  assert.equal((await native(root, ["rev-parse", "refs/heads/project"])).stdout.trim(), base.version);
+});
+
 test("file, project and retained-store quotas fail before a ref can advance", async t => {
   const { root, runtime } = await fixture(t);
   const request = { operation: "project-checkpoint", workspaceRoot: root, path: "demo", expectedVersion: "" };

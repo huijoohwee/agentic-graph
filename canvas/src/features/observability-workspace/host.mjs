@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto'
 import { readWorkspaceObservationSource, readWorkspaceCodebaseIndex } from '../../../viteWorkspaceObservationBridge.mjs'
 import { readWorkflowArchiveRequest } from '../../../viteWorkflowArchiveBridge.mjs'
 import { runAgentGraphTool } from '../../../../mcp/agent-graph-host.js'
+import { AGENT_GRAPH_TOOL_NAMES } from '../../../../mcp/agent-graph/runtime.mjs'
 import { loadRepositoryProfile } from 'agentic-os/adapters/git'
 import { parseRepositoryUrl } from '../../../../mcp/agent-graph/repository-acquisition.mjs'
 
@@ -81,10 +82,27 @@ export function bindRetainedIndexSource(result, source, expectedDigest) {
   // A linked artifact does not inherit the workflow's source identity. Only explicit native acquisition metadata binds its commit.
   return { repository: `${repository.hostname}/${repository.repositoryPath}`, revision: acquisition.commitSha, snapshotDigest: result.result.snapshotDigest }
 }
+export function normalizeGraphNeighborsRequest(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || Object.keys(value).some(key => !['graphId', 'snapshotDigest', 'from', 'afterEdgeId', 'limit'].includes(key)))
+    throw Error('Invalid graph-neighbors request')
+  const { graphId, snapshotDigest, from, afterEdgeId } = value, limit = value.limit ?? 200
+  if (typeof graphId !== 'string' || !/^kg:graph:[a-f0-9]{32}$/.test(graphId)
+    || typeof snapshotDigest !== 'string' || !/^[a-f0-9]{64}$/.test(snapshotDigest)
+    || typeof from !== 'string' || !from.trim() || from.length > 1024 || /[\x00-\x1f\x7f]/.test(from)
+    || !Number.isInteger(limit) || limit < 1 || limit > 200)
+    throw Error('Graph identity and a canonical node ID are required')
+  if (afterEdgeId !== undefined && (typeof afterEdgeId !== 'string' || !afterEdgeId.trim()
+    || afterEdgeId.length > 1024 || /[\x00-\x1f\x7f]/.test(afterEdgeId)))
+    throw Error('Invalid graph-neighbors cursor')
+  return { graphId, expectedSnapshotDigest: snapshotDigest, mode: 'neighbors', from,
+    direction: 'both', maxDepth: 1, limit, maxDurationMs: 15000,
+    ...(afterEdgeId ? { afterEdgeId } : {}) }
+}
 export function createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot, graphRoot, allowMissingRepositories = false }) {
   const workspace = loadWorkspaceManifest(manifestFile, workspaceRoot, { allowMissingRepositories })
   const publicManifest = { ...workspace.value, repositories: workspace.value.repositories.map(({ id, label }) => ({ id, label })) }
-  let busy = false
+  let busy = false, activeExpansions = 0
   return {
     name: 'agentic-graph-observability-workspace',
     generateBundle() { this.emitFile({ type: 'asset', fileName: 'observability-workspace.json', source: JSON.stringify(publicManifest) }) },
@@ -93,7 +111,7 @@ export function createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot
         const url = new URL(req.url || '/', 'http://localhost')
         if (url.pathname === '/' || url.pathname === '/index.html') { req.url = '/observability.html' + url.search; return next() }
         const manifest = url.pathname === '/observability-workspace.json'
-        const operation = url.pathname.match(/^\/api\/observability-workspace\/(workspace-source|workspace-codebase|workflow-trace|index)$/)?.[1]
+        const operation = url.pathname.match(/^\/api\/observability-workspace\/(workspace-source|workspace-codebase|workflow-trace|graph-neighbors|index)$/)?.[1]
         if (!manifest && !operation) return next()
         res.setHeader('Cache-Control', 'no-store')
         res.setHeader('Content-Type', 'application/json')
@@ -125,6 +143,25 @@ export function createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot
             if (!selected || selected.manifestText !== args.manifestText) throw Error('Workflow selection changed')
             result = await readWorkflowArchiveRequest(args, undefined, row.resolved)
             res.setHeader('Content-Type', 'text/event-stream')
+          } else if (operation === 'graph-neighbors') {
+            const query = normalizeGraphNeighborsRequest(args)
+            if (activeExpansions >= 2) throw Error('Graph expansion is busy; retry after the current neighborhood loads')
+            activeExpansions++
+            const output = path.join(os.tmpdir(), 'agentic-graph-observability', hash(workspace.root).slice(0, 24))
+            const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 18000)
+            const cancel = () => { if (!res.writableEnded) controller.abort() }
+            res.once('close', cancel)
+            try {
+              const expanded = await runAgentGraphTool(AGENT_GRAPH_TOOL_NAMES.query, query, {
+                rootDir: graphRoot, env: { ...process.env, AGENTIC_OS_AGENT_GRAPH_ALLOWED_ROOTS: row.resolved,
+                  AGENTIC_OS_AGENT_GRAPH_OUTPUT_ROOT: output }, abortSignal: controller.signal,
+              })
+              if (!expanded.ok || expanded.mode !== 'neighbors' || expanded.snapshotDigest !== query.expectedSnapshotDigest
+                || expanded.graphId !== query.graphId || !expanded.traversal || !expanded.completeness)
+                throw Error(expanded.error?.message || 'Native Graph expansion did not match the selected snapshot')
+              result = { graphId: expanded.graphId, snapshotDigest: expanded.snapshotDigest, mode: expanded.mode,
+                resolution: expanded.resolution, traversal: expanded.traversal, completeness: expanded.completeness }
+            } finally { clearTimeout(timer); res.off('close', cancel); activeExpansions-- }
           } else {
             if (Object.keys(args).length) throw Error('Unexpected index arguments')
             if (busy) throw Error('An explicit local index is already running')
@@ -138,7 +175,7 @@ export function createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot
               try {
                 const indexed = await runAgentGraphTool('agentic-graph.agent_graph.ingest', {
                   rootPath: row.resolved, maxFiles: 20000, maxFileBytes: 2000000, maxTotalBytes: 100000000,
-                  maxDurationMs: 60000, projectionLimit: 200, strict: true, useCache: true,
+                  maxDurationMs: 60000, projectionLimit: 1000, projectionByteLimit: 450000, strict: true, useCache: true,
                   exclude: ['.*', '*credentials*', '*secrets*', '*.pem', '*.key', '*.p12', '*.pfx'],
                 }, { rootDir: graphRoot, env: { ...process.env, AGENTIC_OS_AGENT_GRAPH_ALLOWED_ROOTS: row.resolved,
                   AGENTIC_OS_AGENT_GRAPH_OUTPUT_ROOT: output }, abortSignal: controller.signal })
