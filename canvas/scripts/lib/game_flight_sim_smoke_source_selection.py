@@ -365,6 +365,18 @@ def verify_source_file_button_round_trip(
                 '[data-kg-xr-scene-media-drop="1"]',
               )
               const canvas = root?.querySelector('canvas') || null
+              const mapCanvases = Array.from(document.querySelectorAll(
+                'canvas.maplibregl-canvas',
+              ))
+              const visibleMapCanvasCount = mapCanvases.filter(element => {
+                const rect = element.getBoundingClientRect()
+                const style = window.getComputedStyle(element)
+                return rect.width > 0
+                  && rect.height > 0
+                  && style.display !== 'none'
+                  && style.visibility !== 'hidden'
+                  && Number(style.opacity || '1') > 0
+              }).length
               return {
                 documentName: state.markdownDocumentName,
                 active: demos.isXrPhysicsRunReadyDemoActive(
@@ -380,9 +392,9 @@ def verify_source_file_button_round_trip(
                     gympgrph.LS_KEYS.geospatialOverlayEnabled,
                   ) || '').toLowerCase(),
                 ),
-                mapCanvasCount: document.querySelectorAll(
-                  'canvas.maplibregl-canvas',
-                ).length,
+                mapCanvasCount: mapCanvases.length,
+                mapCanvasVisible: visibleMapCanvasCount > 0,
+                visibleMapCanvasCount,
                 mapLibreActive:
                   gympgrph.readActiveMapLibreMap?.() != null,
                 retainedCanvas: Boolean(canvas)
@@ -399,14 +411,15 @@ def verify_source_file_button_round_trip(
             and value.get("active") is True
             and value.get("renderMode") == "3d"
             and value.get("canvas3dMode") == "xr"
-            and value.get("geospatialModeEnabled") is False
-            and value.get("geospatialPreferenceEnabled") is False
-            and value.get("mapCanvasCount") == 0
-            and value.get("mapLibreActive") is False
+            and value.get("geospatialModeEnabled") is True
+            and value.get("geospatialPreferenceEnabled") is True
+            and value.get("mapCanvasCount") == 1
+            and value.get("mapCanvasVisible") is True
+            and value.get("mapLibreActive") is True
             and value.get("retainedCanvas") is True
             and value.get("flightHudCount") == 0
         ),
-        label="Physics Source Files button restoration",
+        label="Physics Source Files keeps recorded Geo context and shared XR canvas",
     )
     return {
         "recordedFlightSource": recorded_source,
