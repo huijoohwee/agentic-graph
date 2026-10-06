@@ -8,8 +8,8 @@ import { fileURLToPath } from 'node:url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 const json = async file => JSON.parse(await fs.readFile(file, 'utf8'))
-const run = (cwd, command, args, env = {}) => execFileSync(command, args, {
-  cwd, env: { ...process.env, ...env }, stdio: 'inherit', timeout: 300_000,
+const run = (cwd, command, args, env = {}, timeoutMs = 300_000) => execFileSync(command, args, {
+  cwd, env: { ...process.env, ...env }, stdio: 'inherit', timeout: timeoutMs,
 })
 const git = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
 const digest = entries => sha256([...entries].sort((a, b) => a.path.localeCompare(b.path))
@@ -17,6 +17,12 @@ const digest = entries => sha256([...entries].sort((a, b) => a.path.localeCompar
 const safePath = value => typeof value === 'string' && value.length > 0
   && !value.includes('\\') && !value.includes('\0') && !value.startsWith('/')
   && value.split('/').every(part => part && part !== '.' && part !== '..')
+
+export const GAME_XR_INSTALL_STEPS = Object.freeze([
+  Object.freeze({ command: 'npm', args: Object.freeze(['ci', '--ignore-scripts']), timeoutMs: 300_000 }),
+  Object.freeze({ command: 'npx', args: Object.freeze(['playwright', 'install-deps', 'webkit']), timeoutMs: 900_000 }),
+  Object.freeze({ command: 'npx', args: Object.freeze(['playwright', 'install', 'webkit']), timeoutMs: 300_000 }),
+])
 
 export function validateGameXrPin(pin) {
   assert.deepEqual(Object.keys(pin).sort(), ['schema', 'repository', 'sourceRevision', 'artifactDigest',
@@ -225,8 +231,9 @@ async function sourceCheck(source, pin) {
   assert.equal(git(source, 'status', '--porcelain=v1', '--untracked-files=all'), '', 'GameXR source must be clean')
 }
 async function install(source) {
-  run(source, 'npm', ['ci', '--ignore-scripts'])
-  run(source, 'npx', ['playwright', 'install', '--with-deps', 'webkit'])
+  for (const step of GAME_XR_INSTALL_STEPS) {
+    run(source, step.command, step.args, {}, step.timeoutMs)
+  }
 }
 async function browserCheck(source, origin, pin) {
   run(source, 'npx', ['playwright', 'test', 'production-runtime.spec.ts'], {
