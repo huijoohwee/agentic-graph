@@ -5,6 +5,10 @@ import hashlib
 from typing import Any, Callable, Iterable
 
 from playwright.sync_api import Page
+from lib.game_flight_sim_smoke_source_selection import (
+    close_source_files_selection_surface,
+    prepare_source_files_selection_surface,
+)
 
 
 PRACTICE_SOURCE_WORKSPACE_PATH = (
@@ -66,12 +70,9 @@ def apply_isolated_practice_source(
     return page.evaluate(
         """
         async ({expectedSourceText, practiceSourceText, practiceSourcePath}) => {
-          const explorer = await window.__kgFlightSimBrowserProof.importModule('markdownExplorerStore')
-          const materialization = await window.__kgFlightSimBrowserProof.importModule('sourceFilesRuntimeMaterialization')
           const workspaceModule = await window.__kgFlightSimBrowserProof.importModule('workspaceFs')
           const seedBundle = await window.__kgFlightSimBrowserProof.importModule('workspaceCanonicalSeedBundle')
           const demos = await window.__kgFlightSimBrowserProof.importModule('workspaceRunReadyDemos')
-          const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
           const workspace = await workspaceModule.getWorkspaceFs()
           await workspace.ensureSeed()
           const canonicalSourcePath = `/${demos.FLIGHT_SIM_DEMO_REPO_REL_PATH}`
@@ -93,21 +94,11 @@ def apply_isolated_practice_source(
           }
           await workspace.writeFileText(sourcePath, practiceSourceText, {mirrorToHost: false})
           const workspaceText = await workspace.readFileText(sourcePath)
-          explorer.useMarkdownExplorerStore.getState().setActivePath(sourcePath)
-          const applied = await materialization.reapplyActiveWorkspaceMarkdownDocument({
-            activePathOverride: sourcePath,
-            fs: workspace,
-          })
-          const state = store.useGraphStore.getState()
           return {
-            applied,
             canonicalSeedByteIdentical: authored?.text === expectedSourceText,
             canonicalWorkspaceBeforeDerivationByteIdentical:
               canonicalWorkspaceText === expectedSourceText,
             practiceWorkspaceByteIdentical: workspaceText === practiceSourceText,
-            activeDocumentByteIdentical:
-              state.markdownDocumentText === practiceSourceText,
-            documentName: state.markdownDocumentName,
             sourcePath,
           }
         }
@@ -165,15 +156,36 @@ def apply_and_verify_practice_source(
             "canonicalSeedByteIdentical",
             "canonicalWorkspaceBeforeDerivationByteIdentical",
             "practiceWorkspaceByteIdentical",
-            "activeDocumentByteIdentical",
         )
-    ) or not str(practice_application.get("documentName") or "").endswith(
-        PRACTICE_SOURCE_BASENAME
     ):
         raise AssertionError(
             "isolated practice source did not preserve canonical seed identity: "
             f"{practice_application}"
         )
+    prepare_source_files_selection_surface(page)
+    docs = page.get_by_role("button", name="Folder docs", exact=True)
+    seeds = page.get_by_role("button", name="Folder workspace-seeds", exact=True)
+    practice_folder = page.get_by_role(
+        "button", name="Folder flight-sim-practice", exact=True
+    )
+    if seeds.count() == 0:
+        docs.click()
+        seeds.wait_for(state="visible", timeout=120_000)
+    if practice_folder.count() == 0:
+        seeds.click()
+        practice_folder.wait_for(state="visible", timeout=120_000)
+    practice_file = page.get_by_role(
+        "button", name=f"File {PRACTICE_SOURCE_BASENAME}", exact=True
+    )
+    if practice_file.count() == 0:
+        practice_folder.click()
+        practice_file.wait_for(state="visible", timeout=120_000)
+    practice_file.click()
+    practice_application["uiFileSelection"] = {
+        "buttonName": f"File {PRACTICE_SOURCE_BASENAME}",
+        "clicked": True,
+        "surfaceTransition": close_source_files_selection_surface(page),
+    }
     source = poll(
         page,
         lambda: read_identity(

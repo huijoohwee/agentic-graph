@@ -351,6 +351,8 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(evidenceValidator, /canonicalRecordedSourceStayedInactive !== true/)
   assert.match(practiceSource, /derive_flight_practice_source/)
   assert.match(practiceSource, /mirrorToHost: false/)
+  assert.match(practiceSource, /Folder flight-sim-practice/)
+  assert.match(practiceSource, /practice_file\.click\(\)/)
   assert.match(practiceSource, /canonical Recorded Flight source remains practice-inactive/)
   assert.match(practiceSource, /canonicalRecordedSourceStayedInactive/)
   assert.match(evidenceValidator, /inputProof\?\.touchInteraction\?\.runId[\s\S]*missionProof\?\.runId/)
