@@ -64,5 +64,18 @@ export async function closePanelRegion(region, targetPage) {
     }
   }
   // Canvas retains the warmed editor shell for cheap reopen; closing hides it.
-  await region.waitFor({ state: 'hidden', timeout: 30000 })
+  try {
+    await region.waitFor({ state: 'hidden', timeout: 10000 })
+  } catch (error) {
+    const state = await targetPage.evaluate(async () => {
+      const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+      const current = useGraphStore.getState()
+      return {
+        workspaceViewMode: current.workspaceViewMode,
+        workspaceCanvasPaneOpen: current.workspaceCanvasPaneOpen,
+        workspaceGraphMutationLayoutLockActive: current.workspaceGraphMutationLayoutLockActive,
+      }
+    }).catch(() => null)
+    throw new Error(`Workspace close left the editor shell visible: ${JSON.stringify(state)}`, { cause: error })
+  }
 }
