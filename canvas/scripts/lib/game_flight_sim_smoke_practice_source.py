@@ -241,6 +241,27 @@ def apply_and_verify_practice_source(
         "button", name=f"File {PRACTICE_SOURCE_BASENAME}", exact=True
     )
     practice_file.wait_for(state="visible", timeout=20_000)
+    page.evaluate(
+        """
+        () => {
+          const proof = window.__kgFlightSimFirstFrameProof
+          const observer = window.__kgFlightSimFirstFrameObserver
+          const existingFrame = document.querySelector(
+            'canvas[data-kg-flight-sim-first-frame="1"]',
+          )
+          if (!proof || !observer || existingFrame) {
+            throw new Error(
+              'first-frame proof must be armed before the practice source is selected',
+            )
+          }
+          proof.startedAtMs = performance.now()
+          proof.firstFrameAtMs = null
+          proof.firstFrameClassName = null
+          proof.firstFrameSurface = null
+          proof.preExisting = false
+        }
+        """
+    )
     practice_file.click()
     practice_application["uiFileSelection"] = {
         "buttonName": f"File {PRACTICE_SOURCE_BASENAME}",

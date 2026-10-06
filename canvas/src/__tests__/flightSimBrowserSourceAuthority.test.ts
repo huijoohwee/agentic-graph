@@ -362,6 +362,11 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(practiceSource, /name=f"Expand folder \{name\}"/)
   assert.match(practiceSource, /disclosure\.first\.click\(timeout=5_000\)/)
   assert.match(practiceSource, /Folder flight-sim-practice/)
+  assert.match(practiceSource, /proof\.startedAtMs = performance\.now\(\)/)
+  assert.ok(
+    practiceSource.indexOf('proof.startedAtMs = performance.now()')
+      < practiceSource.indexOf('practice_file.click()'),
+  )
   assert.match(practiceSource, /practice_file\.click\(\)/)
   assert.match(practiceSource, /canonical Recorded Flight source remains practice-inactive/)
   assert.match(practiceSource, /canonicalRecordedSourceStayedInactive/)
