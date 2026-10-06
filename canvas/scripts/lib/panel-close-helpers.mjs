@@ -61,6 +61,11 @@ export async function closePanelRegion(region, targetPage) {
       await closeButton.click({ force: true, timeout: 5000 })
     } catch {
       await targetPage.keyboard.press('Escape')
+      try {
+        await region.waitFor({ state: 'hidden', timeout: 2000 })
+        return
+      } catch {}
+      await closeButton.click({ timeout: 5000 })
     }
   }
   // Canvas retains the warmed editor shell for cheap reopen; closing hides it.
