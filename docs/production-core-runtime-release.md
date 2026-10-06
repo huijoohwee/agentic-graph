@@ -89,3 +89,9 @@ WebKit production tests, and proves returning-user cache byte convergence while 
 storage. Any failure occurs before generated mirror publication and enters the existing rollback
 path. The raw release artifact retains `gamexr-before.json`, `gamexr-transition.json` and
 `gamexr-live.json`. Physical-device and human-session claims remain independently unverified.
+
+Protected admission keeps the pinned GameXR WebKit coverage. It installs GameXR's own lockfile
+first, then installs that Playwright version's WebKit system packages with a 15-minute ceiling;
+the WebKit browser download and production test retain separate five-minute ceilings. A slow OS
+package fetch therefore fails before candidate authorization without skipping mobile-browser
+coverage or extending the bounds on source checks and assertions.

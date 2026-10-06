@@ -33,11 +33,11 @@ export async function waitForAuthoredWorkspaceSource(page, timeout = 60000) {
           status: ['idle', 'loading', 'parsed', 'error'].includes(file.status) ? file.status : 'unknown' })),
       }
     }
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
   })
   try {
+    // Store readiness must settle even when the browser is not producing visual frames.
     await page.waitForFunction(() => window.__AG_MISSION_AUTHORED_SOURCE_READY__() === true,
-      null, { timeout: Math.max(1, deadline - Date.now()) })
+      null, { polling: 100, timeout: Math.max(1, deadline - Date.now()) })
   } catch (error) {
     if (error?.name === 'TimeoutError') {
       let timer

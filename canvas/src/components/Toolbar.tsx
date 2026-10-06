@@ -295,7 +295,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         <MainPanelLayer
           data-kg-main-panel-shell="true"
           data-kg-main-panel-requested-tab={mainPanelRequestedTab}
-          className={`fixed inset-0 ${(isNarrowViewport || effectiveMainPanelPinned) ? 'pointer-events-auto' : 'pointer-events-none'}`}
+          className={`fixed inset-0 ${isNarrowViewport ? 'pointer-events-auto' : 'pointer-events-none'}`}
         >
           {isNarrowViewport ? (
             <>

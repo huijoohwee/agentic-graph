@@ -20,7 +20,6 @@ import {
   ResponsiveControlInput,
   ResponsiveControlRow,
   ResponsiveNumberRow,
-  ResponsiveSelectRow,
 } from '@/lib/ui/responsiveControlRows'
 import {
   UI_RESPONSIVE_CONTROL_HINT_CLASSNAME,
@@ -34,11 +33,7 @@ import {
   uiToolbarSettingsPanelSubsectionClassName,
   uiToolbarSettingsPanelTextActionClassName,
 } from '@/features/toolbar/ui/toolbarStyles'
-
-const LAYOUT_MODE_OPTIONS: Array<{ value: LayoutMode2d; label: string }> = [
-  { value: 'radial', label: 'Radial (default)' },
-  { value: 'block', label: 'Block' },
-]
+import { LayoutModeSelect } from './LayoutModeSelect'
 
 export function LayoutModeRendererSettings(props: {
   selectedLayoutMode?: LayoutMode2d
@@ -143,21 +138,10 @@ export function LayoutModeRendererSettings(props: {
 
   const controls = (
       <section className={uiToolbarSettingsPanelBodyClassName}>
-        <section className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
-          Global layout mode shared across 2D/3D renderers and semantic views.
-        </section>
-        <ResponsiveSelectRow
-          label="Mode"
-          value={selectedLayoutMode}
-          disabled={disabled}
-          onChange={next => onSelectLayoutMode((String(next || '').trim().toLowerCase() === 'block' ? 'block' : 'radial'))}
-        >
-          {LAYOUT_MODE_OPTIONS.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </ResponsiveSelectRow>
+        <LayoutModeSelect value={selectedLayoutMode} disabled={disabled} onChange={onSelectLayoutMode}
+          description={props.inspection
+            ? 'Layout mode for the retained read-only D3 inspection.'
+            : 'Global layout mode shared across 2D/3D renderers and semantic views.'} />
         <section className={uiToolbarSettingsPanelSubsectionClassName}>
           <section className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
             {props.inspection ? 'Fit fill applies to the retained D3 viewport. Reference dimensions apply to the workspace canvas.' : 'Shared fit frame for Pin, Fit to View, Fit to Screen, and Zoom to Selection. Frame is clamped upstream against the live viewport.'}

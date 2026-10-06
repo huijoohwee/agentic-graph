@@ -195,3 +195,39 @@ output retain their separate visual semantics.
 | Toast lifetime | Avoid sticky noise | - [ ] Default auto-dismiss by TTL; allow persistent “loading” toasts only with explicit dismiss |
 | State transitions | Preserve causality | - [ ] For event transitions (loading → loaded/error), emit a new toast event and dismiss loading shortly after; forbid overwriting status so users miss the transition |
 | Cleanup | Avoid leaks | - [ ] Clear timers/listeners on unmount; forbid orphaned intervals/timeouts |
+
+## Shared floating guidance
+
+The toolbar floating shell and sequence rows each have one presentation owner:
+`components/ui/FloatingPanel.tsx:FloatingPanelShell` and
+`features/sequence/SequenceInspectorView.tsx`. Native Graph and the portable guide delegate to them;
+application controllers retain state, effects and authority. The portable artifact uses unchanged
+native sequence styles and shared appearance tokens, with no consumer stylesheet variant.
+Canvas OS is presently a product consumer. Moving UI ownership there requires a standalone export,
+acyclic dependencies and migration of every existing consumer; its repository name is not ownership.
+Shared guidance provides a named nonmodal panel, a visible close target, initial keyboard focus,
+Escape callback and disposal. Hosts restore launcher focus on close or explicitly focus the target
+field on action; teardown must not override that target. A selected step is never an acknowledgment.
+
+
+## Shared panel selection and compact chrome
+
+MainPanel, FloatingPanel and BottomPanel use one bounded transient layer order.
+Selecting or focusing any panel raises that panel; capture handlers preserve child
+controls. Anchor menus and toasts retain their higher bands. Portable panel shells
+accept host callbacks and do not import the application store or policy.
+
+Minimized surfaces consume the toolbar control-height, compact padding, surface
+height, shared border and island-radius tokens. Native IconButton, HeaderActions
+and PanelViewTab own icon size, stroke and selected-state backgrounds. Do not add
+panel-specific replacements. Verify actual overlap hit targets and geometry in the
+live app; expanded typography and mobile touch targets remain source-owned.
+
+
+Toolbar and panel icon selection/focus use the shared primary blue background and
+glyph colors, with no border, browser outline or ring. Keyboard focus uses a stronger
+blue wash so an already-selected icon remains distinguishable. `button.iconControl` owns
+keyboard focus for native and portable icons; `button.selectedIcon` owns selection.
+MainPanel tabs, FloatingPanel/BottomPanel tabs and pin controls delegate to these
+owners. Data-view icon actions reuse them; labeled field and row borders retain
+their existing semantics. Do not introduce per-panel focus or hover-ring variants.

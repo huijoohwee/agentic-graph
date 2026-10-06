@@ -174,6 +174,8 @@ Source-authored procedural floor, subject, obstacles and goals use the native sc
 
 Offline Ready requires verified closure of route, editor language chunk, worker, scene code, lessons and assets for one version. First install needs local distribution/download; an uncached visit cannot work offline. No remote map/font/model/texture fallback. Extend the existing service worker; activate a complete bundle atomically, retain the prior complete version until readback. Missing dependencies are explicit. Unrelated connected features are outside this offline claim.
 
+The offline asset manifest owns public fixture copying and service-worker precache admission. The production browser-artifact digest keeps its established executable/runtime path projection; fixture bytes are bound by the exact source revision and precache revision. A fixture addition therefore cannot silently widen the runtime digest contract, and a declared fixture missing from the build remains a publication error.
+
 ### Invocation and harness register
 
 All entries are **proposed/unimplemented**, joined to J1; existing catalogs remain executable schema owners. OS defines sigils, Graph implements, Canvas documents.
