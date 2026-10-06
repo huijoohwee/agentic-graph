@@ -23,7 +23,6 @@ from lib.game_flight_sim_smoke_ledger import (
 )
 from lib.game_flight_sim_smoke_network import (
     assert_authoring_mirror_fixture,
-    assert_authoring_mirror_ownership,
     assert_transport_ownership,
     assert_workspace_seed_list_authority,
     read_proof_authoring_mirror_request,
@@ -376,6 +375,55 @@ def main() -> None:
                         f"responses={failed_responses}"
                     )
 
+            def verify_native_website_authoring_mirror() -> dict[str, Any]:
+                probe = page.evaluate(
+                    """async () => {
+                      const proof = window.__kgFlightSimBrowserProof
+                      const [inventory, writer] = await Promise.all([
+                        proof.importModule('importInventory'),
+                        proof.importModule('workspaceRevealInFileManager'),
+                      ])
+                      const text = inventory.renderImportInventory([{
+                        source: 'https://flight-proof.invalid/example',
+                        status: 'not imported',
+                      }])
+                      const saved = await writer.saveWorkspaceWebsiteLocalCopy(
+                        '/websites/flight-proof.invalid/_import-index.md',
+                        text,
+                      )
+                      return {
+                        saved,
+                        hostname: location.hostname,
+                        online: navigator.onLine,
+                        fixtureBytes: new TextEncoder().encode(text).byteLength,
+                      }
+                    }"""
+                )
+                receipts = authoring_mirror_receipts.decode(
+                    bootstrap_closed=not authoring_bootstrap_open,
+                )
+                if (
+                    probe.get("saved") is not False
+                    or probe.get("online") is not True
+                    or probe.get("hostname") not in {"localhost", "127.0.0.1", "[::1]"}
+                    or not 0 < int(probe.get("fixtureBytes", 0)) < 10_000
+                    or authoring_mirror_requests
+                    or receipts
+                ):
+                    raise AssertionError(
+                        "production website mirror guard did not suppress the "
+                        f"isolated write probe: probe={probe}, "
+                        f"requests={authoring_mirror_requests}, receipts={receipts}"
+                    )
+                return {
+                    "owner": "native website authoring mirror",
+                    "phase": "production-preview-guard",
+                    "requestCount": 0,
+                    "receiptCount": 0,
+                    "fixtureBytes": probe["fixtureBytes"],
+                    "writeSuppressed": True,
+                }
+
             ledger.verify(
                 "Geo provider transport ownership",
                 verify_transport_ownership,
@@ -386,20 +434,7 @@ def main() -> None:
             )
             authoring_mirror_proof = ledger.verify(
                 "native website authoring mirror ownership",
-                lambda: assert_authoring_mirror_ownership(
-                    requests=authoring_mirror_requests,
-                    receipts=authoring_mirror_receipts.decode(bootstrap_closed=not authoring_bootstrap_open),
-                    store_root=owned_store_root,
-                    repository_root=repository_root,
-                    native_workspace_texts=page.evaluate(
-                        """async paths => {
-                          const module = await window.__kgFlightSimBrowserProof.importModule('workspaceFs')
-                          const fs = await module.getWorkspaceFs()
-                          return Object.fromEntries(await Promise.all(paths.map(async path => [path, await fs.readFileText(path)])))
-                        }""",
-                        list({item["workspacePath"] for item in authoring_mirror_requests}),
-                    ),
-                ),
+                verify_native_website_authoring_mirror,
             )
             ledger.verify(
                 "browser error surface",

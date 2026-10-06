@@ -280,6 +280,11 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.doesNotMatch(networkBoundary, /["']\/@vite\//)
   const browserHelperRoot = resolve(repoRoot, 'canvas/scripts/lib')
   const requestedBrowserModuleKeys = new Set<string>()
+  for (const match of verifier.matchAll(
+    /(?:window\.__kgFlightSimBrowserProof|proof)\.importModule\(\s*'([^']+)'\s*,?\s*\)/g,
+  )) {
+    requestedBrowserModuleKeys.add(match[1])
+  }
   for (const browserHelperPath of readdirSync(browserHelperRoot)
     .filter(path => /^game_flight_sim_smoke_.*\.py$/.test(path))) {
     const source = readFileSync(
