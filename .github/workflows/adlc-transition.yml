@@ -1,0 +1,46 @@
+name: ADLC transition
+
+run-name: ADLC transition ${{ inputs.operation_input_digest }} @ ${{ github.workflow_sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation_payload:
+        description: Exact canonical transition operation JSON.
+        required: true
+        type: string
+      operation_input_digest:
+        description: SHA-256 digest of operation_payload.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: huijoohwee/agentic-graph
+          ref: ${{ github.sha }}
+          path: agentic-graph
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: huijoohwee/agentic-os
+          ref: e1cf2c794ca8b8863cce20c267fbeae4639d2117
+          path: agentic-os
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+      - name: Validate exact Graph transition input without write credentials
+        working-directory: agentic-graph
+        run: |
+          test "$GITHUB_REPOSITORY" = "huijoohwee/agentic-graph"
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+          node ../agentic-os/bin/agentic-os-transition.mjs validate-event
