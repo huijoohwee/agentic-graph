@@ -14,6 +14,16 @@ import { numberLabel, workflowSourceLink, type RunTrace, type TraceSpan } from '
 const GraphInspection = React.lazy(() => import('@/components/GraphCanvas/GraphCanvasInspection'))
 const button = `${UI_THEME_TOKENS.control.singleLine} inline-block rounded border text-xs disabled:opacity-50 ${UI_THEME_TOKENS.button.neutralMuted}`
 
+function mostConnectedNodeId(graph: GraphData): string | null {
+  const degree = new Map<string, number>()
+  for (const edge of graph.edges) {
+    degree.set(edge.source, (degree.get(edge.source) ?? 0) + 1)
+    degree.set(edge.target, (degree.get(edge.target) ?? 0) + 1)
+  }
+  return [...degree].sort((left, right) => right[1] - left[1]
+    || (left[0] < right[0] ? -1 : left[0] > right[0] ? 1 : 0))[0]?.[0] ?? graph.nodes[0]?.id ?? null
+}
+
 export function MissionGraphExplorer({ graph, span, onClear, provenance, onExpandNode }: {
   graph: GraphData
   span: TraceSpan | null
@@ -21,12 +31,13 @@ export function MissionGraphExplorer({ graph, span, onClear, provenance, onExpan
   provenance?: AgentMissionProvenanceContext
   onExpandNode?: (nodeId: string, afterEdgeId?: string) => Promise<{ nextCursor: string | null; nodes: number; edges: number }>
 }) {
-  const [selected, setSelected] = React.useState<string | null>(graph.nodes[0]?.id ?? null), [search, setSearch] = React.useState('')
+  const [selected, setSelected] = React.useState<string | null>(() => mostConnectedNodeId(graph)), [search, setSearch] = React.useState('')
   const [cursors, setCursors] = React.useState<Record<string, string | null>>({}), [expanding, setExpanding] = React.useState(false)
   const [expansionStatus, setExpansionStatus] = React.useState('')
   const lookup = React.useMemo(() => getCachedGraphLookup({ cacheScope: 'mission-codebase', graphData: graph }), [graph])
   const impact = React.useMemo(() => agentMissionSpanImpact(span, graph, provenance), [span, graph, provenance])
   React.useEffect(() => { if (span) setSelected(impact.nodeIds[0] ?? null) }, [span, impact])
+  React.useEffect(() => { setSelected(current => current && graph.nodes.some(node => node.id === current) ? current : mostConnectedNodeId(graph)) }, [graph])
   const node = selected ? lookup?.nodeById.get(selected) : null
   const edges = selected ? lookup?.incidentEdgesByNodeId.get(selected) ?? [] : []
   const hasExpansionPage = selected ? Object.hasOwn(cursors, selected) : false
@@ -61,7 +72,7 @@ export function MissionGraphExplorer({ graph, span, onClear, provenance, onExpan
     </div>}
     <React.Suspense fallback={<p role="status">Loading D3…</p>}><GraphInspection graph={graph} selectedNodeId={span && !impact.nodeIds.length ? null : selected} onSelect={setSelected}
       highlightedNodeIds={impact.nodeIds} highlightedEdgeIds={impact.edgeIds}
-      label="Codebase knowledge graph" description="Indexed sources, symbols and relationships; select a node to inspect source evidence" /></React.Suspense>
+      rendererControls label="Codebase knowledge graph" description="Indexed sources, symbols and relationships; select a node to inspect source evidence" /></React.Suspense>
     {node && <section aria-label="Selected codebase evidence" className="rounded border p-3 text-xs">
       <h4 className="font-semibold">{node.label} · {node.type}</h4>
       <p className="break-all">Source: {String(node.properties['corpus:sourcePath'] ?? 'Unreported')}</p>

@@ -231,7 +231,11 @@ export async function projectAgentGraphSnapshot(snapshot, limitRaw = 200, option
   const checkpoint = createQueryCheckpoint(options, "snapshot-projection");
   const limit = boundedInteger(limitRaw, 200, 1, 1000);
   const projectionByteLimit = normalizeAgentGraphProjectionByteLimit(options.projectionByteLimit);
-  const seedLimit = Math.min(limit, Math.max(1, Math.ceil(limit * 0.6)));
+  // Seed a small connected core, then spend the remaining projection budget
+  // on its strongest neighbors instead of unrelated global hubs.
+  const seedLimit = snapshot.manifest.graph.nodes <= limit
+    ? limit
+    : Math.min(limit, Math.max(1, Math.min(16, Math.ceil(limit * 0.05))));
   const degreeByNodeId = new Map();
   for await (const { shard } of iterateAgentGraphSnapshotShards(snapshot, {
     ...options,
