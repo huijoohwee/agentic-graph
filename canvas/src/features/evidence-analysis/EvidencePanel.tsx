@@ -43,6 +43,8 @@ export default function EvidencePanel() {
   const [busy, setBusy] = React.useState(false), [detail, setDetail] = React.useState<any>(null)
   const [prepared, setPrepared] = React.useState<{ text: string; url: string; filename: string } | null>(null)
   const generation = React.useRef(0), current = React.useRef(accepted), downloadUrl = React.useRef<string | null>(null)
+  const pendingRead = React.useRef<AbortController | null>(null)
+  const cancelRead = React.useCallback(() => { pendingRead.current?.abort(); pendingRead.current = null }, [])
   current.current = accepted
   const examples = capture?.config.examples.filter(item => item.kind === kind) || []
   const chosen = examples.find(item => item.id === exampleId) || examples[0]
@@ -55,20 +57,22 @@ export default function EvidencePanel() {
     if (downloadUrl.current) URL.revokeObjectURL(downloadUrl.current)
     downloadUrl.current = null; setPrepared(null)
   }, [])
-  React.useEffect(() => { generation.current++; setBusy(false); setDetail(null); release(); setStatus(source.error || 'Current source configuration ready. Choose an example or import permitted JSON.') }, [capture?.documentName, capture?.documentText, capture?.sourceId, capture?.sourceRevision, source.error, release])
-  React.useEffect(() => () => { generation.current++; if (downloadUrl.current) URL.revokeObjectURL(downloadUrl.current) }, [])
+  React.useEffect(() => { generation.current++; cancelRead(); setBusy(false); setDetail(null); release(); setStatus(source.error || 'Current source configuration ready. Choose an example or import permitted JSON.') }, [capture?.documentName, capture?.documentText, capture?.sourceId, capture?.sourceRevision, source.error, release, cancelRead])
+  React.useEffect(() => () => { generation.current++; cancelRead(); if (downloadUrl.current) URL.revokeObjectURL(downloadUrl.current) }, [cancelRead])
   const live = (token: number, owner: EvidenceSourceCapture) => token === generation.current && isEvidenceSourceCurrent(owner)
   function selectKind(next: EvidenceKind) {
-    generation.current++; setBusy(false); setKind(next); setExampleId(''); setDetail(null)
+    generation.current++; cancelRead(); setBusy(false); setKind(next); setExampleId(''); setDetail(null)
     setAtUtc(capture?.config.examples.find(item => item.kind === next)?.atUtc || '')
     setStatus('Choose a labelled example or import permitted local JSON.')
   }
-  async function run(read: () => Promise<string[]>, example?: EvidenceExample) {
+  async function run(read: (signal: AbortSignal) => Promise<string[]>, example?: EvidenceExample) {
     if (!capture) { setStatus(source.error); return }
+    cancelRead()
+    const controller = new AbortController(); pendingRead.current = controller
     const owner = capture, token = ++generation.current, selectedKind = kind
     setBusy(true); setStatus('Reading local evidence…')
     try {
-      const inputs = await read()
+      const inputs = await read(controller.signal)
       if (!live(token, owner)) return
       if (!inputs.length || inputs.length > 40 || (selectedKind !== 'arrival' && inputs.length !== 1)
         || inputs.reduce((sum, text) => sum + new TextEncoder().encode(text).length, 0) > 2000000) throw new Error('Supply a bounded input set of at most 2,000,000 UTF-8 bytes.')
@@ -85,9 +89,9 @@ export default function EvidencePanel() {
       setStatus(output.disposition === 'unresolved' ? 'Structured input retained with unresolved semantics. Review reasons; no clearance is inferred.' : 'Accepted result is bound to the exact source configuration and original inputs.')
     } catch (error) {
       if (live(token, owner)) setStatus(`Not accepted: ${error instanceof Error ? error.message : String(error)} Previous accepted result retained.`)
-    } finally { if (token === generation.current) setBusy(false) }
+    } finally { if (pendingRead.current === controller) pendingRead.current = null; if (token === generation.current) setBusy(false) }
   }
-  const loadExample = () => chosen && run(() => readEvidenceExamples(chosen.paths), chosen)
+  const loadExample = () => chosen && run(signal => readEvidenceExamples(chosen.paths, undefined, undefined, undefined, { signal }), chosen)
   function importFiles(event: React.ChangeEvent<HTMLInputElement>) {
     const files = [...(event.target.files || [])]
     if (!files.length) return
@@ -134,7 +138,7 @@ export default function EvidencePanel() {
     } catch (error) { if (live(token, item.capture)) setStatus(error instanceof Error ? error.message : String(error)) }
     finally { if (token === generation.current) setBusy(false) }
   }
-  function clear() { generation.current++; setBusy(false); current.current = null; setAccepted(null); setDetail(null); release(); setStatus('Local record removed. Saved files remain on your device.') }
+  function clear() { generation.current++; cancelRead(); setBusy(false); current.current = null; setAccepted(null); setDetail(null); release(); setStatus('Local record removed. Saved files remain on your device.') }
   async function copyPrepared() {
     const item = prepared, token = generation.current
     if (!item) return
