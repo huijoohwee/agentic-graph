@@ -113,13 +113,8 @@ export async function ownerInputDigest(environment = process.env) {
   })
   return createHash('sha256').update(JSON.stringify(value)).digest('hex')
 }
-export function xrRuntimeGateRequired(inputs, eventName) {
-  return !(['pull_request', 'push'].includes(eventName)
-    && inputs.paths.length > 0
-    && inputs.paths.every(path => path.startsWith('docs/documents/') && path.endsWith('.md')
-      && path.split('/').every(segment => segment !== '..' && segment !== '.' && segment !== ''))
-    && inputs.scopes.length === 1 && inputs.scopes[0] === 'documentation'
-    && inputs.commands.length === 0)
+export function xrRuntimeGateRequired(inputs) {
+  return inputs.scopes.includes('xr_v2_video_editor')
 }
 export function xrRuntimeGateExecutionRequired(inputs, eventName) {
   if (!xrRuntimeGateRequired(inputs, eventName)) return false
