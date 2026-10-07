@@ -538,12 +538,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
     || stageSource.includes('hydrateXrMotionReferenceRuntime')) {
     throw new Error('expected one app-root XR choreography hydration owner independent of stage and panel visibility')
   }
-  if (appSource.includes("import { XrMotionReferenceRuntimeBridge } from '@/features/three/XrMotionReferenceRuntimeBridge'")
-    || !appSource.includes("import('@/features/three/XrMotionReferenceRuntimeBridge')")
-    || !appSource.includes('useSourceFilesBootstrapHasReachedReady()')
-    || !appSource.includes('if (!sourceFilesBootstrapHasReachedReady) return null')) {
-    throw new Error('expected the XR motion bridge to load after source bootstrap instead of extending the eager app entry')
-  }
+  await (await import('../../tests/xrMotionReferenceAppStartup.contract')).assertXrMotionReferenceBootstrap(appSource)
   if (!sceneSubjectSource.includes('Math.hypot(dx, dy, dz)') || !sceneSubjectSource.includes('setFromUnitVectors')) {
     throw new Error('expected cast and camera paths to preserve vertical Y-up movement in their 3D segment transform')
   }
