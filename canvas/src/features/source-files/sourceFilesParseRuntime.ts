@@ -5,7 +5,7 @@ import type {
 } from '@/features/source-files/feishuBaseSourceImportContract'
 import { scheduleApplyComposedGraphFromSourceFiles } from '@/features/source-files/applyComposedGraphFromSourceFiles'
 import { findNextSourceFileIndex } from '@/features/source-files/sourceFileNaming'
-import { buildSourceFileParseIdentityHash } from '@/features/source-files/sourceFileParseIdentity'
+import { buildSourceFileParseIdentityHash, resolveSourceFileParseInput } from '@/features/source-files/sourceFileParseIdentity'
 import {
   buildSourceFileLifecycleState,
   buildSourceFileRecord,
@@ -150,7 +150,7 @@ export const buildSourceFileIdleReset = () =>
   buildSourceFileLifecycleState({ status: 'idle' })
 
 const parseJobBySourceFileId = new Map<string, number>()
-const pendingParseBySourceFileId = new Map<string, { promise: Promise<number | null>; source: SourceFileSource; textHash: string }>()
+const pendingParseBySourceFileId = new Map<string, { promise: Promise<number | null>; source: SourceFileSource; name: string; textHash: string }>()
 type SourceFileSource = ReturnType<typeof useGraphStore.getState>['sourceFiles'][number]['source']
 
 export async function applyImportedTextToSourceFile(args: {
@@ -247,10 +247,10 @@ export async function importFeishuBaseSnapshotIntoSourceFile(
 export async function parseAndApplySourceFile(fileId: string, options?: { applyComposedGraph?: boolean }): Promise<void> {
   const before = useGraphStore.getState().sourceFiles.find(file => file.id === fileId)
   if (!before || !String(before.text || '').trim()) return
-  const textHash = buildSourceFileParseIdentityHash({ cacheNamespace: `source-file:${fileId}`, name: before.name, text: before.text })
+  const textHash = buildSourceFileParseIdentityHash(resolveSourceFileParseInput(before))
   const pending = pendingParseBySourceFileId.get(fileId)
-  const pendingJob = pending?.textHash === textHash && areSourceFileSourcesEqual(before.source, pending.source)
-    ? pending : { promise: Promise.resolve().then(() => parseSourceFile(fileId, before)), source: before.source, textHash }
+  const pendingJob = pending?.textHash === textHash && pending.name === before.name && areSourceFileSourcesEqual(before.source, pending.source)
+    ? pending : { promise: Promise.resolve().then(() => parseSourceFile(fileId, before)), source: before.source, name: before.name, textHash }
   // Register before loading publication: synchronous subscribers must join this exact job.
   pendingParseBySourceFileId.set(fileId, pendingJob)
   try {
@@ -267,14 +267,10 @@ export async function parseAndApplySourceFile(fileId: string, options?: { applyC
 async function parseSourceFile(fileId: string, expected: ReturnType<typeof useGraphStore.getState>['sourceFiles'][number]): Promise<number | null> {
   const before = useGraphStore.getState().sourceFiles.find(file => file.id === fileId)
   if (!before || before.name !== expected.name || before.text !== expected.text || !areSourceFileSourcesEqual(before.source, expected.source)) return null
-  const name = String(before.name || '')
+  const parseInput = resolveSourceFileParseInput(before)
   const text = String(before.text || '')
   if (!text.trim()) return null
-  const textHash = buildSourceFileParseIdentityHash({
-    cacheNamespace: `source-file:${fileId}`,
-    name,
-    text,
-  })
+  const textHash = buildSourceFileParseIdentityHash(parseInput)
   const parseJobToken = (parseJobBySourceFileId.get(fileId) || 0) + 1
   parseJobBySourceFileId.set(fileId, parseJobToken)
   if (before.parsedGraphData && before.parsedTextHash === textHash) {
@@ -301,19 +297,15 @@ async function parseSourceFile(fileId: string, expected: ReturnType<typeof useGr
     }),
   )
   const result = await runImportFlow({
-    nameForParse: before.name,
+    nameForParse: parseInput.name,
     textForParse: text,
     applyToStore: false,
     sideEffects: false,
   })
   if (parseJobBySourceFileId.get(fileId) !== parseJobToken) return null
   const latest = useGraphStore.getState().sourceFiles.find(file => file.id === fileId)
-  if (!latest || !areSourceFileSourcesEqual(latest.source, before.source)) return null
-  if (buildSourceFileParseIdentityHash({
-    cacheNamespace: `source-file:${fileId}`,
-    name: String(latest.name || ''),
-    text: String(latest.text || ''),
-  }) !== textHash) return null
+  if (!latest || latest.name !== before.name || !areSourceFileSourcesEqual(latest.source, before.source)) return null
+  if (buildSourceFileParseIdentityHash(resolveSourceFileParseInput(latest)) !== textHash) return null
   const parsedOk = !!(
     result?.graphData
     && result.parserId
@@ -359,14 +351,9 @@ export async function refreshPersistedSourceFilesForCurrentParseIdentity(): Prom
     const file = files[index]
     if (!file) continue
     const id = String(file.id || '').trim()
-    const name = String(file.name || '')
     const text = String(file.text || '')
     if (!id || !text.trim()) continue
-    const nextHash = buildSourceFileParseIdentityHash({
-      cacheNamespace: `source-file:${id}`,
-      name,
-      text,
-    })
+    const nextHash = buildSourceFileParseIdentityHash(resolveSourceFileParseInput(file))
     if (String(file.parsedTextHash || '') !== nextHash) idsToReparse.push(id)
   }
   if (idsToReparse.length === 0) return

@@ -2,10 +2,12 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 87
+contract_version: 97
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
+  - command: ["node", "scripts/browser-proof-build.mjs"]
+    timeout_ms: 420000
   - command: ["node", "canvas/scripts/run_agent_mission_browser_smoke.mjs"]
     timeout_ms: 900000
   - command: ["npm", "-C", "canvas", "run", "test:smoke:xr-v2:browser"]
@@ -14,14 +16,13 @@ ci_command_timeout_overrides:
     timeout_ms: 900000
   - command: ["npm", "run", "travel-commerce:test"]
     timeout_ms: 900000
-  # Isolate measured expensive commands; retain their existing five-minute limits.
-  - command: ["npm", "run", "spatial-workspace:full-app"]
-    timeout_ms: 300000
-  - command: ["node", "canvas/scripts/run_block_editor_browser_smoke.mjs", "--build"]
+  - command: ["node", "canvas/scripts/run_spatial_workspace_full_app_smoke.mjs", "--verified-build"]
+    timeout_ms: 600000
+  - command: ["node", "canvas/scripts/run_block_editor_browser_smoke.mjs", "--verified-build"]
     timeout_ms: 300000
   - command: ["node", "canvas/scripts/run_python_learning_browser_smoke.mjs"]
     timeout_ms: 300000
-  - command: ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--build"]
+  - command: ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--verified-build"]
     timeout_ms: 300000
   - command: ["npm", "run", "runtime:test:core"]
     timeout_ms: 300000
@@ -76,6 +77,18 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  browser_proof_build:
+    roots: ["scripts/browser-proof-build.mjs", "scripts/__tests__/browser-proof-build.test.mjs"]
+    commands: [["node", "--test", "scripts/__tests__/browser-proof-build.test.mjs"], ["node", "scripts/browser-proof-build.mjs"], ["node", "canvas/scripts/run_spatial_workspace_full_app_smoke.mjs", "--verified-build"], ["node", "canvas/scripts/run_block_editor_browser_smoke.mjs", "--verified-build"], ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--verified-build"]]
+  verification_workspace:
+    roots: ["scripts/lib/git-verification-workspace.mjs", "scripts/__tests__/git-verification-workspace.test.mjs"]
+    commands: [["node", "--test", "scripts/__tests__/git-verification-workspace.test.mjs"]]
+  build_asset_budget:
+    roots: ["canvas/viteBoundedChunks.mjs", "scripts/__tests__/vite-build-asset-namespace.test.mjs"]
+    commands: [["node", "--test", "scripts/__tests__/vite-build-asset-namespace.test.mjs"]]
+  geospatial_provider:
+    roots: ["gympgrph/src/features/geospatial/mapLibreProviderStyle.ts", "gympgrph/src/features/geospatial/useMapLibreBasemap.ts", "gympgrph/src/features/geospatial/mapLibreFlightBootstrap.ts", "canvas/src/__tests__/flightSimMapLibreProviderStyleLoad.test.ts", "canvas/src/__tests__/flightSimMapLibreProviderStyleHandoff.test.ts", "canvas/src/__tests__/flightSimMapLibreOfflineStyle.test.ts"]
+    commands: [["npm", "run", "smoke:prepare"], ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/flightSimMapLibreProviderStyleLoad.test.ts", "canvas/src/__tests__/flightSimMapLibreProviderStyleHandoff.test.ts", "canvas/src/__tests__/flightSimMapLibreOfflineStyle.test.ts"]]
   workspace_project_canvas:
     roots: ["canvas/src/features/workspace-project/", "canvas/viteWorkspaceProject.ts", "canvas/viteWorkspaceArtifactBridge.ts", "canvas/src/features/panels/views/HistoryView.tsx", "canvas/src/__tests__/workspaceProjectPanel.test.tsx", "canvas/src/__tests__/workspaceProjectBridge.test.ts", "canvas/src/__tests__/workspaceCrossViewSync.test.tsx", "canvas/src/__tests__/storyboardWidgetMediaRecoveryBudget.test.tsx"]
     commands:
@@ -85,9 +98,9 @@ ci_scopes:
     commands:
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/sequenceFlow.test.ts", "canvas/src/__tests__/sequenceFlowPresentation.test.tsx", "canvas/src/__tests__/sequenceFlowReadiness.test.ts"]
   source_files_bootstrap:
-    roots: ["canvas/src/features/workspace-fs/applyWorkspaceImportToCanvas.ts", "canvas/src/features/source-files/sourceFilesRuntimeMaterialization.ts", "canvas/src/features/source-files/sourceFileParsedState.ts", "canvas/src/__tests__/workspaceBootstrapInventoryConvergence.test.ts", "canvas/src/__tests__/workspaceSeedMaterialization.test.ts", "canvas/src/features/source-files/sourceFilesBootstrapStartup.ts", "canvas/src/features/source-files/SourceFilesPersistenceBootstrap.tsx", "canvas/src/features/source-files/useSourceFilesWorkspaceRuntime.ts", "canvas/src/features/source-files/useSourceFilesCloudSync.ts", "canvas/src/features/source-files/useSourceFilesSeedSync.ts", "canvas/src/features/source-files/sourceFilesPersistenceContracts.ts", "canvas/src/__tests__/workspaceBootstrapSourceAuthority.test.ts", "canvas/src/__tests__/sourceFilesIngestStaleGuard", "canvas/src/__tests__/helpers/sourceFilesBootstrapSource.ts", "canvas/src/__tests__/sourceFilesStorageSync.test.ts", "canvas/src/__tests__/flightSimSourceAuthorityStorage.test.ts", "canvas/src/__tests__/agentic-graph-storage-enhancement-properties-persistence.test.ts", "canvas/src/__tests__/launchSpotlightStatusCardSharedLookupRegression.test.ts"]
+    roots: ["canvas/src/features/source-files/waitForSourceFilesBootstrap.ts", "canvas/src/__tests__/sourceFilesBootstrapImportWait.test.ts", "canvas/src/features/workspace-fs/applyWorkspaceImportToCanvas.ts", "canvas/src/features/source-files/sourceFilesRuntimeMaterialization.ts", "canvas/src/features/source-files/sourceFileParsedState.ts", "canvas/src/__tests__/workspaceBootstrapInventoryConvergence.test.ts", "canvas/src/__tests__/workspaceSeedMaterialization.test.ts", "canvas/src/features/source-files/sourceFilesBootstrapStartup.ts", "canvas/src/features/source-files/SourceFilesPersistenceBootstrap.tsx", "canvas/src/features/source-files/useSourceFilesWorkspaceRuntime.ts", "canvas/src/features/source-files/useSourceFilesCloudSync.ts", "canvas/src/features/source-files/useSourceFilesSeedSync.ts", "canvas/src/features/source-files/sourceFilesPersistenceContracts.ts", "canvas/src/__tests__/workspaceBootstrapSourceAuthority.test.ts", "canvas/src/__tests__/sourceFilesIngestStaleGuard", "canvas/src/__tests__/helpers/sourceFilesBootstrapSource.ts", "canvas/src/__tests__/sourceFilesStorageSync.test.ts", "canvas/src/__tests__/flightSimSourceAuthorityStorage.test.ts", "canvas/src/__tests__/agentic-graph-storage-enhancement-properties-persistence.test.ts", "canvas/src/__tests__/launchSpotlightStatusCardSharedLookupRegression.test.ts"]
     commands:
-      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/workspaceBootstrapInventoryConvergence.test.ts"]
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/workspaceBootstrapInventoryConvergence.test.ts", "canvas/src/__tests__/sourceFilesBootstrapImportWait.test.ts"]
       - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "sourceFiles.persistence.usesContentHashNotLengthOnly", "workspace.selection.switch.passiveSameTextKeepsFrontmatterPreset", "runtimePersistence.syncKey.ssot.sharedAcrossSubscriptions", "sourceFiles.ingest.bootstrap.hydratesPendingUrlSeeds", "sourceFiles.ingest.directTextPath.keepsMarkdownLikeUrls", "sourceFiles.bootstrap.mountsEagerlyBeforeIdleStartupRuntimes", "sourceFiles.bootstrap.ignoresPersistedWorkspaceBackedSourceFiles", "sourceFiles.slice.startsEmptyAndDefersWorkspaceSeedsToBootstrap", "sourceFiles.bootstrap.resyncsOnlyOnActivePathChanges", "sourceFiles.bootstrap.resyncsOnWorkspaceFsSeedChanges", "sourceFiles.parsedState.ownership.centralized", "workspaceRuntime.reusesParsedWorkspaceSourceFileInsteadOfDirectGraphOverride", "workspaceRuntime.applyUsesDirectParserPathForActiveText", "workspaceRuntime.applyGuardsStaleSourceFileSwitch", "workspaceRuntime.canvasAutoApplySkipsWidgetMode", "workspaceRuntime.refresh.setSourceFiles.immediatelySchedulesComposeApply"]
       - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "workspace.import.reusesRefreshSnapshotForApply", "workspace.import.focus.avoidsDuplicateGraphApply", "workspace.refresh.manualActions.suppressFollowUpFsEvent", "workspace.inlineText.ownership.centralized", "workspace.writeThroughAndActiveDocSync.ownership.centralized", "sourceFiles.db.persist.skipsUnchangedRows", "sourceFiles.storageSync.documentHash.forbidsParsedTextHashFeedback", "sourceFiles.bootstrap.storageInboundApply.skipsQueueEcho", "sourceFiles.bootstrap.safariStorageSync.guarded", "workspace.activeMaterialization.skipsImportWhenGraphApplyDisabled", "workspace.markdownDocumentSetter.decouplesWorkspaceViewMode", "spotlight.statusCard.sharedLookup.rootFix", "spotlight.statusCard.seedSyncDebug.tinyStatusLine", "storage.enhancement.property.02.offlineRetention", "storage.enhancement.sourceFiles.bootstrapQueueOwner", "workspaceFs.bootstrap.materialize."]
       - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "ui.sourceFiles.ingest.staleParseGuard", "ui.sourceFiles.ingest.dedupesPendingSameText"]
@@ -176,34 +189,40 @@ ci_scopes:
     commands:
       - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "markdown.workspace.toolbar.autoRoutesImageMode", "ui.markdown.workspace.toolbar.webpageViewControls", "markdown.workspace.toolbar.viewerAndHtmlRenderTogetherAfterSelection"]
   spatial_workspace:
-    roots: ["canvas/src/features/three/spatialWorkspace", "canvas/src/features/three/SpatialWorkspaceReview.tsx", "canvas/src/features/three/XrSubjectTransformEditor.tsx", "canvas/src/features/workspace-table/workspaceSceneMetadataAuthoring.ts", "canvas/src/hooks/store/graph-data-slice/graphDataFrontmatterFlowSync.ts", "canvas/src/hooks/store/graph-data-slice/graphDataNodeActions.ts", "canvas/src/features/agent-ready/xrSceneWebMcpTools.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/__tests__/spatialWorkspace", "canvas/scripts/run_spatial_workspace_browser_smoke.mjs", "canvas/scripts/run_spatial_workspace_full_app_smoke.mjs", "canvas/scripts/lib/aviation-evidence-offline-proof.mjs", "canvas/scripts/lib/spatial-smoke-diagnostics.mjs", "canvas/src/features/strybldr/strybldrTimelineBottomPanelLayout.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/core.ts"]
+    roots: ["canvas/src/features/three/spatialWorkspace", "canvas/src/features/three/SpatialWorkspaceReview.tsx", "canvas/src/features/three/XrSubjectTransformEditor.tsx", "canvas/src/features/workspace-table/workspaceSceneMetadataAuthoring.ts", "canvas/src/hooks/store/graph-data-slice/graphDataFrontmatterFlowSync.ts", "canvas/src/hooks/store/graph-data-slice/graphDataNodeActions.ts", "canvas/src/features/agent-ready/xrSceneWebMcpTools.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/__tests__/spatialWorkspace", "canvas/scripts/run_spatial_workspace_browser_smoke.mjs", "canvas/scripts/run_spatial_workspace_full_app_smoke.mjs", "canvas/scripts/lib/aviation-evidence-offline-proof.mjs", "canvas/scripts/lib/spatial-smoke-diagnostics.mjs", "canvas/scripts/lib/workspace-import-proof.mjs", "canvas/scripts/__tests__/workspace-import-proof.test.mjs", "canvas/src/features/strybldr/strybldrTimelineBottomPanelLayout.ts", "canvas/src/features/markdown-workspace/useWorkspaceFileActions/core.ts"]
     commands:
+      - ["node", "--test", "canvas/scripts/__tests__/workspace-import-proof.test.mjs"]
       - ["npm", "run", "spatial-workspace:test"]
       - ["npm", "run", "spatial-workspace:browser"]
-      - ["npm", "run", "spatial-workspace:full-app"]
+      - ["node", "scripts/browser-proof-build.mjs"]
+      - ["node", "canvas/scripts/run_spatial_workspace_full_app_smoke.mjs", "--verified-build"]
   block_editor:
     roots: ["canvas/src/features/block-editor/", "canvas/src/__tests__/blockEditor", "canvas/src/features/workspace-fs/", "canvas/src/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.io.ts", "canvas/src/__tests__/workspaceFsPersistenceReload.test.ts", "canvas/scripts/run_block_editor_browser_smoke.mjs"]
     commands:
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/blockEditorNative.test.tsx", "canvas/src/__tests__/blockEditorWorkspace.test.tsx"]
       - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "workspaceFs.indexedDb."]
-      - ["node", "canvas/scripts/run_block_editor_browser_smoke.mjs", "--build"]
+      - ["node", "scripts/browser-proof-build.mjs"]
+      - ["node", "canvas/scripts/run_block_editor_browser_smoke.mjs", "--verified-build"]
   xr_subject:
     roots: ["canvas/src/features/three/XrAuthoredSubjectGeometry.tsx", "canvas/src/features/three/XrSceneLibrarySubject.tsx", "canvas/src/features/three/XrSubject", "canvas/src/features/three/xrSubject", "canvas/src/features/three/xrMotionReferenceModel.ts", "canvas/src/features/three/xrMotionReferenceRuntime", "canvas/src/features/three/xrMotionReferenceSubjectPlacement.ts", "canvas/src/features/three/XrMotionReferenceRuntimeBridge.tsx", "canvas/src/__tests__/xrSubjectAuthoring.test.tsx", "canvas/src/tests/registry/postParserCases3Tail.ts"]
     commands:
       - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "xr.subject.draft.sourceAndSelectionFence", "xr.subject.editor.documentFenceAndPersistence"]
   evidence_analysis:
-    roots: ["canvas/src/features/evidence-analysis/", "canvas/public/evidence-analysis/", "canvas/src/features/agent-ready/evidenceAnalysisAgentReadyContract.mjs", "canvas/src/features/agent-ready/evidenceAnalysisWebMcpTools.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/features/agent-ready/webMcpToolRegistry.ts", "canvas/src/features/agent-ready/webMcpToolExposure.mjs", "mcp/local-tool-contract.js", "mcp/server.js"]
+    roots: ["canvas/src/features/game-flight-sim/flightSimInput.ts", "canvas/src/__tests__/flightSimHudFloatingPanelClearance.test.ts", "canvas/src/features/canvas/FlightSimRunReadyDemoRuntime.tsx", "canvas/src/__tests__/flightSimSourceAuthority.test.ts", "canvas/src/features/game-flight-sim/FlightSimFloatingPanelView.tsx", "canvas/src/features/evidence-analysis/", "canvas/public/evidence-analysis/", "canvas/src/features/agent-ready/evidenceAnalysisAgentReadyContract.mjs", "canvas/src/features/agent-ready/evidenceAnalysisWebMcpTools.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/features/agent-ready/webMcpToolRegistry.ts", "canvas/src/features/agent-ready/webMcpToolExposure.mjs", "mcp/local-tool-contract.js", "mcp/server.js"]
     commands:
       - ["node", "--test", "canvas/src/features/evidence-analysis/tests/evidence-core.test.mjs", "canvas/src/features/evidence-analysis/tests/evidence-readsb.test.mjs", "canvas/src/features/evidence-analysis/tests/volume-project.test.mjs", "canvas/src/features/evidence-analysis/tests/arrival-analysis.test.mjs", "canvas/src/features/evidence-analysis/tests/route-benchmark.test.mjs", "canvas/src/features/evidence-analysis/tests/notice-triage.test.mjs", "canvas/src/features/evidence-analysis/tests/evidenceTools.test.mjs"]
-      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/features/evidence-analysis/ui/EvidenceUi.test.tsx", "canvas/src/features/evidence-analysis/ui/evidenceInput.test.ts"]
+      - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/features/evidence-analysis/ui/EvidenceUi.test.tsx", "canvas/src/features/evidence-analysis/ui/evidenceInput.test.ts", "canvas/src/__tests__/flightSimHudFloatingPanelClearance.test.ts", "canvas/src/__tests__/flightSimSourceAuthority.test.ts"]
       - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "agentReady.webMcpRuntime.scope.budgets", "agentReady.webMcpRuntime.scope.workspace"]
   python_learning:
-    roots: ["canvas/src/features/python-learning/", "canvas/src/__tests__/pythonLearning", "canvas/scripts/run_python_learning_", "canvas/src/features/testing/PythonLearningSmokePage.tsx", "canvas/vitePythonLearningOffline.mjs", "canvas/viteServiceWorkerRevisionAuthority.mjs", "canvas/vitePwaRuntimeCachePolicy.ts", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/features/agent-ready/webMcpToolRegistry.ts", "canvas/src/features/agent-ready/webMcpToolExposure.mjs"]
+    roots: ["canvas/src/features/python-learning/", "canvas/src/__tests__/pythonLearning", "canvas/scripts/run_python_learning_", "canvas/src/features/testing/PythonLearningSmokePage.tsx", "canvas/vitePythonLearningOffline.mjs", "canvas/viteServiceWorkerRevisionAuthority.mjs", "canvas/vitePwaRuntimeCachePolicy.ts", "canvas/vitePwaPrecacheAdmission.mjs", "canvas/vite.config.ts", "canvas/src/__tests__/pipelinePwaEnhancementsRegression.test.ts", "canvas/sw.ts", "scripts/__tests__/vite-service-worker-owner.test.mjs", "canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs", "canvas/src/features/agent-ready/webMcpToolRegistry.ts", "canvas/src/features/agent-ready/webMcpToolExposure.mjs"]
     commands:
       - ["env", "TSX_TSCONFIG_PATH=canvas/tsconfig.json", "node", "--import", "tsx", "--test", "canvas/src/__tests__/pythonLearning.test.ts", "canvas/src/__tests__/pythonLearningLifecycle.test.ts", "canvas/src/__tests__/pythonLearningOffline.test.ts"]
       - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "agentReady.webMcpRuntime.scope.budgets", "agentReady.webMcpRuntime.scope.workspace"]
+      - ["npm", "-C", "canvas", "run", "test:ci:unit", "--", "pwa.shell.precachesHashedAssetsAndCachesLocalJson"]
+      - ["node", "--test", "scripts/__tests__/vite-service-worker-owner.test.mjs"]
       - ["node", "canvas/scripts/run_python_learning_browser_smoke.mjs"]
-      - ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--build"]
+      - ["node", "scripts/browser-proof-build.mjs"]
+      - ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--verified-build"]
   design_review:
     roots: ["grph-shared/src/ui/kgToken", "canvas/src/lib/ui/tokens-ssot.ts", "canvas/src/lib/markdown.ts", "canvas/src/cli/gen-kg-tokens-css.ts", "canvas/src/features/design/", "canvas/src/features/design-system/", "canvas/src/features/agent-ready/localCanvasTopologyInspection.ts", "canvas/src/__tests__/designTokenSummary.test.ts", "canvas/src/__tests__/kgTokenSsot.test.ts", "canvas/scripts/verify_design_browser_smoke.mjs"]
     commands:
@@ -440,21 +459,13 @@ ci_command_expansions:
 fallback_commands:
   - ["npm", "run", "check"]
 ---
-
 # agentic-graph Collaboration Runtime Contract
-
 ## Authority
-
 This opening YAML frontmatter is the machine source of truth for collaboration grammar, local source identity, deployment isolation, and affected-scope CI selection. Runtime scripts parse it directly; workflow files must not duplicate its source registry or path-to-command mapping.
-
 The protected Git guideline and checker under `huijoohwee.github.io/scripts/` are an external advisory projection. This contract and its repository-owned executable checks remain `agentic-graph`'s collaboration source of truth. `agentic-graph` may consume the upstream rule intent and exact protected revision, but it must not copy that guideline, checker implementation, rule catalog, or fixtures into this repository.
-
-An exact-path CI scope may narrow only its own composite command when the complete
-normalized change set consists exclusively of declared repository-relative file
-paths. Other matching scopes still run normally. Any mixed, unknown, directory,
+An exact-path CI scope may narrow only its own composite command when the complete normalized change set consists exclusively of declared repository-relative file paths. Other matching scopes still run normally. Any mixed, unknown, directory,
 configuration, or source path falls back to the ordinary affected-scope plan.
-An exact test mapping may explicitly select `scope_local: true` when its command
-executes the complete named test and no runtime source changes are exempted.
+An exact test mapping may explicitly select `scope_local: true` when its command executes the complete named test and no runtime source changes are exempted.
 Every changed path within that scope must then have an exact mapping; changes in
 other scopes keep their own checks. Unmatched paths restore the broader matching
 scope commands as well as the ordinary fallback.
@@ -474,12 +485,9 @@ derive that inventory from `GITHUB_BASE_REF`. Protected-refresh
 nonempty native and canonical bases. This keeps refreshed merge candidates
 scoped to the pull request versus its current base rather than the imported
 first-parent `main` delta.
-
 ## Invocation Grammar
-
 Every non-draft pull request starts with a YAML frontmatter declaration.
 Leading HTML comment wrappers around that declaration are ignored:
-
 ```yaml
 ---
 action: /change
@@ -488,7 +496,6 @@ actor: "@developer-or-codex-task"
 base_sha: "0123456789abcdef0123456789abcdef01234567"
 ---
 ```
-
 - `/` declares one operation.
 - `#` declares one semantic ownership scope.
 - `@` declares one accountable human or Codex task.
@@ -514,7 +521,7 @@ Draft pull requests may omit the declaration while their scope is being formed. 
 - Dev CI never writes a Prod mirror. After protected `main` integration and exact localhost review, the release workflow may create one ephemeral production candidate; it cannot deploy or publish before exact-candidate human authorization.
 - Commands are arrays rather than shell strings, preventing shell interpolation and keeping execution provider-neutral.
 - Affected CI expands declared composite commands through `ci_command_expansions` before exact-argv deduplication. Verified expansions must exactly match the root package script and cannot omit npm lifecycle hooks; drift blocks selection. The manual focused command remains unchanged, while shared prerequisites such as `npm run check` execute once and each expanded component retains the canonical per-command timeout. The pinned agentic-os process runner bounds output, cancels process groups, and emits numeric progress every 30 seconds; progress never grants passing or release authority.
-- `ci_command_timeout_overrides` carries the rare longer-running commands that need a stricter per-command bound than the global default. XR browser smoke uses a 15-minute cap because first-run Playwright downloads can consume a material slice of CI time on fresh GitHub runners.
+- `ci_command_timeout_overrides` binds exceptional command budgets. Shared browser build: 60 s input verification + unchanged 300 s compiler + 60 s output verification = 420 s total; browser journey deadlines stay unchanged. XR smoke retains 15 minutes for first-run Playwright preparation.
 - Every affected-scope command has the canonical bounded timeout; non-terminating checks fail closed instead of freezing the gate.
 - Native validation runs the complete affected selection in disjoint checks: `standard` contains commands within `ci_command_timeout_ms`, and each command with a larger declared timeout owns a separate `extended-<command-digest>` check. Exact command digests bind these selectors to this contract without duplicating its command catalog. Every declared partition must appear exactly once in the native policy or execution fails before running checks. Each extended check requires the standard check; unselected commands do no work. Existing per-command limits and the 15-minute native check ceiling remain in force. The default source command runs every partition. CI exports the aggregate native receipt so the last result cannot hide an earlier failure.
 - Unknown changed paths fail safe through `fallback_commands`.
