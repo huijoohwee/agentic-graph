@@ -70,9 +70,8 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithRetainedInacti
     2,
     'the viewport surfaces must reuse semantic figures for the direct Three and MapLibre media owners',
   )
-  assert.ok(xrPhysicsMediaSurface.includes(
-    'const semanticActive = active && physicsRunReady',
-  ))
+  assert.match(xrPhysicsMediaSurface, /const semanticActive = active\s/)
+  assert.ok(xrPhysicsMediaSurface.includes('physicsRunReady ? XR_PHYSICS_MEDIA_STAGE_DATA_ATTRIBUTES : undefined'))
   assert.equal(
     viewport.match(/<CanvasViewportGeospatialOverlayLazy\b/g)?.length,
     1,
@@ -169,7 +168,7 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithRetainedInacti
   assert.equal(/<(?:div)\b|aria-hidden|on(?:Click|Mouse|Pointer)/.test(mediaFigure), false)
   assert.ok(mediaSurface.includes('CITY_SIM_MEDIA_STAGE_LABEL'))
   assert.ok(xrPhysicsMediaSurface.includes('semanticMediaOwner={semanticActive ? {'))
-  assert.ok(xrPhysicsMediaSurface.includes('label: XR_PHYSICS_MEDIA_STAGE_LABEL'))
+  assert.ok(xrPhysicsMediaSurface.includes('const label = resolveThreeCanvasSemanticLabel(mode, physicsRunReady)'))
   assert.ok(viewport.includes('selectionTarget="descendant"'))
   assert.ok(viewport.includes('MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR'))
   assert.ok(
@@ -209,7 +208,7 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithRetainedInacti
     'the semantic SVG fallback must mount only while it owns the visible fallback surface',
   )
   assert.ok(
-    geospatialHost.includes(
+    readGympgrphSource('features/geospatial/SvgGeospatialFallback.tsx').includes(
       'getCanvas: () => semanticSurfaceRef.current',
     ),
     'the active SVG fallback must reuse the shared selectable media binder directly',
