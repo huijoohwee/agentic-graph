@@ -15,8 +15,11 @@ import { XrMotionReferenceRuntimeBridge } from '@/features/three/XrMotionReferen
 import { readXrMotionReferencePlan, serializeXrMotionReferencePlan } from '@/features/three/xrMotionReferenceModel'
 import { hydrateXrMotionReferenceRuntime, readXrMotionReferenceRuntime, restoreXrMotionReferenceRuntimeSnapshot } from '@/features/three/xrMotionReferenceRuntime'
 import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
+import { shouldMountThreeOverlayFrameSync } from '@/lib/three/threeRendererLifecycle'
 
 export async function testThreeGraphIgnoresUnrelatedStoreUpdates() {
+  assert.equal(shouldMountThreeOverlayFrameSync('xr'), false, 'XR must not mount a duplicate per-frame overlay/DPR subscriber')
+  assert.equal(shouldMountThreeOverlayFrameSync('3d'), true, 'Interactive 3D keeps overlay scheduling and adaptive resolution')
   const previous = useGraphStore.getState()
   const { dom, restore } = initJsdomHarness()
   const host = dom.window.document.body.appendChild(dom.window.document.createElement('main'))

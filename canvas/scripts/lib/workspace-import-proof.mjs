@@ -47,14 +47,16 @@ async function readImportedSource(path) {
   const read = request => new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error)
   })
-  const matches = []
+  const key = `entries\u0000${path}`, matches = []
   for (const { name } of await indexedDB.databases()) {
     if (!name?.includes('workspace-fs:indexeddb')) continue
     const db = await read(indexedDB.open(name))
     try {
       if (!db.objectStoreNames.contains('records')) continue
-      const entries = await read(db.transaction('records', 'readonly').objectStore('records').getAll())
-      matches.push(...entries.filter(item => item.collection === 'entries' && item.value?.path === path).map(item => item.value.text))
+      const entry = await read(db.transaction('records', 'readonly').objectStore('records').get(key))
+      if (entry?.key === key && entry.collection === 'entries' && entry.id === path && entry.value?.path === path) {
+        matches.push(entry.value.text)
+      }
     } finally { db.close() }
   }
   return matches

@@ -5,9 +5,9 @@ import { importWorkspaceFile } from '../lib/workspace-import-proof.mjs'
 
 const native = 'markdown-workspace-status', fallback = 'launch:import:localFiles'
 const path = '/notes/flight.md', source = '# Flight\nα\n'
-function fixture({ records = [{ collection: 'entries', value: { path, text: source } }], initial = [], databases, readError } = {}) {
+function fixture({ records = [{ key: `entries\u0000${path}`, collection: 'entries', id: path, value: { path, text: source } }], initial = [], databases, readError } = {}) {
   const dom = new JSDOM('<!doctype html><html><body></body></html>', { runScripts: 'outside-only' })
-  const { window } = dom, counters = { observers: 0, disconnected: 0, handles: 0, disposed: 0, closed: 0 }
+  const { window } = dom, counters = { observers: 0, disconnected: 0, handles: 0, disposed: 0, closed: 0, lookups: [], scans: 0 }
   const Observer = window.MutationObserver
   window.MutationObserver = class extends Observer {
     constructor(callback) { super(callback); counters.observers++ }
@@ -19,10 +19,19 @@ function fixture({ records = [{ collection: 'entries', value: { path, text: sour
   window.indexedDB = {
     databases: async () => databases || [{ name: 'workspace-fs:indexeddb:test' }],
     open: name => request({ objectStoreNames: { contains: () => true },
-      transaction: () => ({ objectStore: () => ({ getAll: () => {
-        if (!readError) return request(databases?.find(db => db.name === name)?.records || records)
-        const pending = { error: Error('IndexedDB read failed') }; queueMicrotask(() => pending.onerror?.()); return pending
-      } }) }), close: () => { counters.closed++ } }),
+      transaction: () => ({ objectStore: () => ({
+        get: key => {
+          counters.lookups.push(key)
+          const entries = databases?.find(db => db.name === name)?.records || records
+          if (!readError) return request(entries.find(entry => entry.key === key))
+          const pending = { error: Error('IndexedDB read failed') }; queueMicrotask(() => pending.onerror?.()); return pending
+        },
+        getAll: () => {
+          counters.scans++
+          if (!readError) return request(databases?.find(db => db.name === name)?.records || records)
+          const pending = { error: Error('IndexedDB read failed') }; queueMicrotask(() => pending.onerror?.()); return pending
+        },
+      }) }), close: () => { counters.closed++ } }),
   }
   const execute = (fn, ...args) => window.eval(`(${fn.toString()})`)(...args)
   const page = {
@@ -45,15 +54,16 @@ function fixture({ records = [{ collection: 'entries', value: { path, text: sour
   return { page, toast, tick, run, counters, clean, window }
 }
 
-test('fresh native import proves exact persisted UTF-8 bytes and cleans up', async () => {
-  const f = fixture()
+test('fresh native import proves exact persisted UTF-8 bytes by primary key and cleans up', async () => {
+  const f = fixture({ records: [{ key: `entries\u0000${path}`, collection: 'entries', id: path, value: { path, text: source } }] })
   const result = await f.run(async () => { assert.equal(f.counters.observers, 1); f.toast(native, 'Importing'); await f.tick(); f.toast(native, 'Imported 1; corpus ready') })
   assert.equal(result.channel, native); assert.equal(result.bytes, Buffer.byteLength(source)); assert.equal(result.path, path)
+  assert.deepEqual(f.counters.lookups, [`entries\u0000${path}`]); assert.equal(f.counters.scans, 0)
   assert.equal(f.counters.closed, 1); f.clean()
 })
 
 test('fresh fallback completion and replaced terminal nodes are supported', async () => {
-  const f = fixture({ initial: [[fallback, 'Imported 1 file(s)']] })
+  const f = fixture({ records: [{ key: `entries\u0000${path}`, collection: 'entries', id: path, value: { path, text: source } }], initial: [[fallback, 'Imported 1 file(s)']] })
   const result = await f.run(async () => f.toast(fallback, 'Imported 1 file(s)', 'status', true))
   assert.equal(result.channel, fallback); f.clean()
 })
@@ -78,9 +88,9 @@ for (const [message, role] of [['Import failed: disk full', 'status'], ['Import 
 
 for (const [name, records] of [
   ['missing', []],
-  ['wrong path', [{ collection: 'entries', value: { path: '/elsewhere.md', text: source } }]],
-  ['wrong bytes', [{ collection: 'entries', value: { path, text: source.trim() } }]],
-  ['duplicate', Array.from({ length: 2 }, () => ({ collection: 'entries', value: { path, text: source } }))],
+  ['wrong path', [{ key: 'entries\u0000/elsewhere.md', collection: 'entries', id: '/elsewhere.md', value: { path: '/elsewhere.md', text: source } }]],
+  ['wrong bytes', [{ key: `entries\u0000${path}`, collection: 'entries', id: path, value: { path, text: source.trim() } }]],
+  ['wrong id', [{ key: `entries\u0000${path}`, collection: 'entries', id: '/elsewhere.md', value: { path, text: source } }]],
 ]) {
   test(`rejects ${name} persisted source and closes database`, async () => {
     const f = fixture({ records }); await assert.rejects(f.run(async () => f.toast(native, 'Imported 1')), /exactly one record with exact bytes/)
@@ -119,7 +129,7 @@ test('deadline validation prevents action and observer allocation', async () => 
 
 
 test('duplicate exact paths across workspace databases fail and all databases close', async () => {
-  const entry = { collection: 'entries', value: { path, text: source } }
+  const entry = { key: `entries\u0000${path}`, collection: 'entries', id: path, value: { path, text: source } }
   const f = fixture({ databases: [{ name: 'workspace-fs:indexeddb:a', records: [entry] }, { name: 'workspace-fs:indexeddb:b', records: [entry] }] })
   await assert.rejects(f.run(async () => f.toast(native, 'Imported 1')), /found 2/)
   assert.equal(f.counters.closed, 2); f.clean()

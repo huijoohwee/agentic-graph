@@ -41,7 +41,7 @@ import { readWebglSupport } from '@/lib/three/webglSupport'
 import { XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE } from '@/features/three/xrNativeControllerDemoRuntime'
 import { resolveAuthoredWorldPaused } from '@/lib/three/authoredWorldPause'
 import { boundedInverseFitScale, fitFloorOffset, readXrStageMetersPerUnit, resolveSceneBackgroundColor } from '@/lib/three/threeGraphSceneLayout'
-import { resolveThreeRendererLifecycleKey, resolveThreeSceneFrameLoop, shouldMountThreeRenderer } from '@/lib/three/threeRendererLifecycle'
+import { resolveThreeRendererLifecycleKey, resolveThreeSceneFrameLoop, shouldMountThreeOverlayFrameSync, shouldMountThreeRenderer } from '@/lib/three/threeRendererLifecycle'
 import { resolveThreeGraphXrSceneAuthority, ThreeGraphImmersiveMediaHud, ThreeGraphImmersiveMediaStage, useThreeGraphImmersiveMediaActive } from '@/lib/three/ThreeGraphImmersiveMedia'
 import { readImmersiveMediaSnapshot } from '@/features/immersive-media/immersiveMediaRuntime'
 import { type ThreeCanvasSemanticMediaOwner, useThreeCanvasSemanticOwner } from '@/lib/three/threeCanvasSemanticOwner'
@@ -560,7 +560,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
               }
             }}
           /> : null}
-          <OverlayFrameSync enabled={active && mode !== 'xr'} scheduleRef={scheduleRef} onResolutionChange={setCanvasDpr} />
+          {shouldMountThreeOverlayFrameSync(mode) ? <OverlayFrameSync enabled={active} scheduleRef={scheduleRef} onResolutionChange={setCanvasDpr} /> : null}
         </React.Suspense>
       </Canvas>
       </XrSubjectHoverProvider>

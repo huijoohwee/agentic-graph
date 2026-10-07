@@ -73,6 +73,11 @@ export function resolveThreeRendererLifecycleKey(mode: Canvas3dModeId): string {
   return `scene-canvas-${mode}`
 }
 
+/** XR owns its frame loop; the DOM overlay sampler is only mounted for non-XR canvases. */
+export function shouldMountThreeOverlayFrameSync(mode: Canvas3dModeId): boolean {
+  return mode !== 'xr'
+}
+
 /** Static inspection should not trade pixel detail for an idle animation frame rate. */
 export function resolveThreeSceneFrameLoop(input: Readonly<{
   paused: boolean; immersiveMedia: boolean; gameplay: boolean; savedObjectView: boolean; learningScene?: boolean
