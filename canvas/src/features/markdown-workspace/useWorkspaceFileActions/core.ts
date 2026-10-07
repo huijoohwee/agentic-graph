@@ -202,7 +202,9 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
   const status = useWorkspaceStatusHelpers()
 
   const applyImportedTextToGraph = React.useCallback(
-    async (inner: { nameForParse: string; text: string }) => {
+    async (inner: { nameForParse: string; text: string; jobId?: number }) => {
+      const isCurrent = () => inner.jobId == null || importJobRef.current === inner.jobId
+      if (!isCurrent()) return
       const storeBefore = useGraphStore.getState()
       const resolvedText = await (async (): Promise<string> => {
         const meta = parsePdfWorkspaceFrontmatter(inner.text)
@@ -219,11 +221,15 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
           return inner.text
         }
       })()
+      if (!isCurrent()) return
 
       const okMarkdown = await applyMarkdownDocumentToGraph(inner.nameForParse, resolvedText, { force: true })
+      if (!isCurrent()) return
       if (!okMarkdown) {
         const { loadGraphDataFromTextViaParser } = (await import('@/features/parsers/loader')) as typeof import('@/features/parsers/loader')
+        if (!isCurrent()) return
         await loadGraphDataFromTextViaParser(inner.nameForParse, resolvedText, { applyToStore: true })
+        if (!isCurrent()) return
       }
 
       const preset = resolveCanvasFrontmatterPreset({ graphData: useGraphStore.getState().graphData, rawText: resolvedText })
@@ -267,12 +273,14 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
           const schema = store.schema
           if (schema) {
             const { enableHandlesForAllInputsInSchema } = (await import('@/lib/storyboardWidget/storyboardWidgetActions')) as typeof import('@/lib/storyboardWidget/storyboardWidgetActions')
+            if (!isCurrent()) return
             const res = enableHandlesForAllInputsInSchema(schema)
             if (res.changed) store.setSchema(res.schema)
           }
           store.setCanvasRenderMode('2d')
           store.setCanvas2dRenderer('storyboard')
           await requestCanvasFrontmatterGeospatialSurface(false)
+          if (!isCurrent()) return
         }
         store.setWorkspaceViewMode('canvas')
         return
@@ -285,6 +293,7 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
     async (path: WorkspacePath, opts?: { sourceUrl?: string | null; jsonSourceText?: string | null; applyToGraph?: boolean; jobId?: number }) => {
       if (opts?.jobId != null && importJobRef.current !== opts.jobId) return
       const fs = await getFs()
+      if (opts?.jobId != null && importJobRef.current !== opts.jobId) return
       const text = await fs.readFileText(path)
       if (opts?.jobId != null && importJobRef.current !== opts.jobId) return
       const docKey = workspaceDocumentKey(path)
@@ -303,7 +312,7 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
         opts?.applyToGraph === true ||
         (opts?.applyToGraph !== false && shouldApplyImportedCanvasDocumentToGraph({ path: docKey || String(path || ''), text: content }))
       if (docKey && content.trim() && shouldApplyToGraph) {
-        await applyImportedTextToGraph({ nameForParse: docKey, text: content })
+        await applyImportedTextToGraph({ nameForParse: docKey, text: content, jobId: opts?.jobId })
       }
     },
     [
@@ -336,8 +345,9 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
   )
 
   const revealWorkspacePath = React.useCallback(
-    async (path: WorkspacePath, opts?: { activate?: boolean }) => {
+    async (path: WorkspacePath, opts?: { activate?: boolean; jobId?: number }) => {
       await setSelectionPathSafe(path)
+      if (opts?.jobId != null && importJobRef.current !== opts.jobId) return
       if (opts?.activate !== false) setActivePathSafe(path)
       setExpandedPaths(prev => {
         const next = new Set(prev)
@@ -352,10 +362,14 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
     async (createdPath: WorkspacePath, opts?: { sourceUrl?: string | null; jsonSourceText?: string | null; applyToGraph?: boolean; jobId?: number }) => {
       if (opts?.jobId != null && importJobRef.current !== opts.jobId) return
       try {
-        await revealWorkspacePath(createdPath, { activate: false })
+        await revealWorkspacePath(createdPath, { activate: false, jobId: opts?.jobId })
+        if (opts?.jobId != null && importJobRef.current !== opts.jobId) return
         await syncFocusedWorkspacePath(createdPath, opts)
+        if (opts?.jobId != null && importJobRef.current !== opts.jobId) return
         setActivePathSafe(createdPath)
       } catch (e) {
+        if (opts?.jobId != null && importJobRef.current !== opts.jobId) return
+        if (opts?.jobId != null) throw e
         if (opts?.applyToGraph) {
           status.setStatusError(`Apply failed: ${String((e as { message?: unknown })?.message ?? e)}`)
         } else {

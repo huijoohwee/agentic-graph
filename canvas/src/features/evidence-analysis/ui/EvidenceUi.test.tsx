@@ -90,16 +90,85 @@ test('inspection disclosure exposes the complete shared typed record beyond the 
 test('a late example response cannot admit data or replace status after an authored source change', async () => {
   const restoreSource = saveSource(), env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)
   const oldFetch = globalThis.fetch
+  let requestSignal: AbortSignal | undefined
   let resolveResponse!: (response: Response) => void
-  globalThis.fetch = (() => new Promise<Response>(resolve => { resolveResponse = resolve })) as typeof fetch
+  globalThis.fetch = ((_path, init) => { requestSignal = init?.signal as AbortSignal; return new Promise<Response>(resolve => { resolveResponse = resolve }) }) as typeof fetch
   try {
     installSource(); await act(async () => root.render(<EvidencePanel />))
     await act(async () => [...container.querySelectorAll('button')].find(element => element.textContent === 'Load labelled example')!.click())
     assert.match(container.textContent!, /Reading local evidence/)
     await act(async () => installSource(documentText + '\nNew revision.', 2))
+    assert.equal(requestSignal?.aborted, true, 'source departure stops the outstanding I/O')
     await act(async () => { resolveResponse(new Response(readFileSync(new URL('../../../../public/evidence-analysis/fixtures/aviation-synthetic-v1.json', import.meta.url)))); await new Promise(resolve => setTimeout(resolve, 20)) })
     assert.equal(container.querySelector('[aria-label="Accepted evidence record"]'), null)
     assert.match(container.querySelector('[role="status"]')!.textContent!, /Current source configuration ready/)
+  } finally { await act(async () => root.unmount()); globalThis.fetch = oldFetch; restoreSource(); env.restore() }
+})
+for (const intent of ['none', 'pointer', 'keyboard', 'outside', 'source']) test(`async evidence respects ${intent} focus intent`, async () => {
+  const restoreSource = saveSource(), env = initJsdomHarness(), doc = env.dom.window.document
+  // This harness defaults activeElement to body; exercise the native jsdom focus owner.
+  Reflect.deleteProperty(doc, 'activeElement')
+  const container = doc.body.appendChild(doc.createElement('main')), root = createRoot(container)
+  const outside = doc.body.appendChild(doc.createElement('button')), oldFetch = globalThis.fetch
+  let resolveResponse!: (response: Response) => void
+  globalThis.fetch = (() => new Promise<Response>(resolve => { resolveResponse = resolve })) as typeof fetch
+  try {
+    installSource(); await act(async () => root.render(<EvidencePanel />))
+    const load = [...container.querySelectorAll('button')].find(element => element.textContent === 'Load labelled example')!
+    load.focus()
+    await act(async () => load.click())
+    assert.equal(load.disabled, true)
+    // Chromium drops focus when the active button becomes disabled; jsdom does not.
+    doc.body.tabIndex = -1; doc.body.focus(); assert.ok(doc.activeElement === doc.body)
+    if (intent === 'pointer') doc.body.dispatchEvent(new env.dom.window.Event('pointerdown', { bubbles: true }))
+    if (intent === 'keyboard') doc.body.dispatchEvent(new env.dom.window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    if (intent === 'outside') outside.focus()
+    if (intent === 'source') await act(async () => installSource(documentText + '\nChanged.', 2))
+    await act(async () => resolveResponse(new Response(readFileSync(new URL('../../../../public/evidence-analysis/fixtures/aviation-synthetic-v1.json', import.meta.url)))))
+    await settle(() => !load.disabled)
+    assert.ok(doc.activeElement === (intent === 'none' ? load : intent === 'outside' ? outside : doc.body), 'focus follows the latest user intent')
+    if (intent === 'none') {
+      const query = [...container.querySelectorAll('button')].find(element => element.textContent === 'Run read-only query')!
+      query.focus(); await act(async () => { query.click(); query.blur() })
+      await settle(() => !query.disabled)
+      assert.ok(doc.activeElement === query, 'query completion retains its keyboard origin')
+    }
+  } finally { await act(async () => root.unmount()); outside.remove(); globalThis.fetch = oldFetch; restoreSource(); env.restore() }
+})
+for (const departure of ['remove', 'view', 'unmount']) test(`pending evidence input is cancelled on ${departure}`, async () => {
+  const restoreSource = saveSource(), env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)
+  const oldFetch = globalThis.fetch
+  let requestSignal: AbortSignal | undefined, mounted = true
+  globalThis.fetch = ((_path, init) => { requestSignal = init?.signal as AbortSignal; return new Promise(() => {}) }) as typeof fetch
+  const button = (label: string) => [...container.querySelectorAll('button')].find(element => element.textContent === label)!
+  try {
+    installSource(); await act(async () => root.render(<EvidencePanel />))
+    await act(async () => button('Load labelled example').click())
+    assert.equal(requestSignal?.aborted, false)
+    await act(async () => {
+      if (departure === 'unmount') { root.unmount(); mounted = false }
+      else button(departure === 'remove' ? 'Remove record' : 'Volumes').click()
+    })
+    assert.equal(requestSignal?.aborted, true)
+    if (mounted) assert.doesNotMatch(container.textContent!, /Reading local evidence/)
+  } finally { if (mounted) await act(async () => root.unmount()); globalThis.fetch = oldFetch; restoreSource(); env.restore() }
+})
+test('a failed replacement read retains the accepted record and enables retry', async () => {
+  const restoreSource = saveSource(), env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)
+  const oldFetch = globalThis.fetch
+  const fixture = readFileSync(new URL('../../../../public/evidence-analysis/fixtures/aviation-synthetic-v1.json', import.meta.url))
+  globalThis.fetch = (async () => new Response(fixture)) as typeof fetch
+  const button = (label: string) => [...container.querySelectorAll('button')].find(element => element.textContent === label)!
+  try {
+    installSource(); await act(async () => root.render(<EvidencePanel />))
+    await act(async () => button('Load labelled example').click()); await settle(() => container.textContent!.includes('Accepted result is bound'))
+    const accepted = container.querySelector('[aria-label="Accepted evidence record"]')!.textContent
+    globalThis.fetch = (async () => { throw new Error('Local evidence read exceeded its deadline.') }) as typeof fetch
+    await act(async () => button('Load labelled example').click()); await settle(() => container.textContent!.includes('Not accepted:'))
+    assert.equal(container.querySelector('[aria-label="Accepted evidence record"]')!.textContent, accepted)
+    assert.match(container.textContent!, /Previous accepted result retained/)
+    assert.equal(button('Load labelled example').disabled, false)
+    assert.equal(button('Run read-only query').disabled, false)
   } finally { await act(async () => root.unmount()); globalThis.fetch = oldFetch; restoreSource(); env.restore() }
 })
 for (const change of [

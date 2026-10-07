@@ -10,6 +10,7 @@ import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import { notifyWorkspaceFsChanged, runWorkspaceFsChangedBatch } from '@/features/workspace-fs/workspaceFsEvents'
 import { writeWorkspaceAutoRefreshEnabledSetting, writeWorkspaceSeedSyncEnabledSetting } from '@/lib/workspace/workspaceStoreSyncSettings'
 import { renderImportInventory } from '@/features/workspace-fs/importInventory'
+import { readWorkspaceSeedSyncRuntimeSnapshot } from '@/lib/workspace/workspaceSeedSyncRuntime'
 
 export async function testMarkdownWorkspaceReadOnlyInventorySettles() {
   await testReadOnlyInventorySettles()
@@ -152,42 +153,56 @@ async function testMutationRefreshPreservesExplicitReconciliation() {
     return <output>{state.loadError || state.entries.map(entry => entry.text || entry.path).join(',')}</output>
   }
   const waitFor = async (ready: () => boolean) => {
-    for (let i = 0; i < 100 && !ready(); i++) await new Promise(resolve => setTimeout(resolve, 10))
+    // Commit each React turn before checking DOM. listEntries counts read starts,
+    // while refresh still awaits inventory persistence and text hydration.
+    for (let i = 0; i < 100 && !ready(); i++) {
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)) })
+    }
     assert.ok(ready(), 'Scheduled workspace refresh must settle')
   }
+  const isIdle = () => readWorkspaceSeedSyncRuntimeSnapshot().activeTaskCount === 0
   try {
     await act(async () => { root.render(<Harness />) })
     await act(async () => { await refresh!() })
     assert.equal(seeds, 1, 'Explicit Refresh must reconcile seeds')
     assert.match(container.textContent || '', /# First/)
     const sourceFiles = useGraphStore.getState().sourceFiles
+    const beforeArtifactReads = reads
     await act(async () => {
       notifyWorkspaceFsChanged({ op: 'batch', path: '/xr-assets/capture.md' })
-      await waitFor(() => reads === 2)
     })
+    await waitFor(() => reads > beforeArtifactReads && isIdle())
     assert.equal(seeds, 1, 'Artifact mutation must not reconcile unchanged seeds')
     assert.equal(useGraphStore.getState().sourceFiles, sourceFiles, 'No-op refresh preserves source identities')
 
     entries = entries.map(entry => entry.path === '/docs/test.md' ? { ...entry, text: '# Changed', updatedAtMs: 2 } : entry)
+    heldRead = new Promise(resolve => { releaseRead = resolve })
+    const beforeMixedReads = reads
     await act(async () => {
       await runWorkspaceFsChangedBatch(() => {
         notifyWorkspaceFsChanged({ op: 'writeFileText', path: '/docs/test.md' })
         notifyWorkspaceFsChanged({ op: 'writeFileText', path: '/xr-assets/second.md' })
       })
-      await waitFor(() => reads === 3)
     })
+    await waitFor(() => reads > beforeMixedReads && heldRead === null)
+    assert.match(container.textContent || '', /# First/, 'A started read is not a committed refresh')
+    await act(async () => { releaseRead!() })
+    await waitFor(() => isIdle() && (container.textContent || '').includes('# Changed'))
     assert.equal(seeds, 1)
     assert.match(container.textContent || '', /# Changed/, 'Mixed batches must retain earlier document changes')
 
     heldRead = new Promise(resolve => { releaseRead = resolve })
+    const beforeQueuedReads = reads
     await act(async () => {
       notifyWorkspaceFsChanged({ op: 'createFile', path: '/docs/queued.md' })
-      await waitFor(() => reads === 4)
+    })
+    await waitFor(() => reads > beforeQueuedReads && heldRead === null)
+    await act(async () => {
       await refresh!()
       await refresh!({ silent: true, reconcileSeed: false })
       releaseRead!()
-      await waitFor(() => reads === 5)
     })
+    await waitFor(() => isIdle() && seeds === 2 && statuses.length === 2)
     assert.equal(seeds, 2, 'Queued full refresh survives a subsequent local refresh')
     assert.equal(statuses.length, 2, 'Queued explicit refresh retains its visible progress')
     fail = true
@@ -199,8 +214,12 @@ async function testMutationRefreshPreservesExplicitReconciliation() {
   } finally {
     releaseRead?.()
     await act(async () => { root.unmount() })
-    fs.listEntries = originalList; fs.ensureSeed = originalSeed
-    useGraphStore.getState().setSourceFiles(originalSources)
-    resetWorkspaceFsForTests(); restore()
+    try {
+      await waitFor(isIdle)
+    } finally {
+      fs.listEntries = originalList; fs.ensureSeed = originalSeed
+      useGraphStore.getState().setSourceFiles(originalSources)
+      resetWorkspaceFsForTests(); restore()
+    }
   }
 }
