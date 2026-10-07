@@ -10,7 +10,13 @@ import { whenFloatingPanelBridgeReady } from '@/features/toolbar/floatingPanelBr
 import type { ChatMessage } from '@/features/chat/FloatingPanelChatSections'
 import { getLocalStorage, writeJsonToStorage } from '@/lib/persistence'
 import { buildLiveCanvasHeroPresetDemo, type LiveCanvasHeroPresetSelection } from './liveCanvasHeroPresetDemo'
-import { buildLiveCanvasHeroDemoReply, loadLiveCanvasHeroDemo, LIVE_CANVAS_HERO_DEMO_SOURCE, type LiveCanvasHeroDemo } from './liveCanvasHeroDemoSource'
+import {
+  buildLiveCanvasHeroDemoReply,
+  FLIGHT_SIM_HERO_DEMO_SOURCE_PATH,
+  loadLiveCanvasHeroDemo,
+  LIVE_CANVAS_HERO_DEMO_SOURCE,
+  type LiveCanvasHeroDemo,
+} from './liveCanvasHeroDemoSource'
 
 /** Seed only the activated demo's native history identity. */
 export function handoffLiveCanvasHeroDemoHistory(id: string, text: string, messages: ChatMessage[]): void {
@@ -26,6 +32,7 @@ export function handoffLiveCanvasHeroDemoHistory(id: string, text: string, messa
 }
 
 export function buildLiveCanvasHeroDemoDocument(selection: LiveCanvasHeroPresetSelection, demo: LiveCanvasHeroDemo, graphId: string) {
+  if (demo.sourcePath) throw new Error('This demo opens its canonical workspace seed directly.')
   const graph = buildLiveCanvasHeroPresetDemo(selection, demo)
   const reply = buildLiveCanvasHeroDemoReply(demo)
   const messages: ChatMessage[] = [
@@ -59,6 +66,28 @@ export async function activateLiveCanvasHeroDemo(selection: LiveCanvasHeroPreset
     return
   }
   const demo = await loadLiveCanvasHeroDemo(selection.id)
+  if (selection.id === 'flight-sim') {
+    if (demo.sourcePath !== FLIGHT_SIM_HERO_DEMO_SOURCE_PATH
+      || selection.prompt.trim().replace(/\s+/g, ' ') !== '/flight.sim @canvas #flight operation=open') {
+      throw new Error('Reload the source-backed Flight Sim preset before opening Demo.')
+    }
+    const fs = await getWorkspaceFs()
+    const path = demo.sourcePath as `/docs/${string}`
+    const text = String(await fs.readFileText(path).catch(() => ''))
+    const { isFlightSimRunReadyDemoActive } = await import('@/features/workspace-fs/workspaceRunReadyDemos')
+    if (!text || !isFlightSimRunReadyDemoActive(path, text)) {
+      throw new Error(`The canonical Flight Sim workspace seed is unavailable or has a conflicting identity: ${path}`)
+    }
+    useGraphStore.getState().setWorkspaceViewState({ mode: 'editor', paneOpen: true })
+    if (!await activateFirstImportedWorkspaceFile({ fs, createdPaths: [path], applyToGraph: true })) {
+      throw new Error('The canonical Flight Sim seed could not become active. Your existing document is still available.')
+    }
+    const active = useGraphStore.getState()
+    if (!isFlightSimRunReadyDemoActive(active.markdownDocumentName, active.markdownDocumentText)) {
+      throw new Error('The active document did not retain the canonical Flight Sim identity.')
+    }
+    return
+  }
   if (selection.id === 'programmatic-drone-flight') {
     const { activateProgrammaticDroneDemo, isProgrammaticDronePrompt } = await import('@/features/python-learning/programmaticDronePreset')
     if (!isProgrammaticDronePrompt(selection.prompt)) throw new Error('Reload the Programmatic Drone Flight preset before opening Demo.')

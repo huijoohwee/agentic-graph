@@ -15,6 +15,17 @@ demos:
         text: "After a completed flight, Share canvas embed copies an iframe for the same Graph scene and recorded flight. Replay never connects a receiver."
       - title: GameXR simulated bench
         text: "Send to GameXR opens a review tab with the flight path. Connect the simulated receiver, then Run. No physical aircraft or motors are controlled."
+  - id: flight-sim
+    title: Local Flight Simulator
+    source_path: /docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md
+    reply: "Open the source-authored local Flight Sim. Demo applies its canonical workspace seed and starts the existing deterministic practice runtime without creating another document or calling a model."
+    outputs:
+      - title: Canonical source
+        text: "Open /docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md directly. Its authored run_ready_demo identity owns Geo+XR presentation and the Flight Sim panel."
+      - title: Local practice
+        text: "The mission is a browser-local simulation. Start, pause, resume, restart, save, and exit remain explicit controls; no physical aircraft or external service is controlled."
+      - title: Map and evidence boundary
+        text: "The native MapLibre surface presents the authored local route and separately sourced observations. Geographic context does not establish clearance, sovereignty, or airport assignment."
   - id: xr-physics
     title: Physics Playground
     background: xr-physics

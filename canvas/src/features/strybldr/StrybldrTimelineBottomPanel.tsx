@@ -5,6 +5,7 @@ import { PanelViewTabs, PanelViewTab } from '@/features/panels/ui/PanelViewTabs'
 import { FloatingPanel } from '@/components/ui/FloatingPanel'
 import HeaderActions from '@/features/panels/ui/HeaderActions'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { Z_INDEX_WORKSPACE_EDITOR_BACKGROUND_PANEL } from '@/lib/ui/zIndex'
 import { UI_SELECTORS } from '@/lib/config'
 import { WORKSPACE_LEFT_PANE_SELECTOR } from '@/lib/canvas/viewportMeasureElement'
 import { beginRichMediaPanelResizeDrag, RichMediaPanelResizeHandle } from '@/components/RichMediaPanel'
@@ -60,7 +61,11 @@ export function StrybldrTimelineBottomPanel({
   workspaceEditorOverlayOpen?: boolean
 }) {
   const floatingPanelZIndex = useGraphStore(s => s.floatingPanelZIndex)
-  const panelStack = usePanelStack('bottom', floatingPanelZIndex)
+  const panelStack = usePanelStack(
+    'bottom',
+    workspaceEditorOverlayOpen ? Z_INDEX_WORKSPACE_EDITOR_BACKGROUND_PANEL : floatingPanelZIndex,
+    !workspaceEditorOverlayOpen,
+  )
   const { panelTextClass } = usePanelTypography()
   const { active: warehouseInspectionActive } = useWarehouseInspectionMode()
   const rootLayerRef = React.useRef<HTMLElement | null>(null)

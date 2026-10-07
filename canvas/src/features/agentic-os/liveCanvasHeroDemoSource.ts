@@ -1,11 +1,14 @@
 import { load as parseYaml } from 'js-yaml'
+import { FLIGHT_SIM_DEMO_REPO_REL_PATH } from '@/features/workspace-fs/workspaceRunReadyDemos'
 
 export const LIVE_CANVAS_HERO_DEMO_SOURCE = 'docs/workspace-seeds/demo.md'
+export const FLIGHT_SIM_HERO_DEMO_SOURCE_PATH = `/${FLIGHT_SIM_DEMO_REPO_REL_PATH}` as const
 export type LiveCanvasHeroDemo = {
   id: string
   title: string
   background?: 'xr-physics' | 'python-drone'
   repository?: string
+  sourcePath?: typeof FLIGHT_SIM_HERO_DEMO_SOURCE_PATH
   reply: string
   outputs: { title: string; text: string }[]
 }
@@ -20,9 +23,13 @@ export function parseLiveCanvasHeroDemos(text: string): LiveCanvasHeroDemo[] {
   const ids = new Set<string>()
   const string = (value: unknown): value is string => typeof value === 'string' && !!value.trim() && value.length <= 4_000
   return source.demos.map(raw => {
-    const demo = raw as LiveCanvasHeroDemo | null
+    const rawDemo = raw as (LiveCanvasHeroDemo & { source_path?: unknown }) | null
+    const sourcePath = rawDemo?.source_path
+    const demo = rawDemo ? { ...rawDemo, ...(sourcePath !== undefined ? { sourcePath } : {}) } as LiveCanvasHeroDemo : null
     if (!demo || !string(demo.id) || !/^[a-z0-9-]+$/.test(demo.id) || ids.has(demo.id)
       || !string(demo.title) || !string(demo.reply)
+      || (demo.id === 'flight-sim' && sourcePath !== FLIGHT_SIM_HERO_DEMO_SOURCE_PATH)
+      || (sourcePath !== undefined && (demo.id !== 'flight-sim' || sourcePath !== FLIGHT_SIM_HERO_DEMO_SOURCE_PATH))
       || (demo.background !== undefined && !(
         (demo.background === 'xr-physics' && demo.id === 'xr-physics')
         || (demo.background === 'python-drone' && demo.id === 'programmatic-drone-flight')))

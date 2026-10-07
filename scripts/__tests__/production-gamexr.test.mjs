@@ -5,9 +5,21 @@ import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import YAML from 'yaml'
-import { admitGameXr, assertAnalyticsDisabled, fetchGameXrBytes, validateGameXrPin, verifyGameXrArtifact, verifyGameXrFragments } from '../production-gamexr.mjs'
+import { admitGameXr, assertAnalyticsDisabled, fetchGameXrBytes, GAME_XR_INSTALL_STEPS,
+  validateGameXrPin, verifyGameXrArtifact, verifyGameXrFragments } from '../production-gamexr.mjs'
 
 const hash = value => createHash('sha256').update(value).digest('hex')
+
+test('GameXR admission keeps WebKit system packages separate and time-bounded', () => {
+  assert.deepEqual(GAME_XR_INSTALL_STEPS.map(({ command, args, timeoutMs }) => ({
+    command, args: [...args], timeoutMs,
+  })), [
+    { command: 'npm', args: ['ci', '--ignore-scripts'], timeoutMs: 300_000 },
+    { command: 'npx', args: ['playwright', 'install-deps', 'webkit'], timeoutMs: 900_000 },
+    { command: 'npx', args: ['playwright', 'install', 'webkit'], timeoutMs: 300_000 },
+  ])
+})
+
 const fixture = async t => {
   const temp = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'gamexr-admission-')))
   t.after(() => fs.rm(temp, { recursive: true, force: true }))

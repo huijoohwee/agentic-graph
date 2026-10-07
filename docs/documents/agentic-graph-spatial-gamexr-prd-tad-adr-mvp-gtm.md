@@ -407,3 +407,12 @@ outside the repository. Tokens/model/paid calls target zero for the local path; 
 12-month TCO remain unmeasured. New self-hosted or managed services fail this increment's constraints;
 neither is assigned an invented price or savings figure. The implementation supplies bounded mechanical proof of reversible editing. Demand validation, offer
 acceptance and collected revenue remain separate and unestablished for this offer.
+
+## ADR — retain mobile WebKit coverage with a dedicated install bound
+
+The Graph-owned protected release continues to run the pinned GameXR mobile-WebKit production
+suite. Install GameXR's pinned package tree, acquire that Playwright version's WebKit system
+dependencies as a separate command with a 15-minute ceiling, then download WebKit and run the
+browser assertions under their existing five-minute ceilings. A slow OS package fetch fails before
+candidate authorization; it does not justify removing mobile coverage, using an unpinned browser,
+or granting the other checks a longer timeout.

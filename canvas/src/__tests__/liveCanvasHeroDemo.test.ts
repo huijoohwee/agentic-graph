@@ -1,6 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { parseLiveCanvasHeroDemos, buildLiveCanvasHeroDemoReply, LIVE_CANVAS_HERO_DEMO_SOURCE } from '@/features/agentic-os/liveCanvasHeroDemoSource'
+import {
+  parseLiveCanvasHeroDemos,
+  buildLiveCanvasHeroDemoReply,
+  FLIGHT_SIM_HERO_DEMO_SOURCE_PATH,
+  LIVE_CANVAS_HERO_DEMO_SOURCE,
+} from '@/features/agentic-os/liveCanvasHeroDemoSource'
 import { buildLiveCanvasHeroDemoDocument, handoffLiveCanvasHeroDemoHistory } from '@/features/agentic-os/activateLiveCanvasHeroDemo'
 import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdownFrontmatterFlowGraph'
 import { buildHistoryKey, getCachedChatHistory, putChatHistoryCache } from '@/features/chat/floatingPanelChat/floatingPanelChatRuntime'
@@ -13,11 +18,20 @@ import { agentGraphResult, SOURCE_BACKED_INVOCATION } from './agentGraphWorkspac
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { deriveGraphGroups } from '@/components/GraphCanvas/layout/graphGroups'
+import { isFlightSimRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 
 export async function testLiveCanvasHeroDemoDocumentMatchesConversation(): Promise<void> {
   const demos = parseLiveCanvasHeroDemos(readFileSync(resolve(process.cwd(), '..', LIVE_CANVAS_HERO_DEMO_SOURCE), 'utf8'))
   if (demos.find(demo => demo.id === 'programmatic-drone-flight')?.background !== 'python-drone') {
     throw new Error('The drone preset must preview its native warehouse Canvas')
+  }
+  const flightSim = demos.find(demo => demo.id === 'flight-sim')
+  if (flightSim?.sourcePath !== FLIGHT_SIM_HERO_DEMO_SOURCE_PATH) {
+    throw new Error('The Flight Sim demo must reference its single canonical workspace seed')
+  }
+  const flightSeed = readFileSync(resolve(process.cwd(), '..', flightSim.sourcePath.slice(1)), 'utf8')
+  if (!isFlightSimRunReadyDemoActive(flightSim.sourcePath, flightSeed)) {
+    throw new Error('The Flight Sim catalog entry must resolve to the source-authored run-ready seed')
   }
   const catalog = await loadPromptPresetCatalog(await createPresetWorkspace())
   if (isPromptPresetCatalogError(catalog)) throw new Error(catalog.error)
@@ -117,5 +131,13 @@ export function testLiveCanvasHeroDemoSourceRejectsInvalidRecords(): void {
     let rejected = false
     try { parseLiveCanvasHeroDemos(invalid) } catch { rejected = true }
     if (!rejected) throw new Error('Invalid source must not become a demo')
+  }
+  for (const invalid of [
+    text.replace('/docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md', '/docs/other-flight.md'),
+    text.replace('id: flight-sim', 'id: other-demo'),
+  ]) {
+    let rejected = false
+    try { parseLiveCanvasHeroDemos(invalid) } catch { rejected = true }
+    if (!rejected) throw new Error('Flight Sim must not admit copied or alternate seed paths')
   }
 }
