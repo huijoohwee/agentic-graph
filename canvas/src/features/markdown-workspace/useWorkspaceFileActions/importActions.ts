@@ -53,6 +53,11 @@ export function useWorkspaceImportActions(args: {
     setActiveMarkdownDocument,
   } = args.ctx
 
+  const setImportStage = React.useCallback((jobId: number, label: string) => {
+    if (importJobRef.current !== jobId) return
+    status.setStatusProgress(label, null, null, null, null, { busy: true })
+  }, [importJobRef, status])
+
   const hydratePendingImportedPaths = React.useCallback(async (fs: WorkspaceFs, createdPaths: string[]) => {
     for (const path of createdPaths || []) {
       const nextPath = String(path || '').trim()
@@ -65,11 +70,12 @@ export function useWorkspaceImportActions(args: {
     async (
       fs: WorkspaceFs,
       path: WorkspacePath | null | undefined,
-      opts?: { sourceUrl?: string | null; jsonSourceText?: string | null },
+      opts?: { sourceUrl?: string | null; jsonSourceText?: string | null; jobId?: number },
     ) => {
       const normalized = normalizeWorkspacePath(path || '')
       if (!normalized || normalized === WORKSPACE_ROOT_PATH) return
       const text = String((await fs.readFileText(normalized).catch(() => '')) || '')
+      if (opts?.jobId != null && importJobRef.current !== opts.jobId) return
       await writeWorkspaceFileAndSync({
         path: normalized,
         text,
@@ -88,6 +94,7 @@ export function useWorkspaceImportActions(args: {
     },
     [
       activeDocumentKey,
+      importJobRef,
       lastLoadedRef,
       openedPath,
       setActiveMarkdownDocument,
@@ -102,20 +109,33 @@ export function useWorkspaceImportActions(args: {
       result: WorkspaceImportResult
       hydratePending: boolean
       applyToGraph: boolean
+      jobId: number
       resolveSourceUrl?: boolean
+      onStage?: (label: string) => void
     }) => {
       const { fs, result } = args
+      const isCurrent = () => importJobRef.current === args.jobId
+      if (!isCurrent()) return null
+      args.onStage?.('Preparing imported files')
       const {
         applyWorkspaceImportToCanvasBestEffort,
         pickFirstCreatedFilePathForImportFocus,
       } = await loadWorkspaceImportRuntimeActions()
+      if (!isCurrent()) return null
       for (const path of result.removedPaths || []) setWorkspaceEntrySource(path, null)
       bulkSetWorkspaceEntrySources(result.sources)
       if (args.hydratePending) {
+        args.onStage?.('Reading imported files')
         await hydratePendingImportedPaths(fs, result.createdPaths)
+        if (!isCurrent()) return null
       }
+      args.onStage?.('Selecting imported file')
       const createdPath = await pickFirstCreatedFilePathForImportFocus(fs, result.createdPaths)
+      if (!isCurrent()) return null
+      args.onStage?.('Refreshing imported files')
       const refreshed = await refresh()
+      if (!isCurrent()) return null
+      args.onStage?.('Applying imported canvas')
       await applyWorkspaceImportToCanvasBestEffort({
         fs,
         createdPaths: result.createdPaths,
@@ -126,15 +146,20 @@ export function useWorkspaceImportActions(args: {
           ...(result.removedPaths ? { removedPaths: result.removedPaths } : {}),
         },
       })
+      if (!isCurrent()) return null
       const source = args.resolveSourceUrl && createdPath ? result.sources.find(s => s.path === createdPath)?.source : result.sources[0]?.source
       const sourceUrl = source && source.kind === 'url' ? source.url : null
       const jsonSourceText = createdPath
         ? (result.jsonSourceDocuments || []).find(item => String(item?.path || '').trim() === createdPath)?.text ?? null
         : null
-      if (createdPath) await syncImportedExternalWrite(fs, createdPath, { sourceUrl, jsonSourceText })
+      if (createdPath) {
+        args.onStage?.('Synchronizing imported file')
+        await syncImportedExternalWrite(fs, createdPath, { sourceUrl, jsonSourceText, jobId: args.jobId })
+        if (!isCurrent()) return null
+      }
       return { createdPath, sourceUrl, jsonSourceText }
     },
-    [hydratePendingImportedPaths, refresh, syncImportedExternalWrite],
+    [hydratePendingImportedPaths, importJobRef, refresh, syncImportedExternalWrite],
   )
 
   const resolveWorkspaceImportApplyToGraph = React.useCallback(
@@ -181,6 +206,7 @@ export function useWorkspaceImportActions(args: {
       const snapshot = files ? Array.from(files) : []
       if (snapshot.length === 0) return
       const jobId = (importJobRef.current += 1)
+      let bridgeResult: WorkspaceBridgeImportResult = { handled: true }
       status.setStatusProgress('Importing', 0, snapshot.length)
       try {
         const fs = await getFs()
@@ -202,29 +228,39 @@ export function useWorkspaceImportActions(args: {
             },
           })
         }))
-        if (importJobRef.current !== jobId) return
+        bridgeResult = { handled: true, createdPaths: res.createdPaths, removedPaths: res.removedPaths }
+        if (importJobRef.current !== jobId) return bridgeResult
         const imageSourceUnits = (res.corpusManifest?.sourceUnits || []).filter(unit => unit.mediaKind === 'image')
         if (imageSourceUnits.length > 0) registerStrybldrImageFiles({ sourceUnits: imageSourceUnits, files: snapshot })
         registerVideoSequenceSourceFiles(snapshot)
+        setImportStage(jobId, 'Preparing imported canvas')
         const applyToGraph = await resolveWorkspaceImportApplyToGraph(fs, res, importRuntime)
-        if (importJobRef.current !== jobId) return
-        const { createdPath, jsonSourceText } = await finalizeWorkspaceImportCommit({
+        if (importJobRef.current !== jobId) return bridgeResult
+        const finalized = await finalizeWorkspaceImportCommit({
           fs,
           result: res,
           hydratePending: false,
           applyToGraph,
+          jobId,
+          onStage: label => setImportStage(jobId, label),
         })
+        if (!finalized || importJobRef.current !== jobId) return bridgeResult
+        const { createdPath, jsonSourceText } = finalized
         if (createdPath) {
+          setImportStage(jobId, 'Opening imported file')
           await focusAfterImport(createdPath, { applyToGraph, jsonSourceText, jobId })
         }
+        if (importJobRef.current !== jobId) return bridgeResult
         status.setStatusInfo(formatWorkspaceImportSummary('Imported', res).message)
         return { createdPaths: res.createdPaths, removedPaths: res.removedPaths }
       } catch (e) {
-        if (importJobRef.current !== jobId) return
-        status.setStatusError(`Import failed: ${String((e as { message?: unknown })?.message ?? e)}`)
+        if (importJobRef.current !== jobId) return bridgeResult
+        const error = String((e as { message?: unknown })?.message ?? e)
+        status.setStatusError(`Import failed: ${error}`)
+        return { ...bridgeResult, error }
       }
     },
-    [finalizeWorkspaceImportCommit, focusAfterImport, formatWorkspaceImportSummary, getFs, importJobRef, resolveWorkspaceImportApplyToGraph, status],
+    [finalizeWorkspaceImportCommit, focusAfterImport, formatWorkspaceImportSummary, getFs, importJobRef, resolveWorkspaceImportApplyToGraph, setImportStage, status],
   )
 
   const handleImportLocalImages = React.useCallback(
@@ -246,6 +282,7 @@ export function useWorkspaceImportActions(args: {
       const snapshot = files ? Array.from(files) : []
       if (snapshot.length === 0) return
       const jobId = (importJobRef.current += 1)
+      let bridgeResult: WorkspaceBridgeImportResult = { handled: true }
       try {
         const fs = await getFs()
         await fs.ensureSeed()
@@ -257,24 +294,31 @@ export function useWorkspaceImportActions(args: {
             files: snapshot,
           })
         }))
-        if (importJobRef.current !== jobId) return
+        bridgeResult = { handled: true, createdPaths: res.createdPaths, removedPaths: res.removedPaths }
+        if (importJobRef.current !== jobId) return bridgeResult
         registerVideoSequenceSourceFiles(snapshot)
         const applyToGraph = await resolveWorkspaceImportApplyToGraph(fs, res, importRuntime)
-        if (importJobRef.current !== jobId) return
-        const { createdPath, jsonSourceText } = await finalizeWorkspaceImportCommit({
+        if (importJobRef.current !== jobId) return bridgeResult
+        const finalized = await finalizeWorkspaceImportCommit({
           fs,
           result: res,
           hydratePending: false,
           applyToGraph,
+          jobId,
         })
+        if (!finalized || importJobRef.current !== jobId) return bridgeResult
+        const { createdPath, jsonSourceText } = finalized
         if (createdPath) {
           await focusAfterImport(createdPath, { applyToGraph, jsonSourceText, jobId })
         }
+        if (importJobRef.current !== jobId) return bridgeResult
         status.setStatusInfo(formatWorkspaceImportSummary('Imported folder:', res).message)
         return { createdPaths: res.createdPaths, removedPaths: res.removedPaths }
       } catch (e) {
-        if (importJobRef.current !== jobId) return
-        status.setStatusError(`Import failed: ${String((e as { message?: unknown })?.message ?? e)}`)
+        if (importJobRef.current !== jobId) return bridgeResult
+        const error = String((e as { message?: unknown })?.message ?? e)
+        status.setStatusError(`Import failed: ${error}`)
+        return { ...bridgeResult, error }
       }
     },
     [finalizeWorkspaceImportCommit, focusAfterImport, formatWorkspaceImportSummary, getFs, importJobRef, resolveWorkspaceImportApplyToGraph, status],
@@ -366,17 +410,21 @@ export function useWorkspaceImportActions(args: {
               createdPaths: res.createdPaths,
             })
         if (importJobRef.current !== jobId) return bridgeResult
-        const { createdPath, sourceUrl, jsonSourceText } = await finalizeWorkspaceImportCommit({
+        const finalized = await finalizeWorkspaceImportCommit({
           fs,
           result: res,
           hydratePending: false,
           applyToGraph,
+          jobId,
           resolveSourceUrl: true,
         })
+        if (!finalized || importJobRef.current !== jobId) return bridgeResult
+        const { createdPath, sourceUrl, jsonSourceText } = finalized
 
         if (createdPath) {
           await focusAfterImport(createdPath, { sourceUrl, jsonSourceText, applyToGraph, jobId })
         }
+        if (importJobRef.current !== jobId) return bridgeResult
         if (selectedCanvas2dRenderer === 'design') {
           activateDesignEditorSurface({ openFloatingPanel: true })
         }

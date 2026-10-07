@@ -232,12 +232,10 @@ export const testGeospatialOverlayHostSupportsMapLibreGlobeRenderer = () => {
   if (!text.includes('geospatialViewMode')) throw new Error('Expected host to read geospatialViewMode')
 }
 
-export const testGeospatialOverlayHostProvidesSvgFallbackBasemapAndDisablesDefaultMapLibreRuntime = () => {
+export const testGeospatialOverlayHostProvidesSvgFallbackBasemapAndDisablesDefaultMapLibreRuntime = async () => {
+  await (await import('./geospatialFallbackAdmission.test')).testGeospatialFallbackAdmission()
   const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
   const text = readUtf8(hostPath)
-  if (!text.includes('function SvgGeospatialFallback')) {
-    throw new Error('Expected GeospatialOverlayHost to provide a built-in SVG fallback basemap surface')
-  }
   if (!text.includes('const show2dSvgFallback = active && geospatialViewMode === \'2d-svg\'')) {
     throw new Error('Expected GeospatialOverlayHost to expose a dedicated 2D SVG fallback mode')
   }
@@ -455,11 +453,11 @@ export const testGeospatialOverlayHostOverlaysSvgFallbackWhenMapLibreMountsBlank
 }
 
 export const testGeospatialOverlayHostSvgFallbackRendersHighFidelitySvgBasemap = () => {
-  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
+  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'SvgGeospatialFallback.tsx')
   const terrainPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'worldSvgBasemap.ts')
   const text = readUtf8(hostPath)
   const terrainText = readUtf8(terrainPath)
-  if (!text.includes("from './features/geospatial/worldSvgBasemap.js'")) {
+  if (!text.includes("from './worldSvgBasemap.js'")) {
     throw new Error('Expected GeospatialOverlayHost SVG fallback to import the generated inline terrain module')
   }
   if (!terrainText.includes('Generated from ./assets/simple-world-map-edit.svg')) {
@@ -483,7 +481,7 @@ export const testGeospatialOverlayHostSvgFallbackRendersHighFidelitySvgBasemap =
 }
 
 export const testGeospatialOverlayHostSvgFallbackAppliesMaplikeVisualPolish = () => {
-  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
+  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'SvgGeospatialFallback.tsx')
   const text = readUtf8(hostPath)
   const requiredSnippets = [
     'SVG_FALLBACK_STYLE = {',
