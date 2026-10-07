@@ -66,7 +66,7 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   const gitGraphCanvasText = readFileSync(resolve(root, 'components', 'MermaidGitGraphCanvas.tsx'), 'utf8')
   const gitGraphFloatingPanelText = readFileSync(resolve(root, 'features', 'gitgraph', 'GitGraphFloatingPanelView.tsx'), 'utf8')
   const gitGraphDocumentHookText = readFileSync(resolve(root, 'features', 'gitgraph', 'useMermaidGitGraphDocument.ts'), 'utf8')
-  const svgSurfaceZoomRuntimeText = readFileSync(resolve(root, 'components', 'GraphCanvas', 'hooks', 'useSvgSurfaceZoomRuntime.ts'), 'utf8')
+  const svgSurfaceZoomRuntimeText = ['useSvgSurfaceZoomRuntime.ts', 'svgSurfaceGeometry.ts', 'svgSurfaceSelection.ts'].map(file => readFileSync(resolve(root, 'components', 'GraphCanvas', 'hooks', file), 'utf8')).join('\n')
 
   if (!renderConfigText.includes('export const getCanvas2dSurfaceId')) {
     throw new Error('expected shared renderer surface helper in config.render')
@@ -545,7 +545,7 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   if (rendererGraphTopologySummaryText.includes('grid grid-cols-2 gap-x-3 gap-y-1 text-xs')) {
     throw new Error('expected renderer topology stats to avoid fixed mobile two-column grid literals')
   }
-  if (!threeControlsText.includes('const req = threeCameraRequest') || !/if \(store.canvasRenderMode === '2d'\) \{\s*store.requestZoom\(type\)\s*return/.test(readFileSync(resolve(root, 'lib', 'canvas', 'runtimeZoomDispatch.ts'), 'utf8'))) {
+  if (!threeControlsText.includes('const req = threeCameraRequest') || !/if \(store.canvasRenderMode === '2d'\) \{\s*store.requestZoom\(type, options\)\s*return/.test(readFileSync(resolve(root, 'lib', 'canvas', 'runtimeZoomDispatch.ts'), 'utf8'))) {
     throw new Error('expected the shared zoom dispatcher to route 2D requests before Three camera controls')
   }
   if (
@@ -583,35 +583,4 @@ export function test2dRendererPipelineUsesSharedSurfaceHelpers() {
   }
 }
 
-export function testWorkspaceJsonPipelineStaysNeutralAndFileAgnostic() {
-  const text = readFileSync(resolve(process.cwd(), 'src', 'hooks', 'active-graph-data', 'workspaceStructuredGraph.ts'), 'utf8')
-  const perDocumentUiStateText = readFileSync(resolve(process.cwd(), 'src', 'lib', 'persistence', 'perDocumentUiState.ts'), 'utf8')
-  const canvasSliceText = readFileSync(resolve(process.cwd(), 'src', 'hooks', 'store', 'canvasSlice.ts'), 'utf8')
-  if (!text.includes("const WORKSPACE_GRAPH_PARSE_HINT = 'workspace:inline-data'")) {
-    throw new Error('expected neutral inline workspace parse hint for JSON fallback parsing')
-  }
-  if (text.includes("parseGraph(name || 'workspace.json', text)")) {
-    throw new Error('expected workspace JSON fallback parsing to avoid file-specific workspace.json')
-  }
-  if (text.includes("parseGraph(name || 'workspace.data.json', text)")) {
-    throw new Error('expected workspace JSON fallback parsing to avoid hardcoded .json file hints')
-  }
-  if (!text.includes('buildFlowchartSourceMeta({')) {
-    throw new Error('expected workspace flowchart parsing to carry shared source metadata')
-  }
-  if (!text.includes("const WORKSPACE_GRAPH_SOURCE = 'workspace:graph'")) {
-    throw new Error('expected workspace JSON pipeline to use a neutral workspace graph source identity')
-  }
-  if (!text.includes("const WORKSPACE_GRAPH_SOURCE_KIND = 'workspace'")) {
-    throw new Error('expected workspace JSON pipeline to tag workspace source kind explicitly')
-  }
-  if (text.includes('return { ...graphData, nodes: [], edges: [] }')) {
-    throw new Error('expected flowchart path to avoid synthetic empty graph placeholders')
-  }
-  if (!perDocumentUiStateText.includes('isCanvas2dRendererId(record.canvas2dRenderer)')) {
-    throw new Error('expected per-document UI persistence to reuse the shared 2D renderer id validator')
-  }
-  if (!canvasSliceText.includes('isCanvas2dRendererId(v) ? v : DEFAULT_CANVAS_2D_RENDERER')) {
-    throw new Error('expected canvas slice bootstrap to reuse the shared 2D renderer id validator')
-  }
-}
+export { testWorkspaceJsonPipelineStaysNeutralAndFileAgnostic } from './rendererWorkspaceNeutrality.test'

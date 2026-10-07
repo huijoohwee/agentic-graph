@@ -18,7 +18,7 @@ export function useToolbarActions(
   setThemeMode: (mode: ThemeMode) => void,
   launchSpotlight: (mode?: 'tour' | 'stats') => void,
   openMainPanel: (tab: MainPanelTabKey) => void,
-  onZoomSelection?: () => void,
+  _onZoomSelection?: () => void, // Positional compatibility only; the mode setter owns dispatch.
   setZoomToSelectionMode?: (v: boolean) => void,
   setFitToScreenMode?: (v: boolean) => void,
   toggleFitToScreenMode?: () => void,
@@ -147,12 +147,7 @@ export function useToolbarActions(
     if (!setZoomToSelectionMode) return
     const next = !zoomToSelectionMode
     setZoomToSelectionMode(next)
-    if (next) {
-      if (onZoomSelection) {
-        onZoomSelection()
-      }
-    }
-  }, [zoomToSelectionMode, setZoomToSelectionMode, onZoomSelection])
+  }, [zoomToSelectionMode, setZoomToSelectionMode])
 
   const handleToggleRenderMedia = useCallback(() => {
     if (setRenderMediaAsNodes) setRenderMediaAsNodes(!renderMediaAsNodes)

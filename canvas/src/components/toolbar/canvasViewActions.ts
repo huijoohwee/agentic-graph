@@ -1,6 +1,7 @@
 import type { Canvas2dRendererId, Canvas3dModeId } from '@/lib/config'
 import type { BottomSurfaceTab } from '@/hooks/store/store-types/core'
 import type { GraphSchema } from '@/lib/graph/schema'
+import { resolveCanvasDisplayControlDisabledReason } from '@/lib/canvas/canvasDisplayControlCapabilities'
 import { togglePortHandlesEnabledInSchema } from '@/lib/graph/portHandlesBehavior'
 import {
   CANVAS_GRID_DISPLAY_CONTROL_ID,
@@ -78,6 +79,7 @@ type CanvasViewActionParams = {
 }
 
 export const applyCanvasViewSelection = (params: CanvasViewActionParams) => {
+  if (resolveCanvasDisplayControlDisabledReason(params.id, params)) return
   const {
     id,
     ensureBaselineUnlocked,
