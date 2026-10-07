@@ -1,3 +1,4 @@
+import { verifyBrowserProofBuild } from '../../scripts/browser-proof-build.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -8,11 +9,20 @@ import yaml from 'js-yaml'
 import { chromium } from 'playwright'
 import { preview } from 'vite'
 import { createXrV2ExistingStorageFixture } from './lib/xr-v2-existing-storage-fixture.mjs'
+import { runAviationEvidenceOfflineProof } from './lib/aviation-evidence-offline-proof.mjs'
+import { importWorkspaceFile } from './lib/workspace-import-proof.mjs'
+import { createSmokeDiagnostics, collectSmokeDiagnostics, installSmokeDiagnostics, captureLegacySmokeFailure } from './lib/spatial-smoke-diagnostics.mjs'
 
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
 const revision = git('rev-parse', 'HEAD'), tree = git('rev-parse', 'HEAD^{tree}')
 assert.equal(git('status', '--porcelain'), '', 'Acceptance requires a clean, committed candidate')
+const buildEnvironment = { ...process.env }
+let verifiedBuild = null
+if (process.argv.includes('--verified-build')) {
+  assert.ok(!process.argv.includes('--build') && !process.argv.includes('--dev'), 'Verified build cannot be combined with build/dev flags')
+  verifiedBuild = await verifyBrowserProofBuild(root, { environment: buildEnvironment })
+}
 if (process.argv.includes('--build')) execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 300000 })
 const output = resolve(process.env.SPATIAL_FULL_APP_PROOF_DIR || join(tmpdir(), `spatial-full-app-${revision.slice(0, 12)}`))
 const source = `---
@@ -68,7 +78,7 @@ async function visibleReviewWidth(review) {
     return { visible: Math.max(0, right - left), width: rect.width, overflow: element.scrollWidth > element.clientWidth + 1 }
   })
 }
-let server, browser, activePage, activeDiagnostics
+let server, browser, activePage, activeDiagnostics, activeCollector, failed = false
 const results = []
 try {
   await mkdir(output, { recursive: true })
@@ -84,7 +94,9 @@ try {
         configurable: false, get: () => undefined, set: () => {},
       })
     })
+    await installSmokeDiagnostics(context)
     const page = activePage = await context.newPage(), errors = [], remote = [], dialogs = []
+    const collector = activeCollector = createSmokeDiagnostics(page)
     const failedRequests = [], consoleErrors = []
     activeDiagnostics = { errors, failedRequests, consoleErrors }
     page.setDefaultTimeout(30000)
@@ -98,31 +110,40 @@ try {
       remote.push(url.origin + url.pathname); return route.abort()
     })
     const start = performance.now(), actions = []
+    const action = label => { actions.push(label); collector.mark(label) }
+    collector.mark('Navigate:start')
     await page.goto(origin + '/agentic-graph/?openEditorWorkspace=1', { waitUntil: 'domcontentloaded', timeout: 60000 })
+    collector.mark('Navigate:domcontentloaded')
     // Boot readiness accepts multiple source roots; subsequent actions target their own named controls.
     await page.getByRole('navigation', { name: 'Source files', exact: true }).first().waitFor({ timeout: 60000 })
-    await page.getByRole('button', { name: 'Launch', exact: true }).click(); actions.push('Open Launch')
+    collector.mark('Source files visible')
+    await page.getByRole('button', { name: 'Launch', exact: true }).click(); action('Open Launch')
     const chooser = page.waitForEvent('filechooser')
-    await page.getByText('Choose files', { exact: true }).click(); actions.push('Choose files')
-    await (await chooser).setFiles({ name: 'spatial-pilot.md', mimeType: 'text/markdown', buffer: Buffer.from(source) }); actions.push('Select local scene')
+    await page.getByText('Choose files', { exact: true }).click(); action('Choose files')
+    collector.mark('Select local scene:start')
+    await importWorkspaceFile({ page, fileChooser: await chooser, path: '/notes/spatial-pilot.md', source,
+      file: { name: 'spatial-pilot.md', mimeType: 'text/markdown', buffer: Buffer.from(source) } })
+    action('Local scene import complete; exact persisted source verified')
     const review = page.getByRole('region', { name: 'Spatial change review', exact: true })
     await review.getByRole('button', { name: 'Preview +1 m on X', exact: true }).waitFor()
+    collector.mark('Review visible; awaiting enabled fieldset')
     await page.waitForFunction(() => { const fieldset = document.querySelector('[data-kg-spatial-review] fieldset'); return fieldset && !fieldset.disabled })
+    collector.mark('Review enabled')
     const initialLayout = await visibleReviewWidth(review)
     assert.ok(initialLayout.visible >= Math.min(320, width - 48), JSON.stringify(initialLayout))
     assert.equal(initialLayout.overflow, false)
     if (width === 1024) await page.locator('[data-kg-xr-document-loaded="1"]').waitFor({ timeout: 60000 })
     else await page.getByRole('button', { name: 'Load 3D view', exact: true }).waitFor()
     await page.waitForFunction(() => !!navigator.serviceWorker?.controller, undefined, { timeout: 60000 })
-    const initial = await storedSource(page); assert.ok(initial)
+    const initial = await storedSource(page); assert.equal(initial, source)
     await page.waitForLoadState('networkidle', { timeout: 30000 })
     await context.setOffline(true)
     const quickPreview = review.getByRole('button', { name: 'Preview +1 m on X', exact: true })
     const bounds = await quickPreview.boundingBox(); assert.ok(bounds.width >= 44 && bounds.height >= 44)
-    await quickPreview.click(); actions.push('Preview +1 m on X')
+    await quickPreview.click(); action('Preview +1 m on X')
     await review.getByRole('button', { name: 'Apply reviewed change', exact: true }).waitFor()
     assert.equal(await storedSource(page), initial, 'preview cannot mutate the saved source')
-    await review.getByRole('button', { name: 'Apply reviewed change', exact: true }).click(); actions.push('Apply reviewed change')
+    await review.getByRole('button', { name: 'Apply reviewed change', exact: true }).click(); action('Apply reviewed change')
     await review.getByText('Change applied and verified in local storage.', { exact: true }).waitFor()
     const firstValueMs = Math.round(performance.now() - start), applied = await storedSource(page)
     const metadata = yaml.load(applied.split('---', 3)[1])
@@ -141,10 +162,12 @@ try {
     await page.waitForFunction(() => !!navigator.serviceWorker?.controller, undefined, { timeout: 60000 })
     await review.getByText('Offline Studio', { exact: true }).click()
     const installStart = performance.now()
+    collector.mark('Install offline Studio:start')
     await review.getByRole('button', { name: 'Install offline Studio', exact: true }).click()
     const verified = review.getByRole('status').filter({ hasText: /^Verified \d+ files/ })
     await verified.waitFor({ timeout: 190000 })
     const installation = await verified.innerText(), installMs = Math.round(performance.now() - installStart)
+    collector.mark('Install offline Studio:verified')
     await review.getByRole('button', { name: 'Open verified offline workspace', exact: true }).click()
     await page.waitForURL(url => url.searchParams.has('studio-offline'), { timeout: 60000 })
     await review.waitFor({ timeout: 60000 })
@@ -152,6 +175,7 @@ try {
     await page.waitForLoadState('networkidle', { timeout: 30000 })
     assert.equal(await storedSource(page), undone, 'installed route must finish restoring the saved scene before disconnecting')
     await context.setOffline(true)
+    collector.mark('Offline reload:start')
     const reloadStart = performance.now(), response = await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
     assert.equal(response.status(), 200)
     await review.getByRole('button', { name: 'Preview +1 m on X', exact: true }).waitFor({ timeout: 60000 })
@@ -160,6 +184,7 @@ try {
     // Return through its native Close action before resuming canvas review.
     await page.locator('[aria-label="Markdown view controls"]').getByRole('button', { name: 'Close', exact: true }).click()
     await page.waitForFunction(() => { const fieldset = document.querySelector('[data-kg-spatial-review] fieldset'); return fieldset && !fieldset.disabled })
+    collector.mark('Offline review enabled')
     await quickPreview.click(); await review.getByRole('button', { name: 'Cancel proposal', exact: true }).click()
     const reloadMs = Math.round(performance.now() - reloadStart)
     assert.equal(await storedSource(page), undone)
@@ -174,27 +199,36 @@ try {
     const visibleControl = await quickPreview.boundingBox()
     assert.ok(visibleControl.x >= 0 && visibleControl.x + visibleControl.width <= width)
     await page.screenshot({ path: join(output, `review-${width}.png`), fullPage: true })
+    collector.mark('Acceptance complete')
+    const diagnostics = await collectSmokeDiagnostics(page, collector, { revision, tree })
     results.push({ width, actions, firstValueMs, installation, installMs, reloadMs, receipts: 2,
       noWebMcp: true, offlineReview: true, coldReload: true, reloadNavigationActions: ['Close restored source editor'], importedLabelIsText: true, renderer: width === 390 ? 'touch-opt-in-deferred' : 'loaded',
-      overflow, initialLayout, reopenedLayout, pageErrors: errors, blockedRemoteRequests: [...new Set(remote)], evidenceKind: 'automated-technical-rehearsal' })
+      overflow, initialLayout, reopenedLayout, pageErrors: errors, blockedRemoteRequests: [...new Set(remote)], evidenceKind: 'automated-technical-rehearsal', diagnostics })
     console.log(JSON.stringify(results.at(-1)))
     await context.close()
   }
+  activePage = null; activeCollector = null
+  const aviationResults = await runAviationEvidenceOfflineProof({ browser, origin, root, output, revision, tree })
   assert.equal(git('status', '--porcelain'), '')
   assert.equal(git('rev-parse', 'HEAD'), revision)
+  if (verifiedBuild) assert.deepEqual(await verifyBrowserProofBuild(root, { environment: buildEnvironment }), verifiedBuild)
   await writeFile(join(output, 'acceptance.json'), JSON.stringify({ schema: 'agentic-graph.spatial-full-app-acceptance/v1', revision, tree,
-    productionAuthority: false, humanParticipants: 0, modelTokens: 0, results }, null, 2) + '\n')
+    verifiedBuild, productionAuthority: false, humanParticipants: 0, modelTokens: 0, results, aviationResults }, null, 2) + '\n')
 } catch (error) {
-  if (activePage && !activePage.isClosed()) {
-    await activePage.screenshot({ path: join(output, 'failure.png'), fullPage: true }).catch(() => {})
-    const failure = (error.stack || String(error)) + '\nSaved source:\n' + await storedSource(activePage).catch(() => 'Unavailable') + '\nBody:\n' + await activePage.locator('body').innerText().catch(() => 'Unavailable')
-    await writeFile(join(output, 'failure.txt'), failure)
-    // Retained stage logs must explain a disabled form even when runner screenshots are unavailable.
-    console.error(JSON.stringify({ revision, tree, viewport: activePage.viewportSize(), output }))
-    console.error(JSON.stringify(activeDiagnostics))
-    console.error(JSON.stringify(await activePage.evaluate(() => ({ readyState: document.readyState, online: navigator.onLine,
-      worker: navigator.serviceWorker?.controller?.scriptURL, scripts: [...document.scripts].map(script => script.src), html: document.documentElement.outerHTML.slice(0, 4000) })).catch(() => ({ unavailable: true }))))
-    console.error(failure.slice(0, 50000))
+  failed = true
+  if (activePage && activeCollector) {
+    activeCollector.mark('Failure')
+    try {
+      const json = JSON.stringify(await collectSmokeDiagnostics(activePage, activeCollector, { revision, tree }, error))
+      console.error(json)
+      await writeFile(join(output, 'failure-diagnostics.json'), json + '\n')
+    }
+    catch { console.error('Could not write bounded smoke diagnostics') }
   }
+  await captureLegacySmokeFailure({ page: activePage, output, revision, tree, diagnostics: activeDiagnostics, storedSource }, error)
   throw error
-} finally { await browser?.close(); await server?.close() }
+} finally {
+  const cleanup = await Promise.allSettled([browser?.close(), server?.close()])
+  const rejection = cleanup.find(result => result.status === 'rejected')
+  if (!failed && rejection) throw rejection.reason
+}

@@ -60,10 +60,11 @@ export async function revealWorkspaceFileInManager(args: { path: string; kind?: 
   } finally { clearTimeout(timeout) }
 }
 
-/** Local Dev publishes the final workspace bytes; remote/offline browsers keep their existing store. */
-export async function saveWorkspaceWebsiteLocalCopy(workspacePath: string, text: string): Promise<void> {
+/** True acknowledges a host copy. Built or offline browsers retain their local workspace only. */
+export async function saveWorkspaceWebsiteLocalCopy(workspacePath: string, text: string): Promise<boolean> {
   if (!workspacePath.startsWith('/websites/') || typeof window === 'undefined'
-    || !['localhost', '127.0.0.1', '[::1]'].includes(window.location?.hostname || '')) return
+    || import.meta.env?.PROD === true || window.navigator?.onLine === false
+    || !['localhost', '127.0.0.1', '[::1]'].includes(window.location?.hostname || '')) return false
   const outputRoot = readWorkspaceInitializationOutputDocsAbsRoot()
   const payload = JSON.stringify({ saveOnly: true, kind: 'file', ...(outputRoot ? { outputRoot } : {}), snapshot: { workspacePath, text } })
   if (new TextEncoder().encode(payload).byteLength > WORKSPACE_REVEAL_MAX_BYTES) throw new Error('Website document exceeds 500 KB; export it instead')
@@ -74,5 +75,6 @@ export async function saveWorkspaceWebsiteLocalCopy(workspacePath: string, text:
     if (!response.headers.get('content-type')?.includes('application/json')) throw new Error('Saving website documents requires the local workspace host')
     const result = await response.json() as { ok?: boolean; error?: string }
     if (!response.ok || result.ok !== true) throw new Error(result.error || 'The local website document could not be saved')
+    return true
   } finally { clearTimeout(timeout) }
 }

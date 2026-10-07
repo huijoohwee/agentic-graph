@@ -114,13 +114,16 @@ export function mergeWorkspaceEntriesIntoSourceFiles(args: {
     if (internalSpatialCapturePayloadPaths.has(path)) continue
     if (isWorkspaceRuntimeOnlyReferencePath(path)) continue
     if (forceIncludeOnly && !forceInclude.has(path)) continue
+    const src = sourcesByPath[path]
+    const explicitLocal = src?.kind === 'local'
     const underWorkspaceSourceRoot = isWorkspacePathUnderSourceRoots(path, args.workspaceSourceRootPaths || workspaceSourceRootPaths)
-    if (workspaceDocsOnly && !underWorkspaceSourceRoot && !forceInclude.has(path)) continue
+    if (workspaceDocsOnly && !underWorkspaceSourceRoot && !forceInclude.has(path) && !explicitLocal) continue
 
     const seedSourcePath = resolveWorkspaceSeedSourcePath(path)
     const basename = path.replace(/\\/g, '/').replace(/\/+$/, '').split('/').pop() || ''
     const isStaleRootDocsAliasCoveredByDocsMirror =
       workspaceDocsOnly
+      && !explicitLocal
       && !isWorkspacePathUnderSourceRoots(path, args.workspaceSourceRootPaths || workspaceSourceRootPaths)
       && !forceInclude.has(path)
       && !seedSourcePath
@@ -130,13 +133,13 @@ export function mergeWorkspaceEntriesIntoSourceFiles(args: {
     if (isStaleRootDocsAliasCoveredByDocsMirror) continue
     const isLegacyRootSeedAliasCoveredByDocsMirror =
       !!seedSourcePath
+      && !explicitLocal
       && isCanonicalWorkspaceSeedSourcePath(seedSourcePath)
       && !isWorkspacePathUnderSourceRoots(path, args.workspaceSourceRootPaths || workspaceSourceRootPaths)
       && docsMirrorCanonicalSeedSourcePathSet.has(seedSourcePath)
     if (isLegacyRootSeedAliasCoveredByDocsMirror) continue
     const srcPath = resolveWorkspaceSourcePathKey(path)
     const prev = existingWorkspaceByPath.get(srcPath) || null
-    const src = sourcesByPath[path]
     if (!prev && !src && !forceInclude.has(path) && !seedSourcePath && !(workspaceDocsOnly && underWorkspaceSourceRoot)) continue
     const inlineText = typeof e.text === 'string' ? e.text : null
     if (inlineText !== null && !inlineText.trim() && (src?.kind === 'url' || prev?.source?.kind === 'url')) continue
@@ -196,16 +199,19 @@ export function mergeWorkspaceEntriesIntoSourceFiles(args: {
       if (!workspacePath) continue
       if (isWorkspaceRuntimeOnlyReferencePath(workspacePath)) continue
       if (internalSpatialCapturePayloadPaths.has(workspacePath)) continue
+      const explicitLocal = sourcesByPath[workspacePath]?.kind === 'local'
       const basename = workspacePath.replace(/\\/g, '/').replace(/\/+$/, '').split('/').pop() || ''
       const seedSourcePath = resolveWorkspaceSeedSourcePath(workspacePath)
       const isLegacyRootSeedAliasCoveredByDocsMirror =
         !!seedSourcePath
+        && !explicitLocal
         && isCanonicalWorkspaceSeedSourcePath(seedSourcePath)
         && !isWorkspacePathUnderSourceRoots(workspacePath, args.workspaceSourceRootPaths || workspaceSourceRootPaths)
         && docsMirrorCanonicalSeedSourcePathSet.has(seedSourcePath)
       if (isLegacyRootSeedAliasCoveredByDocsMirror) continue
       const isStaleRootDocsAliasCoveredByDocsMirror =
         workspaceDocsOnly
+        && !explicitLocal
         && !seedSourcePath
         && workspacePath.split('/').filter(Boolean).length === 1
         && /\.md$/i.test(basename)
@@ -215,6 +221,7 @@ export function mergeWorkspaceEntriesIntoSourceFiles(args: {
       if (!hasInlineText && !isPersistedWorkspaceBinaryFileName(workspacePath)) continue
       if (
         workspaceDocsOnly
+        && !explicitLocal
         && !isWorkspacePathUnderSourceRoots(workspacePath, args.workspaceSourceRootPaths || workspaceSourceRootPaths)
         && !forceInclude.has(workspacePath)
         && file.enabled !== true

@@ -75,7 +75,10 @@ type ThreeGraphProps = Readonly<{
   learningScene?: { lesson: LearningLesson; scene?: LearningSceneSnapshot }
 }>
 export default function ThreeGraph({ active = true, geospatialComposite = false, mode = '3d', semanticMediaOwner, learningScene }: ThreeGraphProps) {
-  const { schema, selectNode, selectEdge, setSelectionSource } = useGraphStore()
+  const schema = useGraphStore(s => s.schema)
+  const selectNode = useGraphStore(s => s.selectNode)
+  const selectEdge = useGraphStore(s => s.selectEdge)
+  const setSelectionSource = useGraphStore(s => s.setSelectionSource)
   const markdownDocumentName = useGraphStore(s => s.markdownDocumentName)
   const markdownDocumentText = useGraphStore(s => s.markdownDocumentText)
   const xrAuthoringGraphData = useGraphStore(s => s.graphData)

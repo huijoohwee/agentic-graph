@@ -152,7 +152,7 @@ export function CitySimPanelProjection({
   return (
     <aside
       className={cn(
-        'mx-1 mb-1 grid shrink-0 gap-1 rounded border p-2',
+        'mx-1 mb-1 grid min-w-0 grid-cols-1 shrink-0 gap-1 rounded border p-2',
         UI_THEME_TOKENS.panel.border,
         UI_THEME_TOKENS.panel.bg,
       )}
@@ -160,8 +160,8 @@ export function CitySimPanelProjection({
       data-kg-city-sim-projection={surface}
       data-kg-city-sim-projection-active={snapshot.active ? '1' : '0'}
     >
-      <header className="flex items-start justify-between gap-2">
-        <span className="min-w-0">
+      <header className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+        <span className="min-w-0 flex-1">
           <b className="flex items-center gap-1 text-xs">
             <ProjectionIcon surface={surface} />
             {copy.title}
