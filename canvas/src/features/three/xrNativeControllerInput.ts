@@ -1,5 +1,13 @@
 import { clampSpatialInputAxis } from '../../../../packages/apple-spatial-input/src/filter'
 
+const INTERACTIVE_TARGET_SELECTOR = 'button, a[href], input, textarea, select, [contenteditable="true"], [role="button"], [role="link"]'
+
+export function isXrNativeControllerInteractiveTarget(target: EventTarget | null): boolean {
+  const element = target instanceof Element ? target : null
+  return Boolean(element?.closest(INTERACTIVE_TARGET_SELECTOR)
+    || (element?.closest('[role="region"][tabindex]') && !element.closest('canvas')))
+}
+
 export type XrNativeControllerInputSource = 'none' | 'keyboard' | 'gamepad' | 'motion' | 'mixed'
 
 export type XrNativeControllerInput = Readonly<{

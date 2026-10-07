@@ -1,3 +1,4 @@
+import { verifyBrowserProofBuild } from '../../scripts/browser-proof-build.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -16,6 +17,12 @@ const { resolveViteRuntimeIdentity } = await tsImport('../viteChatProxyEnv.ts', 
 const { sourceRevision } = resolveViteRuntimeIdentity(root)
 const dev = process.argv.includes('--dev')
 const output = resolve(process.env.BLOCK_EDITOR_PROOF_DIR || join(tmpdir(), `block-editor-browser-${revision.slice(0, 12)}`))
+const buildEnvironment = { ...process.env }
+let verifiedBuild = null
+if (process.argv.includes('--verified-build')) {
+  assert.ok(!process.argv.includes('--build') && !process.argv.includes('--dev'), 'Verified build cannot be combined with build/dev flags')
+  verifiedBuild = await verifyBrowserProofBuild(root, { environment: buildEnvironment })
+}
 if (process.argv.includes('--build')) execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 240000 })
 let server, browser, page
 const errors = [], remote = [], assetFailures = [], consoleErrors = []
@@ -145,7 +152,8 @@ try {
   await page.screenshot({ path: join(output, 'offline-mobile-block.png'), fullPage: true })
   }
   assert.deepEqual(errors, [])
-  const evidence = { revision, sourceRevision, mobileWidth: 375, pinch: `${beforeZoom}→${afterZoom}`, offlineReopen: !dev,
+  if (verifiedBuild) assert.deepEqual(await verifyBrowserProofBuild(root, { environment: buildEnvironment }), verifiedBuild)
+  const evidence = { verifiedBuild, revision, sourceRevision, mobileWidth: 375, pinch: `${beforeZoom}→${afterZoom}`, offlineReopen: !dev,
     offlineEditSavedAndReloaded: !dev, duplicateCanvasCount: 1, pageErrors: errors,
     remoteRequestsBlockedCount: new Set(remote).size, productionDeploymentProven: false }
   await writeFile(join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n')

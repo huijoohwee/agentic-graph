@@ -12,6 +12,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./geojson": {
+      "types": "./dist/geojson.d.ts",
+      "import": "./dist/geojson.js",
+      "default": "./dist/geojson.js"
+    },
     "./map-preview": {
       "types": "./dist/mapPreview.d.ts",
       "import": "./dist/mapPreview.js",

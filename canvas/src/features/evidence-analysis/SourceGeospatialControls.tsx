@@ -30,7 +30,7 @@ export function SourceGeospatialControls({ capture }: { capture: EvidenceSourceC
       {state.missingPositions.length > 0 && <ul aria-label="Unknown map positions">{state.missingPositions.map(item => <li key={`${item.entityId}:${item.sourceId}`}>{item.label} · position unknown at {item.observedAtUtc}: {item.reason}</li>)}</ul>}
       <details><summary className="min-h-[44px] cursor-pointer">Surface provenance and qualifications</summary>
         <ul>{surfaces.map(feature => <li key={feature.id}>{feature.properties.label} · {feature.properties.status}</li>)}</ul>
-        <ul>{state.references.map(reference => <li key={reference.sha256} className="break-words">{reference.upstreamUrl ? <a href={reference.upstreamUrl} target="_blank" rel="noreferrer" className="underline">{reference.label}</a> : reference.label} · {reference.license}<p className="break-all">SHA-256 {reference.sha256}</p></li>)}</ul>
+        <ul>{state.references.map(reference => <li key={reference.sha256} className="break-words">{reference.upstreamUrl ? <a href={reference.upstreamUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-[44px] items-center underline">{reference.label}</a> : reference.label} · {reference.license}<p className="break-all">SHA-256 {reference.sha256}</p></li>)}</ul>
       </details>
     </>}
   </section>

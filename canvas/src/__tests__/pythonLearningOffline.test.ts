@@ -191,13 +191,13 @@ test('missing, undeclared and traversal public membership cannot replace a compl
   assert.equal((await two.request('install')).ok, false); assert.equal(JSON.stringify(await env.state()), before)
 })
 
-test('one bounded authored asset declaration supplies exact build and precache membership', async () => {
+test('one bounded authored asset declaration supplies exact explicit offline membership', async () => {
   const entries = offlinePrecacheEntries(authoredPublicAssets)
   assert.ok(entries.length > 0 && entries.length <= 40)
   assert.deepEqual(entries, authoredPublicAssets.map(file => ({ url: file.path, revision: file.sha256 })))
   const config = await readFile(new URL('../../vite.config.ts', import.meta.url), 'utf8')
   assert.match(config, /createPythonLearningOfflinePlugin\(runtimeIdentity.sourceRevision, offlinePublicAssets\)/)
-  assert.match(config, /additionalManifestEntries: offlinePrecacheEntries\(offlinePublicAssets\)/)
+  assert.doesNotMatch(config, /additionalManifestEntries:|offlinePrecacheEntries/)
   for (const file of authoredPublicAssets) {
     const bytes = await readFile(new URL(`../../public/${file.path}`, import.meta.url)); assert.equal(bytes.length, file.bytes); assert.equal(await digest(bytes), file.sha256)
   }
