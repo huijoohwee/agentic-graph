@@ -1,4 +1,4 @@
-import { webGpuManualChunk } from './viteManualChunks'
+import { boundedChunksPlugin } from './viteBoundedChunks.mjs'
 import { createRemoteFetchHandler } from './viteRemoteFetch'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'; import tailwindcss from '@tailwindcss/vite'
@@ -49,7 +49,7 @@ import { loadChatProxyServerManagedEnv, resolveViteRuntimeIdentity } from './vit
 import { resolveWorkspaceInitializationDocsRoot } from './viteWorkspaceInitializationDocsRoot'
 import { resolveWorkspaceInitializationWorkspaceSeedsReadRoot } from './viteWorkspaceSeedsReadRoot'
 import { forwardChatProxyUpstreamHead, forwardChatProxyUpstreamResponse } from './viteChatProxyResponse'; import { createProbeTreeMcpBridgePlugin } from './viteProbeTreeMcpBridge'
-import { createDurableRunBridgePlugin } from './viteDurableRunBridge.mjs'; import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createAgentGraphBridgePlugin } from './viteAgentGraphBridge'; import { resolveAgenticGraphStorageDevProxyTarget, resolveStorageDevProxyOrigin } from './viteStorageProxyEnv'; import { buildPwaRuntimeCachingRules } from './vitePwaRuntimeCachePolicy'
+import { createDurableRunBridgePlugin } from './viteDurableRunBridge.mjs'; import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createAgentGraphBridgePlugin } from './viteAgentGraphBridge'; import { resolveAgenticGraphStorageDevProxyTarget, resolveStorageDevProxyOrigin } from './viteStorageProxyEnv'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..'), workspaceRoot = path.resolve(repoRoot, '..')
 const siblingDocsRoot = path.resolve(workspaceRoot, 'huijoohwee', 'docs'); loadChatProxyServerManagedEnv({ repoRoot, canvasRoot: __dirname }); const runtimeIdentity = resolveViteRuntimeIdentity(repoRoot)
@@ -6434,70 +6434,12 @@ export default defineConfig(({ command, mode }) => {
       resolveDependencies: (_filename: string, deps: string[]) =>
         filterModulePreloadDependencies(deps),
     },
-    // Keep Vite quiet for known lazy vendor chunks; hygiene keeps tighter per-chunk budgets for regressions.
-    chunkSizeWarningLimit: 3000,
+    // Every production JavaScript artifact must be smaller than 500,000 bytes.
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
+      // The build plugin partitions the resolved static graph, including zero-render barrels.
       output: { ...buildVersionedAssetFileNames(runtimeIdentity.sourceRevision),
-        ...(process.env.AG_LOW_MEM_BUILD === '1'
-          ? { inlineDynamicImports: true as const }
-          : {
-              manualChunks: (id: string) => {
-                const moduleId = String(id || '').replace(/\\/g, '/')
-                if (moduleId.includes('commonjsHelpers')) return 'react'
-                if (moduleId.includes('/node_modules/react/')) return 'react'
-                if (moduleId.includes('/node_modules/react-dom/')) return 'react'
-                if (moduleId.includes('/node_modules/react-router-dom/')) return 'react'
-                if (moduleId.includes('/node_modules/d3/')) return 'd3'
-                if (moduleId.includes('/node_modules/lucide-react/')) return 'ui'
-                if (moduleId.includes('/node_modules/zustand/')) return 'ui'
-                if (moduleId.includes('/node_modules/fflate/')) return 'fflate'
-                if (moduleId.includes('/node_modules/monaco-editor/')) return 'monaco'
-                if (moduleId.includes('/node_modules/katex/')) return 'katex'
-                if (moduleId.includes('/node_modules/highlight.js/')) return 'highlightjs'
-                if (
-                  moduleId.includes('/node_modules/markdown-it/') ||
-                  moduleId.includes('/node_modules/markdown-it-anchor/') ||
-                  moduleId.includes('/node_modules/markdown-it-footnote/') ||
-                  moduleId.includes('/node_modules/markdown-it-mark/') ||
-                  moduleId.includes('/node_modules/markdown-it-sub/')
-                ) {
-                  return 'markdown-it'
-                }
-                if (
-                  moduleId.includes('/node_modules/unified/') ||
-                  moduleId.includes('/node_modules/remark-gfm/') ||
-                  moduleId.includes('/node_modules/remark-stringify/') ||
-                  moduleId.includes('/node_modules/rehype-parse/') ||
-                  moduleId.includes('/node_modules/rehype-remark/') ||
-                  moduleId.includes('/node_modules/hast-util-to-html/')
-                ) {
-                  return 'markdown-ast'
-                }
-                // Preserve Mermaid's diagram-level dynamic imports. Prefix each emitted chunk so
-                // the existing lazy-vendor cache and byte-budget policies keep applying to them.
-                const mermaidInternalChunk = moduleId.match(
-                  /\/node_modules\/mermaid\/dist\/chunks\/mermaid\.core\/([^/?]+)\.mjs(?:\?.*)?$/,
-                )
-                if (mermaidInternalChunk) return `mermaid-${mermaidInternalChunk[1]}`
-                if (moduleId.includes('/node_modules/mermaid/dist/')) return 'mermaid'
-                if (moduleId.includes('/node_modules/mermaid/')) return 'mermaid'
-                const gpuChunk = webGpuManualChunk(moduleId); if (gpuChunk) return gpuChunk
-                if (moduleId.includes('/node_modules/maplibre-gl/')) return 'maplibre'
-                if (moduleId.includes('/node_modules/onnxruntime-web/')) return 'onnx-runtime'
-                if (moduleId.includes('/node_modules/@huggingface/transformers/')) return 'transformers'
-                if (moduleId.includes('/src/features/panels/views/settingsMcpDocEntries.ts')) {
-                  return 'settings-mcp-core'
-                }
-                const settingsMcpDocModuleMatch = moduleId.match(
-                  /\/src\/features\/panels\/views\/(apiNativeBrowserMcpApiDocs|byteplusModelArkMcpApiDocs|cloudflareAiGatewayMcpApiDocs|crawlerAccessMcpApiDocs|exaMcpApiDocs|externalMcpToolServerDocs|feishuBaseMcpApiDocs|grabmapsMcpApiDocs|agenticGraphToolServerDocs|larkAppMcpApiDocs|miromindMcpApiDocs|openaiMcpApiDocs|operatorDeployMcpApiDocs|sealionMcpApiDocs|stripeMcpApiDocs|vdeoxplnMcpApiDocs|videodbMcpApiDocs)\.ts$/,
-                )
-                if (settingsMcpDocModuleMatch) {
-                  return `settings-${settingsMcpDocModuleMatch[1]}`
-                }
-                if (moduleId.includes('/src/')) return undefined
-                return undefined
-              },
-            }),
+        ...(process.env.AG_LOW_MEM_BUILD === '1' ? { inlineDynamicImports: true as const } : {}),
       },
     },
   },
@@ -6551,13 +6493,14 @@ export default defineConfig(({ command, mode }) => {
     }
   },
   plugins: [
+    boundedChunksPlugin(),
     tailwindcss(), stripEntitiesBadSourcemapsPlugin,
     stripMermaidArchitectureDetectorPlugin,
     stripMermaidCoseBilkentLayoutPlugin,
     react(),
     inlineHtmlStylesheetAssetsPlugin(), createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision), createPythonLearningOfflinePlugin(runtimeIdentity.sourceRevision, offlinePublicAssets),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'autoUpdate', strategies: 'injectManifest', srcDir: '.', filename: 'sw.ts',
       injectRegister: null,
       devOptions: { enabled: false },
       manifest: {
@@ -6621,13 +6564,10 @@ export default defineConfig(({ command, mode }) => {
           },
         },
       },
-      workbox: {
+      injectManifest: {
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, additionalManifestEntries: offlinePrecacheEntries(offlinePublicAssets),
-        navigateFallback: null,
-        importScripts: [`agentic-graph-service-worker-revision.js?revision=${runtimeIdentity.sourceRevision}`, `agentic-graph-chat-stream-sw.js?revision=${runtimeIdentity.sourceRevision}`],
         globPatterns: ['manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,css,woff,woff2,ttf}'],
         globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js', 'assets/**/three-webgpu-*.js', 'assets/**/createWebGpuRenderer-*.js'],
-        runtimeCaching: buildPwaRuntimeCachingRules(),
       },
     }),
     ...(command === 'build' ? [] : [
