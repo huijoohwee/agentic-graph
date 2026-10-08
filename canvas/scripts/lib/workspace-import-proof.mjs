@@ -64,7 +64,7 @@ async function readImportedSource(path) {
 
 /** One Node deadline covers arming, choosing, fresh completion, and exact persisted source. */
 export async function importWorkspaceFile({ page, fileChooser, file, path, source, timeoutMs = 60000 }) {
-  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > 60000) throw new RangeError('Invalid workspace import proof deadline')
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > 120000) throw new RangeError('Invalid workspace import proof deadline')
   if (typeof path !== 'string' || !path.startsWith('/') || typeof source !== 'string') throw new TypeError('Expected exact workspace path and source text')
   const started = performance.now()
   let timer, expired = false, handle

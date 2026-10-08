@@ -123,7 +123,7 @@ test('late handle acquisition is cleaned without selecting files after expiry', 
 
 test('deadline validation prevents action and observer allocation', async () => {
   const f = fixture()
-  await assert.rejects(f.run(async () => assert.fail('must not select'), { timeoutMs: 60001 }), /Invalid/)
+  await assert.rejects(f.run(async () => assert.fail('must not select'), { timeoutMs: 120001 }), /Invalid/)
   assert.equal(f.counters.observers, 0); f.clean()
 })
 

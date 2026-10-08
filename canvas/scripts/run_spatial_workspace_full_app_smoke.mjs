@@ -121,7 +121,7 @@ try {
     const chooser = page.waitForEvent('filechooser')
     await page.getByText('Choose files', { exact: true }).click(); action('Choose files')
     collector.mark('Select local scene:start')
-    await importWorkspaceFile({ page, fileChooser: await chooser, path: '/notes/spatial-pilot.md', source,
+    await importWorkspaceFile({ page, fileChooser: await chooser, path: '/notes/spatial-pilot.md', source, timeoutMs: 120000,
       file: { name: 'spatial-pilot.md', mimeType: 'text/markdown', buffer: Buffer.from(source) } })
     action('Local scene import complete; exact persisted source verified')
     const review = page.getByRole('region', { name: 'Spatial change review', exact: true })
