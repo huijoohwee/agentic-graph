@@ -204,7 +204,7 @@ test('runtime readiness discards tracked and untracked child mutations from its 
   )
 })
 
-test('browser orchestration reports failures from both serial runs and preserves repository bytes', async t => {
+test('browser orchestration stops after the first red serial run and preserves repository bytes', async t => {
   const fixture = await createFixtureRepository()
   t.after(() => rm(fixture.repositoryRoot, { recursive: true, force: true }))
   const before = await repositoryEvidence(fixture)
@@ -232,12 +232,11 @@ test('browser orchestration reports failures from both serial runs and preserves
     }),
     error => assertAggregate(error, [
       'serial browser run 1',
-      'serial browser run 2',
     ]),
   )
 
-  assert.deepEqual(executed, [1, 2])
-  assert.equal(candidateChecks, 3)
+  assert.deepEqual(executed, [1])
+  assert.equal(candidateChecks, 2)
   assert.equal(cleanupCalls, 1)
   const after = await repositoryEvidence(fixture)
   assert.equal(repositoryStatesEqual(before.state, after.state), true)
@@ -306,7 +305,7 @@ test('browser wrapper discards tracked and untracked mutations detected inside i
   )
 })
 
-test('browser orchestration aggregates evidence failures after successful fresh runs', async () => {
+test('browser orchestration stops after the first invalid evidence run', async () => {
   const validated = []
   const infoMessages = []
   await assert.rejects(
@@ -328,14 +327,33 @@ test('browser orchestration aggregates evidence failures after successful fresh 
     }),
     error => assertAggregate(error, [
       'browser evidence run 1',
-      'browser evidence run 2',
     ]),
   )
-  assert.deepEqual(validated, [1, 2])
+  assert.deepEqual(validated, [1])
   assert.equal(
     infoMessages.some(message => message.includes('browser-verification:pass')),
     false,
   )
+})
+
+test('browser orchestration still requires both fresh runs after green evidence', async () => {
+  const executed = []
+  const validated = []
+  const runs = await runSerialBrowserProof({
+    assertExactCandidate: async () => {},
+    clearPriorEvidence: async () => {},
+    executeRun: async runIndex => executed.push(runIndex),
+    log: QUIET_LOGGER,
+    runCount: 2,
+    validateRunEvidence: async runIndex => {
+      validated.push(runIndex)
+      return { runIndex, status: 'passed' }
+    },
+  })
+
+  assert.deepEqual(executed, [1, 2])
+  assert.deepEqual(validated, [1, 2])
+  assert.deepEqual(runs.map(run => run.runIndex), [1, 2])
 })
 
 test('browser exact-candidate preflight remains a hard gate before evidence mutation', async () => {

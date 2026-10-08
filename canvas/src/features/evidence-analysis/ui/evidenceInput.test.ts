@@ -70,3 +70,41 @@ test('declared oversized assets are rejected before reading and redirected respo
   const response = new Response('{}'); Object.defineProperty(response, 'redirected', { value: true })
   await assert.rejects(readEvidenceExamples([paths[0]], (async () => response) as typeof fetch), /unavailable/)
 })
+test('a cancelled owner never requests an example and cancellation prevents the next batch request', async () => {
+  const controller = new AbortController(); controller.abort()
+  let calls = 0
+  const fetcher = (async () => { calls++; return new Response('{}') }) as typeof fetch
+  await assert.rejects(readEvidenceExamples(paths, fetcher, '/', { production: false }, { signal: controller.signal }), { name: 'AbortError' })
+  assert.equal(calls, 0)
+  const next = new AbortController()
+  const cancellingFetch = (async () => { calls++; next.abort(); return new Response('{}') }) as typeof fetch
+  await assert.rejects(readEvidenceExamples(paths, cancellingFetch, '/', { production: false }, { signal: next.signal }), { name: 'AbortError' })
+  assert.equal(calls, 1)
+})
+test('stalled headers have a whole-read deadline and a late body is cancelled', { timeout: 2000 }, async () => {
+  let finish!: (response: Response) => void, requestSignal: AbortSignal | undefined, cancelled = false
+  const fetcher = ((_path, init) => { requestSignal = init?.signal as AbortSignal; return new Promise<Response>(resolve => { finish = resolve }) }) as typeof fetch
+  await assert.rejects(readEvidenceExamples([paths[0]], fetcher, '/', { production: false }, { timeoutMs: 20 }), /deadline/)
+  assert.equal(requestSignal?.aborted, true)
+  finish(new Response(new ReadableStream({ cancel() { cancelled = true } })))
+  await new Promise(resolve => setTimeout(resolve, 0))
+  assert.equal(cancelled, true)
+})
+test('stalled bodies are cancelled without waiting for a broken stream cleanup', { timeout: 2000 }, async () => {
+  let cancelled = false
+  const response = new Response(new ReadableStream({ cancel() { cancelled = true; return new Promise(() => {}) } }))
+  await assert.rejects(readEvidenceExamples([paths[0]], (async () => response) as typeof fetch, '/', { production: false }, { timeoutMs: 20 }), /deadline/)
+  assert.equal(cancelled, true)
+  assert.equal(response.body?.locked, false)
+})
+test('owner cancellation aborts a pending body and a later independent load succeeds', async () => {
+  const controller = new AbortController()
+  let cancelled = false, signal: AbortSignal | undefined
+  const fetcher = (async (_path, init) => {
+    signal = init?.signal as AbortSignal
+    return new Response(new ReadableStream({ start() { setTimeout(() => controller.abort(), 0) }, cancel() { cancelled = true } }))
+  }) as typeof fetch
+  await assert.rejects(readEvidenceExamples(paths, fetcher, '/', { production: false }, { signal: controller.signal }), { name: 'AbortError' })
+  assert.equal(signal?.aborted, true); assert.equal(cancelled, true)
+  assert.deepEqual(await readEvidenceExamples([paths[0]], (async () => new Response('{}')) as typeof fetch), ['{}'])
+})

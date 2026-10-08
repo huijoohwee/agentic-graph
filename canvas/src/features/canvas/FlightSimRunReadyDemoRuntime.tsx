@@ -19,12 +19,30 @@ import { findComposedSourceFileByPath } from '@/features/source-files/composedSo
 import { isFlightSimRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
+import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
 
 const subscribeGeospatialMode = (listener: () => void): (() => void) => (
   onGeospatialModeChanged(() => listener())
 )
 
 const FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT = 2
+
+export type FlightSimRunReadyDemoDiagnostic = Readonly<{
+  active: boolean
+  bootstrapReady: boolean
+  launchAttempt: number
+  launchOwned: boolean
+  sourceError: string | null
+  sourceName: string | null
+  sourceReady: boolean
+  sourceStatus: string | null
+}>
+
+let lastFlightSimRunReadyDemoDiagnostic: FlightSimRunReadyDemoDiagnostic | null = null
+
+export function readFlightSimRunReadyDemoDiagnostic(): FlightSimRunReadyDemoDiagnostic | null {
+  return lastFlightSimRunReadyDemoDiagnostic
+}
 
 export function FlightSimRunReadyDemoRuntime() {
   const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
@@ -49,7 +67,12 @@ export function FlightSimRunReadyDemoRuntime() {
     readGeospatialOverlayEnabledPreference,
     readGeospatialOverlayEnabledPreference,
   )
-  const active = isFlightSimRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
+  const active = React.useMemo(() => {
+    if (!isFlightSimRunReadyDemoActive(markdownDocumentName, markdownDocumentText)) return false
+    const parsed = parseMarkdownFrontmatter(splitMarkdownLines(String(markdownDocumentText || '')))
+    // Authored Recorded intent fences practice before asynchronous evidence loading.
+    return parsed.warnings.length === 0 && !Object.prototype.hasOwnProperty.call(parsed.meta, 'source_geospatial')
+  }, [markdownDocumentName, markdownDocumentText])
   const [launchAttempt, setLaunchAttempt] = React.useState(0)
   const ownsDocumentLaunchRef = React.useRef(false)
   const panelLaunchSourceRef = React.useRef<readonly [string | null, string | undefined] | null>(null)
@@ -59,6 +82,21 @@ export function FlightSimRunReadyDemoRuntime() {
   const previousCanvasSurfaceRef = React.useRef<FlightSimPreviousCanvasSurface>(
     captureFlightSimPreviousCanvasSurface(),
   )
+
+  React.useLayoutEffect(() => {
+    if (import.meta.env?.VITE_AGENTIC_OS_FLIGHT_SIM_BROWSER_PROOF === '1') {
+      lastFlightSimRunReadyDemoDiagnostic = Object.freeze({
+        active,
+        bootstrapReady: sourceFilesBootstrapReady,
+        launchAttempt,
+        launchOwned: ownsDocumentLaunchRef.current,
+        sourceError,
+        sourceName: source?.name || null,
+        sourceReady,
+        sourceStatus: source?.status || null,
+      })
+    }
+  }, [active, launchAttempt, source?.name, source?.status, sourceError, sourceFilesBootstrapReady, sourceReady])
 
   React.useLayoutEffect(() => {
     const previousSource = launchSourceRef.current
