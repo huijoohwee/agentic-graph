@@ -3,7 +3,7 @@ import test from 'node:test'
 import { chromium } from 'playwright'
 import { waitForAuthoredWorkspaceSource } from './mission-authored-state-readiness.mjs'
 
-for (const animationFrames of [true, false]) test(`authored readiness gates startup, accepts a parsed selected source during unrelated sync, and drains unselected roots (${animationFrames ? 'normal frames' : 'no animation frames'})`, { timeout: 30000 }, async t => {
+for (const animationFrames of [true, false]) test(`authored readiness gates startup and selected sources while allowing unselected roots (${animationFrames ? 'normal frames' : 'no animation frames'})`, { timeout: 30000 }, async t => {
   const browser = await chromium.launch({ headless: true })
   t.after(() => browser.close())
   try {
@@ -29,7 +29,7 @@ for (const animationFrames of [true, false]) test(`authored readiness gates star
       historyIndex: -1, path: '/docs/owned.md', sourceFiles: [] } })
     let settled = false
     const pending = waitForAuthoredWorkspaceSource(page, 10000).then(() => { settled = true })
-    for (const patch of [{}, { bootstrap: true }, { historyIndex: 0 },
+    for (const patch of [{}, { tasks: 0 }, { bootstrap: true }, { historyIndex: 0 },
       { path: '/docs/owned.md', sourceFiles: [{ source: { path: 'workspace:/docs/other.md' } }] }]) {
       const reads = await page.evaluate(patch => {
         Object.assign(window.__fixture, patch)
@@ -38,15 +38,15 @@ for (const animationFrames of [true, false]) test(`authored readiness gates star
       await page.waitForFunction(reads => window.__fixture.reads >= reads + 2, reads, { polling: 10, timeout: 10000 })
       assert.equal(settled, false, 'A Promise or incomplete startup must never satisfy readiness')
     }
-    await page.evaluate(() => { window.__fixture.sourceFiles = [{ status: 'parsed', source: { path: 'workspace:/docs/retained.md' } },
-      { status: 'parsed', source: { path: 'workspace:/docs/owned.md' } }] })
+    await page.evaluate(() => { window.__fixture.sourceFiles = [{ source: { path: 'workspace:/docs/retained.md' } },
+      { source: { path: 'workspace:/docs/owned.md' } }] })
     await pending
-    assert.equal(settled, true, 'A parsed selected source proves authored readiness even when unrelated seed sync remains active')
+    assert.equal(settled, true)
     await page.evaluate(() => { window.__fixture = { reads: 0, tasks: 1, bootstrap: false,
       historyIndex: -1, path: null, sourceFiles: [] } })
     let emptySettled = false
     const emptyPending = waitForAuthoredWorkspaceSource(page, 10000).then(() => { emptySettled = true })
-    for (const patch of [{}, { bootstrap: true }, { historyIndex: 0 }]) {
+    for (const patch of [{}, { tasks: 0 }, { bootstrap: true }]) {
       const reads = await page.evaluate(patch => {
         Object.assign(window.__fixture, patch)
         return window.__fixture.reads
@@ -54,7 +54,7 @@ for (const animationFrames of [true, false]) test(`authored readiness gates star
       await page.waitForFunction(reads => window.__fixture.reads >= reads + 2, reads, { polling: 10, timeout: 10000 })
       assert.equal(emptySettled, false, 'An unselected root must still wait for complete startup')
     }
-    await page.evaluate(() => { window.__fixture.tasks = 0 })
+    await page.evaluate(() => { window.__fixture.historyIndex = 0 })
     await emptyPending
     assert.equal(emptySettled, true, 'A ready unselected root does not require a synthetic source')
     await page.evaluate(() => {
