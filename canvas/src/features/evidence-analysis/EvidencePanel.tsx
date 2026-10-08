@@ -1,5 +1,7 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { findComposedSourceFileByPath } from '@/features/source-files/composedSourceSelection'
+import { useSourceFilesBootstrapSnapshot } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { LearningOfflineControls } from '@/features/python-learning/LearningOfflineControls'
 import { captureEvidenceSource, isEvidenceSourceCurrent, type EvidenceKind, type EvidenceExample, type EvidenceSourceCapture } from './evidenceSource'
@@ -27,13 +29,15 @@ function argsFor(kind: EvidenceKind, inputs: string[], entityId: string, atUtc: 
   return { bundle: inputs[0], entityId, ...(kind === 'route' ? {} : { atUtc }) }
 }
 export default function EvidencePanel() {
+  const readiness = useSourceFilesBootstrapSnapshot()
   const documentName = useGraphStore(state => state.markdownDocumentName)
   const documentText = useGraphStore(state => state.markdownDocumentText)
   const sourceFiles = useGraphStore(state => state.sourceFiles)
   const source = React.useMemo(() => {
+    if (readiness.phase !== 'ready') return { capture: null, error: readiness.error || 'Preparing the source workspace…' }
     try { return { capture: captureEvidenceSource(), error: '' } }
     catch (error) { return { capture: null, error: error instanceof Error ? error.message : String(error) } }
-  }, [documentName, documentText, sourceFiles])
+  }, [documentName, documentText, sourceFiles, readiness.phase, readiness.error])
   const capture = source.capture
   const [kind, setKind] = React.useState<EvidenceKind>('record')
   const [exampleId, setExampleId] = React.useState('')
@@ -43,6 +47,46 @@ export default function EvidencePanel() {
   const [busy, setBusy] = React.useState(false), [detail, setDetail] = React.useState<any>(null)
   const [prepared, setPrepared] = React.useState<{ text: string; url: string; filename: string } | null>(null)
   const generation = React.useRef(0), current = React.useRef(accepted), downloadUrl = React.useRef<string | null>(null)
+  const pendingRead = React.useRef<AbortController | null>(null)
+  const panel = React.useRef<HTMLElement | null>(null)
+  const pendingFocus = React.useRef<{ element: HTMLElement; owner: EvidenceSourceCapture; dispose: () => void } | null>(null)
+  const discardFocus = React.useCallback(() => { pendingFocus.current?.dispose(); pendingFocus.current = null }, [])
+  function beginBusy() {
+    discardFocus()
+    const doc = panel.current?.ownerDocument, element = doc?.activeElement
+    if (capture && doc && element instanceof HTMLElement && panel.current?.contains(element)) {
+      const cancel = () => discardFocus()
+      const moved = (event: FocusEvent) => { if (event.target !== element && event.target !== doc.body) cancel() }
+      doc.addEventListener('pointerdown', cancel, true)
+      doc.addEventListener('keydown', cancel, true)
+      doc.addEventListener('focusin', moved, true)
+      pendingFocus.current = { element, owner: capture, dispose: () => {
+        doc.removeEventListener('pointerdown', cancel, true)
+        doc.removeEventListener('keydown', cancel, true)
+        doc.removeEventListener('focusin', moved, true)
+      } }
+    }
+    setBusy(true)
+  }
+  React.useLayoutEffect(() => {
+    const pending = pendingFocus.current
+    if (!pending) return
+    const { element, owner } = pending, state = useGraphStore.getState()
+    const file = findComposedSourceFileByPath({ sourceFiles: state.sourceFiles, targetPath: state.markdownDocumentName })
+    // Only focus intent survives temporary availability loss; source/read fences stay exact.
+    if (!element.isConnected || !panel.current?.contains(element)
+      || element.closest('[hidden],[inert],[aria-hidden="true"],details:not([open])')
+      || state.markdownDocumentName !== owner.documentName || state.markdownDocumentText !== owner.documentText
+      || file?.id !== owner.sourceId || file?.text !== owner.documentText
+      || file?.parsedGraphRevision !== owner.sourceRevision || file?.enabled !== true) { discardFocus(); return }
+    if (busy || !capture || !isEvidenceSourceCurrent(capture) || !isEvidenceSourceCurrent(owner) || element.matches(':disabled')) return
+    const active = element.ownerDocument.activeElement
+    if (active === element.ownerDocument.body) {
+      element.focus({ preventScroll: true })
+      if (element.ownerDocument.activeElement !== element) discardFocus()
+    } else if (active !== element) discardFocus()
+  }, [busy, capture, documentName, documentText, sourceFiles, accepted, detail, prepared, status, discardFocus])
+  const cancelRead = React.useCallback(() => { pendingRead.current?.abort(); pendingRead.current = null }, [])
   current.current = accepted
   const examples = capture?.config.examples.filter(item => item.kind === kind) || []
   const chosen = examples.find(item => item.id === exampleId) || examples[0]
@@ -55,20 +99,22 @@ export default function EvidencePanel() {
     if (downloadUrl.current) URL.revokeObjectURL(downloadUrl.current)
     downloadUrl.current = null; setPrepared(null)
   }, [])
-  React.useEffect(() => { generation.current++; setBusy(false); setDetail(null); release(); setStatus(source.error || 'Current source configuration ready. Choose an example or import permitted JSON.') }, [capture?.documentName, capture?.documentText, capture?.sourceId, capture?.sourceRevision, source.error, release])
-  React.useEffect(() => () => { generation.current++; if (downloadUrl.current) URL.revokeObjectURL(downloadUrl.current) }, [])
+  React.useLayoutEffect(() => { generation.current++; cancelRead(); setBusy(false); setDetail(null); release(); setStatus(source.error || 'Current source configuration ready. Choose an example or import permitted JSON.') }, [capture?.documentName, capture?.documentText, capture?.sourceId, capture?.sourceRevision, source.error, release, cancelRead, discardFocus])
+  React.useEffect(() => () => { generation.current++; cancelRead(); discardFocus(); if (downloadUrl.current) URL.revokeObjectURL(downloadUrl.current) }, [cancelRead, discardFocus])
   const live = (token: number, owner: EvidenceSourceCapture) => token === generation.current && isEvidenceSourceCurrent(owner)
   function selectKind(next: EvidenceKind) {
-    generation.current++; setBusy(false); setKind(next); setExampleId(''); setDetail(null)
+    generation.current++; cancelRead(); discardFocus(); setBusy(false); setKind(next); setExampleId(''); setDetail(null)
     setAtUtc(capture?.config.examples.find(item => item.kind === next)?.atUtc || '')
     setStatus('Choose a labelled example or import permitted local JSON.')
   }
-  async function run(read: () => Promise<string[]>, example?: EvidenceExample) {
+  async function run(read: (signal: AbortSignal) => Promise<string[]>, example?: EvidenceExample) {
     if (!capture) { setStatus(source.error); return }
+    cancelRead()
+    const controller = new AbortController(); pendingRead.current = controller
     const owner = capture, token = ++generation.current, selectedKind = kind
-    setBusy(true); setStatus('Reading local evidence…')
+    beginBusy(); setStatus('Reading local evidence…')
     try {
-      const inputs = await read()
+      const inputs = await read(controller.signal)
       if (!live(token, owner)) return
       if (!inputs.length || inputs.length > 40 || (selectedKind !== 'arrival' && inputs.length !== 1)
         || inputs.reduce((sum, text) => sum + new TextEncoder().encode(text).length, 0) > 2000000) throw new Error('Supply a bounded input set of at most 2,000,000 UTF-8 bytes.')
@@ -85,9 +131,9 @@ export default function EvidencePanel() {
       setStatus(output.disposition === 'unresolved' ? 'Structured input retained with unresolved semantics. Review reasons; no clearance is inferred.' : 'Accepted result is bound to the exact source configuration and original inputs.')
     } catch (error) {
       if (live(token, owner)) setStatus(`Not accepted: ${error instanceof Error ? error.message : String(error)} Previous accepted result retained.`)
-    } finally { if (token === generation.current) setBusy(false) }
+    } finally { if (pendingRead.current === controller) pendingRead.current = null; if (token === generation.current) setBusy(false) }
   }
-  const loadExample = () => chosen && run(() => readEvidenceExamples(chosen.paths), chosen)
+  const loadExample = () => chosen && run(signal => readEvidenceExamples(chosen.paths, undefined, undefined, undefined, { signal }), chosen)
   function importFiles(event: React.ChangeEvent<HTMLInputElement>) {
     const files = [...(event.target.files || [])]
     if (!files.length) return
@@ -101,7 +147,7 @@ export default function EvidencePanel() {
     event?.preventDefault()
     const item = visible
     if (!item || stale) return
-    const token = ++generation.current; setBusy(true)
+    const token = ++generation.current; beginBusy()
     try {
       const output = success(await dispatchEvidence(operations[kind], argsFor(kind, item.inputs, entityId, nextTime), item.capture.config))
       if (!live(token, item.capture) || current.current !== item) return
@@ -112,7 +158,7 @@ export default function EvidencePanel() {
   async function inspectSource(factId: string) {
     const item = visible
     if (!item || stale || !item.record) return
-    const token = ++generation.current; setBusy(true)
+    const token = ++generation.current; beginBusy()
     try {
       const profileId = item.capture.config.profiles[item.kind as 'record' | 'volume' | 'route']
       const output = success(await executeEvidence('aviation.source', { bundle: item.inputs[0], factId, profileId }))
@@ -123,7 +169,7 @@ export default function EvidencePanel() {
   async function prepareExport() {
     const item = visible
     if (!item || stale) return
-    const token = ++generation.current; setBusy(true)
+    const token = ++generation.current; beginBusy()
     try {
       const pack = ['record', 'volume', 'route'].includes(item.kind)
       const output = pack ? success(await executeEvidence('aviation.export', { bundle: item.inputs[0], profileId: item.capture.config.profiles[item.kind as 'record' | 'volume' | 'route'] })) : null
@@ -134,14 +180,14 @@ export default function EvidencePanel() {
     } catch (error) { if (live(token, item.capture)) setStatus(error instanceof Error ? error.message : String(error)) }
     finally { if (token === generation.current) setBusy(false) }
   }
-  function clear() { generation.current++; setBusy(false); current.current = null; setAccepted(null); setDetail(null); release(); setStatus('Local record removed. Saved files remain on your device.') }
+  function clear() { generation.current++; cancelRead(); discardFocus(); setBusy(false); current.current = null; setAccepted(null); setDetail(null); release(); setStatus('Local record removed. Saved files remain on your device.') }
   async function copyPrepared() {
     const item = prepared, token = generation.current
     if (!item) return
     try { await navigator.clipboard.writeText(item.text); if (token === generation.current && downloadUrl.current === item.url) setStatus('Exact export JSON copied. Save and verify the file.') }
     catch (error) { if (token === generation.current && downloadUrl.current === item.url) setStatus(`Clipboard unavailable: ${error instanceof Error ? error.message : String(error)}. Select and copy the displayed JSON.`) }
   }
-  return <section className="grid min-w-0 gap-3 text-xs" aria-label="Native evidence and analysis" data-kg-evidence-panel="1">
+  return <section ref={panel} className="grid min-w-0 gap-3 text-xs" aria-label="Native evidence and analysis" data-kg-evidence-panel="1">
     <h3 className="text-sm font-semibold">{capture?.config.title || 'Evidence and analysis'}</h3>
     <p className="break-words">{capture?.config.description || source.error}</p>
     <SourceGeospatialControls capture={capture} />

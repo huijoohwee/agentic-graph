@@ -147,7 +147,9 @@ export function FlightSimFloatingPanelView() {
     || resolveXrMotionReferenceStage(XR_MOTION_REFERENCE_DEFAULT_STAGE_ID)
   const [pendingOperation, setPendingOperation] = React.useState<PendingOperation | null>(null)
   const [throttle, setThrottle] = React.useState(flight.aircraft.throttle)
-  const [evidenceLoaded, setEvidenceLoaded] = React.useState(false)
+  const [evidenceLoaded, setEvidenceLoaded] = React.useState(sourceContext)
+  const [evidenceOpen, setEvidenceOpen] = React.useState(sourceContext)
+  React.useEffect(() => { if (sourceContext) { setEvidenceLoaded(true); setEvidenceOpen(true) } }, [sourceContext])
 
   React.useEffect(() => {
     setThrottle(flight.aircraft.throttle)
@@ -210,33 +212,23 @@ export function FlightSimFloatingPanelView() {
     && !decisions.hydrationBlocked
   const canSave = flight.phase === 'completed' || flight.phase === 'crashed'
 
-  if (sourceContext) return (
-    <section className={floatingPanelCatalogSurfaceClassName()} aria-label="Recorded flight evidence">
-      <FloatingPanelCatalogHeader title="Recorded flight evidence" subtitle="Source observations · shared map and Timeline" actionsLabel="Recorded evidence actions" />
-      <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
-        <p className="text-xs">Select a map feature to inspect its source and observation time. Closing Timeline keeps the recorded map active.</p>
-        <React.Suspense fallback={<p role="status">Loading local evidence tools…</p>}><EvidencePanelLazy /></React.Suspense>
-      </section>
-    </section>
-  )
-
   return (
     <section
       className={floatingPanelCatalogSurfaceClassName()}
-      aria-label="Flight Sim"
-      data-kg-flight-sim-floating-panel="1"
-      data-kg-flight-sim-active={flight.active ? '1' : '0'}
-      data-kg-flight-sim-phase={flight.phase}
-      data-kg-flight-sim-mcp="agentic-graph.control_local_flight_sim"
-      data-kg-flight-sim-camera-view={camera.view}
-      data-kg-flight-sim-environment={environment.id}
-      data-kg-flight-sim-hydration={hydrationPending ? 'loading' : decisions.hydrationBlocked ? 'blocked' : 'ready'}
+      aria-label={sourceContext ? 'Recorded flight evidence' : 'Flight Sim'}
+      data-kg-flight-sim-floating-panel={sourceContext ? undefined : '1'}
+      data-kg-flight-sim-active={sourceContext ? undefined : (flight.active ? '1' : '0')}
+      data-kg-flight-sim-phase={sourceContext ? undefined : flight.phase}
+      data-kg-flight-sim-mcp={sourceContext ? undefined : 'agentic-graph.control_local_flight_sim'}
+      data-kg-flight-sim-camera-view={sourceContext ? undefined : camera.view}
+      data-kg-flight-sim-environment={sourceContext ? undefined : environment.id}
+      data-kg-flight-sim-hydration={sourceContext ? undefined : (hydrationPending ? 'loading' : decisions.hydrationBlocked ? 'blocked' : 'ready')}
     >
       <FloatingPanelCatalogHeader
-        title="Flight Sim"
-        subtitle="Local deterministic XR mission"
-        actionsLabel="Flight Sim actions"
-        actions={<>
+        title={sourceContext ? 'Recorded flight evidence' : 'Flight Sim'}
+        subtitle={sourceContext ? 'Source observations · shared map and Timeline' : 'Local deterministic XR mission'}
+        actionsLabel={sourceContext ? 'Recorded evidence actions' : 'Flight Sim actions'}
+        actions={!sourceContext && <>
           {!flight.active ? (
             <button
               type="button"
@@ -271,12 +263,14 @@ export function FlightSimFloatingPanelView() {
       />
 
       <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
-        <details className={cn('min-w-0 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
-          onToggle={event => { if (event.currentTarget.open) setEvidenceLoaded(true) }} data-kg-flight-evidence="1">
-          <summary className="min-h-[44px] cursor-pointer text-xs font-semibold">Evidence and analysis</summary>
-          <p className="mb-2 text-xs">Local imported records are separate from simulated aircraft state. Export before closing the Flight panel.</p>
-          {evidenceLoaded ? <React.Suspense fallback={<p role="status" className="text-xs">Loading local evidence tools…</p>}><EvidencePanelLazy /></React.Suspense> : null}
+        {sourceContext && <p className="text-xs">Select a map feature to inspect its source and observation time. Closing Timeline keeps the recorded map active.</p>}
+        <details open={sourceContext || evidenceOpen} className={sourceContext ? 'min-w-0' : cn('min-w-0 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
+          onToggle={event => { setEvidenceOpen(event.currentTarget.open); if (event.currentTarget.open) setEvidenceLoaded(true) }} data-kg-flight-evidence="1">
+          <summary hidden={sourceContext} className="min-h-[44px] cursor-pointer text-xs font-semibold">Evidence and analysis</summary>
+          <p hidden={sourceContext} className="mb-2 text-xs">Local imported records are separate from simulated aircraft state. Export before closing the Flight panel.</p>
+          {(sourceContext || evidenceLoaded) ? <React.Suspense fallback={<p role="status" className="text-xs">Loading local evidence tools…</p>}><EvidencePanelLazy /></React.Suspense> : null}
         </details>
+        {!sourceContext && <>
         <section
           className={cn(
             'grid grid-cols-3 gap-2 rounded border p-2 text-xs',
@@ -531,6 +525,7 @@ export function FlightSimFloatingPanelView() {
             Browser tools · agentic-graph.inspect_local_flight_sim · agentic-graph.control_local_flight_sim
           </p>
         </section>
+        </>}
       </section>
     </section>
   )

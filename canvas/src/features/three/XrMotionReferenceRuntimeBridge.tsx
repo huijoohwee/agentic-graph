@@ -136,17 +136,19 @@ export function hydrateCanonicalXrPhysicsRuntime(): boolean {
 
 export function XrMotionReferenceRuntimeBridge() {
   const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
-  const { graphData, markdownDocumentName, markdownDocumentText, selectedNodeId } = useGraphStore(useShallow(state => ({
-    graphData: state.graphData,
+  const { hasGraphData, graphNodes, graphType, graphMetadata, markdownDocumentName, markdownDocumentText } = useGraphStore(useShallow(state => ({
+    hasGraphData: Boolean(state.graphData),
+    graphNodes: state.graphData?.nodes,
+    graphType: state.graphData?.type,
+    graphMetadata: state.graphData?.metadata,
     markdownDocumentName: state.markdownDocumentName,
     markdownDocumentText: state.markdownDocumentText,
-    selectedNodeId: state.selectedNodeId,
   })))
-  const persistedValue = resolveXrMotionReferencePersistedValue(graphData?.metadata)
-  const persistedPhysicsValue = graphData?.metadata?.[XR_PHYSICS_GRAPH_METADATA_KEY]
+  const persistedValue = resolveXrMotionReferencePersistedValue(graphMetadata)
+  const persistedPhysicsValue = graphMetadata?.[XR_PHYSICS_GRAPH_METADATA_KEY]
   const sceneKey = xrMotionReferenceSceneKey(
     markdownDocumentName || 'Untitled',
-    graphData,
+    hasGraphData ? { type: graphType || 'Graph', metadata: graphMetadata || {} } : null,
   )
 
   useIsomorphicLayoutEffect(() => {
@@ -184,7 +186,12 @@ export function XrMotionReferenceRuntimeBridge() {
     if (!documentReady) return
     hydrateCanonicalXrPhysicsRuntime()
     synchronizeBoundXrActorFromGraphSelection()
-  }, [graphData?.nodes, markdownDocumentName, markdownDocumentText, persistedPhysicsValue, persistedValue, sceneKey, selectedNodeId, sourceFilesBootstrapReady])
+  }, [graphNodes, markdownDocumentName, markdownDocumentText, persistedPhysicsValue, persistedValue, sceneKey, sourceFilesBootstrapReady])
+
+  useIsomorphicLayoutEffect(() => useGraphStore.subscribe((state, previousState) => {
+    if (state.selectedNodeId === previousState.selectedNodeId) return
+    synchronizeBoundXrActorFromGraphSelection()
+  }), [])
 
   return null
 }

@@ -1,3 +1,4 @@
+import { verifyBrowserProofBuild } from '../../scripts/browser-proof-build.mjs'
 import { selectMenuOption } from './lib/select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
@@ -21,6 +22,27 @@ const sourceState = () => execFileSync('git', ['-C', root, 'status', '--porcelai
 const before = sourceState(), output = resolve(process.env.PYTHON_LEARNING_PROOF_DIR || join(tmpdir(), `python-learning-offline-${revision.slice(0, 12)}`))
 const port = Number(process.env.PYTHON_LEARNING_PROOF_PORT || 4198)
 assert.ok(Number.isInteger(port) && port >= 1024 && port <= 65535, 'offline proof port must be 1024..65535')
+async function waitForCanvasSourceAuthority(targetPage, stage) {
+  await targetPage.waitForFunction(() => {
+    const phase = document.querySelector('[data-kg-canvas-viewport-root="1"]')?.getAttribute('data-kg-source-authority-phase')
+    return phase === 'ready' || phase === 'error'
+  }, undefined, { timeout: 60000 })
+  const viewport = targetPage.locator('[data-kg-canvas-viewport-root="1"]').first()
+  const phase = await viewport.getAttribute('data-kg-source-authority-phase')
+  assert.equal(phase, 'ready', `${stage} Canvas source authority must settle ready: ${await viewport.innerText().catch(() => '')}`)
+}
+async function closeBottomTimelineIfVisible(targetPage) {
+  const timeline = targetPage.locator('[data-kg-strybldr-bottom-timeline-panel="1"]')
+  if (!(await timeline.isVisible())) return
+  await timeline.getByRole('button', { name: 'Close', exact: true }).click()
+  await timeline.waitFor({ state: 'hidden', timeout: 10000 })
+}
+const buildEnvironment = { ...process.env }
+let verifiedBuild = null
+if (process.argv.includes('--verified-build')) {
+  assert.ok(!process.argv.includes('--build') && !process.argv.includes('--dev'), 'Verified build cannot be combined with build/dev flags')
+  verifiedBuild = await verifyBrowserProofBuild(root, { environment: buildEnvironment })
+}
 if (process.argv.includes('--build')) execFileSync('npm', ['run', 'pages:build'], { cwd: root, stdio: 'inherit', timeout: 240000 })
 const { LEARNING_LESSONS: lessons } = await tsImport('../src/features/python-learning/learningLessons.ts', import.meta.url)
 const { LEARNING_LESSON_FILES: lessonFiles } = await tsImport('../src/features/python-learning/learningLessonFiles.ts', { parentURL: import.meta.url, tsconfig: join(canvas, 'tsconfig.json') })
@@ -65,6 +87,7 @@ try {
   await page.getByRole('region', { name: 'Source Files', exact: true }).waitFor({ timeout: 60000 })
   await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller), undefined, { timeout: 60000 })
   await page.waitForFunction(() => [...document.querySelectorAll('textarea')].some(editor => editor.value.trim().length > 0), undefined, { timeout: 60000 })
+  await waitForCanvasSourceAuthority(page, 'Initial offline-capable startup')
   // Exercise the actual Source Files owner before the separate offline lesson proof.
   await page.setViewportSize({ width: 1280, height: 900 })
   const startupFloatingPanel = page.locator('[data-kg-floating-panel-root="true"]:not([data-kg-strybldr-bottom-timeline-panel])').first()
@@ -177,6 +200,7 @@ try {
   const offlineResponse = await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
   assert.equal(offlineResponse?.status(), 200, 'verified offline navigation must return the cached application document')
   await pane.waitFor({ timeout: 60000 })
+  await waitForCanvasSourceAuthority(page, 'First offline reload')
   await selectPython()
   await dismissVisibleFloatingPanel(page)
   const reloadMs = Math.round(performance.now() - reloadStart)
@@ -290,6 +314,7 @@ try {
   await page.getByRole('navigation', { name: 'Main Toolbar', exact: true }).getByRole('button', { name: 'Edit Python code', exact: true }).click()
   await pane.waitFor(); await selectPython()
   await dismissVisibleFloatingPanel(page)
+  await closeBottomTimelineIfVisible(page)
   assert.equal((await inspect()).binding.expectedRunId, beforeCanvasSwitch.binding.expectedRunId, 'view switching must preserve the run')
   assert.equal(await editor.inputValue(), lessons.at(-1).solution, 'view switching must preserve source')
   assert.equal(await editor.evaluate(element => element.selectionStart), 7, 'view switching must preserve the editor cursor')
@@ -386,7 +411,8 @@ try {
   assert.equal(await editor.inputValue(), lessons[0].solution)
   assert.deepEqual(errors, [])
   assert.equal(sourceState(), before, 'source must stay frozen throughout the proof')
-  const evidence = { revision, checkoutRevision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
+  if (verifiedBuild) assert.deepEqual(await verifyBrowserProofBuild(root, { environment: buildEnvironment }), verifiedBuild)
+  const evidence = { verifiedBuild, revision, checkoutRevision, sourceState: before, kind: 'native-production-build-local-browser', offlineReloadProven: true,
     nativeLessonFilesProven: true, nativeLessonSaveReloadProven: true, toolRegistrationProven: true, narrowDesktopPaneProven: true, mainCanvasSceneProven: true, monacoEditorRoundTripProven: true, viewSwitchPreservesRun: true, toolHost: 'controlled-registerTool-browser-host', discovery,
     installMs, reloadMs, closureBytes: manifest.bytes, closureFiles: manifest.files.length, outcomes, warehouseRehearsal, corruptionBlocked: true,
     pageErrors: errors, remoteRequestsBlocked: [...new Set(remote)], failedBackgroundRequests: [...new Set(failedRequests)], productionDeploymentProven: false, learnerSessionProven: false }

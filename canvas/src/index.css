@@ -134,6 +134,9 @@
     --kg-motion-ease-standard: linear;
     --kg-motion-ease-spring: linear;
   }
+  .LaunchButton__icon {
+    animation: none;
+  }
 }
 :root[data-theme='light'] {
   color-scheme: light;
