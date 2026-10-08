@@ -10,9 +10,13 @@ export async function waitForAuthoredWorkspaceSource(page, timeout = 60000) {
     ])
     window.__AG_MISSION_AUTHORED_SOURCE_READY__ = () => {
       const state = useGraphStore.getState(), path = useMarkdownExplorerStore.getState().activePath
-      return sync.readWorkspaceSeedSyncRuntimeSnapshot().activeTaskCount === 0
-        && readSourceFilesBootstrapReady() && state.historyIndex >= 0
-        && (!path || state.sourceFiles.some(file => file?.source?.path === `workspace:${path}`))
+      const activeTaskCount = sync.readWorkspaceSeedSyncRuntimeSnapshot().activeTaskCount
+      const selectedSourceReady = typeof path === 'string' && state.sourceFiles.some(file =>
+        file?.source?.path === `workspace:${path}` && file?.status === 'parsed')
+      // A selected source has its own settled record. Unrelated background seed-sync
+      // work must not hold the mission smoke open after that record is parsed.
+      return readSourceFilesBootstrapReady() && state.historyIndex >= 0
+        && (selectedSourceReady || (!path && activeTaskCount === 0))
     }
     window.__AG_MISSION_AUTHORED_SOURCE_SNAPSHOT__ = () => {
       const state = useGraphStore.getState(), path = useMarkdownExplorerStore.getState().activePath
