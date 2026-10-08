@@ -429,7 +429,7 @@ requireMarkers(hudSource, [
   'data-kg-flight-sim-roll',
   'data-kg-flight-sim-save-status', 'data-kg-flight-sim-effective-save-status',
   'data-kg-flight-sim-course-director="hud"',
-  'grid min-w-0 grid-cols-3', 'disabled={!flightControlsEnabled}',
+  'grid min-w-0 grid-cols-3', 'sm:grid-cols-6', 'disabled={!flightControlsEnabled}',
   "'Retry save'",
 ], 'Flight HUD readiness')
 const cameraPanelSource = await readText('canvas/src/features/strybldr/cameraPanelSurfaceRuntime.ts')

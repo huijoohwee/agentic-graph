@@ -13,6 +13,8 @@ import {
 const GITHUB_DOCS_MIRROR_FETCH_CONCURRENCY = 8
 const CANONICAL_GITHUB_DOCS_MIRROR_CACHE_TTL_MS = 60_000
 
+const isBrowserOffline = (): boolean => typeof navigator !== 'undefined' && navigator.onLine === false
+
 export const CANONICAL_HUIJOOHWEE_DEMO_DOCS_GITHUB_URL =
   'https://github.com/huijoohwee/huijoohwee/tree/main/docs'
 export const CANONICAL_HUIJOOHWEE_OUTPUT_DOCS_GITHUB_URL =
@@ -70,6 +72,7 @@ const readGitHubMirrorFileText = async (args: {
   relPath: string
   maxFileBytes: number
 }): Promise<string | null> => {
+  if (isBrowserOffline()) return null
   if (shouldEncodeWorkspaceSourceMirrorAsBase64(args.relPath)) {
     if (typeof fetch !== 'function') return null
     const response = await fetch(args.rawUrl)
@@ -96,11 +99,12 @@ export const readWorkspaceDocsMirrorEntriesFromGitHubSourceUrl = async (args: {
   maxFileBytes: number
   requireCompleteDataset?: boolean
 }): Promise<WorkspaceDocsMirrorEntry[]> => {
-  if (typeof fetch !== 'function') return []
+  if (typeof fetch !== 'function' || isBrowserOffline()) return []
   const repoRef = parseGitHubRepoUrl(String(args.url || '').trim())
   if (!repoRef) return []
   try {
     const ref = repoRef.ref || (await resolveGitHubDefaultBranch({ owner: repoRef.owner, repo: repoRef.repo }))
+    if (isBrowserOffline()) return []
     const tree = await listGitHubRepoTreeFiles({
       owner: repoRef.owner,
       repo: repoRef.repo,
@@ -113,6 +117,7 @@ export const readWorkspaceDocsMirrorEntriesFromGitHubSourceUrl = async (args: {
       tree.files,
       GITHUB_DOCS_MIRROR_FETCH_CONCURRENCY,
       async (file): Promise<WorkspaceDocsMirrorEntry | null> => {
+        if (isBrowserOffline()) return null
         const relPath = stripRepoSubdirPrefix(file.relPath, repoRef.subdirPath)
         if (!relPath || !isWorkspaceSourceMirrorFileName(relPath)) return null
         const text = await readGitHubMirrorFileText({
