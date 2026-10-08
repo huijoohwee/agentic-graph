@@ -20,13 +20,16 @@ export function readWebglSupport(
         || existingRendererCanvas.getContext('webgl')
         || existingRendererCanvas.getContext('experimental-webgl' as never)
       ) as WebGLRenderingContext | WebGL2RenderingContext | null
-      return Boolean(
-        existingContext
-        && (
+      if (existingContext) {
+        return (
           typeof existingContext.isContextLost !== 'function'
           || !existingContext.isContextLost()
-        ),
-      )
+        )
+      }
+      // React Three Fiber can mount its shared canvas before creating the
+      // renderer. Probe capability without claiming that uninitialized canvas
+      // means WebGL is unavailable; the existing owner will acquire the live
+      // context as the surface transition completes.
     }
     const canvas = documentValue.createElement('canvas')
     const context = (

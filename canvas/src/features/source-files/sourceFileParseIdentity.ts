@@ -1,3 +1,5 @@
+import type { SourceFile } from '@/hooks/store/types'
+import { normalizeWorkspacePath, workspaceDocumentKey } from '@/features/workspace-fs/path'
 import { hashStringToHexSharedContentCached } from '@/lib/hash/textHashCache'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 
@@ -22,4 +24,13 @@ export function buildSourceFileParseIdentityHash(args: {
       textHash,
     ].join('|'),
   })
+}
+
+/** Workspace parser names are canonical paths; SourceFile.name remains a display label. */
+export function resolveSourceFileParseInput(file: Pick<SourceFile, 'id' | 'name' | 'text' | 'source'>) {
+  const sourcePath = String(file.source?.path || '')
+  const path = sourcePath.startsWith('workspace:') ? normalizeWorkspacePath(sourcePath.slice('workspace:'.length)) : null
+  return path && workspaceDocumentKey(path)
+    ? { cacheNamespace: `workspace-import:${path}`, name: workspaceDocumentKey(path), text: file.text }
+    : { cacheNamespace: `source-file:${file.id}`, name: file.name, text: file.text }
 }

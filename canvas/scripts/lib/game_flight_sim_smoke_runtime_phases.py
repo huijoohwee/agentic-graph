@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from playwright.sync_api import Page, expect
-
+from lib.game_flight_sim_smoke_activation_diagnostic import wait_for_practice_document_state_trace
 from lib.game_flight_sim_smoke_camera import verify_flight_camera_runtime
 from lib.game_flight_sim_smoke_deadlines import _read_ready_frame_debug
 from lib.game_flight_sim_smoke_deadlines import verify_flight_deadline_contracts
@@ -174,7 +174,7 @@ def run_flight_runtime_verifications(
         # Physics XR baseline after optional Editor Workspace bootstrap settles.
         reset_observed_errors()
         source_application, source = apply_and_verify_exact_authored_source(page)
-        wait_for_flight_hud_activation(page)
+        source_application["practiceDocumentStateTrace"] = wait_for_practice_document_state_trace(page, source, wait_for_flight_hud_activation)
         hud = page.locator('[data-kg-flight-sim-hud="1"]').first
         expect(hud).to_be_visible(timeout=5_000)
         def read_frame_debug(close_activation: bool = False) -> dict[str, Any]:
@@ -213,10 +213,13 @@ def run_flight_runtime_verifications(
         if (
             source.get("sha256") != expected_source_sha256
             or source.get("authoredSeedSha256") != expected_source_sha256
-            or source.get("workspaceSourceSha256") != expected_source_sha256
+            or source.get("workspaceSourceSha256")
+            != source.get("practiceSourceSha256")
+            or source.get("practiceSourceDerivedFromAuthoredSeed") is not True
+            or source.get("canonicalRecordedSourceStayedInactive") is not True
         ):
             raise AssertionError(
-                "disk, bundled, and WorkspaceFs source identities diverged: "
+                "canonical seed, Recorded fence, and isolated practice identities diverged: "
                 f"{source}"
             )
         return {
