@@ -18,6 +18,32 @@ const readWorkspaceViewState = targetPage => targetPage.evaluate(async () => {
     workspaceGraphMutationLayoutLockActive: current.workspaceGraphMutationLayoutLockActive,
   }
 })
+const beginWorkspaceCloseTransitionTrace = targetPage => targetPage.evaluate(async () => {
+  const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+  const target = globalThis
+  target.__agenticGraphWorkspaceCloseTraceUnsubscribe?.()
+  const read = state => ({
+    workspaceViewMode: state.workspaceViewMode,
+    workspaceCanvasPaneOpen: state.workspaceCanvasPaneOpen,
+    workspaceGraphMutationLayoutLockActive: state.workspaceGraphMutationLayoutLockActive,
+  })
+  let previous = read(useGraphStore.getState())
+  target.__agenticGraphWorkspaceCloseTransitions = []
+  target.__agenticGraphWorkspaceCloseTraceUnsubscribe = useGraphStore.subscribe(state => {
+    const next = read(state)
+    if (JSON.stringify(next) === JSON.stringify(previous)) return
+    previous = next
+    if (target.__agenticGraphWorkspaceCloseTransitions.length < 8) target.__agenticGraphWorkspaceCloseTransitions.push(next)
+  })
+})
+const endWorkspaceCloseTransitionTrace = targetPage => targetPage.evaluate(() => {
+  const target = globalThis
+  const transitions = target.__agenticGraphWorkspaceCloseTransitions || []
+  target.__agenticGraphWorkspaceCloseTraceUnsubscribe?.()
+  delete target.__agenticGraphWorkspaceCloseTraceUnsubscribe
+  delete target.__agenticGraphWorkspaceCloseTransitions
+  return transitions
+})
 
 async function waitForWorkspaceEditorClose(targetPage, timeout) {
   const deadline = Date.now() + timeout
@@ -109,6 +135,7 @@ export async function closePanelRegion(region, targetPage) {
     }
   }
   await recordWorkspaceState('before-workspace-close')
+  await beginWorkspaceCloseTransitionTrace(targetPage)
   await clickWorkspaceClose(closeButton, targetPage)
   await recordWorkspaceState('after-first-workspace-close')
   // The Mission handoff can retain a just-replaced toolbar callback for one
@@ -122,13 +149,24 @@ export async function closePanelRegion(region, targetPage) {
   try {
     await region.waitFor({ state: 'hidden', timeout: 10000 })
   } catch (error) {
+    const storeTransitions = await endWorkspaceCloseTransitionTrace(targetPage).catch(() => null)
     const closeControl = await closeButton.first().evaluate(element => ({
       html: element.outerHTML,
       hidden: element instanceof HTMLElement ? element.hidden : null,
       disabled: element instanceof HTMLButtonElement ? element.disabled : null,
+      reactProps: (() => {
+        const key = Object.keys(element).find(candidate => candidate.startsWith('__reactProps$'))
+        const props = key ? element[key] : null
+        return {
+          found: Boolean(key),
+          onClick: typeof props?.onClick,
+          onPointerDown: typeof props?.onPointerDown,
+        }
+      })(),
       rect: (() => { const box = element.getBoundingClientRect(); return { x: box.x, y: box.y, width: box.width, height: box.height } })(),
     })).catch(() => null)
     const state = await readWorkspaceViewState(targetPage).catch(() => null)
-    throw new Error(`Workspace close left the editor shell visible: ${JSON.stringify({ state, closeTrace, closeControl })}`, { cause: error })
+    throw new Error(`Workspace close left the editor shell visible: ${JSON.stringify({ state, closeTrace, storeTransitions, closeControl })}`, { cause: error })
   }
+  await endWorkspaceCloseTransitionTrace(targetPage)
 }
