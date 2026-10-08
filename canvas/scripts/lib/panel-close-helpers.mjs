@@ -9,6 +9,15 @@ const floatingPanelCard = (targetPage, candidates) => candidates.and(targetPage.
 const workspaceEditorClosed = targetPage => targetPage.evaluate(
   async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().workspaceViewMode === 'canvas',
 )
+const readWorkspaceViewState = targetPage => targetPage.evaluate(async () => {
+  const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+  const current = useGraphStore.getState()
+  return {
+    workspaceViewMode: current.workspaceViewMode,
+    workspaceCanvasPaneOpen: current.workspaceCanvasPaneOpen,
+    workspaceGraphMutationLayoutLockActive: current.workspaceGraphMutationLayoutLockActive,
+  }
+})
 
 async function waitForWorkspaceEditorClose(targetPage, timeout) {
   const deadline = Date.now() + timeout
@@ -78,6 +87,10 @@ export async function closeFloatingPanel(
 
 export async function closePanelRegion(region, targetPage) {
   const closeButton = region.locator('[data-kg-workspace-toolbar-close="1"]')
+  const closeTrace = []
+  const recordWorkspaceState = async stage => {
+    closeTrace.push({ stage, state: await readWorkspaceViewState(targetPage).catch(() => null) })
+  }
   const floatingPanel = floatingPanelCard(targetPage,
     targetPage.locator('[data-kg-floating-panel-root="true"]'))
   if (await floatingPanel.isVisible()) {
@@ -95,10 +108,16 @@ export async function closePanelRegion(region, targetPage) {
       await floatingPanel.waitFor({ state: 'hidden', timeout: 10000 })
     }
   }
+  await recordWorkspaceState('before-workspace-close')
   await clickWorkspaceClose(closeButton, targetPage)
+  await recordWorkspaceState('after-first-workspace-close')
   // The Mission handoff can retain a just-replaced toolbar callback for one
   // render. Confirm the actual store transition, then retry that same control.
-  if (!await waitForWorkspaceEditorClose(targetPage, 1000)) await clickWorkspaceClose(closeButton, targetPage)
+  if (!await waitForWorkspaceEditorClose(targetPage, 1000)) {
+    await recordWorkspaceState('before-second-workspace-close')
+    await clickWorkspaceClose(closeButton, targetPage)
+    await recordWorkspaceState('after-second-workspace-close')
+  }
   // Canvas retains the warmed editor shell for cheap reopen; closing hides it.
   try {
     await region.waitFor({ state: 'hidden', timeout: 10000 })
@@ -109,15 +128,7 @@ export async function closePanelRegion(region, targetPage) {
       disabled: element instanceof HTMLButtonElement ? element.disabled : null,
       rect: (() => { const box = element.getBoundingClientRect(); return { x: box.x, y: box.y, width: box.width, height: box.height } })(),
     })).catch(() => null)
-    const state = await targetPage.evaluate(async () => {
-      const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
-      const current = useGraphStore.getState()
-      return {
-        workspaceViewMode: current.workspaceViewMode,
-        workspaceCanvasPaneOpen: current.workspaceCanvasPaneOpen,
-        workspaceGraphMutationLayoutLockActive: current.workspaceGraphMutationLayoutLockActive,
-      }
-    }).catch(() => null)
-    throw new Error(`Workspace close left the editor shell visible: ${JSON.stringify({ state, closeControl })}`, { cause: error })
+    const state = await readWorkspaceViewState(targetPage).catch(() => null)
+    throw new Error(`Workspace close left the editor shell visible: ${JSON.stringify({ state, closeTrace, closeControl })}`, { cause: error })
   }
 }
