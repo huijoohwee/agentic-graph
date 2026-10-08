@@ -58,7 +58,15 @@ export async function closePanelRegion(region, targetPage) {
   if (await floatingPanel.isVisible()) {
     const panelClose = floatingPanel.getByRole('button', { name: 'Close', exact: true }).first()
     if (await panelClose.isVisible()) {
-      await panelClose.click({ timeout: 5000 })
+      try {
+        await panelClose.click({ timeout: 5000 })
+      } catch {
+        try {
+          await panelClose.click({ force: true, timeout: 5000 })
+        } catch {
+          await targetPage.keyboard.press('Escape')
+        }
+      }
       await floatingPanel.waitFor({ state: 'hidden', timeout: 10000 })
     }
   }
