@@ -13,7 +13,6 @@ import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import type { SourceFile } from '@/hooks/store/types'
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { captureFlightSimTrainingSource } from '@/features/game-flight-sim/flightSimTrainingSource'
 import { parseAndApplySourceFile } from '@/features/source-files/sourceFilesParseRuntime'
 import { listParsers, registerParser } from '@/features/parsers/registry'
@@ -339,7 +338,7 @@ export async function testActiveWorkspaceRefreshPreservesConcurrentSourceChanges
 export async function testNativeMaterializationParsesExactSourceBeforeDocumentAdmission() {
   const previous = useGraphStore.getState(), explorer = useMarkdownExplorerStore.getState()
   const path = '/docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md'
-  const text = readFileSync(resolve(process.cwd(), '..', path.slice(1)), 'utf8')
+  const text = readFileSync(new URL('../../../' + path.slice(1), import.meta.url), 'utf8')
   const graph = previous.graphData
   try {
     for (const body of [text, 'Unsupported document text', '']) {
@@ -453,7 +452,7 @@ export async function testNativeLifecycleOnlyRetryWaitsForOneParserBeforeSourceA
   ensureBuiltInParsersRegistered()
   const original = listParsers().find(value => String(value.id) === 'markdown')!
   const path = '/docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md'
-  const text = readFileSync(resolve(process.cwd(), '..', path.slice(1)), 'utf8')
+  const text = readFileSync(new URL('../../../' + path.slice(1), import.meta.url), 'utf8')
   const entry = { path: path as never, parentPath: '/docs/workspace-seeds' as never, kind: 'file' as const,
     name: path.split('/').pop()!, text, updatedAtMs: 1 }
   const snapshot = buildActiveWorkspaceRuntimeSourceFilesSnapshot({ activePath: path as never,

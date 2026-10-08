@@ -31,6 +31,8 @@ import {
 } from '@/features/game-flight-sim/flightSimTrainingScenario'
 
 const seedSource = readFileSync(new URL('../../../docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md', import.meta.url), 'utf8')
+// Training lifecycle tests must not also activate the seed's recorded WSSS evidence context.
+const practiceSource = seedSource.replace(/^source_geospatial:\r?\n(?:[ \t]+.*\r?\n)*/m, '')
 const seedProfile = parseMarkdownFrontmatter(splitMarkdownLines(seedSource)).meta.flight_training_profile
 const profile = validateFlightSimTrainingProfile(seedProfile)
 test.beforeEach(() => {
@@ -239,7 +241,7 @@ test('training kernel consumes renamed authored IDs, parameters, and failure win
 test('exact source admission rejects a changed SourceFile and an active replacement atomically', () => {
   const previous = useGraphStore.getState()
   const name = '/imports/authored-training.md'
-  useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: seedSource, sourceFiles: [{ id: 'profile-source', name, text: seedSource, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: name } }] } as never)
+  useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: practiceSource, sourceFiles: [{ id: 'profile-source', name, text: practiceSource, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: name } }] } as never)
   try {
     const capture = captureFlightSimTrainingSource()
     const before = readFlightSimTrainingScenario()
@@ -299,7 +301,7 @@ test('a source change during async entry or synchronous publication leaves admis
   resetFlightSimRuntimeForTests()
   const previous = useGraphStore.getState()
   const name = '/imports/race-profile.md'
-  useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: seedSource, sourceFiles: [{ id: 'race-source', name, text: seedSource, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: name } }] } as never)
+  useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: practiceSource, sourceFiles: [{ id: 'race-source', name, text: practiceSource, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: name } }] } as never)
   let releaseRead!: () => void
   let signalStarted!: () => void
   const started = new Promise<void>(resolve => { signalStarted = resolve })
@@ -336,7 +338,7 @@ test('a control fence cancelled by a subscriber rolls back profile admission and
   resetFlightSimRuntimeForTests()
   const previous = useGraphStore.getState()
   const name = '/imports/cancel-profile.md'
-  useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: seedSource, sourceFiles: [{ id: 'cancel-source', name, text: seedSource, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: name } }] } as never)
+  useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: practiceSource, sourceFiles: [{ id: 'cancel-source', name, text: practiceSource, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: name } }] } as never)
   try {
     for (const initiallyConfigured of [false, true]) {
       resetFlightSimTrainingScenarioForTests()
@@ -363,7 +365,7 @@ test('already-admitted mission and failure selections roll back cancellation, dr
   resetFlightSimRuntimeForTests()
   const previous = useGraphStore.getState()
   const name = '/imports/selection-race.md'
-  const setSource = () => useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: seedSource, sourceFiles: [{ id: 'selection-source', name, text: seedSource, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: name } }] } as never)
+  const setSource = () => useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: practiceSource, sourceFiles: [{ id: 'selection-source', name, text: practiceSource, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: name } }] } as never)
   try {
     setSource()
     admitCapturedFlightSimTrainingSource(captureFlightSimTrainingSource(), 'stopped')
@@ -423,7 +425,7 @@ test('terminal controls retain the governing profile and selection until explici
   try {
     for (const phase of ['completed', 'crashed'] as const) {
       resetFlightSimRuntimeForTests()
-      setSource(seedSource, 1)
+      setSource(practiceSource, 1)
       admitCapturedFlightSimTrainingSource(captureFlightSimTrainingSource(), 'stopped')
       const spatial = flightSimDefaultRuntime.profile()
       const objective = (id: string) => Object.freeze({ id, position: spatial.spawn.position, radiusMeters: FLIGHT_SIM_MIN_CAPTURE_RADIUS_METERS })
@@ -449,7 +451,7 @@ test('terminal controls retain the governing profile and selection until explici
       // Return the fresh run to a terminal phase before testing changed-source reopen.
       flightSimDefaultRuntime.setInput({ pitch: 0.05 })
       await flightSimDefaultRuntime.advanceBy(4 / 60)
-      setSource(seedSource.replace('targetSpeedMetersPerSecond: [8, 22]', 'targetSpeedMetersPerSecond: [0, 80]'), 2)
+      setSource(practiceSource.replace('targetSpeedMetersPerSecond: [8, 22]', 'targetSpeedMetersPerSecond: [0, 80]'), 2)
       const blocked = await openFlightSimSurface({ webglSupported: true })
       assert.match(blocked.runtimeError || '', /active run/)
       assert.equal(blocked.runId, currentRunId)
@@ -469,7 +471,7 @@ test('paused runs resume unchanged and changed mission or failure requires Resta
   resetFlightSimRuntimeForTests()
   const previous = useGraphStore.getState()
   const name = '/imports/paused-profile.md'
-  useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: seedSource, sourceFiles: [{ id: 'paused-source', name, text: seedSource, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: name } }] } as never)
+  useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: practiceSource, sourceFiles: [{ id: 'paused-source', name, text: practiceSource, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: name } }] } as never)
   try {
     await openFlightSimSurface({ webglSupported: true })
     assert.equal((await controlLocalFlightSim({ operation: 'start' })).ok, true)

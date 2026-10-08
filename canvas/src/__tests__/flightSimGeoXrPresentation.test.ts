@@ -215,10 +215,39 @@ test('Flight Geo bootstrap retains one map owner and stages pre-document ownersh
     /hasPresentationCameraClaim:\s*hasLivePresentationCameraClaim/,
   )
   assert.doesNotMatch(basemapHook, /onGrabMapsFallback\?\.\(\)/)
-  const bootstrapReconciliationDependencies = basemapHook.match(
-    /\}, \[\n[ ]{4}enabled,\n[ ]{4}initialStyleOverride,[\s\S]*?\n[ ]{2}\]\)\n\n[ ]{2}return state/,
-  )?.[0] || ''
-  assert.ok(bootstrapReconciliationDependencies)
+  const reconciliationCallStart = basemapHook.indexOf(
+    'reconcileMapLibreFlightBootstrap({',
+  )
+  const reconciliationDependenciesStart = basemapHook.indexOf(
+    '\n  }, [',
+    reconciliationCallStart,
+  )
+  const reconciliationEffectEnd = basemapHook.indexOf(
+    '\n  ])\n\n  return state',
+    reconciliationDependenciesStart,
+  )
+  assert.ok(
+    reconciliationCallStart >= 0
+      && reconciliationDependenciesStart > reconciliationCallStart
+      && reconciliationEffectEnd > reconciliationDependenciesStart,
+  )
+  const bootstrapReconciliationDependencies = basemapHook.slice(
+    reconciliationDependenciesStart,
+    reconciliationEffectEnd,
+  )
+  for (const dependency of [
+    'enabled',
+    'providerOnline',
+    'initialStyleOverride',
+    'readLiveFlightBootstrapStyle',
+    'state.map',
+    'targetStyleUrl',
+  ]) {
+    assert.ok(
+      bootstrapReconciliationDependencies.includes(dependency),
+      `Flight bootstrap reconciliation depends on ${dependency}`,
+    )
+  }
   assert.doesNotMatch(
     bootstrapReconciliationDependencies,
     /onGrabMapsFallback/,
