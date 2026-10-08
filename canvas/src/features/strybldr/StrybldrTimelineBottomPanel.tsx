@@ -347,9 +347,14 @@ export function StrybldrTimelineBottomPanel({
     height: panelSizePx ? `${panelSizePx.height}px` : `min(${TIMELINE_BOTTOM_PANEL_UNPINNED_MAX_HEIGHT_PX}px, 44dvh)`,
     maxHeight: 'min(62dvh, 24rem)',
   }
+  const expandedWorkspaceForegroundHeightStyle = {
+    height: `min(${TIMELINE_BOTTOM_PANEL_UNPINNED_MAX_HEIGHT_PX}px, 44dvh)`,
+    maxHeight: 'min(44dvh, 24rem)',
+  }
   const panelHeightStyle = minimized
     ? { height: 'auto', minHeight: 'var(--kg-toolbar-compact-surface-height)' }
-    : pinned ? expandedPinnedHeightStyle : expandedUnpinnedHeightStyle
+    : timelineOverlaysWorkspaceEditor ? expandedWorkspaceForegroundHeightStyle
+      : pinned ? expandedPinnedHeightStyle : expandedUnpinnedHeightStyle
   const panelPosition = position || getDefaultUnpinnedPosition()
   const layerStyle = React.useMemo(() => ({ left: workspaceLayerInsetLeft }), [workspaceLayerInsetLeft])
   const panelStyle = pinned
