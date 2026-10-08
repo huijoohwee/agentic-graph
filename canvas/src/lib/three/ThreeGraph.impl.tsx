@@ -41,7 +41,7 @@ import { readWebglSupport } from '@/lib/three/webglSupport'
 import { XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE } from '@/features/three/xrNativeControllerDemoRuntime'
 import { resolveAuthoredWorldPaused } from '@/lib/three/authoredWorldPause'
 import { boundedInverseFitScale, fitFloorOffset, readXrStageMetersPerUnit, resolveSceneBackgroundColor } from '@/lib/three/threeGraphSceneLayout'
-import { resolveThreeRendererLifecycleKey, resolveThreeSceneFrameLoop, shouldMountThreeRenderer } from '@/lib/three/threeRendererLifecycle'
+import { resolveThreeRendererLifecycleKey, resolveThreeSceneFrameLoop, shouldMountThreeOverlayFrameSync, shouldMountThreeRenderer } from '@/lib/three/threeRendererLifecycle'
 import { resolveThreeGraphXrSceneAuthority, ThreeGraphImmersiveMediaHud, ThreeGraphImmersiveMediaStage, useThreeGraphImmersiveMediaActive } from '@/lib/three/ThreeGraphImmersiveMedia'
 import { readImmersiveMediaSnapshot } from '@/features/immersive-media/immersiveMediaRuntime'
 import { type ThreeCanvasSemanticMediaOwner, useThreeCanvasSemanticOwner } from '@/lib/three/threeCanvasSemanticOwner'
@@ -75,7 +75,10 @@ type ThreeGraphProps = Readonly<{
   learningScene?: { lesson: LearningLesson; scene?: LearningSceneSnapshot }
 }>
 export default function ThreeGraph({ active = true, geospatialComposite = false, mode = '3d', semanticMediaOwner, learningScene }: ThreeGraphProps) {
-  const { schema, selectNode, selectEdge, setSelectionSource } = useGraphStore()
+  const schema = useGraphStore(s => s.schema)
+  const selectNode = useGraphStore(s => s.selectNode)
+  const selectEdge = useGraphStore(s => s.selectEdge)
+  const setSelectionSource = useGraphStore(s => s.setSelectionSource)
   const markdownDocumentName = useGraphStore(s => s.markdownDocumentName)
   const markdownDocumentText = useGraphStore(s => s.markdownDocumentText)
   const xrAuthoringGraphData = useGraphStore(s => s.graphData)
@@ -557,7 +560,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
               }
             }}
           /> : null}
-          <OverlayFrameSync enabled={active && mode !== 'xr'} scheduleRef={scheduleRef} onResolutionChange={setCanvasDpr} />
+          {shouldMountThreeOverlayFrameSync(mode) ? <OverlayFrameSync enabled={active} scheduleRef={scheduleRef} onResolutionChange={setCanvasDpr} /> : null}
         </React.Suspense>
       </Canvas>
       </XrSubjectHoverProvider>

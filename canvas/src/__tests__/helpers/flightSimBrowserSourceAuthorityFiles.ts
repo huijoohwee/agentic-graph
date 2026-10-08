@@ -38,6 +38,8 @@ const SOURCE_PATHS = Object.freeze({
     'canvas/scripts/lib/game_flight_sim_smoke_network.py',
   previewPageVerifier:
     'canvas/scripts/__tests__/verify_game_flight_sim_preview_page.py',
+  practiceSource:
+    'canvas/scripts/lib/game_flight_sim_smoke_practice_source.py',
   runner:
     'canvas/scripts/run_game_flight_sim_browser_smoke.mjs',
   runtimePhases:
