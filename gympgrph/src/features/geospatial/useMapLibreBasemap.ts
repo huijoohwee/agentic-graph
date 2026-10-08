@@ -60,7 +60,7 @@ import {
   prepareFlightGeoMapLibreForDisposal,
 } from './flightGeoMapLibreDisposal.js'
 import {
-  isGrabMapsUrl,
+  isGrabMapsUrl, readMapLibreProviderOnline, resolveMapLibreBootstrapStyle, subscribeMapLibreProviderOnline,
   loadMapLibreProviderStyleDocument,
   resolveGrabMapsRequestTarget,
   resolveInitialMapLibreStyle,
@@ -312,9 +312,10 @@ export function useMapLibreBasemap(args: {
   const singaporeInitialCamera =
     createSingaporeMapInitialCameraOptions(singaporeCamera)
   const mountedMapRef = React.useRef<any | null>(null)
+  const providerOnline = React.useSyncExternalStore(subscribeMapLibreProviderOnline, readMapLibreProviderOnline, readMapLibreProviderOnline)
   // Read presentation ownership live so retained maps never remount.
   const initialStyleOverrideRef = React.useRef(initialStyleOverride ?? null)
-  initialStyleOverrideRef.current = initialStyleOverride ?? null
+  initialStyleOverrideRef.current = resolveMapLibreBootstrapStyle(initialStyleOverride)
   const readLiveFlightBootstrapStyle = React.useCallback(() => initialStyleOverrideRef.current, [])
   const gameplayPresentationOwnerRef = React.useRef(gameplayPresentationOwner)
   gameplayPresentationOwnerRef.current = gameplayPresentationOwner
@@ -336,14 +337,9 @@ export function useMapLibreBasemap(args: {
   })
 
   React.useEffect(() => {
-    if (initialStyleOverride) {
-      initialStylePreflightAbortRef.current?.abort()
-    }
-  }, [initialStyleOverride])
-
-  React.useEffect(() => {
-    setRuntimeProjectionMode(projectionMode)
-  }, [enabled, projectionMode])
+    if (initialStyleOverrideRef.current) initialStylePreflightAbortRef.current?.abort()
+  }, [initialStyleOverride, providerOnline])
+  React.useEffect(() => { setRuntimeProjectionMode(projectionMode) }, [enabled, projectionMode])
 
   const setProbe = React.useCallback((next: BasemapProbe) => {
     setState((prev: BasemapResult) => {
@@ -419,6 +415,7 @@ export function useMapLibreBasemap(args: {
     let lastBasemapSourceActivityAtMs = 0
     let basemapSourceRenderable = false
     let consecutiveIdleGrabMapsServiceErrors = 0
+    let releaseRuntimeFallbackConnectivity: (() => void) | null = null
     let removePoiClickBinding: (() => void) | null = null
     let releaseMapLease: (() => void) | null = null
     let releaseMapDisposalPreparation: (() => void) | null = null
@@ -446,6 +443,7 @@ export function useMapLibreBasemap(args: {
     const disposeMountedMap = (): void => {
       cancelled = true
       runtimeFallbackRequester.dispose()
+      releaseRuntimeFallbackConnectivity?.()
       initialStylePreflightAbortRef.current?.abort()
       initialStylePreflightAbortRef.current = null
       if (mountRetryTimer) {
@@ -528,7 +526,7 @@ export function useMapLibreBasemap(args: {
         hasExactFlightPresentation:
           mapHasExactCurrentFlightPresentation,
         isDisposed: () => (
-          cancelled
+          cancelled || !readMapLibreProviderOnline()
           || (map ? isMapLibreMapPreparingForDisposal(map) : false)
         ),
         loadResolvedStyle: async (style, signal) => (
@@ -551,15 +549,15 @@ export function useMapLibreBasemap(args: {
             canvasRenderMode,
           ),
       })
+    releaseRuntimeFallbackConnectivity = subscribeMapLibreProviderOnline(() => { if (!readMapLibreProviderOnline()) runtimeFallbackRequester.cancelPending() })
     const requestResolvedBasemapStyleWithoutDroppingFlight = (
       requestKey: string,
       style: string | Readonly<Record<string, unknown>>,
       onApplied: () => void,
       onRejected: (error: unknown) => void,
-    ): boolean => runtimeFallbackRequester.request(
-      style,
-      { key: requestKey, onApplied, onRejected },
-    )
+    ): boolean => !readMapLibreProviderOnline() || runtimeFallbackRequester.request(
+      style, { key: requestKey, onApplied, onRejected },
+    ) // Offline retains the local style; the online subscription restores the selected provider.
     const selectedStyle = resolveBasemapStyle(targetStyleUrl)
     const requestedGrabMapsStyle = isGrabMapsUrl(selectedStyle || '')
     const notifyGrabMapsFallback = () => {
@@ -571,13 +569,11 @@ export function useMapLibreBasemap(args: {
         void 0
       }
     }
-
     const clearBasemapVisibilityTimer = () => {
       if (!basemapVisibilityTimer) return
       clearTimeout(basemapVisibilityTimer)
       basemapVisibilityTimer = null
     }
-
     const markBasemapRenderable = () => {
       clearBasemapVisibilityTimer()
       setState((prev: BasemapResult) => (
@@ -586,7 +582,6 @@ export function useMapLibreBasemap(args: {
           : prev
       ))
     }
-
     const hasRecentBasemapSourceActivity = (): boolean => {
       return lastBasemapSourceActivityAtMs > 0 && Date.now() - lastBasemapSourceActivityAtMs <= BASEMAP_SOURCE_ACTIVITY_GRACE_MS
     }
@@ -780,8 +775,8 @@ export function useMapLibreBasemap(args: {
           }
         })
         if (cancelled) return
-        const styleForMap = preflight.style
-        const activationStyleOverride = preflight.activationStyleOverride
+        const activationStyleOverride = resolveMapLibreBootstrapStyle(preflight.activationStyleOverride)
+        const styleForMap = activationStyleOverride ?? preflight.style
         requestedOpenFreeMapLibertyRef.current = !activationStyleOverride
           && isOpenFreeMapLibertyUrl(selectedStyle)
         if (
@@ -830,7 +825,7 @@ export function useMapLibreBasemap(args: {
             ...singaporeInitialCamera,
           })
         } catch (err) {
-          if (requestedOpenFreeMapLibertyRef.current) {
+          if (requestedOpenFreeMapLibertyRef.current && readMapLibreProviderOnline()) {
             try {
               map = new MapConstructor({
                 container: el,
@@ -850,7 +845,7 @@ export function useMapLibreBasemap(args: {
             notifyGrabMapsFallback()
           }
           else {
-          if (canvasRenderMode !== '2d') throw err
+          if (canvasRenderMode !== '2d' || !readMapLibreProviderOnline()) throw err
           try {
             el.replaceChildren()
           } catch {
@@ -864,7 +859,7 @@ export function useMapLibreBasemap(args: {
             enableLabels: true,
             enableBuildings: true,
             enableAttribution: true,
-            isCurrent: () => !cancelled,
+            isCurrent: () => !cancelled && readMapLibreProviderOnline(),
           })
           if (cancelled) {
             try {
@@ -1245,7 +1240,7 @@ export function useMapLibreBasemap(args: {
     )
     const liveFlightBootstrapStyle = readLiveFlightBootstrapStyle()
     reconcileMapLibreFlightBootstrap({
-      bootstrapStyle: liveFlightBootstrapStyle,
+      bootstrapStyle: liveFlightBootstrapStyle, requireBootstrapStyle: !providerOnline,
       hasExactFlightOverlay: candidate => {
         const overlay = readFlightGeoOverlay()
         const expectedCamera = createFlightGeoOverlayMapLibreCamera(
@@ -1287,7 +1282,7 @@ export function useMapLibreBasemap(args: {
           }
           return preflight.style
         } catch (error) {
-          if (signal.aborted || readLiveFlightBootstrapStyle()) throw error
+          if (signal.aborted || !readMapLibreProviderOnline() || readLiveFlightBootstrapStyle()) throw error
           return selectedStyle
         }
       },
@@ -1310,7 +1305,7 @@ export function useMapLibreBasemap(args: {
         ),
     })
   }, [
-    enabled,
+    enabled, providerOnline,
     initialStyleOverride,
     readLiveFlightBootstrapStyle,
     state.map,

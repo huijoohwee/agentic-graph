@@ -25,6 +25,7 @@ test('Flight browser proof activates only after applying the authored source', (
     missionVerifier,
     networkBoundary,
     previewPageVerifier,
+    practiceSource,
     runner,
     runtimePhases,
     sceneVerifier,
@@ -47,8 +48,8 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(runner, /indexSource\.includes\('\/@vite\/client'\)/)
   assert.match(runner, /devServerStartMode: 'vite-preview-runner'/)
   assert.match(runner, /productionBuild,/)
-  assert.match(evidenceValidator, /agentic-graph-flight-sim-browser-run\/v5/)
-  assert.match(runner, /agentic-graph-flight-sim-browser-proof\/v5/)
+  assert.match(evidenceValidator, /agentic-graph-flight-sim-browser-run\/v6/)
+  assert.match(runner, /agentic-graph-flight-sim-browser-proof\/v6/)
   assert.match(verifier, /target_url = f"\{BASE_URL\}\/\?kgFlightSimBrowserProof=1"/)
   assert.match(verifier, /json\.dumps\(evidence, indent=2, allow_nan=False\)/)
   for (const removedContradictoryRendererField of [
@@ -92,6 +93,8 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(sourceSelection, /workspace_seeds_button\.click\(\)/)
   assert.match(sourceSelection, /name=f["']File \{flight_basename\}["'],\s*exact=True/)
   assert.match(sourceSelection, /flight_button\.click\(\)/)
+  assert.ok(sourceSelection.indexOf('recorded_geo_context = poll(') < sourceSelection.indexOf('physics_button.click()'))
+  assert.match(sourceSelection, /Flight Source Files presents MapLibre Geo context before returning to Physics/)
   assert.match(sourceSelection, /physics_button\.click\(\)/)
   assert.match(sourceSelection, /canvas === window\.__kgFlightSimCanvas/)
   assert.match(sourceSelection, /isXrPhysicsRunReadyDemoActive/)
@@ -150,9 +153,34 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(geoXrLayoutVerifier, /flight_panel\.locator\(\s*'\[data-kg-flight-sim-open="1"\]'/)
   assert.match(geoXrLayoutVerifier, /open_button\.click\(timeout=30_000\)/)
   assert.match(geoXrLayoutVerifier, /flight\.readFlightSimSnapshot\(\)\.active/)
+  const reportedGeoHandoffIndex = geoXrLayoutVerifier.indexOf(
+    'def prepare_reported_singapore_geo_handoff',
+  )
+  const sourceSurfaceCloseIndex = geoXrLayoutVerifier.indexOf(
+    'source_surface_transition = close_source_files_selection_surface(page)',
+    reportedGeoHandoffIndex,
+  )
+  assert.ok(
+    sourceSurfaceCloseIndex
+      < geoXrLayoutVerifier.indexOf('media_trigger.click(', reportedGeoHandoffIndex),
+    'the smoke must close the editor overlay before using the floating-panel tabs',
+  )
   assert.match(geoXrPresentationVerifier, /def restore_flight_sim_panel\(page: Page\) -> None:/)
   assert.match(geoXrPresentationVerifier, /state\.setFloatingPanelView\('flightSim'\)/)
   assert.match(geoXrPresentationVerifier, /\[data-kg-flight-sim-floating-panel="1"\]'.*wait_for\(/s)
+  const geoToolbarActivationIndex = geoXrPresentationVerifier.indexOf(
+    'ui_path = activate_geo_xr_from_toolbar(page)',
+  )
+  const sourceSurfaceReopenIndex = geoXrPresentationVerifier.indexOf(
+    'prepare_source_files_selection_surface(page)',
+    geoToolbarActivationIndex,
+  )
+  assert.ok(
+    geoToolbarActivationIndex < sourceSurfaceReopenIndex
+      && sourceSurfaceReopenIndex
+        < geoXrPresentationVerifier.indexOf('source_files_opened = True', geoToolbarActivationIndex),
+    'open Source Files only after toolbar tabs complete, then exercise four-view layout',
+  )
   assert.match(geoXrPresentationVerifier, /def verify_flight_geo_xr_city_handoff\(/)
   assert.match(geoXrPresentationVerifier, /regional_poi = require_city_regional_poi_contract\(page\)/)
   for (const regionalPoiProofRequirement of [
@@ -280,6 +308,11 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.doesNotMatch(networkBoundary, /["']\/@vite\//)
   const browserHelperRoot = resolve(repoRoot, 'canvas/scripts/lib')
   const requestedBrowserModuleKeys = new Set<string>()
+  for (const match of verifier.matchAll(
+    /(?:window\.__kgFlightSimBrowserProof|proof)\.importModule\(\s*'([^']+)'\s*,?\s*\)/g,
+  )) {
+    requestedBrowserModuleKeys.add(match[1])
+  }
   for (const browserHelperPath of readdirSync(browserHelperRoot)
     .filter(path => /^game_flight_sim_smoke_.*\.py$/.test(path))) {
     const source = readFileSync(
@@ -338,7 +371,30 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(evidenceValidator, /candidate\?\.runtimeRevision !== candidateHead/)
   assert.match(evidenceValidator, /candidate\?\.runtimeBranch !== candidateBranch/)
   assert.match(evidenceValidator, /source\?\.authoredSeedSha256 !== sourceSha256/)
-  assert.match(evidenceValidator, /source\?\.workspaceSourceSha256 !== sourceSha256/)
+  assert.match(evidenceValidator, /source\?\.canonicalRecordedSourceSha256 !== sourceSha256/)
+  assert.match(evidenceValidator, /source\?\.practiceSourcePath[\s\S]*?flight-sim-practice/)
+  assert.match(evidenceValidator, /source\?\.workspaceSourceSha256[\s\S]*?source\?\.practiceSourceSha256/)
+  assert.match(evidenceValidator, /practiceSourceDerivedFromAuthoredSeed !== true/)
+  assert.match(evidenceValidator, /canonicalRecordedSourceStayedInactive !== true/)
+  assert.match(practiceSource, /derive_flight_practice_source/)
+  assert.match(practiceSource, /mirrorToHost: false/)
+  assert.ok(practiceSource.indexOf('docs.click()') < practiceSource.indexOf('refresh.click('))
+  assert.match(practiceSource, /workspace\.createFolder\(/)
+  assert.match(practiceSource, /workspace\.createFile\([\s\S]*?requireExactPath: true/)
+  assert.match(practiceSource, /practiceFolderMaterialized/)
+  assert.match(practiceSource, /name="Refresh"/)
+  assert.match(practiceSource, /practice_file\.wait_for\(state="visible", timeout=20_000\)/)
+  assert.match(practiceSource, /name=f"Expand folder \{name\}"/)
+  assert.match(practiceSource, /disclosure\.first\.click\(timeout=5_000\)/)
+  assert.match(practiceSource, /Folder flight-sim-practice/)
+  assert.match(practiceSource, /proof\.startedAtMs = performance\.now\(\)/)
+  assert.ok(
+    practiceSource.indexOf('proof.startedAtMs = performance.now()')
+      < practiceSource.indexOf('practice_file.click()'),
+  )
+  assert.match(practiceSource, /practice_file\.click\(\)/)
+  assert.match(practiceSource, /canonical Recorded Flight source remains practice-inactive/)
+  assert.match(practiceSource, /canonicalRecordedSourceStayedInactive/)
   assert.match(evidenceValidator, /inputProof\?\.touchInteraction\?\.runId[\s\S]*missionProof\?\.runId/)
   assert.match(evidenceValidator, /missionProof\?\.phase !== 'completed'/)
   assert.match(evidenceValidator, /missionProof\?\.transitions\?\.length !== 3/)

@@ -4,8 +4,8 @@ title: "agentic-graph Runtime Readiness Contract"
 doc_type: "Runtime Contract"
 status: "active"
 contract_version: 1
-version: "1.0.0"
-date: "2026-09-05"
+version: "1.0.1"
+date: "2026-10-06"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "agentic-graph runtime-readiness"
@@ -33,7 +33,7 @@ stage_contract:
   order: ["research", "storyboard", "render", "edit", "publish", "checkout"]
 docs_dependency:
   repository: "https://github.com/huijoohwee/agentic-os.git"
-  ref: "eac0a6b0d1c7500a7615e6c79dfbf2ad7277581e"
+  ref: "f55ef8d771bdc949bad029a44ca8014320f836e8"
   root_env: "AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT"
   default_relative_root: "../agentic-os/catalog/dictionaries"
   required_files: [ "AGENTS.md", "DICTIONARY-COMMAND.md", "DICTIONARY-SEMANTIC.md", "DICTIONARY-BINDING.md", "RUNTIME-PROOF.md", "REPOSITORY-PACKING.md", "LIVE-AGENT-PROVIDER-PROOF.md", "PROGRESSIVE-AGENTS.md", "PROMPT-PRESETS.md", "AGENT-TOOLKIT.md", "APPLICATION-COMPOSITION.md", "SKILL-EVOLUTION.md", "AGENT-TEAM.md", "VOICE-STUDIO.md", "SKILLS.md", "schemas/production-runtime-readiness.v2.schema.json"]
