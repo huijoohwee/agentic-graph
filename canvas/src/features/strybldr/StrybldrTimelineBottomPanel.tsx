@@ -73,18 +73,16 @@ export function StrybldrTimelineBottomPanel({
   const [view, setView] = React.useState<TimelineBottomPanelView>(initialView)
   const [position, setPosition] = React.useState<TimelineBottomPanelPosition | null>(null)
   const [panelSizePx, setPanelSizePx] = React.useState<TimelineBottomPanelSize | null>(null)
-  // When the editor leaves a readable canvas strip, keep the interactive Timeline beside it.
-  // Shared panels such as Activity stay behind the editor, while the Timeline can still
-  // own its review controls on a narrow viewport.
+  // A full Editor Workspace owns input. Keep the Timeline mounted beneath it and
+  // return it to the foreground as soon as a canvas strip becomes available.
+  const workspaceOwnsTimelineInput = workspaceEditorOverlayOpen && workspaceLayerInsetLeft === 0
   const timelineOverlaysWorkspaceEditor = (
     view === 'timeline' || active === true && view === 'strybldrTimeline'
   ) && workspaceEditorOverlayOpen && workspaceLayerInsetLeft === 0
   const panelStack = usePanelStack(
     'bottom',
-    timelineOverlaysWorkspaceEditor
-      ? floatingPanelZIndex
-      : workspaceEditorOverlayOpen ? Z_INDEX_WORKSPACE_EDITOR_BACKGROUND_PANEL : floatingPanelZIndex,
-    !workspaceEditorOverlayOpen || timelineOverlaysWorkspaceEditor,
+    workspaceOwnsTimelineInput ? Z_INDEX_WORKSPACE_EDITOR_BACKGROUND_PANEL : floatingPanelZIndex,
+    !workspaceOwnsTimelineInput,
   )
   const bottomSurfaceCollapsed = useGraphStore(s => s.bottomSurfaceCollapsed)
   const bottomSurfaceHeightRatio = useGraphStore(s => s.bottomSurfaceHeightRatio)
