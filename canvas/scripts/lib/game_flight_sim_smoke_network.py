@@ -258,6 +258,9 @@ def assert_authoring_mirror_ownership(
 PROOF_LOCAL_STATIC_EXACT_PATHS = {
     "/",
     "/index.html",
+    "/evidence-analysis/fixtures/aviation-singapore-multitrack-v1.json",
+    "/evidence-analysis/fixtures/airport-wsss-source-v1.json",
+    "/evidence-analysis/fixtures/scene-wsss-v1.json",
 }
 PROOF_LOCAL_STATIC_PATH_PREFIXES = (
     "/assets/",

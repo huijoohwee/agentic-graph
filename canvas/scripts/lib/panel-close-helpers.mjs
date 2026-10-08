@@ -53,7 +53,15 @@ export async function closeFloatingPanel(
 }
 
 export async function closePanelRegion(region, targetPage) {
-  const closeButton = region.getByRole('button', { name: 'Close', exact: true })
+  const closeButton = region.locator('[data-kg-workspace-toolbar-close="1"]')
+  const floatingPanel = targetPage.locator('[data-kg-floating-panel-root="true"]')
+  if (await floatingPanel.isVisible()) {
+    const panelClose = floatingPanel.getByRole('button', { name: 'Close', exact: true }).first()
+    if (await panelClose.isVisible()) {
+      await panelClose.click({ timeout: 5000 })
+      await floatingPanel.waitFor({ state: 'hidden', timeout: 10000 })
+    }
+  }
   try {
     await closeButton.click({ timeout: 5000 })
   } catch {
@@ -61,7 +69,32 @@ export async function closePanelRegion(region, targetPage) {
       await closeButton.click({ force: true, timeout: 5000 })
     } catch {
       await targetPage.keyboard.press('Escape')
+      try {
+        await region.waitFor({ state: 'hidden', timeout: 2000 })
+        return
+      } catch {}
+      await closeButton.click({ timeout: 5000 })
     }
   }
-  await region.waitFor({ state: 'detached', timeout: 30000 })
+  // Canvas retains the warmed editor shell for cheap reopen; closing hides it.
+  try {
+    await region.waitFor({ state: 'hidden', timeout: 10000 })
+  } catch (error) {
+    const closeControl = await closeButton.first().evaluate(element => ({
+      html: element.outerHTML,
+      hidden: element instanceof HTMLElement ? element.hidden : null,
+      disabled: element instanceof HTMLButtonElement ? element.disabled : null,
+      rect: (() => { const box = element.getBoundingClientRect(); return { x: box.x, y: box.y, width: box.width, height: box.height } })(),
+    })).catch(() => null)
+    const state = await targetPage.evaluate(async () => {
+      const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
+      const current = useGraphStore.getState()
+      return {
+        workspaceViewMode: current.workspaceViewMode,
+        workspaceCanvasPaneOpen: current.workspaceCanvasPaneOpen,
+        workspaceGraphMutationLayoutLockActive: current.workspaceGraphMutationLayoutLockActive,
+      }
+    }).catch(() => null)
+    throw new Error(`Workspace close left the editor shell visible: ${JSON.stringify({ state, closeControl })}`, { cause: error })
+  }
 }

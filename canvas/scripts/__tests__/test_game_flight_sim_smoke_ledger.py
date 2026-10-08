@@ -284,6 +284,18 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
         )
         self.assertTrue(
             request_is_proof_local_read(
+                request("GET", "/evidence-analysis/fixtures/scene-wsss-v1.json?revision=abc123"),
+                origin,
+            )
+        )
+        self.assertFalse(
+            request_is_proof_local_read(
+                request("POST", "/evidence-analysis/fixtures/scene-wsss-v1.json"),
+                origin,
+            )
+        )
+        self.assertTrue(
+            request_is_proof_local_read(
                 request("POST", "/__agentic_os_fs_list"),
                 origin,
             )

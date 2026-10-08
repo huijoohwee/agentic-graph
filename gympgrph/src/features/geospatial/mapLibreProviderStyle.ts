@@ -4,7 +4,31 @@ import {
   readGrabMapsByokApiKeyFromBrowser,
 } from 'grph-shared/geospatial/grabMapsAuth'
 import { toGrabMapsProxyUrl } from 'grph-shared/geospatial/grabMapsProxy'
-import { MAPLIBRE_CLASSIC_DEFAULT_STYLE_URL } from './basemapStyle.js'
+import { FLIGHT_GEO_BOOTSTRAP_STYLE, MAPLIBRE_CLASSIC_DEFAULT_STYLE_URL } from './basemapStyle.js'
+
+// Offline is an explicit browser state; absent connectivity APIs keep normal admission.
+export const readMapLibreProviderOnline = (): boolean => typeof window === 'undefined'
+  || typeof navigator === 'undefined' || navigator.onLine !== false
+export const resolveMapLibreBootstrapStyle = (override?: Readonly<Record<string, unknown>> | null) =>
+  override ?? (readMapLibreProviderOnline() ? null : FLIGHT_GEO_BOOTSTRAP_STYLE)
+export function subscribeMapLibreProviderOnline(listener: () => void): () => void {
+  if (typeof window === 'undefined') return () => {}
+  window.addEventListener('online', listener); window.addEventListener('offline', listener)
+  return () => { window.removeEventListener('online', listener); window.removeEventListener('offline', listener) }
+}
+// Existing promotion AbortControllers own this event wait; no retries, timers or extra map.
+export async function waitForMapLibreProviderOnline(signal?: AbortSignal): Promise<void> {
+  signal?.throwIfAborted()
+  if (readMapLibreProviderOnline()) return
+  await new Promise<void>((resolve, reject) => {
+    const cleanup = () => { window.removeEventListener('online', resume); signal?.removeEventListener('abort', abort) }
+    const resume = () => { if (readMapLibreProviderOnline()) { cleanup(); resolve() } }
+    const abort = () => { cleanup(); reject(signal?.reason ?? new DOMException('Aborted', 'AbortError')) }
+    window.addEventListener('online', resume); signal?.addEventListener('abort', abort, { once: true })
+    if (signal?.aborted) abort(); else resume()
+  })
+  signal?.throwIfAborted()
+}
 
 export type MapLibreProviderStyle =
   | string
@@ -231,6 +255,7 @@ export async function loadMapLibreProviderStyleDocument(
   if (!canFetchMapLibreProviderStyle(styleUrl)) {
     throw new Error('MapLibre provider style URL is not fetchable over HTTP.')
   }
+  await waitForMapLibreProviderOnline(signal)
   const response = await fetchStyle(styleUrl, {
     method: 'GET',
     ...(signal ? { signal } : {}),
@@ -249,6 +274,7 @@ export async function loadMapLibreProviderStyleDocument(
       'MapLibre provider style response was not a style document.',
     )
   }
+  await waitForMapLibreProviderOnline(signal)
   return normalizedStyle
 }
 
@@ -290,6 +316,7 @@ const hydrateGrabMapsSourceUrls = async (
         return
       }
       try {
+        await waitForMapLibreProviderOnline(signal)
         const response = await fetchStyle(requestTarget.url, {
           headers: requestTarget.headers,
           method: 'GET',
@@ -327,6 +354,7 @@ const preflightGrabMapsStyle = async (
     return { style: styleUrl, shouldFallback: false }
   }
   try {
+    await waitForMapLibreProviderOnline(signal)
     const response = await fetchStyle(requestTarget.url, {
       headers: requestTarget.headers,
       method: 'GET',
@@ -422,6 +450,7 @@ export async function resolveMapLibreFlightProviderStyle(
     fetchStyle,
     signal: options.signal,
   })
+  await waitForMapLibreProviderOnline(options.signal)
   if (typeof preflight.style !== 'string') return preflight
   if (!canFetchMapLibreProviderStyle(preflight.style)) {
     throw new Error(
@@ -445,7 +474,7 @@ export async function resolveInitialMapLibreStyle(options: Readonly<{
   selectedStyle: MapLibreProviderStyle
   signal?: AbortSignal
 }>): Promise<InitialMapLibreStyleResolution> {
-  const initialOverride = options.readActivationStyleOverride() ?? null
+  const initialOverride = resolveMapLibreBootstrapStyle(options.readActivationStyleOverride())
   if (initialOverride) {
     return {
       activationStyleOverride: initialOverride,
@@ -462,7 +491,7 @@ export async function resolveInitialMapLibreStyle(options: Readonly<{
         )
       : { style: options.selectedStyle, shouldFallback: false }
     const activationStyleOverride =
-      options.readActivationStyleOverride() ?? null
+      resolveMapLibreBootstrapStyle(options.readActivationStyleOverride())
     return activationStyleOverride
       ? {
           activationStyleOverride,
@@ -472,7 +501,7 @@ export async function resolveInitialMapLibreStyle(options: Readonly<{
       : { activationStyleOverride: null, ...preflight }
   } catch (error) {
     const activationStyleOverride =
-      options.readActivationStyleOverride() ?? null
+      resolveMapLibreBootstrapStyle(options.readActivationStyleOverride())
     if (!activationStyleOverride) throw error
     return {
       activationStyleOverride,

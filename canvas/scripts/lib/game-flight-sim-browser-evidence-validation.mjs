@@ -532,7 +532,7 @@ export async function readValidatedFlightSimBrowserRunEvidence({
     evidence?.verificationLedger,
   )
   if (
-    evidence?.schema !== 'agentic-graph-flight-sim-browser-run/v5'
+    evidence?.schema !== 'agentic-graph-flight-sim-browser-run/v6'
     || evidence?.candidate?.head !== candidateHead
     || evidence?.candidate?.tree !== candidateTree
     || evidence?.candidate?.branch !== candidateBranch
@@ -540,7 +540,13 @@ export async function readValidatedFlightSimBrowserRunEvidence({
     || evidence?.candidate?.runtimeBranch !== candidateBranch
     || evidence?.source?.sha256 !== sourceSha256
     || evidence?.source?.authoredSeedSha256 !== sourceSha256
-    || evidence?.source?.workspaceSourceSha256 !== sourceSha256
+    || evidence?.source?.canonicalRecordedSourceSha256 !== sourceSha256
+    || evidence?.source?.practiceSourcePath
+      !== '/docs/workspace-seeds/flight-sim-practice/agentic-graph-game-flight-sim-demo-practice.md'
+    || evidence?.source?.workspaceSourceSha256
+      !== evidence?.source?.practiceSourceSha256
+    || evidence?.source?.practiceSourceDerivedFromAuthoredSeed !== true
+    || evidence?.source?.canonicalRecordedSourceStayedInactive !== true
     || evidence?.runIndex !== runIndex
     || evidence?.runCount !== runCount
     || evidence?.inputProof?.touchInteraction?.exercised !== true

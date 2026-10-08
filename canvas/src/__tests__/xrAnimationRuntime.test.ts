@@ -346,7 +346,7 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
     const animationMcpSource = readSource('features', 'three', 'xrAnimationMcpRuntime.ts')
     const agentReadyContractSource = readSource('features', 'agent-ready', 'agentic-graph-agent-ready-tool-contract.mjs')
     const animationWebMcpSource = readSource('features', 'agent-ready', 'xrAnimationWebMcpTools.ts')
-    const toolbarSource = readSource('lib', 'toolbar', 'ToolbarToolMenu.impl.tsx')
+    const toolbarSource = readSource('features', 'toolbar', 'FloatingPanelViewTabs.tsx')
     const xrPanelRoutingSource = readSource('lib', 'toolbar', 'FloatingPanelXrSceneViews.tsx')
     const bridgeSource = readSource('features', 'three', 'XrMotionReferenceRuntimeBridge.tsx')
     const appSource = readSource('App.tsx')
@@ -407,9 +407,13 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
     if (!bridgeSource.includes('hydrateXrMotionReferenceRuntime({')
       || !bridgeSource.includes('useIsomorphicLayoutEffect')
       || !bridgeSource.includes('resetCameraFramingRuntimeForDocument(sceneKey)')
+      || bridgeSource.includes('selectedNodeId: state.selectedNodeId')
+      || !bridgeSource.includes('graphNodes: state.graphData?.nodes')
+      || !bridgeSource.includes('useGraphStore.subscribe((state, previousState) =>')
+      || !bridgeSource.includes('if (state.selectedNodeId === previousState.selectedNodeId) return')
       || !appSource.includes('<XrMotionReferenceRuntimeBridge />')
       || priorHydrationOwners.some(source => source.includes('hydrateXrMotionReferenceRuntime('))) {
-      throw new Error('expected one app-root XR motion hydration owner independent of panel or stage visibility')
+      throw new Error('expected one app-root XR motion hydration owner that avoids renders and expensive hydration on graph selection')
     }
     if (!panelSource.includes('readBoundXrSelectedActorId') || !panelSource.includes("targetId: 'selected-actor'")) {
       throw new Error('expected Animation cards and controls to resolve the graph-bound actor at invocation time')
@@ -434,10 +438,17 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
       if (implementation.includes(forbidden)) throw new Error(`expected clean-room native Animation implementation to avoid ${forbidden}`)
     }
 
+    hydrateXrMotionReferenceRuntime({ sceneKey: 'animation-invocation-test', nodes: graphData.nodes, persistedValue: null })
+    const invocationGraphData = {
+      ...graphData,
+      metadata: {
+        [XR_MOTION_REFERENCE_GRAPH_METADATA_KEY]: serializeXrMotionReferencePlan(readXrMotionReferenceRuntime().plan),
+      },
+    }
     useGraphStore.setState({
       markdownDocumentName: 'Animation invocation.md',
       markdownDocumentText: '# Animation invocation',
-      graphData,
+      graphData: invocationGraphData,
       canvasRenderMode: '2d',
       canvas3dMode: '3d',
       floatingPanelOpen: false,
