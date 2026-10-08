@@ -1,4 +1,5 @@
 import { selectMenuOption } from './select-menu-option.mjs'
+import { closePanelRegion } from './panel-close-helpers.mjs'
 import assert from 'node:assert/strict'
 
 export async function verifyFullCanvas(page) {
@@ -45,7 +46,7 @@ export async function verifyAgentMissionSourceFiles(page, authoredSnapshot, asse
   await page.getByRole('button', { name: 'Close run inspection', exact: true }).click()
   await files.getByRole('button', { name: 'Folder .workspace', exact: true }).waitFor()
   assertAuthored(await authoredSnapshot(), before, 'Manifest inspection must preserve the active authored source')
-  await editor.getByRole('button', { name: 'Close', exact: true }).click()
+  await closePanelRegion(editor, page)
   const persisted = await page.evaluate(async () => (await (await import('/src/features/workspace-fs/workspaceFs.ts')).getWorkspaceFs()).listEntries())
   assert.equal(persisted.some(entry => entry.path.startsWith('/.workspace/')), false, 'Session evidence must not enter persistent Source Files')
   assert.deepEqual(persisted.map(entry => entry.path).sort(), sourcePaths, 'Manifest inspection must preserve the actual persistent source inventory')

@@ -19,6 +19,7 @@ import { XrKeyboardChoreographyRuntime } from './XrKeyboardChoreographyRuntime'
 import { XrSharedObjectMotionControlRuntime } from './XrSharedObjectMotionControlRuntime'
 import {
   createXrNativeControllerInput,
+  isXrNativeControllerInteractiveTarget,
   mergeXrNativeControllerInputs,
   readXrNativeControllerGamepadInput,
   readXrNativeControllerKeyboardInput,
@@ -43,13 +44,6 @@ import {
   resolveFlightSimTrainingMission,
   subscribeFlightSimTrainingScenario,
 } from '@/features/game-flight-sim/flightSimTrainingScenario'
-
-const INTERACTIVE_TARGET_SELECTOR = 'button, a[href], input, textarea, select, [contenteditable="true"], [role="button"], [role="link"]'
-
-function isInteractiveTarget(target: EventTarget | null): boolean {
-  const element = target instanceof Element ? target : null
-  return Boolean(element?.closest(INTERACTIVE_TARGET_SELECTOR))
-}
 
 export function XrNativeControllerDemoStage({
   appearance = DEFAULT_XR_SCENE_APPEARANCE,
@@ -100,7 +94,7 @@ export function XrNativeControllerDemoStage({
       setSharedXrNativeControllerDemoInput(createXrNativeControllerInput())
     }
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!inputEnabled || runtime.phase === 'off' || isInteractiveTarget(event.target)) return
+      if (!inputEnabled || runtime.phase === 'off' || isXrNativeControllerInteractiveTarget(event.target)) return
       if (event.code === 'KeyR') {
         if (!event.repeat) resetSharedXrNativeControllerDemo()
         event.preventDefault()
@@ -116,7 +110,7 @@ export function XrNativeControllerDemoStage({
       if (shouldConsumeXrNativeControllerKeyUp({
         active: inputEnabled && runtime.phase !== 'off',
         code: event.code,
-        editableTarget: isInteractiveTarget(event.target),
+        editableTarget: isXrNativeControllerInteractiveTarget(event.target),
         wasCaptured,
       })) event.preventDefault()
     }

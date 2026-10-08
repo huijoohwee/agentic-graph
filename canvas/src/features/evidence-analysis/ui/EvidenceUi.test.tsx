@@ -6,9 +6,11 @@ import { createRoot } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { beginSourceFilesDocumentIntent, clearSourceFilesDocumentIntent, completeSourceFilesBootstrap, completeSourceFilesDocumentIntent } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { captureEvidenceSource, isEvidenceSourceCurrent, validateEvidenceConfiguration } from '../evidenceSource'
 import { JsonDetails, VolumeResult, ReplayResult, RecordResult } from './EvidenceResults'
 import EvidencePanel from '../EvidencePanel'
+import { FlightSimFloatingPanelView } from '../../game-flight-sim/FlightSimFloatingPanelView'
 import { dispatchEvidence, executeEvidence } from '../tools/executeEvidence.mjs'
 
 const config = {
@@ -32,6 +34,20 @@ async function settle(predicate: () => boolean) {
   while (!predicate() && Date.now() < deadline) await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)) })
   assert.ok(predicate(), 'UI operation completed within the bounded test wait')
 }
+const coldStartupTest = 'evidence actions wait for source bootstrap even when a provisional source is parsed'
+test.beforeEach(context => { if (context.name !== coldStartupTest) completeSourceFilesBootstrap() })
+test(coldStartupTest, async () => {
+  const restore = saveSource(), env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)
+  try {
+    installSource(); await act(async () => root.render(<EvidencePanel />))
+    const load = () => [...container.querySelectorAll('button')].find(element => element.textContent === 'Load labelled example')!
+    assert.equal(load().disabled, true)
+    assert.equal(container.querySelector<HTMLInputElement>('input[type="file"]')!.disabled, true)
+    await act(async () => completeSourceFilesBootstrap())
+    assert.equal(load().disabled, false)
+    assert.equal(container.querySelector<HTMLInputElement>('input[type="file"]')!.disabled, false)
+  } finally { completeSourceFilesBootstrap(); await act(async () => root.unmount()); restore(); env.restore() }
+})
 test('authored configuration is isolated and rejects hidden fields, duplicate examples and remote assets', () => {
   const input = structuredClone(config), accepted = validateEvidenceConfiguration(input)
   input.examples[0].label = 'changed'
@@ -87,19 +103,116 @@ test('inspection disclosure exposes the complete shared typed record beyond the 
     assert.deepEqual(JSON.parse(details.querySelector('pre')!.textContent!), record)
   } finally { await act(async () => root.unmount()); env.restore() }
 })
+test('an action at the source commit survives source-reset ordering', async () => {
+  const restore = saveSource(), env = initJsdomHarness(), doc = env.dom.window.document
+  Reflect.deleteProperty(doc, 'activeElement')
+  const container = doc.body.appendChild(doc.createElement('main')), root = createRoot(container), oldFetch = globalThis.fetch
+  const fixture = readFileSync(new URL('../../../../public/evidence-analysis/fixtures/aviation-synthetic-v1.json', import.meta.url))
+  let signal: AbortSignal | undefined, respond!: (response: Response) => void
+  globalThis.fetch = ((_path, init) => { signal = init?.signal as AbortSignal; return new Promise<Response>(resolve => { respond = resolve }) }) as typeof fetch
+  function FirstAction({ inspect = false }: { inspect?: boolean }) {
+    React.useLayoutEffect(() => {
+      const target = inspect ? container.querySelector<HTMLButtonElement>('button[aria-label^="Inspect original source for"]')
+        : [...container.querySelectorAll('button')].find(element => element.textContent === 'Load labelled example')
+      assert.ok(target && !target.disabled)
+      target.focus(); target.click(); target.blur()
+    }, [inspect])
+    return <EvidencePanel />
+  }
+  try {
+    installSource(); await act(async () => root.render(<FirstAction />))
+    assert.equal(signal?.aborted, false, 'the first committed action is not retired by a delayed initialization effect')
+    await act(async () => respond(new Response(fixture)))
+    await settle(() => container.textContent!.includes('Accepted result is bound'))
+    await act(async () => useGraphStore.setState({ sourceFiles: useGraphStore.getState().sourceFiles.map(file => ({ ...file, status: 'loading' })) }))
+    await act(async () => { installSource(); root.render(<FirstAction inspect />) })
+    await settle(() => container.textContent!.includes('Exact original source and reference'))
+    const inspect = container.querySelector<HTMLButtonElement>('button[aria-label^="Inspect original source for"]')!
+    assert.equal(doc.activeElement, inspect, 'recovery keeps the new operation and its eligible focus')
+  } finally { await act(async () => root.unmount()); globalThis.fetch = oldFetch; restore(); env.restore() }
+})
 test('a late example response cannot admit data or replace status after an authored source change', async () => {
   const restoreSource = saveSource(), env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)
   const oldFetch = globalThis.fetch
+  let requestSignal: AbortSignal | undefined
   let resolveResponse!: (response: Response) => void
-  globalThis.fetch = (() => new Promise<Response>(resolve => { resolveResponse = resolve })) as typeof fetch
+  globalThis.fetch = ((_path, init) => { requestSignal = init?.signal as AbortSignal; return new Promise<Response>(resolve => { resolveResponse = resolve }) }) as typeof fetch
   try {
     installSource(); await act(async () => root.render(<EvidencePanel />))
     await act(async () => [...container.querySelectorAll('button')].find(element => element.textContent === 'Load labelled example')!.click())
     assert.match(container.textContent!, /Reading local evidence/)
     await act(async () => installSource(documentText + '\nNew revision.', 2))
+    assert.equal(requestSignal?.aborted, true, 'source departure stops the outstanding I/O')
     await act(async () => { resolveResponse(new Response(readFileSync(new URL('../../../../public/evidence-analysis/fixtures/aviation-synthetic-v1.json', import.meta.url)))); await new Promise(resolve => setTimeout(resolve, 20)) })
     assert.equal(container.querySelector('[aria-label="Accepted evidence record"]'), null)
     assert.match(container.querySelector('[role="status"]')!.textContent!, /Current source configuration ready/)
+  } finally { await act(async () => root.unmount()); globalThis.fetch = oldFetch; restoreSource(); env.restore() }
+})
+for (const intent of ['none', 'pointer', 'keyboard', 'outside', 'source']) test(`async evidence respects ${intent} focus intent`, async () => {
+  const restoreSource = saveSource(), env = initJsdomHarness(), doc = env.dom.window.document
+  // This harness defaults activeElement to body; exercise the native jsdom focus owner.
+  Reflect.deleteProperty(doc, 'activeElement')
+  const container = doc.body.appendChild(doc.createElement('main')), root = createRoot(container)
+  const outside = doc.body.appendChild(doc.createElement('button')), oldFetch = globalThis.fetch
+  let resolveResponse!: (response: Response) => void
+  globalThis.fetch = (() => new Promise<Response>(resolve => { resolveResponse = resolve })) as typeof fetch
+  try {
+    installSource(); await act(async () => root.render(<EvidencePanel />))
+    const load = [...container.querySelectorAll('button')].find(element => element.textContent === 'Load labelled example')!
+    load.focus()
+    await act(async () => load.click())
+    assert.equal(load.disabled, true)
+    // Chromium drops focus when the active button becomes disabled; jsdom does not.
+    doc.body.tabIndex = -1; doc.body.focus(); assert.ok(doc.activeElement === doc.body)
+    if (intent === 'pointer') doc.body.dispatchEvent(new env.dom.window.Event('pointerdown', { bubbles: true }))
+    if (intent === 'keyboard') doc.body.dispatchEvent(new env.dom.window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    if (intent === 'outside') outside.focus()
+    if (intent === 'source') await act(async () => installSource(documentText + '\nChanged.', 2))
+    await act(async () => resolveResponse(new Response(readFileSync(new URL('../../../../public/evidence-analysis/fixtures/aviation-synthetic-v1.json', import.meta.url)))))
+    await settle(() => !load.disabled)
+    assert.ok(doc.activeElement === (intent === 'none' ? load : intent === 'outside' ? outside : doc.body), 'focus follows the latest user intent')
+    if (intent === 'none') {
+      const query = [...container.querySelectorAll('button')].find(element => element.textContent === 'Run read-only query')!
+      query.focus(); await act(async () => { query.click(); query.blur() })
+      await settle(() => !query.disabled)
+      assert.ok(doc.activeElement === query, 'query completion retains its keyboard origin')
+    }
+  } finally { await act(async () => root.unmount()); outside.remove(); globalThis.fetch = oldFetch; restoreSource(); env.restore() }
+})
+for (const departure of ['remove', 'view', 'unmount']) test(`pending evidence input is cancelled on ${departure}`, async () => {
+  const restoreSource = saveSource(), env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)
+  const oldFetch = globalThis.fetch
+  let requestSignal: AbortSignal | undefined, mounted = true
+  globalThis.fetch = ((_path, init) => { requestSignal = init?.signal as AbortSignal; return new Promise(() => {}) }) as typeof fetch
+  const button = (label: string) => [...container.querySelectorAll('button')].find(element => element.textContent === label)!
+  try {
+    installSource(); await act(async () => root.render(<EvidencePanel />))
+    await act(async () => button('Load labelled example').click())
+    assert.equal(requestSignal?.aborted, false)
+    await act(async () => {
+      if (departure === 'unmount') { root.unmount(); mounted = false }
+      else button(departure === 'remove' ? 'Remove record' : 'Volumes').click()
+    })
+    assert.equal(requestSignal?.aborted, true)
+    if (mounted) assert.doesNotMatch(container.textContent!, /Reading local evidence/)
+  } finally { if (mounted) await act(async () => root.unmount()); globalThis.fetch = oldFetch; restoreSource(); env.restore() }
+})
+test('a failed replacement read retains the accepted record and enables retry', async () => {
+  const restoreSource = saveSource(), env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)
+  const oldFetch = globalThis.fetch
+  const fixture = readFileSync(new URL('../../../../public/evidence-analysis/fixtures/aviation-synthetic-v1.json', import.meta.url))
+  globalThis.fetch = (async () => new Response(fixture)) as typeof fetch
+  const button = (label: string) => [...container.querySelectorAll('button')].find(element => element.textContent === label)!
+  try {
+    installSource(); await act(async () => root.render(<EvidencePanel />))
+    await act(async () => button('Load labelled example').click()); await settle(() => container.textContent!.includes('Accepted result is bound'))
+    const accepted = container.querySelector('[aria-label="Accepted evidence record"]')!.textContent
+    globalThis.fetch = (async () => { throw new Error('Local evidence read exceeded its deadline.') }) as typeof fetch
+    await act(async () => button('Load labelled example').click()); await settle(() => container.textContent!.includes('Not accepted:'))
+    assert.equal(container.querySelector('[aria-label="Accepted evidence record"]')!.textContent, accepted)
+    assert.match(container.textContent!, /Previous accepted result retained/)
+    assert.equal(button('Load labelled example').disabled, false)
+    assert.equal(button('Run read-only query').disabled, false)
   } finally { await act(async () => root.unmount()); globalThis.fetch = oldFetch; restoreSource(); env.restore() }
 })
 for (const change of [
@@ -138,3 +251,102 @@ for (const change of [
     await act(async () => root.unmount()); globalThis.fetch = oldFetch; URL.createObjectURL = oldCreate; URL.revokeObjectURL = oldRevoke; restoreSource(); env.restore()
   }
 })
+
+
+test('accepted evidence survives a transient Recorded context departure while exact-source fences remain active', { timeout: 10000 }, async () => {
+  const restoreSource = saveSource(), env = initJsdomHarness(), container = env.dom.window.document.body.appendChild(env.dom.window.document.createElement('main')), root = createRoot(container)
+  const oldFetch = globalThis.fetch
+  const authored = documentText.replace('---\n# Study', 'source_geospatial: {"schema":"source-geospatial-config/v1","scenePath":"/evidence-analysis/fixtures/scene-wsss-v1.json"}\n---\n# Study')
+  globalThis.fetch = (async url => new Response(readFileSync(new URL(`../../../../public${String(url).split('?')[0]}`, import.meta.url)))) as typeof fetch
+  const button = (label: string) => [...container.querySelectorAll('button')].find(element => element.textContent === label)!
+  try {
+    installSource(); await act(async () => root.render(<FlightSimFloatingPanelView />))
+    assert.equal(container.querySelector('[aria-label="Native evidence and analysis"]'), null, 'Practice keeps evidence lazy until first use')
+    await act(async () => installSource(authored))
+    await settle(() => Boolean(container.querySelector('[aria-label="Native evidence and analysis"]')))
+    assert.ok(container.querySelector('[aria-label="Recorded flight evidence"]'))
+    await act(async () => button('Load labelled example').click()); await settle(() => container.textContent!.includes('Accepted result is bound'))
+    const panel = container.querySelector('[aria-label="Native evidence and analysis"]')!, record = container.querySelector('[aria-label="Accepted evidence record"]')!
+    const retained = record.textContent, query = button('Run read-only query')
+    await act(async () => useGraphStore.setState({ sourceFiles: useGraphStore.getState().sourceFiles.map(source => ({ ...source, status: 'parsing' })) } as never))
+    assert.ok(container.querySelector('[aria-label="Flight Sim"]')); assert.equal(container.querySelector('[aria-label="Native evidence and analysis"]'), panel)
+    assert.equal(container.querySelector('[aria-label="Accepted evidence record"]'), record); assert.equal(record.textContent, retained)
+    assert.equal(query.disabled, true); assert.match(panel.textContent!, /exact enabled, parsed|earlier source revision/)
+    await act(async () => installSource(authored))
+    assert.ok(container.querySelector('[aria-label="Recorded flight evidence"]')); assert.equal(container.querySelector('[aria-label="Native evidence and analysis"]'), panel)
+    assert.equal(button('Run read-only query'), query); assert.equal(query.disabled, false)
+    await act(async () => query.click()); await settle(() => container.textContent!.includes('Explicit query completed'))
+    assert.equal(container.querySelector('[aria-label="Accepted evidence record"]'), record)
+    await act(async () => installSource(authored + '\nNew authored revision.', 2))
+    assert.equal(container.querySelector('[aria-label="Native evidence and analysis"]'), panel)
+    assert.equal(query.disabled, true); assert.match(panel.textContent!, /earlier source revision/)
+    assert.equal(record.textContent, retained)
+  } finally { await act(async () => root.unmount()); restoreSource(); globalThis.fetch = oldFetch; env.restore() }
+})
+
+for (const availability of ['readiness', 'parsed-status']) for (const phase of ['busy', 'completed']) {
+  for (const intent of ['retain', 'pointer', 'keyboard', 'outside', 'hidden', 'source-revert', 'id-revert', 'revision-revert', 'disabled-revert']) {
+    test(`evidence focus survives ${availability} during ${phase} only for ${intent} ownership`, async () => {
+      const restore = saveSource(), env = initJsdomHarness(), doc = env.dom.window.document
+      Reflect.deleteProperty(doc, 'activeElement')
+      const container = doc.body.appendChild(doc.createElement('main')), root = createRoot(container)
+      const outside = doc.body.appendChild(doc.createElement('button')), oldFetch = globalThis.fetch
+      const fixture = readFileSync(new URL('../../../../public/evidence-analysis/fixtures/aviation-synthetic-v1.json', import.meta.url))
+      const intentKey = `evidence-focus-${availability}-${phase}-${intent}`
+      let signal: AbortSignal | undefined, respond!: (response: Response) => void
+      globalThis.fetch = ((_path, init) => {
+        signal = init?.signal as AbortSignal
+        return new Promise<Response>(resolve => { respond = resolve })
+      }) as typeof fetch
+      try {
+        installSource(); await act(async () => root.render(<EvidencePanel />))
+        const load = [...container.querySelectorAll('button')].find(element => element.textContent === 'Load labelled example')!
+        load.focus(); await act(async () => load.click())
+        assert.equal(load.disabled, true)
+        // Chromium moves focus to BODY when the focused control becomes disabled.
+        doc.body.tabIndex = -1; doc.body.focus()
+        if (phase === 'completed') {
+          await act(async () => respond(new Response(fixture)))
+          await settle(() => container.textContent!.includes('Accepted result is bound'))
+          assert.ok(doc.activeElement === load, 'the completed action first restores its initiating control')
+        }
+        await act(async () => {
+          if (availability === 'readiness') beginSourceFilesDocumentIntent(intentKey)
+          else useGraphStore.setState({ sourceFiles: useGraphStore.getState().sourceFiles.map(file => ({ ...file, status: 'parsing' })) } as never)
+        })
+        assert.equal(load.disabled, true)
+        doc.body.focus()
+        if (phase === 'busy') assert.equal(signal?.aborted, true, 'availability loss still cancels the old read')
+        if (intent === 'pointer') doc.dispatchEvent(new env.dom.window.Event('pointerdown', { bubbles: true }))
+        if (intent === 'keyboard') doc.dispatchEvent(new env.dom.window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+        if (intent === 'outside') outside.focus()
+        if (intent === 'hidden') container.hidden = true
+        if (['id-revert', 'revision-revert', 'disabled-revert'].includes(intent)) {
+          await act(async () => useGraphStore.setState({ sourceFiles: useGraphStore.getState().sourceFiles.map(file => ({ ...file,
+            ...(intent === 'id-revert' ? { id: 'replacement-source' } : intent === 'revision-revert' ? { parsedGraphRevision: 2 } : { enabled: false }),
+          })) } as never))
+          await act(async () => installSource())
+        }
+        if (intent === 'source-revert') {
+          await act(async () => installSource(documentText + '\nChanged while unavailable.', 2))
+          await act(async () => installSource())
+        }
+        await act(async () => {
+          installSource()
+          if (availability === 'readiness') completeSourceFilesDocumentIntent(intentKey)
+        })
+        assert.equal(load.disabled, false)
+        if (intent === 'hidden') { container.hidden = false; await act(async () => root.render(<EvidencePanel />)) }
+        assert.ok(doc.activeElement === (intent === 'retain' ? load : intent === 'outside' ? outside : doc.body),
+          'restore only the still-owned exact-source control; source reversion never revives retired focus')
+        if (phase === 'busy') {
+          await act(async () => respond(new Response(fixture)))
+          assert.equal(container.querySelector('[aria-label="Accepted evidence record"]'), null, 'focus recovery does not revive the cancelled operation')
+        } else assert.ok(container.querySelector('[aria-label="Accepted evidence record"]'), 'exact-source acceptance survives availability churn')
+      } finally {
+        clearSourceFilesDocumentIntent(intentKey)
+        await act(async () => root.unmount()); globalThis.fetch = oldFetch; restore(); env.restore()
+      }
+    })
+  }
+}

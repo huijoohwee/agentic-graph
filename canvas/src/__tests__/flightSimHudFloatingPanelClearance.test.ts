@@ -61,6 +61,31 @@ test('shared separator keyboard resize cannot publish Flight input or leave held
   } finally { disposeResize(); flight.dispose(); restore() }
 })
 
+test('focused review regions retain native keys while the Flight surface keeps its controls', () => {
+  const { dom, restore } = initJsdomHarness(), doc = dom.window.document
+  const surface = doc.createElement('section'), canvas = doc.createElement('canvas'), table = doc.createElement('div'), source = doc.createElement('button')
+  for (const region of [surface, table]) { region.setAttribute('role', 'region'); region.tabIndex = 0 }
+  table.setAttribute('aria-label', 'Original fact table'); table.append(source); surface.append(canvas); doc.body.append(surface, table)
+  const inputs: FlightSimTickInput[] = []; let cameras = 0
+  const flight = installFlightSimDesktopInput(canvas, { onInput: input => inputs.push(input), onCycleCamera: () => { cameras++ } })
+  const key = (target: Element, type: string, code: string) => {
+    const event = new dom.window.KeyboardEvent(type, { key: code, code, bubbles: true, cancelable: true })
+    target.dispatchEvent(event); return event
+  }
+  try {
+    table.focus()
+    for (const target of [table, source]) for (const code of ['ArrowLeft', 'ArrowRight', 'KeyC', 'Space']) {
+      assert.equal(key(target, 'keydown', code).defaultPrevented, false)
+      assert.equal(key(target, 'keyup', code).defaultPrevented, false)
+    }
+    assert.deepEqual(inputs, []); assert.equal(cameras, 0)
+    assert.equal(key(canvas, 'keydown', 'ArrowRight').defaultPrevented, true)
+    assert.equal(inputs.at(-1)?.roll, 1, 'a surrounding region must not disable the owned canvas')
+    assert.equal(key(table, 'keyup', 'ArrowRight').defaultPrevented, true)
+    assert.deepEqual(flight.consumeInput(), FLIGHT_SIM_NEUTRAL_INPUT, 'focus changes still release owned keys')
+  } finally { flight.dispose(); restore() }
+})
+
 test('Flight HUD reuses the shared viewport owner without lowering touch controls', () => {
   const source = fs.readFileSync(
     path.join(repoRoot, 'canvas/src/features/game-flight-sim/FlightSimHud.tsx'),
