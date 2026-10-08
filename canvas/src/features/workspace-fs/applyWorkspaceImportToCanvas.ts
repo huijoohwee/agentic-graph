@@ -30,7 +30,12 @@ import {
 import { resolveWorkspaceSourceRootPaths } from '@/features/workspace-fs/workspaceSourceRoots'
 import { readWorkspaceSourceFilesDocsOnlySetting } from '@/lib/workspace/workspaceStoreSyncSettings'
 import { buildSourceFileParseIdentityHash } from '@/features/source-files/sourceFileParseIdentity'
-import { areSourceFileRecordsEqual, buildSourceFileLifecycleState, normalizeSourceFiles } from '@/features/source-files/sourceFileParsedState'
+import {
+  areSourceFileRecordsEqual,
+  areSourceFileSourcesEqual,
+  buildSourceFileLifecycleState,
+  normalizeSourceFiles,
+} from '@/features/source-files/sourceFileParsedState'
 import { resolveWorkspaceSourceFileInlineText } from './workspaceInlineText'
 import {
   activateStrybldrImportSurface,
@@ -149,33 +154,77 @@ export async function applyWorkspaceImportToCanvas(args: {
 
   const store = useGraphStore.getState()
   let expectedSourceFiles = store.sourceFiles
-  const staleImport = () => Object.assign(new Error('Active document source changed during materialization (workspace import publication).'),
-    { code: 'SOURCE_FILES_MATERIALIZATION_STALE', retryable: false })
-  const sourceFilesMatch = (left: SourceFile[], right: SourceFile[]) => left.length === right.length
-    && left.every((file, index) => areSourceFileRecordsEqual(file, right[index]))
-  const assertCurrent = () => {
-    args.opts?.assertCurrent?.()
-    const current = useGraphStore.getState().sourceFiles
-    if (current === expectedSourceFiles) return
-    // A synchronous subscriber may re-publish the same records under a new array identity.
-    if (!sourceFilesMatch(current, expectedSourceFiles)) throw staleImport()
-    expectedSourceFiles = current
-  }
-  const publishSourceFiles = (files: SourceFile[]) => {
-    assertCurrent()
-    const normalized = normalizeSourceFiles(files)
-    store.setSourceFiles(normalized)
-    const published = useGraphStore.getState().sourceFiles
-    if (!sourceFilesMatch(normalized, published)) throw staleImport()
-    expectedSourceFiles = published
-    assertCurrent()
-  }
-  assertCurrent()
   const removedSourcePathKeys = new Set(
     (Array.isArray(args.opts?.removedPaths) ? args.opts.removedPaths : [])
       .map(path => resolveWorkspaceSourcePathKey(normalizeWorkspacePath(path)))
       .filter(Boolean),
   )
+  const importedSourcePathKeys = new Set([
+    ...createdPaths.map(resolveWorkspaceSourcePathKey),
+    ...removedSourcePathKeys,
+  ])
+  const staleImport = () => Object.assign(new Error('Active document source changed during materialization (workspace import publication).'),
+    { code: 'SOURCE_FILES_MATERIALIZATION_STALE', retryable: false })
+  const sourceFilesMatch = (left: SourceFile[], right: SourceFile[]) => left.length === right.length
+    && left.every((file, index) => areSourceFileRecordsEqual(file, right[index]))
+  const sourceFileMaterializationMatches = (current: SourceFile, desired: SourceFile) => current.name === desired.name
+    && current.text === desired.text
+    && current.enabled === desired.enabled
+    && current.geoLayerEnabled === desired.geoLayerEnabled
+    && areSourceFileSourcesEqual(current.source, desired.source)
+  const rebaseImportedSourceFiles = (current: SourceFile[], desired: SourceFile[]): SourceFile[] => {
+    const desiredBySourcePath = new Map<string, SourceFile>()
+    for (const file of desired) {
+      const sourcePath = String(file.source?.path || '')
+      if (importedSourcePathKeys.has(sourcePath)) desiredBySourcePath.set(sourcePath, file)
+    }
+    const appliedPaths = new Set<string>()
+    const rebased = current.flatMap(file => {
+      const sourcePath = String(file.source?.path || '')
+      if (!importedSourcePathKeys.has(sourcePath)) return [file]
+      const replacement = desiredBySourcePath.get(sourcePath)
+      if (!replacement || appliedPaths.has(sourcePath)) return []
+      appliedPaths.add(sourcePath)
+      return [replacement]
+    })
+    for (const [sourcePath, replacement] of desiredBySourcePath) {
+      if (!appliedPaths.has(sourcePath)) rebased.push(replacement)
+    }
+    return rebased
+  }
+  const ownsPublishedImport = (current: SourceFile[], desired: SourceFile[]) => {
+    for (const sourcePath of removedSourcePathKeys) {
+      if (current.some(file => String(file.source?.path || '') === sourcePath)) return false
+    }
+    return desired
+      .filter(file => importedSourcePathKeys.has(String(file.source?.path || '')))
+      .every(file => current.some(candidate => sourceFileMaterializationMatches(candidate, file)))
+  }
+  const assertCurrent = () => {
+    args.opts?.assertCurrent?.()
+    const current = useGraphStore.getState().sourceFiles
+    if (current === expectedSourceFiles) return
+    // Publication may race parsing or hydration. The commit below only owns the
+    // imported paths and will rebase them over the most recent full snapshot.
+    expectedSourceFiles = current
+  }
+  const publishSourceFiles = (files: SourceFile[]) => {
+    assertCurrent()
+    const normalized = normalizeSourceFiles(files)
+    let candidate = rebaseImportedSourceFiles(useGraphStore.getState().sourceFiles, normalized)
+    store.setSourceFiles(candidate)
+    let published = useGraphStore.getState().sourceFiles
+    // A synchronous lifecycle owner may publish parsed state during our setter.
+    // Rebase once more, then fail loudly only if the import's own records vanish.
+    if (!sourceFilesMatch(candidate, published) && !ownsPublishedImport(published, candidate)) {
+      candidate = rebaseImportedSourceFiles(published, normalized)
+      store.setSourceFiles(candidate)
+      published = useGraphStore.getState().sourceFiles
+      if (!ownsPublishedImport(published, candidate)) throw staleImport()
+    }
+    expectedSourceFiles = published
+  }
+  assertCurrent()
   const existingAll = Array.isArray(store.sourceFiles) ? store.sourceFiles : []
   const existing = removedSourcePathKeys.size > 0
     ? existingAll.filter(file => !removedSourcePathKeys.has(String(file?.source?.path || '')))
@@ -199,7 +248,9 @@ export async function applyWorkspaceImportToCanvas(args: {
   if (importedUrls.size > 0) {
     for (const [path, source] of Object.entries(sourcesByPath || {})) {
       if (source.kind === 'url' && importedUrls.has(source.url)) {
-        importSourcePaths.add(resolveWorkspaceSourcePathKey(path))
+        const sourcePath = resolveWorkspaceSourcePathKey(path)
+        importSourcePaths.add(sourcePath)
+        importedSourcePathKeys.add(sourcePath)
       }
     }
   }

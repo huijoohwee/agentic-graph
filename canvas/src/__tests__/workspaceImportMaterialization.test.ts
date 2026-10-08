@@ -90,8 +90,57 @@ export async function testApplyWorkspaceImportToCanvasForceIncludeOnlySkipsInact
     } finally {
       unsubscribe()
     }
+
+    let republishedLifecycleState = false
+    const unsubscribeLifecycle = useGraphStore.subscribe((next, previous) => {
+      const nextFiles = next.sourceFiles || []
+      if (republishedLifecycleState || next.sourceFiles === previous.sourceFiles
+        || !nextFiles.some(file => file.source?.path === 'workspace:/docs/active.md')) return
+      republishedLifecycleState = true
+      store.setSourceFiles(nextFiles.map(file => file.source?.path === 'workspace:/docs/active.md'
+        ? { ...file, status: 'loading' }
+        : file))
+    })
+    try {
+      store.setSourceFiles([])
+      const result = await applyWorkspaceImportToCanvas({
+        fs,
+        createdPaths: ['/docs/active.md'],
+        opts: { applyToGraph: false, workspaceEntries: await fs.listEntries() },
+      })
+      const active = useGraphStore.getState().sourceFiles?.find(file => file.source?.path === 'workspace:/docs/active.md')
+      if (!republishedLifecycleState || !result.sourceFilesUpdated || active?.text !== '# active' || active.status !== 'loading') {
+        throw new Error('workspace import must retain its source through a concurrent lifecycle publication')
+      }
+    } finally {
+      unsubscribeLifecycle()
+    }
+
+    let publishedBackgroundSource = false
+    store.setSourceFiles([])
+    const rebased = await applyWorkspaceImportToCanvas({
+      fs,
+      createdPaths: ['/docs/active.md'],
+      opts: {
+        applyToGraph: false,
+        workspaceEntries: await fs.listEntries(),
+        assertCurrent: () => {
+          if (publishedBackgroundSource) return
+          publishedBackgroundSource = true
+          store.setSourceFiles([{
+            id: 'background-source', name: 'background.md', text: '# background', enabled: false, status: 'idle',
+            source: { kind: 'local', path: 'workspace:/docs/background.md' },
+          }])
+        },
+      },
+    })
+    const rebasedFiles = useGraphStore.getState().sourceFiles || []
+    if (!publishedBackgroundSource || !rebased.sourceFilesUpdated
+      || !rebasedFiles.some(file => file.source?.path === 'workspace:/docs/active.md')
+      || !rebasedFiles.some(file => file.source?.path === 'workspace:/docs/background.md')) {
+      throw new Error('workspace import must rebase its target onto a concurrent source snapshot')
+    }
   } finally {
     store.setSourceFiles(previousSourceFiles)
   }
 }
-
