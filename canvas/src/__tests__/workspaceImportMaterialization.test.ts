@@ -68,6 +68,28 @@ export async function testApplyWorkspaceImportToCanvasForceIncludeOnlySkipsInact
     if (remaining.length !== 1 || remaining[0]?.source?.path !== 'workspace:/docs/active.md') {
       throw new Error('targeted import must not reintroduce removed documents from the workspace snapshot')
     }
+
+    let republishedSameRecords = false
+    const unsubscribe = useGraphStore.subscribe((next, previous) => {
+      const nextFiles = next.sourceFiles || []
+      if (republishedSameRecords || next.sourceFiles === previous.sourceFiles
+        || !nextFiles.some(file => file.source?.path === 'workspace:/docs/active.md')) return
+      republishedSameRecords = true
+      store.setSourceFiles(nextFiles.slice())
+    })
+    try {
+      store.setSourceFiles([])
+      const result = await applyWorkspaceImportToCanvas({
+        fs,
+        createdPaths: ['/docs/active.md'],
+        opts: { applyToGraph: false, workspaceEntries: await fs.listEntries() },
+      })
+      if (!republishedSameRecords || !result.sourceFilesUpdated) {
+        throw new Error('workspace import must tolerate a synchronous equivalent source-files publication')
+      }
+    } finally {
+      unsubscribe()
+    }
   } finally {
     store.setSourceFiles(previousSourceFiles)
   }
