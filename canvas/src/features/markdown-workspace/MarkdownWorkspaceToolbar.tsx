@@ -176,9 +176,6 @@ export function MarkdownWorkspaceToolbar({
   forceMarkdownEditorInEditorMode,
 }: MarkdownWorkspaceToolbarProps) {
   const panelTypography = usePanelTypography()
-  const setWorkspaceViewMode = useGraphStore(s => s.setWorkspaceViewMode)
-  const setWorkspaceViewState = useGraphStore(s => s.setWorkspaceViewState)
-  const workspaceViewMode = useGraphStore(s => s.workspaceViewMode)
   const isTouchToolbarViewport = useMediaQuery('(max-width: 768px), (pointer: coarse)')
   const canNavigateSlides = layoutMode === 'presentation'
   const effectiveSplitPanes = React.useMemo(
@@ -201,14 +198,15 @@ export function MarkdownWorkspaceToolbar({
   const showMarkdownDisplayMenu = viewerKind === 'markdown' && (viewerMode === 'read' || !viewerMode)
   const workspacePanesControlId = React.useId()
   const closeEditorWorkspace = React.useCallback(() => {
+    const current = useGraphStore.getState()
     closeWorkspaceView({
-      workspaceViewMode: workspaceViewMode === 'editor' ? 'editor' : 'canvas',
-      workspaceCanvasPaneOpen: canvasOpen,
-      setWorkspaceViewMode,
-      setWorkspaceViewState,
-      setWorkspaceCanvasPaneOpen: setCanvasOpen,
+      workspaceViewMode: current.workspaceViewMode,
+      workspaceCanvasPaneOpen: current.workspaceCanvasPaneOpen,
+      setWorkspaceViewMode: current.setWorkspaceViewMode,
+      setWorkspaceViewState: current.setWorkspaceViewState,
+      setWorkspaceCanvasPaneOpen: current.setWorkspaceCanvasPaneOpen,
     })
-  }, [canvasOpen, setCanvasOpen, setWorkspaceViewMode, setWorkspaceViewState, workspaceViewMode])
+  }, [])
   const webpageControls = React.useMemo(() => {
     const meta = webpageWorkspaceMeta
     if (!meta || !meta.url) return null
@@ -370,6 +368,7 @@ export function MarkdownWorkspaceToolbar({
           className={`${TOOLBAR_BUTTON_CLASSNAME} shrink-0`}
           title={UI_LABELS.close}
           data-kg-workspace-toolbar-close="1"
+          onPointerDown={closeEditorWorkspace}
           onClick={closeEditorWorkspace}
         >
           <X className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} />
