@@ -114,6 +114,21 @@ test('SWR consults installed authority before starting any background request', 
   }
 })
 
+test('runtime caches reject HTML reads and writes while admitting only status 200', async () => {
+  const { strategies } = worker(async () => null)
+  for (const index of [1, 2, 3, 4]) {
+    const policy = strategies[index].options.plugins[0]
+    for (const contentType of ['text/html', 'application/xhtml+xml']) {
+      const response = new Response('html', { status: 200, headers: { 'content-type': contentType } })
+      assert.equal(await policy.cachedResponseWillBeUsed({ cachedResponse: response }), null)
+      assert.equal(await policy.cacheWillUpdate({ response }), null)
+    }
+    const admitted = new Response('asset', { status: 200, headers: { 'content-type': 'application/javascript' } })
+    assert.equal(await policy.cacheWillUpdate({ response: admitted }), admitted)
+    assert.equal(await policy.cacheWillUpdate({ response: new Response('missing', { status: 503 }) }), null)
+  }
+})
+
 test('one worker retains exact imports and composes canonical route policy after precache', () => {
   const { events, routes, strategies } = worker(async () => null)
   assert.deepEqual(events, [

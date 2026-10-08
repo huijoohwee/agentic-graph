@@ -26,13 +26,20 @@ assert.doesNotMatch(
 for (const cacheName of ['kg-assets', 'kg-static', 'kg-data']) {
   const cacheNameMatch = new RegExp(`cacheName:(["'])${cacheName}\\1`).exec(serviceWorker)
   assert.ok(cacheNameMatch?.index !== undefined, `generated service worker must define ${cacheName}`)
+  const runtimeConfig = serviceWorker.slice(cacheNameMatch.index, cacheNameMatch.index + 256)
+  const pluginReference = /plugins:\[([A-Za-z_$][\w$]*)\]/.exec(runtimeConfig)?.[1]
   const routeStart = serviceWorker.lastIndexOf('registerRoute(', cacheNameMatch.index)
   const nextRouteStart = serviceWorker.indexOf('registerRoute(', cacheNameMatch.index + 1)
-  assert.notEqual(routeStart, -1, `${cacheName} must belong to one generated runtime route`)
-  const routeSource = serviceWorker.slice(
+  const inlineRouteSource = routeStart === -1 ? '' : serviceWorker.slice(
     routeStart,
     nextRouteStart === -1 ? serviceWorker.length : nextRouteStart,
   )
+  // injectManifest compiles the policy once and refers to it from each route;
+  // GenerateSW instead serializes it beside registerRoute. Both forms must
+  // prove the same read/write admission rule against the emitted worker.
+  const policyStart = pluginReference ? serviceWorker.lastIndexOf(`${pluginReference}={`, cacheNameMatch.index) : -1
+  const routeSource = policyStart === -1 ? inlineRouteSource : serviceWorker.slice(policyStart, cacheNameMatch.index)
+  assert.notEqual(routeSource, '', `${cacheName} must retain one runtime cache policy`)
   const readPolicyStart = routeSource.indexOf('cachedResponseWillBeUsed:')
   const writePolicyStart = routeSource.indexOf('cacheWillUpdate:')
   assert.ok(
@@ -57,7 +64,7 @@ for (const cacheName of ['kg-assets', 'kg-static', 'kg-data']) {
   )
 }
 assert.match(serviceWorker, /\.skipWaiting\(\)/, 'generated service worker must activate the canonical revision')
-assert.match(serviceWorker, /\.clientsClaim\(\)/, 'generated service worker must claim clients from one lifecycle owner')
+assert.match(serviceWorker, /\.clients\.claim\(\)/, 'generated service worker must claim clients from one lifecycle owner')
 assert.doesNotMatch(
   importedChatWorker,
   /addEventListener\(["'](?:install|activate)["']/,
