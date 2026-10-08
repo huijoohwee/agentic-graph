@@ -208,7 +208,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     activeTextRef,
     viewerInlineEditActiveRef,
     lastLoadedRef,
-    entries,
+    entries, sourcesByPath,
     setEntries,
     setSourcesByPath,
     setLoading,

@@ -387,7 +387,7 @@ for (const change of ['none', 'inactive import', 'active edit', 'caller authorit
 
 for (const change of ['unsaved document', 'Explorer selection'] as const) {
   test(`materialization fences a late ${change} inside the deferred graph importer`, async () => fixture(async f => {
-    const parser = deferMarkdownParser([f.active.name])
+    const parser = deferMarkdownParser([documentName])
     const captured = [{ ...f.active, text: pendingImportText }, f.inactive, f.imported]
     f.request.sourceFilesSnapshot = captured; f.request.premergedSourceFiles = captured
     f.request.activeWorkspaceEntriesSnapshot = f.request.activeWorkspaceEntriesSnapshot!.map(entry => ({ ...entry, text: pendingImportText }))
@@ -434,14 +434,14 @@ function prepareNativeSource(f: ConvergenceFixture, path = activePath, name = do
   useMarkdownExplorerStore.getState().setActivePath(path)
   return files
 }
-const nativeHash = (file: SourceFile) => buildSourceFileParseIdentityHash({ cacheNamespace: `source-file:${file.id}`, name: file.name, text: file.text })
+const nativeHash = (file: SourceFile) => buildSourceFileParseIdentityHash({ cacheNamespace: `workspace-import:${file.source!.path!.slice('workspace:'.length)}`, name: file.source!.path!.slice('workspace:/'.length), text: file.text })
 const settledProof = (pending: ReturnType<ConvergenceFixture['start']>) => pending.then(proof => ({ proof, error: undefined as unknown }), error => ({ proof: undefined, error: error as unknown }))
 
 for (const [label, path, name, calls] of [
   ['root name', '/convergence.md', 'convergence.md', 1], ['canonical nested name', activePath, documentName, 1],
-  ['nested basename fallback', activePath, 'convergence.md', 2],
+  ['nested basename identity', activePath, 'convergence.md', 1],
 ] as const) test(`graph materialization parses before document application and preserves ${label}`, async () => fixture(async f => {
-  const parser = deferMarkdownParser([name, path.slice(1)]), files = prepareNativeSource(f, path, name)
+  const parser = deferMarkdownParser([path.slice(1)]), files = prepareNativeSource(f, path, name)
   let nativeParsed: SourceFile | undefined
   const stop = useGraphStore.subscribe(state => { const file = state.sourceFiles.find(value => value.id === f.active.id)
     if (!nativeParsed && file?.status === 'parsed') nativeParsed = file })
@@ -456,8 +456,8 @@ for (const [label, path, name, calls] of [
     assert.deepEqual(f.applications, [{ name: path.slice(1), text: pendingImportText }])
     const final = useGraphStore.getState().sourceFiles.find(file => file.id === f.active.id)!
     assert.ok(nativeParsed?.parsedGraphData?.nodes.length)
-    if (calls === 1) { assert.equal(final.parsedTextHash, nativeHash(files[0])); assert.equal(final.parsedGraphRevision, nativeParsed.parsedGraphRevision); assert.equal(final.parsedGraphData, nativeParsed.parsedGraphData) }
-    else assert.notEqual(final.parsedTextHash, nativeHash(files[0]), 'different parser names cannot share the native cache')
+    assert.equal(final.parsedTextHash, nativeHash(files[0])); assert.equal(final.parsedGraphRevision, nativeParsed.parsedGraphRevision)
+    assert.equal(final.parsedGraphData, nativeParsed.parsedGraphData); assert.equal(final.name, name, 'display name remains unchanged')
     assert.equal(useGraphStore.getState().canvas2dRenderer, 'sequence', 'the authored preset still applies on native reuse')
     assert.equal(useGraphStore.getState().sourceFiles.find(file => file.id === f.inactive.id), f.inactive)
   } finally { parser.release(); await pending; stop(); parser.restore(); invalidateCachedWorkspaceActiveEntrySnapshot(path) }
@@ -509,17 +509,16 @@ for (const outcome of ['error', 'empty'] as const) test(`graph materialization r
   } finally { parser.release(); await pending; parser.restore() }
 }))
 
-for (const field of ['name', 'text', 'hash', 'status', 'parser', 'empty graph'] as const) test(`workspace native-cache reuse rejects mismatched ${field}`, async () => fixture(async f => {
+for (const field of ['text', 'hash', 'status', 'parser', 'empty graph'] as const) test(`workspace native-cache reuse rejects mismatched ${field}`, async () => fixture(async f => {
   const parser = deferMarkdownParser()
   prepareNativeSource(f); parser.release()
   try {
     await parseAndApplySourceFile(f.active.id, { applyComposedGraph: false })
     const parsed = useGraphStore.getState().sourceFiles[0]
     const altered: SourceFile = { ...parsed,
-      ...(field === 'name' ? { name: 'other/convergence.md' } : {}), ...(field === 'text' ? { text: '' } : {}),
+      ...(field === 'text' ? { text: '' } : {}),
       ...(field === 'hash' ? { parsedTextHash: 'stale-native-hash' } : {}), ...(field === 'status' ? { status: 'loading' as const } : {}),
       ...(field === 'parser' ? { parsedParserId: '' } : {}), ...(field === 'empty graph' ? { parsedGraphData: { type: 'Graph', nodes: [], edges: [] } } : {}) }
-    if (field === 'name') altered.parsedTextHash = nativeHash(altered) // Coherent native identity with the wrong canonical path.
     const files = [altered, f.inactive]; useGraphStore.setState({ sourceFiles: files })
     const result = await applyWorkspaceImportToCanvas({ fs: f.request.fs!, createdPaths: [activePath], opts: { premergedSourceFiles: files, applyToGraph: true, skipComposedGraphApply: true } })
     assert.ok(parser.calls() >= 1, 'the downstream loader may reuse its independent parser-result cache')
@@ -546,7 +545,7 @@ for (const body of ['', '---\nkgCanvasSurfaceMode: "2d"\nkgCanvas2dRenderer: "se
 
 test('native cached plain import still composes both enabled source layers', async () => fixture(async f => {
   const body = '# Active plain source\n\nFirst local paragraph.\n', otherText = '# Second plain source\n\nAnother local paragraph.\n'
-  const parser = deferMarkdownParser([documentName, f.inactive.name], [body, otherText])
+  const parser = deferMarkdownParser([documentName, 'drafts/retained.md'], [body, otherText])
   const files = prepareNativeSource(f, activePath, documentName, body)
   useGraphStore.setState({ sourceFiles: [files[0], { ...f.inactive, text: otherText, enabled: true }],
     workspaceViewMode: 'canvas', workspaceCanvasPaneOpen: false, workspaceGraphMutationBlockUntilMs: 0,

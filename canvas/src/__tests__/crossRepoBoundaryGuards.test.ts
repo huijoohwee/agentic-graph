@@ -67,9 +67,9 @@ export function testHostGympgrphIntegrationUsesDeclaredPackageEntrypointsOnly() 
     .filter(f => !f.includes(join('src', 'cli')))
   const violations: Array<{ file: string; pattern: string }> = []
   const patterns: RegExp[] = [
-    /\bfrom\s+['"]gympgrph\/(?!map-preview['"]|testkit['"])[^'"]+['"]/,
-    /\bimport\(\s*['"]gympgrph\/(?!map-preview['"]|testkit['"])[^'"]+['"]/,
-    /\brequire\(\s*['"]gympgrph\/(?!map-preview['"]|testkit['"])[^'"]+['"]/,
+    /\bfrom\s+['"]gympgrph\/(?!geojson['"]|map-preview['"]|testkit['"])[^'"]+['"]/,
+    /\bimport\(\s*['"]gympgrph\/(?!geojson['"]|map-preview['"]|testkit['"])[^'"]+['"]/,
+    /\brequire\(\s*['"]gympgrph\/(?!geojson['"]|map-preview['"]|testkit['"])[^'"]+['"]/,
   ]
   for (const file of files) {
     const st = statSync(file)

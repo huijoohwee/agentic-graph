@@ -23,13 +23,13 @@ from lib.game_flight_sim_smoke_ledger import (
 )
 from lib.game_flight_sim_smoke_network import (
     assert_authoring_mirror_fixture,
-    assert_authoring_mirror_ownership,
     assert_transport_ownership,
     assert_workspace_seed_list_authority,
     read_proof_authoring_mirror_request,
     request_is_geo_provider_read,
     request_is_proof_local_read,
     summarize_websocket_attempts,
+    verify_native_website_authoring_mirror,
 )
 from lib.game_flight_sim_smoke_runtime_phases import (
     run_flight_runtime_verifications,
@@ -386,19 +386,11 @@ def main() -> None:
             )
             authoring_mirror_proof = ledger.verify(
                 "native website authoring mirror ownership",
-                lambda: assert_authoring_mirror_ownership(
+                lambda: verify_native_website_authoring_mirror(
+                    page,
                     requests=authoring_mirror_requests,
-                    receipts=authoring_mirror_receipts.decode(bootstrap_closed=not authoring_bootstrap_open),
-                    store_root=owned_store_root,
-                    repository_root=repository_root,
-                    native_workspace_texts=page.evaluate(
-                        """async paths => {
-                          const module = await window.__kgFlightSimBrowserProof.importModule('workspaceFs')
-                          const fs = await module.getWorkspaceFs()
-                          return Object.fromEntries(await Promise.all(paths.map(async path => [path, await fs.readFileText(path)])))
-                        }""",
-                        list({item["workspacePath"] for item in authoring_mirror_requests}),
-                    ),
+                    receipts=authoring_mirror_receipts,
+                    bootstrap_open=authoring_bootstrap_open,
                 ),
             )
             ledger.verify(
@@ -421,7 +413,7 @@ def main() -> None:
             initial = playable_state["initial"]
             moved = desktop["moved"]
             evidence = {
-                "schema": "agentic-graph-flight-sim-browser-run/v5",
+                "schema": "agentic-graph-flight-sim-browser-run/v6",
                 "runIndex": RUN_INDEX,
                 "runCount": RUN_COUNT,
                 "candidate": {

@@ -115,6 +115,7 @@ export async function applyWorkspaceImportToCanvasBestEffort(args: {
   createdPaths: string[]
   opts?: {
     applyToGraph?: boolean
+    deferInteractiveSurface?: boolean
     workspaceEntries?: WorkspaceEntry[]
     sourcesByPath?: Record<string, WorkspaceEntrySource | undefined> | null
     removedPaths?: string[]
