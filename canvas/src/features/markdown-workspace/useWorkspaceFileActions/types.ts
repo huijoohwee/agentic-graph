@@ -91,6 +91,7 @@ export type WorkspaceFileActions = {
 }
 
 export type StatusHelpers = {
+  captureStatusOwnership: () => () => boolean
   setStatusInfo: (label: string, opts?: { ttlMs?: number | null; dismissible?: boolean }) => void
   setStatusWarning: (label: string, opts?: { ttlMs?: number | null; dismissible?: boolean }) => void
   setStatusError: (label: string, opts?: { ttlMs?: number | null; dismissible?: boolean }) => void

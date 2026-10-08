@@ -137,6 +137,7 @@ export const TEST_CASES_POST_PARSER_3_TAIL: TestCaseTuple[] = [
   ["markdown.presentation.frameModel.reusesSsotForFrameVariantAndPadding","@/__tests__/markdownPresentationFrameModel.test","testMarkdownPresentationFrameModelRespectsFrameVariantAndPadding"],
   ["ui.chatInput.rapidOpenCloseSwitchStress","@/__tests__/chatInputStress.test","testChatInputRapidOpenCloseSwitchCycles"],
   ["policy.docsSsotFixture.usesCloudflareD1BackedRoute","@/__tests__/docsSsotFixtureHardcodeGuard.test","testDocsSsotFixtureSeparatesLocalInputsFromExplicitCloudflareReads"],
+  ["workspaceFs.docsMirror.offlineSkipsGithubRequests","@/__tests__/workspaceGithubDocsMirrorSync.test","testWorkspaceGithubDocsMirrorSkipsGitHubRequestsWhenOffline"],
   ["workspaceFs.seedProvider.publishedStorageOwnsAgenticDocs","@/__tests__/workspaceGithubDocsMirrorSync.test","testWorkspaceSeedProviderUsesPublishedStorageForAgenticDocs"],
   ["workspaceFs.sourceFiles.replacesStaleTextAcrossDocsTree","@/__tests__/workspaceGithubDocsMirrorSync.test","testSourceFilesMergeReplacesStaleTextAcrossDocsTree"],
   ["workspaceFs.sourceFiles.tokenEconomicsReplacesStaleText","@/__tests__/workspaceGithubDocsMirrorSync.test","testActiveWorkspaceMaterializationReplacesStaleTokenEconomicsSourceText"],
