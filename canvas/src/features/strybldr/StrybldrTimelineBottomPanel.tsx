@@ -76,7 +76,7 @@ export function StrybldrTimelineBottomPanel({
   // When the editor leaves a readable canvas strip, keep the interactive Timeline beside it.
   // Shared panels such as Activity stay behind the editor, while the Timeline can still
   // own its review controls on a narrow viewport.
-  const timelineOverlaysWorkspaceEditor = (active === true || view === 'timeline')
+  const timelineOverlaysWorkspaceEditor = active === true && view === 'timeline'
     && workspaceEditorOverlayOpen && workspaceLayerInsetLeft === 0
   const panelStack = usePanelStack(
     'bottom',
