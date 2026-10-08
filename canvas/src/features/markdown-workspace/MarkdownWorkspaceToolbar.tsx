@@ -176,9 +176,6 @@ export function MarkdownWorkspaceToolbar({
   forceMarkdownEditorInEditorMode,
 }: MarkdownWorkspaceToolbarProps) {
   const panelTypography = usePanelTypography()
-  const setWorkspaceViewMode = useGraphStore(s => s.setWorkspaceViewMode)
-  const setWorkspaceViewState = useGraphStore(s => s.setWorkspaceViewState)
-  const workspaceViewMode = useGraphStore(s => s.workspaceViewMode)
   const isTouchToolbarViewport = useMediaQuery('(max-width: 768px), (pointer: coarse)')
   const canNavigateSlides = layoutMode === 'presentation'
   const effectiveSplitPanes = React.useMemo(
@@ -201,14 +198,18 @@ export function MarkdownWorkspaceToolbar({
   const showMarkdownDisplayMenu = viewerKind === 'markdown' && (viewerMode === 'read' || !viewerMode)
   const workspacePanesControlId = React.useId()
   const closeEditorWorkspace = React.useCallback(() => {
+    // This toolbar may remain mounted while an inspection restores the prior
+    // workspace surface. Read the current store when handling Close so a
+    // retained callback cannot replay that restored editor state.
+    const workspaceState = useGraphStore.getState()
     closeWorkspaceView({
-      workspaceViewMode: workspaceViewMode === 'editor' ? 'editor' : 'canvas',
-      workspaceCanvasPaneOpen: canvasOpen,
-      setWorkspaceViewMode,
-      setWorkspaceViewState,
-      setWorkspaceCanvasPaneOpen: setCanvasOpen,
+      workspaceViewMode: workspaceState.workspaceViewMode,
+      workspaceCanvasPaneOpen: workspaceState.workspaceCanvasPaneOpen,
+      setWorkspaceViewMode: workspaceState.setWorkspaceViewMode,
+      setWorkspaceViewState: workspaceState.setWorkspaceViewState,
+      setWorkspaceCanvasPaneOpen: workspaceState.setWorkspaceCanvasPaneOpen,
     })
-  }, [canvasOpen, setCanvasOpen, setWorkspaceViewMode, setWorkspaceViewState, workspaceViewMode])
+  }, [])
   const webpageControls = React.useMemo(() => {
     const meta = webpageWorkspaceMeta
     if (!meta || !meta.url) return null
