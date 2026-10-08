@@ -3,6 +3,7 @@ import { resolveVideoSequenceRulerInsetLeft } from './videoSequenceTimelineRuler
 
 export type VideoSequenceTimelineRulerTicksProps = {
   displayTicks: readonly MermaidGanttTimelineTick[]
+  onSeek?: (minutes: number) => void
 }
 
 function formatVideoSequenceTimeAxisLabel(label: string): string {
@@ -24,22 +25,25 @@ function resolveVideoSequenceTickMajor(tick: MermaidGanttTimelineTick): boolean 
   return true
 }
 
-export function VideoSequenceTimelineRulerTicks({ displayTicks }: VideoSequenceTimelineRulerTicksProps) {
+export function VideoSequenceTimelineRulerTicks({ displayTicks, onSeek }: VideoSequenceTimelineRulerTicksProps) {
   return (
     <>
       {displayTicks.map(tick => (
-        <span
+        <button
+          type="button"
+          aria-label={`Seek to ${formatVideoSequenceTimeAxisLabel(tick.label)}`}
+          disabled={!onSeek}
+          onClick={() => onSeek?.(tick.minutes)}
           key={`${tick.minutes}:${tick.label}`}
           className="timeline-transport-ruler-tick"
           style={{ left: resolveVideoSequenceRulerInsetLeft(tick.percent) }}
           data-kg-gantt-timeline-tick="1"
           data-kg-video-sequence-major-tick={resolveVideoSequenceTickMajor(tick) ? '1' : undefined}
         >
-          <span className="timeline-transport-ruler-tick-line" aria-hidden="true" />
           <time className="timeline-transport-ruler-tick-label" dateTime={resolveVideoSequenceTickDateTime(tick)}>
             {formatVideoSequenceTimeAxisLabel(tick.label)}
           </time>
-        </span>
+        </button>
       ))}
     </>
   )

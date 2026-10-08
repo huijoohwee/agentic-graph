@@ -1,9 +1,12 @@
 import { resolveCanvasAspectRatioSize, type CanvasAspectRatioMode } from '@/lib/canvas/canvasAspectRatioDisplayControls'
 import type { SequenceModel } from './sequenceModel'
+import type { GraphSchema } from '@/lib/graph/schema'
+import { sequenceParticipantSize } from './sequencePresentation'
 
 export type SequenceCanvasLayout = 'connections' | 'lifelines'
 export type SequenceParticipantPoint = { x: number; y: number }
 export type SequenceCanvasLayoutOptions = {
+  schema?: GraphSchema
   aspectMode?: CanvasAspectRatioMode
   positions?: Readonly<Record<string, SequenceParticipantPoint>>
 }
@@ -16,7 +19,7 @@ const coordinate = (value: number) => {
 
 /** Presentation coordinates never mutate authored participant or message order. */
 export function resolveSequenceCanvasLayout(model: SequenceModel, layout: SequenceCanvasLayout, options: SequenceCanvasLayoutOptions = {}) {
-  const card = resolveCanvasAspectRatioSize({ defaultWidth: 192, mode: options.aspectMode })
+  const card = sequenceParticipantSize(resolveCanvasAspectRatioSize({ defaultWidth: 192, mode: options.aspectMode }), options.schema)
   const columns = Math.max(1, Math.min(4, Math.ceil(Math.sqrt(model.participants.length))))
   const positions: Record<string, SequenceParticipantPoint> = Object.create(null)
   let previousX = -Infinity

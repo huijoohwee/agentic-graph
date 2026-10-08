@@ -47,14 +47,14 @@ export function testTimelineTransportRateSelectUsesSharedResponsiveCssOwner() {
   }
   for (const snippet of [
     '.timeline-transport-chrome--mermaid-gantt',
-    'rgb(247 246 255 / 1) 12px',
-    'rgb(248 250 252 / 0.72)',
-    'rgb(0 18 128 / 1)',
+    'var(--kg-panel-bg-hover) 12px',
+    'background: var(--kg-panel-bg)',
+    'var(--kg-canvas-accent)',
     '.timeline-transport-track-clip--lane-mask',
     '.timeline-transport-track-clip--lane-grade',
-    '--kg-main-toolbar-height: calc(var(--kg-control-height) + 10px)',
+    '--kg-main-toolbar-height: var(--kg-toolbar-compact-surface-height)',
     '--kg-timeline-toolbar-button-size: var(--kg-control-height)',
-    '--kg-timeline-bar-height: calc(var(--kg-main-toolbar-height) * 1.5)',
+    '--kg-timeline-bar-height: var(--kg-main-toolbar-height)',
     '.timeline-transport-track-clip--milestone .timeline-transport-track-handle',
     'opacity: 0;',
   ]) {

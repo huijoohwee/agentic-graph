@@ -9,6 +9,7 @@ export type VideoSequenceTimelineInsertedLaneRenderArgs = {
 export type VideoSequenceTimelineInsertedLane = {
   content: React.ReactNode | ((args: VideoSequenceTimelineInsertedLaneRenderArgs) => React.ReactNode)
   id: string
+  ariaLabel?: string
   insertAfterLaneId: string
   dragLaneId?: string
   label: React.ReactNode
@@ -72,7 +73,7 @@ export function VideoSequenceTimelineLaneRows({ lanes, selectedDisplayLaneId, se
       : null
     return <section key={lane.id}
       className={`timeline-video-sequence-lane-row ${inserted ? 'timeline-video-sequence-inserted-lane' : ''} ${insertedSelected ? 'timeline-video-sequence-lane-row--selected' : ''}`}
-      aria-label={`${typeof lane.label === 'string' ? lane.label : lane.id} timeline lane`}
+      aria-label={inserted && lane.ariaLabel ? lane.ariaLabel : `${typeof lane.label === 'string' ? lane.label : lane.id} timeline lane`}
       aria-current={insertedSelected ? 'true' : undefined}
       style={{ top: `${laneIndex * VIDEO_SEQUENCE_LANE_HEIGHT_PX}px` }}
       data-kg-video-sequence-display-lane-row={lane.id}

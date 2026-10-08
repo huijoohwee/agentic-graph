@@ -137,7 +137,7 @@ function nearestTimeAxisMark(root: HTMLElement, clientX: number): HTMLElement {
   let nearest = root
   let distance = Infinity
   for (const sibling of Array.from(root.parentElement?.children || [])) {
-    if (!(sibling instanceof HTMLElement) || !timeAxisMarkHandlers.has(sibling)) continue
+    if (!(sibling instanceof HTMLElement) || !timeAxisMarkHandlers.has(sibling) || sibling.getAttribute('aria-disabled') === 'true') continue
     const bounds = sibling.getBoundingClientRect()
     const next = Math.abs(clientX - bounds.left - bounds.width / 2)
     if (next < distance) { nearest = sibling; distance = next }
@@ -162,12 +162,20 @@ export function TimelineTransportTimeAxisMark({
     <article
       {...rootProps}
       ref={markRef}
+      onKeyDown={rootProps.onKeyDown || (event => {
+        if (rootProps.role !== 'button' || rootProps['aria-disabled'] === true || rootProps['aria-disabled'] === 'true') return
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        if (!event.repeat) event.currentTarget.click()
+      })}
       onPointerDown={event => {
+        if (event.currentTarget.getAttribute('aria-disabled') === 'true') return
         const mark = nearestTimeAxisMark(event.currentTarget, event.clientX)
         mark.focus({ preventScroll: true })
         timeAxisMarkHandlers.get(mark)?.onPointerDown?.(event)
       }}
       onClick={event => {
+        if (event.currentTarget.getAttribute('aria-disabled') === 'true') return
         const mark = event.detail === 0 ? event.currentTarget : nearestTimeAxisMark(event.currentTarget, event.clientX)
         mark.focus({ preventScroll: true })
         timeAxisMarkHandlers.get(mark)?.onClick?.(event)
@@ -259,7 +267,7 @@ export function TimelineTransportControls(props: TimelineTransportControlsProps)
       data-kg-timeline-transport="shared"
       style={{ '--kg-timeline-progress': `${progressPercent}%` } as React.CSSProperties}
     >
-      <section className="timeline-player">
+      <section className="timeline-player" aria-label="Timeline playback controls">
         <button
           type="button"
           className="play-control"

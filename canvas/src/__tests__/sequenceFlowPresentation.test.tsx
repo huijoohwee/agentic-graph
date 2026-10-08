@@ -9,11 +9,14 @@ import { sequenceNativeSvg } from '../features/sequence/sequenceNativeSvg'
 import { sequenceTopologySvg } from '../features/sequence/sequenceTopologySvg'
 import { bindSequenceSvg, createSequenceSvgPlayback } from '../features/sequence/sequenceSvgBinding'
 import { resolveSequenceCanvasLayout, constrainSequenceParticipantPosition } from '../features/sequence/sequenceCanvasLayout'
-
+import './sequenceDisplayControls.test'
+import { defaultSchema } from '../lib/graph/schema'
 type Box = { x: number; y: number; width: number; height: number }
-const boxOf = (element: Element): Box => Object.fromEntries(
-  ['x', 'y', 'width', 'height'].map(key => [key, Number(element.getAttribute(key))]),
-) as Box
+const boxOf = (element: Element): Box => {
+  if (element.tagName === 'circle') { const r = Number(element.getAttribute('r')); return { x: Number(element.getAttribute('cx')) - r, y: Number(element.getAttribute('cy')) - r, width: r * 2, height: r * 2 } }
+  if (element.tagName === 'path') { const person = element.closest('[data-sequence-participant]')!, width = Number(person.getAttribute('data-sequence-width')), height = Number(person.getAttribute('data-sequence-height')); return { x: Number(person.getAttribute('data-sequence-x')) - width / 2, y: Number(person.getAttribute('data-sequence-y')) - height / 2, width, height } }
+  return Object.fromEntries(['x', 'y', 'width', 'height'].map(key => [key, Number(element.getAttribute(key))])) as Box
+}
 const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y
 const cases = {
   repeated: () => 'Left->>Right: Same label',
@@ -22,7 +25,6 @@ const cases = {
   notes: () => 'Note over Left,Right: Same label',
   mixed: (index: number) => ['Left->>Right: Same label', 'Right-)Left: Same label', 'Left->>Left: Same label', 'Note over Left,Right: Same label'][index % 4]!,
 }
-
 for (const count of [10, 200]) {
   test(`connections keep ${count} repeated, reverse, self and note targets reachable`, () => {
     for (const [name, line] of Object.entries(cases)) {
@@ -53,7 +55,6 @@ for (const count of [10, 200]) {
     }
   })
 }
-
 test('diagonal connections terminate on the destination boundary with a visible arrowhead', () => {
   const model = parseSequence('sequenceDiagram\nparticipant A\nparticipant B\nparticipant C\nB->>C: Forward entry')
   const dom = new JSDOM(sequenceTopologySvg(model))
@@ -73,7 +74,6 @@ test('diagonal connections terminate on the destination boundary with a visible 
     assert.ok(path.hasAttribute('marker-end'))
   } finally { dom.window.close() }
 })
-
 test('dense connections leave and enter participant edges from outside their boxes', () => {
   const people = Array.from({ length: 32 }, (_, index) => `participant P${index}`)
   const mixed = Array.from({ length: 200 }, (_, index) => {
@@ -363,12 +363,12 @@ for (const [layout, render] of [['lifelines', sequenceNativeSvg], ['connections'
 for (const [layout, render] of [['lifelines', sequenceNativeSvg], ['connections', sequenceTopologySvg]] as const) {
   test(`${layout} shared Aspect dimensions and participant movement preserve authored identity`, () => {
     const model = parseSequence('sequenceDiagram\nactor A as Reader\nparticipant B as Index\nA->>B: Read\nB-->>A: Result\nA->>A: Retry\nNote over A,B: Observe')
-    const authored = JSON.stringify(model)
+    const authored = JSON.stringify(model), schema = { ...defaultSchema, behavior: { ...defaultSchema.behavior, nodeShapeMode: 'rect' as const } }
     for (const aspectMode of ['16:9', '9:16'] as const) {
-      const initial = resolveSequenceCanvasLayout(model, layout, { aspectMode })
-      const point = constrainSequenceParticipantPosition(model, layout, 'A', { x: -100, y: 420 }, { aspectMode })
-      const options = { aspectMode, positions: { A: point } }
-      const dom = new JSDOM(`<main>${render(model, { aspectMode })}</main><aside>${render(model, options)}</aside>`)
+      const initial = resolveSequenceCanvasLayout(model, layout, { aspectMode, schema })
+      const point = constrainSequenceParticipantPosition(model, layout, 'A', { x: -100, y: 420 }, { aspectMode, schema })
+      const options = { aspectMode, schema, positions: { A: point } }
+      const dom = new JSDOM(`<main>${render(model, { aspectMode, schema })}</main><aside>${render(model, options)}</aside>`)
       try {
         const before = dom.window.document.querySelector('main')!, after = dom.window.document.querySelector('aside')!
         const people = [...after.querySelectorAll('[data-sequence-participant]')]

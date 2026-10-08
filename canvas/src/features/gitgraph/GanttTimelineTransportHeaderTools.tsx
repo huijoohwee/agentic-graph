@@ -52,6 +52,7 @@ function renderClipActionIcon(icon: GanttTimelineTransportChromeModel['headerToo
 export function GanttTimelineTransportHeaderTools(args: GanttTimelineTransportHeaderToolsProps) {
   const zoomButtonByKey = new Map(args.model.zoomControls.actionButtons.map(button => [button.key, button]))
   const primaryClipActionButtons = args.model.clipActionButtons.filter(button => PRIMARY_CLIP_EDIT_ACTIONS.has(button.action))
+  const secondaryClipActionButtons = args.model.clipActionButtons.filter(button => !PRIMARY_CLIP_EDIT_ACTIONS.has(button.action))
   const renderZoomButton = (key: GanttTimelineTransportChromeModel['headerTools']['zoomControls']['actionButtons'][number]['key']) => {
     const button = zoomButtonByKey.get(key)
     if (!button) return null
@@ -71,10 +72,9 @@ export function GanttTimelineTransportHeaderTools(args: GanttTimelineTransportHe
   }
   const renderClipActionButton = (
     button: GanttTimelineTransportChromeModel['headerTools']['clipActionButtons'][number],
-    keyPrefix = '',
   ) => (
     <button
-      key={`${keyPrefix}${button.key}`}
+      key={button.key}
       type="button"
       aria-label={button.ariaLabel}
       aria-pressed={button.active ?? undefined}
@@ -82,16 +82,16 @@ export function GanttTimelineTransportHeaderTools(args: GanttTimelineTransportHe
       disabled={button.disabled}
       data-kg-video-sequence-clip-edit={button.action}
       data-kg-video-sequence-clip-edit-active={button.active ? '1' : undefined}
-      data-kg-video-sequence-primary-clip-edit={keyPrefix === 'primary-' ? button.action : undefined}
+      data-kg-video-sequence-primary-clip-edit={PRIMARY_CLIP_EDIT_ACTIONS.has(button.action) ? button.action : undefined}
       data-kg-video-sequence-tool-active={button.active ? '1' : undefined}
       onClick={button.onClick}
     >
       {renderClipActionIcon(button.icon)}
     </button>
   )
-  const renderMediaPlayerButton = (keyPrefix = '') => (
+  const renderMediaPlayerButton = () => (
     <button
-      key={`${keyPrefix}media-player`}
+      key="media-player"
       type="button"
       aria-label={args.model.mediaPlayerButton.ariaLabel}
       aria-pressed={args.model.mediaPlayerButton.active}
@@ -105,9 +105,9 @@ export function GanttTimelineTransportHeaderTools(args: GanttTimelineTransportHe
       <MonitorPlay className="h-3.5 w-3.5" role="img" aria-label="Monitor Play" />
     </button>
   )
-  const renderTimingSyncButton = (keyPrefix = '') => (
+  const renderTimingSyncButton = () => (
     <button
-      key={`${keyPrefix}timing-sync`}
+      key="timing-sync"
       type="button"
       aria-label={args.model.syncModeButton.ariaLabel}
       title={args.model.syncModeButton.title}
@@ -124,7 +124,7 @@ export function GanttTimelineTransportHeaderTools(args: GanttTimelineTransportHe
   )
 
   return (
-    <section className="timeline-transport-header-tools" aria-label="Timeline tools">
+    <section className="timeline-transport-header-tools" aria-label="Timeline command groups">
       {!args.model.runtimeOnly ? <nav className="timeline-video-sequence-tool-strip" aria-label="Video sequence editing tools">
         {renderMediaPlayerButton()}
         {renderTimingSyncButton()}
@@ -147,14 +147,14 @@ export function GanttTimelineTransportHeaderTools(args: GanttTimelineTransportHe
           </nav>
         </details>
         <section className="timeline-video-sequence-primary-clip-actions" aria-label="Primary clip edit tools">
-          {primaryClipActionButtons.map(button => renderClipActionButton(button, 'primary-'))}
+          {primaryClipActionButtons.map(button => renderClipActionButton(button))}
         </section>
         <details className="timeline-tool-menu timeline-tool-menu--clip">
           <summary aria-label="Clip nudge and trim tools" title="Clip nudge and trim tools">
             <MoveHorizontal className="h-3.5 w-3.5" role="img" aria-label="Move Horizontal" />
           </summary>
           <nav className="timeline-tool-menu-panel" aria-label="Clip nudge and trim tools">
-            {args.model.clipActionButtons.map(button => renderClipActionButton(button))}
+            {secondaryClipActionButtons.map(button => renderClipActionButton(button))}
           </nav>
         </details>
       </nav> : null}
@@ -183,32 +183,6 @@ export function GanttTimelineTransportHeaderTools(args: GanttTimelineTransportHe
           <MoreHorizontal className="h-3.5 w-3.5" role="img" aria-label="More Horizontal" />
         </summary>
         <nav className="timeline-transport-chrome-actions timeline-tool-menu-panel" aria-label="Gantt timeline tools">
-          <section className="timeline-overflow-action-group timeline-overflow-action-group--transport" aria-label="Collapsed transport tools">
-            {renderMediaPlayerButton('overflow-')}
-            {renderTimingSyncButton('overflow-')}
-          </section>
-          <section className="timeline-overflow-action-group timeline-overflow-action-group--edit" aria-label="Collapsed edit tools">
-            {args.model.toolButtons.map(tool => (
-              <TimelineVideoSequenceToolButton
-                key={`overflow-tool-${tool.id}`}
-                id={tool.id}
-                label={tool.label}
-                title={tool.title}
-                active={tool.active}
-                disabled={tool.disabled}
-                onClick={tool.onClick}
-              />
-            ))}
-          </section>
-          <section className="timeline-overflow-action-group timeline-overflow-action-group--clip-primary" aria-label="Collapsed primary clip tools">
-            {primaryClipActionButtons.map(button => renderClipActionButton(button, 'overflow-primary-'))}
-          </section>
-          <section className="timeline-overflow-action-group timeline-overflow-action-group--clip" aria-label="Collapsed clip tools">
-            {args.model.clipActionButtons.map(button => renderClipActionButton(button, 'overflow-'))}
-          </section>
-          <section className="timeline-overflow-action-group timeline-overflow-action-group--zoom" aria-label="Collapsed zoom tools">
-            {args.model.zoomControls.actionButtons.map(button => renderZoomButton(button.key))}
-          </section>
           {args.model.actionButtons.map(button => (
             <button
               key={button.key}

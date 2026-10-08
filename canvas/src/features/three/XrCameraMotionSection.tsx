@@ -3,12 +3,10 @@ import React from 'react'
 import type { VideoSequenceTimelineClipOverlayRenderArgs } from '@/components/timeline/VideoSequenceTimelineRuler'
 import {
   resolveVideoSequenceRulerInsetLeft, resolveVideoSequenceRulerInsetWidth,
-  resolveVideoSequenceRulerInsetPixelMetrics,
 } from '@/components/timeline/videoSequenceTimelineRulerGeometry'
 import { resolveVideoSequenceTimelineScaleDurationSeconds } from '@/components/timeline/videoSequenceTimelineZoom'
 import { requestXrSimulationWorkbenchOpen } from '@/features/command-menu/xrSimulationWorkbenchOpenRequest'
 import { useShallow } from 'zustand/react/shallow'
-import { TimelineTransportTimeAxisClip } from '@/components/timeline/TimelineTransportControls'
 import { GanttTimelineTransportPanel } from '@/features/gitgraph/GanttTimelineTransportPanel'
 import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -29,17 +27,15 @@ import {
   subscribeXrNativeControllerDemo,
 } from './xrNativeControllerDemoRuntime'
 import { buildXrMotionReferenceTimelineCode, xrMotionReferenceTimelineDocumentKey } from './xrMotionReferenceTimeline'
-import { CameraMotionMarkRetime, createXrTimelineMarkOnDoubleClick } from './CameraMotionMarkRetime'
+import { buildXrTimelineInsertedLanes } from './XrTimelineInsertedLanes'
 import { controlLocalAnimation } from './xrAnimationMcpRuntime'
 import { selectXrTimelineRow } from './xrTimelineCueRuntime'
 import {
   resolveXrRehearsalTimelineBeatAt,
   resolveXrRehearsalTimelineBeats,
-  resolveXrTimelineObjectPathCaption,
 } from './xrRehearsalTimelineBeats'
 import { XrRehearsalTimelineBeatMarks } from './XrRehearsalTimelineBeatMarks'
 import { XrTimelineSceneStageControls } from './XrTimelineSceneStageControls'
-import { sampleXrTimelineSceneObject } from './xrTimelineSceneProjection'
 import { useXrTimelineLaneSelection, type XrTimelineLaneSelection } from './useXrTimelineLaneSelection'
 import { xrTimelineCommandAdapter } from './xrTimelineCommandAdapter'
 import { XrTimelineRehearsalControls } from './XrTimelineRehearsalControls'
@@ -65,24 +61,6 @@ import {
   readGameFpsSnapshot,
   subscribeGameFpsSnapshot,
 } from '@/features/game-fps/gameFpsRuntime'
-type XrTimelineLaneBarDragState = {
-  input: 'mouse' | 'pointer'
-  laneId: XrTimelineLaneSelection
-  pointerId?: number
-  originClientX: number
-  originClientY: number
-  rectLeft: number
-  rectWidth: number
-}
-
-const XR_TIMELINE_LANE_DRAG_THRESHOLD_PX = 3
-const GAME_FPS_NPC_TIMELINE_COLORS = Object.freeze({
-  hold: '#60a5fa',
-  alert: '#facc15',
-  engage: '#ef4444',
-  flee: '#c084fc',
-})
-
 export function XrCameraMotionSection() {
   const activeGraphData = useActiveGraphRenderData(true)
   const {
@@ -156,10 +134,7 @@ export function XrCameraMotionSection() {
   )
   const [selectedTimelineLaneId, setSelectedTimelineLaneId] = useXrTimelineLaneSelection(timelineCode, selectedShotTarget.id,
     sharedAssetControls.selectedKind || '', sharedAssetControls.selectedTargetId || '', JSON.stringify(runtime.selectedMark))
-  const [draggingTimelineLaneId, setDraggingTimelineLaneId] = React.useState<XrTimelineLaneSelection | null>(null)
   const [savingScene, setSavingScene] = React.useState(false)
-  const timelineLaneDragStateRef = React.useRef<XrTimelineLaneBarDragState | null>(null)
-  const timelineLaneDragMovedRef = React.useRef(false)
   const edges = Array.isArray(graphData?.edges) ? graphData.edges.length : 0
   const sceneScaleDurationSeconds = resolveVideoSequenceTimelineScaleDurationSeconds(runtime.plan.durationSeconds)
   const rehearsalBeats = React.useMemo(() => resolveXrRehearsalTimelineBeats(runtime.plan), [runtime.plan])
@@ -285,125 +260,6 @@ export function XrCameraMotionSection() {
     setSelectedTimelineLaneId(`npc:${npcId}`)
     controlXrSharedAssetControls({ operation: 'select-target', targetId: npcId })
   }, [setSelectedTimelineLaneId])
-  const simulationTimelineLaneSelected = selectedTimelineLaneId === 'simulation'
-  const cameraTimelineLaneSelected = selectedTimelineLaneId === 'camera'
-
-  const resolveTimelineLaneDragSeconds = React.useCallback((clientX: number, dragState: XrTimelineLaneBarDragState): number => {
-    const insetMetrics = resolveVideoSequenceRulerInsetPixelMetrics(dragState.rectWidth)
-    const ratio = Math.min(1, Math.max(0, (clientX - dragState.rectLeft - insetMetrics.insetLeftPx) / insetMetrics.widthPx))
-    const scaleSeconds = sceneScaleDurationSeconds > 0 ? sceneScaleDurationSeconds : runtime.plan.durationSeconds
-    return Math.min(runtime.plan.durationSeconds, Math.max(0, ratio * scaleSeconds))
-  }, [runtime.plan.durationSeconds, sceneScaleDurationSeconds])
-
-  React.useEffect(() => {
-    const updateDrag = (clientX: number, clientY: number, preventDefault: () => void) => {
-      const dragState = timelineLaneDragStateRef.current
-      if (!dragState) return
-      const deltaX = clientX - dragState.originClientX
-      const deltaY = clientY - dragState.originClientY
-      if (!timelineLaneDragMovedRef.current && Math.hypot(deltaX, deltaY) < XR_TIMELINE_LANE_DRAG_THRESHOLD_PX) return
-      preventDefault()
-      timelineLaneDragMovedRef.current = true
-      scrubPlayhead(resolveTimelineLaneDragSeconds(clientX, dragState))
-    }
-    const handlePointerMove = (event: PointerEvent) => {
-      const dragState = timelineLaneDragStateRef.current
-      if (!dragState || dragState.input !== 'pointer' || event.pointerId !== dragState.pointerId) return
-      updateDrag(event.clientX, event.clientY, () => event.preventDefault())
-    }
-    const handlePointerEnd = (event: PointerEvent) => {
-      const dragState = timelineLaneDragStateRef.current
-      if (!dragState || dragState.input !== 'pointer' || event.pointerId !== dragState.pointerId) return
-      timelineLaneDragStateRef.current = null
-      setDraggingTimelineLaneId(null)
-    }
-    const handleMouseMove = (event: MouseEvent) => {
-      const dragState = timelineLaneDragStateRef.current
-      if (!dragState || dragState.input !== 'mouse') return
-      updateDrag(event.clientX, event.clientY, () => event.preventDefault())
-    }
-    const handleMouseEnd = () => {
-      const dragState = timelineLaneDragStateRef.current
-      if (!dragState || dragState.input !== 'mouse') return
-      timelineLaneDragStateRef.current = null
-      setDraggingTimelineLaneId(null)
-    }
-    window.addEventListener('pointermove', handlePointerMove, { passive: false })
-    window.addEventListener('pointerup', handlePointerEnd, { passive: true })
-    window.addEventListener('pointercancel', handlePointerEnd, { passive: true })
-    window.addEventListener('mousemove', handleMouseMove, { passive: false })
-    window.addEventListener('mouseup', handleMouseEnd, { passive: true })
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove)
-      window.removeEventListener('pointerup', handlePointerEnd)
-      window.removeEventListener('pointercancel', handlePointerEnd)
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseup', handleMouseEnd)
-    }
-  }, [resolveTimelineLaneDragSeconds, scrubPlayhead])
-
-  const beginTimelineLaneBarDrag = React.useCallback((
-    event: React.PointerEvent<HTMLElement>,
-    laneId: XrTimelineLaneSelection,
-    selectLane: () => void,
-  ) => {
-    const primaryButtonActive = event.button === 0 || event.buttons === 1
-    if (!primaryButtonActive || runtime.plan.durationSeconds <= 0) return
-    const rulerElement = event.currentTarget.closest('[data-kg-gantt-timeline-ruler-content="1"]') as HTMLElement | null
-    const rect = rulerElement?.getBoundingClientRect()
-    if (!rect || rect.width <= 0) return
-    event.stopPropagation()
-    event.currentTarget.setPointerCapture?.(event.pointerId)
-    timelineLaneDragMovedRef.current = false
-    timelineLaneDragStateRef.current = {
-      input: 'pointer',
-      laneId,
-      pointerId: event.pointerId,
-      originClientX: event.clientX,
-      originClientY: event.clientY,
-      rectLeft: rect.left,
-      rectWidth: rect.width,
-    }
-    setDraggingTimelineLaneId(laneId)
-    selectLane()
-  }, [runtime.plan.durationSeconds])
-
-  const beginTimelineLaneBarMouseDrag = React.useCallback((
-    event: React.MouseEvent<HTMLElement>,
-    laneId: XrTimelineLaneSelection,
-    selectLane: () => void,
-  ) => {
-    if (timelineLaneDragStateRef.current || event.button !== 0 || runtime.plan.durationSeconds <= 0) return
-    const rulerElement = event.currentTarget.closest('[data-kg-gantt-timeline-ruler-content="1"]') as HTMLElement | null
-    const rect = rulerElement?.getBoundingClientRect()
-    if (!rect || rect.width <= 0) return
-    event.stopPropagation()
-    timelineLaneDragMovedRef.current = false
-    timelineLaneDragStateRef.current = {
-      input: 'mouse',
-      laneId,
-      originClientX: event.clientX,
-      originClientY: event.clientY,
-      rectLeft: rect.left,
-      rectWidth: rect.width,
-    }
-    setDraggingTimelineLaneId(laneId)
-    selectLane()
-  }, [runtime.plan.durationSeconds])
-
-  const activateTimelineLaneBarClick = React.useCallback((
-    event: React.MouseEvent<HTMLElement>,
-    selectLane: () => void,
-  ) => {
-    if (timelineLaneDragMovedRef.current) {
-      event.preventDefault()
-      event.stopPropagation()
-      timelineLaneDragMovedRef.current = false
-      return
-    }
-    selectLane()
-  }, [])
-
   const applyStage = React.useCallback((stageId: string) => {
     const keepTimelineOpen = () => {
       const state = useGraphStore.getState()
@@ -497,283 +353,18 @@ export function XrCameraMotionSection() {
           runtimeDocumentKey={xrTransportDocumentKey}
           runtimeDurationSeconds={runtime.plan.durationSeconds}
           runtimeFrameRate={runtime.plan.fps}
-          onSelectedRowKeyChange={rowKey => selectXrTimelineRow(runtime.plan, rowKey, selectSceneTimelineLane)}
-          timelineInsertedLanes={[
-            ...objectTargets.map(target => {
-              const object = sampleXrTimelineSceneObject(runtime.plan, target, runtime.playheadSeconds)
-              const track = target.castActorId
-                ? runtime.plan.cast.find(candidate => candidate.actorId === target.castActorId) || null
-                : null
-              const selected = selectedTimelineLaneId === `object:${target.id}`
-              const pathCaption = resolveXrTimelineObjectPathCaption({
-                label: target.label,
-                motion: object.motion,
-                beatLabel: currentRehearsalBeat?.label,
-              })
-              return {
-                id: `xr-object:${target.id}`,
-                selectRowKey: `xr-lane:object:${target.id}`,
-                insertAfterLaneId: 'scene',
-                selected,
-                label: (
-                  <button
-                    type="button"
-                    className="xr-camera-motion-retime-lane-label xr-shot-target-lane-label"
-                    aria-label={`Link SHOOT to 3D Object ${target.label}`}
-                    aria-pressed={selected}
-                    onClick={() => selectObjectTimelineLane(target.id)}
-                    data-kg-xr-shot-target-lane-label={target.id}
-                    data-kg-xr-choreography-cast-lane-label={track?.actorId}
-                    data-kg-xr-timeline-lane-hit-target={`object-label:${target.id}`}
-                  >
-                    <i aria-hidden style={{ backgroundColor: target.color }} />
-                    <b title={target.label}>{target.label}</b>
-                    <small>{track?.marks.length || 'shot'}</small>
-                  </button>
-                ),
-                content: (
-                  <TimelineTransportTimeAxisClip
-                    laneStyle="video"
-                    className={cn(
-                      'xr-camera-motion-retime-time-axis-rail',
-                    )}
-                    aria-label={`${target.label} linked SHOOT time rail`}
-                    aria-current={selected ? 'true' : undefined}
-                    data-kg-xr-choreography-shared-axis-rail={track ? 'cast' : 'object'}
-                    data-kg-xr-timeline-lane-affordance={`object:${target.id}`}
-                    data-kg-xr-timeline-lane-selected={selected ? '1' : undefined}
-                  >
-                    <section
-                      className="xr-shot-target-timeline-lane"
-                      onDoubleClick={event => createXrTimelineMarkOnDoubleClick(event, target.id, sceneScaleDurationSeconds, !documentLoaded)}
-                      data-kg-xr-shot-target-lane={target.id}
-                      data-kg-xr-shot-target-selected={selected ? '1' : undefined}
-                      data-kg-xr-timeline-lane-selected={selected ? '1' : undefined}
-                    >
-                      <button
-                        type="button"
-                        className={cn('timeline-transport-time-axis-bar xr-shot-target-timeline-bar', selected && 'timeline-transport-track-clip--selected')}
-                        style={{ '--kg-xr-shot-target-color': target.color } as React.CSSProperties}
-                        aria-label={`Link SHOOT to ${target.label} for the full scene. Drag to scrub XR timeline.`}
-                        aria-pressed={selected}
-                        onClick={event => activateTimelineLaneBarClick(event, () => selectObjectTimelineLane(target.id))}
-                        onMouseDown={event => beginTimelineLaneBarMouseDrag(event, `object:${target.id}`, () => selectObjectTimelineLaneSurface(target.id))}
-                        onPointerDown={event => beginTimelineLaneBarDrag(event, `object:${target.id}`, () => selectObjectTimelineLaneSurface(target.id))}
-                        title={`${target.label} · ${pathCaption} · (${object.position.map(value => value.toFixed(1)).join(', ')}) m · drag to scrub; double-click to add mark`}
-                        data-kg-xr-shot-target-bar={target.id}
-                        data-kg-xr-rehearsal-caption={pathCaption}
-                        data-kg-xr-timeline-lane-drag="scrub"
-                        data-kg-xr-timeline-lane-dragging={draggingTimelineLaneId === `object:${target.id}` ? '1' : undefined}
-                        data-kg-xr-timeline-lane-hit-target={`object:${target.id}`}
-                      >
-                        <span>{target.label} · {pathCaption} · ({object.position.map(value => value.toFixed(1)).join(', ')}) m</span>
-                      </button>
-                      {track ? (
-                        <CameraMotionMarkRetime
-                          laneSurfaceDragging={draggingTimelineLaneId === `object:${target.id}`}
-                          layout="lane"
-                          laneTarget={{ kind: 'cast', actorId: track.actorId }}
-                          onLaneSurfaceClick={event => activateTimelineLaneBarClick(event, () => selectObjectTimelineLane(target.id))}
-                          onLaneSurfaceMouseDown={event => beginTimelineLaneBarMouseDrag(event, `object:${target.id}`, () => selectObjectTimelineLaneSurface(target.id))}
-                          onLaneSurfacePointerDown={event => beginTimelineLaneBarDrag(event, `object:${target.id}`, () => selectObjectTimelineLaneSurface(target.id))}
-                        />
-                      ) : null}
-                    </section>
-                  </TimelineTransportTimeAxisClip>
-                ),
-              }
-            }),
-            {
-              id: 'xr-camera',
-              selectRowKey: 'xr-lane:camera',
-              insertAfterLaneId: 'scene',
-              selected: cameraTimelineLaneSelected,
-              label: (
-                <button
-                  type="button"
-                  className="xr-camera-motion-retime-lane-label xr-shot-target-lane-label"
-                  aria-label="Select Camera choreography lane"
-                  aria-pressed={cameraTimelineLaneSelected}
-                  onClick={selectCameraTimelineLane}
-                  data-kg-xr-choreography-camera-lane-label="1"
-                  data-kg-xr-timeline-lane-hit-target="camera-label"
-                >
-                  <i aria-hidden className="xr-camera-motion-retime-camera-swatch" />
-                  <b>Camera</b>
-                  <small>{runtime.plan.camera.length}</small>
-                </button>
-              ),
-              content: (
-                <TimelineTransportTimeAxisClip
-                  laneStyle="audio"
-                  className={cn(
-                    'xr-camera-motion-retime-time-axis-rail',
-                  )}
-                  aria-label="Camera choreography time rail"
-                  aria-current={cameraTimelineLaneSelected ? 'true' : undefined}
-                  data-kg-xr-choreography-shared-axis-rail="camera"
-                  data-kg-xr-timeline-lane-affordance="camera"
-                  data-kg-xr-timeline-lane-selected={cameraTimelineLaneSelected ? '1' : undefined}
-                >
-                  <section
-                    className="xr-shot-target-timeline-lane"
-                    data-kg-xr-camera-lane="1"
-                    data-kg-xr-timeline-lane-selected={cameraTimelineLaneSelected ? '1' : undefined}
-                  >
-                    <button
-                      type="button"
-                      className={cn('timeline-transport-time-axis-bar xr-shot-target-timeline-bar', cameraTimelineLaneSelected && 'timeline-transport-track-clip--selected')}
-                      style={{ '--kg-xr-shot-target-color': '#64748b' } as React.CSSProperties}
-                      aria-label="Select Camera choreography lane. Drag to scrub XR timeline."
-                      aria-pressed={cameraTimelineLaneSelected}
-                      onClick={event => activateTimelineLaneBarClick(event, selectCameraTimelineLane)}
-                      onMouseDown={event => beginTimelineLaneBarMouseDrag(event, 'camera', selectCameraTimelineLane)}
-                      onPointerDown={event => beginTimelineLaneBarDrag(event, 'camera', selectCameraTimelineLane)}
-                      title="Camera marks · drag to scrub"
-                      data-kg-xr-camera-lane-bar="1"
-                      data-kg-xr-timeline-lane-drag="scrub"
-                      data-kg-xr-timeline-lane-dragging={draggingTimelineLaneId === 'camera' ? '1' : undefined}
-                      data-kg-xr-timeline-lane-hit-target="camera"
-                    >
-                      <span>Camera marks · {runtime.plan.camera.length}</span>
-                    </button>
-                    <CameraMotionMarkRetime
-                      laneSurfaceDragging={draggingTimelineLaneId === 'camera'}
-                      layout="lane"
-                      laneTarget={{ kind: 'camera' }}
-                      onLaneSurfaceClick={event => activateTimelineLaneBarClick(event, selectCameraTimelineLane)}
-                      onLaneSurfaceMouseDown={event => beginTimelineLaneBarMouseDrag(event, 'camera', selectCameraTimelineLane)}
-                      onLaneSurfacePointerDown={event => beginTimelineLaneBarDrag(event, 'camera', selectCameraTimelineLane)}
-                    />
-                  </section>
-                </TimelineTransportTimeAxisClip>
-              ),
-            },
-            {
-              id: 'xr-simulation',
-              selectRowKey: 'xr-lane:simulation',
-              insertAfterLaneId: 'scene',
-              selected: simulationTimelineLaneSelected,
-              label: (
-                <button
-                  type="button"
-                  className="xr-camera-motion-retime-lane-label xr-shot-target-lane-label"
-                  aria-label="Open XR Simulation workbench"
-                  aria-pressed={simulationTimelineLaneSelected}
-                  onClick={selectSimulationTimelineLane}
-                  data-kg-xr-simulation-lane-label="1"
-                  data-kg-xr-timeline-lane-hit-target="simulation-label"
-                >
-                  <i aria-hidden style={{ backgroundColor: '#22c55e' }} />
-                  <b>Simulation</b>
-                  <small>{simulationBodyCount}</small>
-                </button>
-              ),
-              content: (
-                <TimelineTransportTimeAxisClip
-                  laneStyle="audio"
-                  className={cn(
-                    'xr-camera-motion-retime-time-axis-rail',
-                  )}
-                  aria-label="XR Simulation runtime lane"
-                  aria-current={simulationTimelineLaneSelected ? 'true' : undefined}
-                  data-kg-xr-simulation-lane="1"
-                  data-kg-xr-timeline-lane-affordance="simulation"
-                  data-kg-xr-timeline-lane-selected={simulationTimelineLaneSelected ? '1' : undefined}
-                >
-                  <section
-                    className="xr-shot-target-timeline-lane"
-                    data-kg-xr-simulation-phase={simulationPhase}
-                    data-kg-xr-simulation-runtime={simulationRuntime}
-                    data-kg-xr-timeline-lane-selected={simulationTimelineLaneSelected ? '1' : undefined}
-                  >
-                    <button
-                      type="button"
-                      className={cn('timeline-transport-time-axis-bar xr-shot-target-timeline-bar', simulationTimelineLaneSelected && 'timeline-transport-track-clip--selected')}
-                      style={{ '--kg-xr-shot-target-color': '#22c55e' } as React.CSSProperties}
-                      aria-label={`Open XR Simulation workbench. ${simulationPhase}; ${simulationBodyCount} bodies. Drag to scrub XR timeline.`}
-                      aria-pressed={simulationTimelineLaneSelected}
-                      onClick={event => activateTimelineLaneBarClick(event, selectSimulationTimelineLane)}
-                      onMouseDown={event => beginTimelineLaneBarMouseDrag(event, 'simulation', selectSimulationTimelineLaneSurface)}
-                      onPointerDown={event => beginTimelineLaneBarDrag(event, 'simulation', selectSimulationTimelineLaneSurface)}
-                      title={`${simulationPhase} · ${simulationBodyCount} bodies · drag to scrub`}
-                      data-kg-xr-simulation-bar="full-scene"
-                      data-kg-xr-timeline-lane-drag="scrub"
-                      data-kg-xr-timeline-lane-dragging={draggingTimelineLaneId === 'simulation' ? '1' : undefined}
-                      data-kg-xr-timeline-lane-hit-target="simulation"
-                    >
-                      <span>{simulationPhase} · {simulationBodyCount} bod{simulationBodyCount === 1 ? 'y' : 'ies'}</span>
-                    </button>
-                  </section>
-                </TimelineTransportTimeAxisClip>
-              ),
-            },
-            ...gameMission.npcs.map(npc => {
-              const selected = selectedTimelineLaneId === `npc:${npc.id}`
-              const npcColor = GAME_FPS_NPC_TIMELINE_COLORS[npc.action]
-              return {
-                id: `xr-gameplay-npc:${npc.id}`,
-                selectRowKey: `xr-lane:npc:${npc.id}`,
-                insertAfterLaneId: 'scene',
-                selected,
-                label: (
-                  <button
-                    type="button"
-                    className="xr-camera-motion-retime-lane-label xr-shot-target-lane-label"
-                    aria-label={`Select gameplay NPC ${npc.id}`}
-                    aria-pressed={selected}
-                    onClick={() => selectNpcTimelineLane(npc.id)}
-                    data-kg-xr-gameplay-npc-lane-label={npc.id}
-                    data-kg-xr-timeline-lane-hit-target={`npc-label:${npc.id}`}
-                  >
-                    <i aria-hidden style={{ backgroundColor: npcColor }} />
-                    <b title={npc.id}>{npc.id}</b>
-                    <small>{Math.round(npc.health)}</small>
-                  </button>
-                ),
-                content: (
-                  <TimelineTransportTimeAxisClip
-                    laneStyle="video"
-                    className={cn(
-                      'xr-camera-motion-retime-time-axis-rail',
-                    )}
-                    aria-label={`${npc.id} gameplay NPC time rail`}
-                    aria-current={selected ? 'true' : undefined}
-                    data-kg-xr-gameplay-npc-shared-axis-rail={npc.id}
-                    data-kg-xr-timeline-lane-affordance={`npc:${npc.id}`}
-                    data-kg-xr-timeline-lane-selected={selected ? '1' : undefined}
-                  >
-                    <section
-                      className="xr-shot-target-timeline-lane"
-                      data-kg-xr-gameplay-npc-lane={npc.id}
-                      data-kg-xr-gameplay-npc-action={npc.action}
-                      data-kg-xr-gameplay-npc-selected={selected ? '1' : undefined}
-                      data-kg-xr-timeline-lane-selected={selected ? '1' : undefined}
-                    >
-                      <button
-                        type="button"
-                        className={cn('timeline-transport-time-axis-bar xr-shot-target-timeline-bar', selected && 'timeline-transport-track-clip--selected')}
-                        style={{ '--kg-xr-shot-target-color': npcColor } as React.CSSProperties}
-                        aria-label={`Select ${npc.id} for shared 3D for XR controls. Drag to scrub XR timeline.`}
-                        aria-pressed={selected}
-                        onClick={event => activateTimelineLaneBarClick(event, () => selectNpcTimelineLane(npc.id))}
-                        onMouseDown={event => beginTimelineLaneBarMouseDrag(event, `npc:${npc.id}`, () => selectNpcTimelineLaneSurface(npc.id))}
-                        onPointerDown={event => beginTimelineLaneBarDrag(event, `npc:${npc.id}`, () => selectNpcTimelineLaneSurface(npc.id))}
-                        title={`${npc.id} · ${npc.action} · ${Math.round(npc.health)} HP · drag to scrub`}
-                        data-kg-xr-gameplay-npc-bar={npc.id}
-                        data-kg-xr-shared-asset-target={npc.id}
-                        data-kg-xr-timeline-lane-drag="scrub"
-                        data-kg-xr-timeline-lane-dragging={draggingTimelineLaneId === `npc:${npc.id}` ? '1' : undefined}
-                        data-kg-xr-timeline-lane-hit-target={`npc:${npc.id}`}
-                      >
-                        <span>{npc.id} · {npc.action} · {Math.round(npc.health)} HP</span>
-                      </button>
-                    </section>
-                  </TimelineTransportTimeAxisClip>
-                ),
-              }
-            }),
-          ]}
+          onSelectedRowKeyChange={rowKey => {
+            if (rowKey?.startsWith('xr-lane:object:')) selectObjectTimelineLaneSurface(rowKey.slice('xr-lane:object:'.length))
+            else if (rowKey?.startsWith('xr-lane:npc:')) selectNpcTimelineLaneSurface(rowKey.slice('xr-lane:npc:'.length))
+            else if (rowKey === 'xr-lane:camera') selectCameraTimelineLane()
+            else if (rowKey === 'xr-lane:simulation') selectSimulationTimelineLaneSurface()
+            else selectXrTimelineRow(runtime.plan, rowKey, selectSceneTimelineLane)
+          }}
+          timelineInsertedLanes={buildXrTimelineInsertedLanes({
+            runtime, gameMission, objectTargets, currentRehearsalBeat, selectedTimelineLaneId,
+            sceneScaleDurationSeconds, documentLoaded, simulationPhase, simulationBodyCount, simulationRuntime,
+            selectObjectTimelineLane, selectCameraTimelineLane, selectSimulationTimelineLane, selectNpcTimelineLane,
+          })}
           timeAxisControls={(
             <section className="flex min-w-0 flex-wrap items-center gap-2" aria-label="XR timeline scale controls" data-kg-timeline-axis-controls-layout="duration-fps">
               <label className="flex min-w-0 items-center gap-1 text-xs" data-kg-xr-timeline-seconds-control="time-axis">

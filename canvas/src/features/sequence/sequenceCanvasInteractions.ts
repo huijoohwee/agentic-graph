@@ -4,7 +4,8 @@ import { readSnapGridConfigFromSchema, snapPointToGrid } from '@/lib/canvas/grid
 import { readHelperLinesDisplayControlActive } from '@/lib/canvas/canvasGridDisplayControls'
 import { alignmentRectFromCenter, resolveAlignmentSnap, type AlignmentGuide } from '@/lib/canvas/alignmentGuides'
 import { ensureGraphAlignmentGuideLayer, clearGraphAlignmentGuides, renderGraphAlignmentGuides } from '@/components/GraphCanvas/alignmentGuides'
-import { readCanvasDragIntentThresholdPx } from '@/lib/canvas/dragIntent'
+import { readCanvasDragIntentThresholdPx, isCanvasObjectDragAllowed } from '@/lib/canvas/dragIntent'
+import { constrainCanvasDraggedPoint2d } from '@/lib/canvas/overlayInteractions2d'
 import type { SequenceModel } from './sequenceModel'
 import type { SequenceCanvasLayout, SequenceParticipantPoint as Point } from './sequenceCanvasLayout'
 
@@ -171,6 +172,9 @@ export function bindSequenceCanvasInteractions(options: Options): { dispose(): v
   type Drag = { id: string; pointer: number; origin: Point; start: Point; client: Point; threshold: number; moved: boolean }
   let drag: Drag | null = null
   const live = () => !disposed && host.querySelector('svg') === svg
+  const allowed = (event?: PointerEvent) => options.canArrange?.() !== false && isCanvasObjectDragAllowed({
+    allowDrag: options.schema()?.behavior?.allowNodeDrag, constraint: options.schema()?.behavior?.dragConstraint, event,
+  })
   const scale = () => {
     const matrix = (content() || svg).getScreenCTM?.()
     return matrix ? Math.hypot(matrix.a, matrix.b) || 1 : d3.zoomTransform(svg).k || 1
@@ -184,12 +188,16 @@ export function bindSequenceCanvasInteractions(options: Options): { dispose(): v
   const rectangle = (person: Participant, point: Point) => alignmentRectFromCenter({ id: person.id, cx: point.x, cy: point.y, width: person.width, height: person.height })
   const resolve = (id: string, raw: Point, alt: boolean) => {
     const schema = options.schema(), grid = readSnapGridConfigFromSchema(schema)
+    const base = drag?.id === id ? drag.start : points[id]!
+    const constrainShared = (point: Point) => constrainCanvasDraggedPoint2d({
+      baseX: base.x, baseY: base.y, ...point, constraint: schema?.behavior?.dragConstraint,
+    })
     let point = !alt && grid.enabled ? snapPointToGrid(raw, grid) : raw, guides: AlignmentGuide[] = []
-    point = constrain(id, point)
+    point = constrain(id, constrainShared(point))
     if (!alt && readHelperLinesDisplayControlActive(schema)) {
       const result = resolveAlignmentSnap({ moving: rectangle(byId.get(id)!, point), scale: scale(),
         stationary: participants.filter(person => person.id !== id).map(person => rectangle(person, points[person.id]!)) })
-      const next = constrain(id, { x: point.x + result.dx, y: point.y + (horizontal ? 0 : result.dy) })
+      const next = constrain(id, constrainShared({ x: point.x + result.dx, y: point.y + (horizontal ? 0 : result.dy) }))
       guides = result.guides.filter(guide => guide.axis === 'x' ? next.x === point.x + result.dx : !horizontal && next.y === point.y + result.dy)
       point = next
     }
@@ -198,6 +206,7 @@ export function bindSequenceCanvasInteractions(options: Options): { dispose(): v
   }
   const cancelFrame = () => { if (frame !== null) win.cancelAnimationFrame(frame); frame = null; pending = null }
   const end = (commit: boolean) => {
+    commit = commit && allowed()
     const current = drag
     drag = null; cancelFrame(); clearGraphAlignmentGuides(guideLayer)
     if (!current) return
@@ -205,6 +214,10 @@ export function bindSequenceCanvasInteractions(options: Options): { dispose(): v
     const next = points[current.id]!
     try { if (!commit || !live()) { points[current.id] = { ...current.start }; if (live()) paint() } }
     finally { options.onInteractionChange?.(false) }
+    if (commit && (!live() || !allowed())) {
+      points[current.id] = { ...current.start }; if (live()) paint()
+      return
+    }
     if (commit && live() && current.moved && !same(next, current.start)) {
       options.onCommit(current.id, { ...next })
     }
@@ -217,6 +230,7 @@ export function bindSequenceCanvasInteractions(options: Options): { dispose(): v
   }
   const move = (event: PointerEvent) => {
     if (!drag || event.pointerId !== drag.pointer || !live()) return
+    if (!allowed()) { end(false); return }
     if (!drag.moved && Math.hypot(event.clientX - drag.client.x, event.clientY - drag.client.y) <= drag.threshold) return
     drag.moved = true
     const point = world(event)
@@ -227,7 +241,7 @@ export function bindSequenceCanvasInteractions(options: Options): { dispose(): v
   const down = (event: PointerEvent) => safely(() => {
     if (drag && live()) { event.preventDefault(); event.stopPropagation(); return }
     const element = target(event), id = element?.getAttribute('data-sequence-arrange-id')
-    if (!id || !byId.has(id) || !live() || event.button !== 0 || event.isPrimary === false || drag || options.canArrange?.() === false) return
+    if (!id || !byId.has(id) || !live() || drag || !allowed(event)) return
     event.preventDefault(); event.stopPropagation(); element!.focus?.()
     drag = { id, pointer: event.pointerId, origin: world(event), start: { ...points[id]! }, client: { x: event.clientX, y: event.clientY }, threshold: readCanvasDragIntentThresholdPx(event.pointerType), moved: false }
     host.setPointerCapture?.(event.pointerId)
@@ -241,18 +255,21 @@ export function bindSequenceCanvasInteractions(options: Options): { dispose(): v
   const up = (event: PointerEvent) => safely(() => { if (drag && event.pointerId === drag.pointer) { move(event); end(true) } })
   const cancel = (event: PointerEvent) => { if (drag && event.pointerId === drag.pointer) safely(() => end(false)) }
   const key = (event: KeyboardEvent) => safely(() => {
+    if (drag && !allowed()) { end(false); return }
     if (event.key === 'Escape' && drag) { event.preventDefault(); event.stopPropagation(); end(false); return }
     const id = target(event)?.getAttribute('data-sequence-arrange-id')
     const axis = event.key === 'ArrowLeft' || event.key === 'ArrowRight' ? 'x' : event.key === 'ArrowUp' || event.key === 'ArrowDown' ? 'y' : null
-    if (!id || !axis || (horizontal && axis === 'y') || event.ctrlKey || event.metaKey || drag || !live()) return
+    if (!id || !axis || (horizontal && axis === 'y') || event.ctrlKey || event.metaKey || drag || !live() || !allowed()) return
     event.preventDefault(); event.stopPropagation()
     const grid = readSnapGridConfigFromSchema(options.schema()), old = points[id]!, direction = event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1
     const amount = (grid.enabled && !event.altKey ? grid[axis] : 10) * (event.shiftKey ? 10 : 1) * direction
     const point = resolve(id, { ...old, [axis]: old[axis] + amount }, event.altKey)
     if (same(old, point)) return
     options.onInteractionChange?.(true)
-    try { points[id] = point; paint(); clearGraphAlignmentGuides(guideLayer) }
+    let applied = false
+    try { if (live() && allowed()) { points[id] = point; paint(); clearGraphAlignmentGuides(guideLayer); applied = true } }
     finally { options.onInteractionChange?.(false) }
+    if (!applied || !live() || !allowed()) { points[id] = old; if (live()) paint(); return }
     options.onCommit(id, { ...point })
   })
   const refresh = () => safely(() => { end(false); clearGraphAlignmentGuides(guideLayer) })

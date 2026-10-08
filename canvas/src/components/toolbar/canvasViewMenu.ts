@@ -58,8 +58,8 @@ import {
   type CanvasSurfaceModeId,
 } from '@/lib/canvas/canvas3dMode'
 import { isRichMediaPanelDisplayEnabled } from '@/lib/render/richMediaSsot'
+import { resolveCanvasDisplayControlDisabledReason } from '@/lib/canvas/canvasDisplayControlCapabilities'
 import { uiBooleanRowValue, uiCurrentChoiceRowIsSelected } from 'grph-shared/ui/selectedRowClasses'
-
 const CANVAS_VIEW_SURFACE_MODE_ICON: Record<CanvasSurfaceModeId, CanvasViewOption['Icon']> = {
   '2d': Columns2,
   '3d': Box,
@@ -265,7 +265,7 @@ export const buildCanvasViewOptions = (
     } satisfies CanvasViewOption
   })
 
-  return [
+  const options: CanvasViewOption[] = [
     {
       id: 'renderer:menu',
       title: '2D Renderer',
@@ -589,5 +589,10 @@ export const buildCanvasViewOptions = (
       ],
     },
   ]
+  for (const option of options.find(group => group.id === 'control:menu')?.children || []) {
+    const disabledReason = resolveCanvasDisplayControlDisabledReason(option.id, state)
+    if (disabledReason && !option.disabled) Object.assign(option, { disabled: true, disabledReason })
+  }
+  return options
 }
 export { getCanvasViewTriggerState } from './canvasViewRendererOptions'

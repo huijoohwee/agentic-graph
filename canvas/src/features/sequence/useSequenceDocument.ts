@@ -4,6 +4,8 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { readYamlFrontmatterMermaidCode, extractYamlFrontmatterHeaderBlock, readYamlFrontmatterValue } from '@/lib/markdown/frontmatter'
 import { parseSequence, sequencePlaybackEvents, sequenceTimedEvents, sequenceEventAtTime } from './sequenceModel'
 import { useTimelineDocumentTransportController, useTimelineTransportStoreBinding } from '@/components/timeline/timelineTransport'
+import { bindSequenceGraph } from './sequenceCanvasSelection'
+import { activateMultiNodeSelectModeForShift, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 
 // Branch choices and explicit marker selection are transient; the graph store owns the sole playhead.
 const EMPTY_CHOICES: Record<string, string> = {}
@@ -86,13 +88,26 @@ export function useSequenceDocument() {
     const projected = sequenceTimedEvents(sequencePlaybackEvents(model, nextChoices))
     const index = projected.findIndex(entry => entry.id === id)
     if (index < 0) return
+    const state = useGraphStore.getState()
+    const edge = bindSequenceGraph(model, state.graphData)?.events.get(id)
+    if (edge) state.selectEdge(edge.id)
     branchState = { key: model.key, choices: nextChoices, selectedId: id }
     binding.setTimelineTransportState({ documentKey: `${model.key}:${JSON.stringify(nextChoices)}`, position: projected[index]!.startMs, playing: false })
     listeners.forEach(listener => listener())
   }, [model, choices, sourceIsCurrent, binding.setTimelineTransportState])
   const selected = branches.key === model.key ? events.find(event => event.id === branches.selectedId) : null
+  const selectParticipant = React.useCallback((id: string, modifiers: { shiftKey?: boolean; metaKey?: boolean; ctrlKey?: boolean } = {}) => {
+    if (!sourceIsCurrent()) return
+    const state = useGraphStore.getState(), node = bindSequenceGraph(model, state.graphData)?.participants.get(id)
+    if (!node) return
+    const mode = activateMultiNodeSelectModeForShift({ mode: state.schema.behavior?.selectMode, ...modifiers,
+      setSelectMode: value => state.setBehavior({ selectMode: value }) })
+    state.setSelectionSource('canvas')
+    if (resolveNodeSelectionGesture({ mode, ...modifiers }) === 'toggle') state.toggleNodeSelectionAdditive(node.id)
+    else state.selectNodesExpanded({ nodeIds: [node.id], activeNodeId: node.id })
+  }, [model, sourceIsCurrent])
   const current = !transport.playing && selected && selected.startMs === transport.playbackPosition
     ? selected : sequenceEventAtTime(events, transport.playbackPosition)
-  return { code, model, mermaidTheme, events, choices, documentKey, duration, transport, chooseBranch, selectEvent,
-    current, revision: source.revision }
+  return { code, model, mermaidTheme, events, choices, documentKey, duration, transport, chooseBranch, selectEvent, selectParticipant,
+    current, sourceIsCurrent, revision: source.revision }
 }

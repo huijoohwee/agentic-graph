@@ -323,16 +323,18 @@ async function settleMaterializedDocument(args: NonNullable<Parameters<typeof re
     && current.markdownDocumentName === file.name && current.markdownDocumentText === file.text && isFrontmatterOnlyDoc(file.text)
     && !file.parsedGraphData?.nodes?.length && !file.parsedGraphData?.edges?.length
     ? { ...file, ...buildSourceFileLifecycleState({ status: 'idle', previousState: file, preserveParsedState: true }) } : file
+  const retryableLifecyclePublication = before.sourceFiles.length === current.sourceFiles.length && before.sourceFiles.every((file, index) => {
+    const latest = current.sourceFiles[index]
+    return !!latest && areSourceFileRecordsEqual(String(file.source?.path || '') === resolveWorkspaceSourcePathKey(activePath) ? { ...file, status: latest.status } : file, latest)
+  })
+  const documentRemainsCurrent = !isMarkdownLikeFileName(activePath) || (matchesMarkdownDocumentPath(activePath, current.markdownDocumentName) && current.markdownDocumentApplyViewPreset !== false && (args.expectedSourceText === undefined || current.markdownDocumentText === args.expectedSourceText))
   if (hasMaterializedActivePathDrifted(activePath, explorerAtStart)
     || before.sourceFiles.length !== current.sourceFiles.length
     || before.sourceFiles.some((file, index) => !areSourceFileRecordsEqual(file, current.sourceFiles[index])
-      && !areSourceFileRecordsEqual(documentOwnedRecord(file), current.sourceFiles[index]))) throw staleMaterialization()
-  if (isMarkdownLikeFileName(activePath) && (!matchesMarkdownDocumentPath(activePath, current.markdownDocumentName)
-    || current.markdownDocumentApplyViewPreset === false
-    || (args.expectedSourceText !== undefined && current.markdownDocumentText !== args.expectedSourceText))) throw staleMaterialization()
+      && !areSourceFileRecordsEqual(documentOwnedRecord(file), current.sourceFiles[index]))) throw staleMaterialization(retryableLifecyclePublication && documentRemainsCurrent, 'active source lifecycle')
+  if (!documentRemainsCurrent) throw staleMaterialization()
   return captureMaterializedWorkspaceSourceProof(activePath)
 }
-
 type GraphOwningActiveWorkspaceSourceFilesArgs = {
   activePath: WorkspacePath
   fs: WorkspaceFs
@@ -401,6 +403,7 @@ async function materializeGraphOwningActiveWorkspaceSourceFiles(args: GraphOwnin
   await applyWorkspaceImportToCanvas({ fs: args.fs, createdPaths: [args.activePath], opts: {
     workspaceEntries: args.workspaceEntries, sourcesByPath: resolveWorkspaceSourceIndexSnapshot(args.sourcesByPath || undefined),
     premergedSourceFiles: mergedSourceFiles, applyToGraph: true, skipComposedGraphApply: isInitializationWorkspacePath(args.activePath),
+    retryOnInventoryDrift: true,
     assertCurrent: () => {
       if (hasMaterializedActivePathDrifted(args.activePath, explorerActivePathAtStart)
         || useGraphStore.getState().markdownDocumentName !== document.markdownDocumentName
@@ -410,7 +413,12 @@ async function materializeGraphOwningActiveWorkspaceSourceFiles(args: GraphOwnin
   if (hasMaterializedActivePathDrifted(args.activePath, explorerActivePathAtStart)
     || useGraphStore.getState().markdownDocumentName !== document.markdownDocumentName
     || useGraphStore.getState().markdownDocumentText !== document.markdownDocumentText
-    || !sameMaterializationSourceIdentities(mergedSourceFiles, useGraphStore.getState().sourceFiles)) throw staleMaterialization()
+    || !sameMaterializationSourceIdentities(mergedSourceFiles, useGraphStore.getState().sourceFiles)) {
+    // This final fence runs after the graph-owned importer has published. A
+    // same-path lifecycle publication can legitimately win that notification;
+    // the outer materializer re-observes persisted bytes before its one retry.
+    throw staleMaterialization(true, 'graph import publication')
+  }
   return captureMaterializedWorkspaceSourceProof(args.activePath)
 }
 
@@ -435,7 +443,7 @@ export async function materializeActiveWorkspaceEntryIntoSourceFiles(args?: Acti
     const before = useGraphStore.getState()
     try {
       const proof = await materializeActiveWorkspaceEntryAttempt(request)
-      if (proof && !isMaterializedWorkspaceSourceProofCurrent(proof)) throw staleMaterialization()
+      if (proof && !isMaterializedWorkspaceSourceProofCurrent(proof)) throw staleMaterialization(true, 'post-publication proof')
       return proof
     } catch (error) {
       let current = useGraphStore.getState()

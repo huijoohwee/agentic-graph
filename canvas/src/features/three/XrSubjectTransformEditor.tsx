@@ -37,9 +37,13 @@ export function XrSubjectTransformEditor() {
     useGraphStore.getState().pushUiToast({ id: 'xr:timeline:transform', kind: result.ok ? 'success' : 'error', message: result.message })
     return result
   }
-  if (!subject && !stageObject) return <SpatialWorkspaceReview />
+  const spatialReview = <details open className="shrink-0 p-2">
+    <summary className="cursor-pointer text-xs font-semibold">Scene change review</summary>
+    <SpatialWorkspaceReview />
+  </details>
+  if (!subject && !stageObject) return spatialReview
   const label = subject?.label || stageObject!.label
-  return <><SpatialWorkspaceReview /><details key={boundary.current.key} open className="shrink-0 p-2" data-kg-xr-timeline-object-inspector={runtime.selectedShotTargetId}
+  return <>{spatialReview}<details key={boundary.current.key} className="shrink-0 p-2" data-kg-xr-timeline-object-inspector={runtime.selectedShotTargetId}
     onFocusCapture={() => { draft.current = context }}>
     <summary className="cursor-pointer text-xs font-semibold">{label} · Object transform</summary>
     {subject ? <section className="mt-2 grid gap-2">

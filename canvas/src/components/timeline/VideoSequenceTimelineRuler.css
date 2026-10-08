@@ -62,11 +62,11 @@
   position: absolute;
   right: 8px;
   left: 8px;
-  top: 7px;
-  z-index: 0;
+  top: calc(var(--kg-video-sequence-lane-count, 0) * var(--kg-video-sequence-lane-height, 61px) + 30px);
+  z-index: 1;
   height: 10px;
   color: rgb(37 99 235 / calc(0.22 + var(--kg-motion-eased, 0) * 0.28));
-  pointer-events: none;
+  pointer-events: visibleStroke;
 }
 
 .timeline-video-sequence-lane-row {
@@ -148,10 +148,6 @@
   padding-bottom: 0;
 }
 
-.timeline-transport-ruler--video-sequence .timeline-transport-ruler-tick-line {
-  bottom: 24px;
-}
-
 .timeline-video-sequence-ruler-content .timeline-transport-track-clip--lane-video:not(.timeline-transport-time-axis-clip):not(.timeline-transport-time-axis-mark) {
   background: color-mix(in srgb, var(--kg-panel-bg, #fff) 92%, var(--kg-canvas-accent, #2563eb) 4%);
 }
@@ -203,15 +199,9 @@
 }
 
 .timeline-video-sequence-ruler-content .timeline-transport-track-handle-grip {
-  display: none;
+  display: block; width: 6px; height: 16px;
 }
 
-.timeline-video-sequence-ruler-content .timeline-transport-track-handle:hover .timeline-transport-track-handle-grip,
-.timeline-video-sequence-ruler-content .timeline-transport-track-handle:focus-visible .timeline-transport-track-handle-grip,
-.timeline-video-sequence-ruler-content .timeline-transport-track-clip--selected .timeline-transport-track-handle-grip,
-.timeline-video-sequence-ruler-content .timeline-transport-track-clip--dragging .timeline-transport-track-handle-grip {
-  display: none;
-}
 
 .timeline-video-sequence-ruler-content .timeline-transport-track-handle:focus-visible {
   outline: 2px solid rgb(37 99 235 / 0.86);
@@ -264,11 +254,12 @@
 .timeline-video-sequence-nested-strip,
 .timeline-video-sequence-text-strip {
   position: absolute;
-  z-index: 0;
+  z-index: 3;
   display: flex;
   min-width: 0;
   align-items: center;
-  pointer-events: none;
+  padding: 0; border: 0; background: transparent;
+  pointer-events: auto; cursor: pointer; touch-action: none;
 }
 
 .timeline-video-sequence-clip-thumbnail-strip {
@@ -467,7 +458,6 @@
 
 .timeline-video-sequence-clip-cues {
   inset: auto 8px 3px;
-  z-index: 1;
   height: 4px;
   align-items: end;
   gap: 2px;

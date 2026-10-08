@@ -4,13 +4,12 @@
   min-width: 0;
   align-items: center;
   gap: 6px;
-  grid-template-columns: 8px minmax(0, 1fr) auto;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
 }
 
-.xr-camera-motion-retime-lane-label i {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
+.xr-camera-motion-retime-lane-label > svg {
+  width: 12px;
+  height: 12px;
 }
 
 .xr-camera-motion-retime-lane-label b {
@@ -60,8 +59,6 @@
   width: auto;
   height: auto;
   min-width: 0;
-  background:
-    repeating-linear-gradient(90deg, transparent 0, transparent calc(10% - 1px), color-mix(in srgb, var(--kg-border, #cbd5e1) 20%, transparent) calc(10% - 1px), color-mix(in srgb, var(--kg-border, #cbd5e1) 20%, transparent) 10%);
   cursor: grab;
   pointer-events: auto;
   touch-action: none;
@@ -80,10 +77,11 @@
 /* XR span geometry uses the shared toolbar-sized time-axis bar. */
 .xr-shot-target-timeline-bar {
   width: var(--kg-xr-scene-span-width, calc(100% - 28px));
-  left: 14px;
+  left: var(--kg-xr-axis-inset, 14px);
   z-index: 0;
+  touch-action: none;
 }
-.xr-shot-target-timeline-bar[data-kg-xr-timeline-lane-dragging="1"] { cursor: grabbing; }
+.xr-shot-target-timeline-bar[data-kg-timeline-ruler-scrubbing="1"] { cursor: grabbing; }
 
 .xr-shot-target-timeline-lane > .xr-camera-motion-retime-lane {
   z-index: 1;

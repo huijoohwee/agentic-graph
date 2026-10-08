@@ -4,7 +4,6 @@
 .sequence-svg-host { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
 .sequence-svg-host > svg { width: 100%; height: 100%; min-width: 0; min-height: 0; }
 .sequence-participant { fill: var(--sequence-card); stroke: var(--kg-border); stroke-width: 1.5; }
-.sequence-participant-glyph { color: var(--kg-canvas-accent); }
 .sequence-participant-type { fill: var(--sequence-muted); font-size: 10px; letter-spacing: 1px; }
 .sequence-participant-name { font-weight: 600; font-size: 14px; }
 .sequence-event-label { font-size: 14px; font-weight: 500; }
@@ -60,3 +59,6 @@
 .sequence-canvas-chrome > [role="alert"] { position: relative; pointer-events: auto; margin: 8px; padding: 8px; background: var(--sequence-surface); }
 .sequence-svg-host [data-sequence-participant][tabindex] { cursor: grab; touch-action: none; }
 .sequence-svg-host [data-sequence-participant][tabindex]:focus-visible { outline: 2px solid var(--kg-canvas-accent); outline-offset: 2px; }
+.sequence-svg-host [data-sequence-selected='true'] :is(.sequence-participant, .sequence-connection-badge) { stroke: var(--kg-canvas-accent); stroke-width: 3; }
+.sequence-svg-host [data-sequence-selected='true'][data-et='participant'] :is(rect, circle, path),
+.sequence-svg-host [data-sequence-event][data-sequence-selected='true'] .sequence-message { stroke: var(--kg-canvas-accent) !important; stroke-width: 3; }
