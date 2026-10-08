@@ -57,11 +57,18 @@ async function waitForWorkspaceEditorClose(targetPage, timeout) {
 async function clickWorkspaceClose(closeButton, targetPage) {
   try {
     await closeButton.click({ timeout: 5000 })
-  } catch {
+    return { mode: 'normal' }
+  } catch (normalError) {
     try {
       await closeButton.click({ force: true, timeout: 5000 })
-    } catch {
+      return { mode: 'forced', normalError: String(normalError.message || normalError).slice(0, 500) }
+    } catch (forcedError) {
       await targetPage.keyboard.press('Escape')
+      return {
+        mode: 'escape',
+        normalError: String(normalError.message || normalError).slice(0, 500),
+        forcedError: String(forcedError.message || forcedError).slice(0, 500),
+      }
     }
   }
 }
@@ -136,13 +143,25 @@ export async function closePanelRegion(region, targetPage) {
   }
   await recordWorkspaceState('before-workspace-close')
   await beginWorkspaceCloseTransitionTrace(targetPage)
-  await clickWorkspaceClose(closeButton, targetPage)
+  closeTrace.push({
+    stage: 'workspace-close-hit-test',
+    target: await closeButton.first().evaluate(element => {
+      const box = element.getBoundingClientRect()
+      const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
+      return {
+        tagName: hit?.tagName || null,
+        className: hit instanceof HTMLElement ? hit.className : null,
+        sameControl: hit === element || element.contains(hit),
+      }
+    }).catch(() => null),
+  })
+  closeTrace.push({ stage: 'first-workspace-close-action', action: await clickWorkspaceClose(closeButton, targetPage) })
   await recordWorkspaceState('after-first-workspace-close')
   // The Mission handoff can retain a just-replaced toolbar callback for one
   // render. Confirm the actual store transition, then retry that same control.
   if (!await waitForWorkspaceEditorClose(targetPage, 1000)) {
     await recordWorkspaceState('before-second-workspace-close')
-    await clickWorkspaceClose(closeButton, targetPage)
+    closeTrace.push({ stage: 'second-workspace-close-action', action: await clickWorkspaceClose(closeButton, targetPage) })
     await recordWorkspaceState('after-second-workspace-close')
   }
   // Canvas retains the warmed editor shell for cheap reopen; closing hides it.
