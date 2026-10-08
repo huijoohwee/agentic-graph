@@ -6,6 +6,30 @@ const readFloatingPanelOpen = targetPage => targetPage.evaluate(
 const floatingPanelCard = (targetPage, candidates) => candidates.and(targetPage.locator(
   '[data-kg-floating-panel-root="true"]:not([data-kg-strybldr-bottom-timeline-panel])',
 )).first()
+const workspaceEditorClosed = targetPage => targetPage.evaluate(
+  async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().workspaceViewMode === 'canvas',
+)
+
+async function waitForWorkspaceEditorClose(targetPage, timeout) {
+  const deadline = Date.now() + timeout
+  while (!await workspaceEditorClosed(targetPage)) {
+    if (Date.now() >= deadline) return false
+    await targetPage.waitForTimeout(50)
+  }
+  return true
+}
+
+async function clickWorkspaceClose(closeButton, targetPage) {
+  try {
+    await closeButton.click({ timeout: 5000 })
+  } catch {
+    try {
+      await closeButton.click({ force: true, timeout: 5000 })
+    } catch {
+      await targetPage.keyboard.press('Escape')
+    }
+  }
+}
 
 // Use the rendered control so this also works against the production preview,
 // where source-module imports are unavailable.
@@ -71,20 +95,10 @@ export async function closePanelRegion(region, targetPage) {
       await floatingPanel.waitFor({ state: 'hidden', timeout: 10000 })
     }
   }
-  try {
-    await closeButton.click({ timeout: 5000 })
-  } catch {
-    try {
-      await closeButton.click({ force: true, timeout: 5000 })
-    } catch {
-      await targetPage.keyboard.press('Escape')
-      try {
-        await region.waitFor({ state: 'hidden', timeout: 2000 })
-        return
-      } catch {}
-      await closeButton.click({ timeout: 5000 })
-    }
-  }
+  await clickWorkspaceClose(closeButton, targetPage)
+  // The Mission handoff can retain a just-replaced toolbar callback for one
+  // render. Confirm the actual store transition, then retry that same control.
+  if (!await waitForWorkspaceEditorClose(targetPage, 1000)) await clickWorkspaceClose(closeButton, targetPage)
   // Canvas retains the warmed editor shell for cheap reopen; closing hides it.
   try {
     await region.waitFor({ state: 'hidden', timeout: 10000 })
