@@ -1,11 +1,62 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
+import { materializeActiveWorkspaceEntryIntoSourceFiles, isMaterializedWorkspaceSourceProofCurrent } from '@/features/source-files/sourceFilesRuntimeMaterialization'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
+import { ensureBuiltInParsersRegistered } from '@/features/parsers/ensure'
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
+import type { SourceFile } from '@/hooks/store/types'
 
 const fileEntry = (path: string, text: string, updatedAtMs = 1): WorkspaceEntry => ({
   path, text, updatedAtMs, kind: 'file', name: path.split('/').pop()!, parentPath: '/docs',
 })
+
+async function assertActiveSourceLifecyclePublicationRetriesOnce() {
+  const previous = useGraphStore.getState(), explorer = useMarkdownExplorerStore.getState()
+  const { restore } = initJsdomHarness()
+  const path = '/docs/lifecycle-retry.md', text = '# Lifecycle retry\n', name = 'lifecycle-retry.md'
+  const entry = fileEntry(path, text)
+  const fs = createMemoryWorkspaceFs({ initialEntries: [
+    { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
+    { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: 1 },
+    entry,
+  ] })
+  const prepared: SourceFile = {
+    id: 'active-source-lifecycle-retry', name, text, enabled: true, geoLayerEnabled: true, status: 'idle',
+    source: { kind: 'local', path: `workspace:${path}` },
+  }
+  try {
+    ensureBuiltInParsersRegistered()
+    let applications = 0
+    useGraphStore.setState({
+      sourceFiles: [], markdownDocumentName: `docs/${name}`, markdownDocumentText: text,
+      markdownDocumentApplyViewPreset: true,
+      setActiveMarkdownDocument: async payload => {
+        applications += 1
+        const sourceFiles = applications === 1
+          ? useGraphStore.getState().sourceFiles.map((file, index) => index === 0 ? { ...file, status: 'loading' as const } : file)
+          : useGraphStore.getState().sourceFiles
+        useGraphStore.setState({ sourceFiles, markdownDocumentName: payload.name, markdownDocumentText: payload.text,
+          markdownDocumentApplyViewPreset: true })
+        return true
+      },
+    })
+    useMarkdownExplorerStore.getState().setActivePath(path)
+    const proof = await materializeActiveWorkspaceEntryIntoSourceFiles({
+      activePathOverride: path, fs, applyToGraph: true, sourceFilesSnapshot: [], premergedSourceFiles: [prepared],
+      activeWorkspaceEntriesSnapshot: [entry], sourcesByPath: {},
+    })
+    const active = useGraphStore.getState().sourceFiles[0]
+    if (!proof || !isMaterializedWorkspaceSourceProofCurrent(proof) || applications !== 2 || active?.status !== 'parsed') {
+      throw new Error('active source lifecycle publication must receive one bounded materialization retry')
+    }
+  } finally {
+    useGraphStore.setState(previous, true)
+    useMarkdownExplorerStore.setState(explorer, true)
+    restore()
+  }
+}
 
 export async function testApplyWorkspaceImportToCanvasForceIncludeOnlySkipsInactiveWorkspaceRecords() {
   const store = useGraphStore.getState()
@@ -176,6 +227,8 @@ export async function testApplyWorkspaceImportToCanvasForceIncludeOnlySkipsInact
       || retainedRetryableFiles.length !== 1 || retainedRetryableFiles[0]?.source?.path !== 'workspace:/docs/background.md') {
       throw new Error('graph-owned materialization must receive a bounded retry signal without overwriting the newer inventory')
     }
+
+    await assertActiveSourceLifecyclePublicationRetriesOnce()
   } finally {
     store.setSourceFiles(previousSourceFiles)
   }

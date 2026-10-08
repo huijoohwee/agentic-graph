@@ -323,13 +323,32 @@ async function settleMaterializedDocument(args: NonNullable<Parameters<typeof re
     && current.markdownDocumentName === file.name && current.markdownDocumentText === file.text && isFrontmatterOnlyDoc(file.text)
     && !file.parsedGraphData?.nodes?.length && !file.parsedGraphData?.edges?.length
     ? { ...file, ...buildSourceFileLifecycleState({ status: 'idle', previousState: file, preserveParsedState: true }) } : file
+  const onlyActiveSourceLifecycleChanged = before.sourceFiles.length === current.sourceFiles.length
+    && before.sourceFiles.every((file, index) => {
+      const latest = current.sourceFiles[index]
+      if (!latest) return false
+      if (String(file.source?.path || '') === resolveWorkspaceSourcePathKey(activePath)) {
+        // A loading marker has no new source authority. Parsed graphs, errors,
+        // parser identities, and every inactive record remain exact fences.
+        return areSourceFileRecordsEqual({ ...file, status: latest.status }, latest)
+      }
+      return areSourceFileRecordsEqual(file, latest)
+    })
+  const documentRemainsCurrent = !isMarkdownLikeFileName(activePath) || (
+    matchesMarkdownDocumentPath(activePath, current.markdownDocumentName)
+    && current.markdownDocumentApplyViewPreset !== false
+    && (args.expectedSourceText === undefined || current.markdownDocumentText === args.expectedSourceText)
+  )
   if (hasMaterializedActivePathDrifted(activePath, explorerAtStart)
     || before.sourceFiles.length !== current.sourceFiles.length
     || before.sourceFiles.some((file, index) => !areSourceFileRecordsEqual(file, current.sourceFiles[index])
-      && !areSourceFileRecordsEqual(documentOwnedRecord(file), current.sourceFiles[index]))) throw staleMaterialization()
-  if (isMarkdownLikeFileName(activePath) && (!matchesMarkdownDocumentPath(activePath, current.markdownDocumentName)
-    || current.markdownDocumentApplyViewPreset === false
-    || (args.expectedSourceText !== undefined && current.markdownDocumentText !== args.expectedSourceText))) throw staleMaterialization()
+      && !areSourceFileRecordsEqual(documentOwnedRecord(file), current.sourceFiles[index]))) {
+    // A native parser may publish lifecycle state for this exact active source
+    // while its document owner settles. Re-observe it once; IDs, bytes,
+    // selection, inactive records, and the document still fence the retry.
+    throw staleMaterialization(onlyActiveSourceLifecycleChanged && documentRemainsCurrent, 'active source lifecycle')
+  }
+  if (!documentRemainsCurrent) throw staleMaterialization()
   return captureMaterializedWorkspaceSourceProof(activePath)
 }
 
@@ -441,7 +460,10 @@ export async function materializeActiveWorkspaceEntryIntoSourceFiles(args?: Acti
     const before = useGraphStore.getState()
     try {
       const proof = await materializeActiveWorkspaceEntryAttempt(request)
-      if (proof && !isMaterializedWorkspaceSourceProofCurrent(proof)) throw staleMaterialization()
+      // The graph importer can yield to a same-path native lifecycle publish
+      // after it captured its proof. Retry from the persisted-byte fences once
+      // instead of turning that bounded publication handoff into a UI failure.
+      if (proof && !isMaterializedWorkspaceSourceProofCurrent(proof)) throw staleMaterialization(true, 'post-publication proof')
       return proof
     } catch (error) {
       let current = useGraphStore.getState()
