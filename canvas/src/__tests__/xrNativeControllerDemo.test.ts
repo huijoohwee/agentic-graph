@@ -1,8 +1,10 @@
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { SINGAPORE_MAJOR_POI_GEO_PROFILE } from 'grph-shared/geospatial/singaporeMajorPoiGeo'
 import {
   createXrNativeControllerInput,
+  isXrNativeControllerInteractiveTarget,
   mergeXrNativeControllerInputs,
   readXrNativeControllerGamepadInput,
   readXrNativeControllerKeyboardInput,
@@ -105,6 +107,33 @@ export function testXrNativeControllerInputNormalizesKeyboardAndGamepad() {
   assert(!shouldConsumeXrNativeControllerKeyUp({ active: false, code: 'Space', editableTarget: false, wasCaptured: true }), 'inactive demo must not cancel Space keyup')
   assert(!shouldConsumeXrNativeControllerKeyUp({ active: true, code: 'Space', editableTarget: false, wasCaptured: false }), 'uncaptured keyup must remain available to focused controls')
   assert(shouldConsumeXrNativeControllerKeyUp({ active: true, code: 'Space', editableTarget: false, wasCaptured: true }), 'active captured input must suppress the matching browser action')
+  const env = initJsdomHarness()
+  try {
+    const cases: Array<[string, boolean]> = [
+      ['<section id="target" role="region" tabindex="0"></section>', true],
+      ['<section role="region" tabindex="0"><span id="target">Fact</span><canvas></canvas></section>', true],
+      ['<section role="region" tabindex="0"><canvas id="target"></canvas></section>', false],
+      ['<div id="target" tabindex="0"></div>', false],
+      ['<button><span id="target">Inspect</span></button>', true],
+    ]
+    for (const tag of ['button', 'a href="/"', 'input', 'textarea', 'select',
+      'div contenteditable="true"', 'div role="button"', 'div role="link"']) {
+      cases.push([`<${tag} id="target"></${tag.split(' ')[0]}>`, true])
+    }
+    for (const [markup, interactive] of cases) {
+      env.dom.window.document.body.innerHTML = markup
+      const target = env.dom.window.document.getElementById('target')
+      assert(isXrNativeControllerInteractiveTarget(target) === interactive, `native target ownership: ${markup}`)
+      for (const code of ['ArrowLeft', 'ArrowRight', 'Space']) {
+        assert(shouldConsumeXrNativeControllerKeyUp({ active: true, code,
+          editableTarget: isXrNativeControllerInteractiveTarget(target), wasCaptured: true }) === !interactive,
+        `matching keyup must preserve focused controls: ${code} ${markup}`)
+        assert(!shouldConsumeXrNativeControllerKeyUp({ active: true, code,
+          editableTarget: interactive, wasCaptured: false }), `uncaptured ${code} remains available`)
+      }
+    }
+    assert(!isXrNativeControllerInteractiveTarget(null), 'missing focus target must remain a motion surface')
+  } finally { env.restore() }
 }
 
 export function testXrNativeBallControllerIsDeterministicAndInteractive() {
@@ -302,7 +331,7 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
     && stage.includes('selectedXrSharedObjectMotionControlActive()')
     && stage.includes('readMotionControlDeviceSensorSnapshot()')
     && stage.includes('readXrNativeControllerSpatialInput'), 'stage runtime must unify standard gamepad, selected XR object keyboard/live motion, and calibrated device motion input')
-  assert(stage.includes('closest(INTERACTIVE_TARGET_SELECTOR)') && stage.includes('frame.bodyRotations'), 'stage must preserve native button activation and consume deterministic prop presentation state')
+  assert(stage.split('isXrNativeControllerInteractiveTarget(event.target)').length === 3 && stage.includes('frame.bodyRotations'), 'stage must preserve native button activation and consume deterministic prop presentation state')
   assert(stage.includes('<XrNativeControllerAuthoredSubjects')
     && authoredSubjects.includes('runtime.plan.subjects.map')
     && authoredSubjects.includes('<XrSceneLibrarySubject'), 'native controller ownership must keep authored Helicopter/Car subjects visible through the shared subject renderer')

@@ -202,6 +202,8 @@ export function installFlightSimDesktopInput(
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.defaultPrevented || isEditableTarget(event.target)
       || (event.target as Element | null)?.closest?.('[role="separator"]')) return
+    const region = (event.target as Element | null)?.closest?.('[role="region"][tabindex]')
+    if (region && !region.contains(element)) return
     if (isFlightSimCameraCycleCode(event.code)) {
       if (!event.repeat) options.onCycleCamera?.()
       event.preventDefault()

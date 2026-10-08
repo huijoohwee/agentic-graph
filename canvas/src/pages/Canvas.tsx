@@ -30,8 +30,13 @@ import {
 import { useMediaQuery } from '@/lib/ui/useMediaQuery'
 import { isRouterRootAliasRuntime } from '@/lib/routing/basePath'
 import { isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { Z_INDEX_PANEL_STACK_MAX_BASE } from '@/lib/ui/zIndex'
 
 import { CanvasStartupRuntimes } from '@/features/canvas/CanvasStartupRuntimes'
+
+// Keep the editor above rendered canvas surfaces, below the minimap (420) and panel stack (>=420).
+const WORKSPACE_EDITOR_SURFACE_Z_INDEX = 300
+const WORKSPACE_EDITOR_TOOLBAR_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 4
 
 const ToolbarLazy = React.lazy(() => import('@/components/Toolbar'))
 const CanvasViewportLazy = React.lazy(() =>
@@ -121,7 +126,6 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
   const [toolbarHeaderElevated, setToolbarHeaderElevated] = React.useState(false)
   const toolbarHeaderRef = React.useRef<HTMLElement>(null)
   const editorOverlayRef = React.useRef<HTMLElement>(null)
-  const toolbarHeaderLayerClassName = toolbarHeaderElevated ? 'z-[420]' : 'z-[290]'
   React.useEffect(() => {
     if (workspaceViewMode !== 'editor') setToolbarHeaderElevated(false)
   }, [workspaceViewMode])
@@ -130,6 +134,10 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
   const activePath = useMarkdownExplorerStore(s => s.activePath)
   const workspaceEditorOverlayOpen = isWorkspaceEditorOverlayOpen({ workspaceViewMode, workspaceCanvasPaneOpen })
   const workspaceCanvasPaneVisible = workspaceEditorOverlayOpen && workspaceCanvasPaneOpen
+  const toolbarHeaderLayerClassName = toolbarHeaderElevated ? 'z-[420]' : 'z-[290]'
+  const toolbarHeaderLayerStyle = workspaceEditorOverlayOpen
+    ? { zIndex: WORKSPACE_EDITOR_TOOLBAR_Z_INDEX }
+    : undefined
   React.useEffect(() => {
     setToolbarHeaderElevated(canvasToolbarDockSpansViewport)
   }, [canvasToolbarDockSpansViewport, workspaceCanvasPaneVisible])
@@ -266,6 +274,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
               <header
                 ref={toolbarHeaderRef}
                 className={`absolute inset-0 pointer-events-none ${toolbarHeaderLayerClassName}`}
+                style={toolbarHeaderLayerStyle}
                 aria-label="Workspace Toolbar Header"
                 data-kg-workspace-toolbar-layer={toolbarHeaderElevated ? 'above-editor' : 'under-editor'}
               >
@@ -343,7 +352,8 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
                     <section
                       ref={editorOverlayRef}
                       hidden={!workspaceEditorOverlayOpen}
-                      className="absolute inset-0 z-[300] pointer-events-none"
+                      className="absolute inset-0 pointer-events-none"
+                      style={{ zIndex: WORKSPACE_EDITOR_SURFACE_Z_INDEX }}
                       aria-label="Workspace editor overlay shell"
                       onPointerDown={() => setToolbarHeaderElevated(false)}
                     >
@@ -372,6 +382,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
                       ) : null}
                     </section>
                   ) : null}
+
                 </section>
               </section>
             </main>

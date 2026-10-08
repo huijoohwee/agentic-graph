@@ -14,13 +14,13 @@ export function testSourceFilesIngestUsesParseJobGuardForStaleAsyncResults() {
   if (!text.includes("parseJobBySourceFileId.get(fileId) !== parseJobToken")) {
     throw new Error('expected stale parse jobs to be dropped before state writeback')
   }
-  if (!text.includes('buildSourceFileParseIdentityHash({')) {
+  if (!text.includes('buildSourceFileParseIdentityHash(resolveSourceFileParseInput(')) {
     throw new Error('expected source file ingest parse path to centralize parse identity hashing')
   }
-  if (!text.includes("cacheNamespace: `source-file:${fileId}`")) {
+  if (!hashText.includes("cacheNamespace: `source-file:${file.id}`")) {
     throw new Error('expected source file ingest parse identity to stay scoped per source file')
   }
-  if (!text.includes("name: String(latest.name || '')")) {
+  if (!text.includes("latest.name !== before.name")) {
     throw new Error('expected parse writeback identity to include latest source file name')
   }
   if (!/SOURCE_FILE_PARSE_SEMANTICS_VERSION\s*=\s*[1-9]\d*\s+as const/.test(hashText)) {
@@ -40,7 +40,7 @@ export function testSourceFilesIngestDedupesPendingParsesForSameTextHash() {
   if (!text.includes('pendingParseBySourceFileId')) {
     throw new Error('expected source file ingest parse path to track pending text hashes per file')
   }
-  if (!text.includes("pending?.textHash === textHash && areSourceFileSourcesEqual(before.source, pending.source)")) {
+  if (!text.includes("pending?.textHash === textHash && pending.name === before.name && areSourceFileSourcesEqual(before.source, pending.source)")) {
     throw new Error('expected source file ingest parse path to skip duplicate parses for the same pending text')
   }
   if (!text.includes('pendingParseBySourceFileId.set(fileId, pendingJob)')) {
@@ -282,17 +282,13 @@ export function testSourceFilesBootstrapSchedulesComposeOnlyForCompositionSignat
 }
 
 export function testWorkspaceImportParseIdentityUsesSemanticsVersionAndName() {
-  const importPath = resolve(process.cwd(), 'src', 'features', 'workspace-fs', 'applyWorkspaceImportToCanvas.ts')
-  const text = readFileSync(importPath, 'utf8')
-
-  if (!text.includes('buildSourceFileParseIdentityHash({')) {
-    throw new Error('expected workspace import parse path to reuse shared source-file parse identity hashing')
+  const text = readFileSync(resolve(process.cwd(), 'src/features/workspace-fs/applyWorkspaceImportToCanvas.ts'), 'utf8')
+  const identity = readFileSync(resolve(process.cwd(), 'src/features/source-files/sourceFileParseIdentity.ts'), 'utf8')
+  if (!text.includes('resolveSourceFileParseInput(') || !text.includes('buildSourceFileParseIdentityHash(parseInput)')) {
+    throw new Error('expected workspace import to consume the shared canonical parser input and hash')
   }
-  if (!text.includes('cacheNamespace: `workspace-import:${path}`')) {
-    throw new Error('expected workspace import parse identity to stay scoped by workspace path')
-  }
-  if (!text.includes('name: workspaceDocumentKey(path)')) {
-    throw new Error('expected workspace import parse identity to include workspace document name')
+  if (!identity.includes('cacheNamespace: `workspace-import:${path}`') || !identity.includes('name: workspaceDocumentKey(path)')) {
+    throw new Error('expected canonical workspace identity to retain workspace path and document name')
   }
 }
 
