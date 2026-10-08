@@ -159,6 +159,9 @@ export function useWorkspaceImportActions(args: {
         createdPaths: result.createdPaths,
         opts: {
           applyToGraph: args.applyToGraph === true,
+          // The selected document below is the single parser and surface owner.
+          // This step only commits the source-file record for its durable receipt.
+          deferInteractiveSurface: true,
           workspaceEntries: refreshed.entries,
           sourcesByPath: refreshed.sourcesByPath,
           ...(result.removedPaths ? { removedPaths: result.removedPaths } : {}),

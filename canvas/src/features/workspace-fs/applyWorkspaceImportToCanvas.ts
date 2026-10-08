@@ -41,6 +41,7 @@ import { looksLikeBytePlusLuminaCanvasText } from '@/lib/graph/io/byteplusLumina
 type ApplyWorkspaceImportToCanvasOpts = {
   applyToGraph?: boolean
   skipComposedGraphApply?: boolean
+  deferInteractiveSurface?: boolean
   workspaceEntries?: WorkspaceEntry[]
   sourcesByPath?: WorkspaceSourceIndex
   removedPaths?: WorkspacePath[]
@@ -245,6 +246,20 @@ export async function applyWorkspaceImportToCanvas(args: {
   }
 
   if (!applyToGraph) {
+    if (next) {
+      publishSourceFiles(next)
+      return { sourceFilesUpdated: true, enabledCount, parsedCount: 0 }
+    }
+    if (merged !== existing || existing.length !== existingAll.length) {
+      publishSourceFiles(merged)
+      return { sourceFilesUpdated: true, enabledCount: 0, parsedCount: 0 }
+    }
+    return { sourceFilesUpdated: false, enabledCount: 0, parsedCount: 0 }
+  }
+
+  // A focused import owns parsing and surface activation exactly once. Publishing its
+  // source record first keeps the durable write independent from a predecessor's UI tail.
+  if (args.opts?.deferInteractiveSurface === true) {
     if (next) {
       publishSourceFiles(next)
       return { sourceFilesUpdated: true, enabledCount, parsedCount: 0 }
