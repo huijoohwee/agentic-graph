@@ -152,10 +152,15 @@ export async function applyWorkspaceImportToCanvas(args: {
   let phase: 'read' | 'publication' = 'read'
   const staleImport = () => Object.assign(new Error('Active document source changed during materialization (workspace import publication).'),
     { code: 'SOURCE_FILES_MATERIALIZATION_STALE', retryable: false })
+  const sourceFilesMatch = (left: SourceFile[], right: SourceFile[]) =>
+    left.length === right.length && left.every((file, index) => areSourceFileRecordsEqual(file, right[index]))
   const assertCurrent = (nextPhase = phase) => {
     phase = nextPhase
     args.opts?.assertCurrent?.(phase)
-    if (useGraphStore.getState().sourceFiles !== expectedSourceFiles) throw staleImport()
+    const current = useGraphStore.getState().sourceFiles
+    if (current === expectedSourceFiles) return
+    if (!sourceFilesMatch(current, expectedSourceFiles)) throw staleImport()
+    expectedSourceFiles = current
   }
   const publishSourceFiles = (files: SourceFile[]) => {
     assertCurrent('publication')
@@ -163,7 +168,7 @@ export async function applyWorkspaceImportToCanvas(args: {
     store.setSourceFiles(normalized)
     const published = useGraphStore.getState().sourceFiles
     // A synchronous subscriber may publish a newer import while the setter notifies.
-    if (normalized.length !== published.length || normalized.some((file, index) => !areSourceFileRecordsEqual(file, published[index]))) throw staleImport()
+    if (!sourceFilesMatch(normalized, published)) throw staleImport()
     expectedSourceFiles = published
     assertCurrent()
   }

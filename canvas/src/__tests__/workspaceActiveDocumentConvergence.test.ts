@@ -96,14 +96,14 @@ for (const prior of ['absent', 'different'] as const) test(`passive source read 
 const graphImportChanges = ['absent', 'different', 'exact', 'same-path draft', 'unnamed draft', 'unnamed whitespace', 'edited document',
   'selection', 'source edit', 'source addition', 'source lifecycle', 'duplicate ID', 'duplicate path',
   'persisted mismatch', 'persisted deletion', 'persisted read error', 'verification edit', 'verification selection',
-  'verification inventory', 'verification preset', 'second exact publication'] as const
+  'verification inventory', 'verification preset', 'second exact publication', 'equivalent source publication'] as const
 for (const change of graphImportChanges) test(`non-Markdown graph import retains exact document authority: ${change}`, async () => {
   const graph = useGraphStore.getState(), explorer = useMarkdownExplorerStore.getState(), env = initJsdomHarness()
   const activePath = '/notes/learning.py', activeName = 'notes/learning.py', body = 'print(42)\n'
   const file: SourceFile = { id: 'python-convergence', name: activeName, text: body, enabled: true, status: 'idle',
     source: { kind: 'local', path: `workspace:${activePath}` } }
   const sources = [file], entered = deferred<void>(), release = deferred<void>(), failure = new Error('Persisted Python read failed')
-  const accept = ['absent', 'different', 'exact'].includes(change)
+  const accept = ['absent', 'different', 'exact', 'equivalent source publication'].includes(change)
   let reads = 0, parses = 0, idleCalls = 0, authoritative = useGraphStore.getState()
   const idle = Object.getOwnPropertyDescriptor(globalThis, 'requestIdleCallback')
   Object.defineProperty(globalThis, 'requestIdleCallback', { configurable: true, value: (callback: () => void) => {
@@ -133,8 +133,8 @@ for (const change of graphImportChanges) test(`non-Markdown graph import retains
   }, writeFileText: async () => assert.fail('materialization cannot write source'), createFile: async () => '/unused',
     createFolder: async () => '/unused', deleteEntry: async () => assert.fail('materialization cannot delete source') }
   useGraphStore.setState({ sourceFiles: sources, markdownDocumentName: ['absent', 'unnamed draft', 'unnamed whitespace'].includes(change) ? null
-    : change === 'same-path draft' || change === 'exact' ? activeName : 'previous.md',
-    markdownDocumentText: change === 'absent' ? '' : change === 'unnamed whitespace' ? ' \n' : change === 'exact' ? body : '# Prior document or draft\n',
+    : change === 'same-path draft' || change === 'exact' || change === 'equivalent source publication' ? activeName : 'previous.md',
+    markdownDocumentText: change === 'absent' ? '' : change === 'unnamed whitespace' ? ' \n' : change === 'exact' || change === 'equivalent source publication' ? body : '# Prior document or draft\n',
     markdownDocumentApplyViewPreset: false })
   useMarkdownExplorerStore.getState().setActivePath(activePath)
   const operation = materializeActiveWorkspaceEntryIntoSourceFiles({ activePathOverride: activePath, fs, applyToGraph: true,
@@ -145,6 +145,7 @@ for (const change of graphImportChanges) test(`non-Markdown graph import retains
     if (boundary === 'parser') {
       useGraphStore.setState({ markdownDocumentName: activeName, markdownDocumentText: change === 'edited document' ? 'print(99)\n' : body })
       if (change === 'selection') useMarkdownExplorerStore.getState().setActivePath('/notes/other.py')
+      if (change === 'equivalent source publication') useGraphStore.setState({ sourceFiles: sources.slice() })
       if (change === 'source edit' || change === 'source lifecycle') useGraphStore.setState({ sourceFiles: [{ ...file,
         ...(change === 'source edit' ? { text: 'print(99)\n' } : { status: 'loading' as const }) }] })
       if (change === 'source addition' || change === 'duplicate ID' || change === 'duplicate path') useGraphStore.setState({ sourceFiles: [file,
@@ -158,8 +159,8 @@ for (const change of graphImportChanges) test(`non-Markdown graph import retains
       assert.ok(result.proof && isMaterializedWorkspaceSourceProofCurrent(result.proof))
       assert.equal(current.markdownDocumentName, activeName); assert.equal(current.markdownDocumentText, body)
       assert.equal(current.sourceFiles[0].text, body); assert.equal(current.sourceFiles[0].status, 'parsed')
-      assert.equal(parses, 1); assert.equal(reads, change === 'exact' ? 0 : 1)
-      assert.equal(idleCalls, change === 'exact' ? 1 : 2, 'only an admitted convergence restarts import, reusing its completed parser result')
+      assert.equal(parses, 1); assert.equal(reads, ['exact', 'equivalent source publication'].includes(change) ? 0 : 1)
+      assert.equal(idleCalls, ['exact', 'equivalent source publication'].includes(change) ? 1 : 2, 'only an admitted convergence restarts import, reusing its completed parser result')
     } else {
       assert.ok(change === 'persisted read error' ? result.error === failure : stale(result.error), String(result.error))
       assert.equal(current.sourceFiles, authoritative.sourceFiles)
