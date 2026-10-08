@@ -108,6 +108,14 @@
     transform: none;
   }
 
+  /* Foreground Timeline review must not cover the editor's bottom toolbar. */
+  .kg-canvas-bottom-panel--workspace-editor-overlay {
+    inset-block-start: calc(var(--kg-safe-top) + var(--kg-canvas-viewport-edge-gap));
+    inset-block-end: auto;
+    inset-inline-start: calc(var(--kg-safe-left) + var(--kg-canvas-viewport-edge-gap));
+    left: auto;
+  }
+
   .kg-canvas-toolbar-dock,
   .kg-workspace-overlay-canvas-toolbar {
     inset-block-start: auto;

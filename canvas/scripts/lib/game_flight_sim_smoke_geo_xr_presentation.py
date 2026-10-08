@@ -451,6 +451,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
     try:
         reported_handoff = prepare_reported_singapore_geo_handoff(page)
         ui_path = activate_geo_xr_from_toolbar(page)
+        prepare_source_files_selection_surface(page)
         source_files_opened = True
         for (
             view_mode,

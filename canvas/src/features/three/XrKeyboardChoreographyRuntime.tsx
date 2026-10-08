@@ -211,6 +211,8 @@ function isKeyboardMotionSurface(target: EventTarget | null): boolean {
   if (state.floatingPanelOpen === true
     && state.floatingPanelView === 'camera'
     && element?.closest('[data-kg-floating-panel-view-trigger="camera"]')) return true
+  // Focused review regions own arrow-key scrolling; direct canvas input still controls motion.
+  if (element?.closest('[role="region"][tabindex]') && !element.closest('canvas')) return false
   return !element?.closest('button, a, summary, [role="button"], [role="menuitem"], [role="option"], [role="slider"], [role="tab"]')
 }
 
