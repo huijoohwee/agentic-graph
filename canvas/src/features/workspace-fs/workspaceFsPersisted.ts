@@ -15,7 +15,6 @@ import {
   WORKSPACE_README_SEED_PATH,
   TEST_VALIDATION_WORKSPACE_SEED_PATH,
   shouldPreserveFallbackWorkspaceSeedText,
-  XR_PHYSICS_WORKSPACE_ROOT_ALIAS_PATH,
   XR_PHYSICS_WORKSPACE_SEED_PATH,
 } from './workspaceFs'
 import { isWorkspaceRepoLocalRunReadyBootstrap } from './workspaceRunReadyDemos'
@@ -29,10 +28,8 @@ import {
 import { deleteWorkspaceDocsMirrorEntry } from './workspaceSeedLocalMirrorAuthority'
 import { notifyWorkspaceFsChanged } from './workspaceFsEvents'
 import {
-  buildDocsMirrorBasenameSet,
   clearStaleXrPhysicsSourcesIfCanonicalMaterialized,
   hasOnlyCanonicalXrPhysicsFile,
-  isStaleRootMarkdownAliasCoveredByDocsMirror,
   migrateLegacyAuthoredMarkdownNotes,
   removeNoncanonicalXrPhysicsFiles,
   removeLegacyWorkspaceSourceEntries,
@@ -200,31 +197,8 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
     if (docsOnlyMode && canonicalXrDocsMirrorEnabled && await removeNoncanonicalXrPhysicsFiles(collections)) {
       changed = true
     }
-    if (docsOnlyMode && hasDocsMirrorFiles) {
-      const rootSeedPaths = new Set<WorkspacePath>([
-        WORKSPACE_README_SEED_PATH,
-        TEST_VALIDATION_WORKSPACE_SEED_PATH,
-        GEOSPATIAL_WORKSPACE_SEED_PATH,
-        XR_PHYSICS_WORKSPACE_ROOT_ALIAS_PATH,
-      ])
-      const docsMirrorBasenames = buildDocsMirrorBasenameSet(docsMirrorEntries)
-      const rows = await collections.entries.find({ selector: { kind: 'file' } }).exec()
-      for (let i = 0; i < rows.length; i += 1) {
-        const row = rows[i]
-        if (!row) continue
-        const path = normalizeWorkspacePath(String(row.get('path') || ''))
-        if (!path || path.startsWith('/docs/')) continue
-        const shouldRemoveRootSeedAlias = rootSeedPaths.has(path)
-        const shouldRemoveStaleRootDocsAlias = isStaleRootMarkdownAliasCoveredByDocsMirror({
-          path,
-          docsMirrorBasenames,
-          rootSeedPaths,
-        })
-        if (!shouldRemoveRootSeedAlias && !shouldRemoveStaleRootDocsAlias) continue
-        await row.remove()
-        changed = true
-      }
-    }
+    // A matching mirror basename is not deletion authority over a root import.
+    // Projection can hide legacy aliases without destroying persisted source bytes.
     if (CUSTOM_TEST_VALIDATION_WORKSPACE_SEED_ACTIVE && !hasAnyFilesNow) {
       const now = Date.now()
       const seeds = await getWorkspaceSeedFiles()
