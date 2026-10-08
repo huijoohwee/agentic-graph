@@ -117,28 +117,32 @@ export async function testApplyWorkspaceImportToCanvasForceIncludeOnlySkipsInact
     }
 
     let publishedBackgroundSource = false
+    let backgroundError: unknown
     store.setSourceFiles([])
-    const rebased = await applyWorkspaceImportToCanvas({
-      fs,
-      createdPaths: ['/docs/active.md'],
-      opts: {
-        applyToGraph: false,
-        workspaceEntries: await fs.listEntries(),
-        assertCurrent: () => {
-          if (publishedBackgroundSource) return
-          publishedBackgroundSource = true
-          store.setSourceFiles([{
-            id: 'background-source', name: 'background.md', text: '# background', enabled: false, status: 'idle',
-            source: { kind: 'local', path: 'workspace:/docs/background.md' },
-          }])
+    try {
+      await applyWorkspaceImportToCanvas({
+        fs,
+        createdPaths: ['/docs/active.md'],
+        opts: {
+          applyToGraph: false,
+          workspaceEntries: await fs.listEntries(),
+          assertCurrent: () => {
+            if (publishedBackgroundSource) return
+            publishedBackgroundSource = true
+            store.setSourceFiles([{
+              id: 'background-source', name: 'background.md', text: '# background', enabled: false, status: 'idle',
+              source: { kind: 'local', path: 'workspace:/docs/background.md' },
+            }])
+          },
         },
-      },
-    })
-    const rebasedFiles = useGraphStore.getState().sourceFiles || []
-    if (!publishedBackgroundSource || !rebased.sourceFilesUpdated
-      || !rebasedFiles.some(file => file.source?.path === 'workspace:/docs/active.md')
-      || !rebasedFiles.some(file => file.source?.path === 'workspace:/docs/background.md')) {
-      throw new Error('workspace import must rebase its target onto a concurrent source snapshot')
+      })
+    } catch (error) {
+      backgroundError = error
+    }
+    const retainedFiles = useGraphStore.getState().sourceFiles || []
+    if (!publishedBackgroundSource || (backgroundError as { code?: string } | undefined)?.code !== 'SOURCE_FILES_MATERIALIZATION_STALE'
+      || retainedFiles.length !== 1 || retainedFiles[0]?.source?.path !== 'workspace:/docs/background.md') {
+      throw new Error('workspace import must reject a concurrent source inventory update')
     }
   } finally {
     store.setSourceFiles(previousSourceFiles)

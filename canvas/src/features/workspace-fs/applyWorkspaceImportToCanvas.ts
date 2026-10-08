@@ -167,11 +167,19 @@ export async function applyWorkspaceImportToCanvas(args: {
     { code: 'SOURCE_FILES_MATERIALIZATION_STALE', retryable: false })
   const sourceFilesMatch = (left: SourceFile[], right: SourceFile[]) => left.length === right.length
     && left.every((file, index) => areSourceFileRecordsEqual(file, right[index]))
-  const sourceFileMaterializationMatches = (current: SourceFile, desired: SourceFile) => current.name === desired.name
+  const sourceFileMaterializationMatches = (current: SourceFile, desired: SourceFile) => current.id === desired.id
+    && current.name === desired.name
     && current.text === desired.text
     && current.enabled === desired.enabled
     && current.geoLayerEnabled === desired.geoLayerEnabled
     && areSourceFileSourcesEqual(current.source, desired.source)
+  const sourceFilesMatchExceptImportedLifecycle = (current: SourceFile[], expected: SourceFile[]) => current.length === expected.length
+    && current.every((file, index) => {
+      const prior = expected[index]
+      if (!prior || !importedSourcePathKeys.has(String(file.source?.path || ''))
+        || !importedSourcePathKeys.has(String(prior.source?.path || ''))) return areSourceFileRecordsEqual(file, prior)
+      return areSourceFileRecordsEqual(file, prior) || sourceFileMaterializationMatches(file, prior)
+    })
   const rebaseImportedSourceFiles = (current: SourceFile[], desired: SourceFile[]): SourceFile[] => {
     const desiredBySourcePath = new Map<string, SourceFile>()
     for (const file of desired) {
@@ -204,8 +212,9 @@ export async function applyWorkspaceImportToCanvas(args: {
     args.opts?.assertCurrent?.()
     const current = useGraphStore.getState().sourceFiles
     if (current === expectedSourceFiles) return
-    // Publication may race parsing or hydration. The commit below only owns the
-    // imported paths and will rebase them over the most recent full snapshot.
+    // Parsing and hydration may change only lifecycle state on the imported
+    // records. Every other inventory or source change remains authoritative.
+    if (!sourceFilesMatchExceptImportedLifecycle(current, expectedSourceFiles)) throw staleImport()
     expectedSourceFiles = current
   }
   const publishSourceFiles = (files: SourceFile[]) => {
@@ -215,13 +224,9 @@ export async function applyWorkspaceImportToCanvas(args: {
     store.setSourceFiles(candidate)
     let published = useGraphStore.getState().sourceFiles
     // A synchronous lifecycle owner may publish parsed state during our setter.
-    // Rebase once more, then fail loudly only if the import's own records vanish.
-    if (!sourceFilesMatch(candidate, published) && !ownsPublishedImport(published, candidate)) {
-      candidate = rebaseImportedSourceFiles(published, normalized)
-      store.setSourceFiles(candidate)
-      published = useGraphStore.getState().sourceFiles
-      if (!ownsPublishedImport(published, candidate)) throw staleImport()
-    }
+    // A concurrent source or inventory edit must remain visible and reject this import.
+    if (!sourceFilesMatchExceptImportedLifecycle(published, candidate)
+      || !ownsPublishedImport(published, candidate)) throw staleImport()
     expectedSourceFiles = published
   }
   assertCurrent()
