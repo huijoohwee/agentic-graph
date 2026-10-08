@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
-import { resolveBuiltChunkBudget } from './hygiene-built-chunk-budget.mjs'
+import { isBuiltJavaScriptPath, resolveBuiltChunkBudget } from './hygiene-built-chunk-budget.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -120,12 +120,11 @@ const semanticSourceRoots = [
 ]
 
 const builtChunkRoots = [
-  'canvas/dist/assets',
+  'canvas/dist',
 ]
 
 const builtChunkExtensions = new Set([
   '.css',
-  '.js',
 ])
 
 const toPosixRel = absolutePath => path.relative(repoRoot, absolutePath).split(path.sep).filter(Boolean).join('/')
@@ -350,7 +349,7 @@ const listBuiltChunks = async () => {
         continue
       }
       if (!entry.isFile()) continue
-      if (builtChunkExtensions.has(path.extname(abs).toLowerCase())) out.push(abs)
+      if (isBuiltJavaScriptPath(abs) || builtChunkExtensions.has(path.extname(abs).toLowerCase())) out.push(abs)
     }
   }
 

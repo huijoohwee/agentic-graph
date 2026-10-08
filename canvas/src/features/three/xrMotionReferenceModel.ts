@@ -469,7 +469,10 @@ export function readXrMotionReferencePlan(value: unknown, nodes: readonly GraphN
   })
 }
 
-export function xrMotionReferenceSceneKey(documentName: string, graphData: GraphData | null): string {
+export function xrMotionReferenceSceneKey(
+  documentName: string,
+  graphData: Pick<GraphData, 'type' | 'metadata'> | null,
+): string {
   const metadata = graphData?.metadata && typeof graphData.metadata === 'object' && !Array.isArray(graphData.metadata)
     ? graphData.metadata as Record<string, unknown>
     : {}

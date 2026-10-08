@@ -237,7 +237,7 @@ async function runCandidateProof() {
   })
 
   const aggregate = {
-    schema: 'agentic-graph-flight-sim-browser-proof/v5',
+    schema: 'agentic-graph-flight-sim-browser-proof/v6',
     candidate: {
       head: candidateHead,
       tree: candidateTree,

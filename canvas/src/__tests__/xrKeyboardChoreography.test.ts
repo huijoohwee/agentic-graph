@@ -1,3 +1,9 @@
+import assert from 'node:assert/strict'
+import React from 'react'
+import { createRoot } from 'react-dom/client'
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
+import { XrKeyboardChoreographyRuntime } from '@/features/three/XrKeyboardChoreographyRuntime'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { GraphData } from '@/lib/graph/types'
@@ -66,7 +72,7 @@ function buildKeyboardCameraGraph(): GraphData {
   }
 }
 
-export function testXrKeyboardChoreographySharesBrowserAndMcpMotion(): void {
+export async function testXrKeyboardChoreographySharesBrowserAndMcpMotion(): Promise<void> {
   registerCanonicalCameraGrammar()
   const diagonal = resolveThreeKeyboardMotionDirection(['w', 'd'])
   const cameraSettings = resolveThreeCameraKeyboardFraming({
@@ -183,5 +189,45 @@ export function testXrKeyboardChoreographySharesBrowserAndMcpMotion(): void {
     || !helpLogicSource.includes('THREE_KEYBOARD_SHORTCUT_GRAMMAR_SIGILS')
     || !helpLogicSource.includes('formatThreeKeyboardShortcutCopyLine')) {
     throw new Error('expected browser keys and WebMCP to delegate to the shared choreography owners')
+  }
+  await assertReviewRegionKeyboardOwnership()
+}
+
+async function assertReviewRegionKeyboardOwnership(): Promise<void> {
+  const previous = useGraphStore.getState()
+  const env = initJsdomHarness(`<body><div id="root"></div>
+    <section id="review" role="region" tabindex="0"><span id="cell" tabindex="0">Fact value</span>
+      <button id="button">Inspect original</button><canvas id="canvas" tabindex="0"></canvas>
+      <button id="lane" data-kg-xr-shot-target-lane data-kg-xr-timeline-lane-selected="1">Lane</button>
+      <button id="label" data-kg-xr-shot-target-lane-label aria-pressed="true">Lane label</button>
+      <button id="cast" data-kg-xr-lane-cast-mark aria-pressed="true">Cast mark</button>
+      <button id="camera" data-kg-xr-lane-camera-mark aria-pressed="true">Camera mark</button>
+      <button id="trigger" data-kg-floating-panel-view-trigger="camera">Camera</button>
+    </section></body>`)
+  const root = createRoot(env.dom.window.document.getElementById('root')!)
+  try {
+    useGraphStore.setState({ markdownDocumentName: 'Review keys.md', markdownDocumentText: '# Review keys',
+      graphData: buildKeyboardCameraGraph(), selectedNodeId: 'actor-a',
+      timelineTransportPlaying: false, floatingPanelOpen: true, floatingPanelView: 'camera' } as never)
+    hydrateCanonicalXrMotionReferenceRuntime()
+    selectXrMotionReferenceCameraMark(readXrMotionReferenceRuntime().plan.camera[0]!.id)
+    await mountReactRoot(root, React.createElement(XrKeyboardChoreographyRuntime))
+    for (const [id, owned] of [['review', false], ['cell', false], ['button', false],
+      ['canvas', true], ['lane', true], ['label', true], ['cast', true], ['camera', true], ['trigger', true]] as const) {
+      const element = env.dom.window.document.getElementById(id)!
+      const before = JSON.stringify(readXrMotionReferenceRuntime().plan)
+      const down = new env.dom.window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true })
+      const up = new env.dom.window.KeyboardEvent('keyup', { key: 'ArrowRight', bubbles: true, cancelable: true })
+      element.dispatchEvent(down)
+      element.dispatchEvent(up)
+      assert.equal(down.defaultPrevented, owned, `${id}: arrow key ownership`)
+      assert.equal(up.defaultPrevented, owned, `${id}: release ownership`)
+      assert.equal(JSON.stringify(readXrMotionReferenceRuntime().plan) !== before, owned, `${id}: choreography mutation`)
+    }
+  } finally {
+    await unmountReactRoot(root)
+    useGraphStore.setState(previous, true)
+    hydrateCanonicalXrMotionReferenceRuntime()
+    env.restore()
   }
 }
