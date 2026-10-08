@@ -65,7 +65,7 @@ export function StrybldrTimelineBottomPanel({
   // When the editor leaves a readable canvas strip, keep the Timeline beside it.
   // On narrow viewports the canonical editor gutter is smaller than the Timeline's
   // minimum usable width, so the Timeline must be the active foreground surface.
-  const timelineOverlaysWorkspaceEditor = workspaceEditorOverlayOpen && workspaceLayerInsetLeft === 0
+  const timelineOverlaysWorkspaceEditor = active === true && workspaceEditorOverlayOpen && workspaceLayerInsetLeft === 0
   const panelStack = usePanelStack(
     'bottom',
     timelineOverlaysWorkspaceEditor
