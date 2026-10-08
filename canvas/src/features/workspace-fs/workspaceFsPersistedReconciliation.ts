@@ -88,33 +88,6 @@ export const toWorkspaceDocsMirrorPath = (relPath: string): WorkspacePath => {
   return normalizeWorkspacePath(`${WORKSPACE_DOCS_MIRROR_ROOT_PATH}/${normalizedRelPath}`)
 }
 
-export const buildDocsMirrorBasenameSet = (
-  docsEntries: ReadonlyArray<{ relPath: string }>,
-): Set<string> => {
-  const out = new Set<string>()
-  for (let i = 0; i < docsEntries.length; i += 1) {
-    const relPath = normalizeDocsMirrorRelPath(String(docsEntries[i]?.relPath || ''))
-    const basename = workspaceBasename(`/${relPath}`).toLowerCase()
-    if (basename) out.add(basename)
-  }
-  return out
-}
-
-export const isStaleRootMarkdownAliasCoveredByDocsMirror = (args: {
-  path: WorkspacePath
-  docsMirrorBasenames: ReadonlySet<string>
-  rootSeedPaths: ReadonlySet<WorkspacePath>
-}): boolean => {
-  const path = normalizeWorkspacePath(args.path)
-  if (!path || path.startsWith('/docs/')) return false
-  if (args.rootSeedPaths.has(path)) return false
-  const segments = path.split('/').filter(Boolean)
-  if (segments.length !== 1) return false
-  const basename = workspaceBasename(path)
-  if (!basename || !/\.md$/i.test(basename)) return false
-  return args.docsMirrorBasenames.has(basename.toLowerCase())
-}
-
 const clearWorkspaceEntrySource = (path: WorkspacePath): boolean => {
   const normalizedPath = normalizeWorkspacePath(path)
   if (!loadWorkspaceSourceIndex()[normalizedPath]) return false

@@ -181,7 +181,11 @@ export function installLearningOfflineOwner(owner, sourceRevision) {
       const requested = navigation ? url.searchParams.get(routeKey) : publicRequest
         ? url.searchParams.get('revision') || referenceRevision || sourceRevision : relativePath.split('/')[1]
       const version = [state.active, state.previous].find(item => item?.revision === requested)
-      if (!version) { if (navigation || publicRequest && url.searchParams.has('revision') && state.active) failure('This offline version is not installed. Reconnect and install it from the relevant workspace pane.'); return null }
+      if (!version) {
+        if (navigation || publicRequest && url.searchParams.has('revision') && state.active && requested !== sourceRevision)
+          failure('This offline version is not installed. Reconnect and install it from the relevant workspace pane.')
+        return null
+      }
       if (navigation) await verify(version)
       const { cache, manifest } = installedManifests.get(version.cache) || await readManifest(version)
       const file = manifest.files.find(item => item.path === (navigation ? 'index.html' : relativePath))

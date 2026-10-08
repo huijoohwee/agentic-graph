@@ -37,6 +37,7 @@ import {
   type MarkdownWorkspacePaneVisibility,
 } from './main/types'
 import type { MarkdownWorkspaceDerivedViewerMode } from './main/viewer/MarkdownWorkspaceDerivedViewer'
+
 import {
   MarkdownWorkspaceDisplayMenu,
   MarkdownWorkspacePresentationNavMenu,
@@ -175,9 +176,6 @@ export function MarkdownWorkspaceToolbar({
   forceMarkdownEditorInEditorMode,
 }: MarkdownWorkspaceToolbarProps) {
   const panelTypography = usePanelTypography()
-  const setWorkspaceViewMode = useGraphStore(s => s.setWorkspaceViewMode)
-  const setWorkspaceViewState = useGraphStore(s => s.setWorkspaceViewState)
-  const workspaceViewMode = useGraphStore(s => s.workspaceViewMode)
   const isTouchToolbarViewport = useMediaQuery('(max-width: 768px), (pointer: coarse)')
   const canNavigateSlides = layoutMode === 'presentation'
   const effectiveSplitPanes = React.useMemo(
@@ -199,6 +197,16 @@ export function MarkdownWorkspaceToolbar({
   )
   const showMarkdownDisplayMenu = viewerKind === 'markdown' && (viewerMode === 'read' || !viewerMode)
   const workspacePanesControlId = React.useId()
+  const closeEditorWorkspace = React.useCallback(() => {
+    const current = useGraphStore.getState()
+    closeWorkspaceView({
+      workspaceViewMode: current.workspaceViewMode,
+      workspaceCanvasPaneOpen: current.workspaceCanvasPaneOpen,
+      setWorkspaceViewMode: current.setWorkspaceViewMode,
+      setWorkspaceViewState: current.setWorkspaceViewState,
+      setWorkspaceCanvasPaneOpen: current.setWorkspaceCanvasPaneOpen,
+    })
+  }, [])
   const webpageControls = React.useMemo(() => {
     const meta = webpageWorkspaceMeta
     if (!meta || !meta.url) return null
@@ -355,6 +363,16 @@ export function MarkdownWorkspaceToolbar({
         ) : (
           <span className="sr-only">Workspace editor</span>
         )}
+        <button
+          type="button"
+          className={`${TOOLBAR_BUTTON_CLASSNAME} shrink-0`}
+          title={UI_LABELS.close}
+          data-kg-workspace-toolbar-close="1"
+          onPointerDown={closeEditorWorkspace}
+          onClick={closeEditorWorkspace}
+        >
+          <X className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} />
+        </button>
         <CollapsibleToolbar forceExpanded={isTouchToolbarViewport} className={`kg-toolbar kg-markdown-workspace-toolbar-controls kg-workspace-toolbar-controls ${uiToolbarRowScrollClassName} gap-1`} ariaLabel="Markdown view controls">
         <menu className={`${uiToolbarRowScrollListClassName} gap-1`} aria-label="Layout mode">
           <li className="kg-workspace-pane-toggles-item list-none">
@@ -514,24 +532,6 @@ export function MarkdownWorkspaceToolbar({
           <li className="list-none">
             <button type="button" className={TOOLBAR_BUTTON_CLASSNAME} title="Fullscreen" onClick={onToggleFullscreen}>
               <Maximize2 className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} />
-            </button>
-          </li>
-          <li className="list-none">
-            <button
-              type="button"
-              className={TOOLBAR_BUTTON_CLASSNAME}
-              title={UI_LABELS.close}
-              onClick={() => {
-                closeWorkspaceView({
-                  workspaceViewMode: workspaceViewMode === 'editor' ? 'editor' : 'canvas',
-                  workspaceCanvasPaneOpen: canvasOpen,
-                  setWorkspaceViewMode,
-                  setWorkspaceViewState,
-                  setWorkspaceCanvasPaneOpen: setCanvasOpen,
-                })
-              }}
-            >
-              <X className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} />
             </button>
           </li>
         </menu>
