@@ -184,10 +184,15 @@ export function StrybldrTimelineBottomPanel({
     const { width, height } = getPanelSize()
     const layerSize = getLayerSize()
     return clampPosition({
-      top: layerSize.height - height - TIMELINE_BOTTOM_PANEL_VISIBLE_PX,
+      // A full-width mobile review surface would otherwise cover the Workspace
+      // editor's bottom toolbar, including its close control. Keep that exit
+      // path available while the Timeline is raised for active review.
+      top: timelineOverlaysWorkspaceEditor
+        ? TIMELINE_BOTTOM_PANEL_VISIBLE_PX
+        : layerSize.height - height - TIMELINE_BOTTOM_PANEL_VISIBLE_PX,
       left: (layerSize.width - width) / 2,
     })
-  }, [clampPosition, getLayerSize, getPanelSize])
+  }, [clampPosition, getLayerSize, getPanelSize, timelineOverlaysWorkspaceEditor])
 
   const clampPanelSize = React.useCallback((next: TimelineBottomPanelSize) => {
     const layerSize = getLayerSize()
