@@ -61,10 +61,17 @@ export function StrybldrTimelineBottomPanel({
   workspaceEditorOverlayOpen?: boolean
 }) {
   const floatingPanelZIndex = useGraphStore(s => s.floatingPanelZIndex)
+  const [workspaceLayerInsetLeft, setWorkspaceLayerInsetLeft] = React.useState(0)
+  // When the editor leaves a readable canvas strip, keep the Timeline beside it.
+  // On narrow viewports the canonical editor gutter is smaller than the Timeline's
+  // minimum usable width, so the Timeline must be the active foreground surface.
+  const timelineOverlaysWorkspaceEditor = workspaceEditorOverlayOpen && workspaceLayerInsetLeft === 0
   const panelStack = usePanelStack(
     'bottom',
-    workspaceEditorOverlayOpen ? Z_INDEX_WORKSPACE_EDITOR_BACKGROUND_PANEL : floatingPanelZIndex,
-    !workspaceEditorOverlayOpen,
+    timelineOverlaysWorkspaceEditor
+      ? floatingPanelZIndex
+      : workspaceEditorOverlayOpen ? Z_INDEX_WORKSPACE_EDITOR_BACKGROUND_PANEL : floatingPanelZIndex,
+    !workspaceEditorOverlayOpen || timelineOverlaysWorkspaceEditor,
   )
   const { panelTextClass } = usePanelTypography()
   const { active: warehouseInspectionActive } = useWarehouseInspectionMode()
@@ -77,7 +84,6 @@ export function StrybldrTimelineBottomPanel({
   const [view, setView] = React.useState<TimelineBottomPanelView>(initialView)
   const [position, setPosition] = React.useState<TimelineBottomPanelPosition | null>(null)
   const [panelSizePx, setPanelSizePx] = React.useState<TimelineBottomPanelSize | null>(null)
-  const [workspaceLayerInsetLeft, setWorkspaceLayerInsetLeft] = React.useState(0)
   const bottomSurfaceCollapsed = useGraphStore(s => s.bottomSurfaceCollapsed)
   const bottomSurfaceHeightRatio = useGraphStore(s => s.bottomSurfaceHeightRatio)
   const bottomSurfaceTab = useGraphStore(s => s.bottomSurfaceTab)
