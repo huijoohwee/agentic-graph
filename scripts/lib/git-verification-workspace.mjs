@@ -142,6 +142,8 @@ function assertSafeIsolationPath(isolationParent, isolationRoot) {
 async function writeIsolationAttestation({
   branch,
   head,
+  tree,
+  caller,
   isolationRoot,
   sourceRoot,
   token,
@@ -156,6 +158,8 @@ async function writeIsolationAttestation({
     `${JSON.stringify({
       branch,
       head,
+      tree,
+      caller,
       isolationRoot,
       sourceRoot,
       token,
@@ -164,9 +168,33 @@ async function writeIsolationAttestation({
   )
 }
 
+async function assertCallerIdentity(sourceRoot, caller) {
+  const [branch, head, status] = await Promise.all([
+    git(sourceRoot, ['branch', '--show-current']),
+    git(sourceRoot, ['rev-parse', 'HEAD']),
+    git(sourceRoot, ['status', '--porcelain=v1', '--untracked-files=all']),
+  ])
+  if (branch !== caller.branch || head !== caller.head || status !== caller.status
+    || await git(sourceRoot, ['rev-parse', `${head}^{tree}`]) !== caller.tree) {
+    throw new Error('Verification caller identity changed')
+  }
+}
+
 export async function createGitVerificationWorkspace(repositoryRoot) {
+  return createVerificationWorkspace(repositoryRoot)
+}
+
+/** Exact historical check input; does not grant candidate or release authority. */
+export async function createHistoricalGitVerificationWorkspace(repositoryRoot, revision) {
+  if (typeof revision !== 'string' || !/^[0-9a-f]{40}$/.test(revision)) {
+    throw new Error('Historical verification requires an exact commit revision')
+  }
+  return createVerificationWorkspace(repositoryRoot, revision)
+}
+
+async function createVerificationWorkspace(repositoryRoot, revision = null) {
   const sourceRoot = path.resolve(repositoryRoot)
-  const [branch, commonGitDirectory, head] = await Promise.all([
+  const [sourceBranch, commonGitDirectory, sourceHead, status] = await Promise.all([
     git(sourceRoot, ['branch', '--show-current']),
     git(sourceRoot, [
       'rev-parse',
@@ -174,7 +202,24 @@ export async function createGitVerificationWorkspace(repositoryRoot) {
       '--git-common-dir',
     ]),
     git(sourceRoot, ['rev-parse', 'HEAD']),
+    git(sourceRoot, ['status', '--porcelain=v1', '--untracked-files=all']),
   ])
+  const caller = Object.freeze({ branch: sourceBranch, head: sourceHead, status,
+    tree: await git(sourceRoot, ['rev-parse', `${sourceHead}^{tree}`]) })
+  if (revision) {
+    if (status) throw new Error('Historical verification requires a clean caller checkout')
+    try {
+      if (await git(sourceRoot, ['rev-parse', `${revision}^{commit}`]) !== revision) {
+        throw new Error('not an exact commit')
+      }
+      await git(sourceRoot, ['merge-base', '--is-ancestor', revision, sourceHead])
+    } catch {
+      throw new Error('Historical verification revision must be a caller ancestor commit')
+    }
+  }
+  const head = revision || sourceHead
+  const branch = revision ? '' : sourceBranch
+  const tree = await git(sourceRoot, ['rev-parse', `${head}^{tree}`])
   const canonicalRepositoryRoot = path.dirname(commonGitDirectory)
   const isolationParent = path.dirname(canonicalRepositoryRoot)
   const isolationRoot = await mkdtemp(
@@ -202,9 +247,16 @@ export async function createGitVerificationWorkspace(repositoryRoot) {
       await git(isolationRoot, ['checkout', '--quiet', '--detach', head])
     }
     await installDependencyOverlay(sourceRoot, isolationRoot)
+    if (await git(isolationRoot, ['rev-parse', 'HEAD']) !== head
+      || await git(isolationRoot, ['rev-parse', 'HEAD^{tree}']) !== tree) {
+      throw new Error('Verification fixture identity differs from its requested commit')
+    }
+    await assertCallerIdentity(sourceRoot, caller)
     await writeIsolationAttestation({
       branch,
       head,
+      tree,
+      caller,
       isolationRoot,
       sourceRoot,
       token,
@@ -217,6 +269,8 @@ export async function createGitVerificationWorkspace(repositoryRoot) {
   return Object.freeze({
     branch,
     head,
+    tree,
+    caller,
     repositoryRoot: isolationRoot,
     token,
     async dispose() {
@@ -244,9 +298,11 @@ export async function assertGitVerificationWorkspace({
     || attestation.token !== token
     || attestation.isolationRoot !== isolationRoot
     || attestation.head !== await git(isolationRoot, ['rev-parse', 'HEAD'])
+    || attestation.tree !== await git(isolationRoot, ['rev-parse', 'HEAD^{tree}'])
     || attestation.branch !== await git(isolationRoot, ['branch', '--show-current'])
   ) {
     throw new Error('Flight verification child lacks an exact isolation attestation')
   }
+  await assertCallerIdentity(attestation.sourceRoot, attestation.caller)
   return Object.freeze(attestation)
 }

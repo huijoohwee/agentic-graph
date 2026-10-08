@@ -14,6 +14,7 @@ const fixture = name => readFile(new URL('../../../../public/evidence-analysis/f
 const bundle = await fixture('aviation-singapore-v1.json'), parsed = JSON.parse(bundle);
 const atUtc = '2026-10-03T10:48:27.060Z';
 const record = { profileId: 'aviation-v1', bundle }, entityId = parsed.entities[0].id;
+const parityCases = [['aviation.inspect', record], ['aviation.replay', { ...record, entityId, atUtc }]];
 const root = fileURLToPath(new URL('../../../../..', import.meta.url));
 const cli = fileURLToPath(new URL('../tools/evidenceCli.mjs', import.meta.url));
 
@@ -74,9 +75,9 @@ test('document dispatcher requires explicit coherent configuration and command g
 });
 
 test('CLI and headless executor return identical success and typed failure payloads', async () => {
-  for (const input of [record, { ...record, extra: true }]) {
-    const expected = await executeEvidence('aviation.inspect', input);
-    const child = spawnSync(process.execPath, [cli, 'aviation.inspect'], { input: JSON.stringify(input), encoding: 'utf8', maxBuffer: 2_000_000 });
+  for (const [operation, args] of parityCases) for (const input of [args, { ...args, extra: true }]) {
+    const expected = await executeEvidence(operation, input);
+    const child = spawnSync(process.execPath, [cli, operation], { input: JSON.stringify(input), encoding: 'utf8', maxBuffer: 2_000_000 });
     assert.equal(child.status, expected.ok === false ? 1 : 0, child.stderr);
     assert.deepEqual(JSON.parse(child.stdout), expected);
   }
@@ -120,7 +121,9 @@ test('native WebMCP builders retain identical success and validation payloads wi
     let text=''; for await (const part of process.stdin) text+=part; const input=JSON.parse(text);
     const tools=buildEvidenceAnalysisWebMcpToolBuilders();
     for(const key of Object.keys(tools)) assert.deepEqual(await tools[key]().execute({}),await executeEvidence(key,{}));
-    assert.deepEqual(await tools.evidence_inspect().execute(input),await executeEvidence('aviation.inspect',input));`;
+    assert.deepEqual(await tools.evidence_inspect().execute(input),await executeEvidence('aviation.inspect',input));
+    const replay={...input,entityId:${JSON.stringify(entityId)},atUtc:${JSON.stringify(atUtc)}};
+    assert.deepEqual(await tools.evidence_replay().execute(replay),await executeEvidence('aviation.replay',replay));`;
   const child = spawnSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', code], {
     cwd: root, input: JSON.stringify(record), encoding: 'utf8', maxBuffer: 2_000_000,
     env: { ...process.env, TSX_TSCONFIG_PATH: 'canvas/tsconfig.json' },
@@ -138,9 +141,9 @@ test('existing native stdio server lists the same eight contracts and returns sh
     await client.connect(transport, { timeout: 10_000 });
     const listed = await client.listTools();
     for (const tool of EVIDENCE_OPERATIONS) assert.deepEqual(listed.tools.find(t => t.name === tool.webName)?.inputSchema, tool.inputSchema);
-    for (const input of [record, { ...record, extra: true }]) {
-      const expected = await executeEvidence('aviation.inspect', input);
-      const result = await client.callTool({ name: findEvidenceOperation('aviation.inspect').webName, arguments: input });
+    for (const [operation, args] of parityCases) for (const input of [args, { ...args, extra: true }]) {
+      const expected = await executeEvidence(operation, input);
+      const result = await client.callTool({ name: findEvidenceOperation(operation).webName, arguments: input });
       assert.deepEqual(result.structuredContent, expected);
       assert.equal(result.isError, expected.ok === false);
     }

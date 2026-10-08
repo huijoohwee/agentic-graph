@@ -290,12 +290,17 @@ def verify_source_file_button_round_trip(
     )
     flight_button.wait_for(state="visible", timeout=120_000)
     flight_button.click()
-    flight = poll(
+    recorded_source = poll(
         page,
         lambda: read_source_identity(page, expected_source_text),
         lambda value: (
             str(value.get("documentName") or "").endswith(flight_basename)
             and value.get("active") is True
+            and value.get("flightAdmissionObserved") is True
+            and value.get("flightAdmissionActive") is False
+            and value.get("flightRuntimeActive") is False
+            and value.get("authoredSeedHasRecordedSourceIntent") is True
+            and value.get("workspaceSourceHasRecordedSourceIntent") is True
             and value.get("authoredSeedByteIdentical") is True
             and value.get("workspaceSourceByteIdentical") is True
             and all((value.get("sourceContract") or {}).values())
@@ -303,9 +308,17 @@ def verify_source_file_button_round_trip(
             and value.get("renderMode") == "3d"
             and value.get("canvas3dMode") == "xr"
         ),
-        label="Flight Source Files button Geo+XR activation",
+        label="Flight Source Files button preserves canonical Recorded intent",
     )
-    wait_for_flight_hud_activation(page)
+    recorded_fence = read_flight_hud_activation(page)
+    if (
+        (recorded_fence.get("flight") or {}).get("active") is True
+        or recorded_fence.get("hudCount") != 0
+    ):
+        raise AssertionError(
+            "canonical Recorded Flight source unexpectedly entered practice: "
+            f"{recorded_fence}"
+        )
     flight_surface = page.evaluate(
         """
         () => {
@@ -330,8 +343,23 @@ def verify_source_file_button_round_trip(
         or flight_surface.get("rendererCanvasCount") != 1
     ):
         raise AssertionError(
-            f"Flight file click replaced the shared XR Canvas: {flight_surface}"
+            f"Recorded Flight source selection replaced the shared XR Canvas: {flight_surface}"
         )
+
+    recorded_geo_context = poll(
+        page,
+        lambda: read_flight_hud_activation(page),
+        lambda value: (
+            value.get("geospatialModeEnabled") is True
+            and value.get("mapCanvasCount") == 1
+            and value.get("mapCanvasVisible") is True
+            and value.get("visibleMapCanvasCount") == 1
+            and value.get("hudCount") == 0
+            and (value.get("flight") or {}).get("active") is False
+        ),
+        label="Flight Source Files presents MapLibre Geo context before returning to Physics",
+        timeout_ms=20_000,
+    )
 
     physics_button.wait_for(state="visible", timeout=120_000)
     physics_button.click()
@@ -352,6 +380,18 @@ def verify_source_file_button_round_trip(
                 '[data-kg-xr-scene-media-drop="1"]',
               )
               const canvas = root?.querySelector('canvas') || null
+              const mapCanvases = Array.from(document.querySelectorAll(
+                'canvas.maplibregl-canvas',
+              ))
+              const visibleMapCanvasCount = mapCanvases.filter(element => {
+                const rect = element.getBoundingClientRect()
+                const style = window.getComputedStyle(element)
+                return rect.width > 0
+                  && rect.height > 0
+                  && style.display !== 'none'
+                  && style.visibility !== 'hidden'
+                  && Number(style.opacity || '1') > 0
+              }).length
               return {
                 documentName: state.markdownDocumentName,
                 active: demos.isXrPhysicsRunReadyDemoActive(
@@ -367,9 +407,9 @@ def verify_source_file_button_round_trip(
                     gympgrph.LS_KEYS.geospatialOverlayEnabled,
                   ) || '').toLowerCase(),
                 ),
-                mapCanvasCount: document.querySelectorAll(
-                  'canvas.maplibregl-canvas',
-                ).length,
+                mapCanvasCount: mapCanvases.length,
+                mapCanvasVisible: visibleMapCanvasCount > 0,
+                visibleMapCanvasCount,
                 mapLibreActive:
                   gympgrph.readActiveMapLibreMap?.() != null,
                 retainedCanvas: Boolean(canvas)
@@ -386,17 +426,20 @@ def verify_source_file_button_round_trip(
             and value.get("active") is True
             and value.get("renderMode") == "3d"
             and value.get("canvas3dMode") == "xr"
-            and value.get("geospatialModeEnabled") is False
-            and value.get("geospatialPreferenceEnabled") is False
-            and value.get("mapCanvasCount") == 0
-            and value.get("mapLibreActive") is False
+            and value.get("geospatialModeEnabled") is True
+            and value.get("geospatialPreferenceEnabled") is True
+            and value.get("mapCanvasCount") == 1
+            and value.get("mapCanvasVisible") is True
+            and value.get("mapLibreActive") is True
             and value.get("retainedCanvas") is True
             and value.get("flightHudCount") == 0
         ),
-        label="Physics Source Files button restoration",
+        label="Physics Source Files keeps recorded Geo context and shared XR canvas",
     )
     return {
-        "flight": flight,
+        "recordedFlightSource": recorded_source,
+        "recordedFence": recorded_fence,
         "flightSurface": flight_surface,
+        "recordedGeoContext": recorded_geo_context,
         "physics": restored,
     }

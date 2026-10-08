@@ -94,6 +94,36 @@ test('WebGL admission reuses the mounted shared Three renderer context', () => {
   assert.equal(releasedSharedContext, false)
 })
 
+test('WebGL admission probes while the shared renderer canvas mounts before its context', () => {
+  let probeCount = 0
+  let probeContextReleased = false
+  const documentValue = {
+    querySelectorAll: (selector: string) => {
+      assert.equal(selector, 'canvas[data-engine^="three.js"]')
+      return [{ getContext: () => null }]
+    },
+    querySelector: () => ({ getContext: () => null }),
+    createElement: () => {
+      probeCount += 1
+      return {
+        getContext: (kind: string) => kind === 'webgl2'
+          ? {
+              getExtension: () => ({
+                loseContext: () => {
+                  probeContextReleased = true
+                },
+              }),
+            }
+          : null,
+      }
+    },
+  } as unknown as Document
+
+  assert.equal(readWebglSupport(documentValue), true)
+  assert.equal(probeCount, 1)
+  assert.equal(probeContextReleased, true)
+})
+
 test('WebGL admission fails closed when multiple Three renderer owners are mounted', () => {
   let probedRenderer = false
   const documentValue = {

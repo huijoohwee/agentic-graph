@@ -1,5 +1,5 @@
 import { resolveRepoSourcePath } from '@/tests/lib/repoTestData'
-import { resolveFloatingPanelZIndex } from '@/lib/ui/zIndex'
+import { resolveFloatingPanelZIndex, Z_INDEX_PANEL_STACK_MAX_BASE } from '@/lib/ui/zIndex'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { resolveStoryboardWidgetVisibleViewport } from '@/components/FlowCanvas/applyZoomRequestNative'
@@ -147,6 +147,20 @@ export function testWorkspaceEditorOverlayDoesNotShrinkCanvasViewport() {
   if (!text.includes('aria-label="Workspace editor overlay shell"')) {
     throw new Error('expected Canvas page to render workspace editor in an absolute overlay shell')
   }
+  if (
+    !text.includes('className="absolute inset-0 pointer-events-none"') ||
+    !text.includes('const WORKSPACE_EDITOR_SURFACE_Z_INDEX = 300') ||
+    !(300 < 420 && 420 < Z_INDEX_PANEL_STACK_MAX_BASE) ||
+    !text.includes('style={{ zIndex: WORKSPACE_EDITOR_SURFACE_Z_INDEX }}') ||
+    !text.includes('const WORKSPACE_EDITOR_TOOLBAR_Z_INDEX = Z_INDEX_PANEL_STACK_MAX_BASE + 4') ||
+    !text.includes('style={toolbarHeaderLayerStyle}')
+  ) {
+    throw new Error('expected the Workspace editor surface to stack over the canvas while the app toolbar stays above it')
+  }
+  if (!workspaceToolbarText.includes('data-kg-workspace-toolbar-close="1"') ||
+    workspaceToolbarText.includes("workspaceViewMode !== 'editor' ? (")) {
+    throw new Error('expected the Workspace close control to remain in its semantic toolbar region in editor mode')
+  }
   if (!text.includes('layout="full"')) {
     throw new Error('expected Canvas viewport to remain in full layout while workspace editor overlay is active')
   }
@@ -218,6 +232,19 @@ export function testWorkspaceEditorOverlayDoesNotShrinkCanvasViewport() {
   }
   if (!workspaceToolbarText.includes('closeWorkspaceView({')) {
     throw new Error('expected workspace close action to reuse the shared close helper for residue cleanup')
+  }
+  const closeButtonIndex = workspaceToolbarText.indexOf('data-kg-workspace-toolbar-close="1"')
+  const controlsIndex = workspaceToolbarText.indexOf('<CollapsibleToolbar')
+  if (closeButtonIndex < 0 || controlsIndex < 0 || closeButtonIndex > controlsIndex) {
+    throw new Error('expected Workspace Close to stay visible before the horizontally scrolling toolbar controls')
+  }
+  const actionsMenuIndex = workspaceToolbarText.indexOf('aria-label="Actions"')
+  if (
+    !workspaceToolbarText.includes('title={UI_LABELS.close}') ||
+    actionsMenuIndex < 0 ||
+    workspaceToolbarText.slice(actionsMenuIndex).includes('title={UI_LABELS.close}')
+  ) {
+    throw new Error('expected one close control outside the scrollable actions menu')
   }
   if (workspaceToolbarText.includes("setWorkspaceViewMode('canvas')")) {
     throw new Error('expected workspace close action to avoid manual canvas-mode fallback bypassing the shared close helper')

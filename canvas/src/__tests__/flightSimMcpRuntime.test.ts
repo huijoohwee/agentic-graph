@@ -14,13 +14,15 @@ import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import { resetFlightSimTrainingScenarioForTests, readFlightSimTrainingScenario, } from '@/features/game-flight-sim/flightSimTrainingScenario'
 import { useGraphStore } from '@/hooks/useGraphStore'
 const trainingSeedSource = readFileSync(new URL('../../../docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md', import.meta.url), 'utf8')
+// Runtime lifecycle tests use the authored practice mode, without activating recorded WSSS evidence.
+const practiceTrainingSource = trainingSeedSource.replace(/^source_geospatial:\r?\n(?:[ \t]+.*\r?\n)*/m, '')
 const authoredTraining = parseMarkdownFrontmatter(splitMarkdownLines(trainingSeedSource)).meta.flight_training_profile as any
 let priorSourceState: Pick<ReturnType<typeof useGraphStore.getState>, 'markdownDocumentName' | 'markdownDocumentText' | 'sourceFiles'>
 test.beforeEach(() => {
   const state = useGraphStore.getState()
   priorSourceState = { markdownDocumentName: state.markdownDocumentName, markdownDocumentText: state.markdownDocumentText, sourceFiles: state.sourceFiles }
   const name = '/imports/current-training.md'
-  useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: trainingSeedSource, sourceFiles: [{ id: 'training-source', name, text: trainingSeedSource, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: name } }] } as never)
+  useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: practiceTrainingSource, sourceFiles: [{ id: 'training-source', name, text: practiceTrainingSource, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: name } }] } as never)
 })
 test.afterEach(() => { useGraphStore.setState(priorSourceState); resetFlightSimTrainingScenarioForTests() })
 const buildWebName = (name: string): string => `agentic-graph.${name}`
@@ -584,8 +586,8 @@ test('Stopped resume rejects source drift and explicit Restart admits the curren
   assert.equal((await controlLocalFlightSim({ operation: 'start' })).ok, true)
   assert.equal((await controlLocalFlightSim({ operation: 'stop' })).ok, true)
   const before = readFlightSimTrainingScenario()
-  const changed = trainingSeedSource.replace('targetSpeedMetersPerSecond: [8, 22]', 'targetSpeedMetersPerSecond: [0, 80]')
-  assert.notEqual(changed, trainingSeedSource)
+  const changed = practiceTrainingSource.replace('targetSpeedMetersPerSecond: [8, 22]', 'targetSpeedMetersPerSecond: [0, 80]')
+  assert.notEqual(changed, practiceTrainingSource)
   useGraphStore.setState(state => ({ markdownDocumentText: changed, sourceFiles: state.sourceFiles.map(file => ({ ...file, text: changed, parsedGraphRevision: 2 })) }))
   assert.equal((await controlLocalFlightSim({ operation: 'start' })).ok, false)
   assert.equal(readFlightSimSnapshot().phase, 'stopped')
