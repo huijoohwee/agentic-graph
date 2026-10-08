@@ -271,6 +271,56 @@ export async function testWorkspaceBootstrapRetriesGraphOwningMaterializationAft
   await verifyLateStartupSelections()
 }
 
+export async function testWorkspaceBootstrapRetriesSamePathGraphAuthorityAfterPersistedConvergence() {
+  const { restore } = initJsdomHarness()
+  const previous = useGraphStore.getState(), explorer = useMarkdownExplorerStore.getState()
+  const path = '/docs/converged.md', documentName = 'docs/converged.md', text = ''
+  const entry = { path, parentPath: '/docs', kind: 'file' as const, name: 'converged.md', text, updatedAtMs: 1 }
+  const baseFs = createMemoryWorkspaceFs({ initialEntries: [
+    { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
+    { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: 1 }, entry,
+  ] })
+  let reads = 0, applied = 0, authorityShifted = false
+  const fs: WorkspaceFs = { ...baseFs, ensureSeed: async () => false,
+    readFileText: async selectedPath => {
+      reads += 1
+      const current = useGraphStore.getState()
+      // The graph importer reads blank files after applying the active document.
+      // Change only its equivalent path identity while that read is in flight.
+      if (!authorityShifted && current.markdownDocumentName === documentName && current.markdownDocumentText === text) {
+        authorityShifted = true
+        useGraphStore.setState({ markdownDocumentName: `/${documentName}` })
+      }
+      return baseFs.readFileText(selectedPath)
+    } }
+  try {
+    useGraphStore.getState().resetAll()
+    useGraphStore.setState({ sourceFiles: [], markdownDocumentName: 'before.md', markdownDocumentText: '# Before',
+      setActiveMarkdownDocument: async payload => {
+        applied += 1
+        useGraphStore.setState({ markdownDocumentName: payload.name, markdownDocumentText: payload.text,
+          markdownDocumentApplyViewPreset: true })
+        return true
+      } })
+    useMarkdownExplorerStore.getState().setActivePath(path)
+    const result = await materializeBootstrapWorkspaceSourceFiles({ fs, existingSourceFiles: [], sourcesByPath: {},
+      startupState: { activePath: path, workspaceEntries: [entry] } })
+    assert.ok(result.activePathKey)
+    assert.equal(authorityShifted, true, `the fixture supersedes graph import after persisted document application: ${JSON.stringify({
+      reads, applied, documentName: useGraphStore.getState().markdownDocumentName,
+      activePath: useMarkdownExplorerStore.getState().activePath,
+      sources: useGraphStore.getState().sourceFiles.map(file => ({ path: file.source?.path, text: file.text, status: file.status })),
+    })}`)
+    assert.ok(reads >= 2, 'the retry rereads the selected file before reapplying')
+    assert.ok(applied >= 1)
+    assert.equal(useGraphStore.getState().markdownDocumentText, text)
+  } finally {
+    useGraphStore.setState(previous, true)
+    useMarkdownExplorerStore.setState(explorer, true)
+    restore()
+  }
+}
+
 type SupersessionCase = 'selection' | 'unsaved' | 'stale-fs' | 'failure' | 'churn'
 async function verifyMaterializationSupersession(mode: SupersessionCase, emptyDocument = false): Promise<void> {
   const { restore } = initJsdomHarness()

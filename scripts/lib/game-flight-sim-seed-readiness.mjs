@@ -124,7 +124,7 @@ export async function assertFlightSimSeedReadiness({
   const nativeFlightDemo = seed.native_flight_demo
   if (
     !nativeFlightDemo
-    || nativeFlightDemo.aircraft_visual_owner !== 'one MapLibre Point feature plus fixed-pixel symbol stack'
+    || nativeFlightDemo.aircraft_visual_owner !== 'one simulated MapLibre Point feature plus fixed-pixel symbol stack; separately sourced observed tracks never become simulated aircraft'
     || nativeFlightDemo.deterministic_step !== true
     || nativeFlightDemo.fixed_step !== 'exactly 1/60 second (approximately 16.667 ms, 60 Hz)'
     || nativeFlightDemo.max_catch_up_ticks_per_advance !== 5

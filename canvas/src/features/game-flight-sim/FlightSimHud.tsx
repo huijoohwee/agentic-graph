@@ -258,7 +258,7 @@ export function FlightSimHud() {
           {save.error ? <p className="mt-1 text-xs text-rose-200" role="alert">{save.error}</p> : null}
         </section>
         {presentation.overlaysVisible ? <section
-          className={`grid min-w-0 grid-cols-6 gap-2 rounded-xl border px-2 py-2 text-center shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm ${hudPanelClassName}`}
+          className={`grid min-w-0 grid-cols-3 gap-2 rounded-xl border px-2 py-2 text-center shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm sm:min-w-[22rem] sm:grid-cols-6 ${hudPanelClassName}`}
           aria-label="Flight HUD instruments"
         >
           <span className="text-xs text-slate-300">KTS<strong className="block text-sm text-white">{training.airspeedReliable ? (projection.airspeed * 1.94384).toFixed(0) : '---'}</strong></span>
