@@ -6,6 +6,7 @@ import type { VideoDownloadOptions } from '@/lib/video-download/types'
 import { activateDesignEditorSurface } from '@/features/design/designEditorLaunchState'
 import { UI_TOAST_TTL_MS } from '@/lib/ui/toastTiming'
 import { normalizeImportUrlInput, normalizeWorkspaceImportUrlInput } from '@/lib/url'
+import { waitForSourceFilesBootstrap } from '@/features/source-files/waitForSourceFilesBootstrap'
 import {
   getWorkspaceUrlImportCanvasRendererLabel,
   isWorkspaceUrlImportCanvasRendererId,
@@ -14,6 +15,18 @@ import {
   type WorkspaceUrlImportDocumentModeId,
 } from '@/features/markdown-workspace/workspaceImport/canvasPresets'
 type PushUiToast = (toast: UiToastInput) => void
+let pendingFallbackImport: { controller: AbortController; cancel: () => void } | null = null
+function beginFallbackImport(pushUiToast: PushUiToast, id: string): AbortController {
+  pendingFallbackImport?.controller.abort()
+  pendingFallbackImport?.cancel()
+  const controller = new AbortController()
+  pendingFallbackImport = { controller, cancel: () => pushUiToast({ id, kind: 'neutral',
+    message: 'Import replaced by a newer request', ttlMs: UI_TOAST_TTL_MS.actionFeedback, dismissible: true, busy: false }) }
+  return controller
+}
+function releaseFallbackImport(controller: AbortController): void {
+  if (pendingFallbackImport?.controller === controller) pendingFallbackImport = null
+}
 
 async function focusFirstImportedWorkspaceFile(args: {
   fs: WorkspaceFs
@@ -37,14 +50,17 @@ export async function importLocalFilesFallback(args: {
 }): Promise<void | WorkspaceBridgeImportResult> {
   const snapshot = args.files ? Array.from(args.files as ArrayLike<File>) : []
   if (snapshot.length === 0) return
+  const controller = beginFallbackImport(args.pushUiToast, 'launch:import:localFiles')
   args.pushUiToast({
     id: 'launch:import:localFiles',
     kind: 'neutral',
-    message: `Importing ${snapshot.length} file(s)…`,
+    message: `Preparing workspace to import ${snapshot.length} file(s)…`,
     ttlMs: null,
     dismissible: false,
   })
   try {
+    await waitForSourceFilesBootstrap({ signal: controller.signal })
+    if (controller.signal.aborted) return { handled: true }
     const [
       { getWorkspaceFs },
       { WORKSPACE_ROOT_PATH },
@@ -68,8 +84,12 @@ export async function importLocalFilesFallback(args: {
     const { registerVideoSequenceSourceFiles } = (await import(
       '@/components/timeline/videoSequenceSourceRegistry'
     )) as typeof import('@/components/timeline/videoSequenceSourceRegistry')
+    if (controller.signal.aborted) return { handled: true }
     const fs = await getWorkspaceFs()
+    if (controller.signal.aborted) return { handled: true }
+    releaseFallbackImport(controller)
     await fs.ensureSeed()
+    if (controller.signal.aborted) return { handled: true }
     const res = normalizeWorkspaceImportResult(await runWorkspaceFsChangedBatch(() =>
       importWorkspaceLocalFiles({
         fs,
@@ -97,14 +117,17 @@ export async function importLocalFilesFallback(args: {
     })
     return { createdPaths: res.createdPaths, removedPaths: res.removedPaths }
   } catch (e) {
+    if (controller.signal.aborted) return { handled: true }
+    const error = String((e as { message?: unknown })?.message ?? e)
     args.pushUiToast({
       id: 'launch:import:localFiles',
       kind: 'error',
-      message: `Import failed: ${String((e as { message?: unknown })?.message ?? e)}`,
+      message: `Import failed: ${error}`,
       ttlMs: UI_TOAST_TTL_MS.warningExtended,
       dismissible: true,
     })
-  }
+    return { handled: true, error }
+  } finally { releaseFallbackImport(controller) }
 }
 
 export async function importLocalFolderFallback(args: {
@@ -113,8 +136,11 @@ export async function importLocalFolderFallback(args: {
 }): Promise<void | WorkspaceBridgeImportResult> {
   const snapshot = args.files ? Array.from(args.files as ArrayLike<File>) : []
   if (snapshot.length === 0) return
-  args.pushUiToast({ id: 'launch:import:folder', kind: 'neutral', message: 'Importing folder…', ttlMs: null, dismissible: false })
+  const controller = beginFallbackImport(args.pushUiToast, 'launch:import:folder')
+  args.pushUiToast({ id: 'launch:import:folder', kind: 'neutral', message: 'Preparing workspace to import folder…', ttlMs: null, dismissible: false })
   try {
+    await waitForSourceFilesBootstrap({ signal: controller.signal })
+    if (controller.signal.aborted) return { handled: true }
     const [
       { getWorkspaceFs },
       { runWorkspaceFsChangedBatch },
@@ -136,8 +162,12 @@ export async function importLocalFolderFallback(args: {
     const { registerVideoSequenceSourceFiles } = (await import(
       '@/components/timeline/videoSequenceSourceRegistry'
     )) as typeof import('@/components/timeline/videoSequenceSourceRegistry')
+    if (controller.signal.aborted) return { handled: true }
     const fs = await getWorkspaceFs()
+    if (controller.signal.aborted) return { handled: true }
+    releaseFallbackImport(controller)
     await fs.ensureSeed()
+    if (controller.signal.aborted) return { handled: true }
     const res = normalizeWorkspaceImportResult(await runWorkspaceFsChangedBatch(() => importWorkspaceLocalFolder({ fs, files: snapshot })))
     registerVideoSequenceSourceFiles(snapshot)
     bulkSetWorkspaceEntrySources(res.sources as Array<{ path: string; source: WorkspaceEntrySource }>)
@@ -159,14 +189,17 @@ export async function importLocalFolderFallback(args: {
     })
     return { createdPaths: res.createdPaths, removedPaths: res.removedPaths }
   } catch (e) {
+    if (controller.signal.aborted) return { handled: true }
+    const error = String((e as { message?: unknown })?.message ?? e)
     args.pushUiToast({
       id: 'launch:import:folder',
       kind: 'error',
-      message: `Import failed: ${String((e as { message?: unknown })?.message ?? e)}`,
+      message: `Import failed: ${error}`,
       ttlMs: UI_TOAST_TTL_MS.warningExtended,
       dismissible: true,
     })
-  }
+    return { handled: true, error }
+  } finally { releaseFallbackImport(controller) }
 }
 
 export async function importUrlFallback(args: {
@@ -190,8 +223,11 @@ export async function importUrlFallback(args: {
   const documentSemanticMode = canvas2dRenderer ? normalizeWorkspaceUrlImportDocumentMode(args.documentSemanticMode) : null
   const rendererLabel = canvas2dRenderer ? getWorkspaceUrlImportCanvasRendererLabel(canvas2dRenderer) : ''
   const toastId = 'launch:import:url'
+  const controller = beginFallbackImport(args.pushUiToast, toastId)
   args.pushUiToast({ id: toastId, kind: 'neutral', message: rendererLabel ? `Importing URL (${rendererLabel})…` : 'Importing URL…', ttlMs: null, dismissible: false, busy: true })
   try {
+    await waitForSourceFilesBootstrap({ signal: controller.signal })
+    if (controller.signal.aborted) return { handled: true }
     const [
       { getWorkspaceFs },
       { WORKSPACE_ROOT_PATH },
@@ -212,8 +248,12 @@ export async function importUrlFallback(args: {
           typeof import('@/features/markdown-workspace/useWorkspaceFileActions/importRuntimeActions')
         >,
       ])
+    if (controller.signal.aborted) return { handled: true }
     const fs = await getWorkspaceFs()
+    if (controller.signal.aborted) return { handled: true }
+    releaseFallbackImport(controller)
     await fs.ensureSeed()
+    if (controller.signal.aborted) return { handled: true }
     const res = normalizeWorkspaceImportResult(await runWorkspaceFsChangedBatch(() =>
       importWorkspaceUrl({
         fs,
@@ -247,6 +287,7 @@ export async function importUrlFallback(args: {
     })
     return { createdPaths: res.createdPaths, removedPaths: res.removedPaths }
   } catch (e) {
+    if (controller.signal.aborted) return { handled: true }
     const error = String((e as { message?: unknown })?.message ?? e)
     args.pushUiToast({
       id: toastId,
@@ -256,7 +297,7 @@ export async function importUrlFallback(args: {
       dismissible: true,
     })
     return { handled: true, error }
-  }
+  } finally { releaseFallbackImport(controller) }
 }
 
 export async function createNewFolderFallback(args: {

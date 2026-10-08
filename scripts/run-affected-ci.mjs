@@ -68,6 +68,9 @@ export async function sourcePlanReuse(partition, partitions, {
   readExecutionPartition(partition === 'all' ? [] : [`--partition=${partition}`])
   const selected = Object.entries(partitions).filter(([name]) => partition === 'all' || name === partition)
   if (!selected.some(([, commands]) => commands.length > 0)) return null
+  // Generated browser inputs require the current build and fresh UI execution.
+  if (selected.some(([, commands]) => commands.some(command =>
+    command[1] === 'scripts/browser-proof-build.mjs' || command.includes('--verified-build')))) return null
   const directory = environment.AGENTIC_OS_CI_SOURCE_EVIDENCE_DIR
   if (!directory || environment.GITHUB_ACTIONS !== 'true' || environment.GITHUB_EVENT_NAME !== 'push'
     || environment.GITHUB_REF !== 'refs/heads/main') return null

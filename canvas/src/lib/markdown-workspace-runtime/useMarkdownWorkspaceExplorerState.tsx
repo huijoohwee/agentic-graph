@@ -61,7 +61,7 @@ import {
   resolveWorkspaceFolderContractTargetPath,
 } from './workspaceFolderContractTarget'
 import { readWorkspaceExplorerReadOnlySnapshot } from './workspaceExplorerReadOnlySnapshot'
-type ExplorerRefreshOptions = { silent?: boolean; reconcileSeed?: boolean }
+import { createWorkspaceRefreshQueue, type ExplorerRefreshOptions } from './workspaceRefreshQueue'
 
 const hasNonWorkspaceSourceFile = (sourceFiles: ReturnType<typeof useGraphStore.getState>['sourceFiles']): boolean => {
   const list = Array.isArray(sourceFiles) ? sourceFiles : []
@@ -80,6 +80,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
   viewerInlineEditActiveRef: React.MutableRefObject<boolean>
   lastLoadedRef: React.MutableRefObject<MarkdownWorkspaceLoadedSnapshot | null>
   entries: WorkspaceEntry[]
+  sourcesByPath: WorkspaceSourceIndex
   setEntries: React.Dispatch<React.SetStateAction<WorkspaceEntry[]>>
   setSourcesByPath: React.Dispatch<React.SetStateAction<WorkspaceSourceIndex>>
   setLoading: React.Dispatch<React.SetStateAction<boolean>>
@@ -87,8 +88,6 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
   folderModeContract: FolderModeContract
 }) {
   const workspaceFsRef = React.useRef<Awaited<ReturnType<typeof getWorkspaceFs>> | null>(null)
-  const refreshInFlightRef = React.useRef(false)
-  const refreshQueuedRef = React.useRef<ExplorerRefreshOptions | null>(null)
   const workspaceRefreshDeferredRef = React.useRef(false)
   const seedSyncInFlightRef = React.useRef(false)
   const workspaceSeedSyncSignatureRef = React.useRef('')
@@ -269,26 +268,11 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     }
   }, [args.readOnly, getFs, scheduleApplyComposedFromSourceFiles])
 
-  const refresh = React.useCallback(async (opts?: ExplorerRefreshOptions): Promise<WorkspaceRefreshSnapshot> => {
-    // Coalesce requests without letting local mutation reads downgrade an explicit refresh.
-    refreshQueuedRef.current = {
-      silent: !!opts?.silent && (refreshQueuedRef.current?.silent ?? true),
-      reconcileSeed: opts?.reconcileSeed !== false || refreshQueuedRef.current?.reconcileSeed === true,
-    }
-    if (refreshInFlightRef.current) return buildWorkspaceRefreshSnapshot({ entries: runtimeRef.current.entries })
-    refreshInFlightRef.current = true
-    let snapshot = buildWorkspaceRefreshSnapshot({ entries: runtimeRef.current.entries })
-    try {
-      do {
-        const next = refreshQueuedRef.current
-        refreshQueuedRef.current = null
-        snapshot = await refreshOnce(next)
-      } while (refreshQueuedRef.current)
-      return snapshot
-    } finally {
-      refreshInFlightRef.current = false
-    }
-  }, [refreshOnce])
+  const refreshOnceRef = React.useRef(refreshOnce)
+  refreshOnceRef.current = refreshOnce
+  const refresh = React.useMemo(() => createWorkspaceRefreshQueue<WorkspaceRefreshSnapshot>(
+    options => refreshOnceRef.current(options),
+  ), [])
 
   React.useEffect(() => {
     return subscribeWorkspaceSeedSyncResumed(() => {
@@ -543,8 +527,9 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     return projectWorkspaceEntriesToSourceFilesExplorer(
       args.entries,
       resolveWorkspaceSourceRootPaths({ chatLocalStorageRootPath }),
+      args.sourcesByPath,
     )
-  }, [args.entries, chatLocalStorageRootPath, workspaceSyncSettingsRev])
+  }, [args.entries, args.sourcesByPath, chatLocalStorageRootPath, workspaceSyncSettingsRev])
 
   const filteredEntries = React.useMemo(() => {
     const q = String(args.search || '').trim().toLowerCase()

@@ -1,5 +1,6 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { initWindowHarness } from '@/tests/lib/windowHarness'
 import {
   readWorkspaceImportDefaultSourceUrlSetting,
   writeWorkspaceImportDefaultSourceUrlSetting,
@@ -7,7 +8,10 @@ import {
 import {
   readWorkspaceInitializationDocsMirrorEntries,
 } from '@/features/workspace-fs/workspaceSeedProvider'
-import { resetCanonicalPublishedDocsMirrorCacheForTests } from '@/features/workspace-fs/workspaceGithubDocsMirror'
+import {
+  readWorkspaceDocsMirrorEntriesFromGitHubSourceUrl,
+  resetCanonicalPublishedDocsMirrorCacheForTests,
+} from '@/features/workspace-fs/workspaceGithubDocsMirror'
 import { readPublishedAgenticDocsMirrorEntries } from '@/features/workspace-fs/workspacePublishedAgenticDocsSource'
 import { resetWorkspaceSeedProviderStorageCacheForTests } from '@/features/workspace-fs/workspaceSeedProviderStorageCache'
 import { readWorkspaceActiveDocumentResolvedText } from '@/features/source-files/sourceFilesRuntimeActive'
@@ -39,6 +43,31 @@ const decodeProxyUrl = (url: string): string => {
   const pairs = q.split('&').map(p => p.split('='))
   const urlParam = pairs.find(([k]) => k === 'url')?.[1] || ''
   return decodeURIComponent(urlParam)
+}
+
+export async function testWorkspaceGithubDocsMirrorSkipsGitHubRequestsWhenOffline() {
+  const { restore } = initWindowHarness({ navigatorOnline: false })
+  const g = globalThis as typeof globalThis & { fetch?: typeof fetch }
+  const originalFetch = g.fetch
+  const requests: string[] = []
+  try {
+    g.fetch = (async input => {
+      requests.push(String(input))
+      return new Response('unexpected request', { status: 500 })
+    }) as typeof fetch
+    const entries = await readWorkspaceDocsMirrorEntriesFromGitHubSourceUrl({
+      url: 'https://github.com/huijoohwee/huijoohwee/tree/main/docs',
+      maxFiles: 10,
+      maxFileBytes: 1024,
+    })
+    if (entries.length !== 0 || requests.length !== 0) {
+      throw new Error(`offline GitHub mirror must return no entries without network requests: ${JSON.stringify({ entries, requests })}`)
+    }
+  } finally {
+    if (originalFetch) g.fetch = originalFetch
+    else delete g.fetch
+    restore()
+  }
 }
 
 export async function testActiveWorkspaceMaterializationReplacesStaleTokenEconomicsSourceText() {

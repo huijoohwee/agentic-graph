@@ -170,8 +170,10 @@ export async function materializeBootstrapWorkspaceSourceFiles(
       args.signal?.throwIfAborted()
     } catch (error) {
       args.signal?.throwIfAborted()
-      if ((error as { code?: string })?.code !== 'SOURCE_FILES_MATERIALIZATION_STALE'
-        || !hasBootstrapActivePathDrifted(context.startupActivePath)) throw error
+      if ((error as { code?: string })?.code !== 'SOURCE_FILES_MATERIALIZATION_STALE') throw error
+      // Same-path graph-import authority can be superseded while the parser or
+      // another startup owner settles. The next pass rereads persisted bytes
+      // and rejects unsaved divergence before it can apply the document.
       supersededError = error
       continue
     }
