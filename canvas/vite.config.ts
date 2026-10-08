@@ -1,10 +1,11 @@
-import { webGpuManualChunk } from './viteManualChunks'
+import { boundedChunksPlugin, rewriteInlinedStylesheetPreloads, rewriteInlinedStylesheetPreloadsOnDisk } from './viteBoundedChunks.mjs'
+import { createPwaPrecacheAdmission } from './vitePwaPrecacheAdmission.mjs'
 import { createRemoteFetchHandler } from './viteRemoteFetch'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'; import tailwindcss from '@tailwindcss/vite'
 import { traeBadgePlugin } from 'vite-plugin-trae-solo-badge'
 import { VitePWA } from 'vite-plugin-pwa'
-import { createPythonLearningOfflinePlugin, offlinePrecacheEntries } from './vitePythonLearningOffline.mjs'; import offlinePublicAssets from './src/features/evidence-analysis/profiles/offline-assets.json'
+import { createPythonLearningOfflinePlugin } from './vitePythonLearningOffline.mjs'; import offlinePublicAssets from './src/features/evidence-analysis/profiles/offline-assets.json'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -49,7 +50,7 @@ import { loadChatProxyServerManagedEnv, resolveViteRuntimeIdentity } from './vit
 import { resolveWorkspaceInitializationDocsRoot } from './viteWorkspaceInitializationDocsRoot'
 import { resolveWorkspaceInitializationWorkspaceSeedsReadRoot } from './viteWorkspaceSeedsReadRoot'
 import { forwardChatProxyUpstreamHead, forwardChatProxyUpstreamResponse } from './viteChatProxyResponse'; import { createProbeTreeMcpBridgePlugin } from './viteProbeTreeMcpBridge'
-import { createDurableRunBridgePlugin } from './viteDurableRunBridge.mjs'; import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createAgentGraphBridgePlugin } from './viteAgentGraphBridge'; import { resolveAgenticGraphStorageDevProxyTarget, resolveStorageDevProxyOrigin } from './viteStorageProxyEnv'; import { buildPwaRuntimeCachingRules } from './vitePwaRuntimeCachePolicy'
+import { createDurableRunBridgePlugin } from './viteDurableRunBridge.mjs'; import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createAgentGraphBridgePlugin } from './viteAgentGraphBridge'; import { resolveAgenticGraphStorageDevProxyTarget, resolveStorageDevProxyOrigin } from './viteStorageProxyEnv'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..'), workspaceRoot = path.resolve(repoRoot, '..')
 const siblingDocsRoot = path.resolve(workspaceRoot, 'huijoohwee', 'docs'); loadChatProxyServerManagedEnv({ repoRoot, canvasRoot: __dirname }); const runtimeIdentity = resolveViteRuntimeIdentity(repoRoot)
@@ -69,6 +70,7 @@ const resolvedD3Entry = nodeRequire.resolve('d3')
 const resolvedMaplibreEntry = nodeRequire.resolve('maplibre-gl/dist/maplibre-gl.mjs')
 const resolvedZustandCompatEntry = path.resolve(__dirname, 'src/lib/vendor/zustandCompat.ts')
 const resolvedGympgrphSrc = path.resolve(__dirname, '../gympgrph/src/index.ts')
+const resolvedGympgrphGeoJsonSrc = path.resolve(__dirname, '../gympgrph/src/geojson.ts')
 const resolvedGympgrphMapPreviewSrc = path.resolve(__dirname, '../gympgrph/src/mapPreview.ts')
 const resolvedGympgrphTestkitSrc = path.resolve(__dirname, '../gympgrph/src/testkit.ts')
 const MARKDOWN_PIPELINE_INPUT_REL_PATH = String(process.env.VITE_MARKDOWN_PIPELINE_INPUT_REL_PATH || '').trim() || 'docs/agentic-graph-pipeline-document.md'
@@ -303,56 +305,6 @@ const filterModulePreloadDependencies = (deps: string[]): string[] =>
     !isInlinedHtmlEntryStylesheetModulePreloadDependency(dep),
   )
 
-const parseViteMapDepsArray = (arrayLiteral: string): string[] | null => {
-  try {
-    const value = JSON.parse(arrayLiteral)
-    if (!Array.isArray(value)) return null
-    return value.every(item => typeof item === 'string') ? value : null
-  } catch {
-    return null
-  }
-}
-
-const rewriteViteMapDepsCalls = (code: string, indexMap: Map<number, number>): string =>
-  code.replace(/__vite__mapDeps\(\[([0-9,\s]*)\]\)/g, (call, indexesRaw) => {
-    const indexes = String(indexesRaw || '')
-      .split(',')
-      .map(value => value.trim())
-      .filter(Boolean)
-      .map(value => Number.parseInt(value, 10))
-    if (!indexes.every(index => Number.isInteger(index) && index >= 0)) return call
-    const nextIndexes = indexes
-      .map(index => indexMap.get(index))
-      .filter((index): index is number => typeof index === 'number')
-    return `__vite__mapDeps([${nextIndexes.join(',')}])`
-  })
-
-const removeInlinedStylesheetDepsFromViteMapDeps = (code: string, inlinedCssFileNames: Set<string>): string => {
-  if (!inlinedCssFileNames.size || !code.includes('__vite__mapDeps')) return code
-  const helperPattern = /const __vite__mapDeps=\(i,m=__vite__mapDeps,d=\(m\.f\|\|\(m\.f=(\[[^\]]*\])\)\)\)=>i\.map\(i=>d\[i\]\);/
-  const helperMatch = code.match(helperPattern)
-  if (!helperMatch || typeof helperMatch.index !== 'number') return code
-  const deps = parseViteMapDepsArray(helperMatch[1])
-  if (!deps || deps.length === 0) return code
-
-  const indexMap = new Map<number, number>()
-  const nextDeps: string[] = []
-  let removed = false
-  deps.forEach((dep, index) => {
-    if (inlinedCssFileNames.has(normalizeModulePreloadDependencyPath(dep))) {
-      removed = true
-      return
-    }
-    indexMap.set(index, nextDeps.length)
-    nextDeps.push(dep)
-  })
-  if (!removed) return code
-
-  const nextHelper = helperMatch[0].replace(helperMatch[1], JSON.stringify(nextDeps))
-  const withHelper = `${code.slice(0, helperMatch.index)}${nextHelper}${code.slice(helperMatch.index + helperMatch[0].length)}`
-  return rewriteViteMapDepsCalls(withHelper, indexMap)
-}
-
 const resolveBundleOutputDir = (options: { dir?: string | null; file?: string | null }): string => {
   const dir = String(options.dir || '').trim()
   if (dir) return path.isAbsolute(dir) ? dir : path.resolve(__dirname, dir)
@@ -398,8 +350,7 @@ const inlineHtmlStylesheetAssetsPlugin = (): Plugin => {
       if (inlinedCssFileNames.size) {
         for (const output of Object.values(bundle)) {
           if (!output || output.type !== 'chunk') continue
-          const nextCode = removeInlinedStylesheetDepsFromViteMapDeps(output.code, inlinedCssFileNames)
-          if (nextCode !== output.code) output.code = nextCode
+          rewriteInlinedStylesheetPreloads(output, inlinedCssFileNames, bundle)
         }
       }
 
@@ -411,21 +362,13 @@ const inlineHtmlStylesheetAssetsPlugin = (): Plugin => {
       }
     },
     async writeBundle(options, bundle) {
-      if (!inlinedCssFileNames.size) return
       const outDir = resolveBundleOutputDir(options)
       if (!outDir) return
       for (const output of Object.values(bundle)) {
         if (!output || output.type !== 'chunk') continue
         const fileName = String(output.fileName || '')
         if (!fileName.endsWith('.js')) continue
-        const filePath = path.resolve(outDir, fileName)
-        try {
-          const code = await fs.readFile(filePath, 'utf8')
-          const nextCode = removeInlinedStylesheetDepsFromViteMapDeps(code, inlinedCssFileNames)
-          if (nextCode !== code) await fs.writeFile(filePath, nextCode)
-        } catch {
-          void 0
-        }
+        await rewriteInlinedStylesheetPreloadsOnDisk(output, inlinedCssFileNames, bundle, outDir)
       }
       for (const fileName of inlinedCssFileNames) {
         try {
@@ -6364,6 +6307,7 @@ function applyWorkspaceInitializationDocsAbsRootDefault(command: string): string
 }
 
 export default defineConfig(({ command, mode }) => {
+  const precacheAdmission = createPwaPrecacheAdmission()
   const workspaceInitializationDocsAbsRoot = applyWorkspaceInitializationDocsAbsRootDefault(command); const fileEnv = loadEnv(mode, __dirname, ''); const agenticGraphStorageDevProxyTarget = resolveAgenticGraphStorageDevProxyTarget({ processEnv: process.env, fileEnv })
   const grphSharedAliasRoot = path.resolve(
     __dirname,
@@ -6386,7 +6330,7 @@ export default defineConfig(({ command, mode }) => {
     __AGENTIC_OS_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__: JSON.stringify(readMainPanelSectionDescriptionsMarkdownSource()),
   },
   esbuild: {
-    sourcemap: false,
+    sourcemap: process.env.AG_BUILD_SOURCEMAP === '1',
   },
   optimizeDeps: {
     include: [
@@ -6429,75 +6373,17 @@ export default defineConfig(({ command, mode }) => {
   build: {
     sourcemap: process.env.AG_BUILD_SOURCEMAP === '1' ? 'hidden' : false,
     minify: process.env.AG_LOW_MEM_BUILD === '1' ? false : 'esbuild',
-    reportCompressedSize: process.env.AG_LOW_MEM_BUILD === '1' ? false : true,
+    reportCompressedSize: false,
     modulePreload: {
       resolveDependencies: (_filename: string, deps: string[]) =>
         filterModulePreloadDependencies(deps),
     },
-    // Keep Vite quiet for known lazy vendor chunks; hygiene keeps tighter per-chunk budgets for regressions.
-    chunkSizeWarningLimit: 3000,
+    // Every production JavaScript artifact must be smaller than 500,000 bytes.
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
+      // The build plugin partitions the resolved static graph, including zero-render barrels.
       output: { ...buildVersionedAssetFileNames(runtimeIdentity.sourceRevision),
-        ...(process.env.AG_LOW_MEM_BUILD === '1'
-          ? { inlineDynamicImports: true as const }
-          : {
-              manualChunks: (id: string) => {
-                const moduleId = String(id || '').replace(/\\/g, '/')
-                if (moduleId.includes('commonjsHelpers')) return 'react'
-                if (moduleId.includes('/node_modules/react/')) return 'react'
-                if (moduleId.includes('/node_modules/react-dom/')) return 'react'
-                if (moduleId.includes('/node_modules/react-router-dom/')) return 'react'
-                if (moduleId.includes('/node_modules/d3/')) return 'd3'
-                if (moduleId.includes('/node_modules/lucide-react/')) return 'ui'
-                if (moduleId.includes('/node_modules/zustand/')) return 'ui'
-                if (moduleId.includes('/node_modules/fflate/')) return 'fflate'
-                if (moduleId.includes('/node_modules/monaco-editor/')) return 'monaco'
-                if (moduleId.includes('/node_modules/katex/')) return 'katex'
-                if (moduleId.includes('/node_modules/highlight.js/')) return 'highlightjs'
-                if (
-                  moduleId.includes('/node_modules/markdown-it/') ||
-                  moduleId.includes('/node_modules/markdown-it-anchor/') ||
-                  moduleId.includes('/node_modules/markdown-it-footnote/') ||
-                  moduleId.includes('/node_modules/markdown-it-mark/') ||
-                  moduleId.includes('/node_modules/markdown-it-sub/')
-                ) {
-                  return 'markdown-it'
-                }
-                if (
-                  moduleId.includes('/node_modules/unified/') ||
-                  moduleId.includes('/node_modules/remark-gfm/') ||
-                  moduleId.includes('/node_modules/remark-stringify/') ||
-                  moduleId.includes('/node_modules/rehype-parse/') ||
-                  moduleId.includes('/node_modules/rehype-remark/') ||
-                  moduleId.includes('/node_modules/hast-util-to-html/')
-                ) {
-                  return 'markdown-ast'
-                }
-                // Preserve Mermaid's diagram-level dynamic imports. Prefix each emitted chunk so
-                // the existing lazy-vendor cache and byte-budget policies keep applying to them.
-                const mermaidInternalChunk = moduleId.match(
-                  /\/node_modules\/mermaid\/dist\/chunks\/mermaid\.core\/([^/?]+)\.mjs(?:\?.*)?$/,
-                )
-                if (mermaidInternalChunk) return `mermaid-${mermaidInternalChunk[1]}`
-                if (moduleId.includes('/node_modules/mermaid/dist/')) return 'mermaid'
-                if (moduleId.includes('/node_modules/mermaid/')) return 'mermaid'
-                const gpuChunk = webGpuManualChunk(moduleId); if (gpuChunk) return gpuChunk
-                if (moduleId.includes('/node_modules/maplibre-gl/')) return 'maplibre'
-                if (moduleId.includes('/node_modules/onnxruntime-web/')) return 'onnx-runtime'
-                if (moduleId.includes('/node_modules/@huggingface/transformers/')) return 'transformers'
-                if (moduleId.includes('/src/features/panels/views/settingsMcpDocEntries.ts')) {
-                  return 'settings-mcp-core'
-                }
-                const settingsMcpDocModuleMatch = moduleId.match(
-                  /\/src\/features\/panels\/views\/(apiNativeBrowserMcpApiDocs|byteplusModelArkMcpApiDocs|cloudflareAiGatewayMcpApiDocs|crawlerAccessMcpApiDocs|exaMcpApiDocs|externalMcpToolServerDocs|feishuBaseMcpApiDocs|grabmapsMcpApiDocs|agenticGraphToolServerDocs|larkAppMcpApiDocs|miromindMcpApiDocs|openaiMcpApiDocs|operatorDeployMcpApiDocs|sealionMcpApiDocs|stripeMcpApiDocs|vdeoxplnMcpApiDocs|videodbMcpApiDocs)\.ts$/,
-                )
-                if (settingsMcpDocModuleMatch) {
-                  return `settings-${settingsMcpDocModuleMatch[1]}`
-                }
-                if (moduleId.includes('/src/')) return undefined
-                return undefined
-              },
-            }),
+        ...(process.env.AG_LOW_MEM_BUILD === '1' ? { inlineDynamicImports: true as const } : {}),
       },
     },
   },
@@ -6518,6 +6404,7 @@ export default defineConfig(({ command, mode }) => {
       { find: /^maplibre-gl(?:\/dist\/maplibre-gl\.js)?$/, replacement: resolvedMaplibreEntry },
       { find: /^zustand$/, replacement: resolvedZustandCompatEntry },
       { find: /^gympgrph$/, replacement: resolvedGympgrphSrc },
+      { find: /^gympgrph\/geojson$/, replacement: resolvedGympgrphGeoJsonSrc },
       { find: /^gympgrph\/map-preview$/, replacement: resolvedGympgrphMapPreviewSrc },
       { find: /^gympgrph\/testkit$/, replacement: resolvedGympgrphTestkitSrc },
       {
@@ -6551,13 +6438,14 @@ export default defineConfig(({ command, mode }) => {
     }
   },
   plugins: [
+    boundedChunksPlugin(),
     tailwindcss(), stripEntitiesBadSourcemapsPlugin,
     stripMermaidArchitectureDetectorPlugin,
     stripMermaidCoseBilkentLayoutPlugin,
     react(),
-    inlineHtmlStylesheetAssetsPlugin(), createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision), createPythonLearningOfflinePlugin(runtimeIdentity.sourceRevision, offlinePublicAssets),
+    inlineHtmlStylesheetAssetsPlugin(), precacheAdmission.plugin, createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision), createPythonLearningOfflinePlugin(runtimeIdentity.sourceRevision, offlinePublicAssets),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'autoUpdate', strategies: 'injectManifest', srcDir: '.', filename: 'sw.ts',
       injectRegister: null,
       devOptions: { enabled: false },
       manifest: {
@@ -6621,13 +6509,10 @@ export default defineConfig(({ command, mode }) => {
           },
         },
       },
-      workbox: {
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, additionalManifestEntries: offlinePrecacheEntries(offlinePublicAssets),
-        navigateFallback: null,
-        importScripts: [`agentic-graph-service-worker-revision.js?revision=${runtimeIdentity.sourceRevision}`, `agentic-graph-chat-stream-sw.js?revision=${runtimeIdentity.sourceRevision}`],
-        globPatterns: ['manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,css,woff,woff2,ttf}'],
-        globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js', 'assets/**/three-webgpu-*.js', 'assets/**/createWebGpuRenderer-*.js'],
-        runtimeCaching: buildPwaRuntimeCachingRules(),
+      injectManifest: {
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        globPatterns: ['manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,mjs,cjs,css,woff,woff2,ttf}'],
+        manifestTransforms: [precacheAdmission.manifestTransform],
       },
     }),
     ...(command === 'build' ? [] : [

@@ -348,6 +348,7 @@ export function markMapLibreFlightReadyFramePresented(
 
 export function reconcileMapLibreFlightBootstrap(options: Readonly<{
   bootstrapStyle: Readonly<Record<string, unknown>> | null
+  requireBootstrapStyle?: boolean
   hasExactFlightOverlay: (map: any) => boolean
   hasLiveFlightStyleOwner: () => boolean
   loadProviderStyle: (
@@ -469,13 +470,16 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
   if (
     !state.bootstrapApplied
     && !state.bootstrapPending
-    && !hasCurrentProviderPresentation(state)
+    && (options.requireBootstrapStyle || !hasCurrentProviderPresentation(state))
   ) {
     try {
       // The source-owned style is installed before provider resolution starts,
       // so the first playable Flight frame never waits on remote style I/O.
-      beginMapLibreFlightBootstrap(state.map, options.bootstrapStyle)
-      state.map.setStyle?.(options.bootstrapStyle, { diff: true })
+      const bootstrapStyle = options.requireBootstrapStyle
+        ? options.retainFlightOverlay(state.map.getStyle?.(), options.bootstrapStyle) ?? options.bootstrapStyle
+        : options.bootstrapStyle
+      beginMapLibreFlightBootstrap(state.map, bootstrapStyle)
+      state.map.setStyle?.(bootstrapStyle, { diff: true })
     } catch (error) {
       clearPendingMapLibreFlightBootstrap(state)
       if (!state.disposed && state.generation === generation) {
@@ -485,6 +489,7 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
     }
   }
 
+  if (options.requireBootstrapStyle) return
   let promotionStarted = false
   const promoteWhenPresented = () => {
     if (

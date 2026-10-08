@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { withDurableBrowserStorage } from './helpers/durable-browser-storage'
@@ -9,6 +10,13 @@ import { createWorkspaceFsDb, WORKSPACE_FS_LEGACY_KEY } from '@/features/workspa
 import { createWorkspacePersistedFs } from '@/features/workspace-fs/workspaceFsPersisted'
 import { WorkspaceSourceTextConflictError, type WorkspaceEntry } from '@/features/workspace-fs/types'
 import { createResilientWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
+import { LS_KEYS } from '@/lib/config'
+import { resolveBrowserStorageKey } from '@/lib/persistence'
+import { cancelWorkspaceSyncTask } from '@/lib/async/workspaceSyncScheduler'
+import { importWorkspaceLocalFiles } from '@/features/markdown-workspace/workspaceImport/localImport'
+import { loadWorkspaceSourceIndex, setWorkspaceEntrySource, type WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
+import { mergeWorkspaceEntriesIntoSourceFiles } from '@/features/workspace-fs/syncToSourceFiles'
+import { projectWorkspaceEntriesToSourceFilesExplorer } from '@/features/workspace-fs/workspaceSourceRoots'
 
 const note = (path = '/notes/draft.md', text = '# Draft\n\n保留 🧭\r\n'): WorkspaceEntry => ({
   path, parentPath: '/notes', kind: 'file', name: path.split('/').at(-1)!, text, updatedAtMs: 7,
@@ -52,6 +60,83 @@ export async function testWorkspaceFileTextPersistsAcrossFsReinit() {
         'a migrated legacy snapshot must not resurrect a deleted file')
       assert.equal(storage.getItem(WORKSPACE_FS_LEGACY_KEY), original, 'migration and edits retain the legacy backup unchanged')
     } finally { await db.db.close() }
+  })
+}
+
+export async function testWorkspaceRootLocalImportSurvivesSeedRefreshAndReload() {
+  await fixture(async (storage, databaseName) => {
+    const name = 'agentic-graph-game-flight-sim-demo.md', path = `/${name}`
+    const mirror = `/docs/workspace-seeds/${name}`
+    const text = await readFile(new URL(`../../../docs/workspace-seeds/${name}`, import.meta.url), 'utf8')
+    const metadataKey = resolveBrowserStorageKey(LS_KEYS.markdownWorkspaceSourcesByPath)
+    const cancelMetadataWrite = () => cancelWorkspaceSyncTask(`ls:coalesced:json:${LS_KEYS.markdownWorkspaceSourcesByPath}`)
+    const previousSource = loadWorkspaceSourceIndex()[path] || null
+    const envKey = 'VITE_AGENTIC_OS_RUN_READY_REPO_LOCAL', previousEnv = process.env[envKey]
+    const previousFetch = globalThis.fetch
+    let db = await createWorkspaceFsDb({ databaseName })
+    process.env[envKey] = '1'
+    globalThis.fetch = (async () => { throw new Error('Root import regression cannot access the network') }) as typeof fetch
+    const freshIndex = async (): Promise<WorkspaceSourceIndex> => {
+      // A new module models a reloaded tab; the existing importer keeps its stale cache.
+      const module = await import(new URL(`../features/workspace-fs/sourceIndex.ts?reload=${randomUUID()}`, import.meta.url).href)
+      return module.loadWorkspaceSourceIndex()
+    }
+    try {
+      let fs = createWorkspacePersistedFs(() => Promise.resolve(db))
+      await fs.ensureSeed()
+      assert.equal(await fs.readFileText(mirror), text, 'Exercise a real equal-byte canonical seed collision')
+      const result = await importWorkspaceLocalFiles({ fs, files: [new File([text], name, { type: 'text/markdown' })], parentPath: '/' })
+      assert.deepEqual(result.failed, [])
+      assert.ok(result.createdPaths.includes(path))
+      const sources = await freshIndex()
+      assert.equal(sources[path]?.kind, 'local')
+      assert.equal(sources[`workspace:${path}`], undefined, 'Provenance uses raw workspace paths')
+      assert.equal(loadWorkspaceSourceIndex()[path]?.kind, 'local')
+      cancelMetadataWrite()
+      await fs.ensureSeed(); await fs.ensureSeed()
+      assert.equal(await fs.readFileText(path), text)
+      await db.db.close()
+      db = await createWorkspaceFsDb({ databaseName })
+      fs = createWorkspacePersistedFs(() => Promise.resolve(db))
+      await fs.ensureSeed()
+      const reloaded = await freshIndex(), entries = await fs.listEntries()
+      assert.equal(await fs.readFileText(path), text, 'Root bytes survive IndexedDB reopen and seed refresh')
+      const project = (index: WorkspaceSourceIndex, workspaceEntries = entries, existing = [] as ReturnType<typeof mergeWorkspaceEntriesIntoSourceFiles>) =>
+        mergeWorkspaceEntriesIntoSourceFiles({ existing, workspaceEntries, sourcesByPath: index, workspaceDocsOnly: true, preserveExistingWorkspaceEntries: true })
+      const files = project(reloaded), imported = files.find(file => file.source?.path === `workspace:${path}`)
+      assert.ok(imported); assert.equal(imported.text, text)
+      const retained = { ...imported, enabled: false }
+      assert.equal(project(reloaded, entries.filter(entry => entry.path !== path), [retained]).find(file => file.id === retained.id), retained,
+        'A partial refresh preserves an explicitly imported disabled source')
+      assert.ok(projectWorkspaceEntriesToSourceFilesExplorer(entries, undefined, reloaded).some(entry => entry.path === path))
+      const roots = entries.filter(entry => entry.path === path || entry.path === mirror)
+      assert.equal(project({}, roots).some(file => file.source?.path === `workspace:${path}`), false)
+      assert.equal(projectWorkspaceEntriesToSourceFilesExplorer(roots, undefined, {}).some(entry => entry.path === path), false)
+      const persistedMetadata = storage.getItem(metadataKey)
+      assert.ok(persistedMetadata)
+      setWorkspaceEntrySource(path, null, { persist: 'sync' }); cancelMetadataWrite()
+      for (const raw of [null, '{broken metadata', persistedMetadata]) {
+        if (raw === null) storage.removeItem(metadataKey)
+        else storage.setItem(metadataKey, raw)
+        const current = await freshIndex()
+        if (raw === persistedMetadata) assert.equal(current[path]?.kind, 'local')
+        else assert.deepEqual(current, {}, 'Reload observes missing/corrupt metadata, not a warm cache')
+        assert.equal(loadWorkspaceSourceIndex()[path], undefined, 'The original tab can retain a stale empty cache')
+        await fs.ensureSeed()
+        await db.db.close()
+        db = await createWorkspaceFsDb({ databaseName })
+        fs = createWorkspacePersistedFs(() => Promise.resolve(db))
+        assert.equal(await fs.readFileText(path), text, 'Uncertain metadata never authorizes deleting root bytes')
+      }
+      storage.setItem(metadataKey, persistedMetadata)
+    } finally {
+      cancelMetadataWrite()
+      setWorkspaceEntrySource(path, previousSource, { persist: 'sync' }); cancelMetadataWrite()
+      await db.db.close()
+      globalThis.fetch = previousFetch
+      if (previousEnv === undefined) delete process.env[envKey]
+      else process.env[envKey] = previousEnv
+    }
   })
 }
 

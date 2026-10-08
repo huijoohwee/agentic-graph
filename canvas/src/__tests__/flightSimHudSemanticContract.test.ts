@@ -17,6 +17,7 @@ test('Flight HUD remains semantic controls without owning a second aircraft pres
   assert.match(hudSource, /<FlightSimNavigationInset/)
   assert.match(hudSource, /aria-label="Capture flight pointer"/)
   assert.match(hudSource, /requestFlightSimPointerCapture/)
+  assert.match(hudSource, /grid min-w-0 grid-cols-3[^`]*sm:grid-cols-6/)
   assert.doesNotMatch(hudSource, /FLIGHT_SIM_AIRCRAFT_ASSET_SPEC/)
   assert.doesNotMatch(hudSource, /data-kg-flight-sim-aircraft-media/)
   assert.doesNotMatch(hudSource, /data-kg-media-xr-asset/)

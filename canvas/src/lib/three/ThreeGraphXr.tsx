@@ -1,5 +1,5 @@
 import React from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import type { WebGLRenderer } from 'three'
 import {
   readSpatialCaptureTool,
@@ -38,15 +38,22 @@ import {
 import { isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { openMotionControlSurface } from '@/features/three/motionControlSurfaceRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { createThreeFrameResolutionBudget } from './threeRendererLifecycle'
+import { createThreeFrameResolutionBudget, shouldAdaptThreeFrameResolution } from './threeRendererLifecycle'
 import { isVideoSequenceRecorderLeased } from '@/components/timeline/videoSequenceRecorderLifecycle'
 
 export function OverlayFrameSync({ enabled, scheduleRef, onResolutionChange }: { enabled: boolean; scheduleRef: React.MutableRefObject<(() => void) | null>; onResolutionChange: (ratio: number) => void }) {
   const resolutionBudget = React.useMemo(createThreeFrameResolutionBudget, [])
+  const frameLoop = useThree(state => state.frameloop)
+  React.useEffect(() => {
+    resolutionBudget.reset()
+    // Hidden/demand canvases may receive no frames in which to reset sampling evidence.
+    document.addEventListener('visibilitychange', resolutionBudget.reset)
+    return () => document.removeEventListener('visibilitychange', resolutionBudget.reset)
+  }, [resolutionBudget, frameLoop])
   useFrame((state, delta) => {
     const ratio = resolutionBudget.sample(delta, state.viewport.dpr, state.viewport.initialDpr,
-      state.gl.xr.enabled && !state.gl.xr.isPresenting && state.frameloop === 'always' && !isVideoSequenceRecorderLeased()
-      && (typeof document === 'undefined' || document.visibilityState === 'visible'))
+      shouldAdaptThreeFrameResolution({ presenting: state.gl.xr.isPresenting, frameLoop: state.frameloop,
+        recording: isVideoSequenceRecorderLeased(), visible: typeof document === 'undefined' || document.visibilityState === 'visible' }))
     // Canvas must own the admitted DPR; frame-local setDpr races its prop on each render.
     if (ratio !== null) onResolutionChange(ratio)
     if (!enabled) return
