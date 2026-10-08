@@ -207,6 +207,10 @@ export async function runSerialBrowserProof({
     if (executed && evidenceValidated && exactCandidateRetained) {
       log.info?.(`[browser-verification:pass] serial run ${runIndex}`)
     }
+    // A red run can never contribute to the required all-green serial proof.
+    // Preserve the candidate check above, then stop instead of paying for a
+    // second fresh browser session that cannot restore readiness.
+    if (!executed || !evidenceValidated) break
   }
 
   throwForNamedFailures('Game Flight Sim browser smoke', failures)

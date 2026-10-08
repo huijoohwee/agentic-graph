@@ -33,7 +33,11 @@ export const createUiCoreActions = (set: SetGraph)=> ({
             : next.paneOpen === true
               ? true
               : state.workspaceCanvasPaneOpen
-        if (state.workspaceGraphMutationLayoutLockActive === true) return {}
+        // A layout lock protects graph geometry, but must not swallow an explicit
+        // request to close the workspace editor. The close transition removes the
+        // editor's ownership and then stamps its own short graph-mutation guard.
+        const closingEditor = state.workspaceViewMode === 'editor' && nextMode === 'canvas'
+        if (state.workspaceGraphMutationLayoutLockActive === true && !closingEditor) return {}
         if (state.workspaceViewMode === nextMode && state.workspaceCanvasPaneOpen === nextPaneOpen) return {}
         if (state.workspaceViewMode !== nextMode) lsSetJson(LS_KEYS.workspaceViewMode, nextMode)
         if (state.workspaceCanvasPaneOpen !== nextPaneOpen) lsSetBool(LS_KEYS.workspaceCanvasPaneOpen, nextPaneOpen)
