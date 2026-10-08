@@ -54,7 +54,8 @@ export async function closeFloatingPanel(
 
 export async function closePanelRegion(region, targetPage) {
   const closeButton = region.locator('[data-kg-workspace-toolbar-close="1"]')
-  const floatingPanel = targetPage.locator('[data-kg-floating-panel-root="true"]')
+  const floatingPanel = floatingPanelCard(targetPage,
+    targetPage.locator('[data-kg-floating-panel-root="true"]'))
   if (await floatingPanel.isVisible()) {
     const panelClose = floatingPanel.getByRole('button', { name: 'Close', exact: true }).first()
     if (await panelClose.isVisible()) {
