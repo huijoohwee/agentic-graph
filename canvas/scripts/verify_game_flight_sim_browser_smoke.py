@@ -29,6 +29,7 @@ from lib.game_flight_sim_smoke_network import (
     request_is_geo_provider_read,
     request_is_proof_local_read,
     summarize_websocket_attempts,
+    verify_native_website_authoring_mirror,
 )
 from lib.game_flight_sim_smoke_runtime_phases import (
     run_flight_runtime_verifications,
@@ -375,55 +376,6 @@ def main() -> None:
                         f"responses={failed_responses}"
                     )
 
-            def verify_native_website_authoring_mirror() -> dict[str, Any]:
-                probe = page.evaluate(
-                    """async () => {
-                      const proof = window.__kgFlightSimBrowserProof
-                      const [inventory, writer] = await Promise.all([
-                        proof.importModule('importInventory'),
-                        proof.importModule('workspaceRevealInFileManager'),
-                      ])
-                      const text = inventory.renderImportInventory([{
-                        source: 'https://flight-proof.invalid/example',
-                        status: 'not imported',
-                      }])
-                      const saved = await writer.saveWorkspaceWebsiteLocalCopy(
-                        '/websites/flight-proof.invalid/_import-index.md',
-                        text,
-                      )
-                      return {
-                        saved,
-                        hostname: location.hostname,
-                        online: navigator.onLine,
-                        fixtureBytes: new TextEncoder().encode(text).byteLength,
-                      }
-                    }"""
-                )
-                receipts = authoring_mirror_receipts.decode(
-                    bootstrap_closed=not authoring_bootstrap_open,
-                )
-                if (
-                    probe.get("saved") is not False
-                    or probe.get("online") is not True
-                    or probe.get("hostname") not in {"localhost", "127.0.0.1", "[::1]"}
-                    or not 0 < int(probe.get("fixtureBytes", 0)) < 10_000
-                    or authoring_mirror_requests
-                    or receipts
-                ):
-                    raise AssertionError(
-                        "production website mirror guard did not suppress the "
-                        f"isolated write probe: probe={probe}, "
-                        f"requests={authoring_mirror_requests}, receipts={receipts}"
-                    )
-                return {
-                    "owner": "native website authoring mirror",
-                    "phase": "production-preview-guard",
-                    "requestCount": 0,
-                    "receiptCount": 0,
-                    "fixtureBytes": probe["fixtureBytes"],
-                    "writeSuppressed": True,
-                }
-
             ledger.verify(
                 "Geo provider transport ownership",
                 verify_transport_ownership,
@@ -434,7 +386,12 @@ def main() -> None:
             )
             authoring_mirror_proof = ledger.verify(
                 "native website authoring mirror ownership",
-                verify_native_website_authoring_mirror,
+                lambda: verify_native_website_authoring_mirror(
+                    page,
+                    requests=authoring_mirror_requests,
+                    receipts=authoring_mirror_receipts,
+                    bootstrap_open=authoring_bootstrap_open,
+                ),
             )
             ledger.verify(
                 "browser error surface",

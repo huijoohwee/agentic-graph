@@ -1,8 +1,57 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
 
 from playwright.sync_api import Page
+
+
+def wait_for_practice_document_state_trace(
+    page: Page,
+    source: dict[str, Any],
+    wait_for_hud: Callable[[Page], Any],
+) -> list[dict[str, Any]]:
+    page.evaluate(
+        """
+        async () => {
+          const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
+          const explorer = await window.__kgFlightSimBrowserProof.importModule('markdownExplorerStore')
+          const runtime = await window.__kgFlightSimBrowserProof.importModule('flightSimRuntime')
+          const admission = await window.__kgFlightSimBrowserProof.importModule('flightSimRunReadyDemoRuntime')
+          const events = []
+          const capture = () => {
+            const state = store.useGraphStore.getState()
+            const value = {
+              activePath: String(explorer.useMarkdownExplorerStore.getState().activePath || ''),
+              documentName: String(state.markdownDocumentName || ''),
+              documentTextLength: String(state.markdownDocumentText || '').length,
+              recordedIntentPresent: /^source_geospatial:/m.test(String(state.markdownDocumentText || '')),
+              flightAdmissionActive: admission.readFlightSimRunReadyDemoDiagnostic()?.active === true,
+              flightRuntimeActive: runtime.readFlightSimSnapshot().active === true,
+            }
+            const previous = events[events.length - 1]
+            if (!previous || JSON.stringify(previous) !== JSON.stringify(value)) events.push(value)
+            if (events.length > 40) events.shift()
+          }
+          const storeUnsubscribe = store.useGraphStore.subscribe(capture)
+          const explorerUnsubscribe = explorer.useMarkdownExplorerStore.subscribe(capture)
+          window.__kgFlightPracticeStateTrace = {
+            events,
+            close: () => { storeUnsubscribe(); explorerUnsubscribe(); return events.slice() },
+          }
+          capture()
+        }
+        """
+    )
+    try:
+        wait_for_hud(page)
+    except Exception as error:
+        transition = page.evaluate(
+            "() => window.__kgFlightPracticeStateTrace?.close?.() || []"
+        )
+        raise AssertionError(
+            f"{error}; verified practice identity={source}; source transition={transition}"
+        ) from error
+    return page.evaluate("() => window.__kgFlightPracticeStateTrace?.close?.() || []")
 
 
 def read_source_activation_diagnostic(page: Page, observe: bool = False) -> dict[str, Any]:
@@ -63,5 +112,4 @@ def read_source_activation_diagnostic(page: Page, observe: bool = False) -> dict
         """,
         observe,
     )
-
 

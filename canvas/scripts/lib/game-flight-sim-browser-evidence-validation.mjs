@@ -1,8 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import {
-  assertExactFlightSimBrowserVerificationLedger,
-} from '../../../scripts/lib/game-flight-sim-browser-evidence.mjs'
+import { assertExactFlightSimBrowserVerificationLedger } from '../../../scripts/lib/game-flight-sim-browser-evidence.mjs'
 import { SINGAPORE_MAJOR_POI_GEO_PROFILE } from 'grph-shared/geospatial/singaporeMajorPoiGeo'
 import { hasExactGeoXrRendererLifecycleEvidence } from './geo-xr-renderer-browser-evidence.mjs'
 import { hasViewportScopedRegionalPoiRendering } from './regional-poi-browser-evidence.mjs'
@@ -528,9 +526,7 @@ export async function readValidatedFlightSimBrowserRunEvidence({
       evidence?.geoXrPresentation?.liveMovement?.before?.aircraftCoordinate,
     )
   )
-  await assertExactFlightSimBrowserVerificationLedger(
-    evidence?.verificationLedger,
-  )
+  await assertExactFlightSimBrowserVerificationLedger(evidence?.verificationLedger)
   if (
     evidence?.schema !== 'agentic-graph-flight-sim-browser-run/v6'
     || evidence?.candidate?.head !== candidateHead
@@ -541,10 +537,8 @@ export async function readValidatedFlightSimBrowserRunEvidence({
     || evidence?.source?.sha256 !== sourceSha256
     || evidence?.source?.authoredSeedSha256 !== sourceSha256
     || evidence?.source?.canonicalRecordedSourceSha256 !== sourceSha256
-    || evidence?.source?.practiceSourcePath
-      !== '/docs/workspace-seeds/flight-sim-practice/agentic-graph-game-flight-sim-demo-practice.md'
-    || evidence?.source?.workspaceSourceSha256
-      !== evidence?.source?.practiceSourceSha256
+    || evidence?.source?.practiceSourcePath !== '/docs/workspace-seeds/flight-sim-practice/agentic-graph-game-flight-sim-demo-practice.md'
+    || evidence?.source?.workspaceSourceSha256 !== evidence?.source?.practiceSourceSha256
     || evidence?.source?.practiceSourceDerivedFromAuthoredSeed !== true
     || evidence?.source?.canonicalRecordedSourceStayedInactive !== true
     || evidence?.runIndex !== runIndex

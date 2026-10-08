@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from playwright.sync_api import Page, expect
-
+from lib.game_flight_sim_smoke_activation_diagnostic import wait_for_practice_document_state_trace
 from lib.game_flight_sim_smoke_camera import verify_flight_camera_runtime
 from lib.game_flight_sim_smoke_deadlines import _read_ready_frame_debug
 from lib.game_flight_sim_smoke_deadlines import verify_flight_deadline_contracts
@@ -174,51 +174,7 @@ def run_flight_runtime_verifications(
         # Physics XR baseline after optional Editor Workspace bootstrap settles.
         reset_observed_errors()
         source_application, source = apply_and_verify_exact_authored_source(page)
-        page.evaluate(
-            """
-            async () => {
-              const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
-              const explorer = await window.__kgFlightSimBrowserProof.importModule('markdownExplorerStore')
-              const runtime = await window.__kgFlightSimBrowserProof.importModule('flightSimRuntime')
-              const admission = await window.__kgFlightSimBrowserProof.importModule('flightSimRunReadyDemoRuntime')
-              const events = []
-              const capture = () => {
-                const state = store.useGraphStore.getState()
-                const value = {
-                  activePath: String(explorer.useMarkdownExplorerStore.getState().activePath || ''),
-                  documentName: String(state.markdownDocumentName || ''),
-                  documentTextLength: String(state.markdownDocumentText || '').length,
-                  recordedIntentPresent: /^source_geospatial:/m.test(String(state.markdownDocumentText || '')),
-                  flightAdmissionActive: admission.readFlightSimRunReadyDemoDiagnostic()?.active === true,
-                  flightRuntimeActive: runtime.readFlightSimSnapshot().active === true,
-                }
-                const previous = events[events.length - 1]
-                if (!previous || JSON.stringify(previous) !== JSON.stringify(value)) events.push(value)
-                if (events.length > 40) events.shift()
-              }
-              const storeUnsubscribe = store.useGraphStore.subscribe(capture)
-              const explorerUnsubscribe = explorer.useMarkdownExplorerStore.subscribe(capture)
-              window.__kgFlightPracticeStateTrace = {
-                events,
-                close: () => { storeUnsubscribe(); explorerUnsubscribe(); return events.slice() },
-              }
-              capture()
-            }
-            """
-        )
-        try:
-            wait_for_flight_hud_activation(page)
-        except Exception as error:
-            transition = page.evaluate(
-                "() => window.__kgFlightPracticeStateTrace?.close?.() || []"
-            )
-            raise AssertionError(
-                f"{error}; verified practice identity={source}; "
-                f"source transition={transition}"
-            ) from error
-        source_application["practiceDocumentStateTrace"] = page.evaluate(
-            "() => window.__kgFlightPracticeStateTrace?.close?.() || []"
-        )
+        source_application["practiceDocumentStateTrace"] = wait_for_practice_document_state_trace(page, source, wait_for_flight_hud_activation)
         hud = page.locator('[data-kg-flight-sim-hud="1"]').first
         expect(hud).to_be_visible(timeout=5_000)
         def read_frame_debug(close_activation: bool = False) -> dict[str, Any]:
