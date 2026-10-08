@@ -49,26 +49,26 @@ export async function testMarkdownExplorerStoreBootstrapDistinguishesDeepLinksFr
 
     window.history.replaceState({ routerKey: 'preserved' }, '', '/?kgDoc=%2Fdocs%2FREADME.md&kgPreview=1')
     consumeDeepLinkParams(window.location.search)
-    if (window.location.search !== '?kgPreview=1') {
-      throw new Error(`expected local document URL cleanup to preserve unrelated params, got ${window.location.search}`)
+    if (window.location.search !== '?kgDoc=%2Fdocs%2FREADME.md&kgPreview=1') {
+      throw new Error(`expected local document URLs to remain shareable after bootstrap, got ${window.location.search}`)
     }
     if (window.history.state?.routerKey !== 'preserved') {
-      throw new Error('expected local document URL cleanup to preserve existing history state')
+      throw new Error('expected stable local document URLs to preserve existing history state')
     }
     if (readLocalDocDeepLinkPathFromCurrentLocation() !== '/docs/README.md') {
-      throw new Error('expected cleaned local document deep link to survive a reload through history state')
+      throw new Error('expected the live local document URL to remain the reload source of truth')
     }
 
     useMarkdownExplorerStore.getState().setActivePath('/docs/README.md')
     if (readLocalDocDeepLinkPathFromCurrentLocation() !== '/docs/README.md') {
-      throw new Error('expected selecting the retained document not to clear its reload intent')
+      throw new Error('expected selecting the address-bar document not to clear its reload intent')
     }
     useMarkdownExplorerStore.getState().setActivePath('/docs/other.md')
-    if (readLocalDocDeepLinkPathFromCurrentLocation() !== null) {
-      throw new Error('expected a different document selection to clear retained local document intent')
+    if (readLocalDocDeepLinkPathFromCurrentLocation() !== '/docs/README.md') {
+      throw new Error('expected the address-bar document to remain authoritative until the URL changes')
     }
     if (window.history.state?.routerKey !== 'preserved') {
-      throw new Error('expected retained local document cleanup to preserve unrelated history state')
+      throw new Error('expected local document URL stability to preserve unrelated history state')
     }
 
     window.history.replaceState({ routerKey: 'preserved' }, '', '/?kgDoc=%2Fdocs%2Fold-local.md')

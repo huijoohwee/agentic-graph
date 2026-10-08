@@ -538,6 +538,7 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
     || stageSource.includes('hydrateXrMotionReferenceRuntime')) {
     throw new Error('expected one app-root XR choreography hydration owner independent of stage and panel visibility')
   }
+  await (await import('../../tests/xrMotionReferenceAppStartup.contract')).assertXrMotionReferenceBootstrap(appSource)
   if (!sceneSubjectSource.includes('Math.hypot(dx, dy, dz)') || !sceneSubjectSource.includes('setFromUnitVectors')) {
     throw new Error('expected cast and camera paths to preserve vertical Y-up movement in their 3D segment transform')
   }
