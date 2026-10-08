@@ -1,7 +1,7 @@
 import type { FeatureCollection } from 'geojson'
 import { SimpleTtlLruCache } from '@/lib/cache/SimpleTtlLruCache'
 import { hashText } from '@/features/parsers/hash'
-import { coerceGeoJsonToFeatureCollection, parseGeoJsonFromText } from '@/lib/gympgrph/api'
+import { coerceGeoJsonToFeatureCollection, parseGeoJsonFromText } from 'gympgrph/geojson'
 import { cloneMarkdownGeoFeatureCollection } from './markdownGeoClone'
 
 type CacheValue =

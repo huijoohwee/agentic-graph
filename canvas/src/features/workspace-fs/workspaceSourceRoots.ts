@@ -1,6 +1,7 @@
 import { CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT, normalizeChatLocalStorageRootPath } from '@/features/chat/chatStorageConfig'
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
+import type { WorkspaceSourceIndex } from './sourceIndex'
 import { readWorkspaceImportShareExportRootPathSetting } from '@/lib/workspace/workspaceStoreSyncSettings'
 
 export const WORKSPACE_DOCS_SOURCE_ROOT_PATH = '/docs' as WorkspacePath
@@ -89,11 +90,25 @@ export function isWorkspaceRuntimeOnlyReferencePath(path: string): boolean {
 export function projectWorkspaceEntriesToSourceFilesExplorer(
   entries: ReadonlyArray<WorkspaceEntry>,
   rootPaths?: ReadonlyArray<string>,
+  sourcesByPath: WorkspaceSourceIndex = {},
 ): WorkspaceEntry[] {
   const roots = normalizeWorkspaceSourceRootPaths(rootPaths)
+  const importedPaths = new Set<string>()
+  for (const entry of entries) {
+    const path = normalizeWorkspacePath(entry.path)
+    if (entry.kind !== 'file' || sourcesByPath[path]?.kind !== 'local'
+      || isWorkspaceRuntimeOnlyReferencePath(path)) continue
+    importedPaths.add(path)
+    let parent = path.slice(0, path.lastIndexOf('/'))
+    while (parent) {
+      importedPaths.add(parent)
+      parent = parent.slice(0, parent.lastIndexOf('/'))
+    }
+  }
   return entries.filter(entry => {
     const path = normalizeWorkspacePath(entry?.path)
     if (!path || path === '/' || isWorkspaceRuntimeOnlyReferencePath(path)) return false
+    if (importedPaths.has(path)) return true
     for (const root of roots) {
       if (path === root || path.startsWith(`${root}/`)) return true
       if (entry.kind === 'folder' && root.startsWith(`${path}/`)) return true

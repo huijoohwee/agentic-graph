@@ -1,6 +1,7 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
+  ["canvas.geospatial.fallbackAdmission", "@/__tests__/geospatialFallbackAdmission.test.tsx", "testGeospatialFallbackAdmission"],
   ["ui.invocation.hoverSourceParity", "@/__tests__/invocationHoverSourceParity.test.tsx", "testInvocationHoverSourceParity"],
   ["ui.card.viewer.mediaSerializationParity", "@/__tests__/cardInlineTextEditorMediaInsertParity.test.tsx", "testCardViewerMediaSerializationParity"],
   ["ui.card.viewer.mediaInsertParity", "@/__tests__/cardInlineTextEditorMediaInsertParity.test.tsx", "testCardViewerMediaInsertParity"],
@@ -14,6 +15,9 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["markdown.workspace.indexing.viewerStability", "@/__tests__/markdownWorkspaceIndexingStability.test.tsx", "testMarkdownWorkspaceIndexingSettlesAcrossViewerRenders"],
   ["markdown.workspace.viewer.storyParagraphEditing", "@/__tests__/markdownWorkspaceIndexingStability.test.tsx", "testMarkdownWorkspaceStoryParagraphEditing"],
   ["markdown.viewer.sharedInvocations", "@/__tests__/markdownVariableInvocations.test.tsx", "testMarkdownViewerSharedInvocations"],
+  ["canvas.xrMode.renderSubscriptions.store", "@/__tests__/threeGraphRenderSubscriptions.test.tsx", "testThreeGraphIgnoresUnrelatedStoreUpdates"],
+  ["canvas.xrMode.renderSubscriptions.gameplay", "@/__tests__/threeGraphRenderSubscriptions.test.tsx", "testGameplaySurfaceIgnoresFramePublications"],
+  ["xr.motionReference.bridge.selectionSync.noRerender", "@/__tests__/threeGraphRenderSubscriptions.test.tsx", "testXrMotionBridgeSelectionSyncDoesNotRerenderTheBridge"],
   ["canvas.xrMode.choreographyOwnership", "@/__tests__/xrChoreographyOwnership.test.tsx", "testXrChoreographyOwnership"],
   ["canvas.xrMode.studio.semanticExercises", "@/__tests__/xrSceneSemantic.test.ts", "testXrStudioSceneProjectionAndExercises"],
   ["canvas.xrMode.studio.inspector", "@/__tests__/xrSceneSemantic.test.ts", "testXrStudioInspectorProjectsSceneAndExercises"],
@@ -292,6 +296,7 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["sourceFiles.cloudSync.localCloudIndicatorClick","@/__tests__/sourceFileCloudSync.test","testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUploadsOnClick"],
   ["sourceFiles.cloudSync.repositoryAuthority","@/__tests__/sourceFileCloudSync.test","testSourceFileCloudTargetsRespectDocumentRepositoryAuthority"],
   ["workspaceFs.indexedDb.reopen","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceFileTextPersistsAcrossFsReinit"],
+  ["workspaceFs.indexedDb.rootLocalImport","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceRootLocalImportSurvivesSeedRefreshAndReload"],
   ["workspaceFs.indexedDb.concurrentMigration","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceIndexedDbConcurrentMigrationAndStaleRows"],
   ["workspaceFs.indexedDb.invalidLegacy","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceIndexedDbMigrationPreservesExistingAndInvalidBytes"],
   ["workspaceFs.indexedDb.writeFailure","@/__tests__/workspaceFsPersistenceReload.test","testWorkspaceIndexedDbWriteFailureAndMigrationRetry"],
