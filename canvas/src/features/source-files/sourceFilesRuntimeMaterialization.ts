@@ -411,7 +411,12 @@ async function materializeGraphOwningActiveWorkspaceSourceFiles(args: GraphOwnin
   if (hasMaterializedActivePathDrifted(args.activePath, explorerActivePathAtStart)
     || useGraphStore.getState().markdownDocumentName !== document.markdownDocumentName
     || useGraphStore.getState().markdownDocumentText !== document.markdownDocumentText
-    || !sameMaterializationSourceIdentities(mergedSourceFiles, useGraphStore.getState().sourceFiles)) throw staleMaterialization()
+    || !sameMaterializationSourceIdentities(mergedSourceFiles, useGraphStore.getState().sourceFiles)) {
+    // This final fence runs after the graph-owned importer has published. A
+    // same-path lifecycle publication can legitimately win that notification;
+    // the outer materializer re-observes persisted bytes before its one retry.
+    throw staleMaterialization(true, 'graph import publication')
+  }
   return captureMaterializedWorkspaceSourceProof(args.activePath)
 }
 
