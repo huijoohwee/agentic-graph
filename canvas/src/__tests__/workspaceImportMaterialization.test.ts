@@ -140,9 +140,41 @@ export async function testApplyWorkspaceImportToCanvasForceIncludeOnlySkipsInact
       backgroundError = error
     }
     const retainedFiles = useGraphStore.getState().sourceFiles || []
-    if (!publishedBackgroundSource || (backgroundError as { code?: string } | undefined)?.code !== 'SOURCE_FILES_MATERIALIZATION_STALE'
+    if (!publishedBackgroundSource || (backgroundError as { code?: string; retryable?: boolean } | undefined)?.code !== 'SOURCE_FILES_MATERIALIZATION_STALE'
+      || (backgroundError as { retryable?: boolean } | undefined)?.retryable !== false
       || retainedFiles.length !== 1 || retainedFiles[0]?.source?.path !== 'workspace:/docs/background.md') {
       throw new Error('workspace import must reject a concurrent source inventory update')
+    }
+
+    let retriedBackgroundSource = false
+    let retryableError: unknown
+    store.setSourceFiles([])
+    try {
+      await applyWorkspaceImportToCanvas({
+        fs,
+        createdPaths: ['/docs/active.md'],
+        opts: {
+          applyToGraph: false,
+          retryOnInventoryDrift: true,
+          workspaceEntries: await fs.listEntries(),
+          assertCurrent: () => {
+            if (retriedBackgroundSource) return
+            retriedBackgroundSource = true
+            store.setSourceFiles([{
+              id: 'retryable-background-source', name: 'background.md', text: '# background', enabled: false, status: 'idle',
+              source: { kind: 'local', path: 'workspace:/docs/background.md' },
+            }])
+          },
+        },
+      })
+    } catch (error) {
+      retryableError = error
+    }
+    const retainedRetryableFiles = useGraphStore.getState().sourceFiles || []
+    if (!retriedBackgroundSource || (retryableError as { code?: string; retryable?: boolean } | undefined)?.code !== 'SOURCE_FILES_MATERIALIZATION_STALE'
+      || (retryableError as { retryable?: boolean } | undefined)?.retryable !== true
+      || retainedRetryableFiles.length !== 1 || retainedRetryableFiles[0]?.source?.path !== 'workspace:/docs/background.md') {
+      throw new Error('graph-owned materialization must receive a bounded retry signal without overwriting the newer inventory')
     }
   } finally {
     store.setSourceFiles(previousSourceFiles)

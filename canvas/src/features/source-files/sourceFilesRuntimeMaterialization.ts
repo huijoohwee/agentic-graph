@@ -401,6 +401,7 @@ async function materializeGraphOwningActiveWorkspaceSourceFiles(args: GraphOwnin
   await applyWorkspaceImportToCanvas({ fs: args.fs, createdPaths: [args.activePath], opts: {
     workspaceEntries: args.workspaceEntries, sourcesByPath: resolveWorkspaceSourceIndexSnapshot(args.sourcesByPath || undefined),
     premergedSourceFiles: mergedSourceFiles, applyToGraph: true, skipComposedGraphApply: isInitializationWorkspacePath(args.activePath),
+    retryOnInventoryDrift: true,
     assertCurrent: () => {
       if (hasMaterializedActivePathDrifted(args.activePath, explorerActivePathAtStart)
         || useGraphStore.getState().markdownDocumentName !== document.markdownDocumentName

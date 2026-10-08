@@ -51,6 +51,7 @@ type ApplyWorkspaceImportToCanvasOpts = {
   removedPaths?: WorkspacePath[]
   premergedSourceFiles?: SourceFile[]
   assertCurrent?: () => void
+  retryOnInventoryDrift?: boolean
 }
 
 type ApplyWorkspaceImportToCanvasResult = {
@@ -164,7 +165,7 @@ export async function applyWorkspaceImportToCanvas(args: {
     ...removedSourcePathKeys,
   ])
   const staleImport = () => Object.assign(new Error('Active document source changed during materialization (workspace import publication).'),
-    { code: 'SOURCE_FILES_MATERIALIZATION_STALE', retryable: false })
+    { code: 'SOURCE_FILES_MATERIALIZATION_STALE', retryable: args.opts?.retryOnInventoryDrift === true })
   const sourceFilesMatch = (left: SourceFile[], right: SourceFile[]) => left.length === right.length
     && left.every((file, index) => areSourceFileRecordsEqual(file, right[index]))
   const sourceFileMaterializationMatches = (current: SourceFile, desired: SourceFile) => current.id === desired.id
