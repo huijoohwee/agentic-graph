@@ -159,7 +159,10 @@ test('upgrade retains the last complete pack when the current pack was evicted o
 test('declared public members are revision-bound offline and tampering fails closed', async () => {
   const file = 'example/fixtures/source.json', env = environment()
   await env.publish(first, undefined, { [file]: '{"version":1}' }); await env.ownerFor(first).request('install')
-  await env.publish(second, undefined, { [file]: '{"version":2}' }); const two = env.ownerFor(second); await two.request('install')
+  await env.publish(second, undefined, { [file]: '{"version":2}' }); const two = env.ownerFor(second)
+  assert.equal(await two.owner.__agLearningOffline!.read({ url: scope + file + '?revision=' + second, mode: 'cors' }), null,
+    'a current online revision falls through to network when only an older offline pack is installed')
+  await two.request('install')
   const read = (revision: string, path = file) => two.owner.__agLearningOffline!.read({ url: scope + path + '?revision=' + revision, mode: 'cors' })
   const before = env.calls(); env.downloads.clear()
   assert.equal(await (await read(first)).text(), '{"version":1}'); assert.equal(await (await read(second)).text(), '{"version":2}')
@@ -191,13 +194,13 @@ test('missing, undeclared and traversal public membership cannot replace a compl
   assert.equal((await two.request('install')).ok, false); assert.equal(JSON.stringify(await env.state()), before)
 })
 
-test('one bounded authored asset declaration supplies exact build and precache membership', async () => {
+test('one bounded authored asset declaration supplies exact explicit offline membership', async () => {
   const entries = offlinePrecacheEntries(authoredPublicAssets)
   assert.ok(entries.length > 0 && entries.length <= 40)
   assert.deepEqual(entries, authoredPublicAssets.map(file => ({ url: file.path, revision: file.sha256 })))
   const config = await readFile(new URL('../../vite.config.ts', import.meta.url), 'utf8')
   assert.match(config, /createPythonLearningOfflinePlugin\(runtimeIdentity.sourceRevision, offlinePublicAssets\)/)
-  assert.match(config, /additionalManifestEntries: offlinePrecacheEntries\(offlinePublicAssets\)/)
+  assert.doesNotMatch(config, /additionalManifestEntries:|offlinePrecacheEntries/)
   for (const file of authoredPublicAssets) {
     const bytes = await readFile(new URL(`../../public/${file.path}`, import.meta.url)); assert.equal(bytes.length, file.bytes); assert.equal(await digest(bytes), file.sha256)
   }

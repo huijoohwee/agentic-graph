@@ -39,10 +39,11 @@ export function testHeavyFeatureSurfacesUseTargetedLazyLoadingGates() {
   if (!monacoTextEditorText.includes("await loadMonacoLanguageContribution(resolvedLanguage)")) {
     throw new Error('expected MonacoTextEditor to lazy-load Monaco language contributions per active language')
   }
-  if (!monacoTextEditorText.includes("await import('monaco-editor/esm/vs/language/json/monaco.contribution')")) {
+  const monacoLanguagesText = readFileSync(resolve(root, 'src', 'lib', 'monaco', 'monacoLanguageContributions.ts'), 'utf8')
+  if (!monacoTextEditorText.includes("from './monacoLanguageContributions'") || !monacoLanguagesText.includes("await import('monaco-editor/esm/vs/language/json/monaco.contribution')")) {
     throw new Error('expected MonacoTextEditor to lazy-load JSON language support only when needed')
   }
-  if (!monacoTextEditorText.includes("await import('monaco-editor/esm/vs/basic-languages/sql/sql.contribution')")) {
+  if (!monacoLanguagesText.includes("await import('monaco-editor/esm/vs/basic-languages/sql/sql.contribution')")) {
     throw new Error('expected MonacoTextEditor to lazy-load SQL language support only when needed')
   }
 
@@ -1060,80 +1061,21 @@ export function testHeavyFeatureSurfacesUseTargetedLazyLoadingGates() {
   if (!viteConfigText.includes("nodeRequire.resolve('maplibre-gl/dist/maplibre-gl.mjs')")) {
     throw new Error('expected published MapLibre ESM to preserve initialized typed arrays across app class-field transforms')
   }
-  if (!viteConfigText.includes("if (moduleId.includes('/node_modules/three/examples/')) return 'three-examples'")) {
-    throw new Error('expected vite config to split three examples into a separate coarse lazy chunk')
+  const boundedChunksText = readFileSync(resolve(root, 'viteBoundedChunks.mjs'), 'utf8')
+  if (!viteConfigText.includes('boundedChunksPlugin()') || !viteConfigText.includes('chunkSizeWarningLimit: 500')) {
+    throw new Error('expected the production build to enforce bounded dependency graph chunks')
   }
-  if (!viteConfigText.includes("if (moduleId.includes('/node_modules/@react-three/fiber/')) return 'three-fiber'")) {
-    throw new Error('expected vite config to split react-three-fiber from three core')
+  if (!boundedChunksText.includes('partitionModuleGraph(infos)') || !boundedChunksText.includes('assertChunkGraphAcyclic(chunks)')) {
+    throw new Error('expected graph-derived chunks to preserve static cycles and reject newly introduced emitted chunk cycles')
   }
-  if (!viteConfigText.includes("if (moduleId.includes('/node_modules/three/')) return 'three-core'")) {
-    throw new Error('expected vite config to keep three internals isolated in one coarse chunk')
+  if (boundedChunksText.includes('!info.isExternal && info.isIncluded') || !boundedChunksText.includes('hoistTransitiveImports: false')) {
+    throw new Error('expected chunk planning to retain empty export barrels and avoid transitive import hoisting')
   }
-  if (
-    viteConfigText.includes("return 'three-math'") ||
-    viteConfigText.includes("return 'three-materials'") ||
-    viteConfigText.includes("return 'three-geometries'") ||
-    viteConfigText.includes("return 'three-scene-core'") ||
-    viteConfigText.includes("return 'three-foundation'") ||
-    viteConfigText.includes("return 'three-renderers'") ||
-    viteConfigText.includes("return 'three-barrel'") ||
-    viteConfigText.includes("return 'three-animation'") ||
-    viteConfigText.includes("return 'three-loaders'") ||
-    viteConfigText.includes("return 'three-audio'") ||
-    viteConfigText.includes("return 'three-helpers'")
-  ) {
-    throw new Error('expected vite config to forbid fine-grained three internal subchunks because they can break evaluation order in production')
+  if (!boundedChunksText.includes('file.bytes >= 500_000') || !boundedChunksText.includes('inspectBuiltJavaScript(outDir)')) {
+    throw new Error('expected a strict decimal byte cap covering final JavaScript chunks, workers, and copied runtimes')
   }
-  if (!viteConfigText.includes("if (moduleId.includes('/node_modules/maplibre-gl/')) return 'maplibre'")) {
-    throw new Error('expected vite config to keep maplibre internals in one evaluation-safe coarse chunk')
-  }
-  if (/return 'maplibre-(?:render|source|shaders|core|ui|style|geo|util|data)'/.test(viteConfigText)) {
-    throw new Error('expected vite config to forbid order-sensitive maplibre internal subchunks')
-  }
-  const genericSrcFallbackIndex = viteConfigText.indexOf("if (moduleId.includes('/src/')) return undefined")
-  if (!viteConfigText.includes('chunkSizeWarningLimit: 3000')) {
-    throw new Error('expected vite config chunk warning limit to match the intentional evaluation-safe coarse runtime budget')
-  }
-  if (genericSrcFallbackIndex < 0) {
-    throw new Error('expected vite config to retain a generic src fallback so local app modules stay on Rollup defaults unless a safer source chunking strategy is reintroduced')
-  }
-  if (
-    viteConfigText.includes("return 'graph-store'") ||
-    viteConfigText.includes("return 'canvas-shell'") ||
-    viteConfigText.includes("return 'panel-core'") ||
-    viteConfigText.includes("return 'workspace-runtime'") ||
-    viteConfigText.includes("return 'workspace-ui'") ||
-    viteConfigText.includes("return 'toolbar'")
-  ) {
-    throw new Error('expected vite config to avoid fine-grained local src manual chunks because production evaluation order can break across circular app imports')
-  }
-  if (!viteConfigText.includes("if (moduleId.includes('/node_modules/monaco-editor/')) return 'monaco'")) {
-    throw new Error('expected vite config to keep Monaco editor internals in one coarse chunk')
-  }
-  if (
-    viteConfigText.includes("return 'monaco-language'") ||
-    viteConfigText.includes("return 'monaco-standalone'") ||
-    viteConfigText.includes("return 'monaco-contrib'") ||
-    viteConfigText.includes("return 'monaco-editor-widget'") ||
-    viteConfigText.includes("return 'monaco-editor-viewparts'") ||
-    viteConfigText.includes("return 'monaco-editor-view'") ||
-    viteConfigText.includes("return 'monaco-editor-controller'") ||
-    viteConfigText.includes("return 'monaco-editor-browser-services'") ||
-    viteConfigText.includes("return 'monaco-editor-browser'") ||
-    viteConfigText.includes("return 'monaco-editor-model'") ||
-    viteConfigText.includes("return 'monaco-editor-languages'") ||
-    viteConfigText.includes("return 'monaco-editor-services'") ||
-    viteConfigText.includes("return 'monaco-editor-common'") ||
-    viteConfigText.includes("return 'monaco-platform'") ||
-    viteConfigText.includes("return 'monaco-base-browser'") ||
-    viteConfigText.includes("return 'monaco-base-common'") ||
-    viteConfigText.includes("return 'monaco-editor-core'") ||
-    viteConfigText.includes("return 'monaco-base'")
-  ) {
-    throw new Error('expected vite config to forbid fine-grained Monaco internal subchunks because they can break evaluation order in production')
-  }
-  if (!viteConfigText.includes("if (moduleId.includes('/node_modules/mermaid/')) return 'mermaid'")) {
-    throw new Error('expected vite config to keep the Mermaid standard runtime in one coarse lazy chunk')
+  if (/return '(?:graph-store|canvas-shell|panel-core|workspace-runtime|workspace-ui|toolbar)'/.test(boundedChunksText)) {
+    throw new Error('expected app chunk membership to follow dependency order rather than arbitrary directory buckets')
   }
   if (!viteConfigText.includes("name: 'agentic-graph-strip-mermaid-architecture-detector'")) {
     throw new Error('expected vite config to strip the stock mermaid architecture detector from the standard runtime path')

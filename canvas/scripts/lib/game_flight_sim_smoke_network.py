@@ -255,9 +255,48 @@ def assert_authoring_mirror_ownership(
             "storeRoot": str(store_root), "requestCount": len(requests),
             "receiptCount": len(receipts), "files": files,
             "gameplayWritesAllowed": False, "fileManagerAllowed": False}
+
+
+def verify_native_website_authoring_mirror(
+    page: Any,
+    *,
+    requests: list[AuthoringMirrorRequest],
+    receipts: Any,
+    bootstrap_open: bool,
+) -> dict[str, Any]:
+    probe = page.evaluate(
+        """async () => {
+          const proof = window.__kgFlightSimBrowserProof
+          const [inventory, writer] = await Promise.all([
+            proof.importModule('importInventory'), proof.importModule('workspaceRevealInFileManager'),
+          ])
+          const text = inventory.renderImportInventory([{source: 'https://flight-proof.invalid/example', status: 'not imported'}])
+          const saved = await writer.saveWorkspaceWebsiteLocalCopy('/websites/flight-proof.invalid/_import-index.md', text)
+          return {saved, hostname: location.hostname, online: navigator.onLine, fixtureBytes: new TextEncoder().encode(text).byteLength}
+        }"""
+    )
+    decoded = receipts.decode(bootstrap_closed=not bootstrap_open)
+    if (
+        probe.get("saved") is not False
+        or probe.get("online") is not True
+        or probe.get("hostname") not in {"localhost", "127.0.0.1", "[::1]"}
+        or not 0 < int(probe.get("fixtureBytes", 0)) < 10_000
+        or requests
+        or decoded
+    ):
+        raise AssertionError(
+            "production website mirror guard did not suppress the isolated write probe: "
+            f"probe={probe}, requests={requests}, receipts={decoded}"
+        )
+    return {"owner": "native website authoring mirror", "phase": "production-preview-guard",
+            "requestCount": 0, "receiptCount": 0, "fixtureBytes": probe["fixtureBytes"],
+            "writeSuppressed": True}
 PROOF_LOCAL_STATIC_EXACT_PATHS = {
     "/",
     "/index.html",
+    "/evidence-analysis/fixtures/aviation-singapore-multitrack-v1.json",
+    "/evidence-analysis/fixtures/airport-wsss-source-v1.json",
+    "/evidence-analysis/fixtures/scene-wsss-v1.json",
 }
 PROOF_LOCAL_STATIC_PATH_PREFIXES = (
     "/assets/",
