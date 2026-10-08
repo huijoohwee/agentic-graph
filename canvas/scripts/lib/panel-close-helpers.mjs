@@ -148,10 +148,29 @@ export async function closePanelRegion(region, targetPage) {
     target: await closeButton.first().evaluate(element => {
       const box = element.getBoundingClientRect()
       const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
+      const describe = node => node ? {
+        tagName: node.tagName,
+        className: node instanceof HTMLElement ? node.className : null,
+        ariaLabel: node.getAttribute('aria-label'),
+        text: String(node.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 160),
+      } : null
       return {
-        tagName: hit?.tagName || null,
-        className: hit instanceof HTMLElement ? hit.className : null,
+        hit: describe(hit),
         sameControl: hit === element || element.contains(hit),
+        ancestors: (() => {
+          const ancestors = []
+          let current = hit
+          while (current && ancestors.length < 6) {
+            ancestors.push(describe(current))
+            current = current.parentElement
+          }
+          return ancestors
+        })(),
+        owner: (() => {
+          const owner = hit?.closest('[aria-label], [data-kg-floating-panel-root], [data-kg-details-menu-portal]')
+          return describe(owner)
+        })(),
+        details: describe(hit?.closest('details')),
       }
     }).catch(() => null),
   })
