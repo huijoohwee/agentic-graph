@@ -33,6 +33,16 @@ export async function testLiveCanvasHeroDemoDocumentMatchesConversation(): Promi
   if (!isFlightSimRunReadyDemoActive(flightSim.sourcePath, flightSeed)) {
     throw new Error('The Flight Sim catalog entry must resolve to the source-authored run-ready seed')
   }
+  const runtimeReadiness = demos.find(demo => demo.id === 'production-runtime-readiness')
+  if (!runtimeReadiness?.demoOnlyPrompt || !runtimeReadiness.demoOnlyPrompt.includes('no model request')) {
+    throw new Error('The runtime-readiness option must be a Graph-owned, display-only demo')
+  }
+  const runtimeDocument = buildLiveCanvasHeroDemoDocument({
+    id: runtimeReadiness.id, prompt: runtimeReadiness.demoOnlyPrompt,
+  }, runtimeReadiness, 'test-demo-production-runtime-readiness')
+  if (!runtimeDocument.text.includes(`prompt_source: ${LIVE_CANVAS_HERO_DEMO_SOURCE}`)) {
+    throw new Error('The display-only demo must cite its Graph-owned source, not the shared prompt catalog')
+  }
   const catalog = await loadPromptPresetCatalog(await createPresetWorkspace())
   if (isPromptPresetCatalogError(catalog)) throw new Error(catalog.error)
   // Unique demo ids are enforced by the source parser. Additional demos may precede paired catalog integration.

@@ -26,6 +26,12 @@ example conversation. Each demo has its own history; existing files and chats
 are preserved. The source declares `demo_only: true`, and visible examples do
 not claim provider-generated artifacts, receipts or current research.
 
+The Graph-owned **Production Runtime Readiness · Demo only** option is a static snapshot of the exact
+deployment marker and the separate cross-repository composition result. It links
+to `docs/documents/production-runtime-ready-demo.md`; Demo creates and opens its
+own local `docs/demos/production-runtime-readiness/<session>/demo.md`. Neither
+action queries release state, calls a model, writes remotely, or deploys.
+
 There is no separate Home **Run all** action. Execution remains an explicit Chat action. Descendant
 document routes stay in the workspace; other deployment bases and similarly
 prefixed sibling paths retain their original routing.

@@ -42,7 +42,7 @@ export function buildLiveCanvasHeroDemoDocument(selection: LiveCanvasHeroPresetS
   const frontmatter = dumpYaml({
     title: `${demo.title} · Demo`, graphId, demo_only: true,
     demo_source: LIVE_CANVAS_HERO_DEMO_SOURCE, preset_id: selection.id,
-    prompt_source: 'agentic-canvas-os/docs/PROMPT-PRESETS.md',
+    prompt_source: demo.demoOnlyPrompt ? LIVE_CANVAS_HERO_DEMO_SOURCE : 'agentic-canvas-os/docs/PROMPT-PRESETS.md',
     kgCanvasSurfaceMode: 'canvas', kgCanvasRenderMode: '2d', kgCanvas2dRenderer: 'storyboard',
     flow: {
       nodes: graph.nodes.map(node => ({ id: node.id, type: node.type, label: node.label,

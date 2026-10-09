@@ -8,6 +8,7 @@ import {
 import {
   type PromptPreset,
 } from '@/features/chat/promptPresetCatalog'
+import type { LiveCanvasHeroDemo } from './liveCanvasHeroDemoSource'
 
 export function LiveCanvasHeroPromptPresetPicker(props: {
   activePresetId: string
@@ -18,7 +19,23 @@ export function LiveCanvasHeroPromptPresetPicker(props: {
   const runtime = props.runtime || defaultPromptPresetSelectionRuntime
   const { presets, loading, error: catalogError, retry } = usePromptPresetCatalogState(runtime.loadCatalog)
   const [invocationError, setInvocationError] = React.useState('')
+  const [demoCatalogError, setDemoCatalogError] = React.useState('')
+  const [demoOnlyPresets, setDemoOnlyPresets] = React.useState<LiveCanvasHeroDemo[]>([])
   const [loadingPresetId, setLoadingPresetId] = React.useState('')
+
+  React.useEffect(() => {
+    if (loading || catalogError) return
+    let active = true
+    void import('./liveCanvasHeroDemoSource').then(module => module.loadLiveCanvasHeroDemos()).then(demos => {
+      if (!active) return
+      const sharedIds = new Set(presets.map(preset => preset.id))
+      setDemoOnlyPresets(demos.filter(demo => demo.demoOnlyPrompt && !sharedIds.has(demo.id)))
+      setDemoCatalogError('')
+    }).catch(error => {
+      if (active) setDemoCatalogError(error instanceof Error ? error.message : 'Graph demo catalog unavailable.')
+    })
+    return () => { active = false }
+  }, [catalogError, loading, presets])
 
   const selectPreset = React.useCallback(async (preset: PromptPreset) => {
     if (loadingPresetId) return
@@ -38,8 +55,9 @@ export function LiveCanvasHeroPromptPresetPicker(props: {
     }
   }, [loadingPresetId, onSelect, runtime])
 
-  const statusMessage = catalogError || invocationError
+  const statusMessage = catalogError || demoCatalogError || invocationError
   const selectedDescription = presets.find(preset => preset.id === activePresetId)?.description
+    || demoOnlyPresets.find(preset => preset.id === activePresetId)?.reply
   return (
     <fieldset data-kg-live-canvas-hero-prompt-presets="true">
       <legend className="text-xs font-semibold uppercase tracking-normal text-[var(--kg-text-secondary)]">
@@ -61,6 +79,8 @@ export function LiveCanvasHeroPromptPresetPicker(props: {
           onValueChange={selectedValueInput => {
             const preset = presets.find(candidate => candidate.id === selectedValueInput)
             if (preset) void selectPreset(preset)
+            const demo = demoOnlyPresets.find(candidate => candidate.id === selectedValueInput)
+            if (demo?.demoOnlyPrompt) onSelect({ id: demo.id, prompt: demo.demoOnlyPrompt })
           }}
         >
           {presets.map(preset => (
@@ -70,6 +90,11 @@ export function LiveCanvasHeroPromptPresetPicker(props: {
               data-kg-prompt-preset-activation={preset.activation}
             >
               {loadingPresetId === preset.id ? `Loading ${preset.label}…` : preset.label}
+            </option>
+          ))}
+          {demoOnlyPresets.map(demo => (
+            <option key={demo.id} value={demo.id} data-kg-prompt-preset-activation="demo-only">
+              {demo.title} · Demo only
             </option>
           ))}
         </PanelSelect>

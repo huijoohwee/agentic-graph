@@ -34,6 +34,8 @@
     "doc:generate-workspace-export-reference": "tsx src/cli/generate-workspace-export-reference.ts",
     "predev": "npm run prepare:html-viewer-runtime && npm --prefix .. run dev:source:check && npm run prepare:linked-packages && npm run prepare:litert-assets && npm run prepare:xr-v2-depth-assets && npm run fix:entities-sourcemaps && npm run build:settings",
     "dev": "vite --configLoader runner",
+    "predev:docs": "npm run prepare:html-viewer-runtime && npm --prefix .. run dev:source:check && npm run prepare:linked-packages && npm run fix:entities-sourcemaps && npm run build:settings",
+    "dev:docs": "vite --configLoader runner",
     "predev:care-agent": "npm run predev",
     "dev:care-agent": "VITE_AGENTIC_OS_RUN_READY_DEMO=care-agent vite --configLoader runner",
     "predev:risk-copilot": "npm run predev",
