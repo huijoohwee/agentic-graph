@@ -8,6 +8,7 @@ import { readWorkflowArchiveRequest } from '../../../viteWorkflowArchiveBridge.m
 import { runAgentGraphTool } from '../../../../mcp/agent-graph-host.js'
 import { AGENT_GRAPH_TOOL_NAMES } from '../../../../mcp/agent-graph/runtime.mjs'
 import { loadRepositoryProfile } from 'agentic-os/adapters/git'
+import { CONTEXT_LIMITS, createCodebaseContext } from 'agentic-os/context/codebase'
 import { parseRepositoryUrl } from '../../../../mcp/agent-graph/repository-acquisition.mjs'
 
 export const WORKSPACE_SCHEMA = 'agentic-canvas-os/observability-workspace/v1'
@@ -23,7 +24,7 @@ export function validateWorkspaceManifest(value) {
       || ids.has(row.id) || typeof row.label !== 'string' || !row.label.trim() || row.label.length > 160
       || typeof row.path !== 'string' || !row.path || row.path.length > 1024 || path.isAbsolute(row.path)
       || /[\\\0\r\n]/.test(row.path) || row.path.split('/').some(part => !part || part === '..' || part === '.')) throw Error('Invalid workspace repository')
-    if (row.buildRevision !== undefined && (row.id !== 'agentic-graph' || !/^[a-f0-9]{40}$/.test(row.buildRevision))) throw Error('Invalid Graph build revision')
+    if (row.buildRevision !== undefined && !/^[a-f0-9]{40}$/.test(row.buildRevision)) throw Error('Invalid repository build revision')
     ids.add(row.id)
   }
   return value
@@ -79,7 +80,7 @@ export function bindRetainedIndexSource(result, source, expectedDigest) {
   const acquisition = result.result.acquisition
   if (!acquisition?.repositoryUrl || !/^[a-f0-9]{40}$/.test(acquisition.commitSha ?? '')) return { snapshotDigest: result.result.snapshotDigest }
   const repository = parseRepositoryUrl(acquisition.repositoryUrl)
-  // A linked artifact does not inherit the workflow's source identity. Only explicit native acquisition metadata binds its commit.
+  // A linked artifact does not inherit the workflow's source identity. Only explicit acquisition metadata binds its commit.
   return { repository: `${repository.hostname}/${repository.repositoryPath}`, revision: acquisition.commitSha, snapshotDigest: result.result.snapshotDigest }
 }
 export function normalizeGraphNeighborsRequest(value) {
@@ -103,6 +104,7 @@ export function createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot
   const workspace = loadWorkspaceManifest(manifestFile, workspaceRoot, { allowMissingRepositories })
   const publicManifest = { ...workspace.value, repositories: workspace.value.repositories.map(({ id, label }) => ({ id, label })) }
   let busy = false, activeExpansions = 0
+  let codebaseContext = null
   return {
     name: 'agentic-graph-observability-workspace',
     generateBundle() { this.emitFile({ type: 'asset', fileName: 'observability-workspace.json', source: JSON.stringify(publicManifest) }) },
@@ -110,8 +112,8 @@ export function createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot
       server.middlewares.use(async (req, res, next) => {
         const url = new URL(req.url || '/', 'http://localhost')
         if (url.pathname === '/' || url.pathname === '/index.html') { req.url = '/observability.html' + url.search; return next() }
-        const manifest = url.pathname === '/observability-workspace.json'
-        const operation = url.pathname.match(/^\/api\/observability-workspace\/(workspace-source|workspace-codebase|workflow-trace|graph-neighbors|index)$/)?.[1]
+        const manifest = url.pathname === '/observability-workspace.json' || url.pathname === '/api/observability-workspace/manifest'
+        const operation = url.pathname.match(/^\/api\/observability-workspace\/(workspace-source|workspace-codebase|workflow-trace|graph-neighbors|source-context|index)$/)?.[1]
         if (!manifest && !operation) return next()
         res.setHeader('Cache-Control', 'no-store')
         res.setHeader('Content-Type', 'application/json')
@@ -158,10 +160,31 @@ export function createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot
               })
               if (!expanded.ok || expanded.mode !== 'neighbors' || expanded.snapshotDigest !== query.expectedSnapshotDigest
                 || expanded.graphId !== query.graphId || !expanded.traversal || !expanded.completeness)
-                throw Error(expanded.error?.message || 'Native Graph expansion did not match the selected snapshot')
+                throw Error(expanded.error?.message || 'Graph expansion did not match the selected snapshot')
               result = { graphId: expanded.graphId, snapshotDigest: expanded.snapshotDigest, mode: expanded.mode,
                 resolution: expanded.resolution, traversal: expanded.traversal, completeness: expanded.completeness }
             } finally { clearTimeout(timer); res.off('close', cancel); activeExpansions-- }
+          } else if (operation === 'source-context') {
+            const mode = args.operation
+            const allowed = mode === 'map' ? ['operation', 'path', 'limit', 'after']
+              : mode === 'search' ? ['operation', 'path', 'query', 'limit', 'after']
+                : mode === 'read' ? ['operation', 'path', 'sha256', 'line', 'lines'] : []
+            if (!allowed.length || Object.keys(args).some(key => !allowed.includes(key))) throw Error('Invalid source-context operation')
+            const before = captureRepositorySource(row.resolved)
+            if (!codebaseContext || codebaseContext.repositoryId !== row.id) {
+              codebaseContext = { repositoryId: row.id, reader: createCodebaseContext({ root: row.resolved }) }
+            }
+            const sourceResult = codebaseContext.reader[mode](Object.fromEntries(Object.entries(args).filter(([key]) => key !== 'operation')))
+            const after = captureRepositorySource(row.resolved)
+            if (before.revision !== after.revision || before.tree !== after.tree || before.dirty !== after.dirty)
+              throw Error('Repository changed while reading source context; retry the operation')
+            // The Agentic OS reader returns its host-local root in the receipt. Keep the public
+            // dossier repository-relative and expose only the selected workspace identity.
+            const safeSourceResult = { ...sourceResult }
+            delete safeSourceResult.repositoryRoot
+            result = { ...safeSourceResult, selectedRepository: { id: row.id, label: row.label },
+              repositoryState: { repository: after.repository, revision: after.revision, tree: after.tree, dirty: after.dirty },
+              limits: CONTEXT_LIMITS }
           } else {
             if (Object.keys(args).length) throw Error('Unexpected index arguments')
             if (busy) throw Error('An explicit local index is already running')
@@ -179,10 +202,10 @@ export function createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot
                   exclude: ['.*', '*credentials*', '*secrets*', '*.pem', '*.key', '*.p12', '*.pfx'],
                 }, { rootDir: graphRoot, env: { ...process.env, AGENTIC_OS_AGENT_GRAPH_ALLOWED_ROOTS: row.resolved,
                   AGENTIC_OS_AGENT_GRAPH_OUTPUT_ROOT: output }, abortSignal: controller.signal })
-                if (!indexed.ok || !indexed.complete) throw Error(indexed.error?.message || 'Native index did not complete')
+                if (!indexed.ok || !indexed.complete) throw Error(indexed.error?.message || 'Index did not complete')
                 const after = captureRepositorySource(row.resolved)
                 if (JSON.stringify(before) !== JSON.stringify(after)) throw Error('Source changed while indexing; refresh the index')
-                // A dirty checkout has no immutable Git tree binding; the native snapshot still identifies its exact indexed bytes.
+                // A dirty checkout has no immutable Git tree binding; the snapshot still identifies its exact indexed bytes.
                 const projectionSource = { repository: before.repository, ...(before.dirty ? {} : { revision: before.revision, tree: before.tree }), snapshotDigest: indexed.snapshotDigest }
                 result = { result: indexed, projectionSource, sourceDirty: before.dirty }
               } finally { clearTimeout(timer); res.off('close', cancel) }
