@@ -42,11 +42,9 @@ const waitForMissionExit = async () => {
 const armMissionExpiryClock = async () => {
   await page.clock.install({ time: new Date() })
   await page.evaluate(async () => {
-    const inspection = await import('/src/features/agent-ready/agentRunInspectionStore.ts')
-    const snapshot = inspection.readAgentRunInspectionSnapshot()
+    const inspection = await import('/src/features/agent-ready/agentRunInspectionStore.ts'), snapshot = inspection.readAgentRunInspectionSnapshot()
     if (!snapshot) throw Error('Mission inspection is unavailable before expiry')
-    inspection.updateAgentRunInspection({ trace: snapshot.trace, scope: snapshot.scope,
-      expiresAt: snapshot.expiresAt, spanId: snapshot.spanId })
+    inspection.updateAgentRunInspection({ trace: snapshot.trace, scope: snapshot.scope, expiresAt: snapshot.expiresAt, spanId: snapshot.spanId })
   })
 }
 const waitForAuthoredWorkspaceSource = timeout => waitForAuthoredSource(page, timeout)
@@ -465,7 +463,6 @@ try {
   })
   await page.mouse.move(point.x, point.y); await page.mouse.down()
   await page.mouse.move(point.x + 20, point.y + 20); await page.mouse.up()
-  // Let workspace startup run on the host clock, then re-arm its supported expiry timer.
   await armMissionExpiryClock()
   await page.clock.fastForward(61000)
   await waitForMissionExit(); await page.clock.setSystemTime(new Date()); await openDashboard()
