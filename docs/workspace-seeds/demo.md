@@ -26,6 +26,19 @@ demos:
         text: "The mission is a browser-local simulation. Start, pause, resume, restart, save, and exit remain explicit controls; no physical aircraft or external service is controlled."
       - title: Map and evidence boundary
         text: "The native MapLibre surface presents the authored local route and separately sourced observations. Geographic context does not establish clearance, sovereignty, or airport assignment."
+  - id: production-runtime-readiness
+    title: Production Runtime Readiness
+    demo_only_prompt: "Review this static, revision-bound runtime evidence. Opening Demo creates a local snapshot and submits no model request."
+    reply: "Review a revision-bound production marker beside a separate cross-repository readiness result. This is a static local example: Demo does not query or verify either record, call a model, write remotely, or deploy."
+    outputs:
+      - title: Verified Graph deployment marker
+        text: "Protected release run 37873261675 records Graph source a593e2d59e8db70c64e375099c77f4d128509c6f, Agentic OS docs/catalog f174f70555613885756b69035328edb88248f908, artifact 24041f546bbdd7f377d648ae4f094351241dd9eb339f230e9844574005a48e8e, and manifest 420d86200e11dc7dd9d623ddb1d4bf47e4aa08c1c0bee11789e6d9a101207309."
+      - title: Cross-repository composition boundary
+        text: "The recorded composition check returned productionRuntimeReady=false and did not execute candidate code. Missing owner evidence remains unresolved; this result does not invalidate the distinct Graph deployment marker."
+      - title: Editor walkthrough
+        text: "Open [the evidence guide](workspace:/docs/documents/production-runtime-ready-demo.md) in Source Files → Editor Workspace. This generated demo.md is an authored snapshot, not a live status page."
+      - title: Next proof
+        text: "Check the exact candidate in a browser at desktop and 360 × 800 CSS pixels, then record keyboard and network observations. No mobile, keyboard, or network result is claimed by this preset."
   - id: xr-physics
     title: Physics Playground
     background: xr-physics
