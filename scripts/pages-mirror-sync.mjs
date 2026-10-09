@@ -41,14 +41,14 @@ const isOfflinePublicAssetNamespace = relativePath =>
   /^evidence-analysis\/fixtures\/[A-Za-z0-9._-]+\.(?:json|txt)$/.test(relativePath)
 const isPublicManagedRelativePath = (relativePath, offlineAssetPaths) => Boolean(relativePath)
   && (relativePath.startsWith('assets/') || publicManagedRootFiles.has(relativePath)
-    || offlineAssetPaths.has(relativePath))
+    || relativePath.startsWith('observability/') || offlineAssetPaths.has(relativePath))
 const isPublicRouteManagedRelativePath = (relativePath, offlineAssetPaths) =>
   isPublicManagedRelativePath(relativePath, offlineAssetPaths) || isOfflinePublicAssetNamespace(relativePath)
 const xrV2RuntimePaths = new Set(XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS)
 
 export const isBrowserRuntimeArtifactRelativePath = relativePath => Boolean(relativePath)
   && (relativePath.startsWith('assets/') || publicManagedRootFiles.has(relativePath)
-    || xrV2RuntimePaths.has(relativePath) || /^workbox-[A-Za-z0-9_-]+\.js$/.test(relativePath))
+    || relativePath.startsWith('observability/') || xrV2RuntimePaths.has(relativePath) || /^workbox-[A-Za-z0-9_-]+\.js$/.test(relativePath))
 
 export const buildOfflinePublicRoutePlan = ({
   sourceFiles,

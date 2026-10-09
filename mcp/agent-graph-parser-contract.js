@@ -12,6 +12,7 @@ export const NATIVE_AGENT_GRAPH_PARSER_ADAPTERS = Object.freeze({
   inventory: "inventory-only",
   "json-config": "ast",
   markdown: "structural-parser",
+  "native-binary": "structural-parser",
   pdf: "native-converted-structure",
   python: "ast",
   sql: "structural-parser",

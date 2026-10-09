@@ -136,9 +136,10 @@ Coverage is capability-driven. A filename or extension never implies a successfu
 | Supported configuration | Extract structural keys, sections, and non-secret references without executing the configuration. |
 | Supported PDFs | Extract locally available text and document structure without remote OCR or model fallback. |
 | Generated language grammar | Compile bounded inert tokens and production rules, then emit a deterministic AST whose edges retain exact source spans and grammar identity. |
-| Unknown or binary input | Preserve a deterministic inventory node so the source remains discoverable without inventing unsupported structural facts. |
+| Recognized native binary | Parse bounded ELF, thin Mach-O, PE, WebAssembly, and `ar` metadata locally; emit format/architecture and selected sections, dependencies, symbols/imports/exports, short archive member names, or WebAssembly imports/exports with byte-offset evidence. Limits are 8 MiB/source, 96 references, 256 section entries, and 65,536 archive members. Long-name archive references remain diagnostic. |
+| Unknown or extensionless binary input | Preserve a deterministic inventory node so the source remains discoverable without inventing unsupported structural facts. |
 
-Unknown formats remain visible through inventory evidence. Unavailable parsers, malformed or unreadable files, encrypted or image-only PDFs, unsupported syntax, and unresolved references must stay visible as limited, unsupported, or unresolved diagnostics. The runtime must not silently substitute a model, remote parser, embedding model, or guessed relationship. An explicit `repositoryUrl` ingest may use the network only to resolve and acquire one canonical credential-free HTTPS repository revision; parsing, storage, query, and explanation remain local and network-free.
+Unknown formats remain visible through inventory evidence. Unavailable parsers, malformed or unreadable files, encrypted or image-only PDFs, unsupported syntax, and unresolved references must stay visible as limited, unsupported, or unresolved diagnostics. Native parsing never executes, loads, emulates, disassembles, or decompiles the target and does not extract arbitrary strings or prove runtime behavior. The runtime must not silently substitute a model, remote parser, embedding model, or guessed relationship. An explicit `repositoryUrl` ingest may use the network only to resolve and acquire one canonical credential-free HTTPS repository revision; parsing, storage, query, and explanation remain local and network-free.
 
 ## Every-Edge Explanation Contract
 
@@ -146,6 +147,7 @@ Every stored edge must be auditable from source-backed evidence:
 
 - the edge identifies its relationship and direction
 - its evidence identifies the source location and deterministic extraction basis
+- binary evidence records a byte offset in its excerpt and source digest; line and column fields are schema placeholders for non-text inputs
 - its explanation states why that relationship exists without model-generated prose
 - inferred or ambiguous resolution remains distinguishable from directly extracted structure
 - supporting premises remain inspectable when an edge depends on other graph evidence
@@ -174,6 +176,7 @@ result-count trimming makes the projection incomplete.
 
 - Canonicalized source paths and resolved symlink targets remain inside the host-owned allowed root.
 - Indexed content is parsed as data and is never executed as code, script, SQL, configuration, document action, or PDF behavior.
+- Native binaries are parsed as bounded metadata only and are never loaded, emulated, or executed; arbitrary strings, instruction streams, and runtime behavior are not emitted as evidence.
 - Output remains inside the host-owned store boundary and must not present a partial or invalid run as complete.
 - Content-addressed source, deterministically chunked repository-resolution, index, and manifest shards are individually bounded and committed behind one atomic current-snapshot pointer. In non-strict mode, an oversized source artifact becomes explicit `limited` source evidence with `source_artifact_limit_exceeded`; strict mode and an oversized single resolution record fail before pointer replacement.
 - A cross-process, dead-owner-recoverable per-graph lease serializes ingest publication and rollback. Ingest writes immutable source shards as each source completes, retains only cross-source resolution records, and applies aggregate record and serialized-byte ceilings to both resolution inputs and derived edges. Ambiguous edges retain the exact candidate count plus a deterministic bounded candidate set that includes their target. A failed unpublished ingest rolls back objects it created and leaves the current pointer unchanged.

@@ -76,3 +76,21 @@ Export is deliberate and local; the native manifest and template remain unchange
 Files authenticated Markdown transfer can upload the report explicitly. It does not transport native
 archives or make saved observations authoritative. See the
 [joined implementation plan](documents/agentic-graph-stream-dashboard-prd-tad-adr-mvp-gtm.md).
+
+## Repository-neutral codebase inventory
+
+The observability workspace selects among explicitly configured local repositories. Optional
+`buildRevision` values use the same lowercase 40-character commit format for every repository ID;
+the workspace does not reserve a special repository identity.
+
+Each codebase index records a bounded `projection.inventory` for the currently loaded graph view:
+parser IDs represented by visible source nodes, node types, relationship labels and recognized
+native binary formats. The Mission dashboard labels these as loaded-projection counts. They describe
+the visible projection and do not claim full-repository parser coverage when the projection is
+truncated. The inventory contains category counts rather than source paths, runs no source code,
+and remains tied to the graph snapshot digest.
+
+An explicit local index is independently explorable even when no workflow archive is selected.
+That explorer identifies its graph as static evidence and preserves exact-snapshot neighbor loading;
+it does not turn code relationships, metadata, or a selected binary format into an application or
+agent-runtime claim. Live application behavior stays in a separate observed-behavior record.

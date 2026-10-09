@@ -49,6 +49,7 @@ export const FLIGHT_SIM_PROMPT_PRESET_INVOCATION = '/flight.sim @canvas #flight 
 export const FLIGHT_SIM_PROMPT_PRESET_MCP_TOOL = 'agentic-graph.control_local_flight_sim' as const
 export const PROMPT_PRESET_REQUIRED_IDS = [
   'xr-physics',
+  'software-forensics',
   'video-agent',
   IMAGE_TO_THREEJS_PROMPT_PRESET_ID,
   IMAGE_TO_GLB_PROMPT_PRESET_ID,
