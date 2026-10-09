@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-
 import {
   checkAgentGraphBudget,
   compareStableStrings,
@@ -21,7 +20,6 @@ import {
 } from "./safe-source-io.mjs";
 import { SOURCE_PARSER_REGISTRY } from "./source-parser-registry.mjs";
 import { NATIVE_BINARY_BOUNDS } from "./native-binary-contract.mjs";
-
 const HARD_EXCLUDED_SEGMENTS = new Set([
   ".git",
   ".hg",
@@ -29,7 +27,6 @@ const HARD_EXCLUDED_SEGMENTS = new Set([
   ".agentic-graph",
   ".agentic-graph-workspace",
 ]);
-
 const SOFT_EXCLUDED_SEGMENTS = new Set([
   ".next",
   ".nuxt",
@@ -43,9 +40,7 @@ const SOFT_EXCLUDED_SEGMENTS = new Set([
   "target",
   "vendor",
 ]);
-
 const normalizePattern = (value) => String(value || "").trim().replaceAll("\\", "/").replace(/^\.\//, "");
-
 function globPatternToRegExp(patternRaw) {
   let pattern = normalizePattern(patternRaw);
   const directoryOnly = pattern.endsWith("/");
@@ -66,7 +61,6 @@ function globPatternToRegExp(patternRaw) {
   const prefix = anchored ? "^" : pattern.includes("/") ? "^(?:.*?/)?" : "^(?:.*?/)?";
   return new RegExp(`${prefix}${source}${directoryOnly ? "(?:/.*)?" : ""}$`);
 }
-
 function buildOrderedIgnoreRules(lines) {
   const rules = [];
   for (const raw of lines) {

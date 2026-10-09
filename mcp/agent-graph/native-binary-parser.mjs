@@ -1,53 +1,32 @@
-import {
-  makeEdge,
-  makeNode,
-  stableEntityId,
-  versionAgentGraphParserOutput,
-} from "./contract.mjs";
+import { makeEdge, makeNode, stableEntityId, versionAgentGraphParserOutput } from "./contract.mjs";
 import { NATIVE_BINARY_BOUNDS, NATIVE_BINARY_FORMATS } from "./native-binary-contract.mjs";
-
 export const NATIVE_BINARY_PARSER_ID = "local-native-binary-metadata";
 export const NATIVE_BINARY_PARSER_VERSION = versionAgentGraphParserOutput("1.0.0");
-
-const MAX_REFERENCES = NATIVE_BINARY_BOUNDS.maxReferences;
-const MAX_SECTIONS = NATIVE_BINARY_BOUNDS.maxSections;
-const MAX_NAME_BYTES = NATIVE_BINARY_BOUNDS.maxNameBytes;
-const MAX_WASM_VECTOR_ENTRIES = NATIVE_BINARY_BOUNDS.maxWasmVectorEntries;
+const { maxReferences: MAX_REFERENCES, maxSections: MAX_SECTIONS, maxNameBytes: MAX_NAME_BYTES,
+  maxWasmVectorEntries: MAX_WASM_VECTOR_ENTRIES } = NATIVE_BINARY_BOUNDS;
 const SAFE_NAME = new RegExp(`^[A-Za-z0-9._+@/-]{1,${MAX_NAME_BYTES}}$`, "u");
-
 export const NATIVE_BINARY_PARSER_CAPABILITIES = Object.freeze({
-  schema: "agentic-graph/native-binary-parser-capabilities/v1",
-  parserId: NATIVE_BINARY_PARSER_ID,
-  parserVersion: NATIVE_BINARY_PARSER_VERSION,
-  formats: NATIVE_BINARY_FORMATS,
-  bounds: NATIVE_BINARY_BOUNDS,
-  executesTargets: false,
-  loadsTargets: false,
-  emulatesTargets: false,
-  disassemblesTargets: false,
+  schema: "agentic-graph/native-binary-parser-capabilities/v1", parserId: NATIVE_BINARY_PARSER_ID,
+  parserVersion: NATIVE_BINARY_PARSER_VERSION, formats: NATIVE_BINARY_FORMATS, bounds: NATIVE_BINARY_BOUNDS,
+  executesTargets: false, loadsTargets: false, emulatesTargets: false, disassemblesTargets: false,
 });
-
 function inRange(bytes, offset, length) {
   return Number.isSafeInteger(offset) && Number.isSafeInteger(length)
     && offset >= 0 && length >= 0 && offset + length <= bytes.length;
 }
-
 function u16(bytes, offset, littleEndian) {
   return inRange(bytes, offset, 2)
     ? littleEndian ? bytes.readUInt16LE(offset) : bytes.readUInt16BE(offset)
     : null;
 }
-
 function u32(bytes, offset, littleEndian) {
   return inRange(bytes, offset, 4) ? littleEndian ? bytes.readUInt32LE(offset) : bytes.readUInt32BE(offset) : null;
 }
-
 function u64(bytes, offset, littleEndian) {
   if (!inRange(bytes, offset, 8)) return null;
   const value = littleEndian ? bytes.readBigUInt64LE(offset) : bytes.readBigUInt64BE(offset);
   return value <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(value) : null;
 }
-
 function safeName(bytes, offset, length) {
   if (!inRange(bytes, offset, length) || length > 512) return "";
   const end = bytes.indexOf(0, offset);
@@ -58,13 +37,11 @@ function safeName(bytes, offset, length) {
   const value = bytes.subarray(offset, boundedEnd).toString("ascii").trim();
   return SAFE_NAME.test(value) ? value : "";
 }
-
 function boundedCString(bytes, offset) {
   if (!inRange(bytes, offset, 1)) return "";
   const end = bytes.indexOf(0, offset);
   return safeName(bytes, offset, Math.min(128, (end < 0 ? bytes.length : end + 1) - offset));
 }
-
 function peRvaOffset(rva, sections, headerSize) {
   if (!Number.isSafeInteger(rva) || rva < 0) return null;
   if (rva < headerSize) return rva;
@@ -72,7 +49,6 @@ function peRvaOffset(rva, sections, headerSize) {
     && rva - item.virtualAddress < item.rawSize);
   return section ? section.rawOffset + rva - section.virtualAddress : null;
 }
-
 function architectureForMachine(machine, format) {
   const common = new Map([
     [3, "x86"], [7, "x86"], [40, "arm"], [62, "x86_64"], [183, "aarch64"],
@@ -82,7 +58,6 @@ function architectureForMachine(machine, format) {
   ]);
   return common.get(machine) || `${format}-machine-${machine}`;
 }
-
 function elfDetails(bytes) {
   if (bytes.length < 16) return { format: "ELF", diagnostics: ["header-truncated"] };
   const elfClass = bytes[4], dataEncoding = bytes[5];
@@ -171,7 +146,6 @@ function elfDetails(bytes) {
     diagnostics,
   };
 }
-
 function machODetails(bytes) {
   if (bytes.length < 4) return { format: "Mach-O", diagnostics: ["header-truncated"] };
   const magic = bytes.subarray(0, 4).toString("hex");
@@ -251,7 +225,6 @@ function machODetails(bytes) {
     diagnostics,
   };
 }
-
 function peDetails(bytes) {
   if (bytes.length < 64) return { format: "PE", diagnostics: ["dos-header-truncated"] };
   const peOffset = u32(bytes, 0x3c, true);
@@ -354,7 +327,6 @@ function peDetails(bytes) {
     diagnostics,
   };
 }
-
 function arDetails(bytes) {
   if (bytes.length < 8 || bytes.toString("ascii", 0, 8) !== "!<arch>\n") {
     return { format: "ar archive", diagnostics: ["header-invalid-or-truncated"] };
@@ -389,7 +361,6 @@ function arDetails(bytes) {
   if (offset < bytes.length && index >= NATIVE_BINARY_BOUNDS.maxArchiveMembers) diagnostics.push("archive-member-limit-reached");
   return { format: "ar archive", memberCount: index, detailCount: details.length, details, diagnostics };
 }
-
 function readUleb(bytes, cursor) {
   let value = 0;
   let shift = 0;
@@ -401,7 +372,6 @@ function readUleb(bytes, cursor) {
   }
   return null;
 }
-
 function wasmString(bytes, cursor) {
   const length = readUleb(bytes, cursor);
   if (length === null || length > 512 || !inRange(bytes, cursor.offset, length)) return "";
@@ -410,13 +380,11 @@ function wasmString(bytes, cursor) {
   cursor.offset += length;
   return result;
 }
-
 function skipLimits(bytes, cursor) {
   const flags = readUleb(bytes, cursor);
   if (flags === null || readUleb(bytes, cursor) === null) return false;
   return !(flags & 1) || readUleb(bytes, cursor) !== null;
 }
-
 function wasmDetails(bytes) {
   if (bytes.length < 8) return { format: "WebAssembly", diagnostics: ["header-truncated"] };
   const version = u32(bytes, 4, true), details = [], diagnostics = [];
@@ -486,7 +454,6 @@ function wasmDetails(bytes) {
     diagnostics,
   };
 }
-
 function inspectNativeBinary(bytes) {
   if (bytes.subarray(0, 8).toString("ascii") === "!<arch>\n") return arDetails(bytes);
   if (bytes.subarray(0, 4).toString("hex") === "7f454c46") return elfDetails(bytes);
@@ -496,14 +463,12 @@ function inspectNativeBinary(bytes) {
   if (bytes.subarray(0, 4).toString("hex") === "0061736d") return wasmDetails(bytes);
   return { format: "unknown", details: [], diagnostics: ["signature-unrecognized"] };
 }
-
 function edgeLabel(kind) {
   return kind === "section" ? "contains-section"
     : kind === "dependency" ? "loads-library"
       : kind === "member" ? "contains-member"
       : kind === "import" ? "imports" : "exports-symbol";
 }
-
 export function createNativeBinaryParser({ parserDescriptorForSource, sourceNodeFor, sourceOnlyFragment }) {
   return (source, options = {}) => {
     const descriptor = parserDescriptorForSource(source, options);
