@@ -14,6 +14,23 @@ import { numberLabel, workflowSourceLink, type RunTrace, type TraceSpan } from '
 const GraphInspection = React.lazy(() => import('@/components/GraphCanvas/GraphCanvasInspection'))
 const button = `${UI_THEME_TOKENS.control.singleLine} inline-block rounded border text-xs disabled:opacity-50 ${UI_THEME_TOKENS.button.neutralMuted}`
 
+function loadedProjectionSummary(data?: MissionCodebaseIndex): string | null {
+  const projection = data?.index.value.projection
+  if (!projection || typeof projection !== 'object' || Array.isArray(projection)) return null
+  const inventory = (projection as Record<string, unknown>).inventory
+  if (!inventory || typeof inventory !== 'object' || Array.isArray(inventory)) return null
+  const value = inventory as Record<string, unknown>
+  if (value.scope !== 'loaded-projection') return null
+  const entries = (input: unknown) => Array.isArray(input) ? input.flatMap(item => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return []
+    const row = item as Record<string, unknown>
+    return typeof row.category === 'string' && typeof row.count === 'number' && Number.isInteger(row.count) && row.count >= 0
+      ? [`${row.category} ${row.count}`] : []
+  }) : []
+  const categories = [...entries(value.nodeTypes).slice(0, 4), ...entries(value.nativeBinaryFormats).map(item => `format ${item}`).slice(0, 2)]
+  return categories.length ? `Loaded projection top categories: ${categories.join(' · ')}` : 'Loaded projection contains no categorized node types.'
+}
+
 function mostConnectedNodeId(graph: GraphData): string | null {
   const degree = new Map<string, number>()
   for (const edge of graph.edges) {
@@ -24,9 +41,10 @@ function mostConnectedNodeId(graph: GraphData): string | null {
     || (left[0] < right[0] ? -1 : left[0] > right[0] ? 1 : 0))[0]?.[0] ?? graph.nodes[0]?.id ?? null
 }
 
-export function MissionGraphExplorer({ graph, span, onClear, provenance, onExpandNode }: {
+export function MissionGraphExplorer({ graph, span, context = 'mission', onClear, provenance, onExpandNode }: {
   graph: GraphData
   span: TraceSpan | null
+  context?: 'mission' | 'codebase'
   onClear?: () => void
   provenance?: AgentMissionProvenanceContext
   onExpandNode?: (nodeId: string, afterEdgeId?: string) => Promise<{ nextCursor: string | null; nodes: number; edges: number }>
@@ -40,6 +58,9 @@ export function MissionGraphExplorer({ graph, span, onClear, provenance, onExpan
   React.useEffect(() => { setSelected(current => current && graph.nodes.some(node => node.id === current) ? current : mostConnectedNodeId(graph)) }, [graph])
   const node = selected ? lookup?.nodeById.get(selected) : null
   const edges = selected ? lookup?.incidentEdgesByNodeId.get(selected) ?? [] : []
+  const contextLabel = span ? `Selected span: ${span.operation}` : context === 'codebase' ? 'Static codebase evidence' : 'Codebase context'
+  const contextReason = !span && context === 'codebase'
+    ? 'Static source relationships and recognized binary metadata; runtime behavior is unobserved.' : impact.reason
   const hasExpansionPage = selected ? Object.hasOwn(cursors, selected) : false
   const nextCursor = selected ? cursors[selected] : undefined
   const expand = async () => {
@@ -53,7 +74,7 @@ export function MissionGraphExplorer({ graph, span, onClear, provenance, onExpan
     finally { setExpanding(false) }
   }
   return <section aria-label="Codebase traversal and context" className="min-w-0 space-y-3 pt-3">
-    <div role="status" aria-label="Codebase context" tabIndex={0} className={`rounded border p-3 text-xs ${WIDGET_SELECTION_SURFACE_CLASS_NAME}`}><p>{span ? `Selected span: ${span.operation}` : 'Codebase context'}</p><p>{impact.reason}</p>
+    <div role="status" aria-label="Codebase context" tabIndex={0} className={`rounded border p-3 text-xs ${WIDGET_SELECTION_SURFACE_CLASS_NAME}`}><p>{contextLabel}</p><p>{contextReason}</p>
       {span && onClear && <button className={`${button} mt-2`} onClick={onClear}>Clear span focus</button>}
     </div>
     <label className="grid gap-1 text-xs">Find a node in this projection
@@ -91,7 +112,7 @@ export function MissionGraphExplorer({ graph, span, onClear, provenance, onExpan
   </section>
 }
 
-/** Shared read-only Mission summary used by the native dashboard and observability host. */
+/** Shared read-only Mission summary used by the dashboard and observability workspace. */
 export function AgentMissionDashboardSummary({ trace, codebase, exploring, onExplore, onOpenFile, onOpenView, embedded = false }: {
   trace: RunTrace
   codebase: { data?: MissionCodebaseIndex; error?: string }
@@ -102,6 +123,7 @@ export function AgentMissionDashboardSummary({ trace, codebase, exploring, onExp
   embedded?: boolean
 }) {
   const { data, error } = codebase, model = agentMissionOverviewModel(trace, data?.index), files = agentMissionWorkspace(trace, data), source = workflowSourceLink(trace)
+  const inventory = loadedProjectionSummary(data)
   return <>
     <header className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-base font-semibold">Codebase → Agent Mission</h3>
@@ -110,7 +132,8 @@ export function AgentMissionDashboardSummary({ trace, codebase, exploring, onExp
     <ol className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-3" aria-label="Index to observability">
       <li className="min-w-0 rounded border border-sky-500/40 p-3">
         <p className="text-xs text-sky-500">01 · INDEX</p><h4 className="font-semibold">{data ? model.sources : 'No linked'} sources</h4>
-        <p className="py-1 text-xs">{data ? `${model.nodes} nodes · ${model.edges} relationships` : error || 'Load a retained native Codebase graph index.'}</p>
+        <p className="py-1 text-xs">{data ? `${model.nodes} nodes · ${model.edges} relationships` : error || 'Load a retained codebase graph index.'}</p>
+        {inventory && <p className="pb-2 text-xs">{inventory} · counts describe the loaded projection</p>}
         {data && <p className="pb-2 text-xs">{model.complete ? 'Complete admitted-source index' : 'Partial index'} · {model.parsed} parsed · {model.reused} reused</p>}
         <button className={button} title="Index manifest" disabled={!data} onClick={() => onOpenFile(`${files.root}/codebase-index.manifest.json`)}>Index manifest</button>
       </li>
@@ -131,7 +154,7 @@ export function AgentMissionDashboardSummary({ trace, codebase, exploring, onExp
   </>
 }
 
-/** Native Mission presentation for read-only hosts; no dashboard editor or execution control is mounted. */
+/** Read-only Mission presentation; no dashboard editor or execution control is mounted. */
 export default function AgentMissionDashboardView({ retained, retainedSpanId, onRetainedSpan, provenance, onExpandNode }: {
   retained: MissionDashboardSnapshot
   retainedSpanId?: string | null
@@ -150,7 +173,7 @@ export default function AgentMissionDashboardView({ retained, retainedSpanId, on
     {exploring && !retained.graph && <p role="status">This mission has no retained D3 projection.</p>}
     {sourceDocument && <details className={`rounded border p-3 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}`}>
       <summary className="cursor-pointer text-sm font-semibold">{sourceDocument.path}</summary>
-      <p className="pt-2 text-xs">Native mission source · read only · no execution or release authority.</p>
+      <p className="pt-2 text-xs">Mission source · read only · no execution or release authority.</p>
       <pre aria-label="Mission source document" className="max-h-96 overflow-auto whitespace-pre-wrap break-all pt-2 text-xs">{sourceDocument.text}</pre>
     </details>}
     {provenance && <details className={`rounded border p-3 ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg}`}>

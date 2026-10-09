@@ -92,6 +92,21 @@ demos:
           session, existing workaround and cost. Agree one measurable paid-pilot
           acceptance criterion. Keep demand, pricing and conversion assumptions
           explicitly unverified until customer evidence supports them.
+  - id: software-forensics
+    title: Agentic Reverse Engineering
+    demo_only_prompt: "Inspect this static, repository-neutral evidence workflow. Demo opens a local example and makes no model request."
+    reply: "Build a bounded dossier from an explicitly selected application and repository. Keep visible behavior, exact-hash source facts, graph relationships, registered binary metadata, inference, and unknowns distinct. Open [agentic-reverse-engineering-demo.md](workspace:/docs/workspace-seeds/agentic-reverse-engineering-demo.md) for the portable steps and evidence record."
+    outputs:
+      - title: Application observation
+        text: "Record only the visible route, state, timestamp, and inspection action. A control or declaration does not prove that an action succeeded."
+      - title: Indexed source
+        text: "Map and search only the selected root. Cite repository-relative paths, Git revision, current-byte hashes, and exact-hash reads; stale bytes remain unresolved."
+      - title: Source graph
+        text: "Use the local graph only when its query schema is available. Bind each relationship to graph identity, snapshot digest, parser identity, and diagnostics."
+      - title: Native binary metadata
+        text: "Use a registered bounded parser for declared metadata only. Unsupported formats stay unknown; do not load, execute, emulate, disassemble, or decompile targets."
+      - title: Evidence dossier
+        text: "Link each claim to evidence IDs, separate inference, record missing layers, and stop at the run budget. Opening this static example does not call a provider or acquire source."
   - id: video-agent
     title: Video Agent
     reply: "This example shows the planned outputs of a multilingual video package. Media generation still requires your script, configured provider and an explicit Run."

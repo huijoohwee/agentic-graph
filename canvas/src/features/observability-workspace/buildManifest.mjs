@@ -21,13 +21,15 @@ function safeOutputPath(fileName) {
   return fileName
 }
 
-export function createObservabilityBuildManifestPlugin({ sourceRevision, sourceDirty, workspaceManifestDigest }) {
+export function createObservabilityBuildManifestPlugin({ sourceRevision, sourceDirty, workspaceManifestDigest, directory = '' }) {
+  if (typeof directory !== 'string' || (directory && (!/^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/.test(directory)))) fail('invalid output directory')
+  const manifestPath = directory ? `${directory}/${MANIFEST}` : MANIFEST
   let outputPaths = []
   return {
     name: 'agentic-graph-observability-build',
     enforce: 'post',
     generateBundle(_options, bundle) {
-      outputPaths = Object.keys(bundle).filter(fileName => fileName !== MANIFEST).map(safeOutputPath).sort()
+      outputPaths = Object.keys(bundle).filter(fileName => fileName !== manifestPath).map(safeOutputPath).sort()
       if (!outputPaths.length || outputPaths.length > MAX_OUTPUTS) fail('output count is outside the supported bound')
     },
     async writeBundle(options) {
@@ -55,14 +57,14 @@ export function createObservabilityBuildManifestPlugin({ sourceRevision, sourceD
         schema: 'agentic-graph/observability-build/v1',
         sourceRevision,
         sourceDirty,
-        entry: 'observability.html',
+        entry: directory ? `${directory}/index.html` : 'index.html',
         workspaceManifestDigest,
         outputs,
       }
       const temporary = path.join(outputRoot, `${MANIFEST}.${randomUUID()}.tmp`)
       try {
         await writeFile(temporary, `${JSON.stringify(manifest, null, 2)}\n`, { flag: 'wx' })
-        await rename(temporary, path.join(outputRoot, MANIFEST))
+        await rename(temporary, path.join(outputRoot, manifestPath))
       } finally {
         await rm(temporary, { force: true })
       }
