@@ -3,11 +3,11 @@ title: "Production browser preflight"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 status: "active"
 continuity_id: "GRAPH-BROWSER-PREFLIGHT-001"
-revision: 9
+revision: 10
 owner: "agentic-graph"
 frontmatter_contract: "required"
-version: "0.1.1"
-date: "2026-09-12"
+version: "0.1.2"
+date: "2026-10-09"
 lang: "en-US"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
@@ -17,16 +17,43 @@ worktree_id: "device-cba000d3779d--planning-v27"
 agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "7fb85741121d8c2886027e4a630d013ba91c1027"
+reviewed_source_revision: "ada248796c97276bc375bd7f922ad650fcc50aa4"
 previous_document_version: "0.1.0"
-prd_revision: "0.1.1"
-tad_revision: "0.1.1"
-adr_revision: "0.1.1"
-mvp_revision: "0.1.1"
-gtm_revision: "0.1.1"
+prd_revision: "0.1.2"
+tad_revision: "0.1.2"
+adr_revision: "0.1.2"
+mvp_revision: "0.1.2"
+gtm_revision: "0.1.2"
 ---
 
 # Production browser preflight
+
+## Revision 10: Dev-to-Prod dependency parity
+
+The local Dev review and the protected Production candidate must use the same exact Graph source
+revision and Agentic OS documentation revision. On 2026-10-09, the live Production marker still
+identified Graph `ada248796c97276bc375bd7f922ad650fcc50aa4` with Agentic OS `70568d1724e767dd0fd9b37c515e3677c73049ba`, while canonical Agentic OS `main` had advanced to
+`f174f70555613885756b69035328edb88248f908`. This is a source dependency drift; the old marker is
+valid for its deployed candidate, but it does not represent the current Dev documentation revision.
+
+Advance `docs/runtime-readiness-contract.md`, `package.json`, and `package-lock.json` together to
+the exact protected Agentic OS revision after its `test` and `budgets` checks pass. Never replace
+the immutable ref with `main`. The existing local-review verifier then binds source commit/tree,
+docs commit/tree, and catalog revision; the release candidate binds those identities plus the built
+artifact and immutable manifest. The isolated candidate and live deployed candidate keep using the
+same `production:fidelity:check` owner, and public route verification requires the deployed markers
+to match the immutable candidate.
+
+Do not rebuild between candidate verification and activation. This reuses one verified artifact
+for isolated browser proof and live readback, so parity does not require a second Dev deployment or
+a second expensive browser suite. A newer Agentic OS `main` requires a new immutable pin promotion
+and a new local review candidate before Production eligibility. Source integration does not grant
+Production authorization; the exact new candidate still needs its own protected human approval and
+live release receipts.
+
+Current dependency pin update in this revision: Agentic OS `f174f70555613885756b69035328edb88248f908`.
+This advances the next candidate's source binding; it does not revise the existing Production
+deployment receipt or claim that the new pin is already live.
 
 ## Revision 6: Source Files disclosure proof
 

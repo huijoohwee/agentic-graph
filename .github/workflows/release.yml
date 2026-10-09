@@ -26,9 +26,9 @@ jobs:
         working-directory: agentic-graph
         env: { LOCAL_REVIEW_INPUT: '${{ inputs.local_review_candidate }}', RELEASE_EVIDENCE_INPUT: '${{ inputs.release_evidence }}' }
         run: |
-          test -n "$LOCAL_REVIEW_INPUT" && test -n "$RELEASE_EVIDENCE_INPUT" && test "$GITHUB_REF" = "refs/heads/main"
-          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          test -n "$LOCAL_REVIEW_INPUT" && test -n "$RELEASE_EVIDENCE_INPUT" && test "$GITHUB_REF" = "refs/heads/main" && test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$RELEASE_SHA"
+          node scripts/check-runtime-docs-parity.mjs
       - { name: Checkout production mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee, path: huijoohwee } }
       - { name: Capture production mirror base revision, id: mirror_revision, working-directory: huijoohwee, run: 'echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"' }
       - { name: Checkout schema mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee.github.io, path: huijoohwee.github.io } }
@@ -201,7 +201,7 @@ jobs:
           node ./scripts/verify-production-release-transports.mjs recapture-rollback --pages-observation "$RUNNER_TEMP/previous-pages-observation.json" --state-evidence "$RUNNER_TEMP/previous-d1-state-evidence.json" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --mirror-revision "${{ needs.verify.outputs.mirror_revision }}" --output "$RUNNER_TEMP/previous-production-rollback-recapture.json" --digest-output "$RUNNER_TEMP/previous-production-rollback-digest.txt"
       - name: Revalidate last-known-good rollback identity
         working-directory: agentic-graph
-        run: test "$(git -C ../huijoohwee ls-remote origin refs/heads/main | cut -f1)" = "${{ needs.verify.outputs.mirror_revision }}"
+        run: test "$(git -C ../huijoohwee ls-remote origin refs/heads/main | cut -f1)" = "${{ needs.verify.outputs.mirror_revision }}" && node scripts/check-runtime-docs-parity.mjs
       - name: Enforce sole deployment ownership
         working-directory: agentic-graph
         env: *cloudflare_release_environment
