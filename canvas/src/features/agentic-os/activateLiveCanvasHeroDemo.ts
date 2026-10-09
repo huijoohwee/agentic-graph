@@ -13,7 +13,7 @@ import { buildLiveCanvasHeroPresetDemo, type LiveCanvasHeroPresetSelection } fro
 import {
   buildLiveCanvasHeroDemoReply,
   FLIGHT_SIM_HERO_DEMO_SOURCE_PATH,
-  loadLiveCanvasHeroDemo,
+  loadLiveCanvasHeroDemos,
   LIVE_CANVAS_HERO_DEMO_SOURCE,
   type LiveCanvasHeroDemo,
 } from './liveCanvasHeroDemoSource'
@@ -31,18 +31,21 @@ export function handoffLiveCanvasHeroDemoHistory(id: string, text: string, messa
   publishChatHistoryTransition({ historyKeys: [key], messages })
 }
 
-export function buildLiveCanvasHeroDemoDocument(selection: LiveCanvasHeroPresetSelection, demo: LiveCanvasHeroDemo, graphId: string) {
-  if (demo.sourcePath) throw new Error('This demo opens its canonical workspace seed directly.')
+export function buildLiveCanvasHeroDemoDocument(selection: LiveCanvasHeroPresetSelection, demo: LiveCanvasHeroDemo | undefined, graphId: string) {
+  if (demo?.sourcePath) throw new Error('This demo opens its canonical workspace seed directly.')
   const graph = buildLiveCanvasHeroPresetDemo(selection, demo)
-  const reply = buildLiveCanvasHeroDemoReply(demo)
+  const reply = demo
+    ? buildLiveCanvasHeroDemoReply(demo)
+    : 'This local preview shows the selected source-backed prompt and its route, context, and parameters. No model call, remote write, or target execution occurred.'
+  const title = demo?.title || selection.id
   const messages: ChatMessage[] = [
     { id: `${graphId}:prompt`, role: 'user', content: selection.prompt },
     { id: `${graphId}:example`, role: 'assistant', content: reply },
   ]
   const frontmatter = dumpYaml({
-    title: `${demo.title} · Demo`, graphId, demo_only: true,
-    demo_source: LIVE_CANVAS_HERO_DEMO_SOURCE, preset_id: selection.id,
-    prompt_source: demo.demoOnlyPrompt ? LIVE_CANVAS_HERO_DEMO_SOURCE : 'agentic-canvas-os/docs/PROMPT-PRESETS.md',
+    title: `${title} · Demo`, graphId, demo_only: true,
+    demo_source: demo ? LIVE_CANVAS_HERO_DEMO_SOURCE : 'agentic-canvas-os/docs/PROMPT-PRESETS.md', preset_id: selection.id,
+    prompt_source: demo?.demoOnlyPrompt ? LIVE_CANVAS_HERO_DEMO_SOURCE : 'agentic-canvas-os/docs/PROMPT-PRESETS.md',
     kgCanvasSurfaceMode: 'canvas', kgCanvasRenderMode: '2d', kgCanvas2dRenderer: 'storyboard',
     flow: {
       nodes: graph.nodes.map(node => ({ id: node.id, type: node.type, label: node.label,
@@ -50,9 +53,11 @@ export function buildLiveCanvasHeroDemoDocument(selection: LiveCanvasHeroPresetS
       edges: graph.edges,
     },
   }, { lineWidth: 100, noRefs: true })
-  const text = ['---', frontmatter.trimEnd(), '---', '', `# ${demo.title} · Demo`, '',
-    '> Example outputs and conversation from demo.md. No model call or generated artifact.', '',
-    '## Prompt preset', '', selection.prompt, '', '## Example response', '', reply, '',
+  const text = ['---', frontmatter.trimEnd(), '---', '', `# ${title} · Demo`, '',
+    demo
+      ? '> Example outputs and conversation from demo.md. No model call or generated artifact.'
+      : '> Local source-backed prompt preview. No model call, remote write, or target execution.', '',
+    '## Prompt preset', '', selection.prompt, '', demo ? '## Example response' : '## Preview', '', reply, '',
   ].join('\n')
   return { text, messages }
 }
@@ -65,9 +70,9 @@ export async function activateLiveCanvasHeroDemo(selection: LiveCanvasHeroPreset
     activateAgentRunPrompt(selection.prompt)
     return
   }
-  const demo = await loadLiveCanvasHeroDemo(selection.id)
+  const demo = (await loadLiveCanvasHeroDemos()).find(entry => entry.id === selection.id)
   if (selection.id === 'flight-sim') {
-    if (demo.sourcePath !== FLIGHT_SIM_HERO_DEMO_SOURCE_PATH
+    if (!demo || demo.sourcePath !== FLIGHT_SIM_HERO_DEMO_SOURCE_PATH
       || selection.prompt.trim().replace(/\s+/g, ' ') !== '/flight.sim @canvas #flight operation=open') {
       throw new Error('Reload the source-backed Flight Sim preset before opening Demo.')
     }
@@ -94,7 +99,7 @@ export async function activateLiveCanvasHeroDemo(selection: LiveCanvasHeroPreset
     await activateProgrammaticDroneDemo()
     return
   }
-  if (demo.repository) {
+  if (demo?.repository) {
     const { activateLiveCanvasHeroRepositoryDemo } = await import('./activateLiveCanvasHeroRepositoryDemo')
     return activateLiveCanvasHeroRepositoryDemo(selection, demo)
   }
