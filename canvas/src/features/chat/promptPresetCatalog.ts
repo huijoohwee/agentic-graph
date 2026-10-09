@@ -167,6 +167,11 @@ const parsePreset = (value: unknown): PromptPreset | null => {
     if (runtimeCommand !== '/xr.physics' || activation !== 'source-backed-canvas'
       || responseMode !== 'native-chat-response' || invocation?.action !== 'physics'
       || invocation.physics.scope !== 'controller') return null
+  } else if (id === 'software-forensics') {
+    const invocation = parseChatSkillSlashInvocation(prompt)
+    if (runtimeCommand !== '/software.forensics' || activation !== 'source-backed-canvas'
+      || responseMode !== 'native-chat-response'
+      || invocation?.skill.slashCommand !== runtimeCommand) return null
   } else if (id === IMAGE_TO_THREEJS_PROMPT_PRESET_ID) {
     if (
       slashCommand !== '/image.to-threejs'
