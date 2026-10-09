@@ -246,41 +246,23 @@ jobs:
           AGENTIC_OS_REQUIRE_REMOTE_SCOPE_CHECK: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
         run: npm run --silent collaboration:contract:check -- --json > collaboration-contract-report.json
 
-      - name: Upload collaboration contract report
+      - name: Validate collaboration contract report
+        working-directory: agentic-graph
+        run: npm run --silent collaboration:report:check -- --json collaboration-contract-report.json > collaboration-validation-result.json
+
+      - name: Validate collaboration validation result
+        working-directory: agentic-graph
+        run: npm run --silent collaboration:report:check-result -- collaboration-validation-result.json --report collaboration-contract-report.json --source-revision "$AGENTIC_OS_SOURCE_REVISION"
+
+      - name: Upload validated collaboration contract proof
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: collaboration-contract-report
-          path: agentic-graph/collaboration-contract-report.json
+          name: collaboration-contract-proof
+          path: |
+            agentic-graph/collaboration-contract-report.json
+            agentic-graph/collaboration-validation-result.json
           if-no-files-found: error
           retention-days: 7
-
-      - name: Download collaboration contract report proof
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: collaboration-contract-report
-          path: agentic-graph/collaboration-contract-report-proof
-
-      - name: Validate downloaded collaboration contract report
-        working-directory: agentic-graph
-        run: npm run --silent collaboration:report:check -- --json collaboration-contract-report-proof/collaboration-contract-report.json > collaboration-validation-result.json
-
-      - name: Upload collaboration validation result
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: collaboration-validation-result
-          path: agentic-graph/collaboration-validation-result.json
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Download collaboration validation result proof
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: collaboration-validation-result
-          path: agentic-graph/collaboration-validation-result-proof
-
-      - name: Validate downloaded collaboration validation result
-        working-directory: agentic-graph
-        run: npm run --silent collaboration:report:check-result -- collaboration-validation-result-proof/collaboration-validation-result.json --report collaboration-contract-report-proof/collaboration-contract-report.json --source-revision "$AGENTIC_OS_SOURCE_REVISION"
 
       - name: Capture protected CI source inputs
         id: ci_evidence_capture
