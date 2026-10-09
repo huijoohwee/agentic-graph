@@ -103,6 +103,7 @@ export const buildPagesMirrorAgentReadyPlan = async ({ agenticGraphRoot, mirrorR
     { label: 'agentic-os integration helper', source: source('cloudflare', 'pages', 'runtime-integration-hub.mjs'), target: target('functions', 'api', '_integrationHub.js') },
     { label: 'agentic-graph graph API Pages Function', source: source('cloudflare', 'pages', 'runtime-graph.mjs'), target: target('functions', 'api', 'graph.js'), targetIntegrationHubSpecifier: './_integrationHub.js' },
     { label: 'agentic-os chat proxy Pages Function', source: source('cloudflare', 'pages', 'runtime-chat-proxy.mjs'), target: target('functions', '__chat_proxy', '[[path]].js'), targetIntegrationHubSpecifier: '../api/_integrationHub.js' },
+    { label: 'agentic-os source evidence Pages Function', source: source('cloudflare', 'pages', 'agentic-os-source-evidence.mjs'), target: target('functions', 'agentic-os', 'api', 'observability-workspace', '[[path]].js') },
   ]
 
   const agentReadyDocRouteTarget = target('functions', 'agentic-graph', 'doc', '[[path]].js')

@@ -122,6 +122,24 @@ test("ingest emits deterministic persisted-source progress fragments", async (t)
   }
 });
 
+test("native binary metadata is indexed for a bounded recognized module", async (t) => {
+  const fixture = await createFixture(t);
+  await writeFile(fixture.corpusRoot, "assets/module.wasm", Buffer.from([
+    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
+  ]));
+  const ingest = await ingestFixture(fixture);
+  const graph = await materializeFixture(fixture, ingest);
+  const source = graph.nodes.find((node) => node.type === "SourceFile"
+    && node.properties["corpus:sourcePath"] === "assets/module.wasm");
+  assert.equal(source?.properties["corpus:parserFidelity"], "structural-parser");
+  assert.equal(source?.properties["native:format"], "WebAssembly");
+  const artifact = graph.nodes.find((node) => node.type === "NativeBinaryArtifact"
+    && node.properties["corpus:sourcePath"] === "assets/module.wasm");
+  assert.equal(artifact?.properties["native:format"], "WebAssembly");
+  assert.ok(graph.edges.some((edge) => edge.label === "has-native-artifact"
+    && edge.source === source?.id && edge.target === artifact?.id));
+});
+
 test("generated parser registry is verified and fences discovery, snapshot identity, and cache reuse", async (t) => {
   const base = await fs.mkdtemp(path.join(os.tmpdir(), "agentic-graph-kg-generated-parser-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));

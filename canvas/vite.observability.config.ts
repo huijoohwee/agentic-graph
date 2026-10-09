@@ -31,10 +31,11 @@ export default defineConfig(async environment => {
     optimizeDeps: { ...native.optimizeDeps, include: ['react', 'react-dom/client', 'd3', 'dagre'] },
     plugins: [react(), tailwindcss(), createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot, graphRoot, allowMissingRepositories }),
       createObservabilityBuildManifestPlugin({ sourceRevision: git(['rev-parse', 'HEAD']),
-        sourceDirty: Boolean(git(['status', '--porcelain', '--untracked-files=normal'])), workspaceManifestDigest: workspace.digest })],
+        sourceDirty: Boolean(git(['status', '--porcelain', '--untracked-files=normal'])), workspaceManifestDigest: workspace.digest,
+        directory: 'observability' })],
     server: { host: '127.0.0.1', strictPort: true, headers: { 'Cache-Control': 'no-store' }, fs: { allow: [graphRoot] } },
-    build: { ...native.build, outDir: path.join(canvasRoot, 'dist/observability'), emptyOutDir: true, sourcemap: false,
-      rollupOptions: { ...native.build?.rollupOptions, input: path.join(canvasRoot, 'observability.html'), output: {
+    build: { ...native.build, outDir: path.join(canvasRoot, 'dist'), emptyOutDir: false, assetsDir: 'observability/assets', sourcemap: false,
+      rollupOptions: { ...native.build?.rollupOptions, input: { index: path.join(canvasRoot, 'observability', 'index.html') }, output: {
         ...(Array.isArray(nativeOutput) ? {} : nativeOutput ?? {}),
         manualChunks: (id, _meta) => {
           const moduleId = id.replace(/\\/g, '/')

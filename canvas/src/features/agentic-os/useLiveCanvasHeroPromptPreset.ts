@@ -11,7 +11,7 @@ export function useLiveCanvasHeroPromptPreset(
   runtime: PromptPresetSelectionRuntime = defaultPromptPresetSelectionRuntime,
 ) {
   const [initialPresetId] = React.useState(() => (
-    isProductEntryLandingRuntime(import.meta.env?.BASE_URL) ? 'launch-copilot' : 'xr-physics'
+    isProductEntryLandingRuntime(import.meta.env?.BASE_URL) ? 'launch-copilot' : 'software-forensics'
   ))
   const [selectedPresetId, setSelectedPresetId] = React.useState(initialPresetId)
   const [draft, updateDraft] = React.useState('')
