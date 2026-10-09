@@ -29,6 +29,7 @@ jobs:
           test -n "$LOCAL_REVIEW_INPUT" && test -n "$RELEASE_EVIDENCE_INPUT" && test "$GITHUB_REF" = "refs/heads/main"
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$RELEASE_SHA"
+      - { name: Fail fast on Dev/Prod docs revision drift, working-directory: agentic-graph, run: 'node scripts/check-runtime-docs-parity.mjs' }
       - { name: Checkout production mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee, path: huijoohwee } }
       - { name: Capture production mirror base revision, id: mirror_revision, working-directory: huijoohwee, run: 'echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"' }
       - { name: Checkout schema mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee.github.io, path: huijoohwee.github.io } }
@@ -202,6 +203,7 @@ jobs:
       - name: Revalidate last-known-good rollback identity
         working-directory: agentic-graph
         run: test "$(git -C ../huijoohwee ls-remote origin refs/heads/main | cut -f1)" = "${{ needs.verify.outputs.mirror_revision }}"
+      - { name: Recheck Dev/Prod docs parity before activation, working-directory: agentic-graph, run: 'node scripts/check-runtime-docs-parity.mjs' }
       - name: Enforce sole deployment ownership
         working-directory: agentic-graph
         env: *cloudflare_release_environment
