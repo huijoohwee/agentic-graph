@@ -455,6 +455,8 @@ try {
   })
   await page.mouse.move(point.x, point.y); await page.mouse.down()
   await page.mouse.move(point.x + 20, point.y + 20); await page.mouse.up()
+  // Let workspace startup run on the host clock; control time only for lease expiry.
+  await page.clock.install({ time: new Date() })
   await page.clock.fastForward(61000)
   await waitForMissionExit(); await page.clock.setSystemTime(new Date()); await openDashboard()
   await choose('baseline-run')
