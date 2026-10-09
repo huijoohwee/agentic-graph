@@ -75,3 +75,27 @@ Do not raise the 15-minute aggregate budget or infer savings from worker count.
 Revert this command change if shared-fixture collisions or resource regressions
 appear. MVP scope is this scheduling repair; GTM/WTP and production proof remain
 unvalidated. CI receipts and diagnostic reports stay outside authored source.
+
+## Collaboration proof artifact transport
+
+The required Integration Gate previously uploaded the collaboration report and
+immediately downloaded it in the same job, then repeated that upload/download
+cycle for its validation envelope. PR #1641's gate failed after 5 minutes 36
+seconds because the just-uploaded report was not yet available to download; the
+canonical integration gate never started. This failure establishes an artifact
+publication race, not a report-validation or candidate-source failure.
+
+The workflow now validates the generated report in place, validates the result
+envelope against the exact report bytes and CI source revision, and retains both
+validated files in one seven-day artifact. The separate immutable release
+manifest upload/download proof remains unchanged. This removes one artifact
+upload and both same-job report downloads from the required path while retaining
+schema, digest, revision, upload-failure, and gate-order checks. It does not claim
+a specific time saving until a protected run is observed.
+
+Acceptance: the focused collaboration report contract test proves the local
+validation order, exact-byte pairing, combined retained artifact, and absence of
+same-job downloads for this report. The protected Integration Gate must run on
+the exact candidate before integration. Revert this workflow change and its
+contract/documentation updates if artifact retention or the canonical gate's
+source binding regresses. No production or cleanup authority is introduced.

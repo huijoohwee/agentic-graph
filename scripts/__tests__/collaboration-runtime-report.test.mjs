@@ -349,13 +349,12 @@ test('validation-result CLI accepts a stored artifact and rejects schema drift',
   }
 })
 
-test('integration round-trips the real validation envelope artifact before the canonical gate', async () => {
+test('integration validates local collaboration proof before retaining one artifact and starting the canonical gate', async () => {
   const workflowSource = await readFile(path.resolve(repoRoot, '.github/workflows/integration.yml'), 'utf8')
   const orderedProofSteps = [
-    'Validate downloaded collaboration contract report',
-    'Upload collaboration validation result',
-    'Download collaboration validation result proof',
-    'Validate downloaded collaboration validation result',
+    'Validate collaboration contract report',
+    'Validate collaboration validation result',
+    'Upload validated collaboration contract proof',
     'Run canonical integration gate',
   ]
   let previousIndex = -1
@@ -366,12 +365,15 @@ test('integration round-trips the real validation envelope artifact before the c
   }
   assert.match(
     workflowSource,
-    /collaboration:report:check -- --json .* > collaboration-validation-result\.json/,
+    /collaboration:report:check -- --json collaboration-contract-report\.json > collaboration-validation-result\.json/,
   )
   assert.match(
     workflowSource,
-    /collaboration:report:check-result -- collaboration-validation-result-proof\/collaboration-validation-result\.json --report collaboration-contract-report-proof\/collaboration-contract-report\.json --source-revision "\$AGENTIC_OS_SOURCE_REVISION"/,
+    /collaboration:report:check-result -- collaboration-validation-result\.json --report collaboration-contract-report\.json --source-revision "\$AGENTIC_OS_SOURCE_REVISION"/,
   )
+  assert.match(workflowSource, /name: collaboration-contract-proof[\s\S]*?agentic-graph\/collaboration-contract-report\.json[\s\S]*?agentic-graph\/collaboration-validation-result\.json/)
+  assert.doesNotMatch(workflowSource, /collaboration-contract-report-proof|collaboration-validation-result-proof/)
+  assert.doesNotMatch(workflowSource, /- name: Download collaboration (?:contract report|validation result)/)
   assert.match(
     workflowSource,
     /AGENTIC_OS_SOURCE_REVISION: \$\{\{ github\.event\.pull_request\.head\.sha \|\| (?:inputs\.expected_head_sha \|\| )?github\.sha \}\}/,
