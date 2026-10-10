@@ -287,7 +287,7 @@ function hasOnlySafeSourceFileAdditions(
   for (let index = 0; index < before.length; index += 1) {
     const previous = before[index]
     const latest = current[index]
-    if (!previous || !latest || !areSourceFileRecordsEqual({ ...previous, status: latest.status }, latest)) return false
+    if (!previous || !latest || !areSourceFileRecordsEqual(previous, latest)) return false
   }
   const knownIds = new Set(before.map(file => file.id))
   const knownPaths = new Set(before.map(file => String(file.source?.path || '')).filter(Boolean))
@@ -451,7 +451,7 @@ export async function materializeActiveWorkspaceEntryIntoSourceFiles(args?: Acti
       let current = useGraphStore.getState()
       if ((error as { code?: string })?.code !== 'SOURCE_FILES_MATERIALIZATION_STALE') throw error
       if (useMarkdownExplorerStore.getState().activePath !== explorer) {
-        if (args?.applyToGraph === true) return null
+        if (args?.applyToGraph === true && !args?.activePathOverride) return null
         throw error
       }
       if (attempt || !(error as { retryable?: boolean }).retryable) throw error
@@ -476,7 +476,8 @@ export async function materializeActiveWorkspaceEntryIntoSourceFiles(args?: Acti
         const readConvergence = () => {
           const state = { applyToGraph: args?.applyToGraph, activePath, activeSourcePath: resolveWorkspaceSourcePathKey(activePath || ''),
             initial, before, current: useGraphStore.getState(), requestedSourceFiles: request?.sourceFilesSnapshot || before.sourceFiles }
-          return readColdStartMaterializationSource({ ...state, preparedSourceFiles: current.sourceFiles })?.text
+          const preparedSourceFiles = Array.isArray(request?.premergedSourceFiles) ? request.premergedSourceFiles : current.sourceFiles
+          return readColdStartMaterializationSource({ ...state, preparedSourceFiles })?.text
             ?? readPassiveMaterializationDocumentText({ ...state, documentKey: workspaceDocumentKey(activePath || '') })
         }
         expectedSourceText = readConvergence()
