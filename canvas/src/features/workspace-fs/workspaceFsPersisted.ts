@@ -21,7 +21,6 @@ import {
 import { isWorkspaceRepoLocalRunReadyBootstrap } from './workspaceRunReadyDemos'
 import {
   ensureWorkspaceDocsMirrorFolder,
-  readCanonicalWorkspaceSeedMirrorEntries,
   readWorkspaceInitializationDocsMirrorEntries,
   upsertWorkspaceDocsMirrorText,
   upsertWorkspaceInitializationSeedText,
@@ -179,18 +178,16 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
     if (await migrateLegacyAuthoredMarkdownNotes(collections)) changed = true
     if (await upgradeAuthoredMarkdownNoteInitialDocuments(collections)) changed = true
     const docsOnlyMode = readWorkspaceSourceFilesDocsOnlySetting()
-    const sourceDocsMirrorEntries = !docsOnlyMode
-      ? []
-      : isWorkspaceRepoLocalRunReadyBootstrap()
-        ? await readCanonicalWorkspaceSeedMirrorEntries()
-        : await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
+    const sourceDocsMirrorEntries = docsOnlyMode
+      ? await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
+      : []
     const docsMirrorEntries = docsOnlyMode
       ? sourceDocsMirrorEntries.every(entry => entry.authority === 'agentic-canvas-os-storage')
         ? sourceDocsMirrorEntries
         : await mergeCanonicalXrPhysicsWorkspaceSeedIntoDocsMirror(sourceDocsMirrorEntries)
       : []
-    const canonicalWorkspaceSeedEntries = !docsOnlyMode && isWorkspaceRepoLocalRunReadyBootstrap()
-      ? await readCanonicalWorkspaceSeedMirrorEntries()
+    const canonicalWorkspaceDocsMirrorEntries = !docsOnlyMode && isWorkspaceRepoLocalRunReadyBootstrap()
+      ? await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
       : []
     const hasDocsMirrorFiles = sourceDocsMirrorEntries.length > 0
     const hasAnyFilesNow = await collections.entries.find({ selector: { kind: 'file' } }).exec().then(rows => rows.length > 0)
@@ -254,7 +251,7 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
     ))
     const canonicalWorkspaceSeedSyncSuppressed = userClearedAll && !hasNoncanonicalFile
     const canonicalWorkspaceSeedInventoryAvailable = !canonicalWorkspaceSeedSyncSuppressed && (
-      canonicalWorkspaceSeedEntries.length > 0
+      canonicalWorkspaceDocsMirrorEntries.length > 0
       || sourceDocsMirrorEntries.some(entry => isCanonicalWorkspaceSeedAuthority(entry.authority))
     )
     const clearedWorkspaceNeedsProtectedXrOnly = userClearedAll
@@ -366,10 +363,8 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
       }
       if (hasDocsMirrorFiles && await syncWorkspaceDocsMirrorEntries(collections, docsMirrorEntries)) changed = true
       if (
-        canonicalWorkspaceSeedEntries.length > 0
-        && await syncWorkspaceDocsMirrorEntries(collections, canonicalWorkspaceSeedEntries, {
-          scope: 'canonical-workspace-seeds',
-        })
+        canonicalWorkspaceDocsMirrorEntries.length > 0
+        && await syncWorkspaceDocsMirrorEntries(collections, canonicalWorkspaceDocsMirrorEntries)
       ) changed = true
       if (canonicalXrDocsMirrorEnabled && await clearStaleXrPhysicsSourcesIfCanonicalMaterialized(collections)) changed = true
       if (!seeded) lsSetBool(LS_KEYS.markdownWorkspaceSeeded, true)
@@ -402,10 +397,8 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
     }
     if (hasDocsMirrorFiles && await syncWorkspaceDocsMirrorEntries(collections, docsMirrorEntries)) changed = true
     if (
-      canonicalWorkspaceSeedEntries.length > 0
-      && await syncWorkspaceDocsMirrorEntries(collections, canonicalWorkspaceSeedEntries, {
-        scope: 'canonical-workspace-seeds',
-      })
+      canonicalWorkspaceDocsMirrorEntries.length > 0
+      && await syncWorkspaceDocsMirrorEntries(collections, canonicalWorkspaceDocsMirrorEntries)
     ) changed = true
     if (canonicalXrDocsMirrorEnabled && await clearStaleXrPhysicsSourcesIfCanonicalMaterialized(collections)) changed = true
     lsSetBool(LS_KEYS.markdownWorkspaceSeeded, true)
