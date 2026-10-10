@@ -1,0 +1,121 @@
+name: Production Rollback Baseline Capture
+run-name: Rollback baseline for release run ${{ inputs.run_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Exact successful protected Production Release run to recapture
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment:
+      name: production
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUN_ID: ${{ inputs.run_id }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+      AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-os/catalog/dictionaries
+    steps:
+      - name: Checkout exact protected main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          path: agentic-graph
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: agentic-graph/package-lock.json
+
+      - name: Install dependencies
+        working-directory: agentic-graph
+        run: npm ci --no-audit --no-fund
+
+      - name: Resolve Agentic Canvas OS docs dependency
+        id: agentic_canvas_os_docs
+        working-directory: agentic-graph
+        run: npm run --silent runtime:docs-dependency:resolve -- --github-output >> "$GITHUB_OUTPUT"
+
+      - name: Checkout Agentic Canvas OS docs SSOT
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: ${{ steps.agentic_canvas_os_docs.outputs.repository }}
+          ref: ${{ steps.agentic_canvas_os_docs.outputs.ref }}
+          path: agentic-os
+          fetch-depth: 0
+
+      - name: Checkout production mirror
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: huijoohwee/huijoohwee
+          ref: main
+          path: huijoohwee
+          fetch-depth: 1
+
+      - name: Verify exact source and prepare private evidence directory
+        id: prepare_capture
+        working-directory: agentic-graph
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          test "$GITHUB_REF" = refs/heads/main
+          test "$(git symbolic-ref --short HEAD)" = main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+          release_source_sha="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq .head_sha)"
+          [[ "$release_source_sha" =~ ^[0-9a-f]{40}$ ]]
+          git fetch --no-tags --depth=1 origin "$release_source_sha"
+          git cat-file -e "$release_source_sha:.github/workflows/release.yml"
+          mkdir -p "$RUNNER_TEMP/production-rollback-baseline"
+          printf '{"schema":"agentic-graph/rollback-baseline-capture-request/v1","captureRunId":"%s","releaseRunId":"%s","productionAuthorized":false}\n' \
+            "$GITHUB_RUN_ID" "$RUN_ID" > "$RUNNER_TEMP/production-rollback-baseline/capture-request.json"
+
+      - name: Capture read-only Production rollback baseline
+        id: capture
+        working-directory: agentic-graph
+        run: >-
+          node ./scripts/production-rollback-baseline.mjs
+          --run-id "$RUN_ID"
+          --mirror-root "$GITHUB_WORKSPACE/huijoohwee"
+          --output-dir "$RUNNER_TEMP/production-rollback-baseline/evidence"
+
+      - name: Retain complete or partial evidence
+        if: always() && steps.prepare_capture.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4
+        with:
+          name: production-rollback-baseline-${{ github.run_id }}
+          path: ${{ runner.temp }}/production-rollback-baseline
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Record capture summary
+        if: always() && steps.prepare_capture.outcome == 'success'
+        env:
+          CAPTURE_OUTCOME: ${{ steps.capture.outcome }}
+        run: |
+          {
+            echo "## Read-only Production rollback baseline"
+            echo "- Release run: `$RUN_ID`"
+            echo "- Capture outcome: `$CAPTURE_OUTCOME`"
+            echo "- Evidence artifact: `production-rollback-baseline-$GITHUB_RUN_ID`"
+            echo "- Production authorization: `false`"
+          } >> "$GITHUB_STEP_SUMMARY"
