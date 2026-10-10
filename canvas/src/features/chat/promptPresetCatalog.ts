@@ -203,6 +203,9 @@ const parsePreset = (value: unknown): PromptPreset | null => {
   } else if (runtimeCommand === '/crawler-agent') {
     const invocation = parseNativeCrawlerInvocation(prompt)
     if (!invocation || invocation.command !== runtimeCommand || activation !== 'chat-agent') return null
+  } else if (activation === 'source-backed-canvas') {
+    const leadingCommand = /^\/[A-Za-z0-9][A-Za-z0-9_.-]*(?=\s|$)/.exec(prompt)?.[0]
+    if (leadingCommand !== runtimeCommand) return null
   } else {
     const invocation = parseChatSkillSlashInvocation(prompt)
     if (!invocation || invocation.skill.slashCommand !== runtimeCommand || activation !== 'chat-agent') return null
