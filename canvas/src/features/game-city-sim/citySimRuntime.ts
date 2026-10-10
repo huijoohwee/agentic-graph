@@ -5,57 +5,24 @@ import {
 } from '@/features/geospatial/geospatialSurfaceOwnershipRuntime'
 import { activateXrSceneSurface, deactivateXrSceneGameplayMode, registerXrSceneGameplayMode } from '@/features/three/xrSceneSurfaceRuntime'
 import type { GameOsModeDeclaration } from 'grph-shared/game-os/index'
-import {
-  CITY_SIM_FIXED_STEP_MS,
-  freezeCityGrid,
-  type CityGrid,
-} from './citySimModel'
-import {
-  validateCitySimAuthoredSource,
-  type CitySimAuthoredSource,
-} from './citySimAuthoredSource'
+import { CITY_SIM_FIXED_STEP_MS, freezeCityGrid, type CityGrid } from './citySimModel'
+import { validateCitySimAuthoredSource, type CitySimAuthoredSource } from './citySimAuthoredSource'
 import { loadCityGridFromWorkspace } from './citySimPersistence'
-import {
-  createInitialCityGameplay,
-  moveCityGameplayPlayer,
-  moveCityGameplayPlayerToCoordinate,
-  selectCityGameplayPlayer,
-} from './citySimGameplay'
-import {
-  citySimSnapshot as snapshot,
-  publishCitySimFailure as publishFailure,
-  publishCitySimSnapshot as publish,
-  publishCitySimSuccess as publishSuccess,
-  readCitySimSnapshot,
-  resetCitySimSnapshotForTests,
-  subscribeCitySimSnapshot,
-  type CitySimSaveStatus,
-  type CitySimSnapshot,
-  type CitySimSnapshotUpdate,
-} from './citySimRuntimeState'
+import { createInitialCityGameplay } from './citySimGameplay'
+import { createCitySimGameplayCommands } from './citySimRuntimeGameplay'
+import { citySimSnapshot as snapshot, publishCitySimFailure as publishFailure, publishCitySimSnapshot as publish, publishCitySimSuccess as publishSuccess, readCitySimSnapshot, resetCitySimSnapshotForTests, subscribeCitySimSnapshot, type CitySimSaveStatus, type CitySimSnapshot, type CitySimSnapshotUpdate } from './citySimRuntimeState'
 import { createCitySimSynchronousCommands } from './citySimSynchronousCommands'
-import {
-  createCitySimPersistenceCommands,
-  type CitySimMalformedDocument,
-  type CitySimWorkspaceOptions,
-} from './citySimPersistenceCommands'
-import {
-  captureCitySimPreviousCanvasSurface,
-  restoreCitySimPreviousCanvasSurface,
-  type CitySimPreviousCanvasSurface,
-} from './citySimSurfaceOwnership'
+import { createCitySimPersistenceCommands, type CitySimMalformedDocument, type CitySimWorkspaceOptions } from './citySimPersistenceCommands'
+import { captureCitySimPreviousCanvasSurface, restoreCitySimPreviousCanvasSurface, type CitySimPreviousCanvasSurface } from './citySimSurfaceOwnership'
 import { isCityCoopGuestReadOnly, resetCityCoopSnapshotForTests } from './cityCoopState'
-
 export { readCitySimSnapshot, subscribeCitySimSnapshot }
 export type { CitySimOperationResult, CitySimPhase, CitySimSaveStatus, CitySimSnapshot } from './citySimRuntimeState'
-
 export type CitySimOpenOptions = CitySimWorkspaceOptions & Readonly<{
   authoredSource?: CitySimAuthoredSource
   openPanel?: boolean
   previousCanvasSurface?: CitySimPreviousCanvasSurface
   webglSupported?: boolean
 }>
-
 let timer: ReturnType<typeof setTimeout> | null = null
 let timerGeneration = 0
 let asyncGeneration = 0
@@ -67,7 +34,6 @@ let latestCitySimSurfaceIntent: 'idle' | 'open' | 'exit' = 'idle'
 let sessionStartCity: CityGrid | null = null
 let authoredSource: CitySimAuthoredSource | null = null
 let malformedDocument: CitySimMalformedDocument | null = null
-
 function guestReadOnlyResult(operation: string): CitySimSnapshot {
   fenceTimer()
   return publishFailure(
@@ -77,13 +43,11 @@ function guestReadOnlyResult(operation: string): CitySimSnapshot {
     { phase: snapshot.active ? 'stopped' : snapshot.phase },
   )
 }
-
 function fenceTimer(): void {
   timerGeneration += 1
   if (timer) clearTimeout(timer)
   timer = null
 }
-
 const synchronousCommands = createCitySimSynchronousCommands({
   fenceTimer,
   invalidateAsyncOperations: () => {
@@ -99,7 +63,6 @@ const synchronousCommands = createCitySimSynchronousCommands({
     sessionStartCity = city
   },
 })
-
 export const {
   stopCitySim,
   advanceCitySimByFixedStep,
@@ -111,7 +74,19 @@ export const {
   requestCityAdvice,
   applyCityAdvice,
 } = synchronousCommands
-
+const gameplayCommands = createCitySimGameplayCommands({
+  guestReadOnlyResult,
+  isGuestReadOnly: isCityCoopGuestReadOnly,
+  publish,
+  publishFailure,
+  publishSuccess,
+  readSnapshot: () => snapshot,
+})
+export const {
+  moveCitySimPlayerToCoordinate,
+  setCitySimPlayerSelected,
+  travelCitySimPlayerToPoi,
+} = gameplayCommands
 function scheduleNextTick(generation: number): void {
   timer = setTimeout(() => {
     timer = null
@@ -130,11 +105,9 @@ function scheduleNextTick(generation: number): void {
     }
   }, CITY_SIM_FIXED_STEP_MS)
 }
-
 function tickZero(city: CityGrid): CityGrid {
   return city.tick === 0 ? city : freezeCityGrid({ ...city, tick: 0 })
 }
-
 function authoredSourceIssue(source: CitySimAuthoredSource): string | null {
   try {
     const issues = validateCitySimAuthoredSource(source)
@@ -143,7 +116,6 @@ function authoredSourceIssue(source: CitySimAuthoredSource): string | null {
     return error instanceof Error ? error.message : String(error)
   }
 }
-
 function applyLoadedCity(
   city: CityGrid,
   saveStatus: Extract<CitySimSaveStatus, 'loaded' | 'not-loaded'>,
@@ -166,7 +138,6 @@ function applyLoadedCity(
     },
   )
 }
-
 const persistenceCommands = createCitySimPersistenceCommands({
   applyLoadedCity,
   beginAsyncOperation: () => {
@@ -185,21 +156,18 @@ const persistenceCommands = createCitySimPersistenceCommands({
     malformedDocument = document
   },
 })
-
 export async function loadCitySim(
   options: CitySimWorkspaceOptions = {},
 ): Promise<CitySimSnapshot> {
   if (isCityCoopGuestReadOnly()) return guestReadOnlyResult('load')
   return persistenceCommands.loadCitySim(options)
 }
-
 export async function saveCitySim(
   options: CitySimWorkspaceOptions = {},
 ): ReturnType<typeof persistenceCommands.saveCitySim> {
   if (isCityCoopGuestReadOnly()) return Promise.resolve(guestReadOnlyResult('save'))
   return persistenceCommands.saveCitySim(options)
 }
-
 function beginCitySimSurfaceRestoration(
   previous: CitySimPreviousCanvasSurface,
 ): Promise<string | null> {
@@ -210,7 +178,6 @@ function beginCitySimSurfaceRestoration(
   citySimSurfaceRestorationTail = restoreCitySimPreviousCanvasSurface(previous)
   return citySimSurfaceRestorationTail
 }
-
 async function failSurfaceEntry(
   previous: CitySimPreviousCanvasSurface,
   code: string,
@@ -233,13 +200,11 @@ async function failSurfaceEntry(
     },
   )
 }
-
 async function claimCityGeoXrSurface(expectedGeneration: number): Promise<void> {
   await commitCanvasGeospatialSurfaceOwnership(true, {
     isCurrent: () => expectedGeneration === asyncGeneration,
   })
 }
-
 function surfaceOwnershipFailureAfterSupersession(
   error: unknown,
 ): CitySimSnapshot {
@@ -253,7 +218,6 @@ function surfaceOwnershipFailureAfterSupersession(
     { active: false, phase: 'error' },
   )
 }
-
 async function performOpenCitySimSurface(
   options: CitySimOpenOptions = {},
 ): Promise<CitySimSnapshot> {
@@ -362,7 +326,6 @@ async function performOpenCitySimSurface(
       },
     )
   }
-
   publish({
     webglSupported,
     saveStatus: 'loading',
@@ -401,7 +364,6 @@ async function performOpenCitySimSurface(
       { saveStatus: 'malformed' },
     )
   }
-
   if (!source) {
     return failSurfaceEntry(
       previous,
@@ -469,7 +431,6 @@ async function performOpenCitySimSurface(
     )
   }
 }
-
 export function openCitySimSurface(
   options: CitySimOpenOptions = {},
 ): Promise<CitySimSnapshot> {
@@ -488,7 +449,6 @@ export function openCitySimSurface(
   })
   return opening
 }
-
 export async function startCitySim(
   options: CitySimOpenOptions = {},
 ): Promise<CitySimSnapshot> {
@@ -533,45 +493,6 @@ export async function startCitySim(
   scheduleNextTick(timerGeneration)
   return running
 }
-
-export function travelCitySimPlayerToPoi(poiId: string): CitySimSnapshot {
-  if (isCityCoopGuestReadOnly()) return guestReadOnlyResult('travel')
-  if (!snapshot.active) {
-    return publishFailure(
-      'travel',
-      'city-inactive',
-      'Open City Builder on Geo+XR before moving the player.',
-    )
-  }
-  const moved = moveCityGameplayPlayer(snapshot.city, snapshot.gameplay, poiId)
-  if (!moved.state) {
-    return publishFailure('travel', 'invalid-destination', moved.error)
-  }
-  const taskMessage = moved.taskCompleted
-    ? `Goal reached. ${moved.state.completedTasks} task${moved.state.completedTasks === 1 ? '' : 's'} completed.`
-    : `Player moved to ${poiId}. The current goal remains ${moved.state.taskPoiId}.`
-  return publishSuccess('travel', taskMessage, { gameplay: moved.state })
-}
-
-/** Selection and walking are session-only presentation state; neither changes City ticks or saves. */
-export function setCitySimPlayerSelected(selected: boolean): boolean {
-  if (isCityCoopGuestReadOnly() || !snapshot.active || !snapshot.gameplay) return false
-  const gameplay = selectCityGameplayPlayer(snapshot.gameplay, selected)
-  if (!gameplay) return false
-  if (gameplay !== snapshot.gameplay) publish({ gameplay })
-  return true
-}
-
-export function moveCitySimPlayerToCoordinate(
-  coordinate: readonly [longitude: number, latitude: number],
-): boolean {
-  if (isCityCoopGuestReadOnly() || !snapshot.active || !snapshot.gameplay) return false
-  const gameplay = moveCityGameplayPlayerToCoordinate(snapshot.gameplay, coordinate)
-  if (!gameplay) return false
-  publish({ gameplay })
-  return true
-}
-
 function performCitySimSurfaceExit(
   options: Readonly<{ restorePreviousSurface?: boolean }> = {},
 ): CitySimSnapshot {
@@ -599,7 +520,6 @@ function performCitySimSurfaceExit(
   }
   return next
 }
-
 export function exitCitySimSurface(
   options: Readonly<{ restorePreviousSurface?: boolean }> = {},
 ): CitySimSnapshot {
@@ -607,7 +527,6 @@ export function exitCitySimSurface(
   deactivateXrSceneGameplayMode('cityBuilder')
   return next
 }
-
 export async function waitForCitySimSurfaceRestoration(): Promise<CitySimSnapshot> {
   while (true) {
     const opening = citySimSurfaceOpenTail
@@ -627,7 +546,6 @@ export async function waitForCitySimSurfaceRestoration(): Promise<CitySimSnapsho
     )
   }
 }
-
 registerXrSceneGameplayMode('cityBuilder', {
   identity: 'city-builder',
   worldSchema: 'agentic-graph.game-mode.city-builder/v1',
@@ -651,7 +569,6 @@ registerXrSceneGameplayMode('cityBuilder', {
     'camera',
   ],
 })
-
 export function resetCitySimRuntimeForTests(
   options: Readonly<{
     authoredSource?: CitySimAuthoredSource

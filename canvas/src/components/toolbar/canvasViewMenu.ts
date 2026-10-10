@@ -595,6 +595,5 @@ export const buildCanvasViewOptions = (
     const disabledReason = resolveCanvasDisplayControlDisabledReason(option.id, state)
     if (disabledReason && !option.disabled) Object.assign(option, { disabled: true, disabledReason })
   }
-  return options
-}
+  return options }
 export { getCanvasViewTriggerState } from './canvasViewRendererOptions'
