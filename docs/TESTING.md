@@ -1,5 +1,32 @@
 # Testing
 
+## Production Runtime Readiness local browser E2E
+
+Run both local browser journeys from the Graph checkout:
+
+```bash
+node canvas/scripts/run_production_runtime_readiness_e2e.mjs
+```
+
+The test starts a fresh Observability workspace on `127.0.0.1:5175` and the
+`/81rv10/` readiness demo on `127.0.0.1:5185`. It fails if either port is
+already occupied, uses a 390 × 844 CSS-pixel mobile viewport, selects the
+Graph source, maps `src/runtime`, reads one listed file by its exact SHA-256,
+then selects **Production Runtime Readiness · Demo only** and opens its local
+document. Cross-origin HTTP(S) browser requests are blocked and reported; the
+test also checks for model-like requests after demo activation. It runs the
+existing `predev:docs` preparation first, then uses a local prompt catalog that
+contains the required shared preset or the pinned Agentic OS catalog included
+with the installed Graph dependencies. In a task worktree, the dev app may
+return its documented optional 404 for `/docs/workspace-readme.md`; the runner
+records that path and tolerates only that exact 404. Other local HTTP failures
+and browser errors fail the test.
+
+This is local browser evidence for the two UI journeys. The readiness route is
+a static demo and does not check current release state. A pass does not prove
+deployed production availability, release authority, physical-device behavior,
+or production runtime readiness.
+
 ## XR v2 pinned runtime-readiness contract
 
 The XR v2 gates trace the v3.0.0 authority pinned at
