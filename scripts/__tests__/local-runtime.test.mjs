@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { chmodSync, writeFileSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -8,6 +9,7 @@ import test from "node:test";
 import {
   classifyCanonicalRuntimeResidue,
   parseConsumerPinnedDocsRef,
+  refreshProtectedMain,
   resolveCanonicalMainWorktree,
   resolveWorkspaceRootFromGitCommonDir,
   validateCanonicalRuntimeCandidate,
@@ -29,6 +31,10 @@ import {
 
 const applicationSha = "a".repeat(40);
 const docsSha = "b".repeat(40);
+
+function git(cwd, args) {
+  return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+}
 
 function repository(id, revision, overrides = {}) {
   return {
@@ -60,6 +66,35 @@ test("canonical runtime accepts only clean protected exact-main sources", () => 
   const validated = validateCanonicalRuntimeCandidate(validCandidate());
   assert.equal(validated.agenticGraph.headSha, applicationSha);
   assert.equal(validated.agenticCanvasOs.revisionBinding, "fetched-tip");
+});
+
+test("local review refresh updates only origin/main and preserves stale lane refs", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "agentic-local-review-fetch-"));
+  const remote = path.join(root, "origin.git"), source = path.join(root, "source"), clone = path.join(root, "clone");
+  try {
+    git(root, ["init", "--bare", "--initial-branch=main", remote]);
+    git(root, ["init", "--initial-branch=main", source]);
+    git(source, ["config", "user.name", "Local review test"]);
+    git(source, ["config", "user.email", "local-review@example.invalid"]);
+    await writeFile(path.join(source, "main.txt"), "first\n");
+    git(source, ["add", "main.txt"]);
+    git(source, ["commit", "-m", "first"]);
+    git(source, ["remote", "add", "origin", remote]);
+    git(source, ["push", "origin", "main"]);
+    git(root, ["clone", remote, clone]);
+    const staleHead = git(clone, ["rev-parse", "refs/remotes/origin/main"]);
+    git(clone, ["update-ref", "refs/remotes/origin/deleted-lane", staleHead]);
+    await writeFile(path.join(source, "main.txt"), "second\n");
+    git(source, ["commit", "-am", "second"]);
+    git(source, ["push", "origin", "main"]);
+
+    refreshProtectedMain(clone, { gitText: (cwd, args) => git(cwd, args) });
+
+    assert.equal(git(clone, ["rev-parse", "refs/remotes/origin/main"]), git(source, ["rev-parse", "HEAD"]));
+    assert.equal(git(clone, ["rev-parse", "refs/remotes/origin/deleted-lane"]), staleHead);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("canonical runtime binds agentic-os to the consumer pin when it is an ancestor of origin/main", () => {
