@@ -109,12 +109,9 @@ function hydrateActiveXrScene(): boolean {
 }
 
 function activateXrSceneWorkspace(): boolean {
-  const state = useGraphStore.getState()
-  const shouldOpenMedia = !state.floatingPanelOpen
-    || state.floatingPanelView === 'gameMode'
-    || state.floatingPanelView === 'flightSim'
   return activateXrSceneSurface({
-    ...(shouldOpenMedia ? { panelView: 'media', openPanel: true } : {}),
+    panelView: 'media',
+    openPanel: true,
     timeline: true,
   })
 }

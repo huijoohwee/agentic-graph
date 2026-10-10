@@ -78,6 +78,7 @@ export {
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
 } from './flightGeoOverlayMapLibre.js'
 export type {
+  CityGeoGameplayState,
   CityGeoOverlaySnapshot,
   CityGeoParcelState,
   CityGeoViewMode,
@@ -85,6 +86,18 @@ export type {
   CityGeoZoneStyle,
   CityGeographicProfile,
 } from './cityGeoOverlay.js'
+export {
+  applyCityGeoGameplayToMap,
+  cityGeoGameplayFeatureCollection,
+  clearCityGeoGameplayFromMap,
+  CITY_GEO_GAMEPLAY_LAYER_IDS,
+  CITY_GEO_GAMEPLAY_LAYER_ORDER,
+  CITY_GEO_GAMEPLAY_SOURCE_ID,
+  mapHasExactCityGeoGameplay,
+} from './cityGeoGameplayMapLibre.js'
+export type {
+  CityGeoGameplayFeatureCollection,
+} from './cityGeoGameplayMapLibre.js'
 export {
   clearCityGeoOverlay,
   createCityGeoOverlaySnapshot,
@@ -107,6 +120,7 @@ export {
   fitMapToCityPresentation,
 } from './cityGeoOverlayMapLibreController.js'
 export {
+  readGeoMapPresentationPadding,
   readGeoMapViewportPadding,
 } from './geoMapViewport.js'
 export {
@@ -121,10 +135,17 @@ export {
   regionalPoiFeatureCollection,
   regionalPoiProfileBounds,
 } from './regionalPoiMapLibre.js'
+export {
+  deriveGameModeCityMapFrame,
+  deriveXrEnvironmentMapFrame,
+  GAME_MODE_GEO_OVERLAY_SOURCE_ID,
+  gameModeGeoOverlayFeatureCollection,
+} from './gameModeGeoOverlayMapLibre.js'
 export type {
   RegionalPoiBounds,
   RegionalPoiFeatureCollection,
   RegionalPoiFeatureProperties,
+  RegionalPoiMapLibreAppearance,
   RegionalPoiMapLibreOptions,
   RegionalPoiViewMode,
 } from './regionalPoiMapLibre.js'
