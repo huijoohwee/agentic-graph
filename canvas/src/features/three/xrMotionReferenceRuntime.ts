@@ -43,6 +43,7 @@ import {
   resolveDefaultXrShotTargetId,
   resolveXrShotTarget,
 } from './xrShotTargets'
+import { requestGeoXrSharedMediaAssetFocus } from './geoXrSharedMediaProjectionRuntime'
 import {
   buildXrConstrainedCastTransitionPlan,
   buildXrConstrainedSubjectAssetTransformEdit,
@@ -282,7 +283,9 @@ export function selectXrMotionReferenceActor(actorId: string): XrMotionReference
 }
 export function selectXrMotionReferenceShotTarget(targetIdValue: string): XrMotionReferenceRuntimeSnapshot {
   const targetId = String(targetIdValue || '').trim()
-  if (!resolveXrShotTarget(snapshot.plan, targetId) || targetId === snapshot.selectedShotTargetId) return snapshot
+  if (!resolveXrShotTarget(snapshot.plan, targetId)) return snapshot
+  requestGeoXrSharedMediaAssetFocus(targetId)
+  if (targetId === snapshot.selectedShotTargetId) return snapshot
   const selectedMark = snapshot.selectedMark?.kind === 'camera'
     && snapshot.plan.camera.some(mark => mark.id === snapshot.selectedMark?.markId && mark.anchorId === targetId)
     ? snapshot.selectedMark

@@ -104,6 +104,13 @@ export function testXrModeUsesCanonicalFloatingPanel() {
     if (spatialAssetTools.includes(staleMarker)) throw new Error(`expected Media 3D spatial tools to remove stale ${staleMarker}`)
   }
   assertXrPanelTimelineSurfaceContracts({ timelineBottomPanel, cameraFloatingProjection, xrCameraMotion })
+  if (
+    !timelineBottomPanel.includes('data-kg-xr-timeline-empty-state="1"')
+    || !timelineBottomPanel.includes('data-kg-xr-timeline-open-media="1"')
+    || !timelineBottomPanel.includes('activateXrSceneSurface({ panelView: \'media\', openPanel: true, timeline: true })')
+  ) {
+    throw new Error('expected an empty XR Timeline to open the shared Media stage instead of ending in a dead-end message')
+  }
   for (const duplicate of ['data-kg-animation-runtime-controls="shared-xr"', 'aria-label="Animation cast target"', 'aria-label="Animation playhead seconds"']) {
     if (xrAnimationPanel.includes(duplicate)) throw new Error(`expected FloatingPanel Animation to remove duplicate Timeline control ${duplicate}`)
   }

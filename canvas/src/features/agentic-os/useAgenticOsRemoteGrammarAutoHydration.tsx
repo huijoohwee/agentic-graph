@@ -1,7 +1,8 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
-import { isCitySimRunReadyDemoActive, isXrPhysicsRuntimeRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { isXrPhysicsRuntimeRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { isCitySimAuthoredSourceCandidate } from '@/features/game-city-sim/citySimAuthoredSource'
 import { isExplicitOfflineWorkspace, QUERY_PARAM_RUNTIME_IDENTITY_PROOF } from '@/lib/routing/queryParams'
 
 const AgenticOsRemoteGrammarAutoHydrationContext = React.createContext(true)
@@ -27,10 +28,7 @@ export function AgenticOsRemoteGrammarAutoHydrationBoundary(props: {
       state.markdownDocumentName,
       state.markdownDocumentText,
     )
-    || isCitySimRunReadyDemoActive(
-      state.markdownDocumentName,
-      state.markdownDocumentText,
-    )
+    || isCitySimAuthoredSourceCandidate(state.markdownDocumentText)
   ))
   const autoHydrationAllowed = resolveAgenticOsRemoteGrammarAutoHydration({
     sourceFilesReady,

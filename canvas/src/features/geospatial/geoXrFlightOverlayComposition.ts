@@ -19,8 +19,10 @@ export function resolveGeoXrGameplayPresentationOwner(input: Readonly<{
   cityActive: boolean
   flightActive: boolean
   flightBootstrapRequested: boolean
+  gameModeActive?: boolean
 }>): GeospatialPresentationCameraOwner {
   if (input.flightActive) return 'flight'
+  if (input.gameModeActive) return 'game-mode'
   if (input.cityActive) return 'city'
   return input.flightBootstrapRequested ? 'flight' : null
 }
