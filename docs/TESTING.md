@@ -17,8 +17,10 @@ explicit port is occupied or if both resolve to the same port. It uses a
 Graph source, maps `src/runtime`, reads one listed file by its exact SHA-256,
 then selects **Production Runtime Readiness · Demo only** and opens its local
 document. Cross-origin HTTP(S) browser requests are blocked and reported; the
-test also checks for model-like requests after demo activation. It runs the
-existing `predev:docs` preparation first, then uses a local prompt catalog that
+test also checks for model-like requests after demo activation. Locally it runs
+the existing `predev:docs` preparation first. In GitHub Actions, where no
+registered canonical checkout exists, it runs the same application preparation
+steps except the local canonical-ownership check, then uses a local prompt catalog that
 contains the required shared preset or the pinned Agentic OS catalog included
 with the installed Graph dependencies. In a task worktree, the dev app may
 return its documented optional 404 for `/docs/workspace-readme.md`; the runner

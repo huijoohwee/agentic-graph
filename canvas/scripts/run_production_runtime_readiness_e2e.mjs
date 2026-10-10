@@ -50,6 +50,20 @@ function sourceState(root) {
   return git(root, 'status', '--porcelain', '--untracked-files=all')
 }
 
+function prepareApplication() {
+  const options = { cwd: graphRoot, stdio: 'inherit', timeout: 600000 }
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    for (const script of [
+      'prepare:html-viewer-runtime',
+      'prepare:linked-packages',
+      'fix:entities-sourcemaps',
+      'build:settings',
+    ]) execFileSync('npm', ['run', script, '--workspace=@agentic-graph/canvas'], options)
+    return
+  }
+  execFileSync('npm', ['run', 'predev:docs', '--workspace=@agentic-graph/canvas'], options)
+}
+
 async function assertPortAvailable(port) {
   await new Promise((resolve, reject) => {
     const probe = createServer()
@@ -379,7 +393,7 @@ try {
   readinessPort = await selectAvailablePort('AG_RUNTIME_READINESS_E2E_PORT', requestedReadinessPort, [observabilityPort])
   if (observabilityPort === readinessPort) throw new Error('The two E2E server ports must differ.')
   phase = 'application-preparation'
-  execFileSync('npm', ['run', 'predev:docs', '--workspace=@agentic-graph/canvas'], { cwd: graphRoot, stdio: 'inherit', timeout: 600000 })
+  prepareApplication()
   laneStateBefore = sourceState(graphRoot)
   canonicalStateBefore = sourceState(canonicalRoot)
   tempRoot = await mkdtemp(path.join(os.tmpdir(), 'agentic-graph-runtime-readiness-e2e-'))
