@@ -125,6 +125,10 @@ export const runSchemaTests = async (results: TestResult[]) => {
     const mod = await modCanvasXrSharedSurfaceOwnership()
     await mod.testXrSceneSurfaceOwnershipSourceBoundaries()
   })
+  await execTest(results, 'canvas.xrMode.sameDocumentPreservesMediaTimeline', async () => {
+    const mod = await modCanvasXrSharedSurfaceOwnership()
+    await mod.testSameDocumentXrMetadataPreservesMediaAndTimelineWorkspace()
+  })
   await execTest(results, 'canvas.xrMode.agenticEcsCompositionBoundary', async () => {
     const mod = await modXrAgenticEcsComposition()
     await mod.testXrAgenticEcsCompositionBoundaryRemainsExplicit()

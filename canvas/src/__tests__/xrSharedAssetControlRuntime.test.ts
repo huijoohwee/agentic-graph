@@ -320,9 +320,11 @@ export function testSharedXrAssetControlsDriveMediaMotionTimelineAndGroundedGame
       || mediaSource.includes('<XrSharedAssetControls surface="media" />')
       || !motionSource.includes('<XrSharedAssetControls surface="motion-control" />')
       || !motionSource.includes("controlXrSharedAssetControls({ operation: 'select-target', targetId })")
-      || !gameModeSource.includes('<XrSharedAssetControls surface="game-mode" embedded />')
+      || gameModeSource.includes('<XrSharedAssetControls surface="game-mode" embedded />')
+      || gameModeSource.includes('xrMotion.plan.subjects.map(subject => {')
+      || !gameModeSource.includes('Open Media → 3D for XR → Subjects & Props')
       || !retimeSource.includes('data-kg-xr-shared-asset-actions="individual-lane"')) {
-      throw new Error('expected Animation, Motion Control, grounded Game Mode, and individual BottomPanel Timeline lanes to mount the shared XR asset control bridge while Media owns authoring only')
+      throw new Error('expected Animation, Motion Control, and individual BottomPanel Timeline lanes to reuse the shared XR asset bridge while Game Mode links to Media without a duplicate asset list')
     }
     for (const separatePresetLane of ['compatibleSharedAssetPresets.map(preset => {', 'data-kg-xr-shared-asset-preset-lane={preset.id}', 'data-kg-xr-shared-asset-preset-lane-label={preset.id}', "id: `xr-preset:${preset.id}`"]) {
       if (timelineSource.includes(separatePresetLane)) throw new Error(`expected XR animation presets to remain tied to individual XR asset lanes, found separate lane marker ${separatePresetLane}`)

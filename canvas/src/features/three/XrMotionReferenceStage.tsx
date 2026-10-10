@@ -27,8 +27,9 @@ import type { GraphData } from '@/lib/graph/types'
 import { XrSceneLibrarySubject, PathSegment, MarkNumberSprite } from '@/features/three/XrSceneLibrarySubject'
 import { xrMotionReferenceWorldPosition } from '@/features/three/xrMotionReferenceCoordinates'
 import { XrStagePresetGeometry } from '@/features/three/XrStagePresetGeometry'
-import { sampleXrStoryPresentation } from './xrStoryPresentation'
+import { resolveXrStageFitScale } from '@/features/three/xrSceneScale'
 import { sampleXrAnimationPose } from '@/features/three/xrAnimationCatalog'
+import { sampleXrMotionReferenceSubjectPlayback } from './xrMotionReferenceSubjectPlayback'
 import { XrKeyboardChoreographyRuntime } from '@/features/three/XrKeyboardChoreographyRuntime'
 import { readXrPhysicsRuntime, readXrPhysicsRuntimeFrame } from '@/features/three/xrPhysicsRuntime'
 import { resolveXrSubjectMotion, xrPhysicsOwnsAuthoredSubject } from '@/features/three/xrSubjectMotionConstraints'
@@ -408,7 +409,7 @@ export function XrMotionReferenceStage({
   )
   const { boundingBoxEnabled, motionActorId, livePose } = motionControl
   const stage = resolveXrMotionReferenceStage(runtime.plan.stageId)
-  const scale = span / Math.max(stage.sizeMeters[0], stage.sizeMeters[1], 1)
+  const scale = resolveXrStageFitScale(stage.sizeMeters, span)
   const subjectIds = React.useMemo(() => new Set(runtime.plan.subjects.map(subject => subject.id)), [runtime.plan.subjects])
   const placeCastMark = React.useCallback((point: readonly [number, number, number]) => {
     const halfWidth = stage.sizeMeters[0] / 2
@@ -464,19 +465,20 @@ export function XrMotionReferenceStage({
             ? runtime.selectedMark.markId
             : ''
           const actorControlMark = track ? resolveCastControlMark(track, selectedMarkId, runtime.playheadSeconds) : null
-          const subjectPosition = track
-            ? sampleXrMotionReferenceMarks(track.marks, runtime.playheadSeconds)
-            : subject.position
-          const animationPose = resolveMotionControlSubjectPose(subject, motionActorId, livePose)
-            || sampleXrAnimationPose(track?.animation || null, runtime.playheadSeconds)
+          const playback = sampleXrMotionReferenceSubjectPlayback(
+            subject,
+            track,
+            runtime.playheadSeconds,
+            resolveMotionControlSubjectPose(subject, motionActorId, livePose),
+          )
           const subjectNode = (
             <XrSceneLibrarySubject
-              animationPose={animationPose}
-              presentation={sampleXrStoryPresentation(track?.marks || [], runtime.playheadSeconds)}
-              facingYRadians={track ? sampleXrMotionReferenceFacingY(track.marks, runtime.playheadSeconds) : 0}
+              animationPose={playback.animationPose}
+              presentation={playback.presentation}
+              facingYRadians={playback.facingYRadians}
               key={subject.id}
               subject={subject}
-              position={xrMotionReferenceWorldPosition(subjectPosition, scale, groundY)}
+              position={xrMotionReferenceWorldPosition(playback.position, scale, groundY)}
               stageScale={scale}
               selected={sharedAssetControls.selectedKind !== 'npc' && runtime.selectedShotTargetId === subject.id}
               showIdentificationBounds={boundingBoxEnabled}

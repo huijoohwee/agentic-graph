@@ -6,6 +6,7 @@ import {
   setHoveredImmersiveMediaMarker,
   setSelectedImmersiveMediaMarker,
 } from './immersiveMediaRuntime'
+import { bindImmersiveMediaCameraPointerControls } from './immersiveMediaCameraPointerControls'
 import type {
   ImmersiveMediaMarker,
   ImmersiveMediaSnapshot,
@@ -61,8 +62,15 @@ export function ImmersiveMediaGeoProjection({
 }: {
   snapshot: ImmersiveMediaSnapshot
 }) {
+  const cameraInputRef = React.useRef<HTMLElement | null>(null)
   const [introAnimating, setIntroAnimating] = React.useState(false)
   const [transitionOpacity, setTransitionOpacity] = React.useState(1)
+
+  React.useEffect(() => {
+    const element = cameraInputRef.current
+    if (!snapshot.active || !element) return
+    return bindImmersiveMediaCameraPointerControls(element)
+  }, [snapshot.active])
 
   React.useEffect(() => {
     if (!snapshot.active || typeof window === 'undefined') return
@@ -135,12 +143,17 @@ export function ImmersiveMediaGeoProjection({
         <span className={`absolute bottom-[13%] right-0 top-[8%] left-[92%] ${MEDIA_EXPANDED_PREVIEW_OVERLAY_CLASS_NAME}`} />
       </section>
       <figure
+        ref={cameraInputRef}
         className="pointer-events-auto absolute inset-[8%_8%_13%_8%] m-0 overflow-hidden rounded-[2rem] border border-cyan-200/35 transition-all ease-out"
-        aria-label="Immersive flight context media"
+        aria-label="Immersive camera view; drag to look and scroll to zoom"
+        tabIndex={0}
         data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
+        data-kg-immersive-media-camera-input="1"
         style={{
+          cursor: 'grab',
           opacity: transitionOpacity,
           transform: `scale(${introAnimating ? lensScale * 0.92 : lensScale})`,
+          touchAction: 'none',
           transitionDuration: `${snapshot.transitionDurationMs}ms`,
         }}
       >

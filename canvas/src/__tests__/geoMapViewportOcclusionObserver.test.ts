@@ -36,7 +36,34 @@ test('camera padding follows actual viewport size in full, inset and embedded ca
   } finally { dom.window.close() }
 })
 
-test('City camera ignores editor mutations and uses the native map resize lifecycle', async () => {
+test('City camera centers gameplay inside the visible MapLibre aperture', () => {
+  const dom = new JSDOM('<main id="map"></main><aside aria-label="Floating panel"></aside>')
+  const [viewport, panel] = Array.from(dom.window.document.body.children) as HTMLElement[]
+  Object.defineProperties(viewport, { clientWidth: { value: 1106 }, clientHeight: { value: 952 } })
+  viewport.getBoundingClientRect = () => rect(0, 0, 1106, 952)
+  panel.getBoundingClientRect = () => rect(760, 0, 346, 700)
+  const map = new TestMapLibreMap({ container: viewport })
+  const basePadding = readGeoMapViewportPadding(map)
+  const controller = createCityGeoOverlayMapLibreController({
+    map,
+    readSnapshot: () => createSyntheticCityGeoOverlaySnapshot(),
+    subscribe: () => () => {},
+    viewMode: '3d',
+  })
+  try {
+    assert.equal(map.fitBoundsCalls.length, 1)
+    const fittedPadding = map.fitBoundsCalls[0].options.padding as { right: number }
+    assert.ok(
+      fittedPadding.right > basePadding.right,
+      'the panel occlusion shifts City gameplay toward the visible side of the map',
+    )
+  } finally {
+    controller.dispose()
+    dom.window.close()
+  }
+})
+
+test('City camera reframes when editor occlusion changes and on native map resize', async () => {
   const dom = new JSDOM('<main></main><aside aria-label="Markdown Workspace"></aside>')
   const [viewport, editor] = Array.from(dom.window.document.body.children) as HTMLElement[]
   let width = 1106, editorWidth = 400
@@ -50,13 +77,20 @@ test('City camera ignores editor mutations and uses the native map resize lifecy
   })
   try {
     assert.equal(map.fitBoundsCalls.length, 1)
-    editorWidth = 520; editor.style.width = '520px'
-    await new Promise(resolve => dom.window.setTimeout(resolve, 0))
-    assert.equal(map.fitBoundsCalls.length, 1, 'editor changes cannot reapply the camera')
+    const editorFraming = map.fitBoundsCalls[0].options.padding as { left: number }
+    editor.style.display = 'none'
+    await new Promise(resolve => dom.window.setTimeout(resolve, 150))
+    assert.equal(map.fitBoundsCalls.length, 2, 'closing an occluding editor reapplies the camera')
+    const openMapFraming = map.fitBoundsCalls[1].options.padding as { left: number }
+    assert.ok(openMapFraming.left < editorFraming.left,
+      'the camera uses the wider aperture after the editor closes')
+    editor.style.removeProperty('display')
+    await new Promise(resolve => dom.window.setTimeout(resolve, 150))
+    assert.equal(map.fitBoundsCalls.length, 3, 'reopening the editor reapplies the camera')
     width = 600; map.emit('resize')
-    assert.equal(map.fitBoundsCalls.length, 2, 'actual map viewport resize refits')
+    assert.equal(map.fitBoundsCalls.length, 4, 'actual map viewport resize refits')
     map.emit('resize')
-    assert.equal(map.fitBoundsCalls.length, 2, 'unchanged dimensions do not refit twice')
+    assert.equal(map.fitBoundsCalls.length, 4, 'unchanged dimensions do not refit twice')
   } finally {
     controller.dispose()
     assert.equal(map.styleListeners.get('resize')?.size, 0)
