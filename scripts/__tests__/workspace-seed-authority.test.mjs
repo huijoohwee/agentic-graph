@@ -275,17 +275,17 @@ test('rejects City drift from the canonical regional POI zoning contract', async
     ],
     [
       'wrong Geo+XR layer order',
-      'layer_order: ["regional-context", "city", "flight"]',
-      'layer_order: ["city", "regional-context", "flight"]',
+      'layer_order: ["regional-context", "city-zones", "city-gameplay", "flight"]',
+      'layer_order: ["city-zones", "regional-context", "city-gameplay", "flight"]',
     ],
     [
       'wrong profile framing policy',
-      'camera_policy: "fit the selected regional POI profile bounds into the visible panel-adjusted aperture and restore prior padding"',
+      'camera_policy: "fit the selected regional POI profile bounds into the visible panel-adjusted aperture; after a travel action, pan to the player-goal midpoint without changing zoom; restore prior padding on exit"',
       'camera_policy: "fit source-authored parcel bounds"',
     ],
     [
       'wrong camera framing',
-      'framing: "selected regional geographic POI bounds in the visible MapLibre aperture"',
+      'framing: "selected regional geographic POI bounds in the MapLibre aperture after visible workspace and FloatingPanel occlusion"',
       'framing: "source-authored City bounds in the visible MapLibre aperture"',
     ],
     [

@@ -473,7 +473,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
                   },
                 } : undefined}
                 storyboardWidgetPanelsActive={geospatialCompositionEnabled && active2dSurface === 'storyboard'}
-                threeOverlayComposed={cityMapLibreSurfaceRequested ? false : geospatialXrModeEnabled}
+                threeOverlayComposed={geospatialXrModeEnabled}
               />
             )}
           </SemanticMediaFigure>

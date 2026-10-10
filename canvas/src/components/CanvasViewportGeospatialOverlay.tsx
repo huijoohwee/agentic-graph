@@ -32,6 +32,7 @@ import { resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
 import { buildRichMediaPanelNode } from '@/lib/render/richMediaPanelNode'
 import { buildSourceFilesGeospatialSelectionSignature } from '@/features/source-files/sourceFilesSignatures'
 import { readSourceGeospatialSnapshot, subscribeSourceGeospatial, useSourceGeospatialReview, sourceGeospatialReviewBounds } from '@/features/evidence-analysis/geospatialSource'
+import { GeoXrMediaSelectionTargets, useGeoXrGameModePresentation } from './geoXrMediaSelectionTargets'
 import { useCanvasAppliedMarkdownDocument } from '@/features/canvas/useCanvasAppliedMarkdownDocument'
 import {
   isFlightSimHydrationPending,
@@ -39,6 +40,8 @@ import {
   readFlightSimSpatialProfile,
   subscribeFlightSimSnapshot,
 } from '@/features/game-flight-sim/flightSimRuntime'
+import { controlXrSharedAssetControls } from '@/features/three/xrSharedAssetControlRuntime'
+import { selectCityParcel, setCitySimPlayerSelected, moveCitySimPlayerToCoordinate } from '@/features/game-city-sim/citySimRuntime'
 import {
   claimFlightSimReadyPresenter,
   completeFlightSimMapLibreReadyFrame,
@@ -47,29 +50,14 @@ import {
   completeFlightSimStagePreparation,
   readCurrentFlightSimStagePreparationRequest,
 } from '@/features/game-flight-sim/flightSimStagePreparationRuntime'
-import {
-  readFlightSimGeospatialBootstrapRequested,
-  subscribeFlightSimGeospatialBootstrapRequest,
-} from '@/features/game-flight-sim/flightSimSurfaceOpenLifecycle'
-import {
-  readCitySimSnapshot,
-  selectCityParcel,
-  subscribeCitySimSnapshot,
-} from '@/features/game-city-sim/citySimRuntime'
 
 const EMPTY_STRING_ARRAY: string[] = []
 const EMPTY_OPEN_WIDGETS_BY_RENDERER: Record<string, string[]> = {}
 
-function readFlightSimActive(): boolean {
-  return readFlightSimSnapshot().active
-}
-
-function readCitySimActive(): boolean {
-  return readCitySimSnapshot().active
-}
 
 type GeospatialOverlayHostProps = {
   active?: boolean
+  keyboardNavigationEnabled?: boolean
   gameplayPresentationOwner: GeospatialPresentationCameraOwner
   semanticMediaOwner?: MapLibreCanvasSemanticOwner | null
   snapshot?: unknown
@@ -161,26 +149,21 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       semanticMediaOwner?.selectionAttribute.value,
     ],
   )
-  const flightBootstrapRequested = React.useSyncExternalStore(
-    subscribeFlightSimGeospatialBootstrapRequest,
-    readFlightSimGeospatialBootstrapRequested,
-    readFlightSimGeospatialBootstrapRequested,
-  )
-  const flightSimActive = React.useSyncExternalStore(
-    subscribeFlightSimSnapshot,
-    readFlightSimActive,
-    readFlightSimActive,
-  )
-  const citySimActive = React.useSyncExternalStore(
-    subscribeCitySimSnapshot,
-    readCitySimActive,
-    readCitySimActive,
-  )
+  const {
+    citySimActive,
+    flightBootstrapRequested,
+    flightSimActive,
+    gameModeActive,
+    gameModeGeoOverlay,
+    geoXrMediaSelectionAssets,
+    keyboardNavigationEnabled,
+  } = useGeoXrGameModePresentation({ active, composedWithXr })
   const sourceReview = useSourceGeospatialReview()
   const gameplayPresentationOwner = sourceReview ? null : resolveGeoXrGameplayPresentationOwner({
     cityActive: citySimActive,
     flightActive: flightSimActive,
     flightBootstrapRequested,
+    gameModeActive,
   })
   const gympgrphBridge = useGraphStore(
     useShallow(s => ({
@@ -277,6 +260,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       selectedNodeIds: gympgrphBridge.selectedNodeIds,
       selectedEdgeId: gympgrphBridge.selectedEdgeId,
       geospatialPanelNodeIds: storyboardWidgetPanelsActive ? gympgrphBridge.openWidgetNodeIds : [],
+      gameModeGeoOverlay,
     }),
     [
       geospatialGraphData,
@@ -290,6 +274,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       storyboardWidgetPanelsActive,
       gympgrphBridge.viewportControlsPreset,
       gympgrphBridge.zoomState,
+      gameModeGeoOverlay,
     ],
   )
 
@@ -360,6 +345,16 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     gympgrphBridge,
   ])
 
+  const selectGameModeGeoActor = React.useCallback((targetId: string) => {
+    const result = controlXrSharedAssetControls({ operation: 'select-target', targetId })
+    gympgrphBridge.pushUiToast({
+      id: `game-mode:map-target:${targetId}:${result.ok ? 'ok' : 'error'}`,
+      kind: result.ok ? 'success' : 'error',
+      message: result.message,
+    })
+    return result.ok
+  }, [gympgrphBridge.pushUiToast])
+
   const handlers = React.useMemo(
     () => ({
       selectNode: gympgrphBridge.selectNode,
@@ -368,6 +363,9 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       requestZoom: gympgrphBridge.requestZoom,
       requestThreeCamera: gympgrphBridge.requestThreeCamera,
       selectCityParcel,
+      selectGameModeGeoActor,
+      setCityGameplayPlayerSelected: setCitySimPlayerSelected,
+      moveCityGameplayPlayerToCoordinate: moveCitySimPlayerToCoordinate,
       renderPoiInRichMediaPanel,
       pushUiToast: gympgrphBridge.pushUiToast,
       upsertUiToast: gympgrphBridge.upsertUiToast,
@@ -375,12 +373,16 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     }),
     [
       gympgrphBridge.dismissUiToast,
+      moveCitySimPlayerToCoordinate,
       gympgrphBridge.pushUiToast,
       gympgrphBridge.requestThreeCamera,
       gympgrphBridge.requestZoom,
       renderPoiInRichMediaPanel,
+      selectGameModeGeoActor,
       gympgrphBridge.selectEdge,
       gympgrphBridge.selectNode,
+      selectCityParcel,
+      setCitySimPlayerSelected,
       gympgrphBridge.setSelectionSource,
       gympgrphBridge.upsertUiToast,
     ],
@@ -510,8 +512,14 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
         active && composedWithXr && !threeOverlayComposed ? '1' : undefined
       }
     >
+      <GeoXrMediaSelectionTargets
+        active={active && composedWithXr && geoXrMediaSelectionAssets.length > 0}
+        assets={geoXrMediaSelectionAssets}
+        onSelect={selectGameModeGeoActor}
+      />
       <GeospatialOverlayHostLazy
         active={active}
+        keyboardNavigationEnabled={keyboardNavigationEnabled}
         gameplayPresentationOwner={gameplayPresentationOwner}
         semanticMediaOwner={stableSemanticMediaOwner}
         snapshot={snapshot}
