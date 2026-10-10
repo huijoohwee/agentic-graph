@@ -170,6 +170,7 @@ function readFlightSimActive(): boolean {
 }
 
 export function useGeoXrGameModePresentation(args: { active: boolean; composedWithXr: boolean }) {
+  const { active, composedWithXr } = args
   const flightBootstrapRequested = React.useSyncExternalStore(
     subscribeFlightSimGeospatialBootstrapRequest,
     readFlightSimGeospatialBootstrapRequested,

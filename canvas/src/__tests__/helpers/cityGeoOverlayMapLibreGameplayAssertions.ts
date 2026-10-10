@@ -350,7 +350,7 @@ export function testControllerWaitsForRegionalSourceSettlementAndRefits(): void 
   }
 }
 
-async export function testPresentationHookKeepsControllerAcrossCallbacks(): Promise<void> {
+export async function testPresentationHookKeepsControllerAcrossCallbacks(): Promise<void> {
   const { dom, restore } = initJsdomHarness()
   const container = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(container)
