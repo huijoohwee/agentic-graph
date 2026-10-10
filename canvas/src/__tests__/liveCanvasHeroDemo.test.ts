@@ -43,6 +43,16 @@ export async function testLiveCanvasHeroDemoDocumentMatchesConversation(): Promi
   if (!runtimeDocument.text.includes(`prompt_source: ${LIVE_CANVAS_HERO_DEMO_SOURCE}`)) {
     throw new Error('The display-only demo must cite its Graph-owned source, not the shared prompt catalog')
   }
+  const sourceBackedPreview = buildLiveCanvasHeroDemoDocument({
+    id: 'software-forensics',
+    prompt: '/software.forensics @application @working-directory @agent @runtime-proof #reverse-engineering #vcc operation=inspect',
+  }, undefined, 'test-demo-software-forensics')
+  const sourceBackedGraph = tryParseMarkdownFrontmatterFlowGraph('demo.md', sourceBackedPreview.text)
+  if (!sourceBackedGraph || !sourceBackedPreview.text.includes('No model call, remote write, or target execution')
+    || !sourceBackedPreview.text.includes('preset_id: software-forensics')
+    || sourceBackedGraph.graphData.nodes.some(node => node.properties.command)) {
+    throw new Error('A source-backed preset without a Graph-owned example must open as a local, non-executing preview')
+  }
   const catalog = await loadPromptPresetCatalog(await createPresetWorkspace())
   if (isPromptPresetCatalogError(catalog)) throw new Error(catalog.error)
   // Unique demo ids are enforced by the source parser. Additional demos may precede paired catalog integration.

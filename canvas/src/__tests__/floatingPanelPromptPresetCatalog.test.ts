@@ -101,14 +101,33 @@ export async function testFloatingPanelChatPromptPresetCatalogLoadsChatAndMcpPre
     '    chat_route: "active native shared runtime"',
     '    mcp_tool: "agentic-graph.agentic_canvas_os.docs.invoke"', '    mcp_token: "/crawler-agent"', '    prompt: |-',
     '      /crawler-agent @url:https://example.invalid @reference-policy #canvas', '',
-    '      Crawl the referenced website with the reference policy.', '---', '', '# Prompt presets',
+    '      Crawl the referenced website with the reference policy.',
+    '', '  - id: "software-forensics"', '    label: "Software Forensics"',
+    '    slash_command: "/software-forensics-prompt-preset"', '    runtime_command: "/software.forensics"',
+    '    description: "Inspect selected source through a bounded evidence workflow."',
+    '    activation: "source-backed-canvas"',
+    '    invocation_modes: ["native-chat-response", "mcp-invocation"]',
+    '    chat_route: "active native shared runtime"',
+    '    mcp_tool: "agentic-graph.agentic_canvas_os.docs.invoke"', '    mcp_token: "/software.forensics"',
+    '    prompt: |-','      /software.forensics @application @working-directory @agent @runtime-proof #reverse-engineering #vcc operation=inspect',
+    '---', '', '# Prompt presets',
   ].join('\n'))
   await workspace.writeFileText(PROMPT_PRESET_CATALOG_WORKSPACE_PATH, extendedCatalogMarkdown)
   const extendedCatalog = await loadPromptPresetCatalog(workspace)
-  if (isPromptPresetCatalogError(extendedCatalog) || extendedCatalog.presets.length !== catalog.presets.length + 1) throw new Error(`expected the source-backed catalog to accept future presets, got ${JSON.stringify(extendedCatalog)}`)
+  if (isPromptPresetCatalogError(extendedCatalog) || extendedCatalog.presets.length !== catalog.presets.length + 2) throw new Error(`expected the source-backed catalog to accept future presets, got ${JSON.stringify(extendedCatalog)}`)
+  const forensics = extendedCatalog.presets.find(preset => preset.id === 'software-forensics')
+  if (!forensics || forensics.activation !== 'source-backed-canvas' || forensics.runtimeCommand !== '/software.forensics') {
+    throw new Error(`expected the source-backed software forensics preset to remain available, got ${JSON.stringify(forensics)}`)
+  }
   const extendedInvocationEntries = buildPromptPresetChatInvocationCatalogEntries(extendedCatalog.presets)
-  if (extendedInvocationEntries.at(-1)?.token !== '/crawler-reference-prompt-preset') {
+  if (!extendedInvocationEntries.some(entry => entry.token === '/crawler-reference-prompt-preset')
+    || !extendedInvocationEntries.some(entry => entry.token === '/software-forensics-prompt-preset')) {
     throw new Error(`expected future source-backed presets to join slash invocation without a local registry edit, got ${JSON.stringify(extendedInvocationEntries)}`)
+  }
+  await workspace.writeFileText(PROMPT_PRESET_CATALOG_WORKSPACE_PATH,
+    extendedCatalogMarkdown.replace('/software.forensics @application', '/other.command @application'))
+  if (!isPromptPresetCatalogError(await loadPromptPresetCatalog(workspace))) {
+    throw new Error('Source-backed presets must fail closed when their prompt route drifts from runtime_command')
   }
   const observability = promptCatalogMarkdown.replace('prompt_presets:', `prompt_presets:
   - id: "agent-observability"

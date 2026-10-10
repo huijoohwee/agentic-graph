@@ -167,6 +167,11 @@ const parsePreset = (value: unknown): PromptPreset | null => {
     if (runtimeCommand !== '/xr.physics' || activation !== 'source-backed-canvas'
       || responseMode !== 'native-chat-response' || invocation?.action !== 'physics'
       || invocation.physics.scope !== 'controller') return null
+  } else if (id === 'software-forensics') {
+    const invocation = parseChatSkillSlashInvocation(prompt)
+    if (runtimeCommand !== '/software.forensics' || activation !== 'source-backed-canvas'
+      || responseMode !== 'native-chat-response'
+      || invocation?.skill.slashCommand !== runtimeCommand) return null
   } else if (id === IMAGE_TO_THREEJS_PROMPT_PRESET_ID) {
     if (
       slashCommand !== '/image.to-threejs'
@@ -198,6 +203,9 @@ const parsePreset = (value: unknown): PromptPreset | null => {
   } else if (runtimeCommand === '/crawler-agent') {
     const invocation = parseNativeCrawlerInvocation(prompt)
     if (!invocation || invocation.command !== runtimeCommand || activation !== 'chat-agent') return null
+  } else if (activation === 'source-backed-canvas') {
+    const leadingCommand = /^\/[A-Za-z0-9][A-Za-z0-9_.-]*(?=\s|$)/.exec(prompt)?.[0]
+    if (leadingCommand !== runtimeCommand) return null
   } else {
     const invocation = parseChatSkillSlashInvocation(prompt)
     if (!invocation || invocation.skill.slashCommand !== runtimeCommand || activation !== 'chat-agent') return null
