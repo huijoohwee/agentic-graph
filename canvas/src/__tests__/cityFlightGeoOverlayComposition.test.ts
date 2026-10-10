@@ -146,6 +146,18 @@ export function testCityFlightGeoOverlayCompositionIsDeterministic() {
       flightBootstrapRequested: true,
     }), 'city')
     assert.equal(resolveGeoXrGameplayPresentationOwner({
+      cityActive: true,
+      flightActive: false,
+      flightBootstrapRequested: false,
+      gameModeActive: true,
+    }), 'game-mode')
+    assert.equal(resolveGeoXrGameplayPresentationOwner({
+      cityActive: true,
+      flightActive: true,
+      flightBootstrapRequested: false,
+      gameModeActive: true,
+    }), 'flight')
+    assert.equal(resolveGeoXrGameplayPresentationOwner({
       cityActive: false,
       flightActive: false,
       flightBootstrapRequested: true,

@@ -70,15 +70,15 @@ export function XrInvocationButton({ invocation, disabled, onInvoke }: { invocat
 
 function XrMediaCatalogThumb({ Icon, color, label, assetId }: { Icon: LucideIcon; color: string; label: string; assetId?: string }) {
   return (
-    <span
-      className={mediaListThumbnailFrameClassName('items-center justify-center cursor-grab active:cursor-grabbing')}
+    <figure
+      className={mediaListThumbnailFrameClassName('m-0 items-center justify-center cursor-grab active:cursor-grabbing')}
       style={{ color }}
-      role="img"
       aria-label={`${label} preview`}
       data-kg-media-xr-thumbnail="media-card"
+      data-kg-xr-catalog-selection-target="asset-artwork"
     >
       <XrCatalogArtwork Icon={Icon} color={color} label={label} assetId={assetId} />
-    </span>
+    </figure>
   )
 }
 
@@ -156,7 +156,7 @@ export function XrLibraryCard({
           <p className={cn('m-0 line-clamp-2 text-xs', UI_THEME_TOKENS.text.secondary)} title={description}>{description}</p>
           <p className={cn('m-0 truncate text-xs uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary)} title={metadata}>{metadata}</p>
         </section>
-        <footer className="flex min-w-0 items-center gap-1" data-kg-media-list-row-section="description">{footer}</footer>
+        <footer className="flex min-w-0 flex-wrap items-center gap-1" data-kg-media-list-row-section="description">{footer}</footer>
       </section>
     </article>
   )
@@ -305,14 +305,15 @@ export function XrSubjectTransformCard({ subject, sceneReady, runControl }: {
           })
         }}
       /></label>
-      <label className="grid gap-0.5 text-xs"><span className={UI_THEME_TOKENS.text.tertiary}>Scale</span><PanelTextInput
+      <label className="grid gap-0.5 text-xs"><span className={UI_THEME_TOKENS.text.tertiary}>Relative scale ×</span><PanelTextInput
         key={`${subject.id}:scale:${subject.scale}`}
         type="number"
         min={0.25}
         max={4}
         step={0.05}
         defaultValue={subject.scale}
-        aria-label={`${subject.label} scale`}
+        aria-label={`${subject.label} relative scale multiplier`}
+        title="1× keeps the shared catalog size. Stage framing and Geo+XR map projection apply uniformly."
         data-kg-media-xr-subject-scale={subject.id}
         onBlur={event => {
           const input = event.currentTarget

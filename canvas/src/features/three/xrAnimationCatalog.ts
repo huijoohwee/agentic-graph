@@ -62,6 +62,8 @@ export type XrAnimationPoseSample = Readonly<{
   rightArmPitchDegrees: number
   leftArmRollDegrees: number
   rightArmRollDegrees: number
+  leftLegPitchDegrees?: number
+  rightLegPitchDegrees?: number
   propCue: XrAnimationPropCue
   eventCues: readonly string[]
 }>
@@ -133,6 +135,8 @@ const emptyPose = (): XrAnimationPoseSample => ({
   rightArmPitchDegrees: 0,
   leftArmRollDegrees: 0,
   rightArmRollDegrees: 0,
+  leftLegPitchDegrees: 0,
+  rightLegPitchDegrees: 0,
   propCue: 'none',
   eventCues: [],
 })
@@ -154,12 +158,12 @@ export function sampleXrAnimationPose(
   if (preset.id === 'fight') {
     const jab = normalized < 0.25 ? smoothstep(normalized / 0.25) : normalized < 0.5 ? 1 - smoothstep((normalized - 0.25) / 0.25) : 0
     const cross = normalized >= 0.5 && normalized < 0.75 ? smoothstep((normalized - 0.5) / 0.25) : normalized >= 0.75 ? 1 - smoothstep((normalized - 0.75) / 0.25) : 0
-    return { rootOffsetMeters: [0, 0, round(-0.08 * Math.abs(wave))], rootRotationDegrees: [round(-6 * Math.abs(wave)), round(12 * (cross - jab)), 0], crouch: round(0.18 + 0.12 * Math.abs(wave)), leftArmPitchDegrees: round(-30 - 105 * jab), rightArmPitchDegrees: round(-30 - 105 * cross), leftArmRollDegrees: -18, rightArmRollDegrees: 18, propCue: 'none', eventCues: jab > 0.85 ? ['jab'] : cross > 0.85 ? ['cross'] : [] }
+    return { rootOffsetMeters: [0, 0, round(-0.08 * Math.abs(wave))], rootRotationDegrees: [round(-6 * Math.abs(wave)), round(12 * (cross - jab)), 0], crouch: round(0.18 + 0.12 * Math.abs(wave)), leftArmPitchDegrees: round(-30 - 105 * jab), rightArmPitchDegrees: round(-30 - 105 * cross), leftArmRollDegrees: -18, rightArmRollDegrees: 18, leftLegPitchDegrees: round(8 + 10 * cross), rightLegPitchDegrees: round(8 + 10 * jab), propCue: 'none', eventCues: jab > 0.85 ? ['jab'] : cross > 0.85 ? ['cross'] : [] }
   }
-  if (preset.id === 'dance') return { rootOffsetMeters: [round(wave * 0.22), round(Math.abs(wave) * 0.08), 0], rootRotationDegrees: [0, round(normalized * 360), round(wave * 8)], crouch: round(0.08 + Math.abs(wave) * 0.1), leftArmPitchDegrees: round(-30 - wave * 55), rightArmPitchDegrees: round(-30 + wave * 55), leftArmRollDegrees: round(-35 - wave * 18), rightArmRollDegrees: round(35 - wave * 18), propCue: 'none', eventCues: normalized > 0.46 && normalized < 0.54 ? ['turn'] : [] }
+  if (preset.id === 'dance') return { rootOffsetMeters: [round(wave * 0.22), round(Math.abs(wave) * 0.08), 0], rootRotationDegrees: [0, round(normalized * 360), round(wave * 8)], crouch: round(0.08 + Math.abs(wave) * 0.1), leftArmPitchDegrees: round(-30 - wave * 55), rightArmPitchDegrees: round(-30 + wave * 55), leftArmRollDegrees: round(-35 - wave * 18), rightArmRollDegrees: round(35 - wave * 18), leftLegPitchDegrees: round(wave * 24), rightLegPitchDegrees: round(-wave * 24), propCue: 'none', eventCues: normalized > 0.46 && normalized < 0.54 ? ['turn'] : [] }
   if (preset.id === 'sit') {
     const seated = normalized < 0.35 ? smoothstep(normalized / 0.35) : normalized < 0.8 ? 1 : 1 - smoothstep((normalized - 0.8) / 0.2)
-    return { rootOffsetMeters: [0, round(-0.55 * seated), round(-0.18 * seated)], rootRotationDegrees: [round(12 * seated), 0, 0], crouch: round(0.72 * seated), leftArmPitchDegrees: round(-12 * seated), rightArmPitchDegrees: round(-12 * seated), leftArmRollDegrees: -8, rightArmRollDegrees: 8, propCue: 'none', eventCues: seated > 0.98 ? ['seated'] : [] }
+    return { rootOffsetMeters: [0, round(-0.55 * seated), round(-0.18 * seated)], rootRotationDegrees: [round(12 * seated), 0, 0], crouch: round(0.72 * seated), leftArmPitchDegrees: round(-12 * seated), rightArmPitchDegrees: round(-12 * seated), leftArmRollDegrees: -8, rightArmRollDegrees: 8, leftLegPitchDegrees: round(18 * seated), rightLegPitchDegrees: round(18 * seated), propCue: 'none', eventCues: seated > 0.98 ? ['seated'] : [] }
   }
   if (preset.id === 'drink') {
     const lift = normalized < 0.3 ? smoothstep(normalized / 0.3) : normalized < 0.68 ? 1 : 1 - smoothstep((normalized - 0.68) / 0.32)
@@ -168,9 +172,9 @@ export function sampleXrAnimationPose(
   if (preset.id === 'jump') {
     const launch = Math.max(0, Math.sin(normalized * Math.PI))
     const crouch = normalized < 0.18 ? smoothstep(normalized / 0.18) : normalized > 0.78 ? 1 - smoothstep((normalized - 0.78) / 0.22) : 0
-    return { rootOffsetMeters: [0, round(launch * 1.15), 0], rootRotationDegrees: [round(-8 * launch), 0, 0], crouch: round(crouch * 0.55), leftArmPitchDegrees: round(-25 - launch * 130), rightArmPitchDegrees: round(-25 - launch * 130), leftArmRollDegrees: -14, rightArmRollDegrees: 14, propCue: 'none', eventCues: normalized > 0.47 && normalized < 0.53 ? ['apex'] : normalized > 0.93 ? ['land'] : [] }
+    return { rootOffsetMeters: [0, round(launch * 1.15), 0], rootRotationDegrees: [round(-8 * launch), 0, 0], crouch: round(crouch * 0.55), leftArmPitchDegrees: round(-25 - launch * 130), rightArmPitchDegrees: round(-25 - launch * 130), leftArmRollDegrees: -14, rightArmRollDegrees: 14, leftLegPitchDegrees: round(-32 * launch), rightLegPitchDegrees: round(-32 * launch), propCue: 'none', eventCues: normalized > 0.47 && normalized < 0.53 ? ['apex'] : normalized > 0.93 ? ['land'] : [] }
   }
-  if (preset.id === 'play-cards') return { rootOffsetMeters: [0, -0.52, -0.14], rootRotationDegrees: [9, round(wave * 5), 0], crouch: 0.7, leftArmPitchDegrees: round(-68 - wave * 12), rightArmPitchDegrees: round(-68 + wave * 20), leftArmRollDegrees: -22, rightArmRollDegrees: 22, propCue: 'cards', eventCues: normalized > 0.48 && normalized < 0.58 ? ['deal'] : [] }
+  if (preset.id === 'play-cards') return { rootOffsetMeters: [0, -0.52, -0.14], rootRotationDegrees: [9, round(wave * 5), 0], crouch: 0.7, leftArmPitchDegrees: round(-68 - wave * 12), rightArmPitchDegrees: round(-68 + wave * 20), leftArmRollDegrees: -22, rightArmRollDegrees: 22, leftLegPitchDegrees: 20, rightLegPitchDegrees: 20, propCue: 'cards', eventCues: normalized > 0.48 && normalized < 0.58 ? ['deal'] : [] }
   return { rootOffsetMeters: [0, round(-0.04 * pulse), 0], rootRotationDegrees: [round(-4 * pulse), round(wave * 8), 0], crouch: 0.12, leftArmPitchDegrees: round(-95 - pulse * 18), rightArmPitchDegrees: round(-95 - pulse * 18), leftArmRollDegrees: -12, rightArmRollDegrees: 12, propCue: 'squirt-gun', eventCues: normalized > 0.42 && normalized < 0.58 ? ['squirt'] : [] }
 }
 

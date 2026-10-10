@@ -28,9 +28,13 @@ export function buildXrMediaLibraryProjection(args: {
   const visibleEnvironments = XR_MOTION_REFERENCE_STAGE_PRESETS.filter(stage => (
     matchesXrMediaLibrarySearch(args.searchText, [stage.label, stage.description, 'environment kit xr 3d'])
   ))
+  const visiblePoiDetailAssets = XR_SCENE_LIBRARY_ASSETS.filter(asset => (
+    Boolean(asset.poiDetailKitId)
+    && matchesXrMediaLibrarySearch(args.searchText, [asset.label, asset.description, ...asset.keywords])
+  ))
   const visibleAssets = XR_SCENE_LIBRARY_ASSETS.filter(asset => (
     (args.categoryFilter === 'all' || asset.category === args.categoryFilter)
     && matchesXrMediaLibrarySearch(args.searchText, [asset.label, asset.category, asset.description, ...asset.keywords, asset.mobile ? 'cast marks motion' : 'static'])
   ))
-  return { featuredAssets, selectedAsset, visibleAssets, visibleEnvironments }
+  return { featuredAssets, selectedAsset, visibleAssets, visibleEnvironments, visiblePoiDetailAssets }
 }

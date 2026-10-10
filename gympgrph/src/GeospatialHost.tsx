@@ -9,6 +9,7 @@ import {
 import { UI_THEME_TOKENS } from 'grph-shared/ui/themeTokens'
 import { useGympgrphStore } from './store.js'
 import { useMapLibreBasemap } from './features/geospatial/useMapLibreBasemap.js'
+import { bindMapLibreKeyboardCameraControls } from './features/geospatial/mapLibreKeyboardCameraControls.js'
 import {
   bindMapLibreCanvasSemanticOwner,
   type MapLibreCanvasSemanticOwner,
@@ -16,9 +17,17 @@ import {
 import { NATIVE_GEOSPATIAL_MAPLIBRE_OWNER } from './features/geospatial/mapLibreHostLease.js'
 import { useFlightGeoOverlayMapLibrePresentation } from './features/geospatial/useFlightGeoOverlayMapLibrePresentation.js'
 import { useCityGeoOverlayMapLibrePresentation } from './features/geospatial/useCityGeoOverlayMapLibrePresentation.js'
+import { useGameModeCityContextMapLibrePresentation } from './features/geospatial/useGameModeCityContextMapLibrePresentation.js'
+import { useGameModeGeoOverlayMapLibrePresentation } from './features/geospatial/useGameModeGeoOverlayMapLibrePresentation.js'
+import {
+  gameModeNeedsMapKeyboardFallback,
+  gameModeOwnsKeyboardInput,
+  type GameModeGeoOverlaySnapshot,
+} from './gameModeGeoOverlayMapLibre.js'
 import { useGeospatialPresentationCameraOwner } from './features/geospatial/useGeospatialPresentationCameraOwner.js'
 import { useGeospatialCameraFitRuntime } from './features/geospatial/useGeospatialCameraFitRuntime.js'
 import { readGeoMapOcclusionPadding } from './geoMapViewport.js'
+import { readCityGeoOverlay } from './cityGeoOverlay.js'
 import {
   readFlightGeoOverlay,
   subscribeFlightGeoOverlay,
@@ -63,6 +72,7 @@ import { useEnhancedGeospatialHostLayers } from './useEnhancedGeospatialHostLaye
 
 type GeospatialOverlayHostProps = {
   active?: boolean
+  keyboardNavigationEnabled?: boolean
   gameplayPresentationOwner: GeospatialPresentationCameraOwner
   semanticMediaOwner?: MapLibreCanvasSemanticOwner | null
   snapshot?: unknown
@@ -112,6 +122,18 @@ function getSnapshotGraphRevision(snapshot: unknown): number {
   if (!isRecord(snapshot)) return 0
   const raw = snapshot.graphRevision
   return typeof raw === 'number' && Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0
+}
+
+function getSnapshotGameModeGeoOverlay(snapshot: unknown): GameModeGeoOverlaySnapshot | null {
+  if (!isRecord(snapshot) || !isRecord(snapshot.gameModeGeoOverlay)) return null
+  const overlay = snapshot.gameModeGeoOverlay
+  return overlay.active === true
+    && typeof overlay.runId === 'number'
+    && typeof overlay.tick === 'number'
+    && isRecord(overlay.player)
+    && Array.isArray(overlay.npcs)
+    ? overlay as unknown as GameModeGeoOverlaySnapshot
+    : null
 }
 
 function getOverlayHandlers(snapshot: unknown, handlers: unknown): Record<string, unknown> | null {
@@ -613,6 +635,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const setGeospatialCursorLngLat = useGympgrphStore(s => s.setGeospatialCursorLngLat)
   const rootRef = React.useRef<HTMLElement | null>(null)
   const mapContainerRef = React.useRef<HTMLElement | null>(null)
+  const cityPlayerMoveHandlerRef = React.useRef<((coordinate: readonly [number, number]) => boolean) | null>(null)
   const [targetStyleUrl, setTargetStyleUrl] = React.useState<string | null>(() => readStyleUrl())
   const [pointStyleConfig, setPointStyleConfig] = React.useState(() => readGeospatialPointStyleConfig())
   const [geospatialViewMode, setGeospatialViewMode] = React.useState<GeospatialViewMode>(
@@ -703,8 +726,21 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const selectedBounds = React.useMemo(() => computeBoundsFromCollections([selectedFeatureCollection]), [selectedFeatureCollection])
   const graphDataKey = React.useMemo(() => graphProjection.signature, [graphProjection.signature])
   const mapLibreRuntimeEnabled = show2dMapLibre || show3d
+  const gameModeGeoOverlay = getSnapshotGameModeGeoOverlay(props.snapshot)
+  const selectGameModeActorOnMap = React.useCallback((actorId: string) => {
+    const overlayHandlers = getOverlayHandlers(props.snapshot, props.handlers)
+    const selectActor = overlayHandlers && typeof overlayHandlers.selectGameModeGeoActor === 'function'
+      ? overlayHandlers.selectGameModeGeoActor as (actorId: string) => boolean
+      : null
+    return selectActor?.(actorId) === true
+  }, [props.handlers, props.snapshot])
   const flightBootstrapStyle = props.gameplayPresentationOwner === 'flight'
     ? FLIGHT_GEO_BOOTSTRAP_STYLE
+    : null
+  const cityHandlers = getOverlayHandlers(props.snapshot, props.handlers)
+  cityPlayerMoveHandlerRef.current = cityHandlers
+    && typeof cityHandlers.moveCityGameplayPlayerToCoordinate === 'function'
+    ? cityHandlers.moveCityGameplayPlayerToCoordinate as (coordinate: readonly [number, number]) => boolean
     : null
 
   const notifyGrabMapsFallback = React.useCallback(() => {
@@ -799,6 +835,14 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
       : null
     selectCityParcel?.(parcelId)
   }, [props.handlers, props.snapshot])
+  const handleCityPlayerSelect = React.useCallback((selected: boolean) => {
+    const overlayHandlers = getOverlayHandlers(props.snapshot, props.handlers)
+    const setPlayerSelected = overlayHandlers
+      && typeof overlayHandlers.setCityGameplayPlayerSelected === 'function'
+      ? overlayHandlers.setCityGameplayPlayerSelected as ((value: boolean) => void)
+      : null
+    setPlayerSelected?.(selected)
+  }, [props.handlers, props.snapshot])
   const clickedGraphNodeCycleRef = React.useRef<{
     pointKey: string
     nodeIds: string[]
@@ -850,6 +894,35 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     onGrabMapsFallback: notifyGrabMapsFallback,
     onPoiClick: handlePoiClick,
   })
+  React.useEffect(() => {
+    const gameModeOwnsKeyboard = gameModeOwnsKeyboardInput(gameModeGeoOverlay)
+    const terminalGameModeNeedsMapNavigation = gameModeNeedsMapKeyboardFallback(gameModeGeoOverlay)
+    if (
+      !active
+      || gameModeOwnsKeyboard
+      || (
+        props.keyboardNavigationEnabled !== true
+        && !terminalGameModeNeedsMapNavigation
+        && gameModeGeoOverlay?.active !== true
+      )
+    ) return
+    return bindMapLibreKeyboardCameraControls(basemap.map, undefined, {
+      isExternalKeyboardFallbackTarget: target => (
+        terminalGameModeNeedsMapNavigation
+        && typeof document !== 'undefined'
+        && document.pointerLockElement === target
+      ),
+      readSelectedCharacterCoordinate: () => {
+        if (gameModeGeoOverlay?.gameplayActive === true) return null
+        const gameplay = readCityGeoOverlay().gameplay
+        if (!gameplay || gameplay.playerSelected !== true) return null
+        return gameplay.playerCoordinate || null
+      },
+      moveSelectedCharacter: coordinate => (
+        cityPlayerMoveHandlerRef.current?.(coordinate) === true
+      ),
+    })
+  }, [active, basemap.map, gameModeGeoOverlay?.active, gameModeGeoOverlay?.gameplayActive, gameModeGeoOverlay?.phase, props.keyboardNavigationEnabled])
   const enhancedLayerBounds = useEnhancedGeospatialHostLayers({
     enabled: active && mapLibreRuntimeEnabled,
     map: basemap.map,
@@ -872,11 +945,29 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const [basemapGraphRevision, setBasemapGraphRevision] = React.useState(0)
 
   useCityGeoOverlayMapLibrePresentation({
-    active,
+    active: active && gameModeGeoOverlay?.active !== true,
     map: basemap.map,
     mapLibreRuntimeEnabled,
+    onPlayerSelect: handleCityPlayerSelect,
     onParcelSelect: handleCityParcelSelect,
     viewMode: show3d ? '3d' : '2d',
+  })
+
+  useGameModeCityContextMapLibrePresentation({
+    active: active && gameModeGeoOverlay?.active === true,
+    map: basemap.map,
+    mapLibreRuntimeEnabled,
+    snapshot: gameModeGeoOverlay?.cityContext || null,
+    viewMode: show3d ? '3d' : '2d',
+  })
+
+  useGameModeGeoOverlayMapLibrePresentation({
+    active: active && gameModeGeoOverlay?.active === true,
+    map: basemap.map,
+    mapLibreRuntimeEnabled,
+    viewMode: show3d ? '3d' : '2d',
+    snapshot: gameModeGeoOverlay,
+    onActorSelect: selectGameModeActorOnMap,
   })
 
   useFlightGeoOverlayMapLibrePresentation({
@@ -888,6 +979,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     onPresented: props.onFlightOverlayPresented,
     rootRef,
     styleRevision: basemap.styleRevision,
+    sceneEnvironment: gameModeGeoOverlay?.environment || null,
     viewMode: geospatialViewMode,
   })
 

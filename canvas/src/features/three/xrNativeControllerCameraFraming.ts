@@ -4,6 +4,7 @@ import {
 } from './xrMotionReferenceCoordinates'
 import { XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE } from './xrNativeControllerDemoRuntime'
 import { resolveXrMotionReferenceStage, type XrMotionReferenceStageId } from './xrSceneLibrary'
+import { resolveXrStageFitScale } from './xrSceneScale'
 
 const DEFAULT_FOLLOW_OFFSET_METERS = Object.freeze([0, 6.6, 9.5] as const)
 const SINGAPORE_FOLLOW_OFFSET_METERS = Object.freeze([0, 7.4, 11.8] as const)
@@ -29,7 +30,7 @@ export function resolveXrSceneCameraWorldScale(args: Readonly<{
 }>): number {
   if (args.nativeControllerDemo) return XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE
   const size = resolveXrMotionReferenceStage(args.stageId).sizeMeters
-  return XR_MOTION_STAGE_SPAN / Math.max(size[0], size[1], 1)
+  return resolveXrStageFitScale(size, XR_MOTION_STAGE_SPAN)
 }
 
 export function resolveXrSceneCameraMinimumY(args: Readonly<{
