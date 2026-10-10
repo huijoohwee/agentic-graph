@@ -18,6 +18,7 @@ import { isFrontmatterOnlyDoc } from '@/lib/markdown/frontmatter'
 import { areSourceFileRecordsEqual, buildSourceFileLifecycleState, canSkipActiveWorkspaceSourceFilesRematerialization, hasExpectedMaterializationSourceText,
   ensureActiveWorkspaceSourceFileEnabled, hasMaterializationDocumentDrifted, readColdStartMaterializationSource, readPassiveMaterializationDocumentText, sameMaterializationSourceIdentities } from '@/features/source-files/sourceFileParsedState'
 import { readActiveWorkspaceSourceFileFallbackText, readWorkspaceActiveDocumentResolvedText, resolveActiveWorkspaceEntriesSnapshot } from '@/features/source-files/sourceFilesRuntimeActive'
+import { hasOnlySafeSourceFileAdditions } from '@/features/source-files/sourceFileMaterializationLifecycle'
 export { sameMaterializationSourceIdentities } from '@/features/source-files/sourceFileParsedState'
 export function shouldProactivelyReapplyActiveWorkspaceMarkdownDocument(args: {
   activePath: WorkspacePath | null
@@ -278,28 +279,6 @@ async function parseActiveWorkspaceSourceBeforeDocumentApply(activePath: Workspa
 function staleMaterialization(retryable = false, stage = 'source'): Error {
   return Object.assign(new Error(`Active document source changed during materialization (${stage}).`), { code: 'SOURCE_FILES_MATERIALIZATION_STALE', retryable })
 }
-function hasOnlySafeSourceFileAdditions(
-  before: SourceFile[],
-  current: SourceFile[],
-  allowUnrelatedAdditions: boolean,
-): boolean {
-  if (current.length < before.length || (!allowUnrelatedAdditions && current.length !== before.length)) return false
-  for (let index = 0; index < before.length; index += 1) {
-    const previous = before[index]
-    const latest = current[index]
-    if (!previous || !latest || !areSourceFileRecordsEqual(previous, latest)) return false
-  }
-  const knownIds = new Set(before.map(file => file.id))
-  const knownPaths = new Set(before.map(file => String(file.source?.path || '')).filter(Boolean))
-  for (let index = before.length; index < current.length; index += 1) {
-    const added = current[index]
-    const path = String(added?.source?.path || '')
-    if (!added?.id || knownIds.has(added.id) || (path && knownPaths.has(path))) return false
-    knownIds.add(added.id)
-    if (path) knownPaths.add(path)
-  }
-  return true
-}
 export type MaterializedWorkspaceSourceProof = Readonly<{
   activePath: WorkspacePath
   explorerActivePath: WorkspacePath | null
@@ -330,11 +309,11 @@ async function settleMaterializedDocument(args: NonNullable<Parameters<typeof re
     && current.markdownDocumentName === file.name && current.markdownDocumentText === file.text && isFrontmatterOnlyDoc(file.text)
     && !file.parsedGraphData?.nodes?.length && !file.parsedGraphData?.edges?.length
     ? { ...file, ...buildSourceFileLifecycleState({ status: 'idle', previousState: file, preserveParsedState: true }) } : file
-  const retryableLifecyclePublication = hasOnlySafeSourceFileAdditions(
-    before.sourceFiles,
-    current.sourceFiles,
-    args.applyToGraph === true,
-  )
+  const retryableLifecyclePublication = hasOnlySafeSourceFileAdditions({
+    before: before.sourceFiles,
+    current: current.sourceFiles,
+    allowUnrelatedAdditions: args.applyToGraph === true,
+  })
   const documentRemainsCurrent = !isMarkdownLikeFileName(activePath) || (matchesMarkdownDocumentPath(activePath, current.markdownDocumentName) && current.markdownDocumentApplyViewPreset !== false && (args.expectedSourceText === undefined || current.markdownDocumentText === args.expectedSourceText))
   if (hasMaterializedActivePathDrifted(activePath, explorerAtStart)
     || before.sourceFiles.length !== current.sourceFiles.length
