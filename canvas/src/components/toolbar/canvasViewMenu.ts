@@ -120,6 +120,8 @@ export const buildCanvasViewOptions = (
     frontmatterModeEnabled: state.frontmatterModeEnabled,
     multiDimTableModeEnabled: state.multiDimTableModeEnabled,
     geospatialEnabled: state.geospatialEnabled,
+    // The toolbar routes XR selection through the exclusive Geo owner handoff.
+    allowGeospatialXrHandoff: true,
     layoutMode: state.layoutMode,
     schema: state.schema,
   }

@@ -22,16 +22,19 @@ export function resolveCanvasSurfaceOwnership(
   activeSurface: '2d' | '3d' | 'geo' | 'geo-xr'
   geospatialOverlayOwnsViewport: boolean
 }> {
-  if (input.cityMapLibreSurfaceRequested) {
-    return {
-      activeSurface: 'geo-xr',
-      geospatialOverlayOwnsViewport: true,
-    }
-  }
+  // Geo+XR is a composed surface: MapLibre remains the geographic background
+  // while the existing XR renderer draws Media assets in the same viewport.
+  // A City simulation request must not disable that renderer.
   if (input.geospatialModeEnabled && input.geospatialXrModeEnabled) {
     return {
       activeSurface: 'geo-xr',
       geospatialOverlayOwnsViewport: false,
+    }
+  }
+  if (input.cityMapLibreSurfaceRequested) {
+    return {
+      activeSurface: 'geo-xr',
+      geospatialOverlayOwnsViewport: true,
     }
   }
   const flightSimGeoOverlayActive = input.gameplayOverlayActive

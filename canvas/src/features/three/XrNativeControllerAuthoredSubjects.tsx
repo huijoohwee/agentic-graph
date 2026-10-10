@@ -1,9 +1,4 @@
 import React from 'react'
-import { sampleXrAnimationPose } from './xrAnimationCatalog'
-import {
-  sampleXrMotionReferenceFacingY,
-  sampleXrMotionReferenceMarks,
-} from './xrMotionReferenceModel'
 import {
   readXrMotionReferenceRuntime,
   subscribeXrMotionReferenceRuntime,
@@ -15,10 +10,10 @@ import {
   subscribeXrSharedAssetControlRuntime,
 } from './xrSharedAssetControlRuntime'
 import { selectBoundXrShotTarget } from './xrSelectedActorBinding'
-import { sampleXrStoryPresentation } from './xrStoryPresentation'
 import { XrSceneLibrarySubject } from './XrSceneLibrarySubject'
 import { xrMotionReferenceWorldPosition } from './xrMotionReferenceCoordinates'
 import { resolveMotionControlSubjectPose, useMotionControlAnimationPose } from './useMotionControlAnimationPose'
+import { sampleXrMotionReferenceSubjectPlayback } from './xrMotionReferenceSubjectPlayback'
 
 export function XrNativeControllerAuthoredSubjects() {
   const runtime = React.useSyncExternalStore(
@@ -48,18 +43,21 @@ export function XrNativeControllerAuthoredSubjects() {
       {runtime.plan.subjects.map(subject => {
         const track = runtime.plan.cast.find(candidate => candidate.actorId === subject.id)
         const motionPose = resolveMotionControlSubjectPose(subject, motionActorId, livePose)
-        const subjectPosition = track
-          ? sampleXrMotionReferenceMarks(track.marks, runtime.playheadSeconds)
-          : subject.position
+        const playback = sampleXrMotionReferenceSubjectPlayback(
+          subject,
+          track,
+          runtime.playheadSeconds,
+          motionPose,
+        )
         return (
           <XrSceneLibrarySubject
             key={subject.id}
-            animationPose={motionPose || sampleXrAnimationPose(track?.animation || null, runtime.playheadSeconds)}
-            facingYRadians={track ? sampleXrMotionReferenceFacingY(track.marks, runtime.playheadSeconds) : 0}
+            animationPose={playback.animationPose}
+            facingYRadians={playback.facingYRadians}
             subject={subject}
-            position={xrMotionReferenceWorldPosition(subjectPosition, 1, 0)}
+            position={xrMotionReferenceWorldPosition(playback.position, 1, 0)}
             stageScale={1}
-            presentation={sampleXrStoryPresentation(track?.marks || [], runtime.playheadSeconds)}
+            presentation={playback.presentation}
             selected={sharedAssetControls.selectedKind !== 'npc' && runtime.selectedShotTargetId === subject.id}
             showIdentificationBounds={boundingBoxEnabled}
             onSelect={() => selectSubject(subject.id)}
