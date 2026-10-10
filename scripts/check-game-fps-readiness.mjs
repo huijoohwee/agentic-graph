@@ -452,8 +452,8 @@ if (!threeGameplayOverlay.includes('if (props.gameFpsActive)')
   || !gameFpsStageMount.includes('geospatialComposite={props.geospatialComposite}')) {
   throw new Error('Game-conditioned Three mounts must remain actor-only in the shared gameplay projection')
 }
-if (!threeGraph.includes('{!gameFpsStageActive ? <ControlsLazy')) {
-  throw new Error('Game FPS must suppress the shared OrbitControls owner')
+if (!threeGraph.includes('{!gameFpsStageActive && !geospatialComposite ? <ControlsLazy')) {
+  throw new Error('Game FPS and Geo+XR must preserve their shared camera owners')
 }
 const xrWorldPlacement = threeGraph.match(/<XrWorldPlacement\b[\s\S]*?<\/XrWorldPlacement>/)?.[0] || ''
 const authoredWorldTargets = ['SceneLazy', 'SemanticTwinStageLazy', 'GlbAssetModel', 'SpatialCaptureManifestStage']
