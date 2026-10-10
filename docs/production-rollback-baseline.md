@@ -10,6 +10,38 @@ frontmatter_contract: "required"
 
 Use the existing successful-release recapture when its terminal carrier remains available. When GitHub has expired that artifact, the source-owned command below can capture a **new observed rollback baseline**. It does not reconstruct the lost lifecycle carrier or attest past human presence. The protected release still rechecks Pages, D1, and mirror identities and requires candidate-specific human authorization before mutation.
 
+### Protected GitHub capture
+
+Use the read-only `Production Rollback Baseline Capture` workflow when local
+Cloudflare credentials are unavailable. It accepts only a successful release
+run ID, runs from protected `main` in the `production` environment, reads the
+existing Pages and D1 state plus the exact production mirror, and stores the
+complete or partial evidence in a 90-day workflow artifact. `agentic-graph` is
+public, so the artifact is repository-visible; D1 evidence contains digests and
+counts, not document bodies, and no credentials are included. The workflow does
+not deploy, mutate D1, or authorize production. The environment supplies the
+existing Cloudflare credentials; none are passed through dispatch inputs.
+The capture uses one lockfile-cached Graph dependency install, no browser run or
+mirror build, a 35-minute job ceiling, and the existing ten-minute provider
+observation window. Provider operations are GitHub/Pages reads and D1 SELECTs.
+
+Choose a successful protected release run whose `head_sha` is the source revision
+currently reported by the production Pages marker. The workflow and source
+validator recheck that identity and reject an older but otherwise successful run.
+
+```sh
+RELEASE_RUN_ID=<exact-matching-run-id>
+gh workflow run production-rollback-baseline-capture.yml \
+  --ref main \
+  --field run_id="$RELEASE_RUN_ID"
+```
+
+Download `production-rollback-baseline-<capture-run-id>` from that workflow run
+and retain the full directory with the release evidence. Its expired terminal
+artifact metadata must still match the recorded protected execution.
+
+### Local capture
+
 Run from clean, integrated canonical `agentic-graph` main with the pinned dependencies installed. Use the existing authenticated `gh` and Wrangler sessions. The Pages read adapter requires `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, and `CLOUDFLARE_PAGES_PROJECT`; obtain their values from protected configuration without printing tokens. Set the pinned docs root through `AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT` if it is not a sibling checkout. The mirror checkout must be clean and exact at its remote main.
 
 ```sh
