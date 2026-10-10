@@ -8,6 +8,7 @@ import { XrSingaporeTerrainGeometry } from './XrSingaporeTerrainGeometry'
 import { XrTropicalPlaygroundTerrain } from './XrTropicalPlaygroundTerrain'
 import { XrTropicalPlaygroundLandmarks } from './XrTropicalPlaygroundLandmarks'
 import { XrNativeControllerDemoAerialSetpieces } from './XrNativeControllerDemoAerialSetpieces'
+import { resolveXrStageFitScale } from './xrSceneScale'
 
 const STRUCTURE_TONES = {
   light: '#94a3b8',
@@ -41,7 +42,7 @@ export function XrStagePresetGeometry({
   onFloorPoint?: (point: readonly [number, number, number]) => void
   coordinateRootRef?: React.RefObject<Object3D | null>
 }) {
-  const scale = span / Math.max(stage.sizeMeters[0], stage.sizeMeters[1], 1)
+  const scale = resolveXrStageFitScale(stage.sizeMeters, span)
   const floorWidth = stage.sizeMeters[0] * scale
   const floorHeight = stage.sizeMeters[1] * scale
   const floorThickness = Math.max(minFloorThickness, scale * 0.08)

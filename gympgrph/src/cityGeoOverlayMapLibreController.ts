@@ -1,5 +1,9 @@
 import type { FitBoundsOptions, LngLatBoundsLike } from 'maplibre-gl'
 import {
+  deriveRegionalPoiLocators,
+  deriveRegionalPoiLongitudeSpan,
+} from 'grph-shared/geospatial/regionalPoiGeo'
+import {
   readCityGeoOverlay,
   subscribeCityGeoOverlay,
   type CityGeoOverlayListener,
@@ -13,6 +17,12 @@ import {
   mapHasExactCityGeoPresentation,
 } from './cityGeoPresentationMapLibre.js'
 import {
+  applyCityGeoGameplayToMap,
+  clearCityGeoGameplayFromMap,
+  mapHasExactCityGeoGameplay,
+  CITY_GEO_GAMEPLAY_LAYER_IDS,
+} from './cityGeoGameplayMapLibre.js'
+import {
   applyRegionalPoiProfileToMap,
   clearRegionalPoiProfileFromMap,
   mapHasExactRegionalPoiProfile,
@@ -21,17 +31,21 @@ import {
   regionalPoiProfileBounds,
   REGIONAL_POI_LAYER_IDS,
   REGIONAL_POI_SOURCE_ID,
+  type RegionalPoiMapLibreAppearance,
 } from './regionalPoiMapLibre.js'
 import {
   geoMapViewportPaddingKey,
-  readGeoMapViewportPadding,
+  observeGeoMapViewportOcclusion,
+  readGeoMapPresentationPadding,
 } from './geoMapViewport.js'
 
 export type CityGeoOverlayMapLibreControllerOptions = Readonly<{
+  appearance?: RegionalPoiMapLibreAppearance
   beforeLayerId?: string | null
   clearOnDispose?: boolean
   frameCity?: boolean
   map: any
+  onPlayerSelect?: (selected: boolean) => void
   onParcelSelect?: (parcelId: string) => void
   readSnapshot?: () => CityGeoOverlaySnapshot
   subscribe?: (listener: CityGeoOverlayListener) => () => void
@@ -58,8 +72,6 @@ const ZERO_PADDING: CityMapPadding = Object.freeze({
   right: 0,
   top: 0,
 })
-const CITY_FRAMING_CLEARANCE_APERTURE_FRACTION = 0.1
-
 function readMapPadding(map: any): CityMapPadding {
   const padding = map?.getPadding?.()
   return Object.freeze({
@@ -70,48 +82,22 @@ function readMapPadding(map: any): CityMapPadding {
   })
 }
 
+export function readCityPresentationPadding(
+  map: any,
+  requestedClearance: number,
+): CityMapPadding {
+  return readGeoMapPresentationPadding(map, requestedClearance)
+}
+
 function cityViewportPadding(
   map: any,
   snapshot: CityGeoOverlaySnapshot,
   viewMode: CityGeoViewMode,
 ): CityMapPadding {
-  const viewport = readGeoMapViewportPadding(map)
-  const requestedClearance = snapshot.profile?.framing[viewMode].paddingPixels ?? 0
-  const mapViewport = map?.getContainer?.() as HTMLElement | null | undefined
-  const width = Math.max(
-    0,
-    Number(mapViewport?.clientWidth) || Number(map?.transform?.width) || 0,
+  return readCityPresentationPadding(
+    map,
+    snapshot.profile?.framing[viewMode].paddingPixels ?? 0,
   )
-  const height = Math.max(
-    0,
-    Number(mapViewport?.clientHeight) || Number(map?.transform?.height) || 0,
-  )
-  const horizontalAperture = Math.max(
-    0,
-    width - viewport.left - viewport.right,
-  )
-  const verticalAperture = Math.max(
-    0,
-    height - viewport.top - viewport.bottom,
-  )
-  const horizontalClearance = horizontalAperture > 0
-    ? Math.min(
-        requestedClearance,
-        horizontalAperture * CITY_FRAMING_CLEARANCE_APERTURE_FRACTION,
-      )
-    : requestedClearance
-  const verticalClearance = verticalAperture > 0
-    ? Math.min(
-        requestedClearance,
-        verticalAperture * CITY_FRAMING_CLEARANCE_APERTURE_FRACTION,
-      )
-    : requestedClearance
-  return Object.freeze({
-    bottom: viewport.bottom + verticalClearance,
-    left: viewport.left + horizontalClearance,
-    right: viewport.right + horizontalClearance,
-    top: viewport.top + verticalClearance,
-  })
 }
 
 function cityViewportSizeKey(map: any): string {
@@ -176,6 +162,27 @@ function framingKey(
   ].join(':')
 }
 
+function cityGameplayRouteCenter(
+  snapshot: CityGeoOverlaySnapshot,
+): readonly [longitude: number, latitude: number] | null {
+  const profile = snapshot.profile?.regionalPoiProfile
+  const gameplay = snapshot.gameplay
+  if (!profile || !gameplay) return null
+  const locators = new Map(deriveRegionalPoiLocators(profile)
+    .map(locator => [locator.poiId, locator]))
+  const player = locators.get(gameplay.playerPoiId)
+  const goal = locators.get(gameplay.taskPoiId)
+  if (!player || !goal) return null
+  const longitude = deriveRegionalPoiLongitudeSpan([
+    (gameplay.playerCoordinate || player.coordinate)[0],
+    goal.coordinate[0],
+  ]).center
+  return Object.freeze([
+    longitude,
+    ((gameplay.playerCoordinate || player.coordinate)[1] + goal.coordinate[1]) / 2,
+  ])
+}
+
 function requireViewMode(viewMode: CityGeoViewMode): CityGeoViewMode {
   if (viewMode !== '2d' && viewMode !== '3d') {
     throw new Error(`Unsupported City Geo view mode ${String(viewMode)}.`)
@@ -187,12 +194,13 @@ export function createCityGeoOverlayMapLibreController(
   options: CityGeoOverlayMapLibreControllerOptions,
 ): CityGeoOverlayMapLibreController {
   const map = options.map
-  const viewport = map?.getContainer?.() as HTMLElement | null | undefined
+  const viewport = (map?.getContainer?.() as HTMLElement | null | undefined) ?? null
   const readSnapshot = options.readSnapshot || readCityGeoOverlay
   const subscribe = options.subscribe || subscribeCityGeoOverlay
   let beforeLayerId = options.beforeLayerId || null
   let viewMode = requireViewMode(options.viewMode)
   let lastFramingKey: string | null = null
+  let lastGameplayFrameKey: string | null = null
   let disposed = false
   let originalPadding: CityMapPadding | null = null
   let settledRegionalPoiSource: unknown = null
@@ -237,13 +245,15 @@ export function createCityGeoOverlayMapLibreController(
     if (disposed) return false
     const snapshot = readSnapshot()
     if (!snapshot.active || !snapshot.profile) {
+      const gameplayCleared = clearCityGeoGameplayFromMap(map)
       const stateCleared = clearCityGeoPresentationFromMap(map)
       const profileCleared = clearRegionalPoiProfileFromMap(map)
       lastFramingKey = null
+      lastGameplayFrameKey = null
       settledRegionalPoiSource = null
       clearPresentationEvidence()
       restoreOriginalPadding()
-      return stateCleared && profileCleared
+      return gameplayCleared && stateCleared && profileCleared
     }
     if (!mapHasExactRegionalPoiSource(
       map,
@@ -252,19 +262,33 @@ export function createCityGeoOverlayMapLibreController(
     const regionalPoiApplied = applyRegionalPoiProfileToMap(
       map,
       snapshot.profile.regionalPoiProfile,
-      { beforeLayerId, viewMode },
+      { appearance: options.appearance, beforeLayerId, viewMode },
     )
     const stateApplied = regionalPoiApplied
       && applyCityGeoPresentationToMap(map, snapshot)
-    const applied = regionalPoiApplied && stateApplied
+    const gameplayApplied = regionalPoiApplied && snapshot.gameplay
+      ? applyCityGeoGameplayToMap(
+          map,
+          snapshot.profile.regionalPoiProfile,
+          snapshot.gameplay,
+          beforeLayerId,
+        )
+      : clearCityGeoGameplayFromMap(map)
+    const applied = regionalPoiApplied && stateApplied && gameplayApplied
     const exactPresentation = applied
       && settledRegionalPoiSource === map?.getSource?.(REGIONAL_POI_SOURCE_ID)
       && mapHasExactRegionalPoiProfile(
         map,
         snapshot.profile.regionalPoiProfile,
-        { beforeLayerId, viewMode },
+        { appearance: options.appearance, beforeLayerId, viewMode },
       )
       && mapHasExactCityGeoPresentation(map, snapshot)
+      && (!snapshot.gameplay || mapHasExactCityGeoGameplay(
+        map,
+        snapshot.profile.regionalPoiProfile,
+        snapshot.gameplay,
+        beforeLayerId,
+      ))
     if (exactPresentation) publishPresentationEvidence(snapshot)
     else clearPresentationEvidence()
     if (!applied || options.frameCity === false) return applied
@@ -273,25 +297,61 @@ export function createCityGeoOverlayMapLibreController(
     const nextFramingKey = sourceKey
       ? [sourceKey, geoMapViewportPaddingKey(padding), cityViewportSizeKey(map)].join(':')
       : null
-    if (!nextFramingKey || nextFramingKey === lastFramingKey) return applied
-    if (!originalPadding) originalPadding = readMapPadding(map)
-    if (fitMapToCityPresentation(map, snapshot, viewMode, padding)) {
+    if (!nextFramingKey) return applied
+    if (nextFramingKey !== lastFramingKey) {
+      if (!originalPadding) originalPadding = readMapPadding(map)
+      if (!fitMapToCityPresentation(map, snapshot, viewMode, padding)) return applied
       lastFramingKey = nextFramingKey
+    }
+    const gameplay = snapshot.gameplay
+    const gameplayFrameKey = gameplay
+      ? [nextFramingKey, gameplay.profileId, gameplay.playerPoiId, gameplay.taskPoiId].join(':')
+      : null
+    if (!gameplayFrameKey) {
+      lastGameplayFrameKey = null
+      return applied
+    }
+    if (gameplayFrameKey === lastGameplayFrameKey) return applied
+    const center = cityGameplayRouteCenter(snapshot)
+    if (!center || typeof map?.easeTo !== 'function') return applied
+    try {
+      map.easeTo({
+        center,
+        duration: 260,
+        offset: [(padding.left - padding.right) / 2, (padding.top - padding.bottom) / 2],
+      })
+      lastGameplayFrameKey = gameplayFrameKey
+    } catch (error) {
+      console.error('[kg-city] MapLibre gameplay route framing failed.', error)
     }
     return applied
   }
 
   const handleMapStyleReady = (): void => {
     settledRegionalPoiSource = null
+    lastGameplayFrameKey = null
     clearCityGeoPresentationFromMap(map)
     apply()
   }
   const handleMapClick = (event: unknown): void => {
-    if (!options.onParcelSelect) return
     const snapshot = readSnapshot()
     if (!snapshot.active) return
     const point = (event as { point?: unknown } | null)?.point
     if (!point || typeof map?.queryRenderedFeatures !== 'function') return
+    const playerLayer = CITY_GEO_GAMEPLAY_LAYER_IDS.player
+    const playerFeatures = map.getLayer?.(playerLayer)
+      ? map.queryRenderedFeatures(point, { layers: [playerLayer] })
+      : []
+    const clickedPlayer = Array.isArray(playerFeatures)
+      && playerFeatures.some(feature => (
+        feature?.properties?.kgCityGameplayFeatureKind === 'player'
+      ))
+    if (clickedPlayer) {
+      options.onPlayerSelect?.(true)
+      return
+    }
+    options.onPlayerSelect?.(false)
+    if (!options.onParcelSelect) return
     const layers = [
       REGIONAL_POI_LAYER_IDS.outline,
       REGIONAL_POI_LAYER_IDS.extrusion,
@@ -350,13 +410,14 @@ export function createCityGeoOverlayMapLibreController(
       || !mapHasExactRegionalPoiProfile(
         map,
         snapshot.profile.regionalPoiProfile,
-        { beforeLayerId, viewMode },
+        { appearance: options.appearance, beforeLayerId, viewMode },
       )
     ) return
     settledRegionalPoiSource = map?.getSource?.(REGIONAL_POI_SOURCE_ID) || null
     apply()
   }
   const unsubscribe = subscribe(apply)
+  const unsubscribeOcclusion = observeGeoMapViewportOcclusion(viewport, apply)
   if (typeof map?.on === 'function') {
     map.on('load', handleMapStyleReady)
     map.on('style.load', handleMapStyleReady)
@@ -373,6 +434,7 @@ export function createCityGeoOverlayMapLibreController(
       if (disposed) return
       disposed = true
       unsubscribe()
+      unsubscribeOcclusion()
       if (typeof map?.off === 'function') {
         map.off('load', handleMapStyleReady)
         map.off('style.load', handleMapStyleReady)
@@ -382,6 +444,7 @@ export function createCityGeoOverlayMapLibreController(
         map.off('sourcedata', handleRegionalPoiSourceData)
       }
       if (options.clearOnDispose !== false) {
+        clearCityGeoGameplayFromMap(map)
         clearCityGeoPresentationFromMap(map)
         clearRegionalPoiProfileFromMap(map)
       }
