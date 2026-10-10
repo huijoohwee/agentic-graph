@@ -30,6 +30,7 @@ import { XrEmptyWorldHud } from '@/features/three/XrEmptyWorldHud'
 import { useXrSceneMediaDrop } from '@/features/three/useXrSceneMediaDrop'
 import { XrCameraAspectMask } from '@/features/three/XrCameraAspectMask'
 import { XrArPlacementStage } from '@/features/three/XrArPlacementStage'
+import { XrGeoProjectedMediaSubjects } from '@/features/three/XrGeoProjectedMediaSubjects'
 import { subscribeXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
 import { isXrPhysicsRuntimeRunReadyDemoActive, isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { XrRendererClearController } from '@/lib/three/XrRendererClearController'
@@ -206,7 +207,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
   const gpuEligible = webGpuSceneEligible({ mode, geospatial: geospatialComposite, learning: !!learningScene,
     immersive: immersiveMediaStageActive, gameplay: gameplayOverlayActive, importedModel: !!glbAsset, spatialCapture: !!spatialCaptureManifest,
     semanticSpace: !!sceneGraphForRender?.nodes.some(node => node.properties?.twinTemplate && node.properties?.spaceId) })
-  const rendererBackend = useThreeRendererBackend(gpuEligible, active && !geospatialComposite)
+  const rendererBackend = useThreeRendererBackend(gpuEligible, active)
   const hasGraph = (mode !== 'xr' || !!documentStageAuthority) && !rendererBackend.gpu && !semanticObjectTarget && !semanticTwinFit && !learningScene && !!sceneGraphForRender && !explicitMediaSourceActive
   const hasGlbAsset = !learningScene && !!glbAsset && shouldRenderGlbAsset
   const hasSpatialCaptureManifest = !learningScene && !!spatialCaptureManifest
@@ -481,6 +482,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
           {learningScene ? <LearningSceneStageLazy {...learningScene} /> : <>
           {immersiveMediaStageActive && !geospatialComposite ? <ThreeGraphImmersiveMediaStage /> : null}
           {immersiveMediaStageActive && !geospatialComposite ? <SemanticTwinStageLazy paused={true} /> : null}
+          {geospatialComposite && mode === 'xr' ? <XrGeoProjectedMediaSubjects /> : null}
           <XrWorldPlacement
             active={mode === 'xr'}
             contentScale={xrWorldContentScale}
@@ -536,7 +538,8 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
             ) : null}
           </XrWorldPlacement>
           </>}
-          {!gameFpsStageActive ? <ControlsLazy
+          {/* MapLibre owns the shared Geo+XR camera; OrbitControls would replace its projection. */}
+          {!gameFpsStageActive && !geospatialComposite ? <ControlsLazy
             key={hasXrEmptyWorld ? 'empty-world-controls' : 'scene-controls'}
             learningSceneId={learningScene?.lesson.id}
             schema={effectiveSchema as GraphSchema}
@@ -562,7 +565,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       </Canvas>
       </XrSubjectHoverProvider>
       {mode === 'xr' && documentStageAuthority && !gameplayOverlayActive && !immersiveMediaStageActive ? <XrCameraAspectMask /> : null}
-      {hasXrEmptyWorld && !gameplayOverlayActive ? <XrEmptyWorldHud /> : null}
+      {hasXrEmptyWorld && !gameplayOverlayActive && !geospatialComposite ? <XrEmptyWorldHud /> : null}
       {immersiveMediaActive ? <ThreeGraphImmersiveMediaHud geospatialComposite={geospatialComposite} /> : null}
       <CanvasXrEntryPanel
         key={`${rendererLifecycleKey}-session-panel`}

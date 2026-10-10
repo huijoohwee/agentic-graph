@@ -161,7 +161,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
     : ''
 
   const catalog = React.useMemo(() => buildXrMediaLibraryProjection({ categoryFilter, searchText, selectedAssetId }), [categoryFilter, searchText, selectedAssetId])
-  const { featuredAssets, selectedAsset, visibleAssets, visibleEnvironments } = catalog
+  const { featuredAssets, selectedAsset, visibleAssets, visibleEnvironments, visiblePoiDetailAssets } = catalog
   const stageObjects = resolveXrStageObjects(runtime.plan.stageId).filter(object => (categoryFilter === 'all' || object.category === categoryFilter) && object.label.toLowerCase().includes(searchText.trim().toLowerCase()))
   const sceneObjectCount = runtime.plan.subjects.length + resolveXrStageObjects(runtime.plan.stageId).length
   const visibleSubjects = runtime.plan.subjects.filter(subject => (categoryFilter === 'all' || subject.category === categoryFilter)
@@ -170,8 +170,10 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
   return (
     <section
       className="grid min-w-0 gap-3"
-      aria-label="3D for XR library"
+      aria-label="Shared 3D for XR library"
       data-kg-media-xr-library="1"
+      data-kg-media-xr-catalog-scope="shared"
+      data-kg-media-xr-composition-scope="source-document"
       data-kg-media-xr-assets-mcp="agentic-graph.control_local_xr_scene"
       data-kg-media-xr-scene-ready={sceneReady ? '1' : '0'}
       data-kg-media-xr-metadata-status={grammarCatalog.hydration.status}
@@ -274,6 +276,28 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
                 />
               )
             })}
+          </section>
+          <section className="grid gap-2 border-t pt-2" aria-label="Singapore procedural POI detail assets" data-kg-media-xr-poi-detail-assets="1">
+            <header className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold">Singapore POI detail assets</span>
+              <output className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>{visiblePoiDetailAssets.length}</output>
+            </header>
+            <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
+              Schematic, deterministic details use shared procedural recipes. Regional profile footprints remain the spatial source.
+            </p>
+            {visiblePoiDetailAssets.map(asset => (
+              <XrLibraryCard
+                key={asset.id}
+                Icon={Building2}
+                color={asset.defaultColor}
+                label={asset.label}
+                description={asset.description}
+                metadata={`procedural POI detail · ${asset.dimensionsMeters.join(' × ')} m · local`}
+                dataAttributes={{ 'data-kg-media-xr-poi-detail-asset': asset.id }}
+                footer={<XrInvocationButton invocation={buildXrPlaceInvocation(asset.id, 'hold')} disabled={!sceneReady} onInvoke={runInvocation} />}
+              />
+            ))}
+            {!visiblePoiDetailAssets.length ? <p className="text-xs opacity-70">No matching regional detail assets.</p> : null}
           </section>
         </section>
       </CollapsibleSection></>}

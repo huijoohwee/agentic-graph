@@ -11,6 +11,7 @@ import { readXrMotionReferencePlan, serializeXrMotionReferencePlan } from '@/fea
 import { controlXrSharedAssetControls, inspectXrSharedAssetControls } from '@/features/three/xrSharedAssetControlRuntime'
 import { XrChoreographyInspector } from '@/features/three/XrChoreographyInspector'
 import { XrSharedAssetControls } from '@/features/three/XrSharedAssetControls'
+import { MAIN_PANEL_OPEN_EVENT } from '@/features/panels/utils/useMainPanelRect'
 import { CameraMotionMarkRetime } from '@/features/three/CameraMotionMarkRetime'
 import { updateXrSelectionBounds } from '@/features/three/XrSelectionBounds'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
@@ -62,6 +63,16 @@ export async function testXrChoreographyOwnership() {
     const motion = container.querySelector('[data-kg-xr-shared-asset-controls="motion-control"]')!
     assert.equal(motion.getAttribute('data-kg-xr-shared-asset-target'), 'pig')
     assert.equal(motion.querySelector('[data-kg-xr-shared-asset-preset-selector]'), null)
+    let helpRequest: Record<string, unknown> | null = null
+    const captureHelpRequest = (event: Event) => {
+      helpRequest = (event as CustomEvent<Record<string, unknown>>).detail
+    }
+    env.dom.window.addEventListener(MAIN_PANEL_OPEN_EVENT, captureHelpRequest)
+    await act(async () => {
+      motion.querySelector<HTMLButtonElement>('[data-kg-xr-shared-asset-shortcut-help="motion-control"]')?.click()
+    })
+    env.dom.window.removeEventListener(MAIN_PANEL_OPEN_EVENT, captureHelpRequest)
+    assert.deepEqual(helpRequest, { tab: 'help', searchQuery: 'WASD' }, 'asset controls open the shared, filtered Help shortcut catalog')
     await act(async () => { selectXrMotionReferenceCameraMark(readXrMotionReferenceRuntime().plan.camera[0]!.id) })
     await change('Camera mark easing', 'linear')
     assert.equal(readXrMotionReferenceRuntime().plan.camera[0]!.caption, 'The crew arrives.')

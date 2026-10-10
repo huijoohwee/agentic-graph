@@ -9,13 +9,16 @@ export function useCityGeoOverlayMapLibrePresentation(options: Readonly<{
   active: boolean
   map: any | null
   mapLibreRuntimeEnabled: boolean
+  onPlayerSelect?: (selected: boolean) => void
   onParcelSelect?: (parcelId: string) => void
   viewMode: '2d' | '3d'
 }>): void {
   const controllerRef = React.useRef<CityGeoOverlayMapLibreController | null>(null)
   const parcelSelectRef = React.useRef(options.onParcelSelect)
+  const playerSelectRef = React.useRef(options.onPlayerSelect)
   const viewModeRef = React.useRef(options.viewMode)
   parcelSelectRef.current = options.onParcelSelect
+  playerSelectRef.current = options.onPlayerSelect
   viewModeRef.current = options.viewMode
 
   React.useEffect(() => {
@@ -27,6 +30,7 @@ export function useCityGeoOverlayMapLibrePresentation(options: Readonly<{
       clearOnDispose: true,
       frameCity: true,
       map: options.map,
+      onPlayerSelect: selected => playerSelectRef.current?.(selected),
       onParcelSelect: parcelId => parcelSelectRef.current?.(parcelId),
       viewMode: viewModeRef.current,
     })
