@@ -256,15 +256,15 @@ export default function ObservabilityWorkspace() {
         </div>
         {sourceBusy && <p role="status" className="text-sm">Reading selected source…</p>}
         {sourceResult && <div className="space-y-2 text-sm">
-          <p>Operation: <code>{sourceResult.operation}</code> · Git revision: <code>{sourceResult.revision}</code> · dirty: {String(sourceResult.repositoryState?.dirty ?? 'unknown')} · scope digest: <code>{sourceResult.snapshotSha256}</code></p>
+          <p>Operation: <code>{sourceResult.operation}</code> · Git revision: <code className="break-all">{sourceResult.revision}</code> · dirty: {String(sourceResult.repositoryState?.dirty ?? 'unknown')} · scope digest: <code className="break-all">{sourceResult.snapshotSha256}</code></p>
           {sourceResult.coverage && <p>Search coverage: {sourceResult.coverage.complete ? 'complete' : 'bounded partial'} · {sourceResult.coverage.filesInspected}/{sourceResult.coverage.filesInScope} files · {sourceResult.coverage.sourceBytesInspected} bytes inspected</p>}
           {sourceResult.observation && <p>Source bytes: {sourceResult.sourceBytes ?? 'unknown'} · read bytes: {sourceResult.observation.sourceReadBytes ?? 'unknown'} · elapsed: {typeof sourceResult.observation.elapsedMs === 'number' ? `${sourceResult.observation.elapsedMs.toFixed(1)} ms` : 'unknown'} · CPU: {typeof sourceResult.observation.cpuMs === 'number' ? `${sourceResult.observation.cpuMs.toFixed(1)} ms` : 'unknown'} · tokens/cost: unknown</p>}
           {sourceResult.limits && <p>Bounds: {sourceResult.limits.files} files · {sourceResult.limits.fileBytes} bytes/file · {sourceResult.limits.sourceBytes} selected bytes · {sourceResult.limits.outputBytes} output bytes · {sourceResult.limits.durationMs} ms</p>}
           {Array.isArray(sourceResult.results) && <ul className="max-h-56 space-y-1 overflow-auto rounded border p-2">{sourceResult.results.map((item: any) => <li key={`${item.path}:${item.sha256}`} className="flex flex-wrap items-center gap-2">
-            <code>{item.path}</code><code>{item.sha256}</code>{Number.isSafeInteger(item.line) && <span>line {item.line}</span>}
+            <code>{item.path}</code><code className="break-all">{item.sha256}</code>{Number.isSafeInteger(item.line) && <span>line {item.line}</span>}
             <button type="button" className={button} disabled={sourceBusy} onClick={() => { setSourceScope(item.path); void runSourceContext({ operation: 'read', path: item.path, sha256: item.sha256, line: item.line ?? 1, lines: 40 }) }}>Read exact hash</button>
           </li>)}</ul>}
-          {sourceResult.operation === 'read' && <section aria-label="Exact source excerpt" className="space-y-1"><p><code>{sourceResult.path}</code> · SHA-256 <code>{sourceResult.sha256}</code> · lines {sourceResult.line}–{sourceResult.nextLine ? sourceResult.nextLine - 1 : 'end'}</p><pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded border p-3">{sourceResult.content}</pre></section>}
+          {sourceResult.operation === 'read' && <section aria-label="Exact source excerpt" className="space-y-1"><p><code>{sourceResult.path}</code> · SHA-256 <code className="break-all">{sourceResult.sha256}</code> · lines {sourceResult.line}–{sourceResult.nextLine ? sourceResult.nextLine - 1 : 'end'}</p><pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded border p-3">{sourceResult.content}</pre></section>}
         </div>}
       </section>}
       {localHost && repository && <section aria-label="Target UI observation record" className="rounded border p-4 space-y-3">
