@@ -268,9 +268,6 @@ export function GameFpsMissionStage({ coordinateScale = 1, geospatialComposite =
     <group ref={stageRootRef} name="agentic_os_game_fps_mission" scale={coordinateScale} userData={{ coordinateScale }}>
       {!geospatialComposite ? (
         <>
-          <ambientLight intensity={0.62} />
-          <hemisphereLight args={['#eff8ff', '#526477', 0.72]} />
-          <directionalLight position={[6, 10, 8]} intensity={0.85} />
           <GameFpsSharedNpcHighlights highlightRef={npcHighlightRef} />
           {GAME_FPS_NPC_IDS.map(id => {
             const npc = snapshotRef.current.npcs.find(candidate => candidate.id === id)!
