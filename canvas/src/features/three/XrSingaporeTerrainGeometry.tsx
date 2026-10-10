@@ -120,9 +120,10 @@ export function XrSingaporeTerrainGeometry({
 }) {
   const perimeter = resolveXrTerrainPerimeter(stage)
   const oceanMarginMeters = Math.max(perimeter.widthMeters, perimeter.depthMeters) * (appearance ? 2 : 0.6)
-  const promenadeWidthMeters = perimeter.widthMeters - 2.2
-  const promenadeZ = -perimeter.halfDepthMeters + 1.05
-  const transitDepthMeters = perimeter.depthMeters - 3.2
+  const transitSpine = stage.walkableSurfaces?.find(surface => surface.id === 'transit-spine')
+  const transitDepthMeters = transitSpine?.sizeMeters[1] || perimeter.depthMeters - 3.2
+  const transitHalfWidthMeters = transitSpine?.sizeMeters[0] / 2 || 2.9
+  const walkableSurfaces = stage.walkableSurfaces || []
   return (
     <group
       name="agentic_os_xr_singapore_terrain"
@@ -150,34 +151,41 @@ export function XrSingaporeTerrainGeometry({
           </group>
         ) : <PerimeterBoundary key={edge.side} edge={edge} shadows={shadows} />)}
       </group>
-      <mesh name="agentic_os_xr_singapore_marina_promenade" position={[0, 0.12, promenadeZ]} receiveShadow={shadows}>
-        <boxGeometry args={[promenadeWidthMeters, 0.24, 1.45]} />
-        <SurfaceMaterial color="#f1e6cf" roughness={0.88} />
-      </mesh>
-      <mesh name="agentic_os_xr_singapore_transit_spine" position={[0, 0.09, 0.35]} receiveShadow={shadows}>
-        <boxGeometry args={[5.8, 0.18, transitDepthMeters]} />
-        <SurfaceMaterial color="#2a3948" roughness={0.82} />
-      </mesh>
-      {[-2.55, 2.55].map(x => (
+      {walkableSurfaces.map(surface => (
+        <mesh
+          key={surface.id}
+          name={`agentic_os_xr_singapore_walkable_${surface.id}`}
+          position={[
+            surface.centerMeters[0],
+            surface.topMeters - surface.thicknessMeters / 2,
+            surface.centerMeters[1],
+          ]}
+          receiveShadow={shadows}
+          userData={{ ...FIXED_TERRAIN_USER_DATA, walkable: true, walkableKind: surface.kind, walkableSurfaceId: surface.id }}
+        >
+          <boxGeometry args={[
+            surface.sizeMeters[0],
+            surface.thicknessMeters,
+            surface.sizeMeters[1],
+          ]} />
+          <SurfaceMaterial
+            color={surface.color || (surface.kind === 'street' ? '#334155' : '#dce9d2')}
+            roughness={surface.kind === 'street' ? 0.82 : 0.9}
+          />
+        </mesh>
+      ))}
+      {[-(transitHalfWidthMeters - 0.35), transitHalfWidthMeters - 0.35].map(x => (
         <mesh key={x} position={[x, 0.12, 0.35]} receiveShadow={shadows}>
           <boxGeometry args={[0.18, 0.12, transitDepthMeters]} />
           <SurfaceMaterial color="#d6c7ae" roughness={0.9} />
         </mesh>
       ))}
-      {[-2.72, 2.72].map(x => (
+      {[-(transitHalfWidthMeters - 0.18), transitHalfWidthMeters - 0.18].map(x => (
         <mesh key={`edge:${x}`} position={[x, 0.195, 0.35]}>
           <boxGeometry args={[0.06, 0.02, transitDepthMeters * 0.96]} />
           <meshBasicMaterial color="#f8fafc" />
         </mesh>
       ))}
-      <mesh position={[-7.4, 0.075, 2.5]} receiveShadow={shadows}>
-        <boxGeometry args={[8.9, 0.15, 5.8]} />
-        <SurfaceMaterial color="#dce9d2" roughness={0.96} />
-      </mesh>
-      <mesh position={[7.7, 0.075, 4.8]} receiveShadow={shadows}>
-        <boxGeometry args={[8.1, 0.15, 5.5]} />
-        <SurfaceMaterial color="#b9d9a9" roughness={0.96} />
-      </mesh>
       {[-1.75, 1.75].flatMap(x => Array.from({ length: 8 }, (_, index) => (
         <mesh key={`${x}:${index}`} position={[x, 0.195, -5.8 + index * 2.1]}>
           <boxGeometry args={[0.08, 0.025, 0.82]} />

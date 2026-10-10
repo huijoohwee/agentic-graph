@@ -100,12 +100,23 @@ export type GameFpsBlocker = Readonly<{
   halfDepth: number
 }>
 
+export type GameFpsWalkableSurface = Readonly<{
+  id: string
+  centerX: number
+  centerZ: number
+  halfWidth: number
+  halfDepth: number
+  topMeters: number
+  kind: 'street' | 'path'
+}>
+
 export type GameFpsSpatialMap = Readonly<{
   centerX: number
   centerZ: number
   halfWidth: number
   halfDepth: number
   blockers: readonly GameFpsBlocker[]
+  walkableSurfaces?: readonly GameFpsWalkableSurface[]
 }>
 
 export type GameFpsSpatialProfile = Readonly<{
@@ -130,6 +141,17 @@ function gameFpsSpatialProfileSignature(profile: GameFpsSpatialProfile): string 
     blocker.halfDepth,
   ])
   const npcSeeds = [...profile.npcSeeds].sort(compareGameFpsSpatialIds).map(npc => [npc.id, npc.x, npc.z])
+  const walkableSurfaces = [...(profile.map.walkableSurfaces || [])]
+    .sort(compareGameFpsSpatialIds)
+    .map(surface => [
+      surface.id,
+      surface.centerX,
+      surface.centerZ,
+      surface.halfWidth,
+      surface.halfDepth,
+      surface.topMeters,
+      surface.kind,
+    ])
   return JSON.stringify([
     profile.id,
     profile.map.centerX,
@@ -137,6 +159,7 @@ function gameFpsSpatialProfileSignature(profile: GameFpsSpatialProfile): string 
     profile.map.halfWidth,
     profile.map.halfDepth,
     blockers,
+    walkableSurfaces,
     [profile.playerSpawn.x, profile.playerSpawn.z, profile.playerSpawn.yaw, profile.playerSpawn.pitch],
     npcSeeds,
   ])
