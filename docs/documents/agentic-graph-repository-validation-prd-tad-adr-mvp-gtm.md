@@ -1,18 +1,18 @@
 ---
 title: "Repository Validation PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.1"
+version: "1.0.2"
 owner: "agentic-graph"
-date: "2026-09-17"
+date: "2026-10-10"
 lang: "en-US"
 frontmatter_contract: "required"
 load_policy: "on-demand"
 continuity_id: "GRAPH-VALIDATION-ADOPTION-001"
-prd_revision: "1.0.1"
-tad_revision: "1.0.1"
-adr_revision: "1.0.1"
-mvp_revision: "1.0.1"
-gtm_revision: "1.0.1"
+prd_revision: "1.0.2"
+tad_revision: "1.0.2"
+adr_revision: "1.0.2"
+mvp_revision: "1.0.2"
+gtm_revision: "1.0.2"
 status: "implementation"
 ---
 
@@ -99,3 +99,22 @@ same-job downloads for this report. The protected Integration Gate must run on
 the exact candidate before integration. Revert this workflow change and its
 contract/documentation updates if artifact retention or the canonical gate's
 source binding regresses. No production or cleanup authority is introduced.
+
+## Native release frontier historical refs
+
+PRD/TAD/ADR/MVP/GTM `1.0.2` (2026-10-10): frontier capture may observe historical
+lane records that share a reused worktree path but point to sibling refs. Requiring
+every recorded head to descend from the currently mounted branch rejects valid
+retained lanes. Capture now inventories exact local branch refs once per round,
+checks each recorded commit against its own retained ref, and includes those ref
+heads in the double-read digest. The mounted checkout head remains independently
+bound; missing, stale, or moving refs still fail closed.
+
+Acceptance: attached-successor and same-path-sibling regressions pass; the live
+read-only capture at Graph `2d338faa` observed six worktrees and 484,419,245 tracked
+bytes with metadata digest `ed6fd62f`. Focused post-transplant proof passed 2/2;
+the earlier complete frontier suite passed 17/17 before the final ancestry case.
+Existing worktree, path, file-size, round-byte, and effect-authority bounds are
+unchanged. No runtime module, dependency, deployment, or paid resource is added.
+Elapsed-time and cost savings remain unmeasured; retain the full frontier checks
+and protected gate. Roll back through a checked source revert that preserves refs.

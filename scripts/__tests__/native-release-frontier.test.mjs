@@ -30,6 +30,7 @@ const fixture = t => {
   const sourceRevision = command(root, 'rev-parse', 'HEAD'), sourceTree = command(root, 'rev-parse', 'HEAD^{tree}')
   const attached = path.join(temporary, 'attached'), detached = path.join(temporary, 'detached')
   command(root, 'worktree', 'add', '-b', 'agent/device/attached', attached, 'HEAD')
+  command(root, 'branch', 'agent/device/detached', 'HEAD')
   command(root, 'worktree', 'add', '--detach', detached, 'HEAD')
   const records = [attached, detached].map((worktree, index) => ({
     worktree, ref: `agent/device/${index ? 'detached' : 'attached'}`, device: 'device',
@@ -161,7 +162,35 @@ test('attached successor uses its exact branch while retaining verified predeces
   command(f.detached, 'add', 'unrelated.md')
   command(f.detached, 'commit', '-m', 'unrelated')
   predecessor.head = command(f.detached, 'rev-parse', 'HEAD')
-  assert.throws(() => collectNativeReleaseFrontier(f.options), /historical lane metadata must precede/)
+  assert.throws(() => collectNativeReleaseFrontier(f.options), /historical lane metadata commit must remain on its exact retained branch/)
+})
+
+test('same-path historical sibling lanes are retained by exact ref without an ancestry assumption', t => {
+  const f = fixture(t)
+  command(f.detached, 'switch', '-c', 'agent/device/sibling')
+  fs.writeFileSync(path.join(f.detached, 'sibling.md'), 'retained sibling lane\n')
+  command(f.detached, 'add', 'sibling.md')
+  command(f.detached, 'commit', '-m', 'sibling lane')
+  const siblingHead = command(f.detached, 'rev-parse', 'HEAD')
+  command(f.detached, 'switch', '--detach', f.sourceRevision)
+  f.records.push({ ...f.records[0], ref: 'agent/device/sibling', scope: 'sibling', head: siblingHead })
+
+  command(f.detached, 'switch', 'agent/device/sibling')
+  fs.writeFileSync(path.join(f.detached, 'successor.md'), 'advanced retained branch\n')
+  command(f.detached, 'add', 'successor.md')
+  command(f.detached, 'commit', '-m', 'advance sibling lane')
+  const siblingTip = command(f.detached, 'rev-parse', 'HEAD')
+  command(f.detached, 'switch', '--detach', f.sourceRevision)
+
+  const frontier = collectNativeReleaseFrontier(f.options)
+  const attached = frontier.lanes.find(lane => lane.path === f.attached)
+  assert.deepEqual(attached.retainedLaneRefs, [
+    { ref: 'refs/heads/agent/device/attached', head: f.sourceRevision, recordedHead: f.sourceRevision },
+    { ref: 'refs/heads/agent/device/sibling', head: siblingTip, recordedHead: siblingHead },
+  ])
+
+  command(f.root, 'branch', '-D', 'agent/device/sibling')
+  assert.throws(() => collectNativeReleaseFrontier(f.options), /historical lane metadata retained branch is missing/)
 })
 
 test('detached successor selects its exact head and retains predecessor history without ambiguity', t => {
