@@ -596,5 +596,4 @@ async function materializeActiveWorkspaceEntryAttempt(args?: ActiveWorkspaceMate
     sourcesByPath: resolveWorkspaceSourceIndexSnapshot(args?.sourcesByPath),
     premergedSourceFiles,
     expectedSourceText: args?.expectedSourceText,
-  })
-}
+  }) }

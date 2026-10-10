@@ -596,5 +596,4 @@ export function resetCitySimRuntimeForTests(
   )
   persistenceCommands.resetQueue(reset)
   deactivateXrSceneGameplayMode('cityBuilder')
-  return reset
-}
+  return reset }
