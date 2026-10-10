@@ -32,6 +32,11 @@
       "import": "./dist/cityGeoOverlayMapLibreController.js",
       "default": "./dist/cityGeoOverlayMapLibreController.js"
     },
+    "./testkit/cityGeoGameplayMapLibre": {
+      "types": "./dist/cityGeoGameplayMapLibre.d.ts",
+      "import": "./dist/cityGeoGameplayMapLibre.js",
+      "default": "./dist/cityGeoGameplayMapLibre.js"
+    },
     "./testkit/cityGeoPresentationMapLibre": {
       "types": "./dist/cityGeoPresentationMapLibre.d.ts",
       "import": "./dist/cityGeoPresentationMapLibre.js",
@@ -91,6 +96,11 @@
       "types": "./dist/features/geospatial/mapLibreInitialCameraAlignment.d.ts",
       "import": "./dist/features/geospatial/mapLibreInitialCameraAlignment.js",
       "default": "./dist/features/geospatial/mapLibreInitialCameraAlignment.js"
+    },
+    "./testkit/features/geospatial/mapLibreKeyboardCameraControls": {
+      "types": "./dist/features/geospatial/mapLibreKeyboardCameraControls.d.ts",
+      "import": "./dist/features/geospatial/mapLibreKeyboardCameraControls.js",
+      "default": "./dist/features/geospatial/mapLibreKeyboardCameraControls.js"
     },
     "./testkit/features/geospatial/mapLibreProviderStyle": {
       "types": "./dist/features/geospatial/mapLibreProviderStyle.d.ts",

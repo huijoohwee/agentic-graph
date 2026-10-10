@@ -5,6 +5,9 @@ import test from 'node:test'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { GameFpsHud } from '@/features/game-fps/GameFpsHud'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { controlLocalGameMode } from '@/features/game-fps/gameModeMcpRuntime'
+import { isGameModeDocumentReady } from '@/features/game-fps/gameModeDocumentCapability'
 import {
   advanceGameFpsBy,
   readGameFpsSpatialProfile,
@@ -21,7 +24,7 @@ import {
   stopGameMode,
 } from '@/features/game-fps/gameModeRuntime'
 import { readGameModeXrSpatialProfile } from '@/features/game-fps/gameModeXrSpatialProfile'
-import { isGameFpsPositionValid } from '@/features/game-fps/gameFpsGeometry'
+import { isGameFpsPositionValid, resolveGameFpsMovement } from '@/features/game-fps/gameFpsGeometry'
 import { GAME_FPS_SHARED_XR_PROFILE_ID } from '@/features/game-fps/gameFpsModel'
 import {
   hydrateCanonicalXrPhysicsRuntime,
@@ -190,11 +193,44 @@ test('every authored XR preset admits collision-free ground-actor spawns', () =>
   assert.equal(new Set(aerial.map.blockers.map(blocker => blocker.id)).size, aerial.map.blockers.length)
 })
 
+test('Game Mode player and NPC movement stays on authored streets and paths', async () => {
+  setXrMotionReferenceStage('singapore')
+  const profile = readGameModeXrSpatialProfile()
+  const surfaces = profile.map.walkableSurfaces || []
+  assert.ok(surfaces.some(surface => surface.kind === 'street'))
+  assert.ok(surfaces.some(surface => surface.kind === 'path'))
+  for (const spawn of [profile.playerSpawn, ...profile.npcSeeds]) {
+    assert.equal(isGameFpsPositionValid(spawn, 0.4, profile.map), true)
+  }
+  assert.equal(isGameFpsPositionValid({ x: 0, z: 0.35 }, 0.35, profile.map), true)
+  assert.equal(isGameFpsPositionValid({ x: -7.4, z: 2.5 }, 0.35, profile.map), true)
+  assert.equal(isGameFpsPositionValid({ x: 13, z: 0 }, 0.35, profile.map), false)
+  assert.deepEqual(
+    resolveGameFpsMovement({ x: 0, z: 0.35 }, { x: 13, z: 0 }, 0.35, profile.map),
+    { x: 0, z: 0.35 },
+  )
+
+  const launched = await startGameMode({ decisions: [], webglSupported: true })
+  assert.equal(launched.launchStatus, 'ready')
+  armGameModeSimulation()
+  setGameFpsInput({ forward: 1 })
+  await advanceGameModeSimulationBy(0.25)
+  const movingSnapshot = readGameFpsSnapshot()
+  assert.ok(movingSnapshot.tick > 0)
+  assert.equal(isGameFpsPositionValid(movingSnapshot.player, 0.35, profile.map), true)
+  for (const npc of movingSnapshot.npcs) {
+    assert.equal(isGameFpsPositionValid(npc, 0.4, profile.map), true, `${npc.id} must remain on a walkable surface`)
+  }
+})
+
 test('Game Mode panel projects shared owners without a second renderer, world, or save path', () => {
   const panel = source('src', 'features', 'game-fps', 'GameModeFloatingPanelView.tsx')
   const renderer = source('src', 'lib', 'three', 'ThreeGraph.impl.tsx')
   const gameplayProjection = source('src', 'lib', 'three', 'ThreeGameplayOverlay.tsx')
   const missionStage = source('src', 'features', 'game-fps', 'GameFpsMissionStage.tsx')
+  const geospatialOverlay = source('src', 'components', 'CanvasViewportGeospatialOverlay.tsx')
+  const geospatialHost = source('..', 'gympgrph', 'src', 'GeospatialHost.tsx')
+  const geoOverlayMapLibre = source('..', 'gympgrph', 'src', 'gameModeGeoOverlayMapLibre.ts')
   const model = source('src', 'features', 'game-fps', 'gameFpsModel.ts')
   const gameRuntime = source('src', 'features', 'game-fps', 'gameFpsRuntime.ts')
   const modeRuntime = source('src', 'features', 'game-fps', 'gameModeRuntime.ts')
@@ -206,8 +242,21 @@ test('Game Mode panel projects shared owners without a second renderer, world, o
   assert.equal(panel.includes('<Canvas'), false)
   assert.equal(panel.includes('createGameFpsAuthoredMission'), false)
   assert.match(panel, /GAME_FPS_SAVE_PATH/)
-  assert.match(gameplayProjection, /GameFpsMissionStageLazy coordinateScale=\{props\.coordinateScale\}/)
+  assert.match(gameplayProjection, /GameFpsMissionStageLazy[\s\S]*geospatialComposite=\{props\.geospatialComposite\}/)
+  assert.match(missionStage, /if \(!geospatialComposite\) \{[\s\S]*camera\.position\.copy\(cameraLocalPosition\)/)
+  assert.match(missionStage, /\{!geospatialComposite \? \([\s\S]*<capsuleGeometry/)
+  assert.match(geospatialOverlay, /gameModeGeoOverlay,[\s\S]*gameModeGeoOverlay,/)
+  assert.match(geospatialOverlay, /phase: gameFpsSnapshot\.phase/)
+  assert.match(geospatialHost, /useGameModeGeoOverlayMapLibrePresentation\([\s\S]*snapshot: gameModeGeoOverlay/)
+  assert.match(geospatialHost, /gameModeNeedsMapKeyboardFallback\(gameModeGeoOverlay\)/)
+  assert.match(panel, /Mission ended\. WASD pans the map; Restart to move the player again\./)
+  assert.match(geoOverlayMapLibre, /circle-pitch-alignment': 'viewport'/)
+  assert.match(geoOverlayMapLibre, /origin\.lng \+ point\.x \/ metersPerDegreeLongitude/)
+  assert.match(geoOverlayMapLibre, /origin\.lat - point\.z \/ metersPerDegreeLatitude/)
   assert.match(missionStage, /const GAME_FPS_CAMERA_FOV_DEGREES = 60/)
+  assert.match(missionStage, /<ambientLight intensity=\{0\.62\} \/>/)
+  assert.match(missionStage, /<hemisphereLight args=\{\['#eff8ff', '#526477', 0\.72\]\} \/>/)
+  assert.match(missionStage, /<directionalLight position=\{\[6, 10, 8\]\} intensity=\{0\.85\} \/>/)
   assert.match(missionStage, /function applyGameFpsCameraOptics\(camera: PerspectiveCamera\): void/)
   assert.match(missionStage, /camera\.updateProjectionMatrix\(\)/)
   assert.match(missionStage, /dataset\.kgGameFpsGroundedCamera = perspectiveCamera\?\.fov === GAME_FPS_CAMERA_FOV_DEGREES \? '1' : '0'/)
@@ -220,6 +269,9 @@ test('Game Mode panel projects shared owners without a second renderer, world, o
     /const \{ citySim, citySimActive, gameFpsActive, flightSimActive \} = useCanvasGameplayOverlayState\(\)/,
   )
   assert.equal(/gameFpsRunReadyDemo\s*\|\|\s*gameMode\.active/.test(`${renderer}\n${viewport}`), false)
+  assert.match(panel, /gameModeDocumentReady \? <>[\s\S]*Game Mode telemetry/)
+  assert.match(panel, /shared neutral scene/)
+  assert.match(panel, /operation !== 'stop' && operation !== 'exit'/)
   assert.match(renderer, /active=\{active && mode === 'xr' && !gameplayOverlayActive\}/)
   assert.match(renderer, /const rendererLifecycleKey = resolveThreeRendererLifecycleKey\(mode\)/)
   assert.match(viewport, /gameFpsHudVisible \? <GameFpsHudLazy \/>/)
@@ -267,4 +319,17 @@ test('Game Mode panel projects shared owners without a second renderer, world, o
       `Game Mode production source must forbid ${forbiddenMarker}`,
     )
   }
+})
+
+test('Game Mode runs on a loaded document without XR authoring data using the shared neutral scene', async () => {
+  assert.equal(isGameModeDocumentReady(), true)
+  useGraphStore.setState({ graphData: { type: 'Graph', nodes: [], edges: [], metadata: {} } } as never)
+  assert.equal(isGameModeDocumentReady(), true)
+  const opened = await controlLocalGameMode({ operation: 'open' })
+  assert.equal(opened.ok, true, opened.message)
+  const started = await startGameMode({ decisions: [], webglSupported: true })
+  assert.equal(started.launchStatus, 'ready', started.message)
+  assert.equal(readGameModeSnapshot().active, true)
+  assert.equal(readGameFpsSpatialProfile().map.halfWidth, 8)
+  assert.equal(readGameFpsSpatialProfile().map.halfDepth, 6)
 })

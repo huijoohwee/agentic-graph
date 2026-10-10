@@ -384,6 +384,59 @@ export async function testXrSurfaceFrontmatterPresetActivatesXrCanvasMode() {
     }
   }
 }
+
+export async function testSameDocumentXrMetadataPreservesMediaAndTimelineWorkspace() {
+  await import('@/features/game-city-sim/citySimRuntime')
+  const store = useGraphStore.getState()
+  store.resetAll()
+  useGraphStore.setState({
+    canvasRenderMode: '3d',
+    canvas3dMode: 'xr',
+    canvasRenderModeLastFree: '3d',
+    canvasRenderModeIsAuto: false,
+    floatingPanelOpen: true,
+    floatingPanelView: 'cityBuilder',
+    bottomSurfaceCollapsed: true,
+    bottomSurfaceTab: 'stats',
+    schema: BLOCK_SCHEMA,
+  } as never)
+
+  if (!activateXrSceneSurface({ panelView: 'media', openPanel: true, timeline: true })) {
+    throw new Error('Expected the existing Geo+XR owner to activate its shared Media and Timeline surfaces')
+  }
+  const changed = applyCanvasFrontmatterPreset({
+    rawText: [
+      '---',
+      'kgCanvasSurfaceMode: "geo-xr"',
+      'kgFloatingPanelOpen: true',
+      'kgFloatingPanelView: "cityBuilder"',
+      'kgBottomPanelOpen: false',
+      'kgBottomPanelTab: "timeline"',
+      '---',
+      '# Existing Geo+XR document',
+    ].join('\n'),
+    preserveLiveSharedXrSurface: true,
+  })
+  await waitForCanvasFrontmatterSurfaceTransition()
+  const next = useGraphStore.getState()
+  if (!changed
+    || next.canvasRenderMode !== '3d'
+    || next.canvas3dMode !== 'xr'
+    || next.floatingPanelView !== 'media'
+    || next.floatingPanelOpen !== true
+    || next.bottomSurfaceTab !== 'timeline'
+    || next.bottomSurfaceCollapsed !== false) {
+    throw new Error(`Expected same-document XR metadata to preserve the live Media/Timeline workspace, got ${JSON.stringify({
+      changed,
+      canvasRenderMode: next.canvasRenderMode,
+      canvas3dMode: next.canvas3dMode,
+      floatingPanelView: next.floatingPanelView,
+      floatingPanelOpen: next.floatingPanelOpen,
+      bottomSurfaceTab: next.bottomSurfaceTab,
+      bottomSurfaceCollapsed: next.bottomSurfaceCollapsed,
+    })}`)
+  }
+}
 export async function testDraftWorkspaceSeedFrontmatterExitsXrAndClosesPanels() {
   await import('@/features/game-flight-sim/flightSimRuntime')
   const draftDocuments = [
