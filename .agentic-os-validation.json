@@ -12,6 +12,7 @@
     "graph-extended-6b2d0d01e0ce-plan",
     "graph-extended-3437b2590d40-plan",
     "graph-extended-c399cf036afb-plan",
+    "graph-extended-738bab4e0659-plan",
     "graph-extended-d3ef035f4482-plan",
     "graph-extended-6443c51c83b6-plan"
   ],
@@ -148,6 +149,24 @@
         "ci:affected:source",
         "--",
         "--partition=extended-c399cf036afb"
+      ],
+      "inputs": [
+        "*"
+      ],
+      "requires": [
+        "graph-standard-plan"
+      ],
+      "reuse": "local-plan",
+      "timeoutMs": 900000
+    },
+    {
+      "id": "graph-extended-738bab4e0659-plan",
+      "command": [
+        "npm",
+        "run",
+        "ci:affected:source",
+        "--",
+        "--partition=extended-738bab4e0659"
       ],
       "inputs": [
         "*"

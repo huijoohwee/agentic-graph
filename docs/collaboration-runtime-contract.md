@@ -2,7 +2,7 @@
 title: "agentic-graph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 87
+contract_version: 88
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 ci_command_timeout_overrides:
@@ -21,6 +21,8 @@ ci_command_timeout_overrides:
     timeout_ms: 300000
   - command: ["node", "canvas/scripts/run_python_learning_browser_smoke.mjs"]
     timeout_ms: 300000
+  - command: ["node", "canvas/scripts/run_production_runtime_readiness_e2e.mjs"]
+    timeout_ms: 900000
   - command: ["node", "canvas/scripts/run_python_learning_offline_smoke.mjs", "--build"]
     timeout_ms: 300000
   - command: ["npm", "run", "runtime:test:core"]
@@ -76,6 +78,11 @@ deployment:
   forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["node\\s+\\./scripts/core-runtime-release-publications\\.mjs(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+versions\\s+(?:upload|deploy)(?:\\s|$)", "wrangler(?:@[^ ]+)?\\s+d1\\s+migrations\\s+apply(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-release\\.mjs\\s+(?:deploy|rollback)(?:\\s|$)", "node\\s+\\./scripts/travel-mesh-bootstrap\\.mjs\\s+apply(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
+  production_runtime_readiness_local_browser:
+    roots: ["docs/TESTING.md", "canvas/scripts/run_production_runtime_readiness_e2e.mjs", "scripts/__tests__/production-runtime-ready-demo.test.mjs", "canvas/src/features/observability-workspace/ObservabilityWorkspace.tsx", "canvas/src/features/observability-workspace/host.mjs", "canvas/src/components/LiveCanvasHero.tsx", "canvas/src/features/agentic-os/LiveCanvasHeroPromptPresetPicker.tsx", "canvas/src/features/agentic-os/activateLiveCanvasHeroDemo.ts", "canvas/src/features/agentic-os/liveCanvasHeroDemoSource.ts", "docs/workspace-seeds/demo.md", "scripts/run-runtime-readiness-demo.mjs"]
+    commands:
+      - ["node", "canvas/scripts/run_production_runtime_readiness_e2e.mjs"]
+      - ["node", "--test", "scripts/__tests__/production-runtime-ready-demo.test.mjs"]
   workspace_project_canvas:
     roots: ["canvas/src/features/workspace-project/", "canvas/viteWorkspaceProject.ts", "canvas/viteWorkspaceArtifactBridge.ts", "canvas/src/features/panels/views/HistoryView.tsx", "canvas/src/__tests__/workspaceProjectPanel.test.tsx", "canvas/src/__tests__/workspaceProjectBridge.test.ts", "canvas/src/__tests__/workspaceCrossViewSync.test.tsx", "canvas/src/__tests__/storyboardWidgetMediaRecoveryBudget.test.tsx"]
     commands:
