@@ -14,6 +14,7 @@ export {
   REGIONAL_POI_LAYER_IDS,
   REGIONAL_POI_LAYER_ORDER,
   REGIONAL_POI_SOURCE_ID,
+  regionalPoiProfileBounds,
   cityGeoPresentationStateEntries,
   mapHasExactCityGeoPresentation,
   mapHasExactRegionalPoiProfile,

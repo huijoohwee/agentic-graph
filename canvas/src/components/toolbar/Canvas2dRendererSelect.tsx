@@ -16,6 +16,7 @@ import { SelectableRowValue } from '@/components/ui/SelectableRowValue'
 import { useMinimapCollapsed } from '@/features/minimap/minimapVisibility'
 import {
   activateXrSceneSurface,
+  activateXrSceneSurfaceAfterGeospatialExit,
   resolveXrSurfaceEntryPanelView,
 } from '@/features/three/xrSceneSurfaceRuntime'
 import {
@@ -164,7 +165,29 @@ export function Canvas2dRendererSelect({
         if (mode === 'xr') {
           const current = useGraphStore.getState()
           const panelView = resolveXrSurfaceEntryPanelView(current)
-          if (!activateXrSceneSurface({ panelView, openPanel: true, timeline: true })) {
+          const activation = { panelView, openPanel: true, timeline: true }
+          if (geospatialEnabled) {
+            void activateXrSceneSurfaceAfterGeospatialExit(activation)
+              .then(activated => {
+                if (!activated) {
+                  current.pushUiToast({
+                    id: 'canvas-view:xr:unavailable',
+                    kind: 'error',
+                    message: 'The shared XR Mode surface is unavailable for this document.',
+                  })
+                }
+              })
+              .catch((error: unknown) => {
+                const message = error instanceof Error ? error.message : String(error || 'Unknown error')
+                useGraphStore.getState().pushUiToast({
+                  id: 'canvas-view:xr:handoff-failed',
+                  kind: 'error',
+                  message: `XR Mode could not take ownership of the Canvas: ${message}`,
+                })
+              })
+            return
+          }
+          if (!activateXrSceneSurface(activation)) {
             current.pushUiToast({
               id: 'canvas-view:xr:unavailable',
               kind: 'error',
