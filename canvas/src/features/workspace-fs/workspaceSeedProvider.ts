@@ -299,7 +299,6 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
   const preferCompleteDataset = args?.preferCompleteDataset === true, traceId = nextWorkspaceMirrorTraceId('bootstrap')
   const completeDatasetCandidates: WorkspaceDocsMirrorEntry[][] = [], defaultSourceUrl = readWorkspaceImportDefaultSourceUrlSetting()
   const defaultSourceUrlIsGitHub = isWorkspaceDocsMirrorGitHubSourceUrl(defaultSourceUrl), repoLocalRunReady = isWorkspaceRepoLocalRunReadyBootstrap()
-  if (repoLocalRunReady && typeof window !== 'undefined') return readCanonicalWorkspaceSeedMirrorEntries()
   const shouldOverlayCanonicalWorkspaceSeedInventory = (): boolean => (
     preferCompleteDataset
     && (sourceFilesSelection?.selectedFolderPath || '') === ''
@@ -316,7 +315,7 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
     )
   }
   const readPublishedCanonicalDocsMirrorEntries = async (): Promise<WorkspaceDocsMirrorEntry[]> => {
-    if (repoLocalRunReady || isExplicitOfflineWorkspace()) return []
+    if (isExplicitOfflineWorkspace()) return []
     const [publishedEntries, publishedAgenticEntries, workspaceSeedEntries] = await Promise.all([
       readCanonicalPublishedNonAgenticDocsMirrorEntries({
         maxFiles: WORKSPACE_DOCS_MIRROR_MAX_FILES,
@@ -328,6 +327,12 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
     const canonicalEntries = [...publishedEntries, ...publishedAgenticEntries]
     if (canonicalEntries.length === 0) return []
     return overlayCanonicalWorkspaceSeedEntries(canonicalEntries, workspaceSeedEntries)
+  }
+  if (repoLocalRunReady && typeof window !== 'undefined') {
+    const publishedEntries = await readPublishedCanonicalDocsMirrorEntries()
+    return publishedEntries.length > 0
+      ? publishedEntries
+      : readCanonicalWorkspaceSeedMirrorEntries()
   }
   // #region debug-point A:workspace-mirror-bootstrap-entry
   reportWorkspaceMirrorTrace({

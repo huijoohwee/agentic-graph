@@ -16,6 +16,12 @@ import {
 } from './citySimAuthoredSource'
 import { loadCityGridFromWorkspace } from './citySimPersistence'
 import {
+  createInitialCityGameplay,
+  moveCityGameplayPlayer,
+  moveCityGameplayPlayerToCoordinate,
+  selectCityGameplayPlayer,
+} from './citySimGameplay'
+import {
   citySimSnapshot as snapshot,
   publishCitySimFailure as publishFailure,
   publishCitySimSnapshot as publish,
@@ -38,6 +44,7 @@ import {
   restoreCitySimPreviousCanvasSurface,
   type CitySimPreviousCanvasSurface,
 } from './citySimSurfaceOwnership'
+import { isCityCoopGuestReadOnly, resetCityCoopSnapshotForTests } from './cityCoopState'
 
 export { readCitySimSnapshot, subscribeCitySimSnapshot }
 export type { CitySimOperationResult, CitySimPhase, CitySimSaveStatus, CitySimSnapshot } from './citySimRuntimeState'
@@ -60,6 +67,16 @@ let latestCitySimSurfaceIntent: 'idle' | 'open' | 'exit' = 'idle'
 let sessionStartCity: CityGrid | null = null
 let authoredSource: CitySimAuthoredSource | null = null
 let malformedDocument: CitySimMalformedDocument | null = null
+
+function guestReadOnlyResult(operation: string): CitySimSnapshot {
+  fenceTimer()
+  return publishFailure(
+    operation,
+    'guest-read-only',
+    'This City is a read-only host projection. Suggest a zone for host review instead.',
+    { phase: snapshot.active ? 'stopped' : snapshot.phase },
+  )
+}
 
 function fenceTimer(): void {
   timerGeneration += 1
@@ -169,10 +186,19 @@ const persistenceCommands = createCitySimPersistenceCommands({
   },
 })
 
-export const {
-  loadCitySim,
-  saveCitySim,
-} = persistenceCommands
+export async function loadCitySim(
+  options: CitySimWorkspaceOptions = {},
+): Promise<CitySimSnapshot> {
+  if (isCityCoopGuestReadOnly()) return guestReadOnlyResult('load')
+  return persistenceCommands.loadCitySim(options)
+}
+
+export async function saveCitySim(
+  options: CitySimWorkspaceOptions = {},
+): ReturnType<typeof persistenceCommands.saveCitySim> {
+  if (isCityCoopGuestReadOnly()) return Promise.resolve(guestReadOnlyResult('save'))
+  return persistenceCommands.saveCitySim(options)
+}
 
 function beginCitySimSurfaceRestoration(
   previous: CitySimPreviousCanvasSurface,
@@ -231,8 +257,10 @@ function surfaceOwnershipFailureAfterSupersession(
 async function performOpenCitySimSurface(
   options: CitySimOpenOptions = {},
 ): Promise<CitySimSnapshot> {
+  if (isCityCoopGuestReadOnly()) return guestReadOnlyResult('open')
   const priorRestoration = citySimSurfaceRestorationTail
   const restorationFailure = await priorRestoration
+  if (isCityCoopGuestReadOnly()) return guestReadOnlyResult('open')
   if (priorRestoration !== citySimSurfaceRestorationTail) return snapshot
   if (restorationFailure) {
     return publishFailure(
@@ -307,6 +335,14 @@ async function performOpenCitySimSurface(
     if (restoreAuthoredGrid && requestedSource) {
       sessionStartCity = tickZero(requestedSource.city)
     }
+    const liveCity = restoreAuthoredGrid && requestedSource
+      ? requestedSource.city
+      : snapshot.city
+    const gameplayMatchesProfile = snapshot.gameplay
+      && snapshot.gameplay.profileId === liveCity.regionalPoiProfileId
+      && snapshot.gameplay.playerPoiId !== snapshot.gameplay.taskPoiId
+      && liveCity.parcels.some(parcel => parcel.id === snapshot.gameplay?.playerPoiId)
+      && liveCity.parcels.some(parcel => parcel.id === snapshot.gameplay?.taskPoiId)
     return publishSuccess(
       'open',
       sourceChanged
@@ -319,6 +355,9 @@ async function performOpenCitySimSurface(
               selectedParcelId: null,
               advisor: null,
             }
+          : {}),
+        ...(!gameplayMatchesProfile || restoreAuthoredGrid
+          ? { gameplay: createInitialCityGameplay(liveCity) }
           : {}),
       },
     )
@@ -340,6 +379,13 @@ async function performOpenCitySimSurface(
       'document-read-failed',
       error instanceof Error ? error.message : String(error),
       { saveStatus: 'error' },
+    )
+  }
+  if (isCityCoopGuestReadOnly()) {
+    return failSurfaceEntry(
+      previous,
+      'guest-read-only',
+      'City entry was canceled because this peer became a read-only guest.',
     )
   }
   if (generation !== asyncGeneration) return snapshot
@@ -404,6 +450,7 @@ async function performOpenCitySimSurface(
         webglSupported,
         phase: 'stopped',
         city,
+        gameplay: createInitialCityGameplay(city),
         selectedParcelId: null,
         advisor: null,
         saveStatus: loaded.status === 'loaded' ? 'loaded' : 'not-loaded',
@@ -445,6 +492,7 @@ export function openCitySimSurface(
 export async function startCitySim(
   options: CitySimOpenOptions = {},
 ): Promise<CitySimSnapshot> {
+  if (isCityCoopGuestReadOnly()) return guestReadOnlyResult('start')
   if (malformedDocument) {
     return publishFailure(
       'start',
@@ -486,6 +534,44 @@ export async function startCitySim(
   return running
 }
 
+export function travelCitySimPlayerToPoi(poiId: string): CitySimSnapshot {
+  if (isCityCoopGuestReadOnly()) return guestReadOnlyResult('travel')
+  if (!snapshot.active) {
+    return publishFailure(
+      'travel',
+      'city-inactive',
+      'Open City Builder on Geo+XR before moving the player.',
+    )
+  }
+  const moved = moveCityGameplayPlayer(snapshot.city, snapshot.gameplay, poiId)
+  if (!moved.state) {
+    return publishFailure('travel', 'invalid-destination', moved.error)
+  }
+  const taskMessage = moved.taskCompleted
+    ? `Goal reached. ${moved.state.completedTasks} task${moved.state.completedTasks === 1 ? '' : 's'} completed.`
+    : `Player moved to ${poiId}. The current goal remains ${moved.state.taskPoiId}.`
+  return publishSuccess('travel', taskMessage, { gameplay: moved.state })
+}
+
+/** Selection and walking are session-only presentation state; neither changes City ticks or saves. */
+export function setCitySimPlayerSelected(selected: boolean): boolean {
+  if (isCityCoopGuestReadOnly() || !snapshot.active || !snapshot.gameplay) return false
+  const gameplay = selectCityGameplayPlayer(snapshot.gameplay, selected)
+  if (!gameplay) return false
+  if (gameplay !== snapshot.gameplay) publish({ gameplay })
+  return true
+}
+
+export function moveCitySimPlayerToCoordinate(
+  coordinate: readonly [longitude: number, latitude: number],
+): boolean {
+  if (isCityCoopGuestReadOnly() || !snapshot.active || !snapshot.gameplay) return false
+  const gameplay = moveCityGameplayPlayerToCoordinate(snapshot.gameplay, coordinate)
+  if (!gameplay) return false
+  publish({ gameplay })
+  return true
+}
+
 function performCitySimSurfaceExit(
   options: Readonly<{ restorePreviousSurface?: boolean }> = {},
 ): CitySimSnapshot {
@@ -501,6 +587,7 @@ function performCitySimSurfaceExit(
       active: false,
       phase: 'idle',
       selectedParcelId: null,
+      gameplay: null,
       advisor: null,
     },
   )
@@ -571,6 +658,7 @@ export function resetCitySimRuntimeForTests(
     webglSupported?: boolean
   }> = {},
 ): CitySimSnapshot {
+  resetCityCoopSnapshotForTests()
   asyncGeneration += 1
   fenceTimer()
   previousCanvasSurface = null

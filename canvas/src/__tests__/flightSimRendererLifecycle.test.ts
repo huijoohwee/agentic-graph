@@ -225,6 +225,34 @@ test('Geo+XR mounts one transparent shared XR viewport over the Geo owner', () =
   }), { mounted: true, active: true })
 })
 
+test('City gameplay keeps the shared XR renderer composed over its Geo map', () => {
+  const ownership = resolveCanvasSurfaceOwnership({
+    canvasRenderMode: '3d',
+    cityMapLibreSurfaceRequested: true,
+    flightSimActive: false,
+    gameplayOverlayActive: true,
+    geospatialModeEnabled: true,
+    geospatialXrModeEnabled: true,
+    workspaceEditorOverlayOpen: true,
+    workspaceStoryboardSurfaceActive: false,
+  })
+  assert.deepEqual(ownership, {
+    activeSurface: 'geo-xr',
+    geospatialOverlayOwnsViewport: false,
+  })
+  assert.deepEqual(resolveThreeCanvasSurfaceLifecycle({
+    sourceFilesBootstrapAdmitted: true,
+    sourceFilesBootstrapReady: true,
+    rendererPreviouslyMounted: false,
+    geospatialOverlayOwnsViewport: ownership.geospatialOverlayOwnsViewport,
+    liveCanvasHeroVisible: false,
+    canvasRenderMode: '3d',
+    heavyRuntimeIntentBlocked: false,
+    activeSurface: ownership.activeSurface,
+    documentSwitchOwnsViewport: false,
+  }), { mounted: true, active: true })
+})
+
 test('City intent fails closed to MapLibre before Geo+XR commits', () => {
   const ownership = resolveCanvasSurfaceOwnership({
     canvasRenderMode: '3d',
