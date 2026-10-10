@@ -216,6 +216,11 @@ export function applyCanvasFrontmatterPreset(args: {
   const retainLiveSharedXrSurface = liveSharedXrSurface
     && !incomingLeavesSharedXrSurface
     && (args.preserveLiveSharedXrSurface === true || canvas3dMode !== 'xr')
+  // Runtime-authored XR metadata is published back through the active
+  // document's canonical frontmatter parser. Preserve the user's live XR
+  // workspace in that same-document case so its authored panel and closed
+  // bottom-panel defaults do not eject the Media/Timeline authoring surface.
+  const preserveLiveXrWorkspace = retainLiveSharedXrSurface && liveSharedXrSurface
   const retainPassiveGeospatialSurface = retainLiveSharedXrSurface
     && args.preserveLiveSharedXrSurface === true && !sharedXrSurfaceRouted
   const isCurrentSurfaceRequest = retainPassiveGeospatialSurface
@@ -294,19 +299,19 @@ export function applyCanvasFrontmatterPreset(args: {
     return activated
   }
   if (typeof geospatialModeEnabled === 'boolean') {
-    if (!retainPassiveGeospatialSurface) {
+    if (!retainPassiveGeospatialSurface && !preserveLiveXrWorkspace) {
       void requestCanvasFrontmatterGeospatialSurface(
         geospatialModeEnabled,
         {
           isCurrent: isCurrentSurfaceRequest,
-          ...(sharedXrSurfaceRouted
+          ...(sharedXrSurfaceRouted && !preserveLiveXrWorkspace
             ? { afterCommit: activateSharedXrSurface }
             : {}),
         },
       )
     }
-    if (sharedXrSurfaceRouted) changed = true
-  } else if (sharedXrSurfaceRouted) {
+    if (sharedXrSurfaceRouted && !preserveLiveXrWorkspace) changed = true
+  } else if (sharedXrSurfaceRouted && !preserveLiveXrWorkspace) {
     activateSharedXrSurface()
   }
   if (!sharedXrSurfaceRouted) {
@@ -369,42 +374,42 @@ export function applyCanvasFrontmatterPreset(args: {
     }
   }
 
-  if (preset?.bottomPanelTab) {
+  if (preset?.bottomPanelTab && !preserveLiveXrWorkspace) {
     const current = useGraphStore.getState()
     if (current.bottomSurfaceTab !== preset.bottomPanelTab) {
       current.setBottomSurfaceTab(preset.bottomPanelTab)
       changed = true
     }
   }
-  if (preset?.bottomPanelOpen === true) {
+  if (preset?.bottomPanelOpen === true && !preserveLiveXrWorkspace) {
     const current = useGraphStore.getState()
     if (current.bottomSurfaceCollapsed === true) {
       current.setBottomSurfaceCollapsed(false)
       changed = true
     }
   }
-  if (preset?.bottomPanelOpen === false) {
+  if (preset?.bottomPanelOpen === false && !preserveLiveXrWorkspace) {
     const current = useGraphStore.getState()
     if (current.bottomSurfaceCollapsed !== true) {
       current.setBottomSurfaceCollapsed(true)
       changed = true
     }
   }
-  if (preset?.floatingPanelView && !(sharedXrSurfaceRouted && xrScenePanelView)) {
+  if (preset?.floatingPanelView && !preserveLiveXrWorkspace && !(sharedXrSurfaceRouted && xrScenePanelView)) {
     const current = useGraphStore.getState()
     if (current.floatingPanelView !== preset.floatingPanelView) {
       current.setFloatingPanelView(preset.floatingPanelView)
       changed = true
     }
   }
-  if (preset?.floatingPanelOpen === true && !(sharedXrSurfaceRouted && xrScenePanelView)) {
+  if (preset?.floatingPanelOpen === true && !preserveLiveXrWorkspace && !(sharedXrSurfaceRouted && xrScenePanelView)) {
     const current = useGraphStore.getState()
     if (current.floatingPanelOpen !== true) {
       current.setFloatingPanelOpen(true)
       changed = true
     }
   }
-  if (preset?.floatingPanelOpen === false && !sharedXrSurfaceRouted) {
+  if (preset?.floatingPanelOpen === false && !preserveLiveXrWorkspace && !sharedXrSurfaceRouted) {
     const current = useGraphStore.getState()
     if (current.floatingPanelOpen !== false) {
       current.setFloatingPanelOpen(false)

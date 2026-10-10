@@ -5,6 +5,7 @@ import {
   type FlightGeoOverlayPresentation,
   type FlightGeoOverlayPresentationOwner,
   type FlightGeoOverlaySnapshot,
+  type FlightGeoEnvironmentProjection,
 } from '../../flightGeoOverlay.js'
 import {
   applyFlightGeoOverlayCameraToMap,
@@ -18,8 +19,10 @@ import {
 } from '../../geoMapViewport.js'
 import {
   applyFlightGeoEnvironmentToMap,
+  applyFlightGeoEnvironmentProjectionToMap,
   clearFlightGeoEnvironmentFromMap,
 } from '../../flightGeoEnvironmentMapLibre.js'
+import { GAME_MODE_GEO_OVERLAY_LAYER_IDS } from '../../gameModeGeoOverlayMapLibre.js'
 import {
   canMapLibreFlightOverlayPresent,
   requestMapLibreFlightPresentationBootstrap,
@@ -77,6 +80,8 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
   graphRevision: number
   map: any | null
   mapLibreRuntimeEnabled: boolean
+  /** Shared Media terrain can remain on the map while Flight Mode is inactive. */
+  sceneEnvironment?: FlightGeoEnvironmentProjection | null
   onPresented?: (presentation: FlightGeoOverlayPresentation) => void
   rootRef: React.RefObject<HTMLElement | null>
   styleRevision: number
@@ -254,7 +259,16 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         disposeGate()
         transitionPresentationOwner(null)
         clearFlightGeoOverlayFromMap(map)
-        clearFlightGeoEnvironmentFromMap(map)
+        if (options.sceneEnvironment) {
+          applyFlightGeoEnvironmentProjectionToMap(
+            map,
+            options.sceneEnvironment,
+            options.viewMode,
+            { beforeLayerId: GAME_MODE_GEO_OVERLAY_LAYER_IDS.assets },
+          )
+        } else {
+          clearFlightGeoEnvironmentFromMap(map)
+        }
         return
       }
       if (isMapLibreMapPreparingForDisposal(map)) {
@@ -281,7 +295,10 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       if (flightGate && overlay.phase === 'stopped') flightGate.clearCanvas()
       const environmentApplied = applyFlightGeoEnvironmentToMap(
         map,
-        overlay,
+        overlay.environment ? overlay : {
+          ...overlay,
+          environment: options.sceneEnvironment || null,
+        },
         options.viewMode,
       )
       const applied = applyFlightGeoOverlayToMap(map, overlay)
@@ -368,6 +385,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     options.mapLibreRuntimeEnabled,
     options.onPresented,
     options.rootRef,
+    options.sceneEnvironment,
     captureMapPadding,
     restoreMapPadding,
     options.styleRevision,

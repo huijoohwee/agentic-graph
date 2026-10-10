@@ -293,6 +293,30 @@ async function parseActiveWorkspaceSourceBeforeDocumentApply(activePath: Workspa
 function staleMaterialization(retryable = false, stage = 'source'): Error {
   return Object.assign(new Error(`Active document source changed during materialization (${stage}).`), { code: 'SOURCE_FILES_MATERIALIZATION_STALE', retryable })
 }
+
+function hasOnlySafeSourceFileAdditions(
+  before: SourceFile[],
+  current: SourceFile[],
+  allowUnrelatedAdditions: boolean,
+): boolean {
+  if (current.length < before.length || (!allowUnrelatedAdditions && current.length !== before.length)) return false
+  for (let index = 0; index < before.length; index += 1) {
+    const previous = before[index]
+    const latest = current[index]
+    if (!previous || !latest || !areSourceFileRecordsEqual({ ...previous, status: latest.status }, latest)) return false
+  }
+  const knownIds = new Set(before.map(file => file.id))
+  const knownPaths = new Set(before.map(file => String(file.source?.path || '')).filter(Boolean))
+  for (let index = before.length; index < current.length; index += 1) {
+    const added = current[index]
+    const path = String(added?.source?.path || '')
+    if (!added?.id || knownIds.has(added.id) || (path && knownPaths.has(path))) return false
+    knownIds.add(added.id)
+    if (path) knownPaths.add(path)
+  }
+  return true
+}
+
 export type MaterializedWorkspaceSourceProof = Readonly<{
   activePath: WorkspacePath
   explorerActivePath: WorkspacePath | null
@@ -323,15 +347,18 @@ async function settleMaterializedDocument(args: NonNullable<Parameters<typeof re
     && current.markdownDocumentName === file.name && current.markdownDocumentText === file.text && isFrontmatterOnlyDoc(file.text)
     && !file.parsedGraphData?.nodes?.length && !file.parsedGraphData?.edges?.length
     ? { ...file, ...buildSourceFileLifecycleState({ status: 'idle', previousState: file, preserveParsedState: true }) } : file
-  const retryableLifecyclePublication = before.sourceFiles.length === current.sourceFiles.length && before.sourceFiles.every((file, index) => {
-    const latest = current.sourceFiles[index]
-    return !!latest && areSourceFileRecordsEqual(String(file.source?.path || '') === resolveWorkspaceSourcePathKey(activePath) ? { ...file, status: latest.status } : file, latest)
-  })
+  const retryableLifecyclePublication = hasOnlySafeSourceFileAdditions(
+    before.sourceFiles,
+    current.sourceFiles,
+    args.applyToGraph === true,
+  )
   const documentRemainsCurrent = !isMarkdownLikeFileName(activePath) || (matchesMarkdownDocumentPath(activePath, current.markdownDocumentName) && current.markdownDocumentApplyViewPreset !== false && (args.expectedSourceText === undefined || current.markdownDocumentText === args.expectedSourceText))
   if (hasMaterializedActivePathDrifted(activePath, explorerAtStart)
     || before.sourceFiles.length !== current.sourceFiles.length
     || before.sourceFiles.some((file, index) => !areSourceFileRecordsEqual(file, current.sourceFiles[index])
-      && !areSourceFileRecordsEqual(documentOwnedRecord(file), current.sourceFiles[index]))) throw staleMaterialization(retryableLifecyclePublication && documentRemainsCurrent, 'active source lifecycle')
+      && !areSourceFileRecordsEqual(documentOwnedRecord(file), current.sourceFiles[index]))) {
+    throw staleMaterialization(retryableLifecyclePublication && documentRemainsCurrent, 'active source lifecycle')
+  }
   if (!documentRemainsCurrent) throw staleMaterialization()
   return captureMaterializedWorkspaceSourceProof(activePath)
 }
@@ -447,9 +474,12 @@ export async function materializeActiveWorkspaceEntryIntoSourceFiles(args?: Acti
       return proof
     } catch (error) {
       let current = useGraphStore.getState()
-      if (attempt || (error as { code?: string; retryable?: boolean })?.code !== 'SOURCE_FILES_MATERIALIZATION_STALE'
-        || !(error as { retryable?: boolean }).retryable
-        || useMarkdownExplorerStore.getState().activePath !== explorer) throw error
+      if ((error as { code?: string })?.code !== 'SOURCE_FILES_MATERIALIZATION_STALE') throw error
+      if (useMarkdownExplorerStore.getState().activePath !== explorer) {
+        if (args?.applyToGraph === true) return null
+        throw error
+      }
+      if (attempt || !(error as { retryable?: boolean }).retryable) throw error
       const retrySources = request?.sourceFilesSnapshot || before.sourceFiles
       const active = current.sourceFiles.filter(file => file.source?.path === resolveWorkspaceSourcePathKey(activePath || ''))
       if (activePath && active.length === 1 && active[0]!.status === 'loading'
@@ -471,7 +501,7 @@ export async function materializeActiveWorkspaceEntryIntoSourceFiles(args?: Acti
         const readConvergence = () => {
           const state = { applyToGraph: args?.applyToGraph, activePath, activeSourcePath: resolveWorkspaceSourcePathKey(activePath || ''),
             initial, before, current: useGraphStore.getState(), requestedSourceFiles: request?.sourceFilesSnapshot || before.sourceFiles }
-          return readColdStartMaterializationSource({ ...state, preparedSourceFiles: request?.premergedSourceFiles })?.text
+          return readColdStartMaterializationSource({ ...state, preparedSourceFiles: current.sourceFiles })?.text
             ?? readPassiveMaterializationDocumentText({ ...state, documentKey: workspaceDocumentKey(activePath || '') })
         }
         expectedSourceText = readConvergence()
