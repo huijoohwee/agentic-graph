@@ -8,9 +8,12 @@ Run both local browser journeys from the Graph checkout:
 node canvas/scripts/run_production_runtime_readiness_e2e.mjs
 ```
 
-The test starts a fresh Observability workspace on `127.0.0.1:5175` and the
-`/81rv10/` readiness demo on `127.0.0.1:5185`. It fails if either port is
-already occupied, uses a 390 × 844 CSS-pixel mobile viewport, selects the
+The test starts fresh Observability and `/81rv10/` readiness-demo servers on
+distinct OS-assigned free loopback ports by default, so an existing live UI
+server is left alone. Set `AG_OBSERVABILITY_E2E_PORT` and
+`AG_RUNTIME_READINESS_E2E_PORT` to request exact ports; the runner fails if an
+explicit port is occupied or if both resolve to the same port. It uses a
+390 × 844 CSS-pixel mobile viewport, selects the
 Graph source, maps `src/runtime`, reads one listed file by its exact SHA-256,
 then selects **Production Runtime Readiness · Demo only** and opens its local
 document. Cross-origin HTTP(S) browser requests are blocked and reported; the

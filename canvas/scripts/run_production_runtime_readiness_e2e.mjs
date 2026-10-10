@@ -18,8 +18,10 @@ const canonicalRoot = path.dirname(execFileSync('git', ['rev-parse', '--path-for
 const workspaceRoot = path.dirname(canonicalRoot)
 const canonicalGraphPath = path.basename(canonicalRoot)
 const viewport = { width: 390, height: 844 }
-const observabilityPort = readPort('AG_OBSERVABILITY_E2E_PORT', 5175)
-const readinessPort = readPort('AG_RUNTIME_READINESS_E2E_PORT', 5185)
+const requestedObservabilityPort = readPort('AG_OBSERVABILITY_E2E_PORT', 0)
+const requestedReadinessPort = readPort('AG_RUNTIME_READINESS_E2E_PORT', 0)
+let observabilityPort
+let readinessPort
 const viteBin = path.join(graphRoot, 'node_modules/vite/bin/vite.js')
 const browserErrors = []
 const httpFailures = []
@@ -57,6 +59,31 @@ async function assertPortAvailable(port) {
     })
     probe.listen(port, '127.0.0.1', () => probe.close(resolve))
   })
+}
+
+async function selectAvailablePort(name, requestedPort, excludedPorts = []) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const port = await new Promise((resolve, reject) => {
+      const probe = createServer()
+      probe.once('error', error => {
+        if (error.code === 'EADDRINUSE') {
+          reject(new Error(`${name} port 127.0.0.1:${requestedPort} is occupied; the E2E will not reuse an existing server.`))
+        } else reject(error)
+      })
+      probe.listen(requestedPort, '127.0.0.1', () => {
+        const address = probe.address()
+        const selectedPort = address && typeof address === 'object' ? address.port : undefined
+        probe.close(error => {
+          if (error) reject(error)
+          else if (!selectedPort) reject(new Error(`${name} could not reserve a loopback port.`))
+          else resolve(selectedPort)
+        })
+      })
+    })
+    if (!excludedPorts.includes(port)) return port
+    if (requestedPort !== 0) throw new Error(`${name} must use a different port from the other E2E server.`)
+  }
+  throw new Error(`${name} could not select a distinct free loopback port after 8 attempts.`)
 }
 
 function capture(child, target) {
@@ -348,6 +375,8 @@ async function verifyReadinessDemoJourney(catalogRoot) {
 let laneStateBefore
 let canonicalStateBefore
 try {
+  observabilityPort = await selectAvailablePort('AG_OBSERVABILITY_E2E_PORT', requestedObservabilityPort)
+  readinessPort = await selectAvailablePort('AG_RUNTIME_READINESS_E2E_PORT', requestedReadinessPort, [observabilityPort])
   if (observabilityPort === readinessPort) throw new Error('The two E2E server ports must differ.')
   phase = 'application-preparation'
   execFileSync('npm', ['run', 'predev:docs', '--workspace=@agentic-graph/canvas'], { cwd: graphRoot, stdio: 'inherit', timeout: 600000 })
@@ -371,6 +400,7 @@ try {
   const evidence = {
     schema: 'agentic-graph-production-runtime-readiness-local-e2e/v1',
     status: 'passed',
+    ports: { observability: observabilityPort, readinessDemo: readinessPort },
     source: { laneRevision: git(graphRoot, 'rev-parse', 'HEAD'), canonicalRevision: git(canonicalRoot, 'rev-parse', 'HEAD') },
     journeys,
     catalogSource,
