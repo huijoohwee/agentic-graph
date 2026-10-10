@@ -299,7 +299,6 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
   const preferCompleteDataset = args?.preferCompleteDataset === true, traceId = nextWorkspaceMirrorTraceId('bootstrap')
   const completeDatasetCandidates: WorkspaceDocsMirrorEntry[][] = [], defaultSourceUrl = readWorkspaceImportDefaultSourceUrlSetting()
   const defaultSourceUrlIsGitHub = isWorkspaceDocsMirrorGitHubSourceUrl(defaultSourceUrl), repoLocalRunReady = isWorkspaceRepoLocalRunReadyBootstrap()
-  if (repoLocalRunReady && typeof window !== 'undefined') return readCanonicalWorkspaceSeedMirrorEntries()
   const shouldOverlayCanonicalWorkspaceSeedInventory = (): boolean => (
     preferCompleteDataset
     && (sourceFilesSelection?.selectedFolderPath || '') === ''
@@ -329,6 +328,7 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
     if (canonicalEntries.length === 0) return []
     return overlayCanonicalWorkspaceSeedEntries(canonicalEntries, workspaceSeedEntries)
   }
+  if (repoLocalRunReady && typeof window !== 'undefined') return readCanonicalWorkspaceSeedMirrorEntries()
   // #region debug-point A:workspace-mirror-bootstrap-entry
   reportWorkspaceMirrorTrace({
     hypothesisId: 'A',
