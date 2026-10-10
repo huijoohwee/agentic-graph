@@ -1,6 +1,6 @@
 import React from 'react'
 import { deriveRegionalPoiLocators } from 'grph-shared/geospatial/regionalPoiGeo'
-import { Building2, CircleDollarSign, Lightbulb, MapPinned, Play, RotateCcw, Save, Square, Users } from 'lucide-react'
+import { AlertTriangle, Building2, CircleDollarSign, Lightbulb, MapPinned, Play, RotateCcw, Save, Square, Users } from 'lucide-react'
 import { FloatingPanelCatalogHeader, floatingPanelCatalogBodyClassName, floatingPanelCatalogSurfaceClassName } from '@/lib/ui/floatingPanelCatalogLayout'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
