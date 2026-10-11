@@ -22,6 +22,7 @@ export type { WorkspaceDocsMirrorEntry } from './workspaceSeedProviderPaths'
 export { upsertWorkspaceInitializationSeedText, ensureWorkspaceDocsMirrorFolder, ensureWorkspaceChatMirrorFolder, upsertWorkspaceChatMirrorText, upsertWorkspaceChatMirrorBytes, deleteWorkspaceInitializationSeedText } from './workspaceSeedProviderLocalIo'
 const AG_FS_LIST_PATH = '/__agentic_os_fs_list'
 const isExplicitRepoLocalDocsProjectionRoot = (value: unknown): boolean => {
+  if (typeof value !== 'string') return false
   const docsRoot = normalizeAbsRoot(readWorkspaceInitializationDocsAbsRoot())
   const seedsRoot = normalizeAbsRoot(readAgenticGraphWorkspaceSeedsReadAbsRoot())
   return !!docsRoot && docsRoot === seedsRoot && normalizeAbsRoot(value) === docsRoot
