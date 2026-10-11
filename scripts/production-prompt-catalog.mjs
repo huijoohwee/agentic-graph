@@ -37,7 +37,11 @@ export function readExpectedPromptPresets(catalogSource, demoSource = null) {
     const title = text(demo?.title, 'reviewed Graph demo title')
     text(demo.demo_only_prompt, 'reviewed Graph demo prompt')
     assert.match(id, /^[a-z0-9-]+$/, 'reviewed Graph demo identity must be portable')
-    assert.ok(!identities.has(id), `reviewed prompt sources must not duplicate ${id}`)
+    // The shared catalog owns a preset identity. A Graph demo with that identity
+    // is its optional local preview, not a second menu entry. This matches the
+    // picker, which projects only Graph-owned identities that are absent from
+    // the shared catalog.
+    if (identities.has(id)) continue
     identities.add(id)
     presets.push({ id, label: `${title} · Demo only` })
   }
