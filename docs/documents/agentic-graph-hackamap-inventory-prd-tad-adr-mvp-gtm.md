@@ -3,16 +3,16 @@ title: "HackaMap whole-repository Source Files and graph projection"
 id: "md:agentic-graph-hackamap-inventory"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "HACKAMAP-SOURCE-FILES-001"
-version: "1.0.1"
+version: "1.0.2"
 date: "2026-10-11"
 lang: "en-US"
 owner: "agentic-graph Source Files product"
 frontmatter_contract: "required"
-local_rung: "spec-complete"
-delivered_rung: "undocumented"
+local_rung: "dev-proven"
+delivered_rung: "production-verified"
 lane: "authoring"
 universal_scope: false
-lifecycle_status: "implementation-validated"
+lifecycle_status: "production-verified"
 deployment_topology: "Local Vite Dev preview -> protected Production Release"
 load_policy: "on-demand"
 worktree_id: "agent/device-0232231d4a19/hackamap-folder-contents"
@@ -35,7 +35,7 @@ source_docs:
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated |
 |---|---|---|---|
-| `HACKAMAP-SOURCE-FILES-001@1.0.1` | C: keep private repository bytes local while exposing a navigable inventory and bounded graphs. E: current preview is a single-file wrapper or a cluttered tree. I: use existing Source Files, graph, and codebase-indexing owners. D: generate local manifests and source previews on demand. | R: HackaMap maintainer · A: browse an entire repository through manifests, D3 and Source Files · O: exact local inventory and independently checked projections · V: H1–H7 below | 2026-10-11 |
+| `HACKAMAP-SOURCE-FILES-001@1.0.2` | C: keep private repository bytes local while exposing a navigable inventory and bounded graphs. E: current preview is a single-file wrapper or a cluttered tree. I: use existing Source Files, graph, and codebase-indexing owners. D: generate local manifests and source previews on demand. | R: HackaMap maintainer · A: browse an entire repository through manifests, D3 and Source Files · O: exact local inventory and independently checked projections · V: H1–H7 below | 2026-10-11 |
 
 ## PRD
 
@@ -121,10 +121,10 @@ free/open-source. Timing and byte metrics are evidence, not authority.
 
 MVP user is the repository maintainer, with the first use case being local review of HackaMap's full
 repository structure. The product proves navigation and representation, not semantic correctness of
-the underlying HackaMap dataset. First delivery is the local preview and merged application feature;
-production remains conditional on exact protected release evidence. There is no measured external
-buyer demand or pricing claim. Start with the smallest local workflow and collect import/index timing
-and actual browsing feedback before extending source limits or adding remote integrations.
+the underlying HackaMap dataset. The merged application feature is production-verified in handover
+1.0.2 below. There is no measured external buyer demand, willingness to pay, or pricing claim. Any
+follow-on should first measure import/index timing and actual browsing feedback before extending source
+limits or adding remote integrations.
 
 ## Implementation handover 1.0.1
 
@@ -153,3 +153,43 @@ the same candidate after Dev readback and exact terminal human authorization, th
 Prod readback and rollback receipts. If release verification fails, use the product-owned protected
 release rollback to the observed retained predecessor and verify its runtime readback. No production
 effect is claimed by this handover.
+
+
+## Production handover 1.0.2 — 2026-10-11
+
+**Development.** Graph PR [#1677](https://github.com/huijoohwee/agentic-graph/pull/1677)
+was merged as `fae3fbedab50afea9e63a7e3f918e83deb8ebd5d`, tree
+`63227e9a92d672caacce9d0f423c870d8decdeab`. Its selected Integration Gate passed in run
+[38143968084](https://github.com/huijoohwee/agentic-graph/actions/runs/38143968084). The recorded
+validation for the exact implementation includes 28/28 standard affected-CI checks, four focused
+collection/import/table tests, 124 `agent-graph:check` tests, and application, PWA-authority and
+observability builds. Local Dev browser evidence rendered the manifest and D3 graph, including the
+`Demos · core` cluster, with 1,430 canvas items and a virtualized first page. The codebase indexer
+reused 71/71 sources, parsed none, and measured 5,207 ms indexing / 6,697 ms total for that run; this
+sample is not a performance guarantee.
+
+**Production Release.** Protected [run 38146256184](https://github.com/huijoohwee/agentic-graph/actions/runs/38146256184)
+passed `Verify Release Candidate` and `Human-Authorized Deploy, Verify, And Publish Mirror` for source
+`fae3fbedab50afea9e63a7e3f918e83deb8ebd5d`. The exact production candidate digest was
+`45b65f110b805b60b9d73f14da6acd27db604fb36612ec8dcef615a1b96d33a8`; the human authorization was
+recorded for this candidate at `2026-10-11T14:27:44.925Z` under decision
+[run 38146256184](https://github.com/huijoohwee/agentic-graph/actions/runs/38146256184#environment-production).
+Pages deployment `679b5af0-4329-4c3f-ac37-98a8fe190cc1` was published at immutable origin
+`https://679b5af0.joohwee.pages.dev`.
+
+**Runtime.** Deployment receipt `c8cc7e5a61bbe89d78d983fa6baf7e6785b359a09fff889799c92826de629088`,
+state reconciliation `7c42bc97a3b9cba2b34f78d06aba82234ea37bfdfee733704690472bac41e74d`, live verification
+`ed852fe813f1733e0ca4b8b459cb382f6f3bddf9005ee61d8ddaae396b75dc88`, publication
+`a3225e5c586e43ab5de18201bb9a7c7fc7ad897072ffecf8b62cfec929b21c17`, and terminal lifecycle
+`6ee96e319130cbd8f42bf74abfbef7f38da1651a2244f68f3956f7d56fcde8f1` are retained in
+[`docs/agentic-graph-acos-deploy-runbook.md`](../agentic-graph-acos-deploy-runbook.md). The live public
+route, immutable/stable transports, browser fidelity and returning-user cache convergence passed.
+The release reports `production-complete`; no rollback was invoked. The private recovery copy retains
+132 validated evidence files because hosted artifact retention is one day. These results do not claim
+physical-device/offline parity, semantic correctness of HackaMap data, external demand, or revenue.
+
+**Remaining product learning.** No product change or additional production effect is currently required
+for this release. If a follow-on is admitted, the maintainer should run one measured repository-browsing
+pilot across the intended device/browser range and record task time, indexing cost, accessibility/offline
+observations and buyer signal. Keep private repository bytes local; extend limits or add remote services
+only after evidence identifies a need. Timing, savings, willingness to pay and revenue remain unknown.
