@@ -74,7 +74,7 @@ test('production catalog proof exercises the shared semantic menu and rejects in
   } finally { await browser.close() }
 })
 
-test('expected catalog rejects absent, undersized and duplicate source identities', () => {
+test('expected catalog rejects absent and undersized shared identities while keeping shared ownership', () => {
   assert.throws(() => readExpectedPromptPresets('missing'), /frontmatter/)
   assert.throws(() => readExpectedPromptPresets('---\nschema: agentic-os-prompt-preset-catalog/v1\nprompt_presets: []\n---\n'), /complete preset inventory/)
   const duplicate = Array.from({ length: 11 }, () => '  - {id: duplicate, label: Duplicate}').join('\n')
@@ -83,5 +83,7 @@ test('expected catalog rejects absent, undersized and duplicate source identitie
     Array.from({ length: 11 }, (_, index) => `  - {id: fixture-${index}, label: Fixture preset ${index}}`).join('\n')
   }\n---\n`
   const duplicateDemo = `---\nschema: agentic-graph-prompt-preset-demos/v1\ndemo_only: true\ndemos:\n  - id: fixture-0\n    title: Conflicting demo\n    demo_only_prompt: Example only\n---\n`
-  assert.throws(() => readExpectedPromptPresets(catalog, duplicateDemo), /must not duplicate fixture-0/)
+  assert.deepEqual(readExpectedPromptPresets(catalog, duplicateDemo), Array.from({ length: 11 }, (_, index) => ({
+    id: `fixture-${index}`, label: `Fixture preset ${index}`,
+  })), 'a Graph-local preview must not create a second shared preset choice')
 })

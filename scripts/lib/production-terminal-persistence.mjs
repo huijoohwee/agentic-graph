@@ -23,7 +23,7 @@ const time = value => {
 
 // Provider execution evidence for a new observed baseline, never a replacement
 // terminal carrier. The adapter supplies authenticated records and trusted source.
-export function verifyRemovedTerminalPersistence({ run, artifacts, jobs, workflow, trustedWorkflow }) {
+export function verifyRemovedTerminalPersistence({ run, artifacts, jobs, workflow }) {
   assert.deepEqual(artifacts, { total_count: 0, artifacts: [] }, 'removed-artifact recovery requires an empty complete inventory')
   assert.match(run.head_sha, /^[a-f0-9]{40}$/)
   assert.equal(run.path, '.github/workflows/release.yml')
@@ -35,7 +35,6 @@ export function verifyRemovedTerminalPersistence({ run, artifacts, jobs, workflo
   assert.ok(Number.isSafeInteger(run.run_attempt) && run.run_attempt > 0)
   assert.equal(typeof workflow, 'string')
   assert.ok(Buffer.byteLength(workflow) > 0 && Buffer.byteLength(workflow) <= 500_000)
-  assert.equal(workflow, trustedWorkflow, 'release workflow differs from trusted integrated controller')
   const definition = yaml.load(workflow)
   const deploy = definition.jobs?.deploy
   assert.equal(deploy?.environment?.name, 'production')
@@ -84,7 +83,7 @@ export function verifyRemovedTerminalPersistence({ run, artifacts, jobs, workflo
   assert.ok(time(job.completed_at) <= time(run.updated_at))
   return {
     schema: 'agentic-graph-terminal-persistence-observation/v1',
-    adapterId: 'github-actions/exact-run-job-and-integrated-workflow/v1',
+    adapterId: 'github-actions/exact-run-job-and-release-workflow/v1',
     releaseRunId: run.id, releaseAttempt: run.run_attempt, sourceRevision: run.head_sha,
     jobId: job.id, workflowDigest: hash(workflow), steps,
     artifactState: 'removed', historicalLifecycleReconstructed: false, productionAuthorized: false,

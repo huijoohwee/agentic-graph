@@ -59,9 +59,8 @@ export async function main(args = process.argv.slice(2)) {
     const readWorkflow = revision => execFileSync('git', ['show', `${revision}:.github/workflows/release.yml`],
       { cwd: root, encoding: 'utf8', timeout: 30_000, maxBuffer: 500_000 })
     const workflow = readWorkflow(releaseRun.head_sha)
-    const trustedWorkflow = readWorkflow('HEAD')
     const jobs = gh(`repos/${repository}/actions/runs/${releaseRun.id}/attempts/${releaseRun.run_attempt}/jobs?per_page=100`)
-    terminalPersistence = { workflow, trustedWorkflow, jobs }
+    terminalPersistence = { workflow, jobs }
     verifyRemovedTerminalPersistence({ ...terminalPersistence, run: releaseRun, artifacts })
     await write(path.join(output, 'terminal-persistence-inputs.json'), terminalPersistence)
   }

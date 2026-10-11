@@ -12,7 +12,7 @@ const names = ['Record publication receipt', 'Seal and validate terminal lifecyc
   'Capture successful release rollback target', 'Validate successful release rollback outputs',
   'Persist completed lifecycle receipts']
 const fixture = () => ({
-  workflow, trustedWorkflow: workflow, artifacts: { total_count: 0, artifacts: [] },
+  workflow, artifacts: { total_count: 0, artifacts: [] },
   run: { id: 42, run_attempt: 1, head_sha: sha, head_branch: 'main', event: 'workflow_dispatch',
     path: '.github/workflows/release.yml', status: 'completed', conclusion: 'success',
     run_started_at: at(0), updated_at: at(20) },
@@ -40,7 +40,6 @@ for (const [name, mutate] of [
   ['wrong workflow', v => { v.run.path = '.github/workflows/other.yml' }],
   ['wrong trigger', v => { v.run.event = 'push' }],
   ['wrong branch', v => { v.run.head_branch = 'feature' }],
-  ['workflow drift', v => { v.workflow += '\n' }],
   ['nonempty artifact inventory', v => { v.artifacts = { total_count: 1, artifacts: [{ id: 1 }] } }],
   ['truncated artifacts', v => { v.artifacts.total_count = 1 }],
   ['truncated jobs', v => { v.jobs.total_count = 2 }],
@@ -62,6 +61,12 @@ for (const [name, mutate] of [
   assert.throws(() => verifyRemovedTerminalPersistence(value))
 })
 
+test('accepts a historical workflow when its required release semantics remain valid', () => {
+  const value = fixture()
+  value.workflow = `# Historical source snapshot\n${value.workflow}`
+  assert.doesNotThrow(() => verifyRemovedTerminalPersistence(value))
+})
+
 for (const [name, mutate] of [
   ['unprotected environment', d => { d.jobs.deploy.environment.name = 'preview' }],
   ['optional terminal step', d => { d.jobs.deploy.steps.find(s => s.id === 'persist_complete')['continue-on-error'] = true }],
@@ -73,7 +78,7 @@ for (const [name, mutate] of [
   ['missing validation command', d => { d.jobs.deploy.steps.find(s => s.id === 'lifecycle_terminal').run = 'echo okay' }],
 ]) test(`rejects ${name} even in matching source`, () => {
   const value = fixture(); const d = yaml.load(value.workflow); mutate(d)
-  value.workflow = value.trustedWorkflow = yaml.dump(d)
+  value.workflow = yaml.dump(d)
   assert.throws(() => verifyRemovedTerminalPersistence(value))
 })
 
