@@ -11,7 +11,8 @@ test('production catalog proof exercises the shared semantic menu and rejects in
   const source = `---\nschema: agentic-os-prompt-preset-catalog/v1\nprompt_presets:\n${
     Array.from({ length: 12 }, (_, index) => `  - {id: fixture-${index}, label: Fixture preset ${index}}`).join('\n')
   }\n---\n`
-  const expected = readExpectedPromptPresets(source)
+  const demoSource = `---\nschema: agentic-graph-prompt-preset-demos/v1\ndemo_only: true\ndemos:\n  - id: fixture-demo\n    title: Fixture demo\n    demo_only_prompt: Example only\n---\n`
+  const expected = readExpectedPromptPresets(source, demoSource)
   const root = fileURLToPath(new URL('../../', import.meta.url))
   const bundle = await build({ bundle: true, write: false, minify: true, platform: 'browser',
     tsconfig: root + 'canvas/tsconfig.json', define: { 'process.env.NODE_ENV': '"production"' },
@@ -36,7 +37,7 @@ test('production catalog proof exercises the shared semantic menu and rejects in
     await page.addScriptTag({ content: bundle.outputFiles[0].text })
     await t.test('actual portal menu passes although its trigger has no native options', async () => {
       assert.equal(await page.locator('option').count(), 0, 'reproduce the retired native-select assumption')
-      await verifyHomePromptCatalog(page, source)
+      await verifyHomePromptCatalog(page, source, demoSource)
       assert.equal(await page.locator('body').getAttribute('data-unexpected-selection'), null)
       assert.equal(await page.getByRole('button', { name: 'Prompt preset', exact: true }).getAttribute('aria-expanded'), 'false')
     })
@@ -58,7 +59,7 @@ test('production catalog proof exercises the shared semantic menu and rejects in
           })
           observer.observe(document.body, { childList: true, subtree: true })
         }, mutation)
-        await assert.rejects(verifyHomePromptCatalog(page, source),
+        await assert.rejects(verifyHomePromptCatalog(page, source, demoSource),
           /every reviewed prompt preset|preset choices must be visible/)
         assert.equal(await page.locator('body').getAttribute('data-unexpected-selection'), null)
       })
@@ -68,7 +69,7 @@ test('production catalog proof exercises the shared semantic menu and rejects in
         const alert = document.createElement('p'); alert.setAttribute('role', 'alert')
         alert.textContent = 'Catalog source unavailable'; fieldset.append(alert)
       })
-      await assert.rejects(verifyHomePromptCatalog(page, source), /source-authority alert|Home prompt catalog failed/)
+      await assert.rejects(verifyHomePromptCatalog(page, source, demoSource), /source-authority alert|Home prompt catalog failed/)
     })
   } finally { await browser.close() }
 })
@@ -78,4 +79,9 @@ test('expected catalog rejects absent, undersized and duplicate source identitie
   assert.throws(() => readExpectedPromptPresets('---\nschema: agentic-os-prompt-preset-catalog/v1\nprompt_presets: []\n---\n'), /complete preset inventory/)
   const duplicate = Array.from({ length: 11 }, () => '  - {id: duplicate, label: Duplicate}').join('\n')
   assert.throws(() => readExpectedPromptPresets(`---\nschema: agentic-os-prompt-preset-catalog/v1\nprompt_presets:\n${duplicate}\n---\n`), /unique/)
+  const catalog = `---\nschema: agentic-os-prompt-preset-catalog/v1\nprompt_presets:\n${
+    Array.from({ length: 11 }, (_, index) => `  - {id: fixture-${index}, label: Fixture preset ${index}}`).join('\n')
+  }\n---\n`
+  const duplicateDemo = `---\nschema: agentic-graph-prompt-preset-demos/v1\ndemo_only: true\ndemos:\n  - id: fixture-0\n    title: Conflicting demo\n    demo_only_prompt: Example only\n---\n`
+  assert.throws(() => readExpectedPromptPresets(catalog, duplicateDemo), /must not duplicate fixture-0/)
 })
