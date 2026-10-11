@@ -94,7 +94,6 @@ demos:
           explicitly unverified until customer evidence supports them.
   - id: software-forensics
     title: Agentic Reverse Engineering
-    demo_only_prompt: "Inspect this static, repository-neutral evidence workflow. Demo opens a local example and makes no model request."
     reply: "Build a bounded dossier from an explicitly selected application and repository. Keep visible behavior, exact-hash source facts, graph relationships, registered binary metadata, inference, and unknowns distinct. Open [agentic-reverse-engineering-demo.md](workspace:/docs/workspace-seeds/agentic-reverse-engineering-demo.md) for the portable steps and evidence record."
     outputs:
       - title: Application observation
