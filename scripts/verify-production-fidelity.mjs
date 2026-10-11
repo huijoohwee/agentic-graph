@@ -270,6 +270,7 @@ const catalogBytes = Buffer.from(await catalogResponse.arrayBuffer())
 const catalogSource = await fs.readFile(resolveAgenticOsDocPath({ absoluteDocsRoot: resolveAgenticCanvasOsDocsRoot(), fileName: 'PROMPT-PRESETS.md' }))
 assert.equal(createHash('sha256').update(catalogBytes).digest('hex'), createHash('sha256').update(catalogSource).digest('hex'),
   'published prompt catalog differs from the exact reviewed docs source')
+const demoSource = await fs.readFile(new URL('../docs/workspace-seeds/demo.md', import.meta.url))
 
 const browser = await chromium.launch({
   channel: 'chrome',
@@ -353,7 +354,7 @@ try {
   await home.locator('h1').filter({ hasText: 'Map intent' }).waitFor({ state: 'visible', timeout: 30_000 })
   const heading = await home.locator('h1').innerText()
   for (const phrase of ['Map intent', 'Run agents', 'Get results']) assert.ok(heading.includes(phrase))
-  await verifyHomePromptCatalog(home, catalogSource)
+  await verifyHomePromptCatalog(home, catalogSource, demoSource)
   const heroFrameElement = home.locator('iframe').first()
   await heroFrameElement.waitFor({ state: 'attached', timeout: 30_000 })
   const heroFrameSrc = await heroFrameElement.getAttribute('src')
