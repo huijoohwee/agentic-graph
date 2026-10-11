@@ -50,6 +50,10 @@ jobs:
         working-directory: agentic-graph
         run: npm ci --no-audit --no-fund
 
+      - name: Build shared runtime dependency
+        working-directory: agentic-graph
+        run: npm run build --workspace=grph-shared
+
       - name: Resolve Agentic Canvas OS docs dependency
         id: agentic_canvas_os_docs
         working-directory: agentic-graph
