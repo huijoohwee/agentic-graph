@@ -190,6 +190,44 @@ const waitForHomeSourceAuthority = async page => {
   )
 }
 
+const waitForHomePromptSelection = async (trigger, presetId) => {
+  const deadline = Date.now() + 30_000
+  while (Date.now() < deadline) {
+    if (await trigger.getAttribute('data-value') === presetId) return
+    await new Promise(resolve => setTimeout(resolve, 100))
+  }
+  throw new Error(`Home did not select reviewed prompt preset ${presetId}`)
+}
+
+const selectHomePromptPreset = async (page, presetId) => {
+  const fieldset = page.locator('[data-kg-live-canvas-hero-prompt-presets="true"]')
+  const trigger = fieldset.getByRole('button', { name: 'Prompt preset', exact: true })
+  await trigger.waitFor({ state: 'visible', timeout: 30_000 })
+  const choose = async id => {
+    await trigger.click()
+    const menu = page.getByRole('menu', { name: 'Prompt preset', exact: true })
+    await menu.waitFor({ state: 'visible', timeout: 10_000 })
+    const choice = menu.locator(`[role="menuitemradio"][value="${id}"]`)
+    await choice.waitFor({ state: 'visible', timeout: 10_000 })
+    await choice.click()
+    await menu.waitFor({ state: 'hidden', timeout: 10_000 })
+    await waitForHomePromptSelection(trigger, id)
+  }
+  if (await trigger.getAttribute('data-value') === presetId) {
+    await trigger.click()
+    const menu = page.getByRole('menu', { name: 'Prompt preset', exact: true })
+    await menu.waitFor({ state: 'visible', timeout: 10_000 })
+    const alternatives = menu.locator(`[role="menuitemradio"]:not([value="${presetId}"])`)
+    assert.ok(await alternatives.count() > 0, `Home catalog must expose an explicit alternative before ${presetId}`)
+    const alternativeId = await alternatives.first().getAttribute('value')
+    assert.ok(alternativeId, 'Home catalog alternative must expose a stable preset identifier')
+    await menu.press('Escape')
+    await menu.waitFor({ state: 'hidden', timeout: 10_000 })
+    await choose(alternativeId)
+  }
+  await choose(presetId)
+}
+
 
 const waitForWorkspaceSeedInventory = async page => {
   const explorer = page.locator('aside[aria-label="Markdown Explorer"]')
@@ -355,7 +393,8 @@ try {
   const heading = await home.locator('h1').innerText()
   for (const phrase of ['Map intent', 'Run agents', 'Get results']) assert.ok(heading.includes(phrase))
   await verifyHomePromptCatalog(home, catalogSource, demoSource)
-  const heroFrameElement = home.locator('iframe').first()
+  await selectHomePromptPreset(home, 'xr-physics')
+  const heroFrameElement = home.locator('iframe[data-kg-live-canvas-hero-selected-embed="true"]')
   await heroFrameElement.waitFor({ state: 'attached', timeout: 30_000 })
   const heroFrameSrc = await heroFrameElement.getAttribute('src')
   assert.ok(heroFrameSrc, 'Home must mount the canonical shared-canvas iframe')
@@ -406,7 +445,11 @@ try {
   const staleHome = await staleSelectionContext.newPage()
   await staleHome.goto(`${browserOrigin}/?kgReleaseProof=${expectedSourceRevision}`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
   await staleHome.locator('h1').filter({ hasText: 'Map intent' }).waitFor({ state: 'visible', timeout: 30_000 })
-  const staleHeroFrame = staleHome.locator('iframe').first()
+  const retainedSelection = await staleHome.evaluate(key => window.sessionStorage.getItem(key), LIVE_CANVAS_HERO_SOURCE_SESSION_KEY)
+  assert.equal(retainedSelection, null, 'persisted source conflict must be removed at the Home source owner')
+  await verifyHomePromptCatalog(staleHome, catalogSource, demoSource)
+  await selectHomePromptPreset(staleHome, 'xr-physics')
+  const staleHeroFrame = staleHome.locator('iframe[data-kg-live-canvas-hero-selected-embed="true"]')
   await staleHeroFrame.waitFor({ state: 'attached', timeout: 30_000 })
   const staleHeroFrameSrc = await staleHeroFrame.getAttribute('src')
   assert.ok(staleHeroFrameSrc, 'Home must recover a canonical iframe from a persisted source conflict')
@@ -415,8 +458,6 @@ try {
     appBasePath: '/agentic-graph',
   })
   assert.deepEqual(recoveredIdentity, canonicalHomeIdentity, 'persisted source conflict must recover the canonical Home document')
-  const retainedSelection = await staleHome.evaluate(key => window.sessionStorage.getItem(key), LIVE_CANVAS_HERO_SOURCE_SESSION_KEY)
-  assert.equal(retainedSelection, null, 'persisted source conflict must be removed at the Home source owner')
   const recoveredCanvasText = await waitForCanvas(() => resolveHomeCanvasBody(staleHome))
   assert.match(recoveredCanvasText, PHYSICS_PLAYGROUND_PATTERN)
   const recoveredSourceAuthority = await waitForHomeSourceAuthority(staleHome)
