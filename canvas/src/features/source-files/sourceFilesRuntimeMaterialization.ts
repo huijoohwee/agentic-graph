@@ -12,6 +12,7 @@ import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorks
 import { normalizeWorkspacePath, workspaceDocumentKey } from '@/features/workspace-fs/path'
 import { resolveWorkspaceSourceRootPaths } from '@/features/workspace-fs/workspaceSourceRoots'
 import { readWorkspaceSourceFilesDocsOnlySetting } from '@/lib/workspace/workspaceStoreSyncSettings'
+import { isWorkspaceDocumentCanvasGraphApplyDisabled } from '@/lib/markdown/workspaceDocumentCanvasApplyPolicy'
 import { hashStringToHexSharedContentCached } from '@/lib/hash/textHashCache'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import { isFrontmatterOnlyDoc } from '@/lib/markdown/frontmatter'
@@ -314,7 +315,9 @@ async function settleMaterializedDocument(args: NonNullable<Parameters<typeof re
     current: current.sourceFiles,
     allowUnrelatedAdditions: args.applyToGraph === true,
   })
-  const documentRemainsCurrent = !isMarkdownLikeFileName(activePath) || (matchesMarkdownDocumentPath(activePath, current.markdownDocumentName) && current.markdownDocumentApplyViewPreset !== false && (args.expectedSourceText === undefined || current.markdownDocumentText === args.expectedSourceText))
+  const documentRemainsCurrent = !isMarkdownLikeFileName(activePath) || (matchesMarkdownDocumentPath(activePath, current.markdownDocumentName)
+    && (current.markdownDocumentApplyViewPreset !== false || isWorkspaceDocumentCanvasGraphApplyDisabled(current.markdownDocumentText || ''))
+    && (args.expectedSourceText === undefined || current.markdownDocumentText === args.expectedSourceText))
   if (hasMaterializedActivePathDrifted(activePath, explorerAtStart)
     || before.sourceFiles.length !== current.sourceFiles.length
     || before.sourceFiles.some((file, index) => !areSourceFileRecordsEqual(file, current.sourceFiles[index])

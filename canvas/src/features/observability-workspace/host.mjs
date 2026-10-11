@@ -1,5 +1,4 @@
 import path from 'node:path'
-import os from 'node:os'
 import { readFileSync, realpathSync, statSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -10,6 +9,7 @@ import { AGENT_GRAPH_TOOL_NAMES } from '../../../../mcp/agent-graph/runtime.mjs'
 import { loadRepositoryProfile } from 'agentic-os/adapters/git'
 import { CONTEXT_LIMITS, createCodebaseContext } from 'agentic-os/context/codebase'
 import { parseRepositoryUrl } from '../../../../mcp/agent-graph/repository-acquisition.mjs'
+import { buildWorkspaceCodebaseIndexArgs, workspaceCodebaseIndexOutputRoot } from '../../../../mcp/agent-graph/workspace-codebase-indexing.mjs'
 
 export const WORKSPACE_SCHEMA = 'agentic-canvas-os/observability-workspace/v1'
 const hash = bytes => createHash('sha256').update(bytes).digest('hex')
@@ -24,7 +24,7 @@ export function validateWorkspaceManifest(value) {
       || ids.has(row.id) || typeof row.label !== 'string' || !row.label.trim() || row.label.length > 160
       || typeof row.path !== 'string' || !row.path || row.path.length > 1024 || path.isAbsolute(row.path)
       || /[\\\0\r\n]/.test(row.path) || row.path.split('/').some(part => !part || part === '..' || part === '.')) throw Error('Invalid workspace repository')
-    if (row.buildRevision !== undefined && !/^[a-f0-9]{40}$/.test(row.buildRevision)) throw Error('Invalid repository build revision')
+    if (row.buildRevision !== undefined && (row.id !== 'agentic-graph' || !/^[a-f0-9]{40}$/.test(row.buildRevision))) throw Error('Invalid repository build revision')
     ids.add(row.id)
   }
   return value
@@ -149,7 +149,7 @@ export function createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot
             const query = normalizeGraphNeighborsRequest(args)
             if (activeExpansions >= 2) throw Error('Graph expansion is busy; retry after the current neighborhood loads')
             activeExpansions++
-            const output = path.join(os.tmpdir(), 'agentic-graph-observability', hash(workspace.root).slice(0, 24))
+            const output = workspaceCodebaseIndexOutputRoot(row.resolved)
             const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 18000)
             const cancel = () => { if (!res.writableEnded) controller.abort() }
             res.once('close', cancel)
@@ -191,16 +191,13 @@ export function createObservabilityWorkspacePlugin({ manifestFile, workspaceRoot
             busy = true
             try {
               const before = captureRepositorySource(row.resolved)
-              const output = path.join(os.tmpdir(), 'agentic-graph-observability', hash(workspace.root).slice(0, 24))
+              const output = workspaceCodebaseIndexOutputRoot(row.resolved)
               const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 65000)
               const cancel = () => { if (!res.writableEnded) controller.abort() }
               res.once('close', cancel)
               try {
-                const indexed = await runAgentGraphTool('agentic-graph.agent_graph.ingest', {
-                  rootPath: row.resolved, maxFiles: 20000, maxFileBytes: 2000000, maxTotalBytes: 100000000,
-                  maxDurationMs: 60000, projectionLimit: 1000, projectionByteLimit: 450000, strict: true, useCache: true,
-                  exclude: ['.*', '*credentials*', '*secrets*', '*.pem', '*.key', '*.p12', '*.pfx'],
-                }, { rootDir: graphRoot, env: { ...process.env, AGENTIC_OS_AGENT_GRAPH_ALLOWED_ROOTS: row.resolved,
+                const indexed = await runAgentGraphTool('agentic-graph.agent_graph.ingest',
+                  buildWorkspaceCodebaseIndexArgs(row.resolved), { rootDir: graphRoot, env: { ...process.env, AGENTIC_OS_AGENT_GRAPH_ALLOWED_ROOTS: row.resolved,
                   AGENTIC_OS_AGENT_GRAPH_OUTPUT_ROOT: output }, abortSignal: controller.signal })
                 if (!indexed.ok || !indexed.complete) throw Error(indexed.error?.message || 'Index did not complete')
                 const after = captureRepositorySource(row.resolved)

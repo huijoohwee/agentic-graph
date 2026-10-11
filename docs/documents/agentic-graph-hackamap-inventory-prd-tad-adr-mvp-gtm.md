@@ -3,7 +3,7 @@ title: "HackaMap whole-repository Source Files and graph projection"
 id: "md:agentic-graph-hackamap-inventory"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "HACKAMAP-SOURCE-FILES-001"
-version: "1.0.0"
+version: "1.0.1"
 date: "2026-10-11"
 lang: "en-US"
 owner: "agentic-graph Source Files product"
@@ -12,10 +12,10 @@ local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-lifecycle_status: "planned"
+lifecycle_status: "implementation-validated"
 deployment_topology: "Local Vite Dev preview -> protected Production Release"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/hackamap-inventory-prd"
+worktree_id: "agent/device-0232231d4a19/hackamap-folder-contents"
 agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
 kgCanvasSurfaceMode: "2d"
@@ -35,7 +35,7 @@ source_docs:
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated |
 |---|---|---|---|
-| `HACKAMAP-SOURCE-FILES-001@1.0.0` | C: keep private repository bytes local while exposing a navigable inventory and bounded graphs. E: current preview is a single-file wrapper or a cluttered tree. I: use existing Source Files, graph, and codebase-indexing owners. D: generate local manifests and source previews on demand. | R: HackaMap maintainer · A: browse an entire repository through manifests, D3 and Source Files · O: exact local inventory and independently checked projections · V: H1–H7 below | 2026-10-11 |
+| `HACKAMAP-SOURCE-FILES-001@1.0.1` | C: keep private repository bytes local while exposing a navigable inventory and bounded graphs. E: current preview is a single-file wrapper or a cluttered tree. I: use existing Source Files, graph, and codebase-indexing owners. D: generate local manifests and source previews on demand. | R: HackaMap maintainer · A: browse an entire repository through manifests, D3 and Source Files · O: exact local inventory and independently checked projections · V: H1–H7 below | 2026-10-11 |
 
 ## PRD
 
@@ -125,3 +125,31 @@ the underlying HackaMap dataset. First delivery is the local preview and merged 
 production remains conditional on exact protected release evidence. There is no measured external
 buyer demand or pricing claim. Start with the smallest local workflow and collect import/index timing
 and actual browsing feedback before extending source limits or adding remote integrations.
+
+## Implementation handover 1.0.1
+
+The reserved feature lane implements the full Source Files collection, chunked source previews,
+separate domain and codebase graph projections, collection-table import, stale-result protection, and
+reuse of the shared workspace codebase indexer. The observed local sample contained 234 files, 247
+source parts and 14,570,069 source bytes. Its domain graph contained 1,489 nodes and 3,689 typed
+edges. A repeat codebase-index pass visited 71 sources, reused all 71, parsed none, and reported a
+5,207 ms indexing stage (6,697 ms total for that observed run); this is an observation, not a latency
+guarantee.
+
+Validation recorded for this revision: 28/28 selected standard affected-CI checks passed; four
+focused collection-import/table tests passed; `agent-graph:check` passed 124 tests; and the Pages
+application, PWA-authority and observability builds passed. The local Vite Dev preview rendered the
+HackaMap manifest and D3 graph, including the `Demos · core` cluster, with 1,430 canvas items and a
+virtualized first page. The generated projection was local-only: the built artifact audit found no
+matching private source-file hashes and no absolute local source-root string. These checks validate
+the source implementation and local Dev preview only; source publication, protected integration,
+production authorization and production readback remain separate transitions. External buyer-demand
+and pricing hypotheses remain unmeasured.
+
+Next owner actions: publish through native `release:common`, pass the protected Integration Gate and
+merge the exact reviewed source candidate; retain source and Dev receipts, then prepare the
+candidate-bound production evidence bundle and use only the protected release workflow. Promote only
+the same candidate after Dev readback and exact terminal human authorization, then record independent
+Prod readback and rollback receipts. If release verification fails, use the product-owned protected
+release rollback to the observed retained predecessor and verify its runtime readback. No production
+effect is claimed by this handover.

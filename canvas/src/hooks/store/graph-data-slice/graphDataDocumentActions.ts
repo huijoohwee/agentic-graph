@@ -286,6 +286,9 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
     if (retainedAgentGraphDocumentIdentity(name) || isWorkspaceDocumentCanvasGraphApplyDisabled(text)) {
       get().setMarkdownDocument(name, text, { autoEnableFrontmatter: false, applyViewPreset: false })
       if ('sourceUrl' in args) get().setMarkdownDocumentSourceUrl(args.sourceUrl ?? null)
+      const { restoreHackamapDomainWorkspaceDocument } = await import('@/features/hackamap/hackamapDomainWorkspaceDocument')
+      const hackamapRestored = await restoreHackamapDomainWorkspaceDocument(name, text)
+      if (hackamapRestored !== null) return hackamapRestored
       const { restoreAgentGraphWorkspaceDocument } = await import('@/features/agent-graph/agentGraphWorkspaceDocument')
       return restoreAgentGraphWorkspaceDocument(name, text)
     }

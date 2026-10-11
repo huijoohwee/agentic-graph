@@ -11,7 +11,7 @@ import { NativeWebsiteCrawler } from '@/lib/websites/server/nativeWebsiteCrawler
 import { createWebsiteImportHandler } from '@/lib/websites/server/websiteImportServer'
 import type { WebsiteImportManifestV1 } from '@/lib/websites/server/websiteImportTypes'
 import { collectSitemapUrls } from '@/lib/websites/server/websiteImportServerHelpers'
-import { extractXmlLocs, fetchTextWithLimit } from '@/lib/websites/server/websiteImportCore'
+import { extractInternalUrlCandidatesFromHtml, extractXmlLocs, fetchTextWithLimit } from '@/lib/websites/server/websiteImportCore'
 import { WebsiteDiscoveryCache, newDiscoveryMetrics } from '@/lib/websites/server/websiteDiscoveryCache'
 
 const listen = async (server: Server) => {
@@ -232,9 +232,28 @@ test('page selection is explicit, bounded and constrained to the source scope', 
   const root = 'https://example.test/library/'
   assert.equal(validateSelectedWebsiteUrls(root, undefined), undefined)
   assert.deepEqual(validateSelectedWebsiteUrls(root, [root + 'a#first', root + 'a#second', root + 'a?q=2']), [root + 'a', root + 'a?q=2'])
+  assert.deepEqual(validateSelectedWebsiteUrls('https://devpost.com/hackathons', ['https://medo.devpost.com/', 'https://agents-assemble.devpost.com/']), [
+    'https://medo.devpost.com/',
+    'https://agents-assemble.devpost.com/',
+  ])
   for (const selection of [[], 'all', Array(501).fill(root), [root, 'https://other.test/library/a'], ['https://user:pass@example.test/library/a'], ['https://example.test/admin'], [root + 'file.png'], [root + 'x'.repeat(4096)]]) {
     assert.throws(() => validateSelectedWebsiteUrls(root, selection))
   }
+})
+
+test('collection discovery admits child subdomain detail pages for apex roots while keeping unrelated hosts out', () => {
+  const urls = extractInternalUrlCandidatesFromHtml([
+    '<a href="https://medo.devpost.com/">MeDo</a>',
+    '<a href="https://agents-assemble.devpost.com/">Agents</a>',
+    '<a href="https://devpost.com/hackathons/open">Open</a>',
+    '<a href="https://example.com/elsewhere">External</a>',
+    '<a href="https://medo.devpost.com/logo.png">Asset</a>',
+  ].join('\n'), 'https://devpost.com/hackathons', 'https://devpost.com/hackathons')
+  assert.deepEqual(urls, [
+    'https://medo.devpost.com/',
+    'https://agents-assemble.devpost.com/',
+    'https://devpost.com/hackathons/open',
+  ])
 })
 
 test('folder selection retains nested pages and distinct query variants', () => {

@@ -56,6 +56,40 @@ export const isSameHost = (a: string, b: string): boolean => {
   }
 }
 
+const normalizeHostname = (value: string): string => String(value || '').trim().toLowerCase().replace(/\.+$/, '')
+
+const deriveHostScope = (rootUrl: string): {
+  rootHost: string
+  canonicalHost: string
+  allowChildSubdomains: boolean
+} | null => {
+  try {
+    const rootHost = normalizeHostname(new URL(rootUrl).hostname)
+    if (!rootHost) return null
+    const canonicalHost = rootHost.startsWith('www.') ? rootHost.slice(4) : rootHost
+    return {
+      rootHost,
+      canonicalHost,
+      // Only apex-like roots can admit child subdomains without a public-suffix registry.
+      allowChildSubdomains: canonicalHost.split('.').filter(Boolean).length === 2,
+    }
+  } catch {
+    return null
+  }
+}
+
+export const isWithinCrawlHostScope = (candidateUrl: string, rootUrl: string): boolean => {
+  try {
+    const scope = deriveHostScope(rootUrl)
+    const candidateHost = normalizeHostname(new URL(candidateUrl).hostname)
+    if (!scope || !candidateHost) return false
+    if (candidateHost === scope.rootHost || candidateHost === scope.canonicalHost) return true
+    return scope.allowChildSubdomains && candidateHost.endsWith(`.${scope.canonicalHost}`)
+  } catch {
+    return false
+  }
+}
+
 const NON_DOCUMENT_EXTENSIONS = new Set([
   'css',
   'js',
@@ -136,8 +170,9 @@ export const isWithinCrawlPathScope = (candidateUrl: string, rootUrl: string): b
 export const isCrawlableInternalUrl = (candidateUrl: string, rootUrl: string): boolean => {
   const normalized = normalizeUrl(candidateUrl)
   if (!normalized) return false
-  if (!isSameHost(normalized, rootUrl)) return false
-  if (!isWithinCrawlPathScope(normalized, rootUrl)) return false
+  const sameHost = isSameHost(normalized, rootUrl)
+  if (!isWithinCrawlHostScope(normalized, rootUrl)) return false
+  if (sameHost && !isWithinCrawlPathScope(normalized, rootUrl)) return false
   try {
     const u = new URL(normalized)
     const path = normalizePathname(u.pathname)
@@ -219,6 +254,7 @@ export const __testkit = {
   urlToTreePath,
   normalizeUrl,
   isSameHost,
+  isWithinCrawlHostScope,
   deriveCrawlPathScope,
   isWithinCrawlPathScope,
   isCrawlableInternalUrl,

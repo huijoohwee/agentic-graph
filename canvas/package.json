@@ -167,6 +167,7 @@
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
+    "fake-indexeddb": "^6.2.5",
     "globals": "^16.0.0",
     "js-yaml": "^4.3.2",
     "jsdom": "^26.0.0",

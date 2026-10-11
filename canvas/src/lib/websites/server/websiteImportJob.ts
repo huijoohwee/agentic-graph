@@ -4,6 +4,7 @@ import { extractXmlLocs, fetchTextWithLimit, hashHex, isCrawlableInternalUrl, no
 import type { NativeWebsiteCrawler } from './nativeWebsiteCrawler'
 import type { WebsiteImportManifestV1, WebsiteImportNode, WebsiteImportOptions, WebsiteImportProgress } from './websiteImportTypes'
 import { buildWebsiteSemanticSnapshotFromHtml } from '../websiteSemanticSnapshot'
+import { extractWebsiteCollectionRecords } from '../websiteCollectionRecords'
 import { collectSitemapUrls, crawlInternalUrls, discoverSitemapUrl, extractTitleFromHtml, isHttpUrl, listLocalHtmlFiles, posixPathFromFsAbs, readLocalTextWithLimit, resolveLocalInputPath, toTreePath, writeJsonFileAtomic, WEBSITE_IMPORT_DISCOVERY_MAX_BYTES, WEBSITE_IMPORT_PAGE_MAX_BYTES } from './websiteImportServerHelpers'
 
 export async function runWebsiteImportJob(args: {
@@ -241,7 +242,6 @@ export async function runWebsiteImportJob(args: {
       return u
     }
 
-    let convertEnv: { restore: () => void } | null = null
     let convertFn: ((args: { html: string; url: string }) => Promise<string>) | null = null
     let convertLock = Promise.resolve()
     const withConvertLock = async <T,>(run: () => Promise<T>): Promise<T> => {
@@ -261,8 +261,6 @@ export async function runWebsiteImportJob(args: {
     const ensureConvertReady = async () => {
       if (!options.generateMarkdownArtifacts) return
       if (convertFn) return
-      const { initJsdomHarness } = await import('../../../tests/lib/jsdomHarness')
-      convertEnv = initJsdomHarness()
       const mod = await import('../webpageHtmlToMarkdownArtifact')
       convertFn = (input: { html: string; url: string }) => mod.convertWebpageHtmlToMarkdownArtifactAsync({
         html: input.html,
@@ -345,8 +343,18 @@ export async function runWebsiteImportJob(args: {
                 void 0
               }
               try {
-                const semanticSnapshot = buildWebsiteSemanticSnapshotFromHtml({ html, url: u, title, maxItems: 220 })
-                const json = JSON.stringify({ ok: true, name: 'webpage.md', markdown, title: title || undefined, source_url: u, images: [], semanticSnapshot }, null, 2)
+                  const semanticSnapshot = buildWebsiteSemanticSnapshotFromHtml({ html, url: u, title, maxItems: 220 })
+                  const collectionRecords = extractWebsiteCollectionRecords({ url: u, markdown })
+                  const json = JSON.stringify({
+                    ok: true,
+                    name: 'webpage.md',
+                    markdown,
+                    title: title || undefined,
+                    source_url: u,
+                    images: [],
+                    semanticSnapshot,
+                    collectionRecords,
+                  }, null, 2)
                 await fs.writeFile(path.join(nodeDirAbs, 'conversion.json'), json, 'utf8')
                 artifacts.conversionJsonRelPath = path.posix.join(workspaceRel, importId, 'nodes', nodeId, 'conversion.json')
                 artifacts.conversionJsonBytes = Buffer.byteLength(json, 'utf8')
@@ -395,13 +403,6 @@ export async function runWebsiteImportJob(args: {
 
     await Promise.all(workers)
     nodes.sort((a, b) => a.path.localeCompare(b.path))
-    if (convertEnv) {
-      try {
-        convertEnv.restore()
-      } catch {
-        void 0
-      }
-    }
     await updateManifest(
       {
         status: 'done',
