@@ -21,6 +21,13 @@ import { readWorkspaceDocsMirrorEntriesFromAgenticGraphStorageDocsBySourceFiles,
 export type { WorkspaceDocsMirrorEntry } from './workspaceSeedProviderPaths'
 export { upsertWorkspaceInitializationSeedText, ensureWorkspaceDocsMirrorFolder, ensureWorkspaceChatMirrorFolder, upsertWorkspaceChatMirrorText, upsertWorkspaceChatMirrorBytes, deleteWorkspaceInitializationSeedText } from './workspaceSeedProviderLocalIo'
 const AG_FS_LIST_PATH = '/__agentic_os_fs_list'
+const isExplicitRepoLocalDocsProjectionRoot = (value: unknown): boolean => {
+  const docsRoot = normalizeAbsRoot(readWorkspaceInitializationDocsAbsRoot())
+  const seedsRoot = normalizeAbsRoot(readAgenticGraphWorkspaceSeedsReadAbsRoot())
+  return !!docsRoot && docsRoot === seedsRoot && normalizeAbsRoot(value) === docsRoot
+}
+export const isExplicitRepoLocalDocsProjectionConfigured = (): boolean =>
+  isExplicitRepoLocalDocsProjectionRoot(readWorkspaceInitializationDocsAbsRoot())
 const isLikelyHtmlDocumentText = (text: string): boolean => {
   const head = String(text || '').trim().slice(0, 512).toLowerCase()
   return head.startsWith('<!doctype html') || head.startsWith('<html') || head.includes('<html ')
@@ -328,7 +335,11 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
     if (canonicalEntries.length === 0) return []
     return overlayCanonicalWorkspaceSeedEntries(canonicalEntries, workspaceSeedEntries)
   }
-  if (repoLocalRunReady && typeof window !== 'undefined') return readCanonicalWorkspaceSeedMirrorEntries()
+  if (
+    repoLocalRunReady
+    && typeof window !== 'undefined'
+    && !isExplicitRepoLocalDocsProjectionConfigured()
+  ) return readCanonicalWorkspaceSeedMirrorEntries()
   // #region debug-point A:workspace-mirror-bootstrap-entry
   reportWorkspaceMirrorTrace({
     hypothesisId: 'A',
@@ -351,7 +362,9 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: { pref
   const rootMirrorEntries = (await Promise.all(localRootRequests.map(async request => {
     const entries = await readWorkspaceMirrorRootEntries({
       ...request,
-      readViaProxy: readWorkspaceDocsMirrorEntriesViaProxy,
+      readViaProxy: root => readWorkspaceDocsMirrorEntriesViaProxy(root, {
+        allowRepoLocal: !request.workspaceRootName && isExplicitRepoLocalDocsProjectionRoot(root),
+      }),
       readViaNodeFs: readWorkspaceDocsMirrorEntriesViaNodeFs,
     })
     if (request.workspaceRootName !== 'workspace-seeds') return entries
