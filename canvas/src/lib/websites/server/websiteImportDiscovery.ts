@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { NativeWebsiteCrawler } from './nativeWebsiteCrawler'
-import { isCrawlableInternalUrl, normalizeUrl, urlToTreePath } from './websiteImportCore'
+import { isCrawlableInternalUrl, isWithinCrawlHostScope, normalizeUrl, urlToTreePath } from './websiteImportCore'
 import { collectSitemapUrls } from './websiteImportServerHelpers'
 import { WebsiteDiscoveryCache, newDiscoveryMetrics } from './websiteDiscoveryCache'
 
@@ -17,8 +17,8 @@ export function validateSelectedWebsiteUrls(rootUrl: string, value: unknown): st
   const selected = new Set<string>()
   for (const raw of value) {
     const url = typeof raw === 'string' && raw.length <= 4096 ? normalizeUrl(raw) : null
-    if (!url || new URL(url).origin !== new URL(rootUrl).origin || new URL(url).username || new URL(url).password || !isCrawlableInternalUrl(url, rootUrl)) {
-      throw new Error('Selected pages must belong to the source website and path')
+    if (!url || new URL(url).username || new URL(url).password || !isWithinCrawlHostScope(url, rootUrl) || !isCrawlableInternalUrl(url, rootUrl)) {
+      throw new Error('Selected pages must belong to the source website scope')
     }
     selected.add(url)
   }
@@ -85,7 +85,7 @@ export async function handleWebsiteDiscovery(req: IncomingMessage, res: ServerRe
     const urls = new Set<string>([url])
     for (const link of [...capture.links, ...(sitemap.ok ? sitemap.urls : [])]) {
       const normalized = normalizeUrl(link)
-      if (normalized && normalized.length <= 4096 && isCrawlableInternalUrl(normalized, rootUrl) && new URL(normalized).origin === new URL(rootUrl).origin && !new URL(normalized).username && !new URL(normalized).password) urls.add(normalized)
+      if (normalized && normalized.length <= 4096 && isCrawlableInternalUrl(normalized, rootUrl) && !new URL(normalized).username && !new URL(normalized).password) urls.add(normalized)
     }
     const pages = [...urls].slice(0, WEBSITE_DISCOVERY_LIMIT).map(pageUrl => ({ url: pageUrl, path: urlToTreePath(pageUrl), ...(pageUrl === url ? { title: capture.title } : {}) }))
     res.setHeader('Content-Type', 'application/json')

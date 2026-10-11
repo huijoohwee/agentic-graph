@@ -1,4 +1,4 @@
-import { hashStringToHex } from '@/lib/hash/stringHash'
+import { hashStringToHex } from '../hash/stringHash'
 
 export const safeWebsitePathSegment = (raw: string): string => {
   const s = String(raw || '').trim()

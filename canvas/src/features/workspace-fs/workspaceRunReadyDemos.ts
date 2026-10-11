@@ -305,8 +305,9 @@ export const resolveWorkspaceRepoLocalRunReadyBootstrap = (args: {
   viteDev: boolean
   configuredValue: string
 }): boolean => {
-  if (args.viteDev) return true
   const value = args.configuredValue.trim().toLowerCase()
+  if (value === '0' || value === 'false' || value === 'no' || value === 'off') return false
+  if (args.viteDev) return true
   return value === '1' || value === 'true' || value === 'yes' || value === 'on'
 }
 
