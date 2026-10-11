@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Protected Release Runbook"
 id: "md:agentic-graph-acos-deploy-runbook"
 doc_type: "Release Runbook"
-version: "2.2.0"
-date: "2026-08-29"
+version: "2.3.0"
+date: "2026-10-11"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.release.runbook"
@@ -78,8 +78,8 @@ evidence and rollback path.
 
 | Boundary | From → To | Evidence Reference | Operator instruction reference | Rollback path and check | State |
 |---|---|---|---|---|---|
-| `AGENTIC-GRAPH-AUTHORING-TO-MIRROR` | Authoring → Mirror | `ER-REL-B1`; result not recorded | `OI-REL-B1`: Production dispatch with exact `source_sha` and `local_review_candidate` | discard the candidate; rerun the verify job; compare candidate, manifest, and lifecycle digests | closed |
-| `AGENTIC-GRAPH-MIRROR-TO-DELIVERY` | Mirror → Delivery | `ER-REL-B2`; result not recorded | `OI-REL-B2`: while the exact run is pending, use the interactive terminal command to submit the protected `production` approval and evidence | follow **Rollback**; rerun live smoke, revision, document-seed, and browser-fidelity checks | closed |
+| `AGENTIC-GRAPH-AUTHORING-TO-MIRROR` | Authoring → Mirror | `ER-REL-B1`; latest result recorded under 2026-10-11 | `OI-REL-B1`: Production dispatch with exact `source_sha` and `local_review_candidate` | discard the candidate; rerun the verify job; compare candidate, manifest, and lifecycle digests | closed |
+| `AGENTIC-GRAPH-MIRROR-TO-DELIVERY` | Mirror → Delivery | `ER-REL-B2`; latest result recorded under 2026-10-11 | `OI-REL-B2`: while the exact run is pending, use the interactive terminal command to submit the protected `production` approval and evidence | follow **Rollback**; rerun live smoke, revision, document-seed, and browser-fidelity checks | closed |
 
 No command from a developer checkout, pull request, or ordinary `main` push opens either
 boundary.
@@ -91,9 +91,10 @@ boundary.
 | `ER-REL-B1` | `.github/workflows/release.yml` verify job for exact `source_sha` `0ecd4deb5ee0ad92e561c4143c03995e4d867a8a` | run `31795886758` `Verify Release Candidate` passed; local review candidate digest `c79a7914c081af8a71788775016b10a80dbb30647597dad6f0e4eeb21ce3236f`, immutable manifest digest `5abe443adec86ed395d0910597928b85371fd7e2d4a68a7a96bd9cb0f79f9ff3`, production candidate digest `a045cbc4a0d80db175a20470f74e7c9ee5db45f84f8700768c9f2e5b510de4ee` | Mirror | this run qualified one immutable candidate for the protected source revision `0ecd4deb5ee0ad92e561c4143c03995e4d867a8a` and Agentic Canvas OS docs revision `db8c6bc86ff2261916129c0d9bffe11b3384b715` |
 | `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | run `31795886758` `Human-Authorized Deploy, Verify, And Publish Mirror` passed after terminal authorization; deployed candidate origin `https://20a0deac.joohwee.pages.dev`, published mirror revision `b764edc1ba7bae6663695d84a0e5185fee293dbf`, public route `https://airvio.co/agentic-graph/` passed, and the canonical rollback and release receipts were promoted to `.release-receipts/2026-08-14/current-production-rollback-recapture.json` and `.release-receipts/2026-08-14/production-release-evidence-0ecd4deb5ee0ad92e561c4143c03995e4d867a8a.json` | Delivery | this run proved one public delivery, D1 reconciliation, live verification, and mirror publication for the exact authorized candidate |
 
-`OI-REL-B1` and `OI-REL-B2` still describe the only valid operator instructions. For the
-latest recorded 2026-08-14 release, those instructions were satisfied only for workflow run
-`31795886758`; outside that exact run and candidate pair, both boundaries remain closed.
+`OI-REL-B1` and `OI-REL-B2` still describe the only valid operator instructions. The
+2026-08-14 record below is historical and applies only to workflow run `31795886758` and its
+candidate. The current latest delivery is recorded under 2026-10-11; authorization remains
+specific to each exact candidate and run.
 
 The canonical local receipt set for that release is:
 
@@ -478,6 +479,14 @@ probes, mirror publication, rollback, and terminal-carrier persistence.
 - [Protected run `36675515249`](https://github.com/huijoohwee/agentic-graph/actions/runs/36675515249) completed for source `78740f780912e6e04aef73e12bf80ea190c6f611` and lifecycle candidate `38d8b1f21cfea013e25f4ca60d66f279a4f4b7e6edf7aeaeb7cf93eb44c308cd`.
 - Its `agentic-graph-core-runtime-release-receipt/v1` reports `status: deployed`, receipt digest `eef339474bf12ad7ef0176caf8972b0c8d32ef644e11ceb7c280f1e168e742ac`, and activated `agentic-storage` version `9b27abdd-5627-4b17-a61f-0d2c8ae9b9eb`.
 - Pages deployment `04549d39-0263-4e6c-8625-9f958503906c`, direct D1 reconciliation, live verification and mirror revision `235418c4de5d071c2bebf7579021c70755f7b704` joined the `production-complete` terminal carrier. No rollback was invoked.
+
+### 2026-10-11 Latest Recorded Receipt
+
+- Protected [Production Release run `38146256184`](https://github.com/huijoohwee/agentic-graph/actions/runs/38146256184) completed successfully for source `fae3fbedab50afea9e63a7e3f918e83deb8ebd5d` (tree `63227e9a92d672caacce9d0f423c870d8decdeab`) and pinned Agentic Canvas OS docs revision `894e66ce1094c98261401c2eed2c6a1c8cdef28d`. `Verify Release Candidate` and `Human-Authorized Deploy, Verify, And Publish Mirror` both passed.
+- The local-review candidate was `cf57e23f2918d4b5ee30187340883f95d77653a988a7e650e6be41097b032aa3`; immutable manifest digest `cb64cf77cc1c1bd7f9396f044cced1052a58b4b587d2fbdd689c6f047f2c8541`; artifact digest `03db01a754fcdfddc65a5c0b8752a94015065ffcde8d990818fc177738abcd1c`; production candidate digest `45b65f110b805b60b9d73f14da6acd27db604fb36612ec8dcef615a1b96d33a8`; lifecycle candidate digest `aa8c953cdc8f5f4651c16443e0512106eda797461b80c81f056f2ad4f5e951e2`.
+- Deployment receipt `c8cc7e5a61bbe89d78d983fa6baf7e6785b359a09fff889799c92826de629088` reports Pages deployment `679b5af0-4329-4c3f-ac37-98a8fe190cc1` at immutable origin `https://679b5af0.joohwee.pages.dev`. State reconciliation receipt `7c42bc97a3b9cba2b34f78d06aba82234ea37bfdfee733704690472bac41e74d` reports content and path/hash parity. Live verification receipt `ed852fe813f1733e0ca4b8b459cb382f6d3bddf9005ee61d8ddaae396b75dc88` reports `verified`; immutable, stable Pages, and `https://airvio.co/agentic-graph/` transport checks, candidate browser fidelity, and returning-user cache convergence passed.
+- Publication receipt `a3225e5c586e43ab5de18201bb9a7c7fc7ad897072ffecf8b62cfec929b21c17` reports `published`; the successful-release rollback capture binds mirror revision `2f9f00e19c29f85bae790579c65f09c5948c2d40` and identity digest `36524e27ba8d75958fed2239a1e1c6bf3cae5564793a74adc51d4ebb6a488210`. The terminal `agentic-collaborative-release-lifecycle/v2` carrier reports `production-complete`, digest `6ee96e319130cbd8f42bf74abfbef7f38da1651a2244f68f3956f7d56fcde8f1`. No rollback was invoked.
+- The native retention command validated and retained the exact terminal carrier plus production evidence and raw observations (132 files; carrier SHA-256 above). GitHub's artifact-retention setting capped workflow artifacts at one day, so the separate local retention receipt is the operator's recovery copy; it grants no further effects.
 
 ### 2026-08-02 Prior Recorded Receipt
 
