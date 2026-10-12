@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { createObservedCurrentRollbackBaseline, createObservedRollbackBaseline } from '../lib/production-rollback-baseline.mjs'
 import { digest } from '../lib/production-release-lifecycle-evidence.mjs'
+import { currentBaselineCaptureSummary } from '../production-rollback-baseline.mjs'
 
 const sha = 'a'.repeat(40)
 const at = second => `2026-09-09T00:00:${String(second).padStart(2, '0')}.000Z`
@@ -78,6 +79,13 @@ test('fresh current provider observations name a rollback target without rebuild
   assert.equal(provenance.productionAuthorized, false)
   assert.equal(provenance.historicalLifecycleReconstructed, false)
   assert.equal(provenance.captureRunId, 7001)
+})
+
+test('current baseline capture summary binds its rollback identity digest', () => {
+  const rollbackIdentity = { pages: { sourceRevision: sha }, mirror: { revision: 'd'.repeat(40) } }
+  const summary = currentBaselineCaptureSummary({ status: 'current-rollback-baseline-observed' }, { rollbackIdentity })
+  assert.deepEqual(summary, { status: 'current-rollback-baseline-observed', productionAuthorized: false,
+    rollbackTargetDigest: digest(rollbackIdentity) })
 })
 
 for (const [label, mutate] of [
