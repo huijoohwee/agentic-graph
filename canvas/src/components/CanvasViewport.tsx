@@ -51,6 +51,8 @@ import {
 } from '@/lib/cards/mediaPreviewSurfaceSelection'
 import { XrPhysicsSemanticMediaSurface } from '@/features/three/XrPhysicsSemanticMediaSurface'
 import { useEmbeddedCanvasChatCommandReceiver } from '@/features/canvas/useEmbeddedCanvasChatCommandReceiver'
+import { SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH } from '@/features/supply-chain/supplyChainOverviewSource'
+import { MARKDOWN_EXPLORER_OPEN_SOURCE_FILES_EVENT } from '@/features/markdown/ui/useMarkdownExplorerSectionCollapseState'
 const PythonLearningCanvasStatus = React.lazy(() => import('@/features/python-learning/LearningCanvasStatus').then(module => ({ default: module.PythonLearningCanvasStatus })))
 const LearningPlanViewLazy = React.lazy(() => import('@/features/python-learning/LearningPlanView'))
 const CanvasViewportGeospatialOverlayLazy = React.lazy(loadCanvasViewportGeospatialOverlay)
@@ -74,6 +76,7 @@ const GameFpsHudLazy = React.lazy(() => import('@/features/game-fps/GameFpsHud')
 const MinimapLazy = React.lazy(() => import('@/features/minimap/Minimap'))
 const StrybldrTimelineBottomPanelLazy = React.lazy(() => import('@/features/strybldr/StrybldrTimelineBottomPanel').then(mod => ({ default: mod.StrybldrTimelineBottomPanel })))
 const LaunchSpotlightLazy = React.lazy(() => import('@/features/spotlight/LaunchSpotlight'))
+const SupplyChainOverviewLazy = React.lazy(() => import('@/features/supply-chain/SupplyChainOverview').then(module => ({ default: module.SupplyChainOverview })))
 const PaywallOverlayLazy = React.lazy(async (): Promise<{ default: React.ComponentType<{ portalTarget: HTMLElement | null }> }> => ({
   default: (await import('@/features/payments/PaywallOverlay')).PaywallOverlay,
 }))
@@ -100,7 +103,46 @@ function resolveLiveCanvasHeroEmbedPreviewSurface(variant: CanvasViewportVariant
   const renderer = new URLSearchParams(window.location.search).get('kgCanvas2dRenderer')
   return isCanvas2dRendererId(renderer) ? getCanvas2dSurfaceId(renderer) : null
 }
+function isSupplyChainOverviewRoute(variant: CanvasViewportVariant): boolean {
+  if (variant !== 'workspace' || typeof window === 'undefined') return false
+  const params = new URLSearchParams(window.location.search)
+  return params.get('kgSupplyChain') === '1' || params.get('kgSupplyChain') === 'overview'
+}
 export function CanvasViewport(props: CanvasViewportProps) {
+  const activePath = useMarkdownExplorerStore(state => state.activePath)
+  const setActivePath = useMarkdownExplorerStore(state => state.setActivePath)
+  const supplyChainRouteRequested = isSupplyChainOverviewRoute(props.variant)
+  const sourceFilesBootstrap = useSourceFilesBootstrapSnapshot()
+  const previousRouteRequested = React.useRef(false)
+  const routeSourceSelected = React.useRef(false)
+
+  React.useEffect(() => {
+    if (!supplyChainRouteRequested) {
+      routeSourceSelected.current = false
+      previousRouteRequested.current = false
+      return
+    }
+    if (!previousRouteRequested.current) {
+      previousRouteRequested.current = true
+      routeSourceSelected.current = false
+    }
+    if (sourceFilesBootstrap.phase === 'ready' && !routeSourceSelected.current) {
+      routeSourceSelected.current = true
+      if (activePath !== SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH) {
+        setActivePath(SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH)
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(MARKDOWN_EXPLORER_OPEN_SOURCE_FILES_EVENT, {
+          detail: { path: SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH },
+        }))
+      }
+    }
+  }, [activePath, setActivePath, sourceFilesBootstrap.phase, supplyChainRouteRequested])
+
+  return <CanvasViewportWorkspace {...props} />
+}
+
+function CanvasViewportWorkspace(props: CanvasViewportProps) {
   const inspection = useAgentRunWorkspace()
   const activityOpen = useGraphStore(state => !state.bottomSurfaceCollapsed && state.bottomSurfaceTab === 'activity')
   const learning = React.useSyncExternalStore(pythonLearningRuntime.subscribe, pythonLearningRuntime.read, pythonLearningRuntime.read)
@@ -144,12 +186,17 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
   const cityMapLibreSurfaceRequested = citySimActive
     || (citySimSourceIntent && citySim.lastResult?.operation !== 'exit')
   const gameplayOverlayActive = citySimActive || gameFpsActive || flightSimActive
-  const geospatialCompositionEnabled = geospatialModeEnabled
   const sourceFilesBootstrap = useSourceFilesBootstrapSnapshot()
   const sourceFilesBootstrapReady = sourceFilesBootstrap.phase === 'ready'
   const gameFpsHudVisible = gameFpsActive && sourceFilesBootstrapReady
   const flightSimHudVisible = flightSimActive && sourceFilesBootstrapReady
   const explorerActivePath = useMarkdownExplorerStore(s => s.activePath)
+  const supplyChainOverviewActive = variant === 'workspace'
+    && explorerActivePath === SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH
+  // This authored source owns a Geo+XR presentation. Keep its map on the
+  // shared geospatial host even when the user has not enabled the global map
+  // preference; leaving this source restores the user's normal canvas mode.
+  const geospatialCompositionEnabled = geospatialModeEnabled || supplyChainOverviewActive
   useFlightSimSurfacePreload({
     activePath: explorerActivePath,
     sourceFiles,
@@ -346,7 +393,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
                   ? 'Canvas Preview Only'
                   : 'Canvas viewport'}
     >
-      <CanvasViewContainer configurable={variant === 'workspace' && !learningScene} sizing={learningScene ? 'full' : undefined}><React.Suspense fallback={null}>
+      <CanvasViewContainer configurable={variant === 'workspace' && !learningScene && !supplyChainOverviewActive} sizing={learningScene || supplyChainOverviewActive ? 'full' : undefined}><React.Suspense fallback={null}>
         {liveCanvasHeroVisible && liveCanvasHeroSource ? (
           <LiveCanvasHeroPresetStageLazy source={liveCanvasHeroSource} sourceFiles={sourceFiles}
             visible={liveCanvasHeroVisible} onEnter={dismissLiveCanvasHero} />
@@ -573,6 +620,9 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
           </>
         ) : null}
       </React.Suspense>
+      {supplyChainOverviewActive && sourceFilesBootstrapReady && !documentSwitchBlocksCanvas && !homePreviewVisible ? (
+        <React.Suspense fallback={null}><SupplyChainOverviewLazy /></React.Suspense>
+      ) : null}
       {sourceFilesBootstrapReady && xrPhysicsRunReadyDemo && !gameplayOverlayActive && !homePreviewVisible ? <XrNativeControllerDemoHud /> : null}
       {gameFpsHudVisible ? <GameFpsHudLazy /> : null}
       {flightSimHudVisible ? (

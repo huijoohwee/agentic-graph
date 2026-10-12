@@ -11,6 +11,11 @@ import {
   resolveWorkspaceValidationSeedRelPath,
 } from './workspaceRunReadyDemos'
 import {
+  loadSupplyChainOverviewWorkspaceSeed,
+  SUPPLY_CHAIN_OVERVIEW_SOURCE_BASENAME,
+  SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH,
+} from '@/features/supply-chain/supplyChainOverviewSource'
+import {
   CANONICAL_XR_PHYSICS_WORKSPACE_SEED_ENABLED,
   loadXrPhysicsDemoSeedSource,
 } from './xrPhysicsDemoSeedSource'
@@ -365,6 +370,13 @@ const WORKSPACE_SEED_SPECS: readonly WorkspaceSeedSpec[] = [
     sourceRelPaths: GEOSPATIAL_WORKSPACE_SEED_REL_PATH_CANDIDATES,
     fallbackText: DEFAULT_GEOSPATIAL_WORKSPACE_SEED_TEXT,
   },
+  {
+    path: SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH,
+    basename: SUPPLY_CHAIN_OVERVIEW_SOURCE_BASENAME,
+    sourceRelPaths: [`docs/workspace-seeds/${SUPPLY_CHAIN_OVERVIEW_SOURCE_BASENAME}`],
+    fallbackText: '',
+    sourceLoader: loadSupplyChainOverviewWorkspaceSeed,
+  },
   ...(CANONICAL_XR_PHYSICS_WORKSPACE_SEED_ENABLED ? [{
     path: XR_PHYSICS_WORKSPACE_SEED_PATH,
     basename: XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME,
@@ -372,7 +384,7 @@ const WORKSPACE_SEED_SPECS: readonly WorkspaceSeedSpec[] = [
     fallbackText: '',
     sourceLoader: loadXrPhysicsDemoSeedSource,
   }] : []),
-].filter(seed => !REPO_LOCAL_VALIDATION_SOURCE_EXCLUSIVE || seed.path === TEST_VALIDATION_WORKSPACE_SEED_PATH)
+].filter(seed => !REPO_LOCAL_VALIDATION_SOURCE_EXCLUSIVE || seed.path === TEST_VALIDATION_WORKSPACE_SEED_PATH || seed.path === SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH)
 const WORKSPACE_SEED_PATH_SET = new Set<WorkspacePath>(WORKSPACE_SEED_SPECS.map(seed => seed.path))
 const WORKSPACE_SEED_SOURCE_REL_PATH_SET = new Set<WorkspacePath>(
   WORKSPACE_SEED_SPECS
@@ -384,7 +396,7 @@ const WORKSPACE_INITIALIZATION_PATH_SET = new Set<WorkspacePath>([
   ...WORKSPACE_SEED_SOURCE_REL_PATH_SET,
 ])
 const DEFAULT_WORKSPACE_SEED_FAMILY_PATHS = new Set<WorkspacePath>([
-  ...WORKSPACE_SEED_SPECS.map(seed => seed.path),
+  ...WORKSPACE_SEED_SPECS.map(seed => seed.path).filter(path => path !== SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH),
 ])
 
 export const loadWorkspaceSeedText = async (args: {
@@ -470,12 +482,15 @@ export function expandWorkspaceSeedFileEntries(path: WorkspacePath, text: string
   return out
 }
 
-export async function getWorkspaceSeedFiles(): Promise<WorkspaceSeedFile[]> {
+export async function getWorkspaceSeedFiles(options?: { includeSupplyChainOverview?: boolean }): Promise<WorkspaceSeedFile[]> {
   const docsMirrorEntries = REPO_LOCAL_VALIDATION_SOURCE_EXCLUSIVE
     ? []
     : await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
+  const seedSpecs = WORKSPACE_SEED_SPECS.filter(seed => (
+    seed.path !== SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH || options?.includeSupplyChainOverview === true
+  ))
   const loaded = await Promise.all(
-    WORKSPACE_SEED_SPECS.map(async seed => {
+    seedSpecs.map(async seed => {
       if (seed.sourceLoader) {
         const text = String(await seed.sourceLoader() || '')
         return text.trim() ? { path: seed.path, text, isFallback: false } : null

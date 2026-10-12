@@ -11,6 +11,12 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { deriveSceneDisplayGraph } from '@/lib/scene/sceneDerivation'
 import { buildGeospatialOverlayGraphData } from '@/features/geospatial/geospatialOverlayGraphData'
 import {
+  buildSupplyChainGeospatialGraphData,
+  isSupplyChainWorkspaceSource,
+} from '@/features/supply-chain/supplyChainGeospatialGraph'
+import { useSupplyChainViewStore } from '@/features/supply-chain/supplyChainViewStore'
+import { SUPPLY_CHAIN_SCENARIO } from '@/features/supply-chain/supplyChainScenario'
+import {
   resolveGeoXrGameplayPresentationOwner,
   type GeoXrOverlayStoreModule,
 } from '@/features/geospatial/geoXrFlightOverlayComposition'
@@ -216,6 +222,16 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     })),
   )
   const graphDataRevision = useGraphStore(s => s.graphDataRevision || 0)
+  const timelineTransport = useGraphStore(useShallow(s => ({
+    documentKey: s.timelineTransportDocumentKey || '',
+    position: s.timelineTransportPosition || 0,
+  })))
+  const supplyChainView = useSupplyChainViewStore(useShallow(s => ({
+    selection: s.selection,
+    modeFilter: s.modeFilter,
+    entityFilter: s.entityFilter,
+    showLabels: s.showLabels,
+  })))
   const canvasMarkdownDocument = useCanvasAppliedMarkdownDocument({
     name: markdownDocumentName,
     sourceUrl: markdownDocumentSourceUrl,
@@ -233,14 +249,40 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     if (!active) return geoGraphLastRef.current
     const derived = deriveSceneDisplayGraph({ graphData })?.displayGraphData || null
     const base = (derived || graphData) as GraphData
-    return buildGeospatialOverlayGraphData({
+    const withMarkdownGeodata = buildGeospatialOverlayGraphData({
       graphData: base,
       graphRevision: graphDataRevision,
       markdownText: canvasMarkdownDocument.text,
       sourceDocumentPath: canvasMarkdownDocument.name,
       sourceFiles: geospatialSourceFiles,
     })
-  }, [active, canvasMarkdownDocument.name, canvasMarkdownDocument.text, geospatialSourceFiles, graphData, graphDataRevision])
+    if (!isSupplyChainWorkspaceSource(canvasMarkdownDocument.name)) return withMarkdownGeodata
+    const timeSeconds = timelineTransport.documentKey === `${SUPPLY_CHAIN_SCENARIO.id}@${SUPPLY_CHAIN_SCENARIO.revision}`
+      ? Math.max(0, Math.floor(timelineTransport.position * 60))
+      : 0
+    return buildSupplyChainGeospatialGraphData({
+      graphData: withMarkdownGeodata,
+      ...supplyChainView,
+      timeSeconds,
+    })
+  }, [active, canvasMarkdownDocument.name, canvasMarkdownDocument.text, geospatialSourceFiles, graphData, graphDataRevision,
+    supplyChainView, timelineTransport.documentKey, timelineTransport.position])
+
+  const supplyChainFitRequestedRef = React.useRef(false)
+  React.useEffect(() => {
+    const supplyChainActive = active && isSupplyChainWorkspaceSource(canvasMarkdownDocument.name)
+    if (!supplyChainActive) {
+      supplyChainFitRequestedRef.current = false
+      return
+    }
+    if (supplyChainFitRequestedRef.current) return
+    supplyChainFitRequestedRef.current = true
+    let cancelled = false
+    void loadGympgrphModule().then(module => {
+      if (!cancelled) module.requestGeospatialFitToData?.()
+    }).catch(() => undefined)
+    return () => { cancelled = true }
+  }, [active, canvasMarkdownDocument.name])
 
   React.useEffect(() => {
     if (!active) return
@@ -252,7 +294,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     () => ({
       graphData: geospatialGraphData,
       sourceGeospatial,
-      graphRevision: graphDataRevision,
+      graphRevision: isSupplyChainWorkspaceSource(canvasMarkdownDocument.name) ? 0 : graphDataRevision,
       zoomState: gympgrphBridge.zoomState,
       canvasRenderMode: gympgrphBridge.canvasRenderMode,
       viewportControlsPreset: gympgrphBridge.viewportControlsPreset,
@@ -264,6 +306,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     }),
     [
       geospatialGraphData,
+      canvasMarkdownDocument.name,
       sourceGeospatial,
       graphDataRevision,
       gympgrphBridge.canvasRenderMode,

@@ -18,6 +18,7 @@ export function buildXrMediaLibraryProjection(args: {
   categoryFilter: 'all' | XrSceneLibraryCategory
   searchText: string
   selectedAssetId: string
+  selectedStageId?: string
 }) {
   const featuredAssets = XR_SCENE_LIBRARY_FEATURED_ASSET_IDS.map(assetId => (
     XR_SCENE_LIBRARY_ASSETS.find(asset => asset.id === assetId)
@@ -28,7 +29,10 @@ export function buildXrMediaLibraryProjection(args: {
   const visibleEnvironments = XR_MOTION_REFERENCE_STAGE_PRESETS.filter(stage => (
     matchesXrMediaLibrarySearch(args.searchText, [stage.label, stage.description, 'environment kit xr 3d'])
   ))
+  const selectedStage = XR_MOTION_REFERENCE_STAGE_PRESETS.find(stage => stage.id === args.selectedStageId)
   const visiblePoiDetailAssets = XR_SCENE_LIBRARY_ASSETS.filter(asset => (
+    (!args.selectedStageId || Boolean(selectedStage?.regionalPoiProfile))
+    &&
     Boolean(asset.poiDetailKitId)
     && matchesXrMediaLibrarySearch(args.searchText, [asset.label, asset.description, ...asset.keywords])
   ))
