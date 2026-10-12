@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { verifyRemovedTerminalPersistence } from './lib/production-terminal-persistence.mjs'
 import { createObservedCurrentRollbackBaseline, createObservedRollbackBaseline } from './lib/production-rollback-baseline.mjs'
+import { digest } from './lib/production-release-lifecycle-evidence.mjs'
 
 const repository = 'huijoohwee/agentic-graph'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -19,6 +20,8 @@ const gh = endpoint => JSON.parse(execFileSync('gh', ['api', endpoint], {
 const run = (script, args) => execFileSync(process.execPath, [path.join(root, 'scripts', script), ...args], {
   cwd: root, stdio: ['ignore', 'pipe', 'pipe'], timeout: 120_000, maxBuffer: 4 * 1024 * 1024,
 })
+export const currentBaselineCaptureSummary = (provenance, recapture) => ({ status: provenance.status,
+  productionAuthorized: false, rollbackTargetDigest: digest(recapture.rollbackIdentity) })
 const round = async (directory, mirrorRoot) => {
   await fs.mkdir(directory)
   const pagesFile = path.join(directory, 'pages.json')
@@ -85,8 +88,7 @@ export async function main(args = process.argv.slice(2)) {
       candidateSourceRevision: sourceRevision })
     await write(path.join(output, 'provenance.json'), provenance)
     await write(path.join(output, 'rollback-recapture.json'), recapture)
-    console.log(JSON.stringify({ status: provenance.status, output, productionAuthorized: false,
-      rollbackTargetDigest: digest(recapture.rollbackIdentity) }))
+    console.log(JSON.stringify({ ...currentBaselineCaptureSummary(provenance, recapture), output }))
     return
   }
   const releaseRun = gh(`repos/${repository}/actions/runs/${values['run-id']}`)
