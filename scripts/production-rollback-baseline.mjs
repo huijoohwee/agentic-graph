@@ -6,7 +6,7 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { verifyRemovedTerminalPersistence } from './lib/production-terminal-persistence.mjs'
-import { createObservedRollbackBaseline } from './lib/production-rollback-baseline.mjs'
+import { createObservedCurrentRollbackBaseline, createObservedRollbackBaseline } from './lib/production-rollback-baseline.mjs'
 
 const repository = 'huijoohwee/agentic-graph'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -29,15 +29,22 @@ const round = async (directory, mirrorRoot) => {
   run('verify-production-release-transports.mjs', ['mirror', '--repository-root', mirrorRoot,
     '--repository', 'huijoohwee/huijoohwee', '--output', mirrorFile])
   return { pages: await read(pagesFile), state: await read(stateFile), mirror: await read(mirrorFile),
-    deployment: (await read(path.join(directory, 'current-pages-deployment-api.json'))).result }
+    deployment: (await read(path.join(directory, 'current-pages-deployment-api.json'))).result,
+    pagesReadiness: await read(path.join(directory, 'current-pages-runtime-readiness.json')),
+    mirrorReadiness: JSON.parse(git(mirrorRoot, 'show', 'HEAD:.well-known/runtime-readiness.json')) }
 }
 
 export async function main(args = process.argv.slice(2)) {
   const { values } = parseArgs({ args, options: {
     'run-id': { type: 'string' }, 'mirror-root': { type: 'string' }, 'output-dir': { type: 'string' },
+    'current-state': { type: 'boolean', default: false },
   }, strict: true })
-  for (const name of ['run-id', 'mirror-root', 'output-dir']) assert.ok(values[name], `--${name} is required`)
-  assert.match(values['run-id'], /^[1-9]\d*$/, '--run-id must be a positive integer')
+  for (const name of ['mirror-root', 'output-dir']) assert.ok(values[name], `--${name} is required`)
+  if (values['current-state']) assert.ok(!values['run-id'], '--current-state cannot be combined with --run-id')
+  else {
+    assert.ok(values['run-id'], '--run-id is required unless --current-state is used')
+    assert.match(values['run-id'], /^[1-9]\d*$/, '--run-id must be a positive integer')
+  }
   const mirrorRoot = path.resolve(values['mirror-root'])
   const output = path.resolve(values['output-dir'])
   const sourceRevision = git(root, 'rev-parse', 'HEAD')
@@ -50,6 +57,38 @@ export async function main(args = process.argv.slice(2)) {
   assert.match(git(mirrorRoot, 'remote', 'get-url', 'origin'), /(?:github\.com[:/])huijoohwee\/huijoohwee(?:\.git)?$/)
   await fs.mkdir(output, { mode: 0o700 }) // Refuse overwriting earlier observations.
   const repo = gh(`repos/${repository}`)
+  if (values['current-state']) {
+    assert.equal(process.env.GITHUB_ACTIONS, 'true', 'current-state capture requires protected GitHub Actions')
+    assert.equal(process.env.GITHUB_REPOSITORY, repository, 'current-state capture ran in the wrong repository')
+    assert.equal(process.env.GITHUB_REF, 'refs/heads/main', 'current-state capture must run on protected main')
+    assert.equal(process.env.GITHUB_WORKFLOW, 'Production Rollback Baseline Capture',
+      'current-state capture must use its protected workflow')
+    assert.equal(process.env.GITHUB_WORKFLOW_REF,
+      `${repository}/.github/workflows/production-rollback-baseline-capture.yml@refs/heads/main`,
+      'current-state capture workflow ref drifted')
+    assert.equal(process.env.GITHUB_SHA, sourceRevision, 'current-state capture source revision drifted')
+    const first = await round(path.join(output, 'first'), mirrorRoot)
+    const second = await round(path.join(output, 'second'), mirrorRoot)
+    const currentRun = gh(`repos/${repository}`)
+    assert.equal(currentRun.id, repo.id, 'repository identity changed during capture')
+    assert.equal(git(root, 'rev-parse', 'HEAD'), sourceRevision, 'capture source changed')
+    assert.equal(git(root, 'status', '--porcelain'), '', 'capture source became dirty')
+    assert.equal(git(root, 'ls-remote', 'origin', 'refs/heads/main').split(/\s+/)[0], sourceRevision,
+      'protected main changed during capture')
+    execFileSync('git', ['merge-base', '--is-ancestor', second.pages.identity.sourceRevision, sourceRevision],
+      { cwd: root, stdio: 'ignore', timeout: 30_000 })
+    const assembledAt = new Date().toISOString()
+    const { recapture, provenance } = createObservedCurrentRollbackBaseline({ first, second,
+      repositoryId: repo.id, candidateSourceRevision: sourceRevision,
+      captureRunId: process.env.GITHUB_RUN_ID, captureWorkflowRef: process.env.GITHUB_WORKFLOW_REF, assembledAt })
+    await write(path.join(output, 'observations.json'), { first, second, repositoryId: repo.id,
+      candidateSourceRevision: sourceRevision })
+    await write(path.join(output, 'provenance.json'), provenance)
+    await write(path.join(output, 'rollback-recapture.json'), recapture)
+    console.log(JSON.stringify({ status: provenance.status, output, productionAuthorized: false,
+      rollbackTargetDigest: digest(recapture.rollbackIdentity) }))
+    return
+  }
   const releaseRun = gh(`repos/${repository}/actions/runs/${values['run-id']}`)
   const artifacts = gh(`repos/${repository}/actions/runs/${values['run-id']}/artifacts?per_page=100`)
   await write(path.join(output, 'release-run.json'), releaseRun)

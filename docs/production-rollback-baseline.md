@@ -1,22 +1,43 @@
 ---
-title: "Recover an expired production rollback receipt"
+title: "Capture a current production rollback baseline"
 doc_type: "Process Guide"
 status: "active"
 lang: "en-US"
 frontmatter_contract: "required"
 ---
 
-# Recover an expired production rollback receipt
+# Capture a current production rollback baseline
 
-Use the existing successful-release recapture when its terminal carrier remains available. When GitHub has expired that artifact, the source-owned command below can capture a **new observed rollback baseline**. It does not reconstruct the lost lifecycle carrier or attest past human presence. The protected release still rechecks Pages, D1, and mirror identities and requires candidate-specific human authorization before mutation.
+Use the existing successful-release recapture when its terminal carrier remains available. When the carrier, artifact metadata, or originating workflow run is no longer available, the protected capture workflow can create a **new observed current-state baseline**. This records what Pages, D1, and the publication mirror serve now; it does not reconstruct a lost lifecycle carrier or attest past human authorization. The protected release still rechecks the exact Pages, D1, and mirror identities and requires candidate-specific human authorization before mutation.
+
+### Protected current-state capture
+
+Run **Production Rollback Baseline Capture** from protected `main` with mode
+`current-observed`. This mode needs no historical release run ID. It takes two ordered
+read-only Pages, authoritative D1, and exact mirror observations under the protected
+`production` environment. It rejects provider drift, mismatch between Pages and mirror
+readiness markers, a deployed source outside the captured `main` history, or nonzero graph
+snapshots. The artifact records the capture run, source revision, provider observations,
+rollback identity, and provenance. It explicitly says `productionAuthorized: false` and
+`historicalLifecycleReconstructed: false`.
+
+The protected source checkout keeps full `main` history (without fetching tags) so the
+ancestry check can validate an older live deployment against the current source frontier.
+
+This current-state baseline is a rollback target only. It does not qualify a release or
+approve a deployment. The protected Production Release workflow binds these exact bytes to
+the preserved source frontier and independently rechecks current provider state before it
+can wait for candidate-specific terminal authorization.
 
 ### Protected GitHub capture
 
 Use the read-only `Production Rollback Baseline Capture` workflow when local
-Cloudflare credentials are unavailable. It accepts only a successful release
-run ID, runs from protected `main` in the `production` environment, reads the
-existing Pages and D1 state plus the exact production mirror, and stores the
-complete or partial evidence in a 90-day workflow artifact. `agentic-graph` is
+Cloudflare credentials are unavailable. In `successful-release-run` mode it accepts a
+successful release run ID and proves its protected execution; in `current-observed` mode it
+captures current state without depending on old Actions records. Both modes run from
+protected `main` in the `production` environment, read Pages and D1 plus the exact
+production mirror, and store complete or partial evidence in a 90-day workflow artifact.
+`agentic-graph` is
 public, so the artifact is repository-visible; D1 evidence contains digests and
 counts, not document bodies, and no credentials are included. The workflow does
 not deploy, mutate D1, or authorize production. The environment supplies the
@@ -24,16 +45,28 @@ existing Cloudflare credentials; none are passed through dispatch inputs.
 The capture uses one lockfile-cached Graph dependency install, no browser run or
 mirror build, a 35-minute job ceiling, and the existing ten-minute provider
 observation window. Provider operations are GitHub/Pages reads and D1 SELECTs.
+The workflow requests 90-day retention, but repository-level policy may shorten it;
+download and retain the complete artifact in the private release-evidence store promptly.
 
-Choose a successful protected release run whose `head_sha` is the source revision
-currently reported by the production Pages marker. The workflow and source
-validator recheck that identity and reject an older but otherwise successful run.
+For historical recovery, choose a successful protected release run whose `head_sha` is the
+source revision currently reported by the production Pages marker. The workflow and source
+validator recheck that identity and reject an older but otherwise successful run. If the run
+or its metadata has been removed, use `current-observed` instead.
 
 ```sh
 RELEASE_RUN_ID=<exact-matching-run-id>
 gh workflow run production-rollback-baseline-capture.yml \
   --ref main \
+  --field baseline_mode=successful-release-run \
   --field run_id="$RELEASE_RUN_ID"
+```
+
+For a current-state-only observation, omit `run_id`:
+
+```sh
+gh workflow run production-rollback-baseline-capture.yml \
+  --ref main \
+  --field baseline_mode=current-observed
 ```
 
 Download `production-rollback-baseline-<capture-run-id>` from that workflow run
@@ -55,7 +88,7 @@ The command performs read-only API, Git, and direct D1 queries. It checks the ex
 
 After completing the implementation lane, materialize the clean release frontier with `rollback-recapture.json` and pass `--source-evidence-ref observed-rollback-baseline=/absolute/path/to/provenance.json`. Retain the entire capture directory with the resulting release evidence. If registered lanes remain, use the existing current-frontier materializer and its preservation inputs. Refresh capture if provider state changes before promotion.
 
-This recovery adds no infrastructure, subscription, paid execution host, or deployment authority. Commerce execution remains on the authenticated local Podman host and is available only while the device and connector run. Reusing this baseline for a free-only release does not establish that every existing account subscription is free; that is a separate account observation. Deployment and live commerce/provider verification remain separate evidence.
+This recovery adds no infrastructure, subscription, paid execution host, or deployment authority. The current-state path does not reconstruct the historical release or its authorization. Commerce execution remains on the authenticated local Podman host and is available only while the device and connector run. Reusing this baseline for a free-only release does not establish that every existing account subscription is free; that is a separate account observation. Deployment and live commerce/provider verification remain separate evidence.
 
 Validation: `node --test scripts/__tests__/production-rollback-baseline.test.mjs` exercises successful recovery and rejects failed or unprotected releases, available/missing artifacts, provider drift, chronology errors, malformed identities, and invalid D1 state. Keep the standard integration checks and production release approval unchanged.
 
@@ -93,7 +126,7 @@ Their final payloads and observation time are retained in
 bound by both the complete observation digest and a dedicated reobservation
 digest. Missing, changed or incorrectly timed final inventories fail capture.
 
-The output uses `agentic-graph-observed-rollback-baseline/v2`, records the retained
+Historical execution recovery uses `agentic-graph-observed-rollback-baseline/v2`, records the retained
 job ID and workflow digest, and labels the artifact `removed`. It invents no
 artifact ID, historical receipt or past authorization. Retain
 `terminal-persistence-inputs.json` and `terminal-persistence-reobservation.json`

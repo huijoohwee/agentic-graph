@@ -20,6 +20,118 @@ const substantive = round => {
   return { pages, state, mirror, deployment: round.deployment }
 }
 
+const currentSubstantive = round => {
+  const { capturedAt: _p, ...pages } = round.pages
+  const { capturedAt: _d, ...state } = round.state
+  const { observedAt: _m, ...mirror } = round.mirror
+  return { pages, state, mirror, deployment: round.deployment, pagesReadiness: round.pagesReadiness,
+    mirrorReadiness: round.mirrorReadiness }
+}
+
+const assertCurrentReadinessParity = round => {
+  const { pages, state, mirror, deployment, pagesReadiness, mirrorReadiness } = round
+  assert.equal(pages.schema, 'agentic-graph-production-pages-current-observation/v1')
+  assert.equal(pages.adapterId, 'cloudflare-pages/api-canonical-observation-v1')
+  assert.equal(state.schema, 'agentic-graph-d1-state-snapshot/v1')
+  assert.equal(state.workspaceId, 'kgws:canonical-docs')
+  assert.equal(state.readbackAdapterId, 'cloudflare-wrangler-d1-direct-readback/v1')
+  assert.equal(state.readbackKind, 'direct-authoritative')
+  assert.equal(mirror.schema, 'agentic-graph-production-observed-mirror-identity/v1')
+  assert.equal(mirror.repository, 'huijoohwee/huijoohwee')
+  assert.equal(pagesReadiness?.schema, 'agentic-os-production-runtime-readiness/v2')
+  assert.equal(pagesReadiness?.status, 'verified-build')
+  assert.equal(pagesReadiness?.source?.repository, 'huijoohwee/agentic-graph')
+  assert.equal(pagesReadiness?.source?.revision, pages.identity.sourceRevision,
+    'Pages readiness marker does not describe the current deployment')
+  assert.equal(pages.identity.deploymentCommitRevision, pages.identity.sourceRevision,
+    'Pages deployment commit and runtime source differ')
+  assert.equal(mirror.sourceRevision, pages.identity.sourceRevision,
+    'published mirror source differs from current Pages runtime')
+  assert.deepEqual(mirrorReadiness, pagesReadiness,
+    'published mirror readiness marker differs from current Pages runtime')
+  assert.equal(deployment.id, pages.identity.deploymentId, 'deployment API identity differs')
+  assert.equal(deployment.url, pages.identity.deploymentOrigin, 'deployment API origin differs')
+  assert.equal(deployment.environment, 'production')
+  assert.equal(deployment.latest_stage?.name, 'deploy')
+  assert.equal(deployment.latest_stage?.status, 'success')
+  assert.equal(instant(deployment.latest_stage.ended_on), instant(pages.identity.deployedAt))
+  return pagesReadiness
+}
+
+// A fresh provider observation can name today's rollback target without
+// reconstructing the historical release carrier or its authorization.
+export function createObservedCurrentRollbackBaseline({ first, second, repositoryId, candidateSourceRevision,
+  captureRunId, captureWorkflowRef, assembledAt }) {
+  assert.ok(Number.isSafeInteger(repositoryId) && repositoryId > 0, 'repository ID is required')
+  assert.match(candidateSourceRevision || '', /^[0-9a-f]{40}$/, 'candidate source revision is required')
+  assert.match(String(captureRunId || ''), /^[1-9]\d*$/, 'protected capture workflow run ID is required')
+  assert.equal(captureWorkflowRef,
+    'huijoohwee/agentic-graph/.github/workflows/production-rollback-baseline-capture.yml@refs/heads/main',
+    'current baseline must come from the protected capture workflow')
+  assert.equal(canonicalJson(currentSubstantive(first)), canonicalJson(currentSubstantive(second)),
+    'current provider state changed between observations')
+  const readiness = assertCurrentReadinessParity(second)
+  assertCurrentReadinessParity(first)
+  const sourceRevision = second.pages.identity.sourceRevision
+  assert.match(sourceRevision, /^[0-9a-f]{40}$/, 'observed Pages source revision is invalid')
+  assert.equal(second.pages.identity.deploymentCommitRevision, sourceRevision)
+  assert.equal(second.mirror.sourceRevision, sourceRevision)
+  assert.equal(readiness.mirror?.repository, 'huijoohwee/huijoohwee')
+  assert.ok(['huijoohwee/agentic-os', 'huijoohwee/agentic-canvas-os'].includes(readiness.agenticCanvasOs?.repository),
+    'current runtime marker names an unsupported documentation owner')
+  assert.match(readiness.agenticCanvasOs?.revision || '', /^[0-9a-f]{40}$/)
+  assert.equal(readiness.agenticCanvasOs?.revision, readiness.catalogRevision,
+    'current runtime marker has an unjoined documentation revision')
+  assert.equal(readiness.artifact?.algorithm, 'sha256')
+  assert.match(readiness.artifact?.digest || '', /^[0-9a-f]{64}$/)
+  assert.equal(readiness.immutableManifest?.algorithm, 'sha256')
+  assert.match(readiness.immutableManifest?.digest || '', /^[0-9a-f]{64}$/)
+  const assembled = instant(assembledAt)
+  const chronology = []
+  for (const round of [first, second]) {
+    assertCurrentReadinessParity(round)
+    assert.ok(Date.parse(round.pages.identity.deployedAt) <= instant(round.pages.capturedAt),
+      'current deployment observation predates the deployment')
+    chronology.push(instant(round.pages.capturedAt), instant(round.state.capturedAt), instant(round.mirror.observedAt))
+  }
+  for (let index = 1; index < chronology.length; index += 1) {
+    assert.ok(chronology[index] > chronology[index - 1], 'provider reads must be strictly ordered')
+  }
+  assert.ok(assembled >= chronology.at(-1), 'baseline assembly predates provider observations')
+  assert.ok(assembled - chronology[0] <= SUCCESSFUL_RELEASE_RECAPTURE_FRESHNESS_MS,
+    'current provider observations are stale')
+  const pages = second.pages.identity
+  const recapture = normalizeRollbackRecapture({
+    schema: ROLLBACK_RECAPTURE_SCHEMA,
+    rollbackIdentity: {
+      schema: ROLLBACK_IDENTITY_SCHEMA,
+      pages: {
+        deploymentId: pages.deploymentId, deploymentOrigin: pages.deploymentOrigin,
+        deploymentCommitRevision: pages.deploymentCommitRevision, sourceRevision: pages.sourceRevision,
+      },
+      mirror: { repository: second.mirror.repository, revision: second.mirror.revision },
+      d1: { stateContractDigest: second.state.stateContractDigest,
+        readbackDigest: second.state.readbackDigest, counts: second.state.observedCounts },
+    },
+    capturedAt: assembledAt,
+  })
+  const provenance = {
+    schema: 'agentic-graph-observed-current-rollback-baseline/v1',
+    status: 'current-rollback-baseline-observed',
+    historicalLifecycleReconstructed: false,
+    productionAuthorized: false,
+    captureRepositoryId: repositoryId,
+    captureRunId: Number(captureRunId),
+    captureWorkflowRef,
+    captureSourceRevision: candidateSourceRevision,
+    observedProductionSourceRevision: sourceRevision,
+    observedAt: assembledAt,
+    observationDigest: digest({ first, second, repositoryId, candidateSourceRevision }),
+    rollbackRecaptureDigest: digest(recapture),
+  }
+  return { recapture, provenance }
+}
+
 // This is a newly observed rollback target, never a reconstruction of lost
 // authorization, reconciliation, or production-complete lifecycle receipts.
 export function createObservedRollbackBaseline({ first, second, run, artifacts, repositoryId, assembledAt,
