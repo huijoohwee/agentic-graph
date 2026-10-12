@@ -53,6 +53,12 @@ readiness ownership. City creates zero Three presentation; any retained shared
 Canvas remains inactive, invisible, and pointer-transparent. It mounts no HTML
 POI marker or alternate world.
 
+The end-to-end logistics overview source is
+`agentic-graph-logistics-supply-chain-overview.md`. It activates a deterministic
+local scenario for supplier, production, air, sea, rail, distribution, delivery,
+and return flows on the existing Geo+XR canvas. It has no `run_ready_demo`
+runtime claim, external dependency, live operational data, or generated service.
+
 The MMORPG source is `agentic-graph-game-mmorpg-demo.md`; its planned
 `run_ready_demo.id` (`mmorpg`), source identity, native offline RPG world,
 three-track asset provenance pipeline, camera source, and MMORPG World
@@ -76,6 +82,7 @@ Explorer → Source Files must reconcile this exact authored inventory in both r
 - `agentic-graph-game-mmorpg-demo.companion.md`
 - `agentic-graph-game-mmorpg-demo.md`
 - `agentic-graph-hackamap.md`
+- `agentic-graph-logistics-supply-chain-overview.md`
 - `agentic-graph-maps-places-reference.md`
 - `agentic-graph-maps-places.md`
 - `agentic-graph-missalph-demo.md`
@@ -102,6 +109,7 @@ The protected app build packages these exact source files as revision-pinned, re
 | `agentic-graph-ar-vr-xr-runtime-readiness-demo.md` | `xr-v2` | XR + 3D + Motion Control workspace graph | browser-demo-ready for AC-1–AC-12; AC-14 source-only; full pinned contract partial | Immutable v3.0.0 authority at commit `1272bae345edf0d132e6fc750d5c5c7eade00b29`, blob `ff41649ac8562b62c7c539baed2d226402fdfe51`, SHA-256 `5067f019a099a94ec02d3f7581963cf2c514ab46bf5a853020df8dfe85d5ef45`; source-authors the mounted AC-1–AC-12 chain while AC-14 remains a separate source implementation; saved assets require explicit publish/refresh/reopen actions; camera/sensors are user enable/disable; `npm run xr-v2:review-ready` is the bounded local proof gate but cannot establish AC-14 browser/device proof, named physical-device, hardened shared storage, headset, Production, or deployment certification |
 | `agentic-graph-game-flight-sim-demo.md` | `flight-sim` | XR Mode overlay on the Physics-authored world | runtime-ready | Native deterministic flight, Media environment-kit selection into the shared Geo panel and next Flight spatial profile, exactly three ordered waypoints then a landing pad, shared Fixed Follow / Free Orbit ownership with Chase/Cockpit/Survey descriptors and a local north-up route inset, spec-primary required aircraft plus one committed-local optional opaque beacon, strict browser-local invocation, Decisions-only WorkspaceFs; prove with `npm run game-flight-sim:runtime-ready` and `npm run game-flight-sim:browser-smoke` |
 | `agentic-graph-game-city-building-sim-demo.md` | `city-sim` | Geo+XR: one semantic MapLibre canvas with checked-in regional context, twelve meter-scaled City parcels, stopped Flight context, and Cooperative Planning panel | implementation candidate; local source/profile and panel evidence recorded | Applied source selects one exact regional POI profile and authors the City grid; regional layers retain exact source surfaces and one identity locator per POI; six Singapore XR details use the shared bounded local asset builder; one guest may suggest zoning while the host owns decisions, ticks, and saves; exact-head two-client, broader file-matrix, and accessibility evidence remain pending |
+| `agentic-graph-logistics-supply-chain-overview.md` | — | Geo+XR full-viewport network overview | local synthetic scenario | Twelve linked sites, four transport modes, selected consignment timelines, and return flow; uses the shared map and camera-fit owner; source-backed gateway coordinates remain distinct from illustrative footprints; no live data or external runtime dependencies |
 | `agentic-graph-game-mmorpg-demo.md` | planned `mmorpg` | 2D Flow design record (planned shared-XR MMORPG World) | draft | Non-activating design seed until its runtime-readiness and browser-smoke gates exist and pass; proposed offline single-player MMO-style RPG world (no networked multiplayer, no Supabase); proposed three-track asset provenance |
 
 Every runtime-ready seed, and every draft's target contract, is **native and in-repo**: `run_ready_demo.external_dependencies` or `planned_run_ready_demo.external_dependencies` must be empty, no runtime external asset/provider/model dependency call is permitted, and no external project source may be copied or depended upon. The XR v2 seed's explicit Publish, Refresh shared, and Reopen actions may use only the existing first-party Asset Contract Writer/storage boundary; they never run on mount, capture, authoring, save, catalog load, or playback. Local runtime readiness is not protected integration, projection, or release proof. The previous Playground command selector resolves to `xr-v2`; it does not register another seed. New seeds are registered in this table; stale, renamed, fallback, legacy, conditional, or conflicting seed variants are forbidden rather than aliased or hidden.
