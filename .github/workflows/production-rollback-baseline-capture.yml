@@ -1,12 +1,20 @@
 name: Production Rollback Baseline Capture
-run-name: Rollback baseline for release run ${{ inputs.run_id }}
+run-name: ${{ inputs.baseline_mode }} rollback baseline${{ inputs.run_id && format(' for release run {0}', inputs.run_id) || '' }}
 
 on:
   workflow_dispatch:
     inputs:
-      run_id:
-        description: Exact successful protected Production Release run to recapture
+      baseline_mode:
+        description: Capture fresh current provider state, or validate a retained successful release run
         required: true
+        type: choice
+        options:
+          - current-observed
+          - successful-release-run
+        default: current-observed
+      run_id:
+        description: Exact successful protected Production Release run (required for successful-release-run mode)
+        required: false
         type: string
 
 permissions:
@@ -27,6 +35,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       RUN_ID: ${{ inputs.run_id }}
+      BASELINE_MODE: ${{ inputs.baseline_mode }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
@@ -80,21 +89,38 @@ jobs:
         working-directory: agentic-graph
         run: |
           set -euo pipefail
-          [[ "$RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          case "$BASELINE_MODE" in
+            current-observed) test -z "$RUN_ID" ;;
+            successful-release-run) [[ "$RUN_ID" =~ ^[1-9][0-9]*$ ]] ;;
+            *) echo "unsupported baseline mode" >&2; exit 1 ;;
+          esac
           test "$GITHUB_REF" = refs/heads/main
           test "$(git symbolic-ref --short HEAD)" = main
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
-          release_source_sha="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq .head_sha)"
-          [[ "$release_source_sha" =~ ^[0-9a-f]{40}$ ]]
-          git fetch --no-tags --depth=1 origin "$release_source_sha"
-          git cat-file -e "$release_source_sha:.github/workflows/release.yml"
+          if test "$BASELINE_MODE" = successful-release-run; then
+            release_source_sha="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq .head_sha)"
+            [[ "$release_source_sha" =~ ^[0-9a-f]{40}$ ]]
+            git fetch --no-tags --depth=1 origin "$release_source_sha"
+            git cat-file -e "$release_source_sha:.github/workflows/release.yml"
+          fi
           mkdir -p "$RUNNER_TEMP/production-rollback-baseline"
-          printf '{"schema":"agentic-graph/rollback-baseline-capture-request/v1","captureRunId":"%s","releaseRunId":"%s","productionAuthorized":false}\n' \
-            "$GITHUB_RUN_ID" "$RUN_ID" > "$RUNNER_TEMP/production-rollback-baseline/capture-request.json"
+          printf '{"schema":"agentic-graph/rollback-baseline-capture-request/v1","captureRunId":"%s","mode":"%s","releaseRunId":"%s","productionAuthorized":false}\n' \
+            "$GITHUB_RUN_ID" "$BASELINE_MODE" "$RUN_ID" > "$RUNNER_TEMP/production-rollback-baseline/capture-request.json"
 
-      - name: Capture read-only Production rollback baseline
+      - name: Capture read-only Production rollback baseline from current state
         id: capture
+        if: inputs.baseline_mode == 'current-observed'
+        working-directory: agentic-graph
+        run: >-
+          node ./scripts/production-rollback-baseline.mjs
+          --current-state
+          --mirror-root "$GITHUB_WORKSPACE/huijoohwee"
+          --output-dir "$RUNNER_TEMP/production-rollback-baseline/evidence"
+
+      - name: Recapture baseline from a retained successful release run
+        id: capture_retained_run
+        if: inputs.baseline_mode == 'successful-release-run'
         working-directory: agentic-graph
         run: >-
           node ./scripts/production-rollback-baseline.mjs
@@ -114,11 +140,13 @@ jobs:
       - name: Record capture summary
         if: always() && steps.prepare_capture.outcome == 'success'
         env:
-          CAPTURE_OUTCOME: ${{ steps.capture.outcome }}
+          BASELINE_MODE: ${{ inputs.baseline_mode }}
+          CAPTURE_OUTCOME: ${{ steps.capture.outcome == 'skipped' && steps.capture_retained_run.outcome || steps.capture.outcome }}
         run: |
           {
             echo "## Read-only Production rollback baseline"
-            echo "- Release run: `$RUN_ID`"
+            echo "- Capture mode: `$BASELINE_MODE`"
+            if test -n "$RUN_ID"; then echo "- Release run: `$RUN_ID`"; fi
             echo "- Capture outcome: `$CAPTURE_OUTCOME`"
             echo "- Evidence artifact: `production-rollback-baseline-$GITHUB_RUN_ID`"
             echo "- Production authorization: `false`"

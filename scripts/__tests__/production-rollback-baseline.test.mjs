@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { createObservedRollbackBaseline } from '../lib/production-rollback-baseline.mjs'
+import { createObservedCurrentRollbackBaseline, createObservedRollbackBaseline } from '../lib/production-rollback-baseline.mjs'
 import { digest } from '../lib/production-release-lifecycle-evidence.mjs'
 
 const sha = 'a'.repeat(40)
@@ -31,6 +32,24 @@ const fixture = () => ({ first: round(10), second: round(20), repositoryId: 99, 
   artifacts: { total_count: 1, artifacts: [{ id: 123, name: `production-lifecycle-complete-${sha}-42`, expired: true }] },
 })
 
+const currentReadiness = () => ({
+  schema: 'agentic-os-production-runtime-readiness/v2', status: 'verified-build',
+  source: { repository: 'huijoohwee/agentic-graph', revision: sha },
+  agenticCanvasOs: { repository: 'huijoohwee/agentic-os', revision: 'e'.repeat(40) },
+  catalogRevision: 'e'.repeat(40),
+  artifact: { algorithm: 'sha256', digest: 'f'.repeat(64) },
+  immutableManifest: { algorithm: 'sha256', digest: '1'.repeat(64) },
+  mirror: { repository: 'huijoohwee/huijoohwee' },
+})
+
+const currentRound = start => {
+  const value = round(start)
+  const readiness = currentReadiness()
+  value.pagesReadiness = structuredClone(readiness)
+  value.mirrorReadiness = structuredClone(readiness)
+  return value
+}
+
 test('fresh stable provider observations recover only a rollback target', () => {
   const value = fixture()
   const { recapture, provenance } = createObservedRollbackBaseline(value)
@@ -40,6 +59,56 @@ test('fresh stable provider observations recover only a rollback target', () => 
   assert.equal(provenance.productionAuthorized, false)
   assert.equal(provenance.historicalLifecycleReconstructed, false)
   assert.equal(provenance.expiredTerminalArtifactId, 123)
+})
+
+test('fresh current provider observations name a rollback target without rebuilding history', () => {
+  const first = currentRound(10), second = currentRound(20)
+  const { recapture, provenance } = createObservedCurrentRollbackBaseline({
+    first, second, repositoryId: 99, candidateSourceRevision: '9'.repeat(40),
+    captureRunId: '7001',
+    captureWorkflowRef: 'huijoohwee/agentic-graph/.github/workflows/production-rollback-baseline-capture.yml@refs/heads/main',
+    assembledAt: at(30),
+  })
+  assert.equal(recapture.rollbackIdentity.pages.sourceRevision, sha)
+  assert.equal(recapture.rollbackIdentity.mirror.revision, second.mirror.revision)
+  assert.deepEqual(recapture.rollbackIdentity.d1.counts, second.state.observedCounts)
+  assert.equal(provenance.schema, 'agentic-graph-observed-current-rollback-baseline/v1')
+  assert.equal(provenance.status, 'current-rollback-baseline-observed')
+  assert.equal(provenance.rollbackRecaptureDigest, digest(recapture))
+  assert.equal(provenance.productionAuthorized, false)
+  assert.equal(provenance.historicalLifecycleReconstructed, false)
+  assert.equal(provenance.captureRunId, 7001)
+})
+
+for (const [label, mutate] of [
+  ['changed Pages deployment', v => { v.second.pages.identity.deploymentId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' }],
+  ['changed D1 readback', v => { v.second.state.readbackDigest = 'e'.repeat(64) }],
+  ['changed mirror revision', v => { v.second.mirror.revision = 'e'.repeat(40) }],
+  ['Pages marker mismatch', v => { v.second.pagesReadiness.source.revision = 'e'.repeat(40) }],
+  ['mirror marker mismatch', v => { v.second.mirrorReadiness.artifact.digest = '2'.repeat(64) }],
+  ['Pages commit mismatch', v => { v.second.pages.identity.deploymentCommitRevision = 'e'.repeat(40) }],
+  ['mirror source mismatch', v => { v.second.mirror.sourceRevision = 'e'.repeat(40) }],
+  ['nonzero graph snapshot count', v => { v.second.state.observedCounts.graphCount = 1 }],
+  ['stale observations', v => { v.assembledAt = '2026-09-09T00:11:00.000Z' }],
+  ['wrong capture workflow', v => { v.captureWorkflowRef = 'feature/production-rollback-baseline-capture.yml' }],
+]) test(`current baseline rejects ${label}`, () => {
+  const value = { first: currentRound(10), second: currentRound(20), repositoryId: 99,
+    candidateSourceRevision: '9'.repeat(40), captureRunId: '7001',
+    captureWorkflowRef: 'huijoohwee/agentic-graph/.github/workflows/production-rollback-baseline-capture.yml@refs/heads/main',
+    assembledAt: at(30) }
+  mutate(value)
+  assert.throws(() => createObservedCurrentRollbackBaseline(value))
+})
+
+test('current baseline workflow is protected and contains no deployment command', () => {
+  const workflow = readFileSync(new URL('../../.github/workflows/production-rollback-baseline-capture.yml', import.meta.url), 'utf8')
+  const implementation = readFileSync(new URL('../production-rollback-baseline.mjs', import.meta.url), 'utf8')
+  assert.match(workflow, /baseline_mode:[\s\S]*current-observed[\s\S]*successful-release-run/)
+  assert.match(workflow, /environment:\n\s+name: production/)
+  assert.match(workflow, /--current-state/)
+  assert.match(workflow, /productionAuthorized/)
+  assert.match(implementation, /productionAuthorized:\s*false/)
+  assert.doesNotMatch(workflow, /wrangler pages deploy|pages:deploy-cloudflare|workers:deploy|storage:deploy/)
 })
 
 for (const [label, mutate] of [
