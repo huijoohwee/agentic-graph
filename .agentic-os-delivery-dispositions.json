@@ -1,0 +1,44 @@
+{
+  "schema": "agentic-os/delivery-disposition-set/v1",
+  "repository": "github.com/huijoohwee/agentic-graph",
+  "dispositions": [
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/browser-gate-software-forensics",
+      "laneHead": "7ceb353afdec0120207523e167e92382f2050bd8",
+      "paths": [
+        "docs/workspace-seeds/demo.md"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "fae3fbedab50afea9e63a7e3f918e83deb8ebd5d",
+      "candidateDigest": "45b65f110b805b60b9d73f14da6acd27db604fb36612ec8dcef615a1b96d33a8",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/agentic-graph-delivery-evidence-38146256184.json",
+      "evidenceDigest": "6bf1d1a403b7af695a7dd02611b63fc9b3ab6ce81669c0f803416fb7fba196c2",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1674",
+      "reason": "The only changed path in PR #1674 is a workspace-seed Markdown file. At the authorized source revision the build resolver returns an empty seed read root for command=build, and the captured production Pages inventory contains no workspace-seeds paths."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/hackamap-source-files-folder",
+      "laneHead": "644f885d638986f99aaf0d37278c1cb4792cd230",
+      "paths": [
+        "canvas/src/features/workspace-fs/workspaceFsPersisted.ts",
+        "canvas/src/features/workspace-fs/workspaceSeedProvider.ts"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "fae3fbedab50afea9e63a7e3f918e83deb8ebd5d",
+      "candidateDigest": "45b65f110b805b60b9d73f14da6acd27db604fb36612ec8dcef615a1b96d33a8",
+      "sourceReleaseReceiptDigest": "248b69d1d1794537e52695e39db54a60f0f87283f064ace34a15fbdfc6f16c89",
+      "deploymentReceiptDigest": "c8cc7e5a61bbe89d78d983fa6baf7e6785b359a09fff889799c92826de629088",
+      "runtimeVerificationReceiptDigest": "ed852fe813f1733e0ca4b8b459cb382f6d3bddf9005ee61d8ddaae396b75dc88",
+      "evidencePath": "docs/reports/agentic-graph-delivery-evidence-38146256184.json",
+      "evidenceDigest": "6bf1d1a403b7af695a7dd02611b63fc9b3ab6ce81669c0f803416fb7fba196c2",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/38146256184#environment-production",
+      "reason": null
+    }
+  ],
+  "receiptDigest": "7f4bc90564cecc1f33ab5d12880a3294d30b0436d9fb9c22bf649ea58288b59d"
+}
