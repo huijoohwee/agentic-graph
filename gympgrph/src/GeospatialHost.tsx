@@ -42,6 +42,7 @@ import {
   clearGeoJsonSourceData,
   ensureDatasetLayer,
   isMapLibreStyleReady,
+  projectGeospatialAreaFeatures,
   readGeoJsonSourceData,
   setGeoJsonSourceData,
 } from './maplibreLayers.js'
@@ -272,34 +273,10 @@ function buildFeatureCollectionFromGraphData(
     }
   }
   const areaFeaturesRaw = meta ? readNestedValue(meta, ['kgGeospatialAreaFeatures']) : null
-  if (isRecord(areaFeaturesRaw) && String(areaFeaturesRaw.type || '') === 'FeatureCollection') {
-    const inner = (areaFeaturesRaw as Record<string, unknown>).features
-    if (Array.isArray(inner)) {
-      for (let i = 0; i < inner.length; i += 1) {
-        const featureRaw = inner[i]
-        if (!isRecord(featureRaw)) continue
-        const geometryRaw = featureRaw.geometry
-        if (!isRecord(geometryRaw)) continue
-        const geometryType = String(geometryRaw.type || '')
-        if (geometryType !== 'Polygon' && geometryType !== 'MultiPolygon') continue
-        const coordinates = geometryRaw.coordinates
-        if (!Array.isArray(coordinates) || coordinates.length === 0) continue
-        const propertiesRaw = isRecord(featureRaw.properties) ? featureRaw.properties : {}
-        const idRaw = featureRaw.id
-        const id = typeof idRaw === 'string' || typeof idRaw === 'number' ? String(idRaw) : `kg-area:${i + 1}`
-        const feature = {
-          type: 'Feature',
-          id,
-          geometry: { type: geometryType, coordinates },
-          properties: { ...propertiesRaw, id },
-        } satisfies FeatureCollection['features'][number]
-        features.push(feature)
-        featureById.set(id, feature)
-        if (graphRevision <= 0 && signatureParts.length < 500) {
-          signatureParts.push(`area:${hashStringToHex(JSON.stringify(featureRaw))}`)
-        }
-      }
-    }
+  for (const { feature, signature } of projectGeospatialAreaFeatures(areaFeaturesRaw)) {
+    features.push(feature)
+    featureById.set(String(feature.id), feature)
+    if (graphRevision <= 0 && signatureParts.length < 500) signatureParts.push(`area:${signature}`)
   }
   const nodesRaw = graphData.nodes
   if (!Array.isArray(nodesRaw)) {

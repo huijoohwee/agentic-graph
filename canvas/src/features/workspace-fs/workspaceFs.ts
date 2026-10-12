@@ -10,11 +10,7 @@ import {
   resolveWorkspaceRunReadyDemoSeed,
   resolveWorkspaceValidationSeedRelPath,
 } from './workspaceRunReadyDemos'
-import {
-  loadSupplyChainOverviewWorkspaceSeed,
-  SUPPLY_CHAIN_OVERVIEW_SOURCE_BASENAME,
-  SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH,
-} from '@/features/supply-chain/supplyChainOverviewSource'
+import { SUPPLY_CHAIN_OVERVIEW_SEED_SPEC, SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH } from '@/features/supply-chain/supplyChainWorkspaceSeedSpec'
 import {
   CANONICAL_XR_PHYSICS_WORKSPACE_SEED_ENABLED,
   loadXrPhysicsDemoSeedSource,
@@ -370,13 +366,7 @@ const WORKSPACE_SEED_SPECS: readonly WorkspaceSeedSpec[] = [
     sourceRelPaths: GEOSPATIAL_WORKSPACE_SEED_REL_PATH_CANDIDATES,
     fallbackText: DEFAULT_GEOSPATIAL_WORKSPACE_SEED_TEXT,
   },
-  {
-    path: SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH,
-    basename: SUPPLY_CHAIN_OVERVIEW_SOURCE_BASENAME,
-    sourceRelPaths: [`docs/workspace-seeds/${SUPPLY_CHAIN_OVERVIEW_SOURCE_BASENAME}`],
-    fallbackText: '',
-    sourceLoader: loadSupplyChainOverviewWorkspaceSeed,
-  },
+  SUPPLY_CHAIN_OVERVIEW_SEED_SPEC,
   ...(CANONICAL_XR_PHYSICS_WORKSPACE_SEED_ENABLED ? [{
     path: XR_PHYSICS_WORKSPACE_SEED_PATH,
     basename: XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME,
@@ -386,15 +376,8 @@ const WORKSPACE_SEED_SPECS: readonly WorkspaceSeedSpec[] = [
   }] : []),
 ].filter(seed => !REPO_LOCAL_VALIDATION_SOURCE_EXCLUSIVE || seed.path === TEST_VALIDATION_WORKSPACE_SEED_PATH || seed.path === SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH)
 const WORKSPACE_SEED_PATH_SET = new Set<WorkspacePath>(WORKSPACE_SEED_SPECS.map(seed => seed.path))
-const WORKSPACE_SEED_SOURCE_REL_PATH_SET = new Set<WorkspacePath>(
-  WORKSPACE_SEED_SPECS
-    .flatMap(seed => seed.sourceRelPaths.map(path => normalizeWorkspacePath(path)))
-    .filter((path): path is WorkspacePath => Boolean(path && path !== WORKSPACE_ROOT_PATH)),
-)
-const WORKSPACE_INITIALIZATION_PATH_SET = new Set<WorkspacePath>([
-  ...WORKSPACE_SEED_PATH_SET,
-  ...WORKSPACE_SEED_SOURCE_REL_PATH_SET,
-])
+const WORKSPACE_SEED_SOURCE_REL_PATH_SET = new Set<WorkspacePath>(WORKSPACE_SEED_SPECS.flatMap(seed => seed.sourceRelPaths.map(path => normalizeWorkspacePath(path))).filter((path): path is WorkspacePath => Boolean(path && path !== WORKSPACE_ROOT_PATH)))
+const WORKSPACE_INITIALIZATION_PATH_SET = new Set<WorkspacePath>([...WORKSPACE_SEED_PATH_SET, ...WORKSPACE_SEED_SOURCE_REL_PATH_SET])
 const DEFAULT_WORKSPACE_SEED_FAMILY_PATHS = new Set<WorkspacePath>([
   ...WORKSPACE_SEED_SPECS.map(seed => seed.path).filter(path => path !== SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH),
 ])

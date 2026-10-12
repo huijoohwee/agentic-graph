@@ -1,8 +1,33 @@
-import type { FeatureCollection } from 'geojson'
+import type { Feature, FeatureCollection } from 'geojson'
+import { hashStringToHex } from 'grph-shared/hash/stringHash'
 import type { ExtrusionLayerConfig } from 'grph-shared/geospatial/enhancedLayerContract'
 import type { GeospatialPointStyleConfig } from './features/geospatial/pointStyleConfig.js'
 
 const EMPTY_FEATURE_COLLECTION: FeatureCollection = { type: 'FeatureCollection', features: [] }
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+export function projectGeospatialAreaFeatures(value: unknown): Array<{ feature: Feature; signature: string }> {
+  if (!isRecord(value) || value.type !== 'FeatureCollection' || !Array.isArray(value.features)) return []
+  return value.features.flatMap((source, index) => {
+    if (!isRecord(source) || !isRecord(source.geometry)) return []
+    const geometryType = source.geometry.type
+    const coordinates = source.geometry.coordinates
+    if ((geometryType !== 'Polygon' && geometryType !== 'MultiPolygon') || !Array.isArray(coordinates) || !coordinates.length) return []
+    const properties = isRecord(source.properties) ? source.properties : {}
+    const rawId = source.id
+    const id = typeof rawId === 'string' || typeof rawId === 'number' ? String(rawId) : `kg-area:${index + 1}`
+    return [{
+      feature: {
+        type: 'Feature', id, geometry: { type: geometryType, coordinates } as Feature['geometry'],
+        properties: { ...properties, id },
+      },
+      signature: hashStringToHex(JSON.stringify(source)),
+    }]
+  })
+}
 
 const pointColorExpression = (fallbackColor: string, pointStyleConfig?: GeospatialPointStyleConfig) => [
   'coalesce',
