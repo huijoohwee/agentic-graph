@@ -22,6 +22,24 @@
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/hackamap-delivery-disposition",
+      "laneHead": "3aa1402bd7c4474bb48bad71bb1062fbaae767ae",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "13553d6ea549562b2baa6ddfba1454aa5b3c232f",
+      "candidateDigest": "45b65f110b805b60b9d73f14da6acd27db604fb36612ec8dcef615a1b96d33a8",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "scripts/production-mirror-artifact-entries.mjs",
+      "evidenceDigest": "8476c366817ea9297ece21dccce3285c126ee59112c8230cee6d11a455e81b9f",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1682",
+      "reason": "The only changed path in PR #1682 for this lane is the delivery-disposition ledger. The production mirror is staged from the explicit productionMirrorArtifactEntries list in scripts/production-mirror-artifact-entries.mjs; this ledger path is excluded from the product artifact. This records no deployment and grants no production effect."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/hackamap-folder-contents",
       "laneHead": "5827ea350449684dc135b2b75a5a6bc9b7762556",
       "paths": [
@@ -84,5 +102,5 @@
       "reason": null
     }
   ],
-  "receiptDigest": "df6e258dec0120803c1c153f3765d274f4e7886b7e8449321d6720ed12f5d1a5"
+  "receiptDigest": "673b786fd50a030511f9ae591536869f514d8105531364e98e645ffdfdcff245"
 }
