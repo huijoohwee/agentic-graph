@@ -21,6 +21,9 @@ snapshots. The artifact records the capture run, source revision, provider obser
 rollback identity, and provenance. It explicitly says `productionAuthorized: false` and
 `historicalLifecycleReconstructed: false`.
 
+The protected source checkout keeps full `main` history (without fetching tags) so the
+ancestry check can validate an older live deployment against the current source frontier.
+
 This current-state baseline is a rollback target only. It does not qualify a release or
 approve a deployment. The protected Production Release workflow binds these exact bytes to
 the preserved source frontier and independently rechecks current provider state before it

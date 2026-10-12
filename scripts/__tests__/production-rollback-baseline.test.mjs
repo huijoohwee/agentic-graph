@@ -105,6 +105,7 @@ test('current baseline workflow is protected and contains no deployment command'
   const implementation = readFileSync(new URL('../production-rollback-baseline.mjs', import.meta.url), 'utf8')
   assert.match(workflow, /baseline_mode:[\s\S]*current-observed[\s\S]*successful-release-run/)
   assert.match(workflow, /environment:\n\s+name: production/)
+  assert.match(workflow, /path: agentic-graph\n\s+fetch-depth: 0\n\s+fetch-tags: false/)
   assert.match(workflow, /--current-state/)
   assert.match(workflow, /productionAuthorized/)
   assert.match(implementation, /productionAuthorized:\s*false/)
