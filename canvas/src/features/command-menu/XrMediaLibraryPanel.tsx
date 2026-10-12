@@ -160,7 +160,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
     ? runtime.selectedShotTargetId
     : ''
 
-  const catalog = React.useMemo(() => buildXrMediaLibraryProjection({ categoryFilter, searchText, selectedAssetId }), [categoryFilter, searchText, selectedAssetId])
+  const catalog = React.useMemo(() => buildXrMediaLibraryProjection({ categoryFilter, searchText, selectedAssetId, selectedStageId: runtime.plan.stageId }), [categoryFilter, searchText, selectedAssetId, runtime.plan.stageId])
   const { featuredAssets, selectedAsset, visibleAssets, visibleEnvironments, visiblePoiDetailAssets } = catalog
   const stageObjects = resolveXrStageObjects(runtime.plan.stageId).filter(object => (categoryFilter === 'all' || object.category === categoryFilter) && object.label.toLowerCase().includes(searchText.trim().toLowerCase()))
   const sceneObjectCount = runtime.plan.subjects.length + resolveXrStageObjects(runtime.plan.stageId).length
@@ -265,7 +265,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
                   color={active ? '#38bdf8' : '#94a3b8'}
                   label={stage.label}
                   description={stage.description}
-                  metadata={`${stage.environmentKind}${stage.id === XR_MOTION_REFERENCE_DEFAULT_STAGE_ID ? ' · default' : ''} · ${stage.sizeMeters.join(' × ')} m · ${stage.id === 'tropical-playground' ? 'procedural island' : stage.id === 'singapore' ? 'procedural city' : 'grey-box stage'}`}
+                  metadata={`${stage.environmentKind}${stage.id === XR_MOTION_REFERENCE_DEFAULT_STAGE_ID ? ' · default' : ''} · ${stage.sizeMeters.join(' × ')} m · ${stage.id === 'tropical-playground' ? 'island terrain' : stage.id === 'singapore' ? 'urban waterfront' : 'rehearsal environment'}`}
                   dragPayload={buildXrStageMediaDragPayload(stage)}
                   active={active}
                   dataAttributes={{ 'data-kg-media-xr-environment': stage.id }}
@@ -277,30 +277,34 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
               )
             })}
           </section>
-          <section className="grid gap-2 border-t pt-2" aria-label="Singapore procedural POI detail assets" data-kg-media-xr-poi-detail-assets="1">
-            <header className="flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold">Singapore POI detail assets</span>
-              <output className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>{visiblePoiDetailAssets.length}</output>
-            </header>
-            <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
-              Schematic, deterministic details use shared procedural recipes. Regional profile footprints remain the spatial source.
-            </p>
-            {visiblePoiDetailAssets.map(asset => (
-              <XrLibraryCard
-                key={asset.id}
-                Icon={Building2}
-                color={asset.defaultColor}
-                label={asset.label}
-                description={asset.description}
-                metadata={`procedural POI detail · ${asset.dimensionsMeters.join(' × ')} m · local`}
-                dataAttributes={{ 'data-kg-media-xr-poi-detail-asset': asset.id }}
-                footer={<XrInvocationButton invocation={buildXrPlaceInvocation(asset.id, 'hold')} disabled={!sceneReady} onInvoke={runInvocation} />}
-              />
-            ))}
-            {!visiblePoiDetailAssets.length ? <p className="text-xs opacity-70">No matching regional detail assets.</p> : null}
-          </section>
         </section>
-      </CollapsibleSection></>}
+      </CollapsibleSection>
+      {visiblePoiDetailAssets.length ? <CollapsibleSection
+        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Regional POI Details</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{visiblePoiDetailAssets.length}</output></span>}
+        defaultCollapsed={false}
+        flushTop
+        headerClassName="px-0"
+        className="mt-1 border-t pt-1"
+        id="xr-media-regional-poi-detail-assets"
+      >
+        <section className="grid gap-2" aria-label="Regional procedural POI detail assets" data-kg-media-xr-poi-detail-assets="1">
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
+            Local scale details accompany the selected regional profile; mapped facility footprints remain the spatial reference.
+          </p>
+          {visiblePoiDetailAssets.map(asset => (
+            <XrLibraryCard
+              key={asset.id}
+              Icon={Building2}
+              color={asset.defaultColor}
+              label={asset.label}
+              description={asset.description}
+              metadata={`regional detail · ${asset.dimensionsMeters.join(' × ')} m · local`}
+              dataAttributes={{ 'data-kg-media-xr-poi-detail-asset': asset.id }}
+              footer={<XrInvocationButton invocation={buildXrPlaceInvocation(asset.id, 'hold')} disabled={!sceneReady} onInvoke={runInvocation} />}
+            />
+          ))}
+        </section>
+      </CollapsibleSection> : null}</>}
 
       <CollapsibleSection
         title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Subjects &amp; Props</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{subjectView === 'scene' ? visibleSubjects.length + stageObjects.length : visibleAssets.length}</output></span>}

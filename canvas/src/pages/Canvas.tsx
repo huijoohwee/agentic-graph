@@ -88,7 +88,9 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
     })),
   )
 
-  const queryRequestsEditorWorkspace = shouldOpenEditorWorkspaceFromSearch(location.search)
+  const queryParams = React.useMemo(() => new URLSearchParams(String(location.search || '')), [location.search])
+  const supplyChainOverviewRequested = queryParams.get('kgSupplyChain') === '1' || queryParams.get('kgSupplyChain') === 'overview'
+  const queryRequestsEditorWorkspace = shouldOpenEditorWorkspaceFromSearch(location.search) || supplyChainOverviewRequested
   const launchSpotlightShortcutEnabled = !previewOnly && workspaceViewMode !== 'editor'
   const consumedEditorWorkspaceQueryRef = React.useRef(false)
 
@@ -126,7 +128,7 @@ export default function CanvasPage(props: { bootstrapRuntimesEnabled?: boolean }
     if (workspaceViewMode !== 'editor') setToolbarHeaderElevated(false)
   }, [workspaceViewMode])
 
-  const { workspacePreviewWidthPx, setResizeHandleEl } = useCanvasWorkspacePaneRuntime()
+  const { workspacePreviewWidthPx, setResizeHandleEl } = useCanvasWorkspacePaneRuntime({ compactForOverview: supplyChainOverviewRequested })
   const activePath = useMarkdownExplorerStore(s => s.activePath)
   const workspaceEditorOverlayOpen = isWorkspaceEditorOverlayOpen({ workspaceViewMode, workspaceCanvasPaneOpen })
   const workspaceCanvasPaneVisible = workspaceEditorOverlayOpen && workspaceCanvasPaneOpen

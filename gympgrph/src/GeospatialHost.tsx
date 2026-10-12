@@ -42,6 +42,7 @@ import {
   clearGeoJsonSourceData,
   ensureDatasetLayer,
   isMapLibreStyleReady,
+  projectGeospatialAreaFeatures,
   readGeoJsonSourceData,
   setGeoJsonSourceData,
 } from './maplibreLayers.js'
@@ -252,16 +253,7 @@ function buildFeatureCollectionFromGraphData(
         const labelRaw = props.label
         const label = typeof labelRaw === 'string' && labelRaw.trim() ? labelRaw.trim() : 'Route'
         if (graphRevision <= 0 && signatureParts.length < 500) {
-          const firstCoord = Array.isArray(coords[0]) ? coords[0] : null
-          const lastCoord = Array.isArray(coords[coords.length - 1]) ? coords[coords.length - 1] : null
-          signatureParts.push([
-            'line',
-            id || `kg-line:${i + 1}`,
-            label,
-            Array.isArray(coords) ? coords.length : 0,
-            Array.isArray(firstCoord) ? `${Number(firstCoord[0] || 0).toFixed(6)}:${Number(firstCoord[1] || 0).toFixed(6)}` : '',
-            Array.isArray(lastCoord) ? `${Number(lastCoord[0] || 0).toFixed(6)}:${Number(lastCoord[1] || 0).toFixed(6)}` : '',
-          ].join(':'))
+          signatureParts.push(`line:${hashStringToHex(JSON.stringify(f))}`)
         }
         const feature = {
           type: 'Feature',
@@ -279,6 +271,12 @@ function buildFeatureCollectionFromGraphData(
         }
       }
     }
+  }
+  const areaFeaturesRaw = meta ? readNestedValue(meta, ['kgGeospatialAreaFeatures']) : null
+  for (const { feature, signature } of projectGeospatialAreaFeatures(areaFeaturesRaw)) {
+    features.push(feature)
+    featureById.set(String(feature.id), feature)
+    if (graphRevision <= 0 && signatureParts.length < 500) signatureParts.push(`area:${signature}`)
   }
   const nodesRaw = graphData.nodes
   if (!Array.isArray(nodesRaw)) {
@@ -324,7 +322,7 @@ function buildFeatureCollectionFromGraphData(
       return 'other'
     })()
     if (graphRevision <= 0 && signatureParts.length < 500) {
-      signatureParts.push(`${nodeId}:${category}:${lng.toFixed(6)}:${lat.toFixed(6)}`)
+      signatureParts.push(`node:${hashStringToHex(JSON.stringify(node))}`)
     }
     const properties = normalizeGeoPoiRichMediaProperties(propsRaw)
     const feature = {

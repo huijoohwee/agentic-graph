@@ -147,7 +147,7 @@ export function XrLibraryCard({
       }}
       {...dataAttributes}
     >
-      <XrMediaCatalogThumb Icon={Icon} color={color} label={label} assetId={dataAttributes?.['data-kg-media-xr-asset'] || dataAttributes?.['data-kg-media-xr-environment']} />
+      <XrMediaCatalogThumb Icon={Icon} color={color} label={label} assetId={dataAttributes?.['data-kg-media-xr-asset'] || dataAttributes?.['data-kg-media-xr-environment'] || dataAttributes?.['data-kg-media-xr-poi-detail-asset']} />
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1" aria-label={`${label} XR media summary`}>
         <header className="flex min-w-0 items-center justify-between gap-2" data-kg-media-list-row-section="title">
           <h4 className="truncate text-xs font-semibold" title={label}>{label}</h4>
