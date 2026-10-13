@@ -9,8 +9,8 @@ type XrTimelineCue = Readonly<{ kind: 'cast' | 'camera' | 'animation'; targetId:
 
 /** Cue navigation delegates to the existing transport and selection owners. */
 export function jumpToXrTimelineCue(beat: XrTimelineCue): void {
-  const paused = controlLocalAnimation({ operation: 'pause' })
-  const seek = paused.ok ? controlLocalAnimation({ operation: 'scrub', timeSeconds: beat.timeSeconds }) : paused
+  const paused = controlLocalAnimation({ operation: 'pause' }, 'human')
+  const seek = paused.ok ? controlLocalAnimation({ operation: 'scrub', timeSeconds: beat.timeSeconds }, 'human') : paused
   const result = seek.ok ? controlXrSharedAssetControls({ operation: 'select-target', targetId: beat.targetId }) : seek
   if (!result.ok) {
     useGraphStore.getState().pushUiToast({ id: 'xr:beat-seek:error', kind: 'error', message: result.message })
@@ -43,8 +43,8 @@ export function createXrTimelineCastMark(actorId: string, requestedSeconds: numb
     jumpToXrTimelineCue({ kind: 'cast', targetId: actorId, markId: existing.id, timeSeconds: existing.timeSeconds })
     return true
   }
-  const paused = controlLocalAnimation({ operation: 'pause' })
-  if (!paused.ok || !controlLocalAnimation({ operation: 'scrub', timeSeconds }).ok) return false
+  const paused = controlLocalAnimation({ operation: 'pause' }, 'human')
+  if (!paused.ok || !controlLocalAnimation({ operation: 'scrub', timeSeconds }, 'human').ok) return false
   const preceding = [...track.marks].reverse().find(mark => mark.timeSeconds <= timeSeconds) || track.marks[0]
   const next = setXrMotionReferenceCastMark({ actorId, timeSeconds,
     position: sampleXrMotionReferenceMarks(track.marks, timeSeconds), transition: preceding?.transition, gait: preceding?.gait })

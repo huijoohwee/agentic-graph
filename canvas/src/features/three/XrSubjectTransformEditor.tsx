@@ -33,7 +33,7 @@ export function XrSubjectTransformEditor() {
     const current = isXrSubjectDraftCurrent(draft.current, readContext())
       && hydrateCanonicalXrMotionReferenceRuntime() && isXrSubjectDraftCurrent(draft.current, readContext())
     const catalogOnlyChange = subject?.construction && ((input.assetId !== undefined && input.assetId !== subject.assetId) || (input.color !== undefined && input.color !== subject.color))
-    const result = current && catalogOnlyChange ? { ok: false, message: 'Edit this subject’s parts and materials in Construction recipe or its procedural controls.' } : current ? controlLocalXrScene(input) : { ok: false, message: 'This object draft belongs to an earlier scene or selection. Review the current object and edit again.' }
+    const result = current && catalogOnlyChange ? { ok: false, message: 'Edit this subject’s parts and materials in Construction recipe or its procedural controls.' } : current ? controlLocalXrScene(input, 'human') : { ok: false, message: 'This object draft belongs to an earlier scene or selection. Review the current object and edit again.' }
     useGraphStore.getState().pushUiToast({ id: 'xr:timeline:transform', kind: result.ok ? 'success' : 'error', message: result.message })
     return result
   }
