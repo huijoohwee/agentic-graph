@@ -396,8 +396,16 @@ function persistPlan(): boolean {
   return true
 }
 
-function activateAnimationSurface(): boolean {
-  return activateXrSceneSurface({ panelView: 'animation', openPanel: true, timeline: true })
+function activateAnimationSurface(preserveOpenXrPanel: boolean): boolean {
+  const state = useGraphStore.getState()
+  const keepCurrentPanel = preserveOpenXrPanel
+    && state.canvasRenderMode === '3d'
+    && state.canvas3dMode === 'xr'
+    && state.floatingPanelOpen
+  return activateXrSceneSurface({
+    ...(keepCurrentPanel ? {} : { panelView: 'animation' as const, openPanel: true }),
+    timeline: true,
+  })
 }
 
 export function inspectLocalAnimation() {
@@ -454,7 +462,7 @@ export function controlLocalAnimation(input: XrAnimationControlInput, controller
   }
   if (!sceneReady() || !hydrateCanonicalXrMotionReferenceRuntime()) return { ok: false, message: 'Open or create a graph document before controlling XR animation.' }
   hydrateCanonicalXrPhysicsRuntime()
-  if (control.operation !== 'export' && !activateAnimationSurface()) {
+  if (control.operation !== 'export' && !activateAnimationSurface(controller === 'human')) {
     return { ok: false, message: 'XR Animation requires an available shared XR Mode surface.' }
   }
   const targetId = resolvedTargetId(control)
