@@ -139,7 +139,26 @@
       "evidenceDigest": "1aaa404fa0d8e8363cafcb88b57c67d71dbff9bc1a818fedfa2973cc4951507b",
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/38288365082#environment-production",
       "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-cba000d3779d/supply-chain-production-delivery",
+      "laneHead": "bead828bec84645b6b91764dab91bcf35143ce43",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json",
+        "docs/reports/production-delivery-evidence-38288365082.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "ba488e7b8716538dc348172cb27c5505f881e2ab",
+      "candidateDigest": "71865fc6cbc04afbbb0152184a9f63829b37b180d1e26c5dfd4f11d590b6f6de",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "scripts/production-mirror-artifact-entries.mjs",
+      "evidenceDigest": "8476c366817ea9297ece21dccce3285c126ee59112c8230cee6d11a455e81b9f",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1694",
+      "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
     }
   ],
-  "receiptDigest": "91bdf893ff05748b63941f796a0ae96ec207614e47f54786447f2a10c2d022d4"
+  "receiptDigest": "8ebfa5df3d720d1a48b3751118f238108d930283fc76abfe49da1dba346d1488"
 }
