@@ -11,9 +11,12 @@ import {
   readXrMotionReferenceRuntime,
   restoreXrMotionReferenceRuntimeSnapshot,
   setXrMotionReferenceCameraMark,
+  setXrMotionReferenceCameraSettingsAtPlayhead,
   setXrMotionReferenceCameraRig,
   setXrMotionReferencePlayhead,
 } from '@/features/three/xrMotionReferenceRuntime'
+import { sampleXrMotionReferenceCameraSettings } from '@/features/three/xrMotionReferenceSampling'
+import { readCinematicControlMode } from '@/features/cinema/cinematicControlModeRuntime'
 import { hydrateCanonicalXrMotionReferenceRuntime } from '@/features/three/XrMotionReferenceRuntimeBridge'
 import { readBoundXrSelectedActorId } from '@/features/three/xrSelectedActorBinding'
 import { requestXrMotionReferenceCameraPlaybackReapply } from '@/features/three/xrCameraPlaybackControlsRuntime'
@@ -336,9 +339,14 @@ function resolveCameraAnchor(targetId: string, requireSubject = false): string {
 
 function resolveCameraFrame(control: NormalizedCameraControl, anchorId: string) {
   const current = readCameraFramingRuntime()
+  const motion = readXrMotionReferenceRuntime()
+  const state = useGraphStore.getState()
+  const timelineSettings = state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr'
+    ? sampleXrMotionReferenceCameraSettings(motion.plan.camera, motion.playheadSeconds)
+    : null
   const orbitChanged = Boolean(control.angle || control.level)
   const settings = readStrybldrCameraSettings({
-    ...current.settings,
+    ...(timelineSettings || current.settings),
     ...(control.angle ? { angle: control.angle } : {}),
     ...(control.level ? { level: control.level } : {}),
     ...(control.shot ? { shot: control.shot } : {}),
@@ -390,6 +398,9 @@ export function inspectLocalCamera() {
   const framing = readCameraFramingRuntime()
   const motion = readXrMotionReferenceRuntime()
   const canonical = resolveCanonicalCameraInvocationTokens()
+  const timelineSettings = state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr'
+    ? sampleXrMotionReferenceCameraSettings(motion.plan.camera, motion.playheadSeconds)
+    : null
   return {
     schema: CAMERA_MCP_SCHEMA,
     webMcpTools: {
@@ -425,8 +436,8 @@ export function inspectLocalCamera() {
     framing: {
       anchorId: framing.anchorId,
       documentKey: readCameraFramingRuntimeDocumentKey(),
-      settings: { ...framing.settings },
-      source: framing.source,
+      settings: { ...(timelineSettings || framing.settings) },
+      source: timelineSettings ? 'timeline' : framing.source,
       revision: framing.revision,
     },
     choreography: {
@@ -449,6 +460,9 @@ export function controlLocalCamera(input: CameraControlInput): CameraControlResu
   if (invalidCameraSource) return invalidCameraSource
   const control = normalizeCameraControl(input)
   if (!control) return { ok: false, message: 'Use a supported structured Camera action or native /camera.* invocation.' }
+  if (readCinematicControlMode() !== 'agent') {
+    return { ok: false, action: control.action, errorCode: 'controller-conflict', message: 'Camera is in Human control mode. Switch Control owner to AI / LLM / MCP before invoking Camera WebMCP.' }
+  }
   if (control.action === 'select') return control.cameraId
     ? controlLocalCameraSource({ action: 'select', cameraId: control.cameraId, targetId: 'camera', invocation: control.invocation }, inspectLocalCamera)
     : { ok: false, action: 'select', message: 'Select fixed-follow or free-orbit.' }
@@ -507,7 +521,32 @@ export function controlLocalCamera(input: CameraControlInput): CameraControlResu
     if (!ensureSharedCameraPanel()) {
       return { ok: false, action: control.action, message: 'Camera framing requires an available shared Camera panel.' }
     }
-    const framing = publishCameraFramingRuntime(resolveCameraFrame(control, anchorId))
+    const nextFraming = resolveCameraFrame(control, anchorId)
+    const timelineOwnsCamera = state.canvasRenderMode === '3d'
+      && state.canvas3dMode === 'xr'
+      && runtime.plan.camera.length > 0
+    if (timelineOwnsCamera) {
+      if (state.timelineTransportPlaying) {
+        return { ok: false, action: control.action, message: 'Pause Camera choreography before editing the active Timeline key.' }
+      }
+      const previous = readXrMotionReferenceRuntime()
+      const edited = setXrMotionReferenceCameraSettingsAtPlayhead(nextFraming.settings)
+      if (edited === previous) {
+        return { ok: false, action: control.action, errorCode: 'camera-key-limit', message: `Camera Timeline could not add a key at ${previous.playheadSeconds.toFixed(2)}s. Check the ${XR_MOTION_REFERENCE_MAX_CAMERA_MARKS}-mark limit or select an existing Camera mark.` }
+      }
+      if (!persistMotionReference()) {
+        restoreXrMotionReferenceRuntimeSnapshot(previous)
+        return { ok: false, action: control.action, message: 'Camera framing could not be written to graph metadata.' }
+      }
+      const activeSettings = sampleXrMotionReferenceCameraSettings(readXrMotionReferenceRuntime().plan.camera, previous.playheadSeconds) || nextFraming.settings
+      return {
+        ok: true,
+        action: control.action,
+        message: `Timeline Camera framed ${activeSettings.shot} at ${previous.playheadSeconds.toFixed(2)}s: ${formatCameraOptics(activeSettings)}.`,
+        camera: inspectLocalCamera(),
+      }
+    }
+    const framing = publishCameraFramingRuntime(nextFraming)
     return {
       ok: true,
       action: control.action,
@@ -536,7 +575,7 @@ export function controlLocalCamera(input: CameraControlInput): CameraControlResu
       playheadSeconds: timeSeconds,
       moveDurationSeconds: control.moveDurationSeconds,
       settings: framing.settings,
-    }) : null
+    }, 'agent') : null
     const rig = control.moveId ? resolveXrCameraMovePreset(control.moveId).rig : control.rig || runtime.selectedCameraRig
     if (moveResult && !moveResult.applied) {
       restoreXrMotionReferenceRuntimeSnapshot(previousRuntime)

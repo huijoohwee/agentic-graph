@@ -256,8 +256,15 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     : learningScene || immersiveMediaStageActive || hasXrEmptyWorld || hasGraph ? 1 : 0
   const rendererLifecycleKey = resolveThreeRendererLifecycleKey(mode) + `-${rendererBackend.key}`
   const [resolution, setResolution] = useState<{ key: string; dpr: number } | null>(null)
-  const canvasDpr = resolution?.key === rendererLifecycleKey ? resolution.dpr : [1, 2] as [number, number]
-  const setCanvasDpr = useCallback((dpr: number) => setResolution({ key: rendererLifecycleKey, dpr }), [rendererLifecycleKey])
+  // Geo+XR composites over MapLibre tiles, so it must match the map pixel ratio instead of adaptively downscaling.
+  const geospatialDpr = geospatialComposite
+    ? Math.min(2, Math.max(1, typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1))
+    : null
+  const canvasDpr = geospatialDpr ?? (resolution?.key === rendererLifecycleKey ? resolution.dpr : [1, 2] as [number, number])
+  const setCanvasDpr = useCallback((dpr: number) => {
+    if (geospatialComposite) return
+    setResolution({ key: rendererLifecycleKey, dpr })
+  }, [geospatialComposite, rendererLifecycleKey])
   const rendererMounted = shouldMountThreeRenderer({
     mode,
     hasRenderableScene,

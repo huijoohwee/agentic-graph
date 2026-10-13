@@ -445,6 +445,7 @@ export function readXrMotionReferencePlan(value: unknown, nodes: readonly GraphN
       durationSeconds,
       origin: track.marks[0]?.position || [0, 0, 0],
       stageSizeMeters: stage.sizeMeters,
+      startTimeSeconds: track.animation.startTimeSeconds,
     })
     const materializedMarksMatch = track.marks.length === generatedMarks.length
       && track.marks.every((mark, index) => mark.timeSeconds === generatedMarks[index]?.timeSeconds)
