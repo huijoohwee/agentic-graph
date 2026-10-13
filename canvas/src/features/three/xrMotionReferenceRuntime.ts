@@ -193,9 +193,7 @@ export function setXrMotionReferenceAppearance(patch: Partial<XrSceneAppearance>
   return updatePlan({ ...planRecord(snapshot.plan), appearance: { ...snapshot.plan.appearance, ...patch } })
 }
 
-export function setXrMotionReferenceFps(fps: number): XrMotionReferenceRuntimeSnapshot {
-  return updatePlan({ ...planRecord(snapshot.plan), fps })
-}
+export function setXrMotionReferenceFps(fps: number): XrMotionReferenceRuntimeSnapshot { return updatePlan({ ...planRecord(snapshot.plan), fps }) }
 
 function applySubjectEdit(
   edit: XrMotionReferenceSubjectEdit | null,
