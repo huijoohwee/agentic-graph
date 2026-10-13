@@ -1,63 +1,63 @@
 ---
 title: "Provider-neutral logistics supply-chain operations overview"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.0"
-date: "2026-10-12"
-updated_date: "2026-10-12"
+version: "0.2.0"
+date: "2026-10-13"
+updated_date: "2026-10-13"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Canvas experience owner"
 continuity_id: "logistics-supply-chain-operations-overview"
-prd_revision: "0.1.0"
-tad_revision: "0.1.0"
-adr_revision: "0.1.0"
-mvp_revision: "0.1.0"
-gtm_revision: "0.1.0"
-local_rung: "undocumented"
+prd_revision: "0.2.0"
+tad_revision: "0.2.0"
+adr_revision: "0.2.0"
+mvp_revision: "0.2.0"
+gtm_revision: "0.2.0"
+local_rung: "dev-proven"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: true
-worktree_id: "device-cba000d3779d"
-agent_id: "device-cba000d3779d"
+worktree_id: "device-0232231d4a19--share-url-no-sign-in"
+agent_id: "device-0232231d4a19"
 lifecycle_status: "proposed"
 ---
 
 # Provider-neutral logistics supply-chain operations overview — PRD, TAD, ADR, MVP and GTM
 
-This joined proposal at `logistics-supply-chain-operations-overview@0.1.0` expands the local XR concept from one warehouse to an end-to-end, multimodal goods flow. The first increment is an offline deterministic simulation. It represents supplier and production origins, consolidation, road/rail/air/sea terminals, linehaul, regional hubs, fulfillment, last-mile delivery, proof of delivery, and reverse logistics in one connected scene and one synchronized operations view. All sample quantities, locations, events, health and performance values are synthetic. The proposal does not claim live connectivity, accurate operating benchmarks, validated demand, deployment, or production readiness.
+This joined planning artifact at `logistics-supply-chain-operations-overview@0.2.0` updates the as-built record for the deterministic multimodal overview already in Canvas. It represents supplier and production origins, consolidation, road/rail/air/sea terminals, hubs, fulfillment, delivery and reverse logistics with synthetic data. This revision wires the active overview to the existing 3D-for-XR asset library and provides an offline schematic while retaining the shared read-only Timeline. It does not claim live connectivity, operating benchmarks, validated demand, deployment or production readiness.
 
 ## Evidence, scope and grounding
 
 ### Observed state
 
-- **O-01 — user intent:** the user wants a single view of the complete logistics chain and explicitly corrected a warehouse-only interpretation. The current local view still shows only a warehouse shell and apron; airports, seaports and other chain locations are absent.
-- **O-02 — local source boundary:** the current graph app has a Python-learning warehouse scene, deterministic warehouse route, three inspection actors, layout data and a shared Timeline. These are useful XR and replay primitives; they do not model shipments across facilities.
-- **O-03 — local product boundary:** `agentic-graph` owns the Canvas app and scene integration. `agentic-canvas-os` supplies product/runtime packaging. `agentic-os` supplies workflow and lane controls. The latter two do not provide logistics entities or scene assets.
-- **O-04 — data boundary:** no current local source defines a supply-chain network, consignment lifecycle, multimodal leg, inter-facility handoff, delivery event, return linkage, or an operational-data provider. MVP therefore needs a deterministic synthetic scenario and a provider interface, not invented live status.
-- **O-05 — visual boundary:** the new view needs visible and identifiable origin, production, air terminal, seaport, rail terminal, cross-dock, regional hub, fulfillment, delivery station, destination and returns. A warehouse close-up cannot satisfy this outcome.
+- **O-01 — user intent:** the user asks to keep the full multimodal chain, share documents without sign-in, and reuse the existing Media asset library and shared Timeline. Market demand remains unvalidated.
+- **O-02 — current feature owner:** at Graph `ba488e7b8716538dc348172cb27c5505f881e2ab`, `SupplyChainOverview.tsx` already projects twelve facilities, three deterministic sample consignments, five transport modes including returns, operations detail, and a shared read-only Gantt Timeline.
+- **O-03 — asset and host boundary:** `CanvasViewport.tsx` activates the supply-chain overview. The shared `openXrMediaLibrary` owner opens FloatingPanel → Media → 3D for XR; that library owns Terrain / Environment Kits and Subjects & Props. This revision adds an entry point instead of another catalog.
+- **O-04 — network boundary:** online geospatial display uses the configured public map style. When the browser reports offline, the overview renders its locally generated schematic and keeps scenario selection and Timeline state interactive; no map tile is required for that fallback.
+- **O-05 — data boundary:** scenario records remain synthetic and local. No carrier adapter, operational feed, service commitment, or production claim is added.
 
 ### Evidence register
 
 | ID | Evidence class | Result | Limit |
 |---|---|---|---|
 | E-01 | User instruction | Complete logistics-chain scope; airport, port and other nodes must appear in the local scene. | Product direction, not market validation. |
-| E-02 | Local browser observation | `http://127.0.0.1:5173/` shows the existing warehouse-only XR lesson; no multimodal terminal or end-to-end chain is visible. | One local view and viewport. |
-| E-03 | Source observation | Graph base `0fc6b404ea791308d2e7aba8be4f4b37424e9bc4`; Python-learning owns the warehouse layout, actor route, scene and shared-Timeline projection. | Source presence does not prove broad product capability. |
-| E-04 | Source observation | `CanvasViewport.tsx`, Three.js controls, XR stage, scene-selection and shared Timeline are existing integration primitives. | A new supply-chain feature surface and its selection model do not yet exist. |
-| E-05 | Cross-repository observation | Local `agentic-os` and `agentic-canvas-os` provide workflow/runtime infrastructure, not transport or facility models. | No operational data or reusable logistics assets were found there. |
+| E-02 | Historical browser observation (2026-10-12) | Earlier local view showed the warehouse lesson before the supply-chain source was active. | Historical state; superseded by the current source and browser check. |
+| E-03 | Historical source observation | Graph base `0fc6b404ea791308d2e7aba8be4f4b37424e9bc4` described the warehouse lesson before the supply-chain feature landed. | Retained for provenance; not the current feature inventory. |
+| E-04 | Current source observation | Graph base `ba488e7b8716538dc348172cb27c5505f881e2ab` contains the supply-chain module, shared Timeline, shared XR asset library and geospatial host. | Source presence alone does not prove every VCC. |
+| E-05 | Current source observation | Supply-chain scenario data, event projection and entity selection are implemented under `canvas/src/features/supply-chain/`. | Synthetic local records do not prove live operations or market demand. |
 | E-06 | Binary inventory | No relevant tracked native executable, library, WebAssembly module or Node addon was identified in the admitted product paths. | No native-binary behavior claim is made. |
 
 ### Codebase grounding record
 
-All `agentic-graph` source observations below are pinned to base `0fc6b404ea791308d2e7aba8be4f4b37424e9bc4`. The proposed work stays in `agentic-graph`; the other repositories retain their existing ownership.
+Current source observations below are pinned to Graph base `ba488e7b8716538dc348172cb27c5505f881e2ab`; E-02/E-03 above retain their earlier base as historical context. Changes stay in the admitted Graph lane and preserve the existing source owners.
 
 | Owner | Existing source | Grounded capability | Gap this proposal adds |
 |---|---|---|---|
-| Canvas host | `canvas/src/components/CanvasViewport.tsx` | Composes Canvas views and the XR/3D surface. | Explicit supply-chain overview activation and host lifecycle. |
-| General scene | `canvas/src/features/three/Controls.tsx`; `canvas/src/lib/three/ThreeGraphXr.tsx` | Existing orbit, viewport and XR session primitives. | Supply-chain scene projection, labels, focus and view filters. |
-| Warehouse lesson | `canvas/src/features/python-learning/LearningDroneRoom.tsx`; `LearningWarehouseStructure.tsx`; `warehouseLayout.ts` | Local procedural warehouse and lesson context. | Keep it available as a facility pattern; do not make the Python lesson the supply-chain domain owner. |
-| Local replay | `canvas/src/features/python-learning/WarehouseTimelinePanel.tsx`; shared Timeline owners | A working replay surface and transport model. | Project shipment and handoff events onto one selected deterministic scenario timeline. |
-| XR selection | `canvas/src/features/xr-v2/XrSelectionBounds.tsx`; `XrStageObjectSelection.tsx` | Existing selection affordances and scene selection patterns. | Stable supply-chain entity identity synchronized across map, inspector, roster and journey. |
+| Canvas host | `canvas/src/components/CanvasViewport.tsx`; `canvas/src/features/supply-chain/useSupplyChainOverviewRoute.ts` | Activates the supply-chain workspace view. | Preserve explicit route activation and normal document ownership. |
+| Scenario and operations UI | `canvas/src/features/supply-chain/SupplyChainOverview.tsx`; `supplyChainScenario.ts`; `supplyChainViewStore.ts` | Owns the synthetic network, projection, synchronized selection, filtering, event details and offline schematic. | No live feed or provider-specific data. |
+| Shared replay | `canvas/src/features/gitgraph/GanttTimelineTransportPanel.tsx`; supply-chain timeline projection | Shared read-only transport is keyed to the deterministic scenario. | Keep one scenario clock across map, journey and event state. |
+| XR asset library | `canvas/src/features/xr-v2/openXrMediaLibrary.ts`; `canvas/src/features/command-menu/XrMediaLibraryPanel.tsx` | Opens existing Terrain / Environment Kits and Subjects & Props in shared Media. | No duplicate catalog or asset package. |
+| Geospatial host | `canvas/src/components/CanvasViewportGeospatialOverlay.tsx`; local supply-chain graph | Displays projected facilities and route geometry with the configured online basemap. | Offline interaction uses the local schematic; no tile is required for the fallback. |
 | Runtime packaging | `agentic-canvas-os/README.md` | Product/runtime packaging boundary. | No package or provider dependency is proposed. |
 | Workflow authority | `agentic-os/docs/START-WORKFLOW.md` | Bounded lane admission and protected release workflow. | Use for plan admission and implementation lifecycle only. |
 
@@ -110,9 +110,10 @@ This is a reusable chain topology, not a fixed jurisdiction, carrier, inventory 
 | A-05 | Infrastructure, moving resources and all-entity filters plus label visibility and search operate on stable IDs without deleting scenario data. | Browser smoke toggles each filter and confirms the expected visible groups while selected entity state remains valid. |
 | A-06 | Simulated provenance is persistent and explicit. The UI exposes scenario source, deterministic seed/revision and event time; no live indicator appears for synthetic records. | UI inspection and source projection confirm all demo entities have simulated provenance and live status cannot be inferred from an absent adapter. |
 | A-07 | Replay, seek, pause and speed use the shared Timeline transport. Resetting to the same scenario revision and time reproduces the same entities and events. | Replay the same deterministic seed/time twice and compare the normalized domain snapshot and selected journey state. |
-| A-08 | Offline use needs no external asset host, data service, login or provider credentials. | Run the local scenario with network access disabled after app load; scene, details, search, filters and replay remain functional. |
+| A-08 | After the app shell loads, core scenario use remains available offline without map tiles, data service, login or provider credentials. | Disable network in the browser; the local schematic, details, search, filters and shared replay remain functional. |
 | A-09 | The scene has a readable non-XR network/map view and keyboard-operable equivalent navigation. Responsive panels never permanently obscure the selected entity or Timeline controls. | Keyboard and browser viewport review at wide, split-workspace and narrow layouts; inspect focus order and a 2D/network fallback. |
 | A-10 | Generated geometry and labels are original, generic and local to this feature; no external operational feed or visual asset is required. | Source and dependency review finds the scene assets locally authored and no new external runtime dependency. |
+| A-11 | The active overview reuses the existing Media → 3D for XR library for Terrain / Environment Kits and Subjects & Props, with no second asset catalog. | Browser check activates **3D assets** and verifies the shared Media panel opens in `xr-3d` mode with the existing kit and subject/prop sections. |
 
 ### Scope and explicit boundaries
 
@@ -126,12 +127,12 @@ If a later increment introduces live data, it needs a separate admitted provider
 
 | Measure | Target | Method / present evidence |
 |---|---|---|
-| Full-chain visibility | 100% of the required MVP facility classes represented and reachable from overview. | Scene acceptance A-01; current baseline is warehouse-only. |
-| Trace completeness | 100% of ordered events link from origin to delivery, with return linked to origin. | Domain acceptance A-02; not yet implemented. |
-| Selection synchronization | Map, inspector, roster and timeline show one selected stable ID. | A-03/A-04; not yet implemented. |
+| Full-chain visibility | 100% of the required MVP facility classes represented and reachable from overview. | Source defines all twelve facilities; browser acceptance A-01 remains to be recorded. |
+| Trace completeness | 100% of ordered events link from origin to delivery, with return linked to origin. | Deterministic domain source and A-02 acceptance; exact check result is pending. |
+| Selection synchronization | Map, inspector, roster and timeline show one selected stable ID. | Shared selection state and A-03/A-04 browser acceptance; exact check result is pending. |
 | Synthetic/live clarity | 100% of demo entities disclose synthetic provenance; zero false live indicators. | A-06; no provider is planned in MVP. |
 | Time to value | Under 60 seconds from app open to identifying a consignment's current modeled stage and next handoff. | Proposed usability threshold; measure in five moderated local reviews. |
-| Incremental model spend | $0 for offline deterministic MVP. | No model call or remote provider is planned; app build/runtime costs are not measured here. |
+| Incremental model spend | $0 for the deterministic scenario. | No model call; the optional online basemap is networked and separate from the local schematic. App build/runtime costs are not measured here. |
 | Product economics | Unknown. | No validated buyer, pricing, support cost or retention baseline. Do not report ROI. |
 
 ### Risks and quality boundaries
@@ -140,23 +141,22 @@ If a later increment introduces live data, it needs a separate admitted provider
 |---|---|---|
 | A synthetic network looks operationally real. | Persistent simulation badge, scenario/source disclosure, local-only wording and no live color/health semantics without adapter evidence. | Product owner |
 | Metrics disagree between map and journey. | One revisioned snapshot and pure projections; reconciliation is an acceptance criterion. | Feature maintainer |
-| The whole network is unreadable at small size. | Level of detail, selected-entity focus, collapsible panels and accessible 2D list/map. | Canvas experience owner |
-| Scene crowds the existing lesson or couples domain and learning code. | New feature module and explicit host activation; keep Python-learning route and collision owners unchanged. | Canvas maintainer |
+| The whole network is unreadable at small size. | Responsive controls, selected-entity focus, collapsible panels and keyboard-operable local schematic. | Canvas experience owner |
+| Scene crowds the existing lesson or couples domain and learning code. | Existing feature module and explicit host activation; keep Python-learning route and collision owners unchanged. | Canvas maintainer |
 | Commercial or operational assumptions are mistaken for evidence. | Mark customer, market, offer and financial data as unknown until researched. | Product strategy owner |
 
 ## TAD — technical architecture and data
 
 ### Component ownership and boundaries
 
-| Component | Proposed owner | Responsibility | Boundary |
+| Component | Current owner | Responsibility | Boundary |
 |---|---|---|---|
-| Scenario contract and snapshot | `canvas/src/features/supply-chain/` | Stable IDs, scenario revision, facilities, legs, consignments, resources, events, provenance and pure time projections. | Provider-neutral TypeScript; no UI framework types in domain contracts. |
-| Scenario provider | Same feature module | Deterministic seeded local fixture implements the provider contract. | Offline; no invented live or external source. |
-| Event/replay adapter | Same feature module plus existing Timeline owner | Map shared playhead to ordered scenario event/snapshot. | Shared transport is the only clock. |
-| Scene projection | Same feature module; existing Canvas Three/XR primitives | Procedural topology, facilities, roads/rails/air/sea elements, routes, labels, filters, focus. | No external asset server; no mutation of Python lesson geometry or its physics. |
-| Operations shell | Same feature module | Overview metrics, stage rail, search/filter controls, inspector, roster, consignment journey and provenance. | Every surface consumes the same selected snapshot and stable entity identity. |
-| Host activation | `canvas/src/components/CanvasViewport.tsx` | Mount and dispose the supply-chain surface under an explicit route/mode. | Preserve generic Canvas, XR and Python-learning ownership. |
-| Admission/check map | `docs/collaboration-runtime-contract.md` plus focused browser smoke | Register affected roots and commands for the new module. | Existing canonical test runner owns check selection. |
+| Scenario contract and snapshot | `canvas/src/features/supply-chain/supplyChainScenario.ts` | Stable IDs, revision, facilities, legs, consignments, resources, events and pure time projection. | Provider-neutral TypeScript; sample values are synthetic. |
+| Scenario view and selection | `canvas/src/features/supply-chain/SupplyChainOverview.tsx`; `supplyChainViewStore.ts` | Overview, synchronized selection, filters, details and offline SVG schematic. | No provider-specific data or duplicate clock. |
+| Event/replay adapter | Supply-chain view plus `GanttTimelineTransportPanel` | Map shared playhead to ordered scenario state. | Shared transport is the only clock. |
+| Media asset access | `canvas/src/features/xr-v2/openXrMediaLibrary.ts`; existing `XrMediaLibraryPanel.tsx` | Open the shared Terrain / Environment Kits and Subjects & Props library. | No second catalog or new asset package. |
+| Host activation | `canvas/src/components/CanvasViewport.tsx`; `useSupplyChainOverviewRoute.ts` | Mount the feature for its workspace seed. | Preserve generic Canvas and Python-learning ownership. |
+| Admission/check map | Existing Canvas check runner and focused browser review | Check changed feature paths and responsive interaction. | A planned command is not a passed result. |
 | Runtime packaging | `agentic-canvas-os` | Existing product/runtime distribution. | No new package is proposed. |
 | Workflow | `agentic-os` | Plan-bound mission, path reservation, receipts, protected integration. | Not imported by browser runtime. |
 
@@ -234,18 +234,18 @@ All controls need visible focus, meaningful names, keyboard selection and predic
 
 ## ADR — choices and consequences
 
-### ADR-01: standalone feature module and explicit host activation
+### ADR-01: domain module with explicit host activation and shared owners
 
-**Decision:** create a logistics domain and view under `canvas/src/features/supply-chain/` and mount it through an explicit Canvas host state. Reuse graph-owned Canvas, Three.js, XR and Timeline primitives. Keep the Python warehouse lesson as an optional facility pattern, not the owner of supply-chain lifecycle.
+**Decision:** keep the logistics domain in its existing `canvas/src/features/supply-chain/` module and mount it through the existing explicit Canvas host state. Reuse the shared Timeline transport and Media 3D-for-XR library. Keep the Python warehouse lesson as an independent feature.
 
 | Alternative | Decision | Reason / consequence |
 |---|---|---|
 | Extend the Python warehouse overview and rename its labels | Rejected | It would still use a single-site inspection route and couple the full chain to learning-only state. |
 | Add the domain to the generic graph semantic model | Rejected for MVP | Supply-chain lifecycles are domain-specific; changing generic graph identity would create broad ownership and compatibility risk. |
-| New supply-chain feature module with existing Canvas integration | Chosen | Keeps domain types cohesive and lets other providers or renderers be added behind adapters. Requires a new host route and registered focused checks. |
+| Existing supply-chain module with shared Media and Timeline entry points | Chosen | Keeps domain types cohesive and avoids duplicate clocks or asset catalogs. |
 | Depend on hosted logistics maps/assets | Rejected | Offline use and source neutrality are MVP requirements; adds service, data and license boundaries. |
 
-**Consequences:** deterministic fixtures make the flow repeatable but establish no live fidelity or demand. Procedural assets require local rendering work but keep the scenario portable. The shared Timeline gives replay coherence but limits this increment to one scenario clock. Integration stays in `agentic-graph`; `agentic-canvas-os` package changes are not justified.
+**Consequences:** deterministic fixtures make the flow repeatable but establish no live fidelity or demand. The offline schematic needs no map tiles; the online geospatial basemap remains networked. The shared Timeline gives replay coherence but limits this increment to one scenario clock. No runtime package change is needed.
 
 ### ADR-02: one snapshot and explicit provenance
 
@@ -257,34 +257,34 @@ All controls need visible focus, meaningful names, keyboard selection and predic
 
 ### MVP slice and staged acceptance
 
-The first deliverable is a local browser scenario that renders all chain node classes and one shipment end to end, including a linked return. It includes one port, one airport, one rail terminal, road transfer, linehaul, hub, fulfillment, delivery and returns. It provides search, selection/focus, visible labels, infrastructure/resource/all filters, synchronized details and roster, shared-Timeline replay, simulated-data provenance, and a non-XR network fallback. It uses generated local geometry and no new external package or service.
+The existing local browser scenario renders all chain node classes and deterministic sample consignments, including a linked return. This revision retains its search, selection, filters, synchronized details, simulated provenance and shared-Timeline replay; adds a small-screen entry to the existing 3D asset library; and uses a local schematic when the browser is offline. It adds no package, hosted asset or data service.
 
 | VCC | MVP evidence required | State |
 |---|---|---|
-| A-01 full-chain scene | Browser capture shows all required node classes and readable labels from initial overview or through explicit all-chain fit. | Not implemented. |
-| A-02 shipment + linked return | Domain trace verifies stable identity, ordered events, modes and parent consignment link. | Not implemented. |
-| A-03/A-04 synchronized projection | Focused projection and browser checks verify one snapshot/selected ID across surfaces. | Not implemented. |
-| A-05 filters and search | Browser interaction covers each filter, label toggle and selected search result. | Not implemented. |
-| A-06 provenance | Synthetic badge/source/time visible; no live mode without adapter. | Not implemented. |
-| A-07 shared replay | Play, pause, seek and deterministic reset align to shared Timeline. | Not implemented. |
-| A-08 offline | Local scenario continues without external assets/services. | Not implemented. |
-| A-09 accessibility/responsive | Keyboard and viewport review; non-XR path usable. | Not implemented. |
-| A-10 local original assets | Source/dependency review verifies generated local scene assets. | Not implemented. |
+| A-01 full-chain scene | Browser capture shows all required node classes and readable labels from initial overview or through explicit all-chain fit. | Source implemented; browser evidence pending. |
+| A-02 shipment + linked return | Domain trace verifies stable identity, ordered events, modes and parent consignment link. | Source implemented; focused result pending. |
+| A-03/A-04 synchronized projection | Focused projection and browser checks verify one snapshot/selected ID across surfaces. | Source implemented; focused result pending. |
+| A-05 filters and search | Browser interaction covers each filter, label toggle and selected search result. | Source implemented; browser evidence pending. |
+| A-06 provenance | Synthetic badge/source/time visible; no live mode without adapter. | Source implemented; browser evidence pending. |
+| A-07 shared replay | Play, pause, seek and deterministic reset align to shared Timeline. | Shared transport is in use; browser evidence pending. |
+| A-08 offline | Local schematic, details, search, filters and replay continue without tiles after app load. | Local fallback implemented; offline browser evidence pending. |
+| A-09 accessibility/responsive | Keyboard and viewport review; non-XR path usable. | Responsive controls and keyboard handlers present; browser evidence pending. |
+| A-10 local original assets | Source/dependency review verifies generated local scene assets. | Local scenario geometry and SVG fallback; review recorded at source base. |
+| A-11 shared asset reuse | Browser check opens the existing 3D-for-XR library from the active overview. | Passed locally: the **3D assets** action opens the shared Media panel in `xr-3d` mode and shows the existing Terrain / Environment Kits and Subjects & Props sections. |
 
 ### Readiness and rollout boundary
 
-Current status is `proposed`; local and delivered rungs are `undocumented`. No implemented full-chain feature, validated prototype, pilot, deployment, paying customer or production service is evidenced by this plan. Advance to `dev-proven` only after VCCs A-01–A-10 are independently recorded against the exact candidate. Release and integration require the protected Integration Gate. Deployment is excluded.
+The local rung is `dev-proven` on the reproducible A-11 browser VCC. A-01–A-10 remain pending or source-reviewed as shown in the VCC table; delivered readiness remains `undocumented`. This task does not claim a pilot, deployment, payer or production service. `runtime-ready` requires evidence for every applicable VCC. Release/integration and deployment remain separate transitions.
 
 ### Planned implementation path map
 
-These are candidate reservations for the new mission; exact write paths and affected checks must be readmitted from the committed plan before implementation:
+Current implementation owners and verification surfaces:
 
-- `canvas/src/features/supply-chain/` — contracts, deterministic provider, snapshot projection, scene and interface.
-- `canvas/src/components/CanvasViewport.tsx` — explicit host integration.
-- `canvas/src/__tests__/supplyChain*.test.ts` — pure contract/projection and synchronization checks.
-- `canvas/scripts/run_supply_chain_overview_browser_smoke.mjs` — offline browser VCC smoke.
-- `docs/collaboration-runtime-contract.md` — affected CI scope for module, tests and smoke command.
-- This joined planning artifact.
+- `canvas/src/features/supply-chain/SupplyChainOverview.tsx` — overview, existing Timeline and offline schematic.
+- `canvas/src/features/xr-v2/openXrMediaLibrary.ts` — shared FloatingPanel → Media → 3D for XR entry.
+- `canvas/src/features/command-menu/XrMediaLibraryPanel.tsx` — existing Terrain / Environment Kits and Subjects & Props owner.
+- `canvas/src/features/gitgraph/GanttTimelineTransportPanel.tsx` — shared Timeline transport.
+- This joined planning artifact and the focused browser review.
 
 No warehouse lesson route, obstacle, collision, actor timing or existing user data should change as a side effect. Do not add live provider adapters, native binaries or remote assets in this increment.
 
@@ -343,8 +343,8 @@ No warehouse lesson route, obstacle, collision, actor timing or existing user da
 
 | Revision | Context / intent / directive | Role / action / outcome | Decision and next check |
 |---|---|---|---|
-| `logistics-supply-chain-operations-overview@0.1.0` | C: local XR source is a warehouse-only lesson; user requires airport, port and complete chain visibility. I: let a reviewer trace goods and a linked return end to end in one local scene. D: specify an offline, synthetic, provider-neutral multimodal network with synchronized selection and shared replay. | R: Canvas experience owner. A: define a new feature module and explicit host surface. O: one deterministic end-to-end scenario with visible provenance and original local geometry. | This is a plan, not implementation evidence. Commit and integrate this artifact through the protected Integration Gate before starting the new `agentic-os` implementation mission. Revisit the local/delivered rung only after A-01–A-10 evidence. |
+| `logistics-supply-chain-operations-overview@0.2.0` | C: the existing overview already models the multimodal scenario; the user asks to reuse the shared asset library and Timeline, and preserve local use. I: keep one coherent local operations view without duplicate catalogs or clocks. D: open the existing 3D-for-XR library from the overview and render a local schematic when map tiles are unavailable. | R: Canvas experience owner. A: extend the current supply-chain view and update its seed/plan. O: reuse existing Terrain / Environment Kits, Subjects & Props, and the read-only shared Timeline. | Record focused source/browser results against this revision; retain unknown market evidence. Only the protected release path can establish integration. |
 
 ### Implementation boundary
 
-The existing warehouse-only overview remains a separate admitted increment. This plan does not authorize rewriting its mission or changing its immutable plan. Once this planning artifact is present at protected `origin/main`, start a distinct lane with disjoint supply-chain feature paths, exact affected checks, and an explicit host integration reservation. Keep the earlier warehouse worktree intact until its owner completes or reconciles it.
+The warehouse lesson remains independent and is not rewritten. Current changes are admitted in a Graph lane from refreshed `origin/main`; only the reserved Graph feature, source seed, tests and planning paths may change. Local readiness and protected integration are recorded separately.
