@@ -31,6 +31,7 @@ import { useXrSceneMediaDrop } from '@/features/three/useXrSceneMediaDrop'
 import { XrCameraAspectMask } from '@/features/three/XrCameraAspectMask'
 import { XrArPlacementStage } from '@/features/three/XrArPlacementStage'
 import { XrGeoProjectedMediaSubjects } from '@/features/three/XrGeoProjectedMediaSubjects'
+import { Controls } from '@/features/three/Controls'
 import { subscribeXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
 import { isXrPhysicsRuntimeRunReadyDemoActive, isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { XrRendererClearController } from '@/lib/three/XrRendererClearController'
@@ -50,7 +51,6 @@ import { resolveXrDocumentStageAuthority } from '@/features/three/xrSceneDocumen
 import type { LearningLesson, LearningSceneSnapshot } from '@/features/python-learning/learningLessons'
 const LearningSceneStageLazy = React.lazy(() => import('@/features/python-learning/LearningSceneStage').then(mod => ({ default: mod.LearningSceneStage })))
 const SceneLazy = React.lazy(() => import('@/lib/three/Scene.impl').then(mod => ({ default: mod.Scene })))
-const ControlsLazy = React.lazy(() => import('@/features/three/Controls').then(mod => ({ default: mod.Controls })))
 const SemanticTwinStageLazy = React.lazy(() => import('@/features/xr-v2/SemanticTwinStage').then(mod => ({ default: mod.SemanticTwinStage })))
 const XR_PHYSICS_RUN_READY_GRAPH: GraphData = { type: 'Graph', nodes: [], edges: [] }
 function XrWorldPlacement({
@@ -546,7 +546,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
           </XrWorldPlacement>
           </>}
           {/* MapLibre owns the shared Geo+XR camera; OrbitControls would replace its projection. */}
-          {!gameFpsStageActive && !geospatialComposite ? <ControlsLazy
+          {!gameFpsStageActive && !geospatialComposite ? <Controls
             key={hasXrEmptyWorld ? 'empty-world-controls' : 'scene-controls'}
             learningSceneId={learningScene?.lesson.id}
             schema={effectiveSchema as GraphSchema}
