@@ -266,14 +266,32 @@ function Crate({ color, size }: { color: string; size: PropSize }) {
     <group name="agentic_os_xr_procedural_crate">
       <mesh position={[0, 0, height * 0.5]} castShadow receiveShadow>
         <boxGeometry args={[width, depth, height]} />
-        <Wall color={color} roughness={0.84} />
+        <Wall color={color} roughness={0.72} />
       </mesh>
       {[-0.46, 0.46].map(edge => (
         <mesh key={edge} position={[0, 0, height * (0.5 + edge * 0.08)]} castShadow>
-          <boxGeometry args={[width * 1.04, depth * 1.04, height * 0.08]} />
-          <Wall color="#57534e" roughness={0.7} metalness={0.12} />
+          <boxGeometry args={[width * 1.015, depth * 1.015, height * 0.055]} />
+          <Wall color="#45515a" roughness={0.48} metalness={0.62} />
         </mesh>
       ))}
+      {[-1, 1].flatMap(side => [-1, 1].map(face => <React.Fragment key={`${side}:${face}`}>
+        <mesh position={[side * width * 0.475, face * depth * 0.505, height * 0.5]} castShadow>
+          <boxGeometry args={[width * 0.045, depth * 0.035, height * 0.9]} />
+          <Wall color="#78848a" roughness={0.4} metalness={0.68} />
+        </mesh>
+        {[-0.38, 0, 0.38].map(rivet => <mesh key={rivet} position={[side * width * 0.475, face * depth * 0.53, height * (0.5 + rivet * 0.34)]}>
+          <sphereGeometry args={[Math.min(width, depth) * 0.018, 8, 6]} />
+          <Wall color="#c1c9cb" roughness={0.34} metalness={0.78} />
+        </mesh>)}
+      </React.Fragment>))}
+      <mesh position={[0, depth * 0.515, height * 0.53]}>
+        <boxGeometry args={[width * 0.54, depth * 0.025, height * 0.16]} />
+        <Wall color="#d4c4a3" roughness={0.78} />
+      </mesh>
+      <mesh position={[0, depth * 0.534, height * 0.53]}>
+        <boxGeometry args={[width * 0.39, depth * 0.012, height * 0.035]} />
+        <meshStandardMaterial color="#39434b" roughness={0.54} />
+      </mesh>
     </group>
   )
 }
