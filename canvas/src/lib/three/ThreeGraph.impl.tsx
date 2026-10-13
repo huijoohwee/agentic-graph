@@ -31,7 +31,7 @@ import { useXrSceneMediaDrop } from '@/features/three/useXrSceneMediaDrop'
 import { XrCameraAspectMask } from '@/features/three/XrCameraAspectMask'
 import { XrArPlacementStage } from '@/features/three/XrArPlacementStage'
 import { XrGeoProjectedMediaSubjects } from '@/features/three/XrGeoProjectedMediaSubjects'
-import { Controls } from '@/features/three/Controls'
+import { useThreeViewportRuntimeReadiness } from '@/lib/three/useThreeViewportRuntimeReadiness'
 import { subscribeXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
 import { isXrPhysicsRuntimeRunReadyDemoActive, isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { XrRendererClearController } from '@/lib/three/XrRendererClearController'
@@ -51,6 +51,7 @@ import { resolveXrDocumentStageAuthority } from '@/features/three/xrSceneDocumen
 import type { LearningLesson, LearningSceneSnapshot } from '@/features/python-learning/learningLessons'
 const LearningSceneStageLazy = React.lazy(() => import('@/features/python-learning/LearningSceneStage').then(mod => ({ default: mod.LearningSceneStage })))
 const SceneLazy = React.lazy(() => import('@/lib/three/Scene.impl').then(mod => ({ default: mod.Scene })))
+const ControlsLazy = React.lazy(() => import('@/features/three/Controls').then(mod => ({ default: mod.Controls })))
 const SemanticTwinStageLazy = React.lazy(() => import('@/features/xr-v2/SemanticTwinStage').then(mod => ({ default: mod.SemanticTwinStage })))
 const XR_PHYSICS_RUN_READY_GRAPH: GraphData = { type: 'Graph', nodes: [], edges: [] }
 function XrWorldPlacement({
@@ -270,6 +271,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     hasRenderableScene,
     webglSupported: effectiveWebglSupported,
   })
+  const xrRuntimeReadiness = useThreeViewportRuntimeReadiness({ active: active && rendererMounted, mode, documentLoaded: xrDocumentLoaded, geospatialComposite })
   useEffect(() => {
     draggedNodeIdRef.current = draggedNodeId
   }, [draggedNodeId])
@@ -435,6 +437,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       ref={containerRef}
       className="absolute inset-0 w-full h-full z-0"
       data-kg-xr-document-loaded={mode === 'xr' ? (xrDocumentLoaded ? '1' : '0') : undefined}
+      data-kg-xr-runtime-ready={mode === 'xr' ? xrRuntimeReadiness : undefined}
       data-kg-xr-scene-authority={xrSceneAuthority}
       data-kg-xr-exclusive-stage={mode === 'xr' && (immersiveMediaStageActive || hasGraph || hasXrEmptyWorld) ? '1' : undefined}
       data-kg-xr-empty-world={hasXrEmptyWorld ? '1' : undefined}
@@ -546,7 +549,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
           </XrWorldPlacement>
           </>}
           {/* MapLibre owns the shared Geo+XR camera; OrbitControls would replace its projection. */}
-          {!gameFpsStageActive && !geospatialComposite ? <Controls
+          {!gameFpsStageActive && !geospatialComposite ? <ControlsLazy
             key={hasXrEmptyWorld ? 'empty-world-controls' : 'scene-controls'}
             learningSceneId={learningScene?.lesson.id}
             schema={effectiveSchema as GraphSchema}

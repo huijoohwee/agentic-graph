@@ -111,7 +111,10 @@ try {
     const initialLayout = await visibleReviewWidth(review)
     assert.ok(initialLayout.visible >= Math.min(320, width - 48), JSON.stringify(initialLayout))
     assert.equal(initialLayout.overflow, false)
-    if (width === 1024) await page.locator('[data-kg-xr-document-loaded="1"]').waitFor({ timeout: 60000 })
+    if (width === 1024) {
+      await page.locator('[data-kg-xr-document-loaded="1"]').waitFor({ timeout: 60000 })
+      await page.locator('[data-kg-xr-runtime-ready="ready"]').waitFor({ timeout: 60000 })
+    }
     else await page.getByRole('button', { name: 'Load 3D view', exact: true }).waitFor()
     await page.waitForFunction(() => !!navigator.serviceWorker?.controller, undefined, { timeout: 60000 })
     const initial = await storedSource(page); assert.ok(initial)
