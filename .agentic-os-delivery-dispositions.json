@@ -4,6 +4,105 @@
   "dispositions": [
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/browser-gate-software-forensics",
+      "laneHead": "7ceb353afdec0120207523e167e92382f2050bd8",
+      "paths": [
+        "docs/workspace-seeds/demo.md"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "fae3fbedab50afea9e63a7e3f918e83deb8ebd5d",
+      "candidateDigest": "45b65f110b805b60b9d73f14da6acd27db604fb36612ec8dcef615a1b96d33a8",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/agentic-graph-delivery-evidence-38146256184.json",
+      "evidenceDigest": "6bf1d1a403b7af695a7dd02611b63fc9b3ab6ce81669c0f803416fb7fba196c2",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1674",
+      "reason": "The only changed path in PR #1674 is a workspace-seed Markdown file. At the authorized source revision the build resolver returns an empty seed read root for command=build, and the captured production Pages inventory contains no workspace-seeds paths."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/hackamap-delivery-disposition",
+      "laneHead": "3aa1402bd7c4474bb48bad71bb1062fbaae767ae",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "13553d6ea549562b2baa6ddfba1454aa5b3c232f",
+      "candidateDigest": "45b65f110b805b60b9d73f14da6acd27db604fb36612ec8dcef615a1b96d33a8",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "scripts/production-mirror-artifact-entries.mjs",
+      "evidenceDigest": "8476c366817ea9297ece21dccce3285c126ee59112c8230cee6d11a455e81b9f",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1682",
+      "reason": "The only changed path in PR #1682 for this lane is the delivery-disposition ledger. The production mirror is staged from the explicit productionMirrorArtifactEntries list in scripts/production-mirror-artifact-entries.mjs; this ledger path is excluded from the product artifact. This records no deployment and grants no production effect."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/hackamap-folder-contents",
+      "laneHead": "5827ea350449684dc135b2b75a5a6bc9b7762556",
+      "paths": [
+        "canvas/package.json",
+        "canvas/src/__fixtures__/devpost-hackathons.sample.md",
+        "canvas/src/__tests__/websiteCollectionImportProgress.test.ts",
+        "canvas/src/__tests__/websiteCollectionRecords.test.ts",
+        "canvas/src/__tests__/websiteImportSelection.test.ts",
+        "canvas/src/components/GraphCanvas/layout/graphGroups.ts",
+        "canvas/src/features/agent-graph/agentGraphWorkspaceArtifact.ts",
+        "canvas/src/features/hackamap/hackamapDomainWorkspaceDocument.ts",
+        "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction.ts",
+        "canvas/src/features/markdown-workspace/useWorkspaceFileActions/websiteImportNodeWriter.ts",
+        "canvas/src/features/observability-workspace/host.mjs",
+        "canvas/src/features/source-files/sourceFilesRuntimeMaterialization.ts",
+        "canvas/src/features/workspace-fs/workspaceRunReadyDemos.ts",
+        "canvas/src/hooks/store/graph-data-slice/graphDataDocumentActions.ts",
+        "canvas/src/lib/markdown-workspace-runtime/markdownWorkspaceDocumentSwitchApply.ts",
+        "canvas/src/lib/websites/server/websiteImportCore.ts",
+        "canvas/src/lib/websites/server/websiteImportDiscovery.ts",
+        "canvas/src/lib/websites/server/websiteImportJob.ts",
+        "canvas/src/lib/websites/websiteCollectionRecords.ts",
+        "canvas/src/lib/websites/websiteCollectionTableMarkdown.ts",
+        "canvas/src/lib/websites/websitePathUtils.ts",
+        "docs/documents/agentic-graph-hackamap-inventory-prd-tad-adr-mvp-gtm.md",
+        "mcp/agent-graph/workspace-codebase-indexing.mjs",
+        "package-lock.json",
+        "scripts/__tests__/run-hackamap-multi-dim-table.test.mjs",
+        "scripts/build-hackamap-codebase-projection.ts",
+        "scripts/run-hackamap-multi-dim-table.mjs"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "fae3fbedab50afea9e63a7e3f918e83deb8ebd5d",
+      "candidateDigest": "45b65f110b805b60b9d73f14da6acd27db604fb36612ec8dcef615a1b96d33a8",
+      "sourceReleaseReceiptDigest": "248b69d1d1794537e52695e39db54a60f0f87283f064ace34a15fbdfc6f16c89",
+      "deploymentReceiptDigest": "c8cc7e5a61bbe89d78d983fa6baf7e6785b359a09fff889799c92826de629088",
+      "runtimeVerificationReceiptDigest": "ed852fe813f1733e0ca4b8b459cb382f6d3bddf9005ee61d8ddaae396b75dc88",
+      "evidencePath": "docs/reports/agentic-graph-delivery-evidence-38146256184.json",
+      "evidenceDigest": "6bf1d1a403b7af695a7dd02611b63fc9b3ab6ce81669c0f803416fb7fba196c2",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/38146256184#environment-production",
+      "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/hackamap-source-files-folder",
+      "laneHead": "644f885d638986f99aaf0d37278c1cb4792cd230",
+      "paths": [
+        "canvas/src/features/workspace-fs/workspaceFsPersisted.ts",
+        "canvas/src/features/workspace-fs/workspaceSeedProvider.ts"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "fae3fbedab50afea9e63a7e3f918e83deb8ebd5d",
+      "candidateDigest": "45b65f110b805b60b9d73f14da6acd27db604fb36612ec8dcef615a1b96d33a8",
+      "sourceReleaseReceiptDigest": "248b69d1d1794537e52695e39db54a60f0f87283f064ace34a15fbdfc6f16c89",
+      "deploymentReceiptDigest": "c8cc7e5a61bbe89d78d983fa6baf7e6785b359a09fff889799c92826de629088",
+      "runtimeVerificationReceiptDigest": "ed852fe813f1733e0ca4b8b459cb382f6d3bddf9005ee61d8ddaae396b75dc88",
+      "evidencePath": "docs/reports/agentic-graph-delivery-evidence-38146256184.json",
+      "evidenceDigest": "6bf1d1a403b7af695a7dd02611b63fc9b3ab6ce81669c0f803416fb7fba196c2",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/38146256184#environment-production",
+      "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-cba000d3779d/production-baseline-capture-fix",
       "laneHead": "e666e8f4514478d70c9dd09ea47331a1e0f8a972",
       "paths": [
@@ -42,5 +141,5 @@
       "reason": null
     }
   ],
-  "receiptDigest": "e41e66f807ccdfa83dd6f5a6e3b8c03bcca348ef9b30e775ee33eb6478bc397b"
+  "receiptDigest": "91bdf893ff05748b63941f796a0ae96ec207614e47f54786447f2a10c2d022d4"
 }
