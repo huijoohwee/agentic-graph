@@ -36,6 +36,7 @@ import { StrybldrCameraOpticsSection } from './StrybldrCameraOpticsSection'
 type StrybldrCameraPanelProps = {
   selectedCardTitle: string
   settings: StrybldrCameraSettings
+  disabled?: boolean
   previewImageUrl?: string | null
   onSettingsChange: (settings: StrybldrCameraSettings) => void
   onReframe: (settings: StrybldrCameraSettings) => void
@@ -388,6 +389,7 @@ function StrybldrCameraSphereGraphic({
 export function StrybldrCameraPanel({
   selectedCardTitle,
   settings,
+  disabled = false,
   previewImageUrl,
   onSettingsChange,
   onReframe,
@@ -423,11 +425,13 @@ export function StrybldrCameraPanel({
         </section>
       </section>
 
+      <fieldset disabled={disabled} className="contents" aria-label="Human camera controls">
       <section className="space-y-2" aria-label="Strybldr camera preview">
         <section
           ref={previewRef}
           className={cn(
             'relative aspect-[7/6] touch-none overflow-hidden rounded-[8px] border border-black/10 bg-white/70',
+            disabled ? 'pointer-events-none opacity-60' : '',
             draggingCamera ? 'cursor-grabbing' : 'cursor-grab',
           )}
           aria-label="Strybldr camera orbit sphere"
@@ -516,6 +520,7 @@ export function StrybldrCameraPanel({
       <section className={cn('sr-only')} aria-live="polite">
         {formatStrybldrCameraSettings(settings)}. Drag camera around the sphere to reframe.
       </section>
+      </fieldset>
     </section>
   )
 }

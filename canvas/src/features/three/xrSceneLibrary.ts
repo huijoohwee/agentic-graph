@@ -9,6 +9,10 @@ import type {
   RegionalPoiPresentationPolicy,
 } from '@/features/geospatial/regionalPoiPresentationStyle'
 import { SINGAPORE_POI_DETAIL_KITS } from './singaporePoiDetailKits'
+import {
+  HONG_KONG_ISLAND_REFERENCE_GROUP_COLORS,
+  HONG_KONG_ISLAND_REFERENCE_LOCATIONS,
+} from '../cinema/hongKongIslandGeoKit'
 
 export type XrMotionReferenceVector = readonly [number, number, number]
 
@@ -17,6 +21,7 @@ export type XrMotionReferenceStageId =
   | 'tropical-playground'
   | 'neutral-volume'
   | 'street-grid'
+  | 'hong-kong-cinema'
   | 'loading-bay'
   | 'downtown'
   | 'residential-street'
@@ -53,11 +58,35 @@ export type XrMotionReferenceStagePreset = Readonly<{
   label: string
   description: string
   environmentKind: 'terrain' | 'environment'
+  /** Optional renderer profile for authored, reusable environment-kit geometry. */
+  visualProfile?: 'night-waterfront'
+  geospatialContext?: Readonly<{
+    label: string
+    bounds: readonly [west: number, south: number, east: number, north: number]
+    /** Presentation-only map focus for fictional local blocking; never a geotag. */
+    previewAnchor?: readonly [longitude: number, latitude: number]
+    purpose: 'regional-viewport-only'
+  }>
   regionalPoiProfile?: RegionalPoiProfile
   regionalPoiPresentationPolicy?: RegionalPoiPresentationPolicy
   sizeMeters: readonly [number, number]
+  /** Optional catalog scale note when the kit extends beyond its local rehearsal footprint. */
+  scaleSummary?: string
+  /** Optional story-relevant catalog assets offered first while this kit is active. */
+  featuredAssetIds?: readonly string[]
+  /** Optional authored geographic locations that can bind timeline shots and shared camera framing. */
+  referenceLocations?: readonly XrMotionReferenceStageLocation[]
   structures: readonly XrGreyBoxStructure[]
   walkableSurfaces?: readonly XrWalkableSurfacePreset[]
+}>
+
+export type XrMotionReferenceStageLocation = Readonly<{
+  index: number
+  label: string
+  group: string
+  color: string
+  coordinate: readonly [longitude: number, latitude: number]
+  elevationMeters: number
 }>
 
 export const XR_MOTION_REFERENCE_DEFAULT_STAGE_ID: XrMotionReferenceStageId = 'singapore'
@@ -133,6 +162,40 @@ export const XR_MOTION_REFERENCE_STAGE_PRESETS: readonly XrMotionReferenceStageP
       { id: 'street-channel', kind: 'street', centerMeters: [0, 0], sizeMeters: [8.2, 13], topMeters: 0, thicknessMeters: 0 },
       { id: 'west-walk', kind: 'path', centerMeters: [-4.8, 0], sizeMeters: [1.4, 13], topMeters: 0.3, thicknessMeters: 0.3 },
       { id: 'east-walk', kind: 'path', centerMeters: [4.8, 0], sizeMeters: [1.4, 13], topMeters: 0.3, thicknessMeters: 0.3 },
+    ],
+  },
+  {
+    id: 'hong-kong-cinema',
+    label: 'Hong Kong SAR · Cinema Blockout',
+    description: 'Harbourfront blockout anchored on the Tsim Sha Tsui promenade; Hong Kong Island terrain and landmark massing are placed at real scale in the Geo+XR metric frame.',
+    environmentKind: 'environment',
+    visualProfile: 'night-waterfront',
+    geospatialContext: {
+      label: 'Hong Kong SAR · regional context only',
+      bounds: [113.8167, 22.1333, 114.5167, 22.5833],
+      previewAnchor: [114.1720, 22.29328],
+      purpose: 'regional-viewport-only',
+    },
+    sizeMeters: [30, 22],
+    scaleSummary: 'real-scale Hong Kong Island metric kit · 25 sheet locations · 30 × 22 m shot blocking',
+    featuredAssetIds: ['character-bionic-operative', 'character-security-android', 'character-corporate-executive', 'vehicle-sedan', 'prop-debris-cluster', 'prop-crate'],
+    referenceLocations: HONG_KONG_ISLAND_REFERENCE_LOCATIONS.map(location => Object.freeze({
+      ...location,
+      color: HONG_KONG_ISLAND_REFERENCE_GROUP_COLORS[location.group],
+    })),
+    structures: [
+      { id: 'hk-harbour-tower-west', position: [-10, 6.5, -7], size: [7, 13, 6], tone: 'dark' },
+      { id: 'hk-harbour-tower-east', position: [9, 8, -7], size: [8, 16, 6], tone: 'mid' },
+      { id: 'hk-market-block', position: [-9, 3, 1], size: [7, 6, 6], tone: 'mid' },
+      { id: 'hk-terminal-block', position: [7, 3, 0], size: [8, 6, 7], tone: 'light' },
+      { id: 'hk-causeway-block', position: [0, 4, 8], size: [18, 8, 5], tone: 'dark' },
+      { id: 'hk-pier-deck', position: [0, 0.25, 10], size: [13, 0.5, 4], tone: 'accent' },
+    ],
+    walkableSurfaces: [
+      { id: 'hk-street-channel', kind: 'street', centerMeters: [0, 0], sizeMeters: [9, 18], topMeters: 0, thicknessMeters: 0 },
+      { id: 'hk-west-walk', kind: 'path', centerMeters: [-5.4, 0], sizeMeters: [1.6, 18], topMeters: 0.12, thicknessMeters: 0.12 },
+      { id: 'hk-east-walk', kind: 'path', centerMeters: [5.4, 0], sizeMeters: [1.6, 18], topMeters: 0.12, thicknessMeters: 0.12 },
+      { id: 'hk-pier-walk', kind: 'path', centerMeters: [0, 8.2], sizeMeters: [13, 2.8], topMeters: 0.16, thicknessMeters: 0.16 },
     ],
   },
   {
@@ -286,6 +349,7 @@ export type XrSceneLibraryAsset = Readonly<{
   defaultColor: string
   mobile: boolean
   keywords: readonly string[]
+  visualProfile?: 'bionic-operative' | 'corporate-executive' | 'security-android' | 'cinema-protagonist'
   poiDetailKitId?: string
 }>
 
@@ -314,6 +378,10 @@ export const XR_SCENE_LIBRARY_ASSETS: readonly XrSceneLibraryAsset[] = [
   {"id": "prop-house-brick", "referenceLabel": "brick", "label": "Brick house", "category": "props", "description": "Brick courses, solid roof and a chimney by the sea.", "shape": "crate", "dimensionsMeters": [2.2, 2.4, 2.2], "orientationOffsetYDegrees": 180, "defaultColor": "#c66b50", "mobile": false, "keywords": ["brick", "house", "story"]},
   {"id": "prop-soup-pot", "referenceLabel": "pot of hot soup", "label": "Soup pot", "category": "props", "description": "Open metal pot with warm soup and a rim.", "shape": "crate", "dimensionsMeters": [1.8, 1.6, 1.8], "defaultColor": "#445464", "mobile": false, "keywords": ["soup", "pot", "story"]},
   { id: 'person-adult', label: 'Adult', category: 'people', description: 'Neutral standing performer at human scale.', shape: 'humanoid', dimensionsMeters: [0.65, 1.75, 0.45], orientationOffsetYDegrees: 180, defaultColor: '#38bdf8', mobile: true, keywords: ['cast', 'actor', 'human'] },
+  { id: 'character-bionic-operative', label: 'Bionic operative', category: 'people', description: 'Animatable long-haired performer in a fitted black evening dress with bare arms, silver jewelry, and restrained cyan interface details; shaped from the local character sheet.', shape: 'humanoid', visualProfile: 'bionic-operative', dimensionsMeters: [0.62, 1.76, 0.42], orientationOffsetYDegrees: 180, defaultColor: '#29c4df', mobile: true, keywords: ['actor', 'bionic', 'operative', 'cinema'] },
+  { id: 'character-corporate-executive', label: 'Corporate executive', category: 'people', description: 'Animatable broad-shouldered executive in a tailored dark suit, white shirt, and muted red tie; a fictional 3D proxy for the supplied antagonist sheet.', shape: 'humanoid', visualProfile: 'corporate-executive', dimensionsMeters: [0.68, 1.82, 0.46], orientationOffsetYDegrees: 180, defaultColor: '#c38a4c', mobile: true, keywords: ['actor', 'executive', 'suit', 'cinema'] },
+  { id: 'character-cinema-protagonist', label: 'Cinema protagonist', category: 'people', description: 'Animatable dark-haired performer in a rain-darkened long coat, built to match the recurring Hong Kong night-story lead in the supplied shot sheet.', shape: 'humanoid', visualProfile: 'cinema-protagonist', dimensionsMeters: [0.7, 1.82, 0.48], orientationOffsetYDegrees: 180, defaultColor: '#526777', mobile: true, keywords: ['actor', 'protagonist', 'raincoat', 'cinema'] },
+  { id: 'character-security-android', label: 'Security android', category: 'people', description: 'Animatable IFC-style security machine with articulated pale armour, black helmet, and cyan sensor visor based on the local robot sheet.', shape: 'humanoid', visualProfile: 'security-android', dimensionsMeters: [0.72, 1.92, 0.54], orientationOffsetYDegrees: 180, defaultColor: '#d7e2eb', mobile: true, keywords: ['actor', 'robot', 'android', 'security', 'cinema'] },
   { id: 'person-child', label: 'Child', category: 'people', description: 'Smaller neutral performer for family blocking.', shape: 'humanoid', dimensionsMeters: [0.52, 1.25, 0.38], orientationOffsetYDegrees: 180, defaultColor: '#f97316', mobile: true, keywords: ['cast', 'actor', 'human'] },
   { id: 'animal-dog', label: 'Dog', category: 'animals', description: 'Medium quadruped with a clear facing direction.', shape: 'quadruped', dimensionsMeters: [0.45, 0.72, 1.05], defaultColor: '#a78bfa', mobile: true, keywords: ['pet', 'cast'] },
   { id: 'animal-cat', label: 'Cat', category: 'animals', description: 'Small quadruped for close domestic staging.', shape: 'quadruped', dimensionsMeters: [0.3, 0.42, 0.72], defaultColor: '#ec4899', mobile: true, keywords: ['pet', 'cast'] },
@@ -348,6 +416,36 @@ export const XR_SCENE_LIBRARY_ASSETS: readonly XrSceneLibraryAsset[] = [
 export function resolveXrMotionReferenceStage(stageId: XrMotionReferenceStageId): XrMotionReferenceStagePreset {
   return XR_MOTION_REFERENCE_STAGE_PRESETS.find(preset => preset.id === stageId)
     || XR_MOTION_REFERENCE_STAGE_PRESETS.find(preset => preset.id === XR_MOTION_REFERENCE_DEFAULT_STAGE_ID)!
+}
+
+export function resolveXrMotionReferenceStagePreviewBounds(
+  stageId: XrMotionReferenceStageId,
+): readonly [west: number, south: number, east: number, north: number] | null {
+  const stage = resolveXrMotionReferenceStage(stageId)
+  const context = stage.geospatialContext
+  if (context?.purpose !== 'regional-viewport-only') return null
+
+  const [west, south, east, north] = context.bounds
+  const [longitude, latitude] = context.previewAnchor || [
+    (west + east) / 2,
+    (south + north) / 2,
+  ]
+  const paddingMeters = 10
+  const halfWidthMeters = stage.sizeMeters[0] / 2 + paddingMeters
+  const halfDepthMeters = stage.sizeMeters[1] / 2 + paddingMeters
+  const metersPerLongitudeDegree = 111_320 * Math.max(
+    0.01,
+    Math.abs(Math.cos(latitude * Math.PI / 180)),
+  )
+  const longitudeRadius = halfWidthMeters / metersPerLongitudeDegree
+  const latitudeRadius = halfDepthMeters / 111_320
+
+  return Object.freeze([
+    longitude - longitudeRadius,
+    latitude - latitudeRadius,
+    longitude + longitudeRadius,
+    latitude + latitudeRadius,
+  ] as const)
 }
 
 export function resolveXrMotionReferenceColliderStructures(

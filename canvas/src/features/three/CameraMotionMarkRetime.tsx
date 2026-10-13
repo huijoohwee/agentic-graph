@@ -31,6 +31,7 @@ import { resolveXrRehearsalBeatLabelAt, resolveXrRehearsalTimelineBeats } from '
 import { createXrTimelineCastMark, jumpToXrTimelineCue } from './xrTimelineCueRuntime'
 import { XrChoreographyMarkControls } from './XrChoreographyMarkControls'
 import { applyXrConstrainedCastMarkChoreography } from './xrConstrainedCastMarkRuntime'
+import { readCinematicControlMode, subscribeCinematicControlMode } from '@/features/cinema/cinematicControlModeRuntime'
 import './CameraMotionMarkRetime.css'
 
 function TimeEditor({
@@ -88,7 +89,8 @@ function rulerMarkSeconds(axis: HTMLElement, clientX: number, scaleDurationSecon
 }
 
 export function createXrTimelineMarkOnDoubleClick(event: React.MouseEvent<HTMLElement>, actorId: string, scaleDurationSeconds: number, disabled: boolean): void {
-  if (disabled || (event.target as Element).closest('[data-kg-timeline-time-axis-mark], .xr-camera-motion-mark-selection-controls')) return
+  if (disabled || readCinematicControlMode() !== 'human'
+    || (event.target as Element).closest('[data-kg-timeline-time-axis-mark], .xr-camera-motion-mark-selection-controls')) return
   event.preventDefault()
   event.stopPropagation()
   createXrTimelineCastMark(actorId, rulerMarkSeconds(event.currentTarget, event.clientX, scaleDurationSeconds))
@@ -101,7 +103,7 @@ function beginRulerMarkDrag(
   retimeMark: (value: number) => void,
   onDrag: () => void,
 ): (() => void) | undefined {
-  if (event.isPrimary === false || event.button !== 0) return
+  if (readCinematicControlMode() !== 'human' || event.isPrimary === false || event.button !== 0) return
   const target = event.currentTarget
   const axis = target.closest<HTMLElement>('[data-kg-xr-choreography-lane-axis="1"]')
     || target.closest<HTMLElement>('[data-kg-gantt-timeline-ruler-content="1"]')
@@ -124,7 +126,7 @@ function beginRulerMarkDrag(
   const move = (moveEvent: PointerEvent) => {
     if (moveEvent.pointerId !== event.pointerId) return
     const current = useGraphStore.getState()
-    if (!axis.isConnected || !target.isConnected || current.markdownDocumentName !== source.markdownDocumentName
+    if (readCinematicControlMode() !== 'human' || !axis.isConnected || !target.isConnected || current.markdownDocumentName !== source.markdownDocumentName
       || current.markdownDocumentText !== source.markdownDocumentText || current.canvasRenderMode !== source.canvasRenderMode
       || current.canvas3dMode !== source.canvas3dMode || JSON.stringify(readXrMotionReferenceRuntime().selectedMark) !== selectedMark) { finish(); return }
     if (!resolveMermaidGanttBarDragCommitted(moveEvent.clientX - event.clientX)) return
@@ -166,6 +168,12 @@ export function CameraMotionMarkRetime({
     readXrMotionReferenceRuntime,
     readXrMotionReferenceRuntime,
   )
+  const controlMode = React.useSyncExternalStore(
+    subscribeCinematicControlMode,
+    readCinematicControlMode,
+    readCinematicControlMode,
+  )
+  const humanControlsEnabled = controlMode === 'human'
   const motionControl = React.useSyncExternalStore(
     subscribeMotionControl,
     readMotionControlSnapshot,
@@ -253,6 +261,7 @@ export function CameraMotionMarkRetime({
           ? `${selectedCastTrack!.label} · ${selectedCastMarkIndex + 1}`
           : `Camera · C${selectedCameraMarkIndex + 1} · ${shotTargetLabelById.get(selectedCameraMark?.anchorId || '') || 'Unbound'} · ${selectedCameraMark ? formatCameraOptics(selectedCameraMark.settings) : ''}`}
       </span>
+      <fieldset className="contents" disabled={!humanControlsEnabled} aria-label="Human choreography mark controls">
       {selectedCastMark ? (
         <>
           <TimeEditor compact label={`${selectedCastTrack!.label} mark ${selectedCastMarkIndex + 1} time`} value={selectedCastMark.timeSeconds} max={runtime.plan.durationSeconds} onChange={value => retimeXrMotionReferenceCastMark(selectedCastTrack!.actorId, selectedCastMark.id, value)} />
@@ -269,6 +278,7 @@ export function CameraMotionMarkRetime({
           <button type="button" className="App-toolbar__btn p-0.5" aria-label={`Remove camera mark ${selectedCameraMarkIndex + 1}`} onClick={() => removeXrMotionReferenceCameraMark(selectedCameraMark.id)}><Trash2 className="size-3" role="img" aria-label="Remove mark" /></button>
         </>
       ) : null}
+      </fieldset>
     </section>
   )
   if (layout === 'lane' && laneTarget?.kind === 'cast') {
@@ -401,6 +411,7 @@ export function CameraMotionMarkRetime({
         <h4 className="text-xs font-semibold uppercase">Retime marks</h4>
         <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>Seconds · actor + camera</p>
       </header>
+      <fieldset className="contents" disabled={!humanControlsEnabled} aria-label="Human timeline retiming">
       <section className="flex min-w-0 flex-wrap gap-1" aria-label="Cast mark times">
         {selectedTrack?.marks.map((mark, index) => (
           <article key={mark.id} className={cn('flex items-center gap-1 rounded border px-1 py-0.5', UI_THEME_TOKENS.panel.border)} data-kg-xr-retime-cast-mark={index + 1}>
@@ -426,6 +437,7 @@ export function CameraMotionMarkRetime({
         ))}
         {runtime.plan.camera.length === 0 ? <p className={cn('m-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>Drop camera marks from FloatingPanel → Camera → SHOOT.</p> : null}
       </section>
+      </fieldset>
     </section>
   )
 }

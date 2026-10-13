@@ -51,6 +51,7 @@ import {
 import { updateXrAnimationAssignment } from './xrAnimationAssignmentRuntime'
 import { activateXrSceneSurface } from './xrSceneSurfaceRuntime'
 import { readXrSceneDocumentReady } from './xrSceneDocumentReadiness'
+import { readCinematicControlMode, type CinematicControlMode } from '@/features/cinema/cinematicControlModeRuntime'
 
 const XR_ANIMATION_CONTROL_OPERATIONS = Object.freeze([
   'apply',
@@ -445,9 +446,12 @@ export function inspectLocalAnimation() {
   }
 }
 
-export function controlLocalAnimation(input: XrAnimationControlInput): XrAnimationControlResult {
+export function controlLocalAnimation(input: XrAnimationControlInput, controller: CinematicControlMode = 'agent'): XrAnimationControlResult {
   const control = normalizeControl(input)
   if (!control) return { ok: false, message: 'Use a supported structured animation operation or native /animation.control invocation.' }
+  if (readCinematicControlMode() !== controller) {
+    return { ok: false, message: `Animation is in ${readCinematicControlMode() === 'human' ? 'Human' : 'AI / LLM / MCP'} control mode; switch Control owner before using this route.` }
+  }
   if (!sceneReady() || !hydrateCanonicalXrMotionReferenceRuntime()) return { ok: false, message: 'Open or create a graph document before controlling XR animation.' }
   hydrateCanonicalXrPhysicsRuntime()
   if (control.operation !== 'export' && !activateAnimationSurface()) {
