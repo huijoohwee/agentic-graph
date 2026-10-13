@@ -12,8 +12,7 @@ import {
 } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
-import { setMediaCatalogMode } from '@/features/command-menu/mediaCatalogModeRuntime'
-import { emitFloatingPanelOpen } from '@/features/canvas/utils'
+import { openXrMediaLibrary } from '@/features/xr-v2/openXrMediaLibrary'
 import { isGameModeDocumentReady } from './gameModeDocumentCapability'
 import {
   renderAgenticOsInvocationKeywordChip,
@@ -89,6 +88,8 @@ export function GameModeFloatingPanelView() {
   const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
   const gameModeDocumentReady = React.useMemo(
     () => isGameModeDocumentReady(),
+    // These subscribed values invalidate readiness read from the imperative document owner.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [graphData, markdownDocumentName, markdownDocumentText, sourceFilesBootstrapReady],
   )
   const gameMode = React.useSyncExternalStore(
@@ -165,16 +166,10 @@ export function GameModeFloatingPanelView() {
     })
   }, [pushUiToast])
 
-  const openSharedSubjectsAndProps = React.useCallback(() => {
-    const state = useGraphStore.getState()
-    state.setFloatingPanelView('media')
-    state.setFloatingPanelOpen(true)
-    emitFloatingPanelOpen({ tab: 'media', open: true })
-    setMediaCatalogMode('xr-3d')
-  }, [])
-
   const sharedAssetControls = React.useMemo(
     () => inspectXrSharedAssetControls(),
+    // External-store revisions intentionally invalidate this imperative snapshot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [mission.revision, sharedAssetControlRevision],
   )
 
@@ -318,7 +313,7 @@ export function GameModeFloatingPanelView() {
           <div className="flex flex-wrap gap-1">
             <button type="button" className="App-toolbar__btn" onClick={() => switchCompanion('motion-control')} data-kg-game-mode-open-companion="motion-control">Motion Control</button>
             <button type="button" className="App-toolbar__btn" onClick={() => switchCompanion('xr-3d')} data-kg-game-mode-open-companion="xr"><View className="h-3.5 w-3.5" aria-hidden="true" /> XR Mode</button>
-            <button type="button" className="App-toolbar__btn" onClick={openSharedSubjectsAndProps} title="Open Media → 3D for XR → Subjects & Props to add or remove scene assets" aria-label="Manage subjects and props in the shared Media library" data-kg-game-mode-manage-shared-subjects-props="1">Manage subjects &amp; props</button>
+            <button type="button" className="App-toolbar__btn" onClick={openXrMediaLibrary} title="Open Media → 3D for XR → Subjects & Props to add or remove scene assets" aria-label="Manage subjects and props in the shared Media library" data-kg-game-mode-manage-shared-subjects-props="1">Manage subjects &amp; props</button>
           </div>
           <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Select assets on the Geo+XR map. Add and remove them in the shared Media → 3D for XR → Subjects &amp; Props library.</p>
           <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>On XR, Game Mode retains the paused authored scene while its first-person overlay owns camera and gameplay; exit resumes the shared controller owner.</p>

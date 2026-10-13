@@ -14,6 +14,7 @@ import { AgenticOsRemoteGrammarAutoHydrationBoundary } from '@/features/agentic-
 import { useSourceFilesBootstrapHasReachedReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
 
 const CanvasLazy = lazy(() => import('@/pages/Canvas'))
+const LocalDocumentSharePageLazy = lazy(() => import('@/pages/LocalDocumentSharePage'))
 const XrMotionReferenceRuntimeBridgeLazy = lazy(async () => ({
   default: (await import('@/features/three/XrMotionReferenceRuntimeBridge')).XrMotionReferenceRuntimeBridge,
 }))
@@ -63,6 +64,8 @@ function XrMotionReferenceRuntimeBridge() {
 }
 
 export default function App() {
+  if (String(window.location.hash || '').startsWith('#kgShare='))
+    return <Suspense fallback={<main className="min-h-svh bg-white p-6 text-sm text-slate-600">Opening shared document…</main>}><LocalDocumentSharePageLazy /></Suspense>
   if (new URLSearchParams(window.location.search).get('kgLearningCanvas') === 'drone')
     return <Suspense fallback={<p>Loading shared Canvas…</p>}><LearningCanvasEmbedLazy /></Suspense>
   return <CanvasApplication />
