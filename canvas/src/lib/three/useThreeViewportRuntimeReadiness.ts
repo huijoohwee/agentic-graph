@@ -26,6 +26,7 @@ export function useThreeViewportRuntimeReadiness(options: Options): Readiness {
       import('@/features/three/Controls'),
       import('@/lib/three/Scene.impl'),
       import('@/features/xr-v2/SemanticTwinStage'),
+      import('@/features/three/XrMotionReferenceGraphStage'),
     ]).then(() => {
       if (current) setState({ key, readiness: 'ready' })
     }).catch(error => {
