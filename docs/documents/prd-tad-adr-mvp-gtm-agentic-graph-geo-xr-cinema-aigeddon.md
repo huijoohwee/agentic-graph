@@ -1,18 +1,18 @@
 ---
 title: "Geo+XR Cinema Aigeddon — Product, Architecture, Decisions, MVP, and GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.11.0"
-revision: "0.11.0"
-date: "2026-10-13"
+version: "0.12.0"
+revision: "0.12.0"
+date: "2026-10-14"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Product architecture"
 continuity_id: "PLAN-GEO-XR-CINEMA-AIGEDDON"
-prd_revision: "0.11.0"
-tad_revision: "0.11.0"
-adr_revision: "0.11.0"
-mvp_revision: "0.11.0"
-gtm_revision: "0.11.0"
+prd_revision: "0.12.0"
+tad_revision: "0.12.0"
+adr_revision: "0.12.0"
+mvp_revision: "0.12.0"
+gtm_revision: "0.12.0"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -23,13 +23,13 @@ guideline_version: "3.4.0"
 guideline_revision: "085eb0b9f2351b30d8cb5fd00c16f04f4d127280"
 template_version: "1.5.0"
 template_revision: "085eb0b9f2351b30d8cb5fd00c16f04f4d127280"
-source_revision: "3b4dbb50bd86dd946d0d5b10e0cf97cad77d412e"
-agentic_os_revision: "c26c85587c40ee6021b29bfb48e45f127b602551"
+source_revision: "ee3c8dd8dd887ffe4fe51c3df1d33702a976cf52"
+agentic_os_revision: "073d9eb2498fbf6e2b610fc08a441e7ec854b4fc"
 ---
 
 # Geo+XR Cinema Aigeddon
 
-This joined record owns the cinema-specific product scope, architecture, decisions, smallest validation slice, and first-dollar experiment. Revision 0.11.0 connects the existing provider-neutral Video Agent route to cinematic planning and searchable Skills & Commands discovery, while retaining the local Hong Kong scene, source-backed Timeline, and existing media owners. It does not claim
+This joined record owns the cinema-specific product scope, architecture, decisions, smallest validation slice, and first-dollar experiment. Revision 0.12.0 records delivery evidence for the existing provider-neutral cinematic workspace while retaining the local Hong Kong scene, shared source-backed Timeline, and existing media owners. It does not claim
 native runtime readiness, persisted shot-to-actor joins, offline/mobile proof, image rights, or GTM proof.
 
 ## Authority and continuity
@@ -575,24 +575,12 @@ claim is required for this local implementation candidate.
 
 ## ADLC handover and next action
 
-The implementation lane is based on exact fetched origin/main revision
-3b4dbb50bd86dd946d0d5b10e0cf97cad77d412e. It changes the shared stage catalog, Media projection,
-BottomPanel Timeline route, local cinema adapter, seed, registry, and this joined record. The exact
-worktree candidate has local UI evidence only. It has no publication, merge, deployment, or
-Production authority.
+Development: PR #1707 merged at `9d8ccd9323f763f876923d0aa666e539783d0797` from lane head `5c619e3839cd88f7f82b76d3e5dc878acf6a40d5`; source-release receipt `c439325edf839674709464405f6aeea39ea49a3b5b3b8f1773ed629c27597326` binds the protected integration.
 
-2026-10-14 local verification: canvas `npm run typecheck` passes. The live `npm run dev` preview
-shows Hong Kong at 114.1588, 22.2856; the shared BottomPanel has nine shots and 9/9 local images.
-Camera mark 7 at 5.1s updates Camera Framing to 85mm in Human mode; returning to 0s restores 35mm,
-and the owner is restored to AI / LLM / MCP default. Mobile/keyboard review, offline replay,
-save/reload, rights enforcement, stage lifecycle, native readiness, and delivery remain unverified.
-Integration, deployment, and rollback still require their own exact candidate, authority, and receipts.
+Production Release: GitHub Production Release run [38505103102](https://github.com/huijoohwee/agentic-graph/actions/runs/38505103102) succeeded for canonical candidate `ee3c8dd8dd887ffe4fe51c3df1d33702a976cf52`, candidate digest `c5a7de5012a89484b7ff28e731fe5554c4e60d0b7eba34d2590790147475c8fe`; the exact candidate has human authorization, deployment receipt `dd0309a126a1882a87a1b3c0453386da0c4168707749e5d20b3de326a0835f65`, publication receipt `a8783505432affd4d38387afa52fbb7d6476d31f50ceb86bb9d4bf2a9b114943`, and retained rollback identity.
 
-The initial lane reservation omitted three already-dirty Graph paths. The native `release:common
-rebind` flow captured the complete existing inventory (59 entries, 933,754 bytes), preserved the
-worktree and head, then validated the matching workflow manifest and explicitly readmitted the
-candidate from canonical `main`. The resulting reservation covers the admitted exact path set; this
-recovery changed no source bytes and granted no provider, integration, cleanup, publication, or
-deployment authority.
+Runtime: readback is verified by receipt `eca859d3f067b5df77df982c90c5b20e68ae6f2fb9d8eab4e79d75ff2d992485`; immutable, stable, and public route transport evidence passed. The full Development, Production, Runtime, transport, travel-mesh and rollback evidence is retained in [production-delivery-evidence-38505103102.json](../reports/production-delivery-evidence-38505103102.json), SHA-256 `ee510c6190c71ed1a073f3247966db8851656bd9b9edbd0979f5d1fd533d5e94`.
 
-ACOS docs lane: `release:common start cinematic-production --plan=docs/PRD-TAD-ADR-MVP-GTM.md` created the declared sibling checkout at the fetched protected base. Its catalog-only update remains un-published and keeps `/video-agent` and the existing dictionaries as canonical owners.
+The merged implementation lane is delivery-complete at that candidate. Its exact deployed disposition is still pending a committed ledger row. Next: merge this evidence-only documentation lane, then land one control-ledger-only change recording the PR #1707 deployed row and this report lane's no-deploy row. The existing production result is reused; no second deployment is needed. Merge authority for the follow-up evidence and ledger lanes remains separate.
+
+Related work: the requested Agentic Canvas OS docs/SKILLS.md update remains blocked on native allocation reconciliation or a committed task plan; the Agentic OS dictionary remains unchanged under its pinned owner.
