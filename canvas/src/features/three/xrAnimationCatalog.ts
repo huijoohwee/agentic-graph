@@ -15,13 +15,16 @@ export const XR_ACTION_PATH_PRESET_IDS = [
   'helicopter-orbit',
   'car-chase',
   'collapsing-debris',
+  'patrol-sweep',
+  'pursuit-dash',
+  'street-cruise',
 ] as const
 
 export type XrCharacterMotionPresetId = (typeof XR_CHARACTER_MOTION_PRESET_IDS)[number]
 export type XrActionPathPresetId = (typeof XR_ACTION_PATH_PRESET_IDS)[number]
 export type XrAnimationPresetId = XrCharacterMotionPresetId | XrActionPathPresetId
 export type XrAnimationTrackKind = 'character-motion' | 'action-path'
-export type XrAnimationPropCue = 'none' | 'cup' | 'cards' | 'squirt-gun'
+export type XrAnimationPropCue = 'none' | 'cup' | 'cards' | 'squirt-gun' | 'tablet'
 
 type XrAnimationPresetBase = Readonly<{
   label: string
@@ -89,6 +92,9 @@ export const XR_ANIMATION_PRESETS: readonly XrAnimationPreset[] = Object.freeze(
   { id: 'squirt-gun', kind: 'character-motion', label: 'Squirt gun', description: 'Ready, aim, squeeze, recoil, and reset with a procedural prop cue.', cycleSeconds: 2.2, loop: true, compatibleCategories: PEOPLE, compatibleAssetIds: [], keywords: ['squirt gun', 'water', 'aim', 'recoil'] },
   { id: 'helicopter-orbit', kind: 'action-path', label: 'Helicopter orbit', description: 'Constant-altitude establishing orbit with a complete facing path.', cycleSeconds: 8, loop: true, compatibleCategories: VEHICLES, compatibleAssetIds: ['vehicle-helicopter'], keywords: ['helicopter', 'orbit', 'aerial', 'circle'] },
   { id: 'car-chase', kind: 'action-path', label: 'Car chase', description: 'Acceleration, lane changes, corner pressure, and escape-line finish.', cycleSeconds: 7, loop: false, compatibleCategories: VEHICLES, compatibleAssetIds: ['vehicle-sedan', 'vehicle-van'], keywords: ['car', 'chase', 'lane change', 'pursuit'] },
+  { id: 'patrol-sweep', kind: 'action-path', label: 'Patrol sweep', description: 'Walking perimeter loop with corner pauses for guards, sentries, and security performers.', cycleSeconds: 12, loop: false, compatibleCategories: PEOPLE, compatibleAssetIds: [], keywords: ['patrol', 'guard', 'security', 'sweep', 'perimeter'] },
+  { id: 'pursuit-dash', kind: 'action-path', label: 'Pursuit dash', description: 'Emerge at a walk, break into a jog, sprint with a cut-back, and land in a held pose.', cycleSeconds: 9, loop: false, compatibleCategories: PEOPLE, compatibleAssetIds: [], keywords: ['pursuit', 'escape', 'run', 'sprint', 'chase', 'on foot'] },
+  { id: 'street-cruise', kind: 'action-path', label: 'Street cruise', description: 'Roll in along a street, swing through a bend, and brake to a held stop.', cycleSeconds: 5, loop: false, compatibleCategories: VEHICLES, compatibleAssetIds: ['vehicle-sedan', 'vehicle-van'], keywords: ['car', 'street', 'cruise', 'arrival', 'brake'] },
   { id: 'collapsing-debris', kind: 'action-path', label: 'Collapsing debris', description: 'Suspended mass, staged fall, impact, bounce, and final settle.', cycleSeconds: 4, loop: false, compatibleCategories: PROPS, compatibleAssetIds: ['prop-debris-cluster'], keywords: ['debris', 'collapse', 'fall', 'impact', 'bounce'] },
 ])
 
@@ -192,20 +198,62 @@ export function buildXrAnimationActionPath(args: {
   durationSeconds: number
   origin: XrMotionReferenceVector
   stageSizeMeters: readonly [number, number]
+  /** Optional cue time; the path then holds at its first mark and plays from the cue to the end. */
+  startTimeSeconds?: number
 }): readonly XrAnimationPathMark[] {
   const duration = Math.max(1, Number(args.durationSeconds) || 1)
+  const start = round(clamp(Number(args.startTimeSeconds) || 0, 0, duration - 0.5), 3)
+  const path = buildActionPathWindow({ ...args, durationSeconds: duration - start })
+  if (start <= 0) return path
+  const shifted = path.map(item => ({ ...item, timeSeconds: round(item.timeSeconds + start, 3) }))
+  return [{ timeSeconds: 0, position: shifted[0]!.position, transition: 'ease-in-out', gait: 'hold' }, ...shifted]
+}
+
+function buildActionPathWindow(args: {
+  presetId: XrActionPathPresetId
+  durationSeconds: number
+  origin: XrMotionReferenceVector
+  stageSizeMeters: readonly [number, number]
+}): readonly XrAnimationPathMark[] {
+  const duration = Math.max(0.5, Number(args.durationSeconds) || 1)
   const [width, depth] = args.stageSizeMeters
-  const defaultGait: XrChoreographyGait = args.presetId === 'car-chase'
+  const defaultGait: XrChoreographyGait = args.presetId === 'car-chase' || args.presetId === 'street-cruise'
     ? 'wheeled'
     : args.presetId === 'collapsing-debris'
       ? 'drop'
-      : 'flight'
+      : args.presetId === 'patrol-sweep' || args.presetId === 'pursuit-dash'
+        ? 'walk'
+        : 'flight'
   const mark = (
     progress: number,
     position: XrMotionReferenceVector,
     transition: XrChoreographyEasing = 'ease-in-out',
     gait: XrChoreographyGait = defaultGait,
   ): XrAnimationPathMark => ({ timeSeconds: round(duration * progress, 3), position: boundedPosition(position, args.stageSizeMeters), transition, gait })
+  const [ox, oy, oz] = args.origin
+  if (args.presetId === 'patrol-sweep') return [
+    mark(0, [ox, oy, oz]),
+    mark(0.22, [ox + 1.6, oy, oz]),
+    mark(0.3, [ox + 1.6, oy, oz]),
+    mark(0.52, [ox + 1.6, oy, oz - 1.4]),
+    mark(0.6, [ox + 1.6, oy, oz - 1.4]),
+    mark(0.82, [ox, oy, oz - 1.4]),
+    mark(1, [ox, oy, oz]),
+  ]
+  if (args.presetId === 'pursuit-dash') return [
+    mark(0, [ox, oy, oz], 'ease-in'),
+    mark(0.2, [ox + 0.5, oy, oz - 0.7], 'ease-in-out', 'jog'),
+    mark(0.42, [ox + 1.6, oy, oz - 2.6], 'linear', 'run'),
+    mark(0.64, [ox + 0.4, oy, oz - 5], 'linear', 'run'),
+    mark(0.84, [ox + 2, oy, oz - 6.8], 'ease-out', 'jog'),
+    mark(1, [ox + 2.4, oy, oz - 7.3], 'hold', 'hold'),
+  ]
+  if (args.presetId === 'street-cruise') return [
+    mark(0, [ox, 0, oz], 'ease-in'),
+    mark(0.35, [ox, 0, oz - 3.5], 'linear'),
+    mark(0.7, [ox + 1.4, 0, oz - 6.5]),
+    mark(1, [ox + 1.6, 0, oz - 8], 'hold', 'hold'),
+  ]
   if (args.presetId === 'helicopter-orbit') {
     const radiusX = Math.max(2.5, width * 0.28)
     const radiusZ = Math.max(2.5, depth * 0.28)

@@ -10,6 +10,7 @@ import {
   setXrMotionReferenceCameraRig,
 } from './xrMotionReferenceRuntime'
 import { resolveXrShotTarget } from './xrShotTargets'
+import { readCinematicControlMode, type CinematicControlMode } from '@/features/cinema/cinematicControlModeRuntime'
 
 export type ApplyXrCameraMoveResult = Readonly<{
   applied: boolean
@@ -24,7 +25,11 @@ export function applyXrCameraMove(args: {
   playheadSeconds: number
   moveDurationSeconds?: number
   settings: StrybldrCameraSettings
-}): ApplyXrCameraMoveResult {
+}, controller: CinematicControlMode = 'agent'): ApplyXrCameraMoveResult {
+  if (readCinematicControlMode() !== controller) {
+    const owner = readCinematicControlMode() === 'human' ? 'Human' : 'AI / LLM / MCP'
+    return Object.freeze({ applied: false, message: `Camera move is owned by ${owner}; switch Control owner before using this route.` })
+  }
   const runtime = readXrMotionReferenceRuntime()
   if (!resolveXrShotTarget(runtime.plan, args.anchorId)) {
     return Object.freeze({ applied: false, message: 'Select a Scene or 3D Object before applying a target-bound Camera move.' })

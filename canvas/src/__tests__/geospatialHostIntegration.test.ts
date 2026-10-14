@@ -287,9 +287,8 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   if (viewportText.includes('shared-xr-stage') || hostText.includes('sharedXrStage')) {
     throw new Error('Expected Geo+XR to avoid the conflicting shared-R3F provider policy')
   }
-  if (!publisherText.includes('publishGeoXrOverlayComposition({')
-    || !publisherText.includes('projectFlightSimToGeospatialOverlay(')) {
-    throw new Error('Expected Geo+XR to publish the deterministic Flight projection to the Geo owner')
+  if (!['publishGeoXrOverlayComposition({', 'projectFlightSimToGeospatialOverlay(', 'retryCinemaCameraAfterMapMount', 'cancelAnimationFrame(mapMountFrame)'].every(marker => publisherText.includes(marker))) {
+    throw new Error('Expected Geo+XR to retain its deterministic Flight projection and bounded Cinema camera retry')
   }
   if (!hostText.includes('const mapLibreRuntimeEnabled = show2dMapLibre || show3d')
     || !hostText.includes('useFlightGeoOverlayMapLibrePresentation({')

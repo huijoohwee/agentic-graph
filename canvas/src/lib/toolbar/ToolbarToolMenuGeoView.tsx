@@ -115,6 +115,11 @@ export const GeoView = React.memo(function GeoView(props: {
         <span className={UI_THEME_TOKENS.text.secondary}>
           {selectedEnvironment.environmentKind} · {selectedEnvironment.sizeMeters.join(' × ')} m · local authored stage
         </span>
+        {selectedEnvironment.geospatialContext?.purpose === 'regional-viewport-only' ? (
+          <span className={UI_THEME_TOKENS.text.tertiary} data-kg-geo-xr-context="regional-viewport-only">
+            {selectedEnvironment.geospatialContext.label} · local blockout preview only · no shot or structure geotags
+          </span>
+        ) : null}
       </section>
       {geospatialModeEnabled ? (
         <ErrorBoundary>

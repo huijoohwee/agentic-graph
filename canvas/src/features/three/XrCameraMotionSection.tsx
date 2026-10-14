@@ -1,6 +1,7 @@
 import { persistXrSceneToAuthoredSource } from './xrScenePersistence'
 import React from 'react'
 import type { VideoSequenceTimelineClipOverlayRenderArgs } from '@/components/timeline/VideoSequenceTimelineRuler'
+import type { VideoSequenceTimelineInsertedLane } from '@/components/timeline/VideoSequenceTimelineLanes'
 import {
   resolveVideoSequenceRulerInsetLeft, resolveVideoSequenceRulerInsetWidth,
 } from '@/components/timeline/videoSequenceTimelineRulerGeometry'
@@ -61,7 +62,9 @@ import {
   readGameFpsSnapshot,
   subscribeGameFpsSnapshot,
 } from '@/features/game-fps/gameFpsRuntime'
-export function XrCameraMotionSection() {
+export function XrCameraMotionSection({ supplementalTimelineLanes = [] }: {
+  supplementalTimelineLanes?: readonly VideoSequenceTimelineInsertedLane[]
+} = {}) {
   const activeGraphData = useActiveGraphRenderData(true)
   const {
     canvas3dMode,
@@ -186,7 +189,7 @@ export function XrCameraMotionSection() {
   }, [graphData, pushUiToast])
 
   const scrubPlayhead = React.useCallback((timeSeconds: number) => {
-    const result = controlLocalAnimation({ operation: 'scrub', timeSeconds })
+    const result = controlLocalAnimation({ operation: 'scrub', timeSeconds }, 'human')
     if (result.ok) return
     pushUiToast({
       id: 'xr:animation:error',
@@ -266,7 +269,7 @@ export function XrCameraMotionSection() {
       state.setBottomSurfaceTab('timeline')
       state.setBottomSurfaceCollapsed(false)
     }
-    const result = controlLocalXrScene({ action: 'stage', stageId })
+    const result = controlLocalXrScene({ action: 'stage', stageId }, 'human')
     keepTimelineOpen()
     if (typeof window !== 'undefined') window.requestAnimationFrame(keepTimelineOpen)
     pushUiToast({
@@ -364,6 +367,7 @@ export function XrCameraMotionSection() {
             runtime, gameMission, objectTargets, currentRehearsalBeat, selectedTimelineLaneId,
             sceneScaleDurationSeconds, documentLoaded, simulationPhase, simulationBodyCount, simulationRuntime,
             selectObjectTimelineLane, selectCameraTimelineLane, selectSimulationTimelineLane, selectNpcTimelineLane,
+            supplementalTimelineLanes,
           })}
           timeAxisControls={(
             <section className="flex min-w-0 flex-wrap items-center gap-2" aria-label="XR timeline scale controls" data-kg-timeline-axis-controls-layout="duration-fps">

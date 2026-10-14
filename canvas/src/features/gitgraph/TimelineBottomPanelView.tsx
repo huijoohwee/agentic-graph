@@ -3,6 +3,7 @@ import { useSourceGeospatialContext } from '@/features/evidence-analysis/geospat
 
 const SourceGeospatialTimelinePanel = React.lazy(() => import('@/features/evidence-analysis/SourceGeospatialTimelinePanel').then(module => ({ default: module.SourceGeospatialTimelinePanel })))
 import { GanttTimelineTransportPanel } from './GanttTimelineTransportPanel'
+import type { VideoSequenceTimelineInsertedLane } from '@/components/timeline/VideoSequenceTimelineLanes'
 import { useMermaidGanttDocument } from './useMermaidGanttDocument'
 import { useStoryboardWidgetDiagramSelectionBridge } from './useStoryboardWidgetDiagramSelectionBridge'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -26,15 +27,29 @@ import {
   subscribeGameModeSnapshot,
 } from '@/features/game-fps/gameModeRuntime'
 import { readGameFpsSnapshot, subscribeGameFpsSnapshot } from '@/features/game-fps/gameFpsRuntime'
+import { extractYamlFrontmatterHeaderBlock } from '@/lib/markdown/frontmatter'
 
 const SemanticObjectInspector = React.lazy(() => import('@/features/xr-v2/SemanticSpacePanel').then(module => ({ default: module.SemanticSpacePanel })))
 const SequenceTimeline = React.lazy(() => import('@/features/sequence/SequenceTimeline').then(module => ({ default: module.SequenceTimeline })))
+const CinemaShotTimeline = React.lazy(() => import('@/features/cinema/CinemaShotTimeline').then(module => ({ default: module.CinemaShotTimeline })))
 const WarehouseTimelinePanel = React.lazy(() => import('@/features/python-learning/WarehouseTimelinePanel').then(module => ({ default: module.WarehouseTimelinePanel })))
 
-function MediaTimelineBottomPanelView({ compact }: { compact: boolean }) {
+function hasCinemaTimelineSource(sourceText: string): boolean {
+  const yamlText = extractYamlFrontmatterHeaderBlock(sourceText)?.yamlText || ''
+  return /^planned_cinema_demo:\s*$/m.test(yamlText)
+}
+
+function MediaTimelineBottomPanelView({ compact, runtimeDurationSeconds, runtimeFrameRate, timelineInsertedLanes = [] }: {
+  compact: boolean
+  runtimeDurationSeconds?: number
+  runtimeFrameRate?: number
+  timelineInsertedLanes?: readonly VideoSequenceTimelineInsertedLane[]
+}) {
   const { code: mediaGanttCode, ganttModel, graphData } = useMermaidGanttDocument({ purpose: 'media' })
   const { handleDiagramSelectedRowKeyChange } = useStoryboardWidgetDiagramSelectionBridge({ graphData, diagramModel: ganttModel, kind: 'gantt' })
-  return <GanttTimelineTransportPanel code={mediaGanttCode} compact={compact} mode="media" onSelectedRowKeyChange={handleDiagramSelectedRowKeyChange} />
+  return <GanttTimelineTransportPanel code={mediaGanttCode} compact={compact} mode="media"
+    runtimeDurationSeconds={runtimeDurationSeconds} runtimeFrameRate={runtimeFrameRate}
+    timelineInsertedLanes={timelineInsertedLanes} onSelectedRowKeyChange={handleDiagramSelectedRowKeyChange} />
 }
 
 function LiveGeoXrSimulationTimeline({ compact }: { compact: boolean }) {
@@ -154,13 +169,22 @@ export function XrObjectInspector({ emptyMessage = '' }: { emptyMessage?: string
 }
 
 export function TimelineBottomPanelView({ compact = false }: { compact?: boolean }) {
+  const sourceText = useGraphStore(state => state.markdownDocumentText || '')
   const sourceContext = useSourceGeospatialContext()
+  const cinemaSource = React.useMemo(() => hasCinemaTimelineSource(sourceText), [sourceText])
   const sequenceContext = useGraphStore(state => state.canvasRenderMode === '2d' && ['sequence', 'sequenceMermaid'].includes(state.canvas2dRenderer))
   const { available: warehouseTimelineAvailable } = useWarehouseInspectionMode()
   const xrTimelineContext = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
   const stageAuthority = useGraphStore(state => resolveXrDocumentStageAuthority(state))
   if (sourceContext) return <React.Suspense fallback={<p>Opening source Timeline…</p>}><SourceGeospatialTimelinePanel compact={compact} /></React.Suspense>
   if (warehouseTimelineAvailable) return <React.Suspense fallback={<p>Opening warehouse timeline…</p>}><WarehouseTimelinePanel compact={compact} /></React.Suspense>
+  if (cinemaSource) return <React.Suspense fallback={<p>Opening cinema shot Timeline…</p>}>
+    <CinemaShotTimeline sourceText={sourceText} compact={compact} xrTimeline={Boolean(xrTimelineContext && stageAuthority)}>
+      {timelineInsertedLanes => xrTimelineContext && stageAuthority
+        ? <><XrCameraMotionSection supplementalTimelineLanes={timelineInsertedLanes} /><XrSubjectTransformEditor /></>
+        : <MediaTimelineBottomPanelView compact={compact} timelineInsertedLanes={timelineInsertedLanes} />}
+    </CinemaShotTimeline>
+  </React.Suspense>
   if (xrTimelineContext && !stageAuthority) return <LiveGeoXrSimulationTimeline compact={compact} />
   if (xrTimelineContext) return <><XrSubjectTransformEditor /><XrCameraMotionSection /></>
   if (sequenceContext) return <React.Suspense fallback={<p>Opening sequence timeline…</p>}><SequenceTimeline /></React.Suspense>

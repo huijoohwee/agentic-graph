@@ -31,6 +31,7 @@ import { useXrSceneMediaDrop } from '@/features/three/useXrSceneMediaDrop'
 import { XrCameraAspectMask } from '@/features/three/XrCameraAspectMask'
 import { XrArPlacementStage } from '@/features/three/XrArPlacementStage'
 import { XrGeoProjectedMediaSubjects } from '@/features/three/XrGeoProjectedMediaSubjects'
+import { useThreeViewportRuntimeReadiness } from '@/lib/three/useThreeViewportRuntimeReadiness'
 import { subscribeXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
 import { isXrPhysicsRuntimeRunReadyDemoActive, isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { XrRendererClearController } from '@/lib/three/XrRendererClearController'
@@ -256,13 +257,21 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     : learningScene || immersiveMediaStageActive || hasXrEmptyWorld || hasGraph ? 1 : 0
   const rendererLifecycleKey = resolveThreeRendererLifecycleKey(mode) + `-${rendererBackend.key}`
   const [resolution, setResolution] = useState<{ key: string; dpr: number } | null>(null)
-  const canvasDpr = resolution?.key === rendererLifecycleKey ? resolution.dpr : [1, 2] as [number, number]
-  const setCanvasDpr = useCallback((dpr: number) => setResolution({ key: rendererLifecycleKey, dpr }), [rendererLifecycleKey])
+  // Geo+XR composites over MapLibre tiles, so it must match the map pixel ratio instead of adaptively downscaling.
+  const geospatialDpr = geospatialComposite
+    ? Math.min(2, Math.max(1, typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1))
+    : null
+  const canvasDpr = geospatialDpr ?? (resolution?.key === rendererLifecycleKey ? resolution.dpr : [1, 2] as [number, number])
+  const setCanvasDpr = useCallback((dpr: number) => {
+    if (geospatialComposite) return
+    setResolution({ key: rendererLifecycleKey, dpr })
+  }, [geospatialComposite, rendererLifecycleKey])
   const rendererMounted = shouldMountThreeRenderer({
     mode,
     hasRenderableScene,
     webglSupported: effectiveWebglSupported,
   })
+  const xrRuntimeReadiness = useThreeViewportRuntimeReadiness({ active: active && rendererMounted, mode, documentLoaded: xrDocumentLoaded, geospatialComposite })
   useEffect(() => {
     draggedNodeIdRef.current = draggedNodeId
   }, [draggedNodeId])
@@ -428,6 +437,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       ref={containerRef}
       className="absolute inset-0 w-full h-full z-0"
       data-kg-xr-document-loaded={mode === 'xr' ? (xrDocumentLoaded ? '1' : '0') : undefined}
+      data-kg-xr-runtime-ready={mode === 'xr' ? xrRuntimeReadiness : undefined}
       data-kg-xr-scene-authority={xrSceneAuthority}
       data-kg-xr-exclusive-stage={mode === 'xr' && (immersiveMediaStageActive || hasGraph || hasXrEmptyWorld) ? '1' : undefined}
       data-kg-xr-empty-world={hasXrEmptyWorld ? '1' : undefined}
