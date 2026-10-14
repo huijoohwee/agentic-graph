@@ -99,12 +99,15 @@ try {
     })
     const start = performance.now(), actions = []
     await page.goto(origin + '/agentic-graph/?openEditorWorkspace=1', { waitUntil: 'domcontentloaded', timeout: 60000 })
-    // Boot readiness accepts multiple source roots; subsequent actions target their own named controls.
+    // Navigation can render before source restoration finishes, especially on touch viewports.
     await page.getByRole('navigation', { name: 'Source files', exact: true }).first().waitFor({ timeout: 60000 })
+    await page.locator('[data-kg-canvas-viewport-root="1"][data-kg-source-authority-phase="ready"]').waitFor({ timeout: 60000 })
     await page.getByRole('button', { name: 'Launch', exact: true }).click(); actions.push('Open Launch')
     const chooser = page.waitForEvent('filechooser')
     await page.getByText('Choose files', { exact: true }).click(); actions.push('Choose files')
     await (await chooser).setFiles({ name: 'spatial-pilot.md', mimeType: 'text/markdown', buffer: Buffer.from(source) }); actions.push('Select local scene')
+    await page.locator('[data-kg-toast-message]').filter({ hasText: /^Imported 1$/ }).waitFor({ timeout: 60000 })
+    await page.locator('[data-kg-canvas-viewport-root="1"][data-kg-source-authority-phase="ready"]').waitFor({ timeout: 60000 })
     const review = page.getByRole('region', { name: 'Spatial change review', exact: true })
     await review.getByRole('button', { name: 'Preview +1 m on X', exact: true }).waitFor()
     await page.waitForFunction(() => { const fieldset = document.querySelector('[data-kg-spatial-review] fieldset'); return fieldset && !fieldset.disabled })
