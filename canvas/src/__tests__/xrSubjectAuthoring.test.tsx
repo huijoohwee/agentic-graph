@@ -25,9 +25,10 @@ import { settleWorkspaceSourceTextWrites } from '@/hooks/store/graph-data-slice/
 import { publishCameraFramingRuntime, readCameraFramingRuntime, readCameraFramingRuntimeDocumentKey } from '@/features/strybldr/cameraFramingRuntime'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
+import { readCinematicControlMode, setCinematicControlMode } from '@/features/cinema/cinematicControlModeRuntime'
 
 export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsValidDraft() {
-  const prior = useGraphStore.getState(), priorRuntime = readXrMotionReferenceRuntime()
+  const prior = useGraphStore.getState(), priorRuntime = readXrMotionReferenceRuntime(), priorControlMode = readCinematicControlMode()
   const env = initJsdomHarness('<!doctype html><body><div id="root"></div></body>')
   const container = env.dom.window.document.getElementById('root')!, root = createRoot(container)
   const plan = readXrMotionReferencePlan({ stageId: 'neutral-volume', subjects: [{ id: 'shared-id', assetId: 'prop-crate', label: 'Crate' }] })
@@ -46,10 +47,15 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
   const focus = (input: HTMLInputElement) => input.dispatchEvent(new env.dom.window.FocusEvent('focusin', { bubbles: true }))
   const blur = (input: HTMLInputElement) => input.dispatchEvent(new env.dom.window.FocusEvent('focusout', { bubbles: true }))
   try {
+    setCinematicControlMode('agent')
     completeSourceFilesBootstrap()
     const originalA = install('/draft-a.md')
     await mountReactRoot(root, <XrSubjectTransformEditor />)
     assert.ok(container.querySelector('input[aria-label="Subject description"]'), 'Catalog subjects retain the opt-in construction entry')
+    assert.equal(readCinematicControlMode(), 'agent', 'AI / LLM / MCP owns the default scene controls')
+    assert.equal(container.querySelector<HTMLFieldSetElement>('[aria-label="Human object controls"]')?.disabled, true)
+    await act(async () => { setCinematicControlMode('human') })
+    assert.equal(container.querySelector<HTMLFieldSetElement>('[aria-label="Human object controls"]')?.disabled, false)
     const old = nameInput()
     await act(async () => { focus(old); old.value = 'Stale from A' })
     let originalB = ''
@@ -375,6 +381,7 @@ export async function testXrSubjectEditorFencesDuplicateDocumentsAndPersistsVali
   } finally {
     await unmountReactRoot(root)
     await settleWorkspaceSourceTextWrites()
+    setCinematicControlMode(priorControlMode)
     useGraphStore.setState(prior); restoreXrMotionReferenceRuntimeSnapshot(priorRuntime)
     env.restore()
   }

@@ -32,6 +32,7 @@ import {
   hydrateCanonicalXrPhysicsRuntime,
 } from './XrMotionReferenceRuntimeBridge'
 import { readXrSceneDocumentReady } from './xrSceneDocumentReadiness'
+import { readCinematicControlMode, type CinematicControlMode } from '@/features/cinema/cinematicControlModeRuntime'
 import { XR_PHYSICS_GRAPH_METADATA_KEY } from './xrPhysicsModel'
 import {
   applyXrPhysicsImpulse,
@@ -334,9 +335,12 @@ function runXrPhysicsControl(physics: XrPhysicsControlInput): XrPhysicsControlRe
   return { ok: true, message: `XR body ${physics.operation} persisted for ${subject.label}.`, subjectId }
 }
 
-export function controlLocalXrScene(input: XrSceneControlInput): XrSceneControlResult {
+export function controlLocalXrScene(input: XrSceneControlInput, controller: CinematicControlMode = 'agent'): XrSceneControlResult {
   const control = normalizeXrSceneControl(input)
   if (!control) return { ok: false, message: 'Use a supported XR action or an invocation such as /xr.place @person-adult transition=linear.' }
+  if (readCinematicControlMode() !== controller) {
+    return { ok: false, message: `XR scene is in ${readCinematicControlMode() === 'human' ? 'Human' : 'AI / LLM / MCP'} control mode; switch Control owner before using this route.` }
+  }
   if (!hydrateActiveXrScene()) return { ok: false, message: 'Open or create a graph document before controlling the XR scene.' }
   const requestedStage = control.action === 'stage'
     ? XR_MOTION_REFERENCE_STAGE_PRESETS.find(candidate => candidate.id === control.stageId)

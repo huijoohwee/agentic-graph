@@ -266,7 +266,7 @@ export function projectXrEnvironmentToFlightGeo(
     }, reference)
   const footprintSurface: FlightGeoEnvironmentSurface = Object.freeze({
     baseHeightMeters: 0,
-    color: '#0f766e',
+    color: stage.visualProfile === 'night-waterfront' ? '#0b1824' : '#0f766e',
     heightMeters: 0.08,
     id: `${stage.id}:footprint`,
     kind: 'stage-footprint',

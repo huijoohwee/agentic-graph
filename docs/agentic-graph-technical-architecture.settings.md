@@ -31,7 +31,10 @@ separate settings authority.
 <!-- SETTINGS_REGISTRY_CONTINUATION_TABLE_START -->
 
 | Setting key | Type | Source | LS key (if any) | Owner |
-| ----------- | ---- | ------ | ------------ | ----- |
+| --- | --- | --- | --- | --- |
+| `storyboardWidgetOverlayWheelProxyEnabled` | boolean | store | `kg:ui:storyboardWidget:overlayWheelProxyEnabled` | `ui.workspace` |
+| `viewPinned` | boolean | store |  |  |
+| `fitToScreenMode` | boolean | store |  |  |
 | `zoomToSelectionMode` | boolean | store |  |  |
 | `zoomDurationFitMs` | number | store | `kg:ui:zoom:durationFitMs` | `ui.workspace` |
 | `zoomDurationSelectionMs` | number | store | `kg:ui:zoom:durationSelectionMs` | `ui.workspace` |
@@ -165,8 +168,6 @@ separate settings authority.
 | `three.media.iframeOverlay.poolMax` | number | store |  |  |
 | `three.media.iframeOverlay.maxVisibleDefault` | number | store |  |  |
 | `three.media.iframeOverlay.maxVisibleCompact` | number | store |  |  |
-| `three.media.iframeOverlay.maxDistanceDefault` | number | store |  |  |
-| `three.media.iframeOverlay.maxDistanceCompact` | number | store |  |  |
 | `three.media.iframeOverlay.baseWidthRatioDefault` | number | store |  |  |
 | `three.media.iframeOverlay.baseWidthRatioCompact` | number | store |  |  |
 | `three.media.iframeOverlay.baseWidthMinPxDefault` | number | store |  |  |
@@ -225,6 +226,14 @@ separate settings authority.
 | `payments.stripe.mcp.localArgs` | json | localStorage |  |  |
 | `payments.stripe.mcp.startupTimeoutMs` | number | localStorage |  |  |
 | `payments.stripe.mcp.requireConfirmation` | boolean | localStorage |  |  |
+| `payments.travel.issuance.mcpServerKey` | string | localStorage |  |  |
+| `payments.travel.issuance.mcpTransport` | string | localStorage |  |  |
+| `payments.travel.issuance.mcpToolName` | string | localStorage |  |  |
+| `payments.travel.issuance.deadlineMs` | number | localStorage |  |  |
+| `payments.travel.issuance.perCardCapMinor` | number | localStorage |  |  |
+| `payments.travel.issuance.currency` | string | localStorage |  |  |
+| `payments.travel.issuance.productionEnabled` | boolean | localStorage |  |  |
+| `payments.travel.guardrail.retryBound` | number | localStorage |  |  |
 
 <!-- SETTINGS_REGISTRY_CONTINUATION_TABLE_END -->
 
