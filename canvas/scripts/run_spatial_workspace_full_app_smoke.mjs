@@ -106,9 +106,12 @@ try {
     const chooser = page.waitForEvent('filechooser')
     await page.getByText('Choose files', { exact: true }).click(); actions.push('Choose files')
     await (await chooser).setFiles({ name: 'spatial-pilot.md', mimeType: 'text/markdown', buffer: Buffer.from(source) }); actions.push('Select local scene')
-    await page.locator('[data-kg-toast-message]').filter({ hasText: /^Imported 1$/ }).waitFor({ timeout: 60000 })
-    await page.locator('[data-kg-canvas-viewport-root="1"][data-kg-source-authority-phase="ready"]').waitFor({ timeout: 60000 })
     const review = page.getByRole('region', { name: 'Spatial change review', exact: true })
+    await page.waitForFunction(() => {
+      const object = document.querySelector('[data-kg-spatial-review] [data-kg-select="true"][aria-label="Review object"]')
+      return object?.getAttribute('data-value') === 'box'
+    }, undefined, { timeout: 60000 })
+    await page.locator('[data-kg-canvas-viewport-root="1"][data-kg-source-authority-phase="ready"]').waitFor({ timeout: 60000 })
     await review.getByRole('button', { name: 'Preview +1 m on X', exact: true }).waitFor()
     await page.waitForFunction(() => { const fieldset = document.querySelector('[data-kg-spatial-review] fieldset'); return fieldset && !fieldset.disabled })
     const initialLayout = await visibleReviewWidth(review)
