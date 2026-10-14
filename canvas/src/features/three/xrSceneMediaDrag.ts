@@ -99,14 +99,14 @@ export function controlXrSceneMediaDrop(payload: MediaDragPayload): XrSceneContr
   const projection = normalizeXrSceneMediaDragProjection(payload.xrScene)
   if (!projection) return null
   if (projection.entityKind === 'environment') {
-    return controlLocalXrScene({ action: 'stage', stageId: projection.entityId })
+    return controlLocalXrScene({ action: 'stage', stageId: projection.entityId }, 'human')
   }
   const result = controlLocalXrScene({
     action: 'place',
     assetId: projection.entityId,
     transition: projection.transition || 'linear',
     ...(projection.subjectLabel ? { label: projection.subjectLabel } : {}),
-  })
+  }, 'human')
   if (result.ok && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent<XrSceneMediaDropCommittedDetail>(XR_SCENE_MEDIA_DROP_COMMITTED_EVENT, {
       detail: {

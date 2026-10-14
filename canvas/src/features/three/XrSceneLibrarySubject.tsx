@@ -15,6 +15,7 @@ import { buildProceduralAsset, disposeProceduralAsset } from '@/features/image-t
 import { XrProceduralBallGeometry } from '@/features/three/XrProceduralBallGeometry'
 import { XrProceduralHouseGeometry } from '@/features/three/XrProceduralHouseGeometry'
 import { XrProceduralVehicleGeometry } from '@/features/three/XrProceduralVehicleGeometry'
+import { XrCinematicHumanoid } from '@/features/three/XrCinematicHumanoid'
 import {
   XR_MOTION_REFERENCE_SELECTION_COLOR,
   type XrMotionReferenceSubject,
@@ -194,7 +195,10 @@ function Debris({ color, size }: { color: string; size: readonly [number, number
     [-0.08, 0.2, 0.58, 0.48, 0.24, 0.22],
     [0.3, 0.22, 0.16, 0.22, 0.42, 0.34],
   ] as const
-  return <group>{fragments.map((fragment, index) => <mesh key={index} position={[fragment[0] * width, fragment[1] * depth, fragment[2] * height]} rotation={[index * 0.31, index * 0.47, index * 0.23]}><boxGeometry args={[fragment[3] * width, fragment[4] * depth, fragment[5] * height]} /><Material color={color} /></mesh>)}</group>
+  return <group>{fragments.map((fragment, index) => <mesh key={index} position={[fragment[0] * width, fragment[1] * depth, fragment[2] * height]} scale={[fragment[3] * width, fragment[4] * depth, fragment[5] * height]} rotation={[index * 0.31, index * 0.47, index * 0.23]} castShadow receiveShadow>
+    <dodecahedronGeometry args={[0.5, 0]} />
+    <meshStandardMaterial color={color} roughness={index % 2 ? 0.78 : 0.52} metalness={index % 2 ? 0.14 : 0.42} flatShading />
+  </mesh>)}</group>
 }
 
 function Chair({ color, size }: { color: string; size: readonly [number, number, number] }) {
@@ -338,6 +342,9 @@ export function XrSceneLibraryAssetGeometry({
   const size = asset.dimensionsMeters
   const effectiveColor = color || asset.defaultColor
   if (asset.poiDetailKitId) return <XrProceduralPoiDetailKit poiId={asset.poiDetailKitId} />
+  if (asset.shape === 'humanoid' && asset.visualProfile) {
+    return <XrCinematicHumanoid profile={asset.visualProfile} color={effectiveColor} pose={animationPose} size={size} />
+  }
   const character = asset.id === 'character-pig' ? 'pig' : asset.id === 'character-wolf' ? 'wolf' : asset.id === 'character-monkey' ? 'monkey' : resolveCharacterSilhouette(label)
   if (asset.shape === 'humanoid' && character !== 'person') return <XrStoryCharacter kind={character} color={effectiveColor} pose={animationPose} size={size} />
   if (asset.shape === 'sailboat') return <XrSailboatGeometry color={effectiveColor} size={size} />

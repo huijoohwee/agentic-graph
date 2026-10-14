@@ -128,7 +128,7 @@
       "id": "agent.video",
       "version": "1.0.0",
       "title": "Video Agent",
-      "summary": "Source-backed video reasoning across transcript, frame evidence, annotations, timeline planning, render intent, and rich-media output.",
+      "summary": "Provider-neutral cinematic and video production across source-grounded story, scene continuity, storyboard, shot timing, camera and subject action, and rich-media output.",
       "planProfile": "superagent.full.v1",
       "capabilities": ["evidence.research", "media.ingest", "media.annotation", "media.storyboard", "media.render", "artifact.export", "audit", "cost"],
       "inputSchemaRef": "agentic-graph.agent-run.input/v1",
@@ -138,7 +138,7 @@
       "bounds": { "maxSteps": 80, "maxRetriesPerTask": 2, "maxWallSeconds": 900, "maxConcurrentWorkers": 3 },
       "fallback": "Return source metadata, frame and transcript evidence, a deterministic render plan, and a structured provider-unavailable error without inventing media URLs.",
       "vccs": ["Every media artifact preserves source and prompt provenance.", "Dry-run makes zero paid calls and emits no invented URLs.", "Render and publish mutations remain approval-gated."],
-      "promptContract": ["Compile source metadata, transcript windows, frame evidence, annotations, timeline lanes, render intent, and rich-media outputs.", "Use operator-supplied media and preserve artifact provenance.", "Keep generation providers behind runtime adapters and explicit approvals."]
+      "promptContract": ["Compile source metadata, transcript windows, frame evidence, annotations, and user-provided creative references into editable story, scene, shot, and timeline plans with stable identities.", "Keep shot timing, camera intent, subject and prop choreography, and optional spatial blocking renderer-neutral; reuse the existing Canvas, Media, Assets, and Timeline owners when available.", "Treat Geo and XR staging as optional local previs; preserve source provenance, rights state, and the distinction between observed references and authored or inferred details.", "Route text, image, audio, and video generation only through registered modality adapters; expose provider availability, approvals, token limits, actual cost, and artifact persistence as separate evidence.", "Use only the exact `/video-agent` route and source-backed `@` bindings and `#` semantics; return a typed gap for unsupported tokens instead of inventing aliases.", "Dry-run emits zero paid calls and no invented asset URLs; render, publish, and provider-side mutations require their existing explicit gates."]
     }
   ]
 }

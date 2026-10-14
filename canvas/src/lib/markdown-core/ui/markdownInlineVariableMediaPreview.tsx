@@ -56,7 +56,7 @@ export function useMarkdownVariablePreviewSource(source: string | undefined, edi
         || !matchesMarkdownDocumentPath(current.activeDocumentPath, state.markdownDocumentName)) return
       const target = buildMarkdownVariablePreviewByKey(current.source)[key]?.invocationTarget
       if (!target || !getMarkdownXrVariableInvocations(target).some(item => item.invocation === invocation)) return
-      const result = controlLocalXrScene({ invocation })
+      const result = controlLocalXrScene({ invocation }, 'human')
       if (!result.ok) state.pushUiToast({ id: 'markdown:xr:invoke', kind: 'error', message: result.message })
     } catch {
       useGraphStore.getState().pushUiToast({ id: 'markdown:xr:invoke', kind: 'error', message: 'The XR action could not be loaded or applied. Try again.' })
