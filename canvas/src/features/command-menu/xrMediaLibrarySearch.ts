@@ -20,16 +20,19 @@ export function buildXrMediaLibraryProjection(args: {
   selectedAssetId: string
   selectedStageId?: string
 }) {
-  const featuredAssets = XR_SCENE_LIBRARY_FEATURED_ASSET_IDS.map(assetId => (
+  const selectedStage = XR_MOTION_REFERENCE_STAGE_PRESETS.find(stage => stage.id === args.selectedStageId)
+  const stageFeaturedIds = selectedStage?.featuredAssetIds || []
+  const featuredAssets = [...new Set([...stageFeaturedIds, ...XR_SCENE_LIBRARY_FEATURED_ASSET_IDS])].map(assetId => (
     XR_SCENE_LIBRARY_ASSETS.find(asset => asset.id === assetId)
   )).filter((asset): asset is XrSceneLibraryAsset => Boolean(asset))
   const selectedAsset = featuredAssets.find(asset => asset.id === args.selectedAssetId)
+    || featuredAssets.find(asset => asset.id === stageFeaturedIds[0])
     || featuredAssets.find(asset => asset.id === XR_SCENE_LIBRARY_DEFAULT_ASSET_ID)
     || featuredAssets[0]
+  // The active kit leads the list; catalog order is otherwise preserved.
   const visibleEnvironments = XR_MOTION_REFERENCE_STAGE_PRESETS.filter(stage => (
-    matchesXrMediaLibrarySearch(args.searchText, [stage.label, stage.description, 'environment kit xr 3d'])
-  ))
-  const selectedStage = XR_MOTION_REFERENCE_STAGE_PRESETS.find(stage => stage.id === args.selectedStageId)
+    matchesXrMediaLibrarySearch(args.searchText, [stage.label, stage.description, stage.scaleSummary || '', 'environment kit xr 3d'])
+  )).sort((left, right) => Number(right.id === args.selectedStageId) - Number(left.id === args.selectedStageId))
   const visiblePoiDetailAssets = XR_SCENE_LIBRARY_ASSETS.filter(asset => (
     (!args.selectedStageId || Boolean(selectedStage?.regionalPoiProfile))
     &&

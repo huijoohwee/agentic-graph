@@ -15,6 +15,14 @@ import { StrybldrCameraPanel } from './StrybldrCameraPanel'
 import { readSemanticSpace, subscribeSemanticSpace } from '@/features/xr-v2/semanticSpaceStore'
 import { listStrybldrImageFiles } from './strybldrImageFileRegistry'
 import { readImmersiveMediaSnapshot, subscribeImmersiveMediaSnapshot } from '@/features/immersive-media/immersiveMediaRuntime'
+import { CinematicControlModeSelect } from '@/features/cinema/CinematicControlModeSelect'
+import { readCinematicControlMode, subscribeCinematicControlMode } from '@/features/cinema/cinematicControlModeRuntime'
+import {
+  readXrMotionReferenceRuntime,
+  setXrMotionReferenceCameraSettingsAtPlayhead,
+  subscribeXrMotionReferenceRuntime,
+} from '@/features/three/xrMotionReferenceRuntime'
+import { sampleXrMotionReferenceCameraSettings } from '@/features/three/xrMotionReferenceSampling'
 import {
   STRYBLDR_CAMERA_PROPERTY_KEY,
   readStrybldrCameraSettings,
@@ -70,6 +78,9 @@ export function StrybldrCameraFramingSection() {
     updateNode,
     addHistory,
     pushUiToast,
+    canvasRenderMode,
+    canvas3dMode,
+    timelineTransportPlaying,
   } = useGraphStore(
     useShallow(state => ({
       rawGraphData: state.graphData,
@@ -79,8 +90,20 @@ export function StrybldrCameraFramingSection() {
       updateNode: state.updateNode,
       addHistory: state.addHistory,
       pushUiToast: state.pushUiToast,
+      canvasRenderMode: state.canvasRenderMode,
+      canvas3dMode: state.canvas3dMode,
+      timelineTransportPlaying: state.timelineTransportPlaying,
     })),
   )
+  const motion = React.useSyncExternalStore(subscribeXrMotionReferenceRuntime, readXrMotionReferenceRuntime, readXrMotionReferenceRuntime)
+  const controlMode = React.useSyncExternalStore(subscribeCinematicControlMode, readCinematicControlMode, readCinematicControlMode)
+  const xrTimelineCameraActive = rawGraphData !== null
+    && canvasRenderMode === '3d'
+    && canvas3dMode === 'xr'
+    && motion.plan.camera.length > 0
+  const sampledTimelineSettings = xrTimelineCameraActive
+    ? sampleXrMotionReferenceCameraSettings(motion.plan.camera, motion.playheadSeconds)
+    : null
   const runtime = React.useSyncExternalStore(
     subscribeCameraFramingRuntime,
     readCameraFramingRuntime,
@@ -112,11 +135,12 @@ export function StrybldrCameraFramingSection() {
     [selectedCardProperties],
   )
   const cameraAnchorId = selectedCard?.id || SHARED_CANVAS_CAMERA_ANCHOR_ID
-  const settings = selectedCard
+  const settings = sampledTimelineSettings || (selectedCard
     ? runtime.anchorId === selectedCard.id
       ? runtime.settings
       : persistedSettings
-    : runtime.settings
+    : runtime.settings)
+  const humanControlsEnabled = controlMode === 'human' && !timelineTransportPlaying
   const previewImageUrl = React.useMemo(
     () => resolveStrybldrCameraPreviewImageUrl(selectedCard)
       || listStrybldrImageFiles().find(file => file.workspacePath === activeSourcePath?.replace(/^\/+/, ''))?.objectUrl
@@ -142,14 +166,32 @@ export function StrybldrCameraFramingSection() {
   }, [persistedSettings, selectedCard])
 
   const changeSettings = React.useCallback((nextSettings: StrybldrCameraSettings) => {
+    if (!humanControlsEnabled) return
+    if (xrTimelineCameraActive) {
+      setXrMotionReferenceCameraSettingsAtPlayhead(nextSettings)
+      return
+    }
     publishCameraFramingRuntime({
       anchorId: selectedCard?.id || SHARED_CANVAS_CAMERA_ANCHOR_ID,
       settings: nextSettings,
       source: 'panel',
     })
-  }, [selectedCard])
+  }, [humanControlsEnabled, selectedCard, xrTimelineCameraActive])
 
   const reframeSelectedCardCamera = React.useCallback((nextSettings: StrybldrCameraSettings) => {
+    if (!humanControlsEnabled) return
+    if (xrTimelineCameraActive) {
+      const before = readXrMotionReferenceRuntime()
+      const after = setXrMotionReferenceCameraSettingsAtPlayhead(nextSettings)
+      if (after === before) return
+      addHistory('Camera choreography reframe')
+      pushUiToast({
+        id: 'strybldr:camera:timeline-reframe',
+        kind: 'success',
+        message: `Timeline camera reframed at ${after.playheadSeconds.toFixed(2)}s. Save the scene to keep it.`,
+      })
+      return
+    }
     if (!selectedCard) {
       publishCameraFramingRuntime({
         anchorId: SHARED_CANVAS_CAMERA_ANCHOR_ID,
@@ -188,7 +230,7 @@ export function StrybldrCameraFramingSection() {
       kind: 'success',
       message: 'Strybldr camera reframed.',
     })
-  }, [addHistory, graphData, pushUiToast, selectedCard, updateNode])
+  }, [addHistory, graphData, humanControlsEnabled, motion, pushUiToast, selectedCard, updateNode, xrTimelineCameraActive])
 
   return (
     <section
@@ -196,9 +238,11 @@ export function StrybldrCameraFramingSection() {
       aria-label="Shared camera framing"
       data-kg-camera-framing-anchor={cameraAnchorId}
       data-kg-camera-framing-mode={selectedCard ? 'storyboard' : 'shared'}
-      data-kg-camera-framing-source={selectedCard && runtime.anchorId !== selectedCard.id ? 'document' : runtime.source}
+      data-kg-camera-framing-source={xrTimelineCameraActive ? 'timeline' : selectedCard && runtime.anchorId !== selectedCard.id ? 'document' : runtime.source}
       data-kg-camera-framing-revision={runtime.revision}
+      data-kg-camera-framing-timeline-playhead={xrTimelineCameraActive ? motion.playheadSeconds : undefined}
     >
+      <CinematicControlModeSelect />
       {editableCards.length ? (
         <PanelSelect
           value={selectedCard?.id || ''}
@@ -227,6 +271,7 @@ export function StrybldrCameraFramingSection() {
         selectedCardTitle={selectedCard?.title || 'Canvas camera'}
         settings={settings}
         previewImageUrl={previewImageUrl}
+        disabled={!humanControlsEnabled}
         onSettingsChange={changeSettings}
         onReframe={reframeSelectedCardCamera}
       />

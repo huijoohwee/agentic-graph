@@ -28,6 +28,7 @@ type XrTimelineInsertedLaneOptions = {
   selectCameraTimelineLane: () => void
   selectSimulationTimelineLane: () => void
   selectNpcTimelineLane: (id: string) => void
+  supplementalTimelineLanes?: readonly VideoSequenceTimelineInsertedLane[]
 }
 
 /** XR supplies lane content and domain actions; the shared ruler owns selection and scrub gestures. */
@@ -35,10 +36,12 @@ export function buildXrTimelineInsertedLanes({
   runtime, gameMission, objectTargets, currentRehearsalBeat, selectedTimelineLaneId,
   sceneScaleDurationSeconds, documentLoaded, simulationPhase, simulationBodyCount, simulationRuntime,
   selectObjectTimelineLane, selectCameraTimelineLane, selectSimulationTimelineLane, selectNpcTimelineLane,
+  supplementalTimelineLanes = [],
 }: XrTimelineInsertedLaneOptions): readonly VideoSequenceTimelineInsertedLane[] {
   const cameraTimelineLaneSelected = selectedTimelineLaneId === 'camera'
   const simulationTimelineLaneSelected = selectedTimelineLaneId === 'simulation'
   return [
+  ...supplementalTimelineLanes,
   ...objectTargets.map(target => {
     const object = sampleXrTimelineSceneObject(runtime.plan, target, runtime.playheadSeconds)
     const track = target.castActorId

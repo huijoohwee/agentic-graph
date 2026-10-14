@@ -62,6 +62,10 @@ import { isXrMediaInvocationMetadataReady } from './xrMediaInvocationMetadata'
 import { buildXrMediaLibraryProjection } from './xrMediaLibrarySearch'
 import { buildXrMediaInvocationControlInput } from './xrMediaInvocationRuntime'
 import { resolveXrSceneDocumentReady } from '@/features/three/xrSceneDocumentReadiness'
+import { CinematicControlModeSelect } from '@/features/cinema/CinematicControlModeSelect'
+
+const CinemaReferenceAssetsPanel = React.lazy(() => import('@/features/cinema/CinemaShotTimeline').then(module => ({ default: module.CinemaReferenceAssetsPanel })))
+
 type XrSceneLibraryFilter = 'all' | XrSceneLibraryCategory
 
 const XR_LIBRARY_SECTION_KEYS = ['environments', 'subjects-props', 'simulation'] as const
@@ -91,7 +95,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
   const [subjectView, setSubjectView] = React.useState<'catalog' | 'scene'>('scene')
   const [categoryFilter, setCategoryFilter] = React.useState<XrSceneLibraryFilter>('all')
   const [nextLabel, setNextLabel] = React.useState('')
-  const [selectedAssetId, setSelectedAssetId] = React.useState<string>(XR_SCENE_LIBRARY_DEFAULT_ASSET_ID)
+  const [selectedAssetId, setSelectedAssetId] = React.useState<string>('')
   const [assetTransitions, setAssetTransitions] = React.useState<Record<string, XrSceneTransition>>({})
   const {
     allCollapsed: allLibrarySectionsCollapsed,
@@ -125,7 +129,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
   )
   const sourceMetadataReady = isXrMediaInvocationMetadataReady(grammarCatalog)
   const runControl = React.useCallback((input: XrSceneControlInput) => {
-    const result = controlLocalXrScene(input)
+    const result = controlLocalXrScene(input, 'human')
     pushUiToast({
       id: result.ok ? 'media:xr-library:updated' : 'media:xr-library:error',
       kind: result.ok ? 'success' : sceneReady ? 'error' : 'warning',
@@ -180,6 +184,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
       data-kg-media-xr-metadata-version={String(grammarCatalog.version)}
     >
       {presentation === 'full' && <><header className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}>
+        <CinematicControlModeSelect />
         <section className="flex items-start gap-2">
           <XrMediaLibrarySummary metadataReady={sourceMetadataReady} metadataStatus={grammarCatalog.hydration.status} />
           <section className="flex shrink-0 items-center gap-1">
@@ -265,7 +270,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
                   color={active ? '#38bdf8' : '#94a3b8'}
                   label={stage.label}
                   description={stage.description}
-                  metadata={`${stage.environmentKind}${stage.id === XR_MOTION_REFERENCE_DEFAULT_STAGE_ID ? ' · default' : ''} · ${stage.sizeMeters.join(' × ')} m · ${stage.id === 'tropical-playground' ? 'island terrain' : stage.id === 'singapore' ? 'urban waterfront' : 'rehearsal environment'}`}
+                  metadata={`${stage.environmentKind}${stage.id === XR_MOTION_REFERENCE_DEFAULT_STAGE_ID ? ' · default' : ''} · ${stage.scaleSummary || `${stage.sizeMeters.join(' × ')} m · ${stage.id === 'tropical-playground' ? 'island terrain' : stage.id === 'singapore' ? 'urban waterfront' : 'rehearsal environment'}`}`}
                   dragPayload={buildXrStageMediaDragPayload(stage)}
                   active={active}
                   dataAttributes={{ 'data-kg-media-xr-environment': stage.id }}
@@ -395,6 +400,9 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
       </CollapsibleSection>
 
       {presentation === 'full' && <>
+      <React.Suspense fallback={<p role="status" className="text-xs opacity-70">Opening local cinema assets…</p>}>
+        <CinemaReferenceAssetsPanel sourceText={markdownDocumentText} />
+      </React.Suspense>
       <CollapsibleSection
         title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Simulation</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{runtime.plan.subjects.length} subjects</output></span>}
         collapsed={collapsedLibrarySectionKeys.has('simulation')}

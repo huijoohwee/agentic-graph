@@ -12,10 +12,14 @@ import { resolveXrShotTargetPosition } from './xrShotTargets'
 import { useShallow } from 'zustand/react/shallow'
 import { hydrateCanonicalXrMotionReferenceRuntime } from './XrMotionReferenceRuntimeBridge'
 import { captureXrSubjectDraftContext, isXrSubjectDraftCurrent } from './xrSubjectAuthoring'
+import { CinematicControlModeSelect } from '@/features/cinema/CinematicControlModeSelect'
+import { readCinematicControlMode, subscribeCinematicControlMode } from '@/features/cinema/cinematicControlModeRuntime'
 
 /** The selected object's only transform editor, mounted by BottomPanel Timeline. */
 export function XrSubjectTransformEditor() {
   const runtime = React.useSyncExternalStore(subscribeXrMotionReferenceRuntime, readXrMotionReferenceRuntime, readXrMotionReferenceRuntime)
+  const controlMode = React.useSyncExternalStore(subscribeCinematicControlMode, readCinematicControlMode, readCinematicControlMode)
+  const humanControlsEnabled = controlMode === 'human'
   const document = useGraphStore(useShallow(state => ({ markdownDocumentName: state.markdownDocumentName, markdownDocumentText: state.markdownDocumentText })))
   const subject = runtime.plan.subjects.find(subject => subject.id === runtime.selectedShotTargetId)
   const stageObject = resolveXrStageObjects(runtime.plan.stageId).find(object => object.id === runtime.selectedShotTargetId)
@@ -33,7 +37,7 @@ export function XrSubjectTransformEditor() {
     const current = isXrSubjectDraftCurrent(draft.current, readContext())
       && hydrateCanonicalXrMotionReferenceRuntime() && isXrSubjectDraftCurrent(draft.current, readContext())
     const catalogOnlyChange = subject?.construction && ((input.assetId !== undefined && input.assetId !== subject.assetId) || (input.color !== undefined && input.color !== subject.color))
-    const result = current && catalogOnlyChange ? { ok: false, message: 'Edit this subject’s parts and materials in Construction recipe or its procedural controls.' } : current ? controlLocalXrScene(input) : { ok: false, message: 'This object draft belongs to an earlier scene or selection. Review the current object and edit again.' }
+    const result = current && catalogOnlyChange ? { ok: false, message: 'Edit this subject’s parts and materials in Construction recipe or its procedural controls.' } : current ? controlLocalXrScene(input, 'human') : { ok: false, message: 'This object draft belongs to an earlier scene or selection. Review the current object and edit again.' }
     useGraphStore.getState().pushUiToast({ id: 'xr:timeline:transform', kind: result.ok ? 'success' : 'error', message: result.message })
     return result
   }
@@ -43,10 +47,10 @@ export function XrSubjectTransformEditor() {
   </details>
   if (!subject && !stageObject) return spatialReview
   const label = subject?.label || stageObject!.label
-  return <>{spatialReview}<details key={boundary.current.key} className="shrink-0 p-2" data-kg-xr-timeline-object-inspector={runtime.selectedShotTargetId}
+  return <>{spatialReview}<CinematicControlModeSelect /><details key={boundary.current.key} className="shrink-0 p-2" data-kg-xr-timeline-object-inspector={runtime.selectedShotTargetId}
     onFocusCapture={() => { draft.current = context }}>
     <summary className="cursor-pointer text-xs font-semibold">{label} · Object transform</summary>
-    {subject ? <section className="mt-2 grid gap-2">
+    {subject ? <fieldset className="mt-2 grid min-w-0 gap-2 border-0 p-0" disabled={!humanControlsEnabled} aria-label="Human object controls">
       <section className="grid gap-2">
         <label className="grid gap-1 text-xs">Name<PanelTextInput key={`${subject.id}:${subject.label}`} defaultValue={subject.label}
           aria-label={`Rename ${subject.label}`} onBlur={event => {
@@ -57,7 +61,7 @@ export function XrSubjectTransformEditor() {
       </section>
       <XrSubjectTransformCard subject={subject} sceneReady={readXrSceneDocumentReady()} runControl={runControl} />
       <XrSubjectAuthoringControls subject={subject} context={context} />
-    </section> : <section className="mt-2 grid gap-2 text-xs">
+    </fieldset> : <section className="mt-2 grid gap-2 text-xs">
       <p>{stageObject!.nativeBodyId ? 'Position is controlled by the playground simulation.' : 'Placement belongs to the Tropical Playground environment.'} Select this object as a camera target or inspect its Timeline lane.</p>
       <output aria-label={`${label} position`}>Position · {resolveXrShotTargetPosition(runtime.plan, stageObject!.id, runtime.playheadSeconds).map(value => value.toFixed(2)).join(', ')} m</output>
     </section>}

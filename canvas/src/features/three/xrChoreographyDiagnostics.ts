@@ -73,6 +73,8 @@ export function resolveXrChoreographySpeedWarnings(plan: XrMotionReferencePlan):
   for (let index = 0; index < plan.camera.length - 1; index += 1) {
     const from = plan.camera[index]!
     const to = plan.camera[index + 1]!
+    // A held camera mark ends its shot; the next mark is a cut, not camera travel.
+    if (from.easing === 'hold') continue
     const duration = Math.max(0.001, to.timeSeconds - from.timeSeconds)
     const speed = distance(from.pose.position, to.pose.position) / duration
     const limit = CAMERA_SPEED_LIMITS[from.rig]
