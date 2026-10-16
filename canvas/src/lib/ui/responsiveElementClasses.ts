@@ -99,7 +99,7 @@ export const UI_RESPONSIVE_CANVAS_BOTTOM_PANEL_CLASSNAME = 'kg-canvas-bottom-pan
 
 export const UI_RESPONSIVE_CANVAS_MINIMAP_OVERLAY_CLASSNAME = 'kg-canvas-minimap-overlay'
 
-export const UI_RESPONSIVE_CANVAS_DOCUMENT_SWITCH_NOTICE_CLASSNAME = 'kg-canvas-document-switch-notice rounded border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] text-sm text-[var(--kg-text-secondary)] shadow-sm'
+export const UI_RESPONSIVE_CANVAS_DOCUMENT_SWITCH_NOTICE_CLASSNAME = 'kg-canvas-document-switch-notice rounded border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] text-sm text-[var(--kg-text-secondary)] shadow-[var(--kg-shadow-raised)]'
 
 export const UI_RESPONSIVE_CANVAS_STATUS_ROW_CLASSNAME = 'kg-canvas-status-row'
 

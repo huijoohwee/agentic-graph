@@ -200,7 +200,7 @@ export function testDocumentVersioningSurfacesUseSharedOwners() {
     !timelineBottomPanelText.includes('data-kg-strybldr-bottom-timeline-gitgraph-toggle="1"') ||
     !timelineBottomPanelText.includes('data-kg-strybldr-bottom-timeline-gantt-toggle="1"') ||
     !timelineBottomPanelText.includes('title="Timeline"') ||
-    !timelineBottomPanelText.includes('title="Strybldr Timeline"') ||
+    !timelineBottomPanelText.includes('title="Storyboard"') ||
     !timelineBottomPanelText.includes('title="Version Graph"') ||
     !timelineBottomPanelText.includes('title="GitGraph"') ||
     !timelineBottomPanelText.includes('title="Gantt-Timeline"') ||

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
+import { validateFlightSimGeographicReference } from '@/features/game-flight-sim/flightSimGeospatialCoordinates'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { FlightGeoOverlaySnapshot } from 'gympgrph/testkit/flightGeoOverlay'
@@ -24,6 +27,10 @@ import {
 import {
   deriveXrObservationWheelSupports,
 } from '@/features/three/xrObservationWheelPresentation'
+
+const geographicReference = validateFlightSimGeographicReference(
+  (parseMarkdownFrontmatter(splitMarkdownLines(readFileSync('../docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md', 'utf8'))).meta.geo_flight_overlay as { geographic_reference: unknown }).geographic_reference,
+)!
 
 test('Singapore POIs derive XR presentation and exact Geo extrusion from one profile', () => {
   assert.deepEqual(
@@ -82,7 +89,7 @@ test('Singapore POIs derive XR presentation and exact Geo extrusion from one pro
   const environment = projectXrEnvironmentToFlightGeo({
     stageId: 'singapore',
     subjects: [],
-  })
+  }, geographicReference)
   const poiSurfaces = environment.surfaces.filter(
     surface => surface.kind === 'poi',
   )

@@ -53,6 +53,7 @@ export type CanvasSurfaceModeDisabledCopy = {
 
 export type CanvasSurfaceModeApplicabilityArgs = VoxelModeApplicabilityArgs & {
   layoutMode?: string | null
+  allowGeospatialXrHandoff?: boolean
 }
 
 export type CanvasSurfaceModeSelectionParams = CanvasSurfaceModeApplicabilityArgs & {
@@ -137,7 +138,7 @@ export function getCanvasSurfaceModeDisabledCopy(
     return null
   }
   if (mode === '3d' || mode === 'xr') {
-    if (geospatialEnabled) {
+    if (geospatialEnabled && (mode === '3d' || !args.allowGeospatialXrHandoff)) {
       return {
         reason: 'Disabled in Geospatial Mode',
         hint: 'Switch to Document Mode to enable',

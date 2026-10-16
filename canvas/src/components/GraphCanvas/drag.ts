@@ -11,9 +11,22 @@ import { DEFAULT_DRAG_ALPHA_TARGET_HARD_CAP } from '@/lib/graph/layoutDefaults'
 import { markGraphCanvasUserInteracted } from '@/components/GraphCanvas/userInteractionFlag'
 import { cancelPendingRefreeze, scheduleSimulationRefreezeAfterDrag } from '@/components/GraphCanvas/dragRefreeze'
 import { beginDragForceTuning } from '@/components/GraphCanvas/dragForceTuning'
-import { readCanvasDragIntentThresholdPx } from '@/lib/canvas/dragIntent'
+import { readCanvasDragIntentThresholdPx, isCanvasObjectDragAllowed } from '@/lib/canvas/dragIntent'
+import { constrainCanvasDraggedPoint2d } from '@/lib/canvas/overlayInteractions2d'
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
 import { buildCanonicalNodeLookup, getCanonicalNodeLookupValue } from '@/lib/graph/canonicalNodeIds'
+
+const capturePosition = (node: GraphNode) => ({ x: node.x, y: node.y, fx: node.fx, fy: node.fy, vx: node.vx, vy: node.vy })
+const dragPolicy = (schema: GraphSchema) => {
+  const initial = useGraphStore.getState().schema
+  const readSchema = () => useGraphStore.getState().schema === initial ? schema : useGraphStore.getState().schema
+  return { readSchema, allowed: (event?: { button?: number; ctrlKey?: boolean; isPrimary?: boolean }) => {
+    const current = readSchema()
+    return isCanvasObjectDragAllowed({ pointerMode: useGraphStore.getState().canvasPointerMode2d,
+      spacePanHeld: isSpacePanHeld(), allowDrag: current.behavior.allowNodeDrag,
+      constraint: current.behavior.dragConstraint, event })
+  } }
+}
 
 export const nodeDragBehavior = (
   simulation: d3.Simulation<GraphNode, GraphEdge>,
@@ -29,6 +42,8 @@ export const nodeDragBehavior = (
   },
 ) =>
   (() => {
+    const policy = dragPolicy(schema)
+    let initialPosition: ReturnType<typeof capturePosition> | null = null
     let locked = false
     let shouldRefreeze = false
     let refreezeSvg: SVGSVGElement | null = null
@@ -67,7 +82,7 @@ export const nodeDragBehavior = (
       watchdogTimer = 0
     }
 
-    const resetDragState = () => {
+    const resetDragState = (commit = true) => {
       clearWatchdog()
       if (locked) {
         locked = false
@@ -90,14 +105,18 @@ export const nodeDragBehavior = (
           activeNode.vy = 0
 
           try {
-            opts?.onNodeDragEnd?.(activeNode)
+            if (commit) opts?.onNodeDragEnd?.(activeNode)
           } catch {
             void 0
           }
         }
 
         if (dragActivated && structured) simulation.stop()
-        activeNode = null
+        if (!commit && initialPosition) {
+          Object.assign(activeNode, initialPosition)
+          const tick = simulation.on('tick'); if (typeof tick === 'function') tick.call(simulation)
+        }
+        activeNode = null; initialPosition = null
       }
 
       if (shouldRefreeze) {
@@ -112,8 +131,8 @@ export const nodeDragBehavior = (
       dragStartClientY = Number.NaN
     }
 
-    const onGlobalRelease = () => {
-      if (activeNode) resetDragState()
+    const onGlobalRelease = (event?: Event) => {
+      if (activeNode) resetDragState(event?.type === 'pointerup' && policy.allowed())
     }
 
     const activateDrag = (event: d3.D3DragEvent<SVGElement, GraphNode, GraphNode>, d: GraphNode, el: SVGElement) => {
@@ -151,12 +170,13 @@ export const nodeDragBehavior = (
     }
 
     return d3.drag<SVGElement, GraphNode>()
+    .filter(event => policy.allowed(event))
     .on('start', function (event, d) {
-      if (useGraphStore.getState().canvasPointerMode2d === 'pan') return
-      if (isSpacePanHeld()) return
+      if (!policy.allowed()) return
       lockGlobalUserSelect()
       locked = true
       activeNode = d
+      initialPosition = capturePosition(d)
       lastDragAtMs = Date.now()
 
       try {
@@ -195,8 +215,8 @@ export const nodeDragBehavior = (
       if (!(dragThresholdPx > 0)) activateDrag(event, d, this as unknown as SVGElement)
     })
     .on('drag', function (event, d) {
-      if (useGraphStore.getState().canvasPointerMode2d === 'pan') return
-      if (isSpacePanHeld()) return
+      if (activeNode !== d) return
+      if (!policy.allowed()) { resetDragState(false); return }
       lastDragAtMs = Date.now()
       if (!dragActivated && dragThresholdPx > 0) {
         const src = event && typeof event === 'object' && 'sourceEvent' in event ? (event as { sourceEvent?: unknown }).sourceEvent : null
@@ -237,24 +257,10 @@ export const nodeDragBehavior = (
         }
       }
       
-      const constraint = schema.behavior.dragConstraint || 'free';
-      if (constraint === 'axis-x') {
-        d.fx = nx;
-        if (structured) d.x = nx;
-      } else if (constraint === 'axis-y') {
-        d.fy = ny;
-        if (structured) d.y = ny;
-      } else if (constraint === 'none') {
-        d.fx = d.x; // Keep original if 'none' constraint, though usually 'free' is default
-        d.fy = d.y;
-      } else {
-        d.fx = nx;
-        d.fy = ny;
-        if (structured) {
-          d.x = nx;
-          d.y = ny;
-        }
-      }
+      const point = constrainCanvasDraggedPoint2d({ baseX: initialPosition?.x ?? d.x ?? 0,
+        baseY: initialPosition?.y ?? d.y ?? 0, x: nx, y: ny, constraint: policy.readSchema().behavior.dragConstraint })
+      d.fx = point.x; d.fy = point.y
+      if (structured) { d.x = point.x; d.y = point.y }
 
       if (structured) {
         const tickHandler = simulation.on('tick')
@@ -273,7 +279,7 @@ export const nodeDragBehavior = (
         locked = false
         unlockGlobalUserSelect()
       }
-      if (activeNode) resetDragState()
+      if (activeNode) resetDragState(policy.allowed() && event.sourceEvent?.type !== 'touchcancel')
     });
   })()
 
@@ -284,6 +290,8 @@ export const edgeDragBehavior = (
 ) =>
   (() => {
     const canonicalNodeLookup = nodeById && nodeById.size > 0 ? buildCanonicalNodeLookup(nodeById.entries()) : null
+    const policy = dragPolicy(schema)
+    let initialPositions: Array<{ node: GraphNode; position: ReturnType<typeof capturePosition> }> = []
     let locked = false
     let sourceNode: GraphNode | undefined
     let targetNode: GraphNode | undefined
@@ -320,7 +328,7 @@ export const edgeDragBehavior = (
       watchdogTimer = 0
     }
 
-    const resetDragState = () => {
+    const resetDragState = (commit = true) => {
       clearWatchdog()
       if (locked) {
         locked = false
@@ -346,6 +354,11 @@ export const edgeDragBehavior = (
         targetNode.vy = 0
         if (structured) simulation.stop()
       }
+      if (!commit) {
+        for (const { node, position } of initialPositions) Object.assign(node, position)
+        const tick = simulation.on('tick'); if (typeof tick === 'function') tick.call(simulation)
+      }
+      initialPositions = []
       sourceNode = undefined
       targetNode = undefined
       activeEdge = null
@@ -358,14 +371,14 @@ export const edgeDragBehavior = (
       refreezeSvg = null
     }
 
-    const onGlobalRelease = () => {
-      if (activeEdge) resetDragState()
+    const onGlobalRelease = (event?: Event) => {
+      if (activeEdge) resetDragState(event?.type === 'pointerup' && policy.allowed())
     }
 
     return d3.drag<SVGElement, GraphEdge>()
+      .filter(event => policy.allowed(event))
       .on('start', function (event, d) {
-        if (useGraphStore.getState().canvasPointerMode2d === 'pan') return
-        if (isSpacePanHeld()) return
+        if (!policy.allowed()) return
         lockGlobalUserSelect()
         locked = true
         activeEdge = d
@@ -405,7 +418,8 @@ export const edgeDragBehavior = (
         sourceNode = sId ? getCanonicalNodeLookupValue(canonicalNodeLookup, sId) || undefined : undefined
         targetNode = tId ? getCanonicalNodeLookupValue(canonicalNodeLookup, tId) || undefined : undefined
         
-        if (!sourceNode || !targetNode) return
+        if (!sourceNode || !targetNode) { resetDragState(false); return }
+        initialPositions = [sourceNode, targetNode].map(node => ({ node, position: capturePosition(node) }))
 
         const mode = readLayoutMode(schema)
         const structured = mode === 'radial'
@@ -448,13 +462,14 @@ export const edgeDragBehavior = (
         targetNode.fy = targetNode.y
       })
       .on('drag', (event) => {
-        if (useGraphStore.getState().canvasPointerMode2d === 'pan') return
-        if (isSpacePanHeld()) return
+        if (!activeEdge) return
+        if (!policy.allowed()) { resetDragState(false); return }
         if (!sourceNode || !targetNode) return
         lastDragAtMs = Date.now()
 
-        const dx = event.dx / dragZoomK
-        const dy = event.dy / dragZoomK
+        const delta = constrainCanvasDraggedPoint2d({ baseX: 0, baseY: 0, x: event.dx / dragZoomK,
+          y: event.dy / dragZoomK, constraint: policy.readSchema().behavior.dragConstraint })
+        const dx = delta.x, dy = delta.y
         
         // Move both nodes
         if (sourceNode.fx != null) sourceNode.fx += dx
@@ -483,6 +498,6 @@ export const edgeDragBehavior = (
           window.removeEventListener('pointercancel', onGlobalRelease, { capture: true })
           window.removeEventListener('pointerdown', onGlobalRelease, { capture: true })
         }
-        if (activeEdge) resetDragState()
+        if (activeEdge) resetDragState(policy.allowed() && event.sourceEvent?.type !== 'touchcancel')
       })
   })()

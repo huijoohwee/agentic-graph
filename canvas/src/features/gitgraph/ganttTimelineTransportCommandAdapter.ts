@@ -55,6 +55,12 @@ export type GanttTimelineTransportCommandAdapter = Readonly<{
   handleCommand: (command: GanttTimelineTransportCommand) => GanttTimelineTransportCommandAdapterDecision
 }>
 
+export const READ_ONLY_GANTT_TIMELINE_COMMAND_ADAPTER: GanttTimelineTransportCommandAdapter = Object.freeze<GanttTimelineTransportCommandAdapter>({
+  selectionFollowsPlayhead: false,
+  canEditTrack: () => false,
+  handleCommand: () => ({ status: 'rejected', reason: 'This timeline projects authored data. Edit it in its source editor.' }),
+})
+
 export type GanttTimelineTransportCommandRouteResult<T> =
   | Readonly<{ owner: 'external'; status: 'handled' }>
   | Readonly<{ owner: 'external'; reason: string; status: 'rejected' }>

@@ -1,0 +1,15 @@
+{
+  "schema": "volume-view/v1",
+  "profile": {"id": "volume-v1", "version": "1.0.0"},
+  "roles": {"vertices": "boundary", "floor": "lower", "ceiling": "upper", "validFrom": "valid_from", "validTo": "valid_to"},
+  "components": {"ordinal": "ordinal", "longitude": "longitude", "latitude": "latitude"},
+  "geometry": {"type": "simple-polygon", "coordinateDatum": "WGS84", "maxVertices": 64, "maxSpanDegrees": 5, "latitudeLimit": 85},
+  "vertical": {"datum": "AMSL", "unit": "m"},
+  "projection": {"width": 640, "height": 420, "padding": 36, "origin": [103.9, 1.25], "radiusMetres": 6378137},
+  "ui": {
+    "title": "Singapore study volume · synthetic exercise",
+    "description": "Authored test geometry within the Singapore and surrounding study area. This is NOT an actual notice, official airspace, FIR, sovereignty boundary or clearance. The view is a schematic with declared vertical references; no terrain or geodetic accuracy is implied.",
+    "fixturePath": "./fixtures/volume-singapore-synthetic-v1.json",
+    "defaultAtUtc": "2026-10-03T10:45:00.000Z"
+  }
+}

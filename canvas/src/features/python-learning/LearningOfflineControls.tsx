@@ -21,31 +21,34 @@ async function offlineRequest(operation: 'install' | 'verify' | 'recover'): Prom
     worker.postMessage({ type: 'AG_PYTHON_LEARNING_OFFLINE', operation, revision }, [channel.port2])
   })
 }
-export function LearningOfflineControls({ purpose = 'learning' }: { purpose?: 'learning' | 'studio' }) {
+export function LearningOfflineControls({ purpose = 'learning' }: { purpose?: 'learning' | 'studio' | 'workspace' }) {
   const buttonClass = `${UI_THEME_TOKENS.control.singleLine} ${UI_THEME_TOKENS.border.outline} rounded`
   const studio = purpose === 'studio'
+  const label = purpose === 'workspace' ? 'workspace' : studio ? 'Studio' : 'lessons'
   const [busy, setBusy] = React.useState(false), [notice, setNotice] = React.useState(''), [evidence, setEvidence] = React.useState<Evidence | null>(null)
-  const live = React.useRef(true)
+  const live = React.useRef(true), requestPending = React.useRef(false)
   React.useEffect(() => { live.current = true; return () => { live.current = false } }, [])
   const act = async (operation: 'install' | 'verify' | 'recover') => {
+    if (requestPending.current) return
+    requestPending.current = true
     setBusy(true); setEvidence(null); setNotice('Checking the complete installation…')
     try {
       const result = await offlineRequest(operation)
       if (live.current) { setEvidence(result); setNotice(`Verified ${result.files} files · ${(result.bytes / 1024 / 1024).toFixed(1)} MiB · ${result.revision.slice(0, 12)}`) }
     } catch (error) { if (live.current) setNotice(error instanceof Error ? error.message : String(error)) }
-    finally { if (live.current) setBusy(false) }
+    finally { requestPending.current = false; if (live.current) setBusy(false) }
   }
   const open = () => {
-    if (!evidence) return
+    if (!evidence || requestPending.current) return
     const url = new URL(location.href)
     url.searchParams.delete('python-learning-offline'); url.searchParams.delete('studio-offline')
-    url.searchParams.set(studio ? 'studio-offline' : 'python-learning-offline', evidence.revision)
+    url.searchParams.set(purpose === 'learning' ? 'python-learning-offline' : 'studio-offline', evidence.revision)
     url.searchParams.set('openEditorWorkspace', '1'); location.assign(url.href)
   }
-  return <details className="min-w-0"><summary className={`${UI_THEME_TOKENS.control.singleLine} content-center cursor-pointer`}>{studio ? 'Offline Studio' : 'Offline lessons'}</summary>
-    <p>{studio ? 'Install the application assets while connected. Save the editable scene source separately and verify it after reopening. The previous complete installation is retained for recovery; browser storage can still be evicted.' : 'Install the application assets while connected. Source and debriefs stay in this browser. The previous complete installation is retained for recovery; browser storage can still be evicted.'}</p>
+  return <details className="min-w-0"><summary className={`${UI_THEME_TOKENS.control.singleLine} content-center cursor-pointer`}>Offline {label}</summary>
+    <p>{purpose === 'workspace' ? 'Install the application assets while connected. Save your editable source in this browser workspace before reopening, then verify the saved source after reopening offline. The previous complete installation is retained for recovery; browser storage can still be evicted.' : studio ? 'Install the application assets while connected. Save the editable scene source separately and verify it after reopening. The previous complete installation is retained for recovery; browser storage can still be evicted.' : 'Install the application assets while connected. Source and debriefs stay in this browser. The previous complete installation is retained for recovery; browser storage can still be evicted.'}</p>
     <nav aria-label="Offline installation controls" className="flex min-w-0 flex-wrap items-center gap-2 p-2">
-      <button className={buttonClass} disabled={busy} onClick={() => void act('install')}>Install offline {studio ? 'Studio' : 'lessons'}</button>
+      <button className={buttonClass} disabled={busy} onClick={() => void act('install')}>Install offline {label}</button>
       <button className={buttonClass} disabled={busy} onClick={() => void act('verify')}>Verify installation</button>
       <button className={buttonClass} disabled={busy} onClick={() => void act('recover')}>Recover previous installation</button>
       <button className={buttonClass} disabled={busy || !evidence} onClick={open}>Open verified offline workspace</button>

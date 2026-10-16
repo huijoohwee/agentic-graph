@@ -115,7 +115,7 @@ export const GraphDataTableDomTableView = React.memo(function GraphDataTableDomT
               <tr
                 key={row.id}
                 className={`${UI_THEME_TOKENS.table.rowBg} ${selected ? UI_THEME_TOKENS.table.rowSelected : ''} ${UI_THEME_TOKENS.table.rowHover}`}
-                aria-current={selected ? 'true' : undefined}
+                aria-selected={selected}
                 tabIndex={0}
                 onKeyDown={event => {
                   if (event.target === event.currentTarget && ['Enter', ' '].includes(event.key)) {

@@ -56,8 +56,8 @@ export function createSyntheticCityGeoOverlaySnapshot(options: Readonly<{
   revision?: string
   selectedParcelId?: string | null
 }> = {}): CityGeoOverlaySnapshot {
-  const rows = 2
-  const columns = 3
+  const columns = Math.min(4, SINGAPORE_MAJOR_POI_GEO_PROFILE.pois.length)
+  const rows = Math.ceil(SINGAPORE_MAJOR_POI_GEO_PROFILE.pois.length / columns)
   const parcels = SINGAPORE_MAJOR_POI_GEO_PROFILE.pois.map((poi, index) => {
     const row = Math.floor(index / columns)
     const column = index % columns
@@ -131,6 +131,7 @@ export class TestMapLibreMap {
     bounds: unknown
     options: Record<string, unknown>
   }>> = []
+  readonly easeToCalls: Array<Readonly<Record<string, unknown>>> = []
   readonly style = { _loaded: true }
   readonly setPaddingCalls: Array<Readonly<{
     bottom: number
@@ -168,6 +169,7 @@ export class TestMapLibreMap {
   private readonly corruptedSources = new Set<string>()
   private readonly featureStates = new Map<string, Record<string, unknown>>()
   private readonly sources = new Map<string, TestGeoJsonSource>()
+  private readonly images = new Map<string, unknown>()
   private readonly layers: Record<string, any>[] = [{
     id: TEST_LAYER_ANCHOR,
     type: 'background',
@@ -233,6 +235,23 @@ export class TestMapLibreMap {
     return this.layers.find(layer => layer.id === id)
   }
 
+  hasImage(id: string): boolean {
+    return this.images.has(id)
+  }
+
+  getImage(id: string): unknown {
+    return this.images.get(id)
+  }
+
+  addImage(id: string, image: unknown): void {
+    assert.equal(this.images.has(id), false)
+    this.images.set(id, structuredClone(image))
+  }
+
+  removeImage(id: string): void {
+    this.images.delete(id)
+  }
+
   addLayer(layer: unknown, beforeLayerId?: string): void {
     const next = cloneRecord(layer)
     assert.equal(this.getLayer(String(next.id)), undefined)
@@ -276,6 +295,10 @@ export class TestMapLibreMap {
   fitBounds(bounds: unknown, options: Record<string, unknown>): void {
     if (this.fitBoundsError) throw this.fitBoundsError
     this.fitBoundsCalls.push({ bounds, options })
+  }
+
+  easeTo(options: Record<string, unknown>): void {
+    this.easeToCalls.push(structuredClone(options))
   }
 
   getContainer(): HTMLElement | null {

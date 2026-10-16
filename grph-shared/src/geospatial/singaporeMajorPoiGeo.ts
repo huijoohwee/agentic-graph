@@ -8,6 +8,9 @@ import {
 import {
   SINGAPORE_MAJOR_POI_IDENTITIES,
 } from './singaporeMajorPoiIdentity.js'
+import {
+  SINGAPORE_MAJOR_POI_SUPPLEMENT_SURFACES,
+} from './singaporeMajorPoiSupplement.js'
 
 const SNAPSHOT_AT = '2026-07-31T00:00:00Z'
 
@@ -469,7 +472,7 @@ export const SINGAPORE_MAJOR_POI_GEO_PROFILE: RegionalPoiProfile =
       code: 'SGP',
       label: 'Singapore',
     },
-    revision: '2026-07-31.2',
+    revision: '2026-10-09.1',
     dataPolicy: {
       storage: 'checked-in',
       runtimeNetwork: 'forbidden',
@@ -481,5 +484,5 @@ export const SINGAPORE_MAJOR_POI_GEO_PROFILE: RegionalPoiProfile =
       licenseUrl: 'https://opendatacommons.org/licenses/odbl/1-0/',
     }],
     pois: SINGAPORE_MAJOR_POI_IDENTITIES,
-    surfaces,
+    surfaces: [...surfaces, ...SINGAPORE_MAJOR_POI_SUPPLEMENT_SURFACES],
   })

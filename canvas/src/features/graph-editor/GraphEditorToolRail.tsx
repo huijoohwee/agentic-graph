@@ -40,7 +40,7 @@ export function GraphEditorToolRail(props: {
 
   return (
     <nav
-      className={`rounded-xl border ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.input.border} shadow-sm`}
+      className={`rounded-xl border ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.input.border} shadow-[var(--kg-shadow-raised)]`}
       aria-label="Graph editor tools"
     >
       <section className="flex flex-col p-1">

@@ -1,0 +1,27 @@
+{
+  "schema": "evidence-profile/v1",
+  "id": "aviation-v1",
+  "version": "1.0.0",
+  "bundleSchema": "aviation-evidence-bundle/v1",
+  "limits": {"maxBytes": 499999, "maxPackBytes": 2000000, "maxEntities": 10, "maxFacts": 5000, "maxSources": 20, "maxSpanSeconds": 86400, "maxTextLength": 2048},
+  "classifications": ["synthetic", "fixture", "imported"],
+  "rightsStatuses": {"synthetic": ["synthetic-authored"], "fixture": ["synthetic-authored", "operator-attested"], "imported": ["operator-attested"]},
+  "staleAfterSeconds": 60,
+  "gapAfterSeconds": 60,
+  "requiredKinds": ["position", "altitude", "registration", "operator", "weather", "schedule", "restrictions"],
+  "ui": {
+    "title": "Aviation Evidence Layer",
+    "description": "Inspect original facts, replay their chronology and verify a portable export locally. Synthetic examples are not observed flights or operational advice.",
+    "entityLabel": "Flight",
+    "fixturePath": "./fixtures/aviation-synthetic-v1.json"
+  },
+  "fields": [
+    {"key": "position", "label": "Position", "type": "vector", "nullable": true, "units": ["deg"], "datums": ["WGS84"], "sameDatum": true, "canonicalUnit": "deg", "conversions": [], "range": null, "components": [{"key": "latitude", "minimum": -90, "maximum": 90}, {"key": "longitude", "minimum": -180, "maximum": 180}]},
+    {"key": "altitude", "label": "Altitude", "type": "number", "nullable": true, "units": ["m", "ft"], "datums": ["AMSL", "AGL", "pressure", "geometric"], "sameDatum": true, "canonicalUnit": "m", "conversions": [{"from": "ft", "to": "m", "factor": 0.3048}], "range": [-500, 30000], "components": []},
+    {"key": "registration", "label": "Registration", "type": "string", "nullable": true, "units": ["text"], "datums": ["not-applicable"], "sameDatum": true, "canonicalUnit": "text", "conversions": [], "range": null, "components": []},
+    {"key": "operator", "label": "Operator", "type": "string", "nullable": true, "units": ["text"], "datums": ["not-applicable"], "sameDatum": true, "canonicalUnit": "text", "conversions": [], "range": null, "components": []},
+    {"key": "weather", "label": "Weather", "type": "string", "nullable": true, "units": ["text"], "datums": ["not-applicable"], "sameDatum": true, "canonicalUnit": "text", "conversions": [], "range": null, "components": []},
+    {"key": "schedule", "label": "Scheduled arrival", "type": "utc", "nullable": true, "units": ["UTC"], "datums": ["not-applicable"], "sameDatum": true, "canonicalUnit": "UTC", "conversions": [], "range": null, "components": []},
+    {"key": "restrictions", "label": "Restrictions", "type": "string", "nullable": true, "units": ["text"], "datums": ["not-applicable"], "sameDatum": true, "canonicalUnit": "text", "conversions": [], "range": null, "components": []}
+  ]
+}

@@ -1,5 +1,6 @@
 import type { MermaidGanttTimelineTick } from '@/lib/mermaid/mermaidGanttBarInteraction'
 import { formatVideoSequenceTimelineSecondsOffset } from './videoSequenceTimeline'
+import { resolveVideoSequenceRulerInsetPixelMetrics } from './videoSequenceTimelineRulerGeometry'
 
 const VIDEO_SEQUENCE_TIMELINE_ZOOM_TICK_TARGET_PER_ZOOM = 8
 const VIDEO_SEQUENCE_TIMELINE_ZOOM_TICK_STEPS_SECONDS = [1, 2, 10, 15, 30, 60, 120, 300, 600] as const
@@ -151,6 +152,7 @@ export function buildVideoSequenceTimelineZoomTicks(args: {
   frameRate?: number
   maxMinutes: number
   mediaDurationSeconds: number
+  rulerWidthPx?: number
   timelineZoom: number
 }): readonly MermaidGanttTimelineTick[] {
   const mediaDurationSeconds = Number.isFinite(args.mediaDurationSeconds) && args.mediaDurationSeconds > 0 ? args.mediaDurationSeconds : 0
@@ -158,11 +160,11 @@ export function buildVideoSequenceTimelineZoomTicks(args: {
   if (mediaDurationSeconds <= 0 || maxMinutes <= 0) return args.displayTicks
   const scaleDurationSeconds = resolveVideoSequenceTimelineScaleDurationSeconds(mediaDurationSeconds)
   if (shouldUseVideoSequenceFrameTicks({ mediaDurationSeconds: scaleDurationSeconds, timelineZoom: args.timelineZoom })) {
-    return buildVideoSequenceTimelineFrameTicks({
+    return fitVideoSequenceTickLabels(buildVideoSequenceTimelineFrameTicks({
       frameRate: resolveVideoSequenceTimelineFrameRate(args.frameRate || 0),
       maxMinutes,
       scaleDurationSeconds,
-    })
+    }), args.rulerWidthPx)
   }
   const stepSeconds = resolveVideoSequenceTimelineZoomTickStepSeconds({
     durationSeconds: scaleDurationSeconds,
@@ -182,7 +184,24 @@ export function buildVideoSequenceTimelineZoomTicks(args: {
     minutes: maxMinutes,
     percent: 100,
   })
-  return ticks
+  return fitVideoSequenceTickLabels(ticks, args.rulerWidthPx)
+}
+
+function fitVideoSequenceTickLabels(ticks: readonly MermaidGanttTimelineTick[], width?: number): readonly MermaidGanttTimelineTick[] {
+  if (!Number.isFinite(width) || !width || width <= 0 || ticks.length < 3) return ticks
+  const plotWidth = resolveVideoSequenceRulerInsetPixelMetrics(width).widthPx
+  const last = ticks[ticks.length - 1]
+  const minimumSpacing = 56
+  let previousLabelPosition = ticks[0].percent * plotWidth / 100
+  return ticks.map((tick, index) => {
+    if (!index || index === ticks.length - 1 || !tick.label) return tick
+    const position = tick.percent * plotWidth / 100
+    if (position - previousLabelPosition < minimumSpacing || last.percent * plotWidth / 100 - position < minimumSpacing) {
+      return { ...tick, label: '' }
+    }
+    previousLabelPosition = position
+    return tick
+  })
 }
 
 export function resolveVideoSequenceTimelineAppendSpacePercent(timelineZoom: number): number {

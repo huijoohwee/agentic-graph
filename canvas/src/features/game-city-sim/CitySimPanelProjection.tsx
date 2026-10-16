@@ -18,6 +18,10 @@ import {
   stopCitySim,
   subscribeCitySimSnapshot,
 } from './citySimRuntime'
+import {
+  readGameModeSnapshot,
+  subscribeGameModeSnapshot,
+} from '@/features/game-fps/gameModeRuntime'
 import { describeCityInputSnapshot } from './citySimInputRuntime'
 
 export type CitySimProjectionSurface =
@@ -46,7 +50,7 @@ const SURFACE_COPY: Readonly<Record<CitySimProjectionSurface, {
   },
   gameMode: {
     title: 'City gameplay overlay',
-    ownership: 'City claims the shared Geo+XR surface while MapLibre owns visuals and gestures.',
+    ownership: 'Game Mode actors share the City map, player, route, and coordinate frame.',
   },
   flightSim: {
     title: 'Existing Flight overlay',
@@ -90,17 +94,15 @@ function projectionStatus(
       : 'No normalized pointer, keyboard, or touch input has been consumed.'
   }
   if (surface === 'gameMode') {
-    return snapshot.active
-      ? 'The city overlay currently owns the interactive gameplay surface.'
-      : 'The shared gameplay surface is ready for a city handoff.'
+    return 'City POIs, zones, player, and route stay in the shared Geo+XR world while Game Mode runs.'
   }
   if (surface === 'flightSim') {
     return 'City does not author or activate Flight route, aircraft, camera, or gameplay state.'
   }
   return snapshot.active
     ? snapshot.selectedParcelId
-      ? `${snapshot.selectedParcelId} is selected while native MapLibre retains framing.`
-      : 'Native MapLibre framing is active for the City Geo+XR surface.'
+      ? `${snapshot.selectedParcelId} is selected. Focus the map and use WASD or arrow keys to pan its Camera.`
+      : 'Focus the map and use WASD or arrow keys to pan its Camera; drag and scroll also work.'
     : 'Open City to use native MapLibre framing without replacing Camera presets.'
 }
 
@@ -113,6 +115,11 @@ export function CitySimPanelProjection({
     subscribeCitySimSnapshot,
     readCitySimSnapshot,
     readCitySimSnapshot,
+  )
+  const gameModeActive = React.useSyncExternalStore(
+    subscribeGameModeSnapshot,
+    () => readGameModeSnapshot().active,
+    () => readGameModeSnapshot().active,
   )
   const [pending, setPending] = React.useState(false)
   const [localError, setLocalError] = React.useState<string | null>(null)
@@ -158,7 +165,7 @@ export function CitySimPanelProjection({
       )}
       aria-label={`${copy.title} city simulation projection`}
       data-kg-city-sim-projection={surface}
-      data-kg-city-sim-projection-active={snapshot.active ? '1' : '0'}
+      data-kg-city-sim-projection-active={snapshot.active || (surface === 'gameMode' && gameModeActive) ? '1' : '0'}
     >
       <header className="flex items-start justify-between gap-2">
         <span className="min-w-0">
@@ -190,7 +197,9 @@ export function CitySimPanelProjection({
           surface === 'motionControl' ? snapshot.lastInput?.sequence : undefined
         }
       >
-        {projectionStatus(surface, snapshot)}
+        {surface === 'gameMode' && !gameModeActive
+          ? 'City POIs, zones, player, and route are available in the shared Geo+XR world.'
+          : projectionStatus(surface, snapshot)}
       </p>
       <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
         {copy.ownership}

@@ -13,17 +13,27 @@ import {
   isFlightSimTrainingFailureActive,
   readFlightSimTrainingScenario,
   resolveFlightSimTrainingMission,
+  resolveFlightSimTrainingFailure,
   setFlightSimTrainingVoiceEnabled,
   subscribeFlightSimTrainingScenario,
 } from './flightSimTrainingScenario'
 import {
   projectFlightSimEnvelope,
+  flightSimControlAuthority,
+  flightSimStallSeverity,
   type FlightSimEnvelopeProjection,
 } from '../../../../packages/apple-spatial-input/src/flight'
 
 export type FlightSimTrainingGrade = 'A' | 'B' | 'C' | 'D' | 'Pending'
 
+export type FlightSimTrainingEnvelope = Omit<FlightSimEnvelopeProjection, 'status' | 'targetSpeedMetersPerSecond'> & Readonly<{
+  status: FlightSimEnvelopeProjection['status'] | 'unavailable'
+  targetSpeedMetersPerSecond: readonly [number, number] | null
+}>
+
 export type FlightSimTrainingSnapshot = Readonly<{
+  available: boolean
+  profileSourceKey: string
   missionId: ReturnType<typeof readFlightSimTrainingScenario>['missionId']
   missionTitle: string
   objective: string
@@ -42,7 +52,7 @@ export type FlightSimTrainingSnapshot = Readonly<{
   stabilityPercent: number
   energyPercent: number
   airspeedReliable: boolean
-  envelope: FlightSimEnvelopeProjection
+  envelope: FlightSimTrainingEnvelope
   coachingCue: string
   systemsChecklist: readonly string[]
   revision: number
@@ -56,6 +66,7 @@ let lastFlightRevision = -1
 let lastScenarioRevision = -1
 let measuredRunId = 0
 let measuredMissionId = ''
+let measuredProfileSourceKey = ''
 let measuredTick = 0
 let observedTicks = 0
 let stableTicks = 0
@@ -78,35 +89,30 @@ function grade(score: number, phase: FlightSimPhase): FlightSimTrainingGrade {
 
 function coachingCue(
   flight: FlightSimSnapshot,
-  mission: ReturnType<typeof resolveFlightSimTrainingMission>,
-  failureId: ReturnType<typeof readFlightSimTrainingScenario>['failureId'],
+  mission: NonNullable<ReturnType<typeof resolveFlightSimTrainingMission>>,
   activeFailure: boolean,
   recovered: boolean,
-  envelope: FlightSimEnvelopeProjection,
+  envelope: FlightSimTrainingEnvelope,
 ): string {
   if (!flight.active) return `Open Flight Sim for ${mission.label}.`
   if (flight.phase === 'stopped') return `Start ${mission.label} when the systems checklist is complete.`
-  if (flight.phase === 'completed') return 'Circuit complete. Review the measured score and save the debrief.'
-  if (flight.phase === 'crashed') return 'Flight ended. Review the trace, correct one system, and restart.'
-  if (activeFailure && failureId === 'engine-power-loss') {
-    return 'Power loss. Hold attitude, preserve airspeed, then restore power after the drill window.'
-  }
-  if (activeFailure && failureId === 'instrument-uncertainty') {
-    return 'Airspeed is unreliable. Cross-check pitch, power, and visual attitude.'
-  }
-  if (activeFailure) return 'Control bias detected. Counter gently and keep bank within the stable envelope.'
-  if (recovered) return 'Failure recovered. Rejoin the circuit and stabilize the landing.'
-  if (flight.phase === 'ready') return 'Advance power smoothly and keep wings level through departure.'
+  if (flight.phase === 'completed') return 'Mission complete. Review the measured score and save the debrief.'
+  if (flight.phase === 'crashed') return 'Flight ended. Review the trace and restart when ready.'
+  if (activeFailure) return resolveFlightSimTrainingFailure()?.coachingCue || 'A configured practice effect is active. Monitor the controls and flight state.'
+  if (recovered) return 'Practice effect recovered. Resume the authored objective.'
+  if (flight.phase === 'ready') return 'Advance power smoothly and keep wings level.'
   if (envelope.status !== 'on-target') return envelope.recoveryCue
   return flight.currentWaypointId
     ? `Track ${flight.currentWaypointId}; keep pitch and bank inside the stable envelope.`
-    : 'Settle on the marked landing area and hold the rollout.'
+    : 'Follow the authored terminal objective.'
 }
 
 function resetMeasurements(
   flight: FlightSimSnapshot,
   missionId: string,
+  profileSourceKey: string,
 ): void {
+  measuredProfileSourceKey = profileSourceKey
   measuredRunId = flight.runId
   measuredMissionId = missionId
   measuredTick = flight.tick
@@ -116,11 +122,12 @@ function resetMeasurements(
   failureRecovered = false
 }
 
-function measure(flight: FlightSimSnapshot, missionId: string): void {
+function measure(flight: FlightSimSnapshot, missionId: string, profileSourceKey: string): void {
   if (flight.runId !== measuredRunId
     || missionId !== measuredMissionId
+    || profileSourceKey !== measuredProfileSourceKey
     || flight.tick < measuredTick) {
-    resetMeasurements(flight, missionId)
+    resetMeasurements(flight, missionId, profileSourceKey)
   }
   const elapsedTicks = Math.max(0, flight.tick - measuredTick)
   if (elapsedTicks === 0) return
@@ -130,12 +137,14 @@ function measure(flight: FlightSimSnapshot, missionId: string): void {
   }
   const speed = Math.hypot(...flight.aircraft.velocity)
   const mission = resolveFlightSimTrainingMission()
+  if (!mission) return
   const [minimumSpeed, maximumSpeed] = mission.targetSpeedMetersPerSecond
   if (speed >= minimumSpeed && speed <= maximumSpeed) energyTicks += elapsedTicks
   if (
-    readFlightSimTrainingScenario().failureId !== 'none'
-    && flight.tick >= 420
-    && flight.aircraft.throttle >= 0.6
+    resolveFlightSimTrainingFailure()?.effect.kind !== 'none'
+    && readFlightSimTrainingScenario().profile !== null
+    && flight.tick >= readFlightSimTrainingScenario().profile!.failureWindow.endTickExclusive
+    && flight.aircraft.throttle >= readFlightSimTrainingScenario().profile!.recoveryThrottleMinimum
   ) {
     failureRecovered = true
   }
@@ -152,7 +161,7 @@ function synchronize(): FlightSimTrainingSnapshot {
   ) {
     return snapshot
   }
-  measure(flight, scenario.missionId)
+  measure(flight, scenario.missionId, scenario.sourceKey)
   const mission = resolveFlightSimTrainingMission(scenario.missionId)
   const stabilityPercent = percentage(stableTicks, observedTicks)
   const energyPercent = percentage(energyTicks, observedTicks)
@@ -161,14 +170,21 @@ function synchronize(): FlightSimTrainingSnapshot {
     : 0
   const failureActive = isFlightSimTrainingFailureActive(flight)
   const airspeedReliable = isFlightSimTrainingAirspeedReliable(flight)
-  const envelope = projectFlightSimEnvelope({
+  const envelope: FlightSimTrainingEnvelope = mission ? projectFlightSimEnvelope({
     aircraft: flight.aircraft,
     targetSpeedMetersPerSecond: mission.targetSpeedMetersPerSecond,
     airspeedReliable,
+  }) : Object.freeze({
+    status: 'unavailable', severity: 'caution', label: 'Training unavailable',
+    recoveryCue: 'Apply a source-authored training profile to enable mission guidance.',
+    airspeedMetersPerSecond: Math.hypot(...flight.aircraft.velocity), airspeedReliable: true,
+    targetSpeedMetersPerSecond: null,
+    controlAuthority: flightSimControlAuthority(Math.hypot(...flight.aircraft.velocity)),
+    stallSeverity: flightSimStallSeverity(Math.hypot(...flight.aircraft.velocity)),
   })
   const routeScore = Math.round(Math.min(1, flight.waypointIndex / Math.max(1, flight.waypointCount)) * 40)
   const terminalScore = flight.phase === 'completed' ? 15 : 0
-  const recoveryScore = scenario.failureId === 'none' || failureRecovered ? 10 : 0
+  const recoveryScore = resolveFlightSimTrainingFailure()?.effect.kind === 'none' || failureRecovered ? 10 : 0
   const score = Math.min(100, Math.round(
     routeScore
     + terminalScore
@@ -177,36 +193,32 @@ function synchronize(): FlightSimTrainingSnapshot {
     + recoveryScore,
   ))
   snapshot = Object.freeze({
+    available: mission !== null,
+    profileSourceKey: scenario.sourceKey,
     missionId: scenario.missionId,
-    missionTitle: mission.label,
-    objective: mission.objective,
-    terrain: mission.terrain,
-    night: mission.night,
+    missionTitle: mission?.label || 'Training unavailable',
+    objective: mission?.objective || 'Apply a source-authored training profile.',
+    terrain: mission?.terrain || '',
+    night: mission?.night || false,
     failureId: scenario.failureId,
     failureActive,
     failureRecovered,
     voiceEnabled: scenario.voiceEnabled,
-    voiceAvailable: typeof window !== 'undefined'
+    voiceAvailable: Boolean(mission) && typeof window !== 'undefined'
       && 'speechSynthesis' in window
       && typeof SpeechSynthesisUtterance !== 'undefined',
     flightActive: flight.active,
     phase: flight.phase,
-    score,
-    grade: grade(score, flight.phase),
-    routeProgress,
-    stabilityPercent,
-    energyPercent,
+    score: mission ? score : 0,
+    grade: mission ? grade(score, flight.phase) : 'Pending',
+    routeProgress: mission ? routeProgress : 0,
+    stabilityPercent: mission ? stabilityPercent : 0,
+    energyPercent: mission ? energyPercent : 0,
     airspeedReliable,
     envelope,
-    coachingCue: coachingCue(
-      flight,
-      mission,
-      scenario.failureId,
-      failureActive,
-      failureRecovered,
-      envelope,
-    ),
-    systemsChecklist: mission.systemsChecklist,
+    coachingCue: mission ? coachingCue(flight, mission, failureActive, failureRecovered, envelope)
+      : 'Training unavailable. Apply a source-authored training profile.',
+    systemsChecklist: mission?.systemsChecklist || Object.freeze([]),
     revision: Math.max(flight.revision, scenario.revision),
   })
   lastFlightRevision = flight.revision
@@ -274,7 +286,7 @@ export function enableFlightSimVoiceInstructor(enabled: boolean): boolean {
 export function buildFlightSimTrainingOutcomeDecision(
   flight: FlightSimSnapshot = readFlightSimSnapshot(),
 ): FlightSimDecisionRecord | null {
-  if (flight.runId <= 0 || (flight.phase !== 'completed' && flight.phase !== 'crashed')) {
+  if (!synchronize().available || flight.runId <= 0 || (flight.phase !== 'completed' && flight.phase !== 'crashed')) {
     return null
   }
   return createFlightSimTrainingOutcomeDecision(flight, synchronize())
@@ -284,12 +296,14 @@ export function createFlightSimTrainingOutcomeDecision(
   flight: Pick<FlightSimSnapshot, 'runId' | 'phase' | 'tick'>,
   training: FlightSimTrainingSnapshot,
 ): FlightSimDecisionRecord {
+  if (!training.available) throw new Error('Flight training outcome is unavailable without an admitted profile.')
   return Object.freeze({
     decisionId: `flight-training:run-${flight.runId}:${training.missionId}:outcome`,
     decisionType: 'dialogue_outcome',
     entityRef: FLIGHT_SIM_MISSION_ENTITY_REF,
     payload: Object.freeze({
       schema: 'agentic-graph-flight-training-outcome/v1',
+      profileSourceKey: training.profileSourceKey,
       missionId: training.missionId,
       status: flight.phase,
       score: training.score,
@@ -310,6 +324,7 @@ export function resetFlightSimTrainingRuntimeForTests(): void {
   lastScenarioRevision = -1
   measuredRunId = 0
   measuredMissionId = ''
+  measuredProfileSourceKey = ''
   measuredTick = 0
   observedTicks = 0
   stableTicks = 0

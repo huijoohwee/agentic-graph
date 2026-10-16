@@ -26,7 +26,7 @@ export function PythonLearningCanvasStatus({ lesson, scene, documentId, runId, e
   const selected = learningAssets(lesson, scene, inspection.active ? inspection.sample : undefined).find(asset => asset.id === view.selectedId)
   const drone = lesson.vehicle === 'drone'
   return <section ref={ref} style={{ left: left + 8, ...(panelOpen ? { '--learning-panel-clearance': resolveFloatingPanelRightClearanceCss(panelRatio) } : {}) } as CSSProperties} className="learning-spatial-ui learning-scene-controls absolute left-2 right-2 top-14 z-[60] flex flex-col items-start gap-1 pointer-events-none" aria-label="Lesson scene controls">
-    {drone && <nav className="pointer-events-auto flex max-w-full flex-wrap items-center gap-1 rounded-lg border bg-[var(--kg-panel-bg)] p-1 shadow-sm" aria-label="Lesson scene options">
+    {drone && <nav className="pointer-events-auto flex max-w-full flex-wrap items-center gap-1 rounded-lg border bg-[var(--kg-panel-bg)] p-1 shadow-[var(--kg-shadow-raised)]" aria-label="Lesson scene options">
       <button type="button" className={actionClass} aria-pressed={view.dimensions} onClick={() => update({ dimensions: !view.dimensions })}>Dimensions</button>
       <button type="button" className={actionClass} disabled={!inspection.active && !inspection.canEnable} aria-pressed={inspection.active} onClick={inspection.active ? inspection.disable : inspection.enable}>{inspection.active ? 'Return to Python flight' : 'Warehouse rehearsal'}</button>
       <button type="button" className={actionClass} onClick={() => {
@@ -38,7 +38,7 @@ export function PythonLearningCanvasStatus({ lesson, scene, documentId, runId, e
       <button type="button" className={actionClass} onClick={openLearningActivity}>Activity / checks</button>
       {view.placement && <button type="button" className={actionClass} onClick={cancelLearningPlacement}>Cancel placement</button>}
       <details className="relative text-xs"><summary className={`${actionClass} cursor-pointer content-center`}>Doors</summary>
-        <nav aria-label="Warehouse doors" className="absolute left-0 top-full z-10 grid min-w-48 gap-1 rounded border bg-[var(--kg-panel-bg)] p-2 shadow-lg">{WAREHOUSE_DOORS.map(door => <button key={door.id} type="button" aria-pressed={view.doors.includes(door.id)} className={actionClass} onClick={() => toggleWarehouseDoor(door.id)}>{view.doors.includes(door.id) ? 'Close' : 'Open'} {door.name}</button>)}</nav>
+        <nav aria-label="Warehouse doors" className="absolute left-0 top-full z-10 grid min-w-48 gap-1 rounded border bg-[var(--kg-panel-bg)] p-2 shadow-[var(--kg-shadow-overlay)]">{WAREHOUSE_DOORS.map(door => <button key={door.id} type="button" aria-pressed={view.doors.includes(door.id)} className={actionClass} onClick={() => toggleWarehouseDoor(door.id)}>{view.doors.includes(door.id) ? 'Close' : 'Open'} {door.name}</button>)}</nav>
       </details>
     </nav>}
     {drone && view.walk && renderMode !== '2d' && <nav className="pointer-events-auto flex max-w-full flex-wrap gap-1 rounded border bg-[var(--kg-panel-bg)] p-1" aria-label="Walk touch controls">

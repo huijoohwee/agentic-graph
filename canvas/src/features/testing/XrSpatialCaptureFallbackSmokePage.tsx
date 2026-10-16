@@ -21,7 +21,7 @@ export function XrSpatialCaptureFallbackSmokePage() {
       </header>
       <section
         data-kg-xr-spatial-capture-smoke-surface="1"
-        className="relative mx-auto mt-8 min-h-[22rem] w-full max-w-5xl overflow-hidden rounded-3xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] shadow-sm"
+        className="relative mx-auto mt-8 min-h-[22rem] w-full max-w-5xl overflow-hidden rounded-3xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] shadow-none"
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_52%),linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.75))]" />
         <div className="relative z-10 flex h-full min-h-[22rem] items-end justify-start p-6 text-sm text-[var(--kg-text-secondary)]">

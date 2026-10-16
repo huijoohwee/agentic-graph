@@ -8,6 +8,9 @@ import {
   formatStoryboardTimelinePositionLabel,
   resolveStoryboardTimelineIndex,
 } from '@/components/StoryboardCanvas/storyboardTimeline'
+import { VideoSequenceTimelineRuler } from '@/components/timeline/VideoSequenceTimelineRuler'
+import { useGanttTimelineInteractions } from '@/features/gitgraph/useGanttTimelineInteractions'
+import { resolveVideoSequenceTimelineScaleMaxMinutes } from '@/components/timeline/videoSequenceTimelineZoom'
 import { TimelineTransportChrome } from '@/components/timeline/TimelineTransportControls'
 import {
   TIMELINE_TRANSPORT_PLAYBACK_RATES,
@@ -94,12 +97,38 @@ export function StrybldrTimelinePanel({ active = true }: { active?: boolean }) {
     [maxPosition, selectNode, timelineItems],
   )
 
-  if (timelineItems.length === 0) return null
+  const contentRef = React.useRef<HTMLElement>(null)
+  const viewportRef = React.useRef<HTMLElement>(null)
+  const maxMinutes = Math.max(1, timelineItems.length) / 60
+  const spans = React.useMemo(() => timelineItems.map((item, index) => ({
+    rowKey: item.id, label: item.title, raw: item.title, lineIndex: index,
+    startMinutes: index / 60, durationMinutes: 1 / 60, endMinutes: (index + 1) / 60,
+  })), [timelineItems])
+  const scaleMinutes = resolveVideoSequenceTimelineScaleMaxMinutes({ maxMinutes, mediaDurationSeconds: timelineItems.length })
+  const interactions = useGanttTimelineInteractions({
+    autoSnappingEnabled: false, markdownDocumentName: '', markdownText: '',
+    maxMinutes, scrubMaxMinutes: scaleMinutes, positionMinutes: position / 60,
+    resolveRowKeyAtPosition: () => '', selectedRowKey: selectedNodeId, selectionFollowsPlayhead: false,
+    setSelectedRowKey: key => { if (key) selectNode(key) }, spans, onCommitDrag: () => {},
+    setTransportPlaying: setPlaying, setTransportPlaybackPosition: minutes => handleTimelineValueChange(minutes * 60),
+  })
 
   return (
     <TimelineTransportChrome
-      ariaLabel="Strybldr storyboard timeline"
-      chromeClassName="h-full min-h-0 p-1"
+      ariaLabel="Storyboard timeline"
+      chromeClassName="timeline-transport-chrome--mermaid-gantt"
+      showRange={false}
+      showInlineProgress
+      rulerClassName="timeline-transport-ruler--video-sequence"
+      ruler={<VideoSequenceTimelineRuler contentRef={contentRef} viewportRef={viewportRef}
+        displayTicks={[]} dragPreview={null} draggingMode={null} draggingRowKey="" editable={false}
+        maxMinutes={maxMinutes} mediaDurationSeconds={timelineItems.length}
+        playheadPercent={timelineItems.length ? position / timelineItems.length * 100 : 0}
+        projectionMode="workflow" selectedRowKey={selectedNodeId} taskSpans={spans} timelineZoom={1}
+        timeAxisControls={<span>Seconds</span>} onRulerPointerDown={interactions.handleRulerPointerScrub}
+        onSelectRowKey={key => { if (key) selectNode(key) }}
+        onSelectRowPosition={(_key, minutes) => handleTimelineValueChange(minutes * 60)}
+        onDropMedia={() => false} onTrackPointerStart={() => {}} />}
       currentLabel={currentLabel}
       disabled={timelineItems.length <= 1}
       max={maxPosition}
@@ -107,13 +136,11 @@ export function StrybldrTimelinePanel({ active = true }: { active?: boolean }) {
       playbackRates={TIMELINE_TRANSPORT_PLAYBACK_RATES}
       playing={playing}
       rootProps={{
-        'aria-label': 'Strybldr timeline',
+        'aria-label': 'Storyboard timeline',
         'data-kg-strybldr-timeline-panel': '1',
         'data-kg-timeline-transport-playhead-percent': String(Math.round(playheadPercent)),
       } as React.HTMLAttributes<HTMLElement>}
       step={1}
-      subtitleLabel={activeItem ? `${activeItem.laneLabel}: ${activeItem.title}` : 'No active card'}
-      titleLabel="Strybldr timeline"
       totalLabel={totalLabel}
       value={position}
       onPlaybackRateChange={setPlaybackRate}

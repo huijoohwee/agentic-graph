@@ -89,8 +89,13 @@ export function testToastHostRendersBusySpinnerIcon() {
   if (!text.includes('className={TOAST_ROW_GRID_CLASS_NAME}')) {
     throw new Error('expected toast rows to reuse the responsive row owner')
   }
-  if (!text.includes('kg-toast-card pointer-events-auto flex-none')) {
-    throw new Error('expected toast cards to be hit-testable for text selection and controls')
+  if (!text.includes('kg-toast-card pointer-events-none flex-none')) {
+    throw new Error('expected empty toast frames to pass pointer input through to the workspace')
+  }
+  if (!text.includes('kg-toast-message pointer-events-auto select-text') ||
+      !text.includes('className="pointer-events-auto mt-2"') ||
+      !text.includes('gap-1 pointer-events-auto')) {
+    throw new Error('expected toast messages, actions and controls to retain native pointer input')
   }
   if (!text.includes('className="list-none"')) {
     throw new Error('expected toast list items to retain their semantic list contract')

@@ -343,10 +343,8 @@ export function isSameOriginCanvasEmbedUrl(url: string, origin?: string | null):
 
 export function consumeDeepLinkParams(search: string): void {
   try {
-    const link = parseDocDeepLink(search)
     const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search)
     let changed = false
-    if (params.has(LOCAL_DOC_PARAM)) { params.delete(LOCAL_DOC_PARAM); changed = true }
     if (params.has(DEEP_LINK_PARAM)) { params.delete(DEEP_LINK_PARAM); changed = true }
     if (params.has(PUBLISHED_DOC_SHARE_TOKEN_PARAM)) { params.delete(PUBLISHED_DOC_SHARE_TOKEN_PARAM); changed = true }
     if (params.has(WORKSPACE_ID_PARAM)) { params.delete(WORKSPACE_ID_PARAM); changed = true }
@@ -354,8 +352,7 @@ export function consumeDeepLinkParams(search: string): void {
     if (!changed) return
     const next = params.toString()
     const nextUrl = `${window.location.pathname}${next ? `?${next}` : ''}${window.location.hash || ''}`
-    const retainedLocalPath = link?.kind === 'local' ? link.relativePath : null
-    const nextState = buildLocalDocHistoryState(retainedLocalPath)
+    const nextState = buildLocalDocHistoryState(null)
     window.history.replaceState(nextState, '', nextUrl)
     try {
       window.dispatchEvent(new PopStateEvent('popstate', { state: nextState }))

@@ -84,10 +84,10 @@ export function LaunchDropdownExportMenu({
             else openExportMenu()
           }}
         >
-          <Download className={menuIconClass} strokeWidth={1.6} />
+          <Download className={menuIconClass} />
           <span className="truncate">Export</span>
           <WorkspaceLaunchRowValue label="Export" value="Configure" optionId="export:configure" />
-          <ChevronDown className={`ml-auto ${menuIconClass} transition-transform ${exportMenuOpen ? 'rotate-180' : ''}`} strokeWidth={1.6} aria-hidden="true" />
+          <ChevronDown className={`ml-auto ${menuIconClass} transition-transform ${exportMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
         </button>
         {exportMenuOpen ? (
           <menu id={exportMenuId} className={exportMenuClass} aria-label="Export">
@@ -120,7 +120,7 @@ export function LaunchDropdownExportMenu({
                     }}
                   >
                     <span className="truncate">PDF (.pdf) — Print…</span>
-                    <ChevronDown className={`ml-auto ${menuIconClass} transition-transform ${pdfMenuOpen ? 'rotate-180' : ''}`} strokeWidth={1.6} aria-hidden="true" />
+                    <ChevronDown className={`ml-auto ${menuIconClass} transition-transform ${pdfMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                   </button>
                   {pdfMenuOpen ? (
                     <menu id={pdfMenuId} className={pdfExportMenuClass} aria-label="PDF export orientation">

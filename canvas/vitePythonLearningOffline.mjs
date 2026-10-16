@@ -3,24 +3,42 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
 export const LEARNING_OFFLINE_SCHEMA = 'python-learning-offline/v1'
-export const createPythonLearningOfflinePlugin = revision => ({
+const publicPath = value => typeof value === 'string' && /^[A-Za-z][A-Za-z0-9_-]*(?:\/[A-Za-z0-9._-]+)+\.(?:json|txt)$/.test(value)
+  && !value.split('/').some(part => part === '.' || part === '..') && !/^(?:assets|api)\//.test(value)
+export function offlinePrecacheEntries(input = []) {
+  if (!Array.isArray(input) || input.length > 40) throw new Error('Invalid offline public asset declaration.')
+  const seen = new Set(); let total = 0
+  return input.map(file => {
+    if (!file || Object.keys(file).sort().join(',') !== 'bytes,path,sha256' || !publicPath(file.path) || seen.has(file.path)
+      || !Number.isSafeInteger(file.bytes) || file.bytes < 1 || file.bytes > 499999 || !/^[0-9a-f]{64}$/.test(file.sha256)) throw new Error('Invalid offline public asset.')
+    seen.add(file.path); total += file.bytes
+    if (total > 2000000) throw new Error('Offline public assets exceed 2,000,000 bytes.')
+    return { url: file.path, revision: file.sha256 }
+  })
+}
+export const createPythonLearningOfflinePlugin = (revision, declaredPublicAssets = []) => {
+  offlinePrecacheEntries(declaredPublicAssets)
+  const publicAssets = declaredPublicAssets.map(file => ({ ...file }))
+  return {
   name: 'agentic-graph-python-learning-offline-manifest', apply: 'build',
   writeBundle: { order: 'post', sequential: true, async handler(options, bundle) {
     if (!/^[0-9a-f]{40}$/.test(revision)) throw new Error('Offline manifest requires an exact source revision.')
     // Conservative closure of the existing application shell. Dynamic editor, language and
     // worker imports are included; unrelated public datasets/models are not learning inputs.
-    const names = Object.keys(bundle).filter(name => name === 'index.html' || /^assets\/.*\.(?:js|css|woff2?|ttf|svg|png)$/.test(name)).sort()
+    const names = [...Object.keys(bundle).filter(name => name === 'index.html' || /^assets\/.*\.(?:js|css|woff2?|ttf|svg|png)$/.test(name)), ...publicAssets.map(file => file.path)].sort()
     const files = []
     for (const path of names) {
       const bytes = await readFile(resolve(options.dir, path))
-      files.push({ path, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') })
+      const file = { path, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') }, declared = publicAssets.find(item => item.path === path)
+      if (declared && (declared.bytes !== file.bytes || declared.sha256 !== file.sha256)) throw new Error('Offline public asset differs from its declaration: ' + path)
+      files.push(file)
     }
     if (!files.some(file => file.path === 'index.html') || !files.some(file => /pythonWorker/.test(file.path))) throw new Error('Learning offline closure is missing its shell or worker.')
-    const manifest = { schema: LEARNING_OFFLINE_SCHEMA, revision, files, bytes: files.reduce((sum, file) => sum + file.bytes, 0) }
+    const manifest = { schema: LEARNING_OFFLINE_SCHEMA, revision, files, publicAssets: publicAssets.map(file => file.path), bytes: files.reduce((sum, file) => sum + file.bytes, 0) }
     if (files.length > 4096 || manifest.bytes > 96 * 1024 * 1024 || files.some(file => file.bytes > 16 * 1024 * 1024)) throw new Error('Learning offline closure exceeds its installation budget.')
     await writeFile(resolve(options.dir, `learning-offline-manifest-${revision}.json`), JSON.stringify(manifest))
   } },
-})
+} }
 
 // Serialized into the existing revision authority, never installed as another service worker.
 // The same native owner supplies Workbox cache reads and explicit installation messages.
@@ -28,6 +46,8 @@ export function installLearningOfflineOwner(owner, sourceRevision) {
   const scope = new URL(owner.registration.scope), prefix = 'kg-python-learning-v1-' + encodeURIComponent(scope.pathname) + '-', meta = prefix + 'state'
   const pointerUrl = new URL('__learning_state__', scope).href, manifestKey = new URL('__learning_manifest__', scope).href
   const sha = /^[0-9a-f]{64}$/, revisionPattern = /^[0-9a-f]{40}$/
+  const publicPath = value => typeof value === 'string' && /^[A-Za-z][A-Za-z0-9_-]*(?:\/[A-Za-z0-9._-]+)+\.(?:json|txt)$/.test(value)
+    && !value.split('/').some(part => part === '.' || part === '..') && !/^(?:assets|api)\//.test(value)
   const failure = message => { throw new Error(message) }
   const digest = async bytes => Array.from(new Uint8Array(await owner.crypto.subtle.digest('SHA-256', bytes)), byte => byte.toString(16).padStart(2, '0')).join('')
   const limited = async (response, limit) => {
@@ -53,14 +73,17 @@ export function installLearningOfflineOwner(owner, sourceRevision) {
   const validateManifest = value => {
     if (!value || value.schema !== 'python-learning-offline/v1' || !revisionPattern.test(value.revision) || !Array.isArray(value.files)
       || value.files.length < 2 || value.files.length > 4096) failure('Invalid offline manifest.')
-    const seen = new Set(); let total = 0
+    const publicAssets = value.publicAssets ?? []
+    if (!Array.isArray(publicAssets) || publicAssets.length > 40 || publicAssets.some(path => !publicPath(path)) || new Set(publicAssets).size !== publicAssets.length) failure('Invalid offline public membership.')
+    const seen = new Set(); let total = 0, publicBytes = 0
     for (const file of value.files) {
-      if (!file || typeof file.path !== 'string' || !(file.path === 'index.html' || file.path.startsWith('assets/' + value.revision + '/'))
+      if (!file || typeof file.path !== 'string' || !(file.path === 'index.html' || file.path.startsWith('assets/' + value.revision + '/') || publicAssets.includes(file.path))
         || /[?#%\\\s]/.test(file.path) || file.path.split('/').some(part => part === '..' || !part)
         || !Number.isSafeInteger(file.bytes) || file.bytes < 1 || file.bytes > 16 * 1024 * 1024 || !sha.test(file.sha256) || seen.has(file.path)) failure('Invalid offline member.')
       total += file.bytes; seen.add(file.path)
+      if (publicAssets.includes(file.path)) { publicBytes += file.bytes; if (file.bytes > 499999 || publicBytes > 2000000) failure('Offline public assets exceed their byte budget.') }
     }
-    if (!seen.has('index.html') || total !== value.bytes || total > 96 * 1024 * 1024) failure('Invalid offline closure or byte budget.')
+    if (!seen.has('index.html') || publicAssets.some(path => !seen.has(path)) || total !== value.bytes || total > 96 * 1024 * 1024) failure('Invalid offline closure or byte budget.')
     return value
   }
   const readManifest = async version => {
@@ -133,18 +156,36 @@ export function installLearningOfflineOwner(owner, sourceRevision) {
     if (url.origin !== scope.origin || !url.pathname.startsWith(scope.pathname)) return null
     const learningRoute = url.searchParams.has('python-learning-offline'), studioRoute = url.searchParams.has('studio-offline')
     const navigation = request.mode === 'navigate' && (learningRoute || studioRoute)
-    if (!navigation && !url.pathname.startsWith(scope.pathname + 'assets/')) return null
+    const relativePath = url.pathname.slice(scope.pathname.length), publicRequest = publicPath(relativePath)
+    if (!navigation && !url.pathname.startsWith(scope.pathname + 'assets/') && !publicRequest) return null
     let state
     try { state = await readState() } catch (error) { if (!navigation) return null; return new Response(String(error.message), { status: 503 }) }
     try {
+      const installedManifests = new Map()
+      if (publicRequest) {
+        let declared = false
+        for (const candidate of [state.active, state.previous]) {
+          if (!candidate) continue
+          try {
+            const installed = await readManifest(candidate); installedManifests.set(candidate.cache, installed)
+            if ((installed.manifest.publicAssets || []).includes(relativePath)) declared = true
+          } catch { /* An unverified manifest cannot claim ownership of a public request. */ }
+        }
+        if (!declared) return null
+      }
       if (navigation && learningRoute && studioRoute) failure('Choose one offline workspace route.')
       const routeKey = studioRoute ? 'studio-offline' : 'python-learning-offline'
-      const requested = navigation ? url.searchParams.get(routeKey) : url.pathname.slice(scope.pathname.length).split('/')[1]
+      const referrer = request.referrer ? new URL(request.referrer) : null
+      const referenceRevision = referrer?.origin === scope.origin && referrer.pathname.startsWith(scope.pathname)
+        ? referrer.searchParams.get('studio-offline') || referrer.searchParams.get('python-learning-offline') : null
+      const requested = navigation ? url.searchParams.get(routeKey) : publicRequest
+        ? url.searchParams.get('revision') || referenceRevision || sourceRevision : relativePath.split('/')[1]
       const version = [state.active, state.previous].find(item => item?.revision === requested)
-      if (!version) { if (navigation) failure('This offline version is not installed. Reconnect and install it from the relevant workspace pane.'); return null }
+      if (!version) { if (navigation || publicRequest && url.searchParams.has('revision') && state.active) failure('This offline version is not installed. Reconnect and install it from the relevant workspace pane.'); return null }
       if (navigation) await verify(version)
-      const { cache, manifest } = await readManifest(version)
-      const file = manifest.files.find(item => item.path === (navigation ? 'index.html' : url.pathname.slice(scope.pathname.length)))
+      const { cache, manifest } = installedManifests.get(version.cache) || await readManifest(version)
+      const file = manifest.files.find(item => item.path === (navigation ? 'index.html' : relativePath))
+      if (publicRequest && !(manifest.publicAssets || []).includes(relativePath)) return null
       if (!file) { if (navigation) failure('Offline shell is missing.'); return null }
       return await checkedMember(cache, file)
     } catch (error) {

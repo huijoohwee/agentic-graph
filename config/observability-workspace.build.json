@@ -1,0 +1,12 @@
+{
+  "schema": "agentic-canvas-os/observability-workspace/v1",
+  "title": "Published source evidence",
+  "readOnly": true,
+  "repositories": [
+    {
+      "id": "published-source-evidence",
+      "label": "Published source evidence",
+      "path": "source-evidence"
+    }
+  ]
+}

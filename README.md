@@ -324,6 +324,8 @@ Use `npm run dev:apex` from that same checkout for the supervised Apex runtime, 
 
 The same `npm run dev` or `npm run dev:apex` command may run from a registered `agent/<device>/<semantic-scope>` worktree for an isolated task preview. The source guard selects task mode automatically; that preview is not canonical Dev or release proof. If `$GITHUB_ROOT/agentic-graph` is occupied by a task branch or `main` is registered elsewhere, preserve the lane and restore canonical ownership through the repository lifecycle workflow before claiming canonical Dev.
 
+For the real HackaMap SSOT in the shared table surface, run `node ./scripts/run-hackamap-multi-dim-table.mjs --host 127.0.0.1 --port 4177`. The launcher reads `../hackamap/site/hackamap-ssot.md`, writes a temporary source-backed `agentic-graph-hackamap.md` seed wrapper under the OS temp directory, and prints the exact loopback URL that opens directly in Multi-dimensional Table mode.
+
 Use focused checks for the behavior being changed:
 
 ```bash

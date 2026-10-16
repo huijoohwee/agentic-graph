@@ -1,0 +1,47 @@
+{
+  "schema": "route-policy/v1",
+  "id": "regional-polyline-comparison",
+  "version": "1.0.0",
+  "profile": {
+    "id": "route-v1",
+    "version": "1.0.0"
+  },
+  "roles": {
+    "measuredVertices": "measured_vertex",
+    "referenceVertices": "reference_vertex",
+    "measuredStart": "measured_start",
+    "measuredEnd": "measured_end",
+    "referenceStart": "reference_start",
+    "referenceEnd": "reference_end",
+    "routeType": "route_type",
+    "measuredUncertainty": "measured_uncertainty",
+    "referenceUncertainty": "reference_uncertainty"
+  },
+  "components": {
+    "ordinal": "ordinal",
+    "longitude": "longitude",
+    "latitude": "latitude"
+  },
+  "coordinateDatum": "WGS84",
+  "model": {
+    "id": "authored-fixed-sphere",
+    "version": "1.0.0",
+    "method": "spherical-haversine/v1",
+    "radiusMetres": 6371000,
+    "citation": "Wolfram Research, Haversine documentation, sphere-distance definition: https://reference.wolfram.com/language/ref/Haversine.html . Radius 6371000 m is an authored model parameter; no ellipsoidal/geodetic accuracy is claimed."
+  },
+  "supportedTypes": [
+    "polyline-study"
+  ],
+  "excludedRegions": [],
+  "bounds": {
+    "maxVertices": 100,
+    "maxSpanDegrees": 5,
+    "latitudeLimit": 85,
+    "maxWindowSeconds": 86400
+  },
+  "uncertainty": {
+    "method": "per-vertex-spherical-bound/v1",
+    "statement": "Authored per-vertex maximum positional displacement in metres under this fixed spherical metric. For n vertices each bounded by u, triangle inequality bounds polyline error by 2(n-1)u. This conditional bound excludes model and geodetic error; it is not statistical coverage."
+  }
+}

@@ -11,12 +11,14 @@ import {
   View,
 } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { useSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
+import { openXrMediaLibrary } from '@/features/xr-v2/openXrMediaLibrary'
+import { isGameModeDocumentReady } from './gameModeDocumentCapability'
 import {
   renderAgenticOsInvocationKeywordChip,
 } from '@/features/agentic-os/agenticOsInvocationChips'
 import { useAgenticOsRemoteGrammarCatalog } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import { openMotionControlSurface } from '@/features/three/motionControlSurfaceRuntime'
-import { XrSharedAssetControls } from '@/features/three/XrSharedAssetControls'
 import {
   controlXrSharedAssetControls,
   inspectXrSharedAssetControls,
@@ -80,6 +82,16 @@ function Invocation({ operation }: { operation: GameModeOperation }) {
 }
 
 export function GameModeFloatingPanelView() {
+  const graphData = useGraphStore(state => state.graphData)
+  const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
+  const markdownDocumentText = useGraphStore(state => state.markdownDocumentText)
+  const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
+  const gameModeDocumentReady = React.useMemo(
+    () => isGameModeDocumentReady(),
+    // These subscribed values invalidate readiness read from the imperative document owner.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [graphData, markdownDocumentName, markdownDocumentText, sourceFilesBootstrapReady],
+  )
   const gameMode = React.useSyncExternalStore(
     subscribeGameModeSnapshot,
     readGameModeSnapshot,
@@ -107,6 +119,14 @@ export function GameModeFloatingPanelView() {
     && GAME_MODE_REQUIRED_TOKENS.every(required => grammarCatalog.entries.some(entry => entry.token === required.token && entry.kind === required.kind))
 
   const runControl = React.useCallback(async (operation: GameModeOperation) => {
+    if (!gameModeDocumentReady && operation !== 'stop' && operation !== 'exit') {
+      pushUiToast({
+        id: `game-mode:${operation}:setup-required`,
+        kind: 'warning',
+        message: 'Open a workspace document before using Game Mode.',
+      })
+      return
+    }
     setPendingOperation(operation)
     try {
       const result = await controlLocalGameMode({ operation })
@@ -118,7 +138,7 @@ export function GameModeFloatingPanelView() {
     } finally {
       setPendingOperation(null)
     }
-  }, [pushUiToast])
+  }, [gameModeDocumentReady, pushUiToast])
 
   const resetSave = React.useCallback(async () => {
     setPendingOperation('reset-save')
@@ -148,13 +168,15 @@ export function GameModeFloatingPanelView() {
 
   const sharedAssetControls = React.useMemo(
     () => inspectXrSharedAssetControls(),
+    // External-store revisions intentionally invalidate this imperative snapshot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [mission.revision, sharedAssetControlRevision],
   )
 
-  const selectNpcTarget = React.useCallback((npcId: string) => {
-    const result = controlXrSharedAssetControls({ operation: 'select-target', targetId: npcId })
+  const selectActorTarget = React.useCallback((targetId: string) => {
+    const result = controlXrSharedAssetControls({ operation: 'select-target', targetId })
     pushUiToast({
-      id: `game-mode:npc-target:${npcId}:${result.ok ? 'ok' : 'error'}`,
+      id: `game-mode:actor-target:${targetId}:${result.ok ? 'ok' : 'error'}`,
       kind: result.ok ? 'success' : 'error',
       message: result.message,
     })
@@ -183,13 +205,14 @@ export function GameModeFloatingPanelView() {
       data-kg-game-mode-phase={mission.phase}
       data-kg-game-mode-simulation={gameMode.simulationStatus}
       data-kg-game-mode-mcp="agentic-graph.control_local_game_mode"
+      data-kg-game-mode-capability={gameModeDocumentReady ? 'ready' : 'setup'}
     >
       <FloatingPanelCatalogHeader
         title="Game Mode"
         subtitle="Deterministic ECS gameplay"
         actionsLabel="Game Mode actions"
         actions={<>
-          <button type="button" className="App-toolbar__btn" disabled={pendingOperation !== null || mission.phase !== 'stopped' || decisions.hydrationBlocked} onClick={() => void runControl('start')} data-kg-game-mode-start="1">
+          <button type="button" className="App-toolbar__btn" disabled={!gameModeDocumentReady || pendingOperation !== null || mission.phase !== 'stopped' || decisions.hydrationBlocked} onClick={() => void runControl('start')} data-kg-game-mode-start="1">
             <Gamepad2 className="h-3.5 w-3.5" aria-hidden="true" /> Start
           </button>
           <button type="button" className="App-toolbar__btn" disabled={pendingOperation !== null || !gameMode.active} onClick={() => void runControl('stop')} data-kg-game-mode-stop="1">
@@ -198,6 +221,13 @@ export function GameModeFloatingPanelView() {
         </>}
       />
       <section className={floatingPanelCatalogBodyClassName('grid content-start gap-2 px-1 pb-2')}>
+        {!gameModeDocumentReady ? (
+          <section className={cn('grid gap-1 rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} role="status" data-kg-game-mode-setup="1">
+            <b>Open a workspace document to start Game Mode.</b>
+            <p className={UI_THEME_TOKENS.text.secondary}>Game Mode follows the active document and uses its authored XR scene when available. Other documents use the shared neutral scene.</p>
+          </section>
+        ) : null}
+        {gameModeDocumentReady ? <>
         <section className={cn('grid grid-cols-3 gap-2 rounded border p-2 text-xs', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Game Mode telemetry">
           <span><b>Status</b><br />{gameMode.launchStatus} · {gameMode.simulationStatus}</span>
           <span><b>Mission</b><br />{mission.phase}</span>
@@ -213,6 +243,16 @@ export function GameModeFloatingPanelView() {
         <section className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} aria-label="Game Mode runtime status">
           <p className="flex items-center gap-1 text-xs font-semibold"><MonitorSmartphone className="h-3.5 w-3.5" aria-hidden="true" /> Desktop, pointer, touch, Motion Control</p>
           <p className={cn('text-xs', UI_THEME_TOKENS.text.secondary)}>{gameMode.message}</p>
+          {mission.phase === 'lost' || mission.phase === 'won' ? (
+            <p className={cn('text-xs', UI_THEME_TOKENS.status.warning)} role="status" data-kg-game-mode-terminal-input="1">
+              Mission ended. WASD pans the map; Restart to move the player again.
+            </p>
+          ) : null}
+          {mission.phase === 'stopped' ? (
+            <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)} role="status" data-kg-game-mode-paused-input="1">
+              Mission stopped. Select Start to resume WASD movement.
+            </p>
+          ) : null}
           <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>One existing R3F Canvas · synchronous WebGL guard · fixed native Agentic ECS ticks · normalized slab AABB hitscan.</p>
           {mission.runtimeError ? <p className={cn('text-xs', UI_THEME_TOKENS.status.error)} role="alert" data-kg-game-mode-runtime-error="1"><ShieldAlert className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />{mission.runtimeError}</p> : null}
           {decisions.error ? <p className={cn('break-words text-xs', UI_THEME_TOKENS.status.error)} role="alert" data-kg-game-mode-save-error="1">{decisions.error}</p> : null}
@@ -229,7 +269,11 @@ export function GameModeFloatingPanelView() {
           <button type="button" className="App-toolbar__btn" disabled={!gameMode.active} onClick={() => void runControl('exit')} data-kg-game-mode-action="exit">Exit</button>
         </section>
 
-        <section className="grid gap-1" aria-label="Scored four-action NPC decisions" data-kg-game-mode-npc-scores="1">
+        <section className="grid gap-1" aria-label="Game Mode mission NPCs" data-kg-game-mode-npc-scores="1">
+          <header className="grid gap-0.5 px-1">
+            <h3 className="text-xs font-semibold">Mission NPCs</h3>
+            <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Mission NPCs share the Geo+XR map. Scene subjects and props are managed in the existing Media panel.</p>
+          </header>
           {npcRows.map(npc => (
             <article
               key={npc.id}
@@ -252,7 +296,7 @@ export function GameModeFloatingPanelView() {
                   aria-label={`Select ${npc.id} for shared 3D for XR controls`}
                   aria-pressed={sharedAssetControls.selectedKind === 'npc' && sharedAssetControls.selectedTargetId === npc.id}
                   title={`Select ${npc.id}`}
-                  onClick={() => selectNpcTarget(npc.id)}
+                  onClick={() => selectActorTarget(npc.id)}
                   data-kg-game-mode-npc-shared-target={npc.id}
                 >
                   <Target className="size-3.5" aria-hidden />
@@ -269,10 +313,12 @@ export function GameModeFloatingPanelView() {
           <div className="flex flex-wrap gap-1">
             <button type="button" className="App-toolbar__btn" onClick={() => switchCompanion('motion-control')} data-kg-game-mode-open-companion="motion-control">Motion Control</button>
             <button type="button" className="App-toolbar__btn" onClick={() => switchCompanion('xr-3d')} data-kg-game-mode-open-companion="xr"><View className="h-3.5 w-3.5" aria-hidden="true" /> XR Mode</button>
+            <button type="button" className="App-toolbar__btn" onClick={openXrMediaLibrary} title="Open Media → 3D for XR → Subjects & Props to add or remove scene assets" aria-label="Manage subjects and props in the shared Media library" data-kg-game-mode-manage-shared-subjects-props="1">Manage subjects &amp; props</button>
           </div>
-          <XrSharedAssetControls surface="game-mode" embedded />
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>Select assets on the Geo+XR map. Add and remove them in the shared Media → 3D for XR → Subjects &amp; Props library.</p>
           <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>On XR, Game Mode retains the paused authored scene while its first-person overlay owns camera and gameplay; exit resumes the shared controller owner.</p>
         </section>
+        </> : null}
 
         <FlightSimTrainingSurfaceProjection surface="game-mode" />
 

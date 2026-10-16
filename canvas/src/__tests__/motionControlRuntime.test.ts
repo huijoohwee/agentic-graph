@@ -335,7 +335,7 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
   }
   if (!mediaCatalogModeSource.includes("let snapshot: MediaCatalogMode = 'media'")
     || !mediaPanelSource.includes('subscribeMediaCatalogMode')
-    || !mediaPanelSource.includes("setMediaCatalogMode('media')")
+    || !mediaPanelSource.includes('onChange={setMediaCatalogMode}')
     || !mediaPanelSource.includes("setMediaCatalogMode('xr-3d')")) {
     throw new Error('expected Media and 3D for XR to share one observable catalog-mode owner')
   }
@@ -343,7 +343,7 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
   const toolbarPanelSelection = toolbarToolMenuSource.indexOf('setFloatingPanelView(view)', toolbarXrRouting)
   if (toolbarXrRouting < 0
     || toolbarPanelSelection < toolbarXrRouting
-    || !toolbarToolMenuSource.includes('handleSelectView(requestedFloatingPanelView)')
+    || !toolbarToolMenuSource.includes('handleSelectView(requestedFloatingPanelView, true)')
     || !xrSceneSurfaceSource.includes("if (activation.panelView === 'media') setMediaCatalogMode('xr-3d')")
     || !xrSceneMcpSource.includes('activateXrSceneSurface({')
     || !xrCameraMotionSource.includes("activateXrSceneSurface({ panelView: 'media', openPanel: true, timeline: true })")) {

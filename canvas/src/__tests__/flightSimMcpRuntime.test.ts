@@ -1,55 +1,28 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
 import { mergeDecisionsIntoAgenticOsMarkdown } from '../../../ecs/decisionDocument.js'
-
-import {
-  buildAgenticGraphAgentReadyToolContracts,
-  AGENTIC_OS_AGENT_READY_TOOL_IDS,
-} from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
-import {
-  buildFlightSimWebMcpToolBuilders,
-  FLIGHT_SIM_WEB_MCP_DEADLINE_MS,
-} from '@/features/agent-ready/flightSimWebMcpTools'
-import {
-  FLIGHT_SIM_AGENT_READY_TOOL_IDS,
-} from '@/features/agent-ready/flightSimAgentReadyContract.mjs'
-import {
-  FLIGHT_SIM_INVOCATION_BINDINGS,
-  FLIGHT_SIM_INVOCATION_COMMANDS,
-  FLIGHT_SIM_INVOCATION_SEMANTICS,
-  FLIGHT_SIM_MCP_SCHEMA,
-  FLIGHT_SIM_CONTROL_OPERATIONS,
-  FLIGHT_SIM_WEB_MCP_TOOL_IDS,
-} from '@/features/game-flight-sim/flightSimMcpContract.mjs'
-import {
-  buildFlightSimInvocation,
-  controlLocalFlightSim,
-  diagnoseFlightSimControl,
-  inspectLocalFlightSim,
-  normalizeFlightSimControl,
-  parseFlightSimInvocation,
-} from '@/features/game-flight-sim/flightSimMcpRuntime'
-import {
-  advanceFlightSimByFixedStep,
-  exitFlightSimSurface,
-  isFlightSimHydrationPending,
-  openFlightSimSurface,
-  readFlightSimSnapshot,
-  rejectFlightSimGameplayNetworkAttempt,
-  resetFlightSimLocalPersistence,
-  resetFlightSimRuntimeForTests,
-  startFlightSim,
-} from '@/features/game-flight-sim/flightSimRuntime'
-import {
-  readFlightSimDecisionStore,
-  resetFlightSimDecisionStoreForTests,
-} from '@/features/game-flight-sim/flightSimDecisionStore'
+import { buildAgenticGraphAgentReadyToolContracts, AGENTIC_OS_AGENT_READY_TOOL_IDS, } from '@/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs'
+import { buildFlightSimWebMcpToolBuilders, FLIGHT_SIM_WEB_MCP_DEADLINE_MS, } from '@/features/agent-ready/flightSimWebMcpTools'
+import { FLIGHT_SIM_AGENT_READY_TOOL_IDS, } from '@/features/agent-ready/flightSimAgentReadyContract.mjs'
+import { FLIGHT_SIM_INVOCATION_BINDINGS, FLIGHT_SIM_INVOCATION_COMMANDS, FLIGHT_SIM_INVOCATION_SEMANTICS, FLIGHT_SIM_MCP_SCHEMA, FLIGHT_SIM_CONTROL_OPERATIONS, FLIGHT_SIM_WEB_MCP_TOOL_IDS, } from '@/features/game-flight-sim/flightSimMcpContract.mjs'
+import { buildFlightSimInvocation, controlLocalFlightSim, diagnoseFlightSimControl, inspectLocalFlightSim, normalizeFlightSimControl, parseFlightSimInvocation, } from '@/features/game-flight-sim/flightSimMcpRuntime'
+import { advanceFlightSimByFixedStep, exitFlightSimSurface, isFlightSimHydrationPending, openFlightSimSurface, readFlightSimSnapshot, rejectFlightSimGameplayNetworkAttempt, resetFlightSimLocalPersistence, resetFlightSimRuntimeForTests, startFlightSim, } from '@/features/game-flight-sim/flightSimRuntime'
+import { readFlightSimDecisionStore, resetFlightSimDecisionStoreForTests, } from '@/features/game-flight-sim/flightSimDecisionStore'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
-import {
-  resetFlightSimTrainingScenarioForTests,
-} from '@/features/game-flight-sim/flightSimTrainingScenario'
+import { resetFlightSimTrainingScenarioForTests, readFlightSimTrainingScenario, } from '@/features/game-flight-sim/flightSimTrainingScenario'
 import { useGraphStore } from '@/hooks/useGraphStore'
-
+const trainingSeedSource = readFileSync(new URL('../../../docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md', import.meta.url), 'utf8')
+const authoredTraining = parseMarkdownFrontmatter(splitMarkdownLines(trainingSeedSource)).meta.flight_training_profile as any
+let priorSourceState: Pick<ReturnType<typeof useGraphStore.getState>, 'markdownDocumentName' | 'markdownDocumentText' | 'sourceFiles'>
+test.beforeEach(() => {
+  const state = useGraphStore.getState()
+  priorSourceState = { markdownDocumentName: state.markdownDocumentName, markdownDocumentText: state.markdownDocumentText, sourceFiles: state.sourceFiles }
+  const name = '/imports/current-training.md'
+  useGraphStore.setState({ markdownDocumentName: name, markdownDocumentText: trainingSeedSource, sourceFiles: [{ id: 'training-source', name, text: trainingSeedSource, enabled: true, status: 'parsed', parsedGraphRevision: 1, source: { kind: 'local', path: name } }] } as never)
+})
+test.afterEach(() => { useGraphStore.setState(priorSourceState); resetFlightSimTrainingScenarioForTests() })
 const buildWebName = (name: string): string => `agentic-graph.${name}`
 const readOnlyAnnotations = Object.freeze({
   readOnlyHint: true,
@@ -63,52 +36,30 @@ const mutationAnnotations = Object.freeze({
   openWorldHint: false,
   idempotentHint: false,
 })
-
 test('Flight Sim keeps one canonical invocation tuple and two browser tool ids', () => {
   assert.deepEqual(FLIGHT_SIM_INVOCATION_COMMANDS, { control: '/flight.sim' })
   assert.deepEqual(FLIGHT_SIM_INVOCATION_BINDINGS, { canvas: '@canvas' })
   assert.deepEqual(FLIGHT_SIM_INVOCATION_SEMANTICS, { flight: '#flight' })
   assert.equal(FLIGHT_SIM_MCP_SCHEMA, 'agentic-graph-flight-sim-mcp/v1')
-  assert.deepEqual(FLIGHT_SIM_WEB_MCP_TOOL_IDS, {
-    inspect: 'inspect_local_flight_sim',
-    control: 'control_local_flight_sim',
-  })
-  assert.deepEqual(FLIGHT_SIM_AGENT_READY_TOOL_IDS, {
-    inspectLocalFlightSim: 'inspect_local_flight_sim',
-    controlLocalFlightSim: 'control_local_flight_sim',
-  })
-  assert.deepEqual(FLIGHT_SIM_CONTROL_OPERATIONS, [
-    'open', 'start', 'stop', 'restart', 'throttle',
-    'mission-foundation', 'mission-night', 'mission-systems',
-    'failure-none', 'failure-engine', 'failure-instruments', 'failure-controls',
-    'voice-on', 'voice-off', 'coach',
-    'save', 'exit',
-  ])
+  assert.deepEqual(FLIGHT_SIM_WEB_MCP_TOOL_IDS, { inspect: 'inspect_local_flight_sim', control: 'control_local_flight_sim', })
+  assert.deepEqual(FLIGHT_SIM_AGENT_READY_TOOL_IDS, { inspectLocalFlightSim: 'inspect_local_flight_sim', controlLocalFlightSim: 'control_local_flight_sim', })
+  assert.deepEqual(FLIGHT_SIM_CONTROL_OPERATIONS, [ 'open', 'start', 'stop', 'restart', 'throttle', 'mission', 'failure', 'voice-on', 'voice-off', 'coach', 'save', 'exit', ])
 })
-
 test('Flight Sim builds and parses every canonical native operation', () => {
   for (const operation of FLIGHT_SIM_CONTROL_OPERATIONS) {
-    const invocation = operation === 'throttle'
-      ? buildFlightSimInvocation(operation, 0.75)
-      : buildFlightSimInvocation(operation)
-    assert.deepEqual(parseFlightSimInvocation(invocation), {
-      invocation,
-      operation,
-      ...(operation === 'throttle' ? { throttle: 0.75 } : {}),
-    })
+    const selectionId = operation === 'mission' ? authoredTraining.defaultMissionId : operation === 'failure' ? authoredTraining.failures[0].id : undefined
+    const invocation = buildFlightSimInvocation(operation, operation === 'throttle' ? 0.75 : undefined, selectionId)
+    const parsed = parseFlightSimInvocation(invocation)
+    assert.ok(parsed)
+    const { trainingSource, ...normalized } = parsed
+    assert.deepEqual(normalized, { invocation, operation, ...(operation === 'throttle' ? { throttle: 0.75 } : {}), ...(selectionId ? { [`${operation}Id`]: selectionId } : {}), })
+    if (selectionId) assert.ok(trainingSource?.profile)
   }
-  assert.equal(
-    buildFlightSimInvocation('open'),
-    '/flight.sim @canvas #flight operation=open',
-  )
-  assert.equal(
-    buildFlightSimInvocation('throttle', 0.75),
-    '/flight.sim @canvas #flight operation=throttle throttle=0.75',
-  )
+  assert.equal( buildFlightSimInvocation('open'), '/flight.sim @canvas #flight operation=open', )
+  assert.equal( buildFlightSimInvocation('throttle', 0.75), '/flight.sim @canvas #flight operation=throttle throttle=0.75', )
   const smallThrottle = buildFlightSimInvocation('throttle', 1e-7)
   assert.equal(parseFlightSimInvocation(smallThrottle)?.throttle, 1e-7)
 })
-
 test('Flight Sim native parsing rejects duplicate, unknown, and incomplete tokens', () => {
   const invalidInvocations = [
     '/flight.sim /flight.sim @canvas #flight operation=open',
@@ -134,21 +85,10 @@ test('Flight Sim native parsing rejects duplicate, unknown, and incomplete token
     assert.equal(parseFlightSimInvocation(invocation), null, invocation)
   }
 })
-
 test('Flight Sim structured input rejects mixed, unknown, and invalid throttle fields', () => {
-  assert.deepEqual(normalizeFlightSimControl({ operation: 'open' }), {
-    invocation: '',
-    operation: 'open',
-  })
-  assert.deepEqual(normalizeFlightSimControl({ operation: 'throttle', throttle: 0.25 }), {
-    invocation: '',
-    operation: 'throttle',
-    throttle: 0.25,
-  })
-  assert.equal(normalizeFlightSimControl({
-    invocation: buildFlightSimInvocation('open'),
-    operation: 'open',
-  }), null)
+  assert.deepEqual(normalizeFlightSimControl({ operation: 'open' }), { invocation: '', operation: 'open', })
+  assert.deepEqual(normalizeFlightSimControl({ operation: 'throttle', throttle: 0.25 }), { invocation: '', operation: 'throttle', throttle: 0.25, })
+  assert.equal(normalizeFlightSimControl({ invocation: buildFlightSimInvocation('open'), operation: 'open', }), null)
   assert.equal(normalizeFlightSimControl({ operation: 'open', throttle: 0.25 }), null)
   assert.equal(normalizeFlightSimControl({ operation: 'throttle' }), null)
   assert.equal(normalizeFlightSimControl({ operation: 'throttle', throttle: Number.NaN }), null)
@@ -158,7 +98,6 @@ test('Flight Sim structured input rejects mixed, unknown, and invalid throttle f
   assert.equal(normalizeFlightSimControl({ operation: 'unknown' as 'open' }), null)
   assert.equal(normalizeFlightSimControl({ operation: 'open', unknown: true } as never), null)
 })
-
 test('Flight Sim diagnostics name each fail-closed invocation violation and retain state byte-identically', async () => {
   resetFlightSimRuntimeForTests()
   const cases = [
@@ -206,7 +145,6 @@ test('Flight Sim diagnostics name each fail-closed invocation violation and reta
       errorCode: 'FLIGHT_SIM_CONTROL_UNSUPPORTED_OPERATION',
     },
   ] as const
-
   for (const diagnosticCase of cases) {
     const before = JSON.stringify(readFlightSimSnapshot())
     const diagnostic = diagnoseFlightSimControl(diagnosticCase.input)
@@ -214,7 +152,6 @@ test('Flight Sim diagnostics name each fail-closed invocation violation and reta
     if (diagnostic.ok) throw new Error('expected a Flight Sim diagnostic failure')
     assert.equal(diagnostic.errorCode, diagnosticCase.errorCode)
     assert.ok(diagnostic.field || diagnostic.token)
-
     const result = await controlLocalFlightSim(diagnosticCase.input)
     assert.equal(result.ok, false)
     assert.equal(result.errorCode, diagnostic.errorCode)
@@ -222,7 +159,6 @@ test('Flight Sim diagnostics name each fail-closed invocation violation and reta
     assert.equal(JSON.stringify(readFlightSimSnapshot()), before)
   }
 })
-
 test('Flight Sim builder rejects invalid programmatic invocation values', () => {
   assert.throws(
     () => buildFlightSimInvocation('throttle'),
@@ -241,7 +177,6 @@ test('Flight Sim builder rejects invalid programmatic invocation values', () => 
     /Unsupported Flight Sim operation/,
   )
 })
-
 test('Flight Sim MCP controls training mission, failure, voice, and coaching state', async () => {
   resetFlightSimRuntimeForTests()
   resetFlightSimTrainingScenarioForTests()
@@ -250,7 +185,6 @@ test('Flight Sim MCP controls training mission, failure, voice, and coaching sta
     assert.equal(inspectLocalFlightSim().training.missionId, 'night-circuit')
     assert.equal(inspectLocalFlightSim().training.night, true)
     assert.equal(inspectLocalFlightSim().training.failureId, 'instrument-uncertainty')
-
     assert.equal((await controlLocalFlightSim({ operation: 'failure-controls' })).ok, true)
     assert.equal(inspectLocalFlightSim().training.failureId, 'control-bias')
     assert.equal((await controlLocalFlightSim({ operation: 'voice-on' })).ok, true)
@@ -259,20 +193,15 @@ test('Flight Sim MCP controls training mission, failure, voice, and coaching sta
       (await controlLocalFlightSim({ operation: 'coach' })).message,
       /coaching cue/i,
     )
-
     await openFlightSimSurface({ openPanel: false, webglSupported: true })
     await controlLocalFlightSim({ operation: 'start' })
-    assert.equal(
-      (await controlLocalFlightSim({ operation: 'mission-foundation' })).ok,
-      false,
-    )
+    assert.equal( (await controlLocalFlightSim({ operation: 'mission-foundation' })).ok, false, )
   } finally {
     if (readFlightSimSnapshot().active) exitFlightSimSurface()
     resetFlightSimRuntimeForTests()
     resetFlightSimTrainingScenarioForTests()
   }
 })
-
 test('Flight Sim MCP enforces the active tick-zero lifecycle and resumable stop/start', async () => {
   resetFlightSimRuntimeForTests()
   const hostFetch = globalThis.fetch
@@ -282,27 +211,22 @@ test('Flight Sim MCP enforces the active tick-zero lifecycle and resumable stop/
     assert.equal(inspectLocalFlightSim().flightSim.active, true)
     assert.equal((await controlLocalFlightSim({ operation: 'inspect' })).errorCode, 'FLIGHT_SIM_CONTROL_UNSUPPORTED_OPERATION')
     assert.equal((await controlLocalFlightSim({ operation: 'open' })).ok, false)
-
     assert.equal((await controlLocalFlightSim({ operation: 'start' })).ok, true)
     assert.equal(readFlightSimSnapshot().phase, 'ready')
-
     assert.equal((await controlLocalFlightSim({ operation: 'throttle', throttle: 0.75 })).ok, true)
     assert.equal(readFlightSimSnapshot().phase, 'ready')
     assert.notEqual(readFlightSimSnapshot().aircraft.throttle, 0.75)
     await advanceFlightSimByFixedStep()
     assert.equal(readFlightSimSnapshot().phase, 'flying')
     assert.equal(readFlightSimSnapshot().aircraft.throttle, Math.fround(0.75))
-
     assert.equal((await controlLocalFlightSim({ operation: 'stop' })).ok, true)
     assert.equal(readFlightSimSnapshot().phase, 'stopped')
     assert.equal((await controlLocalFlightSim({ operation: 'start' })).ok, true)
     assert.equal(readFlightSimSnapshot().phase, 'flying')
-
     assert.equal((await controlLocalFlightSim({ operation: 'restart' })).ok, true)
     assert.equal(readFlightSimSnapshot().phase, 'ready')
     assert.equal(readFlightSimSnapshot().tick, 0)
     assert.equal((await controlLocalFlightSim({ operation: 'save' })).ok, false)
-
     let gameplayTransportExecuted = false
     const rejected = rejectFlightSimGameplayNetworkAttempt(
       'fetch:GET:https://airvio.co/api/storage',
@@ -322,7 +246,6 @@ test('Flight Sim MCP enforces the active tick-zero lifecycle and resumable stop/
     assert.equal(globalThis.fetch, hostFetch)
   }
 })
-
 test('Flight Sim MCP reports a failed Canvas restoration instead of a successful Exit', async () => {
   resetFlightSimRuntimeForTests()
   await openFlightSimSurface({ openPanel: false, webglSupported: true })
@@ -342,7 +265,6 @@ test('Flight Sim MCP reports a failed Canvas restoration instead of a successful
     resetFlightSimRuntimeForTests()
   }
 })
-
 test('Flight Sim cannot create a World while local Decisions are still hydrating', async () => {
   resetFlightSimDecisionStoreForTests()
   resetFlightSimRuntimeForTests()
@@ -361,7 +283,6 @@ test('Flight Sim cannot create a World while local Decisions are still hydrating
       return '---\nflow:\n  nodes: [not valid\n---\n'
     },
   } as unknown as WorkspaceFs
-
   try {
     const opening = openFlightSimSurface({
       openPanel: false,
@@ -381,7 +302,6 @@ test('Flight Sim cannot create a World while local Decisions are still hydrating
     assert.equal(earlyStart.runId, 0)
     assert.equal(earlyStart.phase, 'stopped')
     assert.match(earlyStart.runtimeError || '', /still loading/)
-
     releaseRead()
     const blocked = await opening
     assert.equal(isFlightSimHydrationPending(), false)
@@ -398,7 +318,6 @@ test('Flight Sim cannot create a World while local Decisions are still hydrating
     resetFlightSimRuntimeForTests()
   }
 })
-
 test('Reset local save clears a prior mission hydration error before a fresh Start', async () => {
   resetFlightSimDecisionStoreForTests()
   resetFlightSimRuntimeForTests()
@@ -437,7 +356,6 @@ test('Reset local save clears a prior mission hydration error before a fresh Sta
       workspace,
     })
     assert.match(blocked.runtimeError || '', /Unreadable/)
-
     const reset = await resetFlightSimLocalPersistence({ workspace })
     assert.equal(reset.status, 'saved')
     assert.equal(readFlightSimSnapshot().runtimeError, null)
@@ -456,7 +374,6 @@ test('Reset local save clears a prior mission hydration error before a fresh Sta
     resetFlightSimRuntimeForTests()
   }
 })
-
 test('profile-incompatible Decisions block hydration before a mission World is created', async () => {
   resetFlightSimDecisionStoreForTests()
   resetFlightSimRuntimeForTests()
@@ -488,7 +405,7 @@ test('profile-incompatible Decisions block hydration before a mission World is c
     assert.equal(readFlightSimDecisionStore().hydrationBlocked, true)
     assert.match(
       blocked.runtimeError || '',
-      /Unreadable \/game-flight-sim\/mission-1-decisions\.md: local Decision document is invalid\./,
+      /Unreadable \/game-flight-sim\/mission-1-decisions\.md: Flight Sim Decision collider identity is outside the active mission profile/,
     )
   } finally {
     if (readFlightSimSnapshot().active) exitFlightSimSurface()
@@ -496,7 +413,6 @@ test('profile-incompatible Decisions block hydration before a mission World is c
     resetFlightSimRuntimeForTests()
   }
 })
-
 test('Flight Sim publishes exactly two browser-only agent-ready contracts', () => {
   const browserContracts = buildAgenticGraphAgentReadyToolContracts({
     includeBrowserOnlyTools: true,
@@ -508,15 +424,8 @@ test('Flight Sim publishes exactly two browser-only agent-ready contracts', () =
   const browserFlightContracts = browserContracts.filter(contract => (
     flightToolNames.includes(contract.name)
   ))
-  assert.deepEqual(
-    browserFlightContracts.map(contract => contract.webName),
-    ['agentic-graph.inspect_local_flight_sim', 'agentic-graph.control_local_flight_sim'],
-  )
-  assert.equal(
-    publishedContracts.some(contract => flightToolNames.includes(contract.name)),
-    false,
-  )
-
+  assert.deepEqual( browserFlightContracts.map(contract => contract.webName), ['agentic-graph.inspect_local_flight_sim', 'agentic-graph.control_local_flight_sim'], )
+  assert.equal( publishedContracts.some(contract => flightToolNames.includes(contract.name)), false, )
   const inspectContract = browserFlightContracts[0]
   const controlContract = browserFlightContracts[1]
   assert.deepEqual(inspectContract.annotations, readOnlyAnnotations)
@@ -529,17 +438,12 @@ test('Flight Sim publishes exactly two browser-only agent-ready contracts', () =
       throttle?: { type?: string; minimum?: number; maximum?: number }
     }
   }>
-  assert.equal(variants.length, FLIGHT_SIM_CONTROL_OPERATIONS.length + 1)
+  assert.equal(variants.length, FLIGHT_SIM_CONTROL_OPERATIONS.length + 2)
   const throttleVariant = variants.find(variant => variant.properties?.operation?.const === 'throttle')
   assert.deepEqual(throttleVariant?.required, ['operation', 'throttle'])
-  assert.deepEqual(throttleVariant?.properties?.throttle, {
-    type: 'number',
-    minimum: 0,
-    maximum: 1,
-  })
+  assert.deepEqual(throttleVariant?.properties?.throttle, { type: 'number', minimum: 0, maximum: 1, })
   for (const variant of variants) assert.equal(variant.additionalProperties, false)
 })
-
 test('Flight Sim WebMCP builders bind the exact two shared contracts', async () => {
   const contracts = buildAgenticGraphAgentReadyToolContracts({
     includeBrowserOnlyTools: true,
@@ -552,26 +456,15 @@ test('Flight Sim WebMCP builders bind the exact two shared contracts', async () 
   resetFlightSimRuntimeForTests()
   try {
     const builders = buildFlightSimWebMcpToolBuilders(findContract)
-    assert.deepEqual(Object.keys(builders), [
-      AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalFlightSim,
-      AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalFlightSim,
-    ])
-
+    assert.deepEqual(Object.keys(builders), [ AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalFlightSim, AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalFlightSim, ])
     const inspectTool = builders[AGENTIC_OS_AGENT_READY_TOOL_IDS.inspectLocalFlightSim]()
     const controlTool = builders[AGENTIC_OS_AGENT_READY_TOOL_IDS.controlLocalFlightSim]()
     assert.equal(inspectTool.name, 'agentic-graph.inspect_local_flight_sim')
     assert.equal(controlTool.name, 'agentic-graph.control_local_flight_sim')
-
     const inactiveBefore = JSON.stringify(readFlightSimSnapshot())
     const unavailable = await inspectTool.execute()
-    assert.deepEqual(unavailable, {
-      ok: false,
-      errorCode: 'FLIGHT_SIM_STATE_UNAVAILABLE',
-      message: 'Flight Sim state is unavailable while the surface is inactive.',
-      operation: 'inspect',
-    })
+    assert.deepEqual(unavailable, { ok: false, errorCode: 'FLIGHT_SIM_STATE_UNAVAILABLE', message: 'Flight Sim state is unavailable while the surface is inactive.', operation: 'inspect', })
     assert.equal(JSON.stringify(readFlightSimSnapshot()), inactiveBefore)
-
     await openFlightSimSurface({ openPanel: false, webglSupported: true })
     const inspection = await inspectTool.execute()
     assert.equal((inspection as { schema?: unknown }).schema, FLIGHT_SIM_MCP_SCHEMA)
@@ -579,16 +472,12 @@ test('Flight Sim WebMCP builders bind the exact two shared contracts', async () 
       invocation: '/flight.sim @canvas @canvas #flight operation=open',
     })
     assert.equal((invalid as { ok?: unknown }).ok, false)
-    assert.equal(
-      (invalid as { errorCode?: unknown }).errorCode,
-      'FLIGHT_SIM_INVOCATION_DUPLICATE_SIGIL',
-    )
+    assert.equal( (invalid as { errorCode?: unknown }).errorCode, 'FLIGHT_SIM_INVOCATION_DUPLICATE_SIGIL', )
   } finally {
     if (readFlightSimSnapshot().active) exitFlightSimSurface()
     resetFlightSimRuntimeForTests()
   }
 })
-
 test('Flight Sim WebMCP deadline returns a deterministic structured timeout envelope', async () => {
   const contracts = buildAgenticGraphAgentReadyToolContracts({
     includeBrowserOnlyTools: true,
@@ -646,14 +535,63 @@ test('Flight Sim WebMCP deadline returns a deterministic structured timeout enve
   assert.equal(JSON.stringify(readFlightSimSnapshot()), before)
   assert.equal(observedFence?.signal.aborted, true)
   assert.equal(observedFence?.isCurrent(), false)
-
   assert.ok(releaseControl)
   releaseControl()
   await controlSettled
-  assert.equal(
-    JSON.stringify(readFlightSimSnapshot()),
-    before,
-    'a timed-out delayed control must not mutate after its timeout envelope settles',
-  )
+  assert.equal( JSON.stringify(readFlightSimSnapshot()), before, 'a timed-out delayed control must not mutate after its timeout envelope settles', )
+  resetFlightSimRuntimeForTests()
+})
+test('generic training fields and authored alias shims share one admitted profile', async () => {
+  resetFlightSimRuntimeForTests()
+  resetFlightSimTrainingScenarioForTests()
+  assert.equal((await controlLocalFlightSim({ operation: 'mission', missionId: authoredTraining.missions[1].id })).ok, true)
+  assert.equal(inspectLocalFlightSim().training.missionId, authoredTraining.missions[1].id)
+  const alias = Object.entries(authoredTraining.controlAliases).find(([, value]: any) => value.kind === 'failure')![0]
+  assert.equal((await controlLocalFlightSim({ operation: alias })).ok, true)
+  assert.equal(inspectLocalFlightSim().training.failureId, authoredTraining.controlAliases[alias].id)
+  for (const input of [
+    { operation: 'mission', missionId: 'unknown' },
+    { operation: 'failure', failureId: 'unknown' },
+    { operation: 'mission', missionId: authoredTraining.defaultMissionId, failureId: authoredTraining.failures[0].id },
+    { operation: alias, failureId: authoredTraining.failures[0].id },
+    { operation: 'unknown-authored-alias' },
+  ]) {
+    const before = readFlightSimTrainingScenario()
+    assert.equal((await controlLocalFlightSim(input)).ok, false)
+    assert.equal(readFlightSimTrainingScenario(), before)
+  }
+})
+test('declared training profile is validated before live entry effects and absence stays neutral', async () => {
+  resetFlightSimRuntimeForTests()
+  resetFlightSimTrainingScenarioForTests()
+  const initial = readFlightSimTrainingScenario()
+  let reads = 0
+  useGraphStore.setState({ sourceFiles: [] })
+  const rejected = await openFlightSimSurface({ webglSupported: true, workspace: { readFileText: async () => { reads += 1; return null } } as unknown as WorkspaceFs })
+  assert.equal(rejected.active, false)
+  assert.match(rejected.runtimeError || '', /exact enabled, parsed active SourceFile/)
+  assert.equal(reads, 0)
+  assert.equal(readFlightSimTrainingScenario(), initial)
+  useGraphStore.setState({ markdownDocumentName: '', markdownDocumentText: '', sourceFiles: [] })
+  assert.equal(inspectLocalFlightSim().training.available, false)
+  assert.equal((await controlLocalFlightSim({ operation: 'mission', missionId: 'anything' })).errorCode, 'FLIGHT_SIM_CONTROL_TRAINING_UNAVAILABLE')
+})
+
+test('Stopped resume rejects source drift and explicit Restart admits the current profile', async () => {
+  resetFlightSimRuntimeForTests()
+  resetFlightSimTrainingScenarioForTests()
+  await openFlightSimSurface({ webglSupported: true })
+  assert.equal((await controlLocalFlightSim({ operation: 'start' })).ok, true)
+  assert.equal((await controlLocalFlightSim({ operation: 'stop' })).ok, true)
+  const before = readFlightSimTrainingScenario()
+  const changed = trainingSeedSource.replace('targetSpeedMetersPerSecond: [8, 22]', 'targetSpeedMetersPerSecond: [0, 80]')
+  assert.notEqual(changed, trainingSeedSource)
+  useGraphStore.setState(state => ({ markdownDocumentText: changed, sourceFiles: state.sourceFiles.map(file => ({ ...file, text: changed, parsedGraphRevision: 2 })) }))
+  assert.equal((await controlLocalFlightSim({ operation: 'start' })).ok, false)
+  assert.equal(readFlightSimSnapshot().phase, 'stopped')
+  assert.equal(readFlightSimTrainingScenario(), before)
+  assert.equal((await controlLocalFlightSim({ operation: 'restart' })).ok, true)
+  assert.deepEqual(readFlightSimTrainingScenario().profile!.missions[0].targetSpeedMetersPerSecond, [0, 80])
+  if (readFlightSimSnapshot().active) exitFlightSimSurface()
   resetFlightSimRuntimeForTests()
 })

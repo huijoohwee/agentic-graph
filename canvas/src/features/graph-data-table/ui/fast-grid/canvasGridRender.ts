@@ -1,3 +1,4 @@
+import { UI_ROW_SELECTION_PAINT } from 'grph-shared/ui/themeTokens'
 import { UI_FONT_SANS } from 'grph-shared/ui/typography'
 import { binarySearchFloor, clamp, getVisibleColumnsRange, getVisibleRange } from './fastGridMath'
 import { parseGeodataValueToLatLng } from '@/features/geospatial/geodataValue'
@@ -296,7 +297,7 @@ export function drawGrid<RowT extends { id: string; __order?: number }>(args: {
   ctx.textBaseline = 'middle'
   const accentRgb = parseCssColorToRgb(accent) || { r: 59, g: 130, b: 246 }
   const textPrimaryRgb = parseCssColorToRgb(textPrimary) || { r: 17, g: 24, b: 39 }
-  const rowSelectedBg = rgba(accentRgb, 0.14)
+  const rowSelectedBg = rgba(parseCssColorToRgb(UI_ROW_SELECTION_PAINT.accent)!, UI_ROW_SELECTION_PAINT.alpha)
   const colSelectedBg = rgba(accentRgb, 0.10)
   const groupRowBg = rgba(textPrimaryRgb, 0.035)
 
@@ -525,6 +526,11 @@ export function drawGrid<RowT extends { id: string; __order?: number }>(args: {
           ctx.restore()
         }
       }
+    }
+
+    if (item.kind === 'row' && selectedSet.has(item.row.id)) {
+      ctx.fillStyle = UI_ROW_SELECTION_PAINT.accent
+      ctx.fillRect(0, y, UI_ROW_SELECTION_PAINT.accentWidthPx, rowHeight)
     }
 
     ctx.strokeStyle = divider

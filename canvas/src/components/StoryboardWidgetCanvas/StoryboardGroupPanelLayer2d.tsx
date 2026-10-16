@@ -278,7 +278,7 @@ export function StoryboardGroupPanelLayer2d(props: {
             ariaLabel={`Group Panel: ${group.label}`}
             className={getStoryboardWidgetPanelSurfaceChromeClassName({
               selected,
-              className: 'pointer-events-none absolute overflow-hidden bg-[color:color-mix(in_srgb,var(--kg-media-panel-bg)_42%,transparent)] shadow-sm',
+              className: 'pointer-events-none absolute overflow-hidden bg-[color:color-mix(in_srgb,var(--kg-media-panel-bg)_42%,transparent)] shadow-none',
             })}
             data-kg-group-panel="1"
             data-kg-group-panel-id={group.id}

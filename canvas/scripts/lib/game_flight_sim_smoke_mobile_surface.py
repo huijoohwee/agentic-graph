@@ -64,6 +64,9 @@ def _read_pitch_touch_surface(page: Page) -> dict[str, Any]:
               graphState: {
                 floatingPanelOpen: state.floatingPanelOpen,
                 floatingPanelView: state.floatingPanelView,
+                timelineEnabled: state.timelineEnabled,
+                bottomSurfaceCollapsed: state.bottomSurfaceCollapsed,
+                bottomSurfaceTab: state.bottomSurfaceTab,
                 workspaceCanvasPaneOpen: state.workspaceCanvasPaneOpen,
                 workspaceViewMode: state.workspaceViewMode,
               },
@@ -92,6 +95,16 @@ def _read_pitch_touch_surface(page: Page) -> dict[str, Any]:
           const floatingPanelOwner = topHit instanceof Element
             ? topHit.closest('[data-kg-floating-panel-root="true"]')
             : null
+          const timelinePanelOwner = floatingPanelOwner?.matches(
+            '[data-kg-strybldr-bottom-timeline-panel="1"]',
+          )
+          const bottomSurfaceRequested = state.bottomSurfaceCollapsed !== true && [
+            'activity', 'documentVersionGraph', 'flowchart', 'gitGraph', 'gantt',
+            'timeline', 'architecture', 'eventModeling',
+          ].includes(state.bottomSurfaceTab)
+          const toolPanelOwner = floatingPanelOwner?.querySelector(
+            '[aria-label="Floating panel views"]',
+          )
           const owner = workspaceOwner || floatingPanelOwner
           return {
             center,
@@ -103,15 +116,18 @@ def _read_pitch_touch_surface(page: Page) -> dict[str, Any]:
             graphState: {
               floatingPanelOpen: state.floatingPanelOpen,
               floatingPanelView: state.floatingPanelView,
+              timelineEnabled: state.timelineEnabled,
+              bottomSurfaceCollapsed: state.bottomSurfaceCollapsed,
+              bottomSurfaceTab: state.bottomSurfaceTab,
               workspaceCanvasPaneOpen: state.workspaceCanvasPaneOpen,
               workspaceViewMode: state.workspaceViewMode,
             },
             owner: describe(owner),
             ownerKind: workspaceOwner
               ? 'workspace-editor'
-              : floatingPanelOwner
-                ? 'floating-panel'
-                : null,
+              : timelinePanelOwner
+                ? (bottomSurfaceRequested ? 'bottom-surface' : 'timeline-panel')
+                : toolPanelOwner ? 'floating-panel' : null,
             runtime: {
               active: flightSnapshot.active,
               phase: flightSnapshot.phase,
@@ -143,6 +159,12 @@ def _wait_for_occluder_close(
         ) or (
             owner_kind == "floating-panel"
             and graph_state.get("floatingPanelOpen") is False
+        ) or (
+            owner_kind == "timeline-panel"
+            and graph_state.get("timelineEnabled") is False
+        ) or (
+            owner_kind == "bottom-surface"
+            and graph_state.get("bottomSurfaceCollapsed") is True
         )
         owner_left_top = last.get("ownerKind") != owner_kind
         if (
@@ -182,8 +204,11 @@ def _close_mobile_touch_occluders(page: Page) -> dict[str, Any]:
         elif owner_kind == "floating-panel":
             owner = page.locator(
                 '[data-kg-floating-panel-root="true"]'
-            ).first
-            close_button = owner.locator('button[title="Close"]')
+            ).filter(has=page.locator('[aria-label="Floating panel views"]'))
+            close_button = owner.get_by_role("button", name="Close", exact=True)
+        elif owner_kind in ("timeline-panel", "bottom-surface"):
+            owner = page.locator('[data-kg-strybldr-bottom-timeline-panel="1"]')
+            close_button = owner.get_by_role("button", name="Close", exact=True)
         else:
             raise AssertionError(
                 f"mobile Pitch Up center had an unsupported topmost owner: "

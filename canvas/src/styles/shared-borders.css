@@ -1,8 +1,15 @@
 /* Neutral borders share the toolbar reference. Intent/focus colors stay explicit. */
 :root {
   --kg-surface-border-width: 1px;
+  --kg-shadow-raised: 0 1px 2px rgb(0 0 0 / 0.04);
+  --kg-shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.12);
   --kg-surface-border: var(--kg-surface-border-width) solid var(--kg-border);
   --kg-resize-separator-thickness: 8px;
+}
+
+:root[data-theme='dark'] {
+  --kg-shadow-raised: 0 1px 2px rgb(0 0 0 / 0.5);
+  --kg-shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.5);
 }
 
 /* Structural edge ownership must take precedence over the frame's border utility. */

@@ -1,5 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import React, { act } from 'react'
+import { createRoot } from 'react-dom/client'
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 import {
   clearFlightGeoOverlay,
@@ -10,6 +13,7 @@ import {
 import {
   FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT,
   FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT,
+  useFlightGeoOverlayMapLibrePresentation,
 } from 'gympgrph/testkit/features/geospatial/useFlightGeoOverlayMapLibrePresentation'
 import {
   applyFlightGeoOverlayToMap,
@@ -392,4 +396,112 @@ test('retained layers with stale empty data cannot acknowledge a ready frame', (
   harness.emitRender()
   assert.equal(harness.presentations.length, 1)
   assert.equal(harness.canvas.dataset.kgFlightSimFirstFrame, '1')
+})
+
+test('the React presentation owner retains earned first-frame proof only on the same active canvas', async () => {
+  const { dom, restore } = initJsdomHarness()
+  const canvasConstructor = Object.getOwnPropertyDescriptor(globalThis, 'HTMLCanvasElement')
+  Object.defineProperty(globalThis, 'HTMLCanvasElement', {
+    configurable: true, value: dom.window.HTMLCanvasElement,
+  })
+  const container = dom.window.document.createElement('main')
+  const viewport = dom.window.document.createElement('section')
+  dom.window.document.body.append(container, viewport)
+  const root = createRoot(container)
+  const rootRef = { current: viewport }
+  const presentations: Array<{ readyFrameRequestId: number | null }> = []
+  const onPresented = (presentation: { readyFrameRequestId: number | null; revision: string }) => {
+    presentations.push(presentation)
+    if (presentation.readyFrameRequestId !== null) {
+      assert.equal(markFlightGeoOverlayReadyFramePresented(
+        presentation.revision, presentation.readyFrameRequestId,
+      ), true)
+    }
+  }
+  const createMap = (overlay: FlightGeoOverlaySnapshot) => {
+    const harness = presentationHarness(overlay)
+    harness.gate.dispose()
+    harness.setWidth(100)
+    const canvas = dom.window.document.createElement('canvas')
+    canvas.width = canvas.height = 100
+    canvas.getBoundingClientRect = harness.canvas.getBoundingClientRect
+    harness.map.getCanvas = () => canvas
+    viewport.append(canvas)
+    return { ...harness, canvas }
+  }
+  let ready = flightOverlay('ready', 'ready:hook-lifecycle', 91)
+  const first = createMap(ready)
+  let map = first.map
+  let active = true
+  let enabled = true
+  let graphRevision = 1
+  const Presentation = () => {
+    useFlightGeoOverlayMapLibrePresentation({
+      active, enhancedLayerBounds: null, graphRevision, map,
+      mapLibreRuntimeEnabled: enabled, onPresented, rootRef,
+      styleRevision: 1, viewMode: '3d',
+    })
+    return null
+  }
+  const render = async () => {
+    await act(async () => { root.render(React.createElement(Presentation)) })
+  }
+  const publish = (harness: ReturnType<typeof createMap>, overlay: FlightGeoOverlaySnapshot) => {
+    harness.setCurrent(overlay)
+    setFlightGeoOverlay(overlay)
+  }
+  clearFlightGeoOverlay()
+  publish(first, ready)
+  try {
+    await render()
+    first.emitRender()
+    assert.equal(first.canvas.dataset.kgFlightSimFirstFrame, '1')
+    assert.equal(presentations.at(-1)?.readyFrameRequestId, 91)
+    ready = { ...ready, readyFrameRequestId: null }
+    publish(first, ready)
+    first.emitRender()
+    assert.equal(presentations.at(-1)?.readyFrameRequestId, null)
+
+    graphRevision += 1
+    await render()
+    assert.equal(first.canvas.dataset.kgFlightSimFirstFrame, '1',
+      'same-map effect restart must retain the actual previously committed frame')
+    first.emitRender()
+    assert.equal(first.canvas.dataset.kgFlightSimFirstFrameSurface, 'maplibre')
+
+    const second = createMap(ready)
+    map = second.map
+    await render()
+    assert.equal(first.canvas.dataset.kgFlightSimFirstFrame, undefined,
+      'replacement must clear proof on the old map canvas')
+    second.emitRender()
+    assert.equal(second.canvas.dataset.kgFlightSimFirstFrame, undefined,
+      'a consumed request cannot manufacture proof on a new map canvas')
+
+    for (const boundary of ['inactive', 'disabled', 'overlay-inactive', 'stopped', 'unmounted'] as const) {
+      ready = flightOverlay('ready', `ready:hook-${boundary}`, 92)
+      publish(second, ready)
+      second.emitRender()
+      assert.equal(second.canvas.dataset.kgFlightSimFirstFrame, '1', boundary)
+      if (boundary === 'inactive') active = false
+      if (boundary === 'disabled') enabled = false
+      if (boundary === 'overlay-inactive') publish(second, { ...ready, active: false })
+      if (boundary === 'stopped') publish(second, flightOverlay('stopped', 'stopped:hook'))
+      if (boundary === 'unmounted') {
+        await act(async () => { root.render(null) })
+      } else await render()
+      assert.equal(second.canvas.dataset.kgFlightSimFirstFrame, undefined, boundary)
+      assert.equal(second.canvas.dataset.kgFlightSimFirstFrameSurface, undefined, boundary)
+      active = enabled = true
+      await render()
+    }
+  } finally {
+    await act(async () => { root.unmount() })
+    clearFlightGeoOverlay()
+    container.remove()
+    viewport.remove()
+    if (canvasConstructor) Object.defineProperty(globalThis, 'HTMLCanvasElement', canvasConstructor)
+    else delete (globalThis as { HTMLCanvasElement?: unknown }).HTMLCanvasElement
+    restore()
+  }
 })

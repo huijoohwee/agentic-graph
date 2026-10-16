@@ -323,6 +323,7 @@ function updateMermaidGanttCodeRowToTiming(args: {
     metaTokens: shouldWriteSourceRange
       ? upsertMermaidGanttSourceRangeToken(metaTokens, args.sourceRange as MermaidGanttSourceRangeSeconds)
       : metaTokens,
+    positionToken: readGanttTaskTokens(line).find(token => readClockMinutes(token) != null),
   })
   return lines.join('\n')
 }
@@ -565,7 +566,7 @@ export function replaceFirstMermaidGanttFrontmatterCode(markdownText: string, ne
   if (lines[0]?.trim() !== '---') return null
   const frontmatterEndIndex = lines.findIndex((line, index) => index > 0 && line.trim() === '---')
   if (frontmatterEndIndex <= 0) return null
-  const typeIndex = lines.findIndex((line, index) => index > 0 && index < frontmatterEndIndex && /^\s*type\s*:\s*mermaid_gantt\s*$/.test(line))
+  const typeIndex = lines.findIndex((line, index) => index > 0 && index < frontmatterEndIndex && /^\s*type\s*:\s*(?:mermaid_gantt|'mermaid_gantt'|"mermaid_gantt")(?:\s+#.*)?\s*$/.test(line))
   if (typeIndex <= 0) return null
   const valueIndex = lines.findIndex((line, index) => {
     if (index <= typeIndex || index >= frontmatterEndIndex) return false

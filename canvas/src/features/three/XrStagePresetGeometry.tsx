@@ -8,6 +8,8 @@ import { XrSingaporeTerrainGeometry } from './XrSingaporeTerrainGeometry'
 import { XrTropicalPlaygroundTerrain } from './XrTropicalPlaygroundTerrain'
 import { XrTropicalPlaygroundLandmarks } from './XrTropicalPlaygroundLandmarks'
 import { XrNativeControllerDemoAerialSetpieces } from './XrNativeControllerDemoAerialSetpieces'
+import { XrNightWaterfrontKit } from './XrNightWaterfrontKit'
+import { resolveXrStageFitScale } from './xrSceneScale'
 
 const STRUCTURE_TONES = {
   light: '#94a3b8',
@@ -41,12 +43,13 @@ export function XrStagePresetGeometry({
   onFloorPoint?: (point: readonly [number, number, number]) => void
   coordinateRootRef?: React.RefObject<Object3D | null>
 }) {
-  const scale = span / Math.max(stage.sizeMeters[0], stage.sizeMeters[1], 1)
+  const scale = resolveXrStageFitScale(stage.sizeMeters, span)
   const floorWidth = stage.sizeMeters[0] * scale
   const floorHeight = stage.sizeMeters[1] * scale
   const floorThickness = Math.max(minFloorThickness, scale * 0.08)
   const singapore = stage.id === 'singapore'
   const tropical = stage.id === 'tropical-playground'
+  const nightWaterfront = stage.visualProfile === 'night-waterfront'
   const nativeTerrain = singapore || tropical
   return (
     <group name={`agentic_os_xr_stage_preset_${stage.id}`} userData={{ stageId: stage.id }}>
@@ -68,22 +71,22 @@ export function XrStagePresetGeometry({
       >
         <boxGeometry args={[floorWidth, floorThickness, floorHeight]} />
         <meshStandardMaterial
-          color={appearance?.groundColor || (singapore ? '#cfe2c5' : tropical ? '#e7dec1' : '#475569')}
-          roughness={1}
-          metalness={0}
-          transparent={tropical || (!appearance && !nativeTerrain)}
-          opacity={tropical ? 0 : appearance || nativeTerrain ? 1 : 0.68}
+          color={nightWaterfront ? '#101a27' : appearance?.groundColor || (singapore ? '#cfe2c5' : tropical ? '#e7dec1' : '#475569')}
+          roughness={nightWaterfront ? 0.32 : 1}
+          metalness={nightWaterfront ? 0.24 : 0}
+          transparent={tropical || (!nightWaterfront && !appearance && !nativeTerrain)}
+          opacity={tropical ? 0 : appearance || nativeTerrain || nightWaterfront ? 1 : 0.68}
           depthWrite={!tropical}
         />
       </mesh>
-      {showGrid ? (
+      {showGrid && !nightWaterfront ? (
         <gridHelper
           name="agentic_os_xr_motion_world_grid"
           args={[floorWidth, Math.max(12, Math.round(stage.sizeMeters[0] * 2)), '#38bdf8', '#334155']}
           position={[0, groundY + 0.08, 0]}
         />
       ) : null}
-      {showAxes ? (
+      {showAxes && !nightWaterfront ? (
         <axesHelper
           name="agentic_os_xr_motion_world_origin"
           args={[Math.max(minAxesSize, scale * 2.4)]}
@@ -106,8 +109,11 @@ export function XrStagePresetGeometry({
           <XrNativeControllerDemoAerialSetpieces />
         </group>
       ) : null}
+      {nightWaterfront ? (
+        <XrNightWaterfrontKit stage={stage} scale={scale} groundY={groundY} appearance={appearance} shadows={shadows} />
+      ) : null}
       <group name={`agentic_os_xr_motion_stage_preset_${stage.id}`}>
-        {!nativeTerrain ? stage.structures.map(structure => {
+        {!nativeTerrain && !nightWaterfront ? stage.structures.map(structure => {
           const position = xrMotionReferenceWorldPosition(structure.position, scale, groundY)
           return (
             <mesh

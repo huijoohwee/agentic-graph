@@ -30,7 +30,7 @@ by the same generator and together form one projection.
 <!-- SETTINGS_REGISTRY_TABLE_START -->
 
 | Setting key | Type | Source | LS key (if any) | Owner |
-| ----------- | ---- | ------ | ------------ | ----- |
+| --- | --- | --- | --- | --- |
 | `startup.openWorkflowPanel` | boolean | localStorage |  |  |
 | `uiOverlayOpacity` | number | store | `kg:ui:overlayOpacity` | `ui.overlayOpacity` |
 | `uiPanelOpacity` | number | store | `kg:ui:panelOpacity` | `ui.panelOpacity` |
@@ -60,9 +60,11 @@ by the same generator and together form one projection.
 | `uiPanelMicroLabelTextSizeClass` | string | store |  |  |
 | `uiIconAnimationEnabled` | boolean | store |  |  |
 | `themeMode` | string | store | `kg:ui:themeMode` | `ui.theme` |
+| `darkThemeVariant` | string | store | `kg:ui:darkThemeVariant` | `ui.theme` |
 | `floatingPanelWidthRatio` | number | localStorage | `kg:ui:floatingPanelWidthRatio` | `ui.floatingPanel` |
 | `floatingPanelZIndex` | number | localStorage | `kg:ui:floatingPanelZIndex` | `ui.floatingPanel` |
 | `enableLaunchSpotlight` | boolean | store |  |  |
+| `workspaceAutosaveEnabled` | boolean | store | `kg:ui:workspace:autosaveEnabled` |  |
 | `spotlight.margin` | number | store |  |  |
 | `spotlight.nearTopThreshold` | number | store |  |  |
 | `chatProvider` | string | localStorage | `kg:chat:provider` | `ui.chat` |
@@ -285,6 +287,7 @@ by the same generator and together form one projection.
 | `monacoHorizontalScrollbarSizeEnabled` | boolean | store |  |  |
 | `monacoVerticalScrollbarSizeEnabled` | boolean | store |  |  |
 | `monacoMouseWheelScrollSensitivityEnabled` | boolean | store |  |  |
+| `canvas.container.sizing` | string | localStorage |  |  |
 | `workspace.surface.padding.top` | number | localStorage |  |  |
 | `workspace.surface.padding.right` | number | localStorage |  |  |
 | `workspace.surface.padding.bottom` | number | localStorage |  |  |
@@ -428,9 +431,6 @@ by the same generator and together form one projection.
 | `infiniteCanvasInteractionMode` | string | store | `kg:ui:canvas:interactionMode` | `ui.workspace` |
 | `canvasWorkspaceSyncMode` | string | store | `kg:ui:canvas:workspaceSyncMode` | `ui.workspace` |
 | `storyboardWidgetSelectionOnDrag` | boolean | store | `kg:ui:storyboardWidget:selectionOnDrag` | `ui.workspace` |
-| `storyboardWidgetOverlayWheelProxyEnabled` | boolean | store | `kg:ui:storyboardWidget:overlayWheelProxyEnabled` | `ui.workspace` |
-| `viewPinned` | boolean | store |  |  |
-| `fitToScreenMode` | boolean | store |  |  |
 
 <!-- SETTINGS_REGISTRY_TABLE_END -->
 

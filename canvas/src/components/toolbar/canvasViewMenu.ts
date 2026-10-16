@@ -58,6 +58,7 @@ import {
   type CanvasSurfaceModeId,
 } from '@/lib/canvas/canvas3dMode'
 import { isRichMediaPanelDisplayEnabled } from '@/lib/render/richMediaSsot'
+import { resolveCanvasDisplayControlDisabledReason } from '@/lib/canvas/canvasDisplayControlCapabilities'
 import { uiBooleanRowValue, uiCurrentChoiceRowIsSelected } from 'grph-shared/ui/selectedRowClasses'
 
 const CANVAS_VIEW_SURFACE_MODE_ICON: Record<CanvasSurfaceModeId, CanvasViewOption['Icon']> = {
@@ -69,6 +70,8 @@ const CANVAS_VIEW_SURFACE_MODE_ICON: Record<CanvasSurfaceModeId, CanvasViewOptio
   geospatial: Map,
 }
 const CANVAS_VIEW_RENDERER_OPTION_TITLE: Record<Canvas2dRendererId, string> = {
+  sequence: '2D Renderer: Sequence Diagram',
+  sequenceMermaid: '2D Renderer: Sequence Diagram (Mermaid)',
   d3: UI_COPY.canvasViewRendererD3Title,
   dashboard: UI_COPY.canvasViewRendererDashboardTitle,
   gallery: UI_COPY.canvasViewRendererGalleryTitle,
@@ -118,6 +121,8 @@ export const buildCanvasViewOptions = (
     frontmatterModeEnabled: state.frontmatterModeEnabled,
     multiDimTableModeEnabled: state.multiDimTableModeEnabled,
     geospatialEnabled: state.geospatialEnabled,
+    // The toolbar routes XR selection through the exclusive Geo owner handoff.
+    allowGeospatialXrHandoff: true,
     layoutMode: state.layoutMode,
     schema: state.schema,
   }
@@ -263,7 +268,7 @@ export const buildCanvasViewOptions = (
     } satisfies CanvasViewOption
   })
 
-  return [
+  const options: CanvasViewOption[] = [
     {
       id: 'renderer:menu',
       title: '2D Renderer',
@@ -528,8 +533,6 @@ export const buildCanvasViewOptions = (
           label: 'Time',
           Icon: History,
           isActive: timelineBottomPanelVisible,
-          disabled: state.geospatialEnabled,
-          disabledReason: state.geospatialEnabled ? 'Disabled in Geospatial Mode' : undefined,
         },
         {
           id: 'control:flowchart',
@@ -589,5 +592,10 @@ export const buildCanvasViewOptions = (
       ],
     },
   ]
+  for (const option of options.find(group => group.id === 'control:menu')?.children || []) {
+    const disabledReason = resolveCanvasDisplayControlDisabledReason(option.id, state)
+    if (disabledReason && !option.disabled) Object.assign(option, { disabled: true, disabledReason })
+  }
+  return options
 }
 export { getCanvasViewTriggerState } from './canvasViewRendererOptions'

@@ -3,7 +3,7 @@ export const isMermaidCodeFenceLang = (lang: string): boolean => {
   return v === 'mermaid' || v === 'mmd'
 }
 
-export type MermaidDiagramKind = 'flowchart' | 'gitgraph' | 'gantt' | 'timeline' | 'architecture' | 'eventmodeling' | 'unknown'
+export type MermaidDiagramKind = 'flowchart' | 'sequence' | 'gitgraph' | 'gantt' | 'timeline' | 'architecture' | 'eventmodeling' | 'unknown'
 
 export type MermaidDiagramSlice = {
   code: string
@@ -21,6 +21,7 @@ export const readMermaidDiagramKindFromLine = (line: string): MermaidDiagramKind
   const meaningful = readMeaningfulMermaidLine(line)
   if (!meaningful) return 'unknown'
   if (/^(?:graph|flowchart)\b/i.test(meaningful)) return 'flowchart'
+  if (/^sequenceDiagram\b/.test(meaningful)) return 'sequence'
   if (/^gitgraph\b:?\s*/i.test(meaningful)) return 'gitgraph'
   if (/^gantt\b:?\s*/i.test(meaningful)) return 'gantt'
   if (/^timeline\b:?\s*/i.test(meaningful)) return 'timeline'
@@ -121,6 +122,7 @@ export const splitMermaidDiagrams = (code: string): MermaidDiagramSlice[] => {
 }
 
 export const normalizeMermaidCodeForRuntime = (code: string): string => {
+  if (readMermaidDiagramKind(code) === 'sequence') return String(code || '')
   const lines = String(code || '').split('\n')
   for (let i = 0; i < lines.length; i += 1) {
     const line = String(lines[i] || '')

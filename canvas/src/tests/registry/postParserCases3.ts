@@ -1,6 +1,7 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 import { TEST_CASES_POST_PARSER_3_TAIL } from './postParserCases3Tail'
 export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
+  ["ui.appearance.sharedAuthority", "@/__tests__/uiAppearanceAuthority.test", "testUiAppearanceSharedAuthority"],
   ["ui.panels.borders.sharedOwner", "@/__tests__/sharedPanelBorders.test", "testSharedPanelBordersForbidLegacyVariants"],
   ["ui.panels.borders.resizeKeyboard", "@/__tests__/sharedPanelBorders.test", "testResizeSeparatorKeyboardUsesBoundedDragOwner"],
   ["ui.panels.colour.math", "@/__tests__/panelColorPicker.test", "testPanelColorMath"],
@@ -517,6 +518,7 @@ export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
   ["workspace.import.localFiles.csvJson.exportFidelity","@/__tests__/csvJsonConversion.test","testWorkspaceLocalCsvAndJsonImportExportFidelity"],
   ["workspace.import.localFiles.csvJson.pickerExportFidelity","@/__tests__/csvJsonConversion.test","testCsvJsonWorkspaceExportWritesExactPickerBlobText"],
   ["ui.mainPanel.sharedPresentation.accessibleControlsAndHelp","@/__tests__/mainPanelSharedPresentation.test","testMainPanelSharedPresentationKeepsAccessibleControlsAndHelp"],
+  ["ui.mainPanel.sharedPresentation.pendingLoadCloseRace","@/__tests__/mainPanelSharedPresentation.test","testMainPanelPendingLoadCanCloseWithoutLateReopen"],
   ...TEST_CASES_POST_PARSER_3_TAIL,
   ["ui.panels.fields.presentation", "@/__tests__/panelFieldPresentation.test", "testPanelFieldsShareOnePresentationAndKeepInteractions"],
   ["ui.panels.fields.forbidVariants", "@/__tests__/panelFieldPresentation.test", "testPanelFieldsForbidPresentationVariants"],

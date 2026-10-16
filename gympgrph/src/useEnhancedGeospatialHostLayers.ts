@@ -1,6 +1,7 @@
 import React from 'react'
 import type { GeospatialBounds } from 'grph-shared/geospatial/enhancedLayerContract'
 import { useEnhancedGeospatialLayers } from './useEnhancedGeospatialLayers.js'
+import { useSourceGeospatialLayers } from './useSourceGeospatialLayers.js'
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -41,6 +42,11 @@ export function useEnhancedGeospatialHostLayers(args: {
     map: args.map,
     styleRevision: args.styleRevision,
     notify,
+  })
+  useSourceGeospatialLayers({
+    enabled: args.enabled, map: args.map, styleRevision: args.styleRevision,
+    snapshot: isRecord(args.snapshot) ? args.snapshot.sourceGeospatial : null,
+    onError: message => notify({ id: 'kg:geo:source', kind: 'error', message, ttlMs: 5000 }),
   })
   React.useEffect(() => {
     if (

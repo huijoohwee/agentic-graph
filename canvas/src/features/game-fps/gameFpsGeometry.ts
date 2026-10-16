@@ -40,7 +40,46 @@ export function isGameFpsPositionValid(
 ): boolean {
   if (Math.abs(point.x - map.centerX) > map.halfWidth - radius) return false
   if (Math.abs(point.z - map.centerZ) > map.halfDepth - radius) return false
+  if (map.walkableSurfaces?.length && !hasWalkableFootprint(point, radius, map.walkableSurfaces)) return false
   return !map.blockers.some(blocker => insideBlocker(point, blocker, radius))
+}
+
+function isInsideWalkableSurface(
+  point: GameFpsPoint,
+  surface: NonNullable<GameFpsSpatialMap['walkableSurfaces']>[number],
+): boolean {
+  return Math.abs(point.x - surface.centerX) <= surface.halfWidth
+    && Math.abs(point.z - surface.centerZ) <= surface.halfDepth
+}
+
+function hasWalkableFootprint(
+  point: GameFpsPoint,
+  radius: number,
+  surfaces: NonNullable<GameFpsSpatialMap['walkableSurfaces']>,
+): boolean {
+  if (!surfaces.some(surface => isInsideWalkableSurface(point, surface))) return false
+  if (radius <= 0) return true
+  const sampleCount = 16
+  for (let index = 0; index < sampleCount; index += 1) {
+    const angle = index * Math.PI * 2 / sampleCount
+    const sample = {
+      x: point.x + Math.cos(angle) * radius,
+      z: point.z + Math.sin(angle) * radius,
+    }
+    if (!surfaces.some(surface => isInsideWalkableSurface(sample, surface))) return false
+  }
+  return true
+}
+
+export function readGameFpsGroundHeight(
+  point: GameFpsPoint,
+  map: GameFpsSpatialMap,
+): number {
+  const surfaces = map.walkableSurfaces || []
+  const ground = surfaces
+    .filter(surface => isInsideWalkableSurface(point, surface))
+    .sort((left, right) => right.topMeters - left.topMeters || left.id.localeCompare(right.id))[0]
+  return ground?.topMeters || 0
 }
 
 export function resolveGameFpsMovement(

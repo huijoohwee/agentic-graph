@@ -255,6 +255,7 @@ async function traverseNeighborhood(snapshot, repositoryId, startNodeId, config,
     const candidates = boundedBest(remaining + 1, compareTraversalCandidates);
     await scanRepositoryEdges(snapshot, repositoryId, options, (edge) => {
       if (seenEdgeIds.has(edge.id) || !allowedEdge(edge, config.edgeLabels)) return;
+      if (depth === 0 && config.afterEdgeId && compareStableStrings(edge.id, config.afterEdgeId) <= 0) return;
       const match = frontierMatch(edge, frontierRank, config.direction);
       if (!match) return;
       candidates.add({
@@ -281,6 +282,7 @@ async function traverseNeighborhood(snapshot, repositoryId, startNodeId, config,
         edgeIds,
         limitTruncated: true,
         depthLimited: false,
+        nextCursor: selected.at(-1)?.edgeId ?? null,
       };
     }
     frontier = nextFrontier;
@@ -294,7 +296,7 @@ async function traverseNeighborhood(snapshot, repositoryId, startNodeId, config,
     config.edgeLabels,
     options,
   );
-  return { nodeIds: [...nodeIds], edgeIds, limitTruncated: false, depthLimited };
+  return { nodeIds: [...nodeIds], edgeIds, limitTruncated: false, depthLimited, nextCursor: null };
 }
 
 async function hydrateRecords(snapshot, repositoryId, nodeIds, edgeIds, options) {
@@ -377,6 +379,13 @@ export async function queryAgentGraphSnapshotTraversal(
 ) {
   const limit = boundedInteger(args.limit, 20, 1, 200);
   const maxDepth = boundedInteger(args.maxDepth, 3, 0, 12);
+  const afterEdgeId = args.afterEdgeId === undefined ? "" : String(args.afterEdgeId).trim();
+  if (args.afterEdgeId !== undefined && (!afterEdgeId || afterEdgeId.length > 1024)) {
+    throw new AgentGraphError("after_edge_id_invalid", "afterEdgeId must be a non-empty edge ID of at most 1024 characters.");
+  }
+  if (afterEdgeId && (mode !== "neighbors" || maxDepth !== 1)) {
+    throw new AgentGraphError("after_edge_id_mode_invalid", "afterEdgeId pagination is supported only for one-hop neighbor queries.");
+  }
   const maxTraversalNodes = boundedInteger(args.maxTraversalNodes, 250_000, 1, 1_000_000);
   const edgeLabels = Array.isArray(args.edgeLabels) && args.edgeLabels.length
     ? new Set(args.edgeLabels.slice(0, 64).map((value) => String(value).slice(0, 512)))
@@ -430,7 +439,7 @@ export async function queryAgentGraphSnapshotTraversal(
     snapshot,
     repositoryId,
     start.node.id,
-    { direction, edgeLabels, maxDepth, limit },
+    { direction, edgeLabels, maxDepth, limit, afterEdgeId },
     options,
   );
   const records = await hydrateRecords(

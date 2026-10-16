@@ -7,6 +7,7 @@ import {
   type CityGrid,
 } from './citySimModel'
 import type { CityInputSnapshot } from './citySimInputModel'
+import type { CityGeoGameplayState } from 'gympgrph'
 
 export type CitySimPhase = 'idle' | 'running' | 'stopped' | 'error'
 export type CitySimSaveStatus =
@@ -32,6 +33,7 @@ export type CitySimSnapshot = Readonly<{
   phase: CitySimPhase
   city: CityGrid
   selectedParcelId: string | null
+  gameplay?: CityGeoGameplayState | null
   lastInput: CityInputSnapshot | null
   advisor: CityAdvisorResult | null
   message: string
@@ -73,6 +75,7 @@ export let citySimSnapshot: CitySimSnapshot = Object.freeze({
   phase: 'idle',
   city: UNINITIALIZED_CITY_GRID,
   selectedParcelId: null,
+  gameplay: null,
   lastInput: null,
   advisor: null,
   message: 'City Simulation is inactive.',
@@ -174,6 +177,7 @@ export function resetCitySimSnapshotForTests(
     phase: 'idle',
     city: city ?? UNINITIALIZED_CITY_GRID,
     selectedParcelId: null,
+    gameplay: null,
     lastInput: null,
     advisor: null,
     message: 'City Simulation is inactive.',

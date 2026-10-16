@@ -36,6 +36,7 @@ import { StrybldrCameraOpticsSection } from './StrybldrCameraOpticsSection'
 type StrybldrCameraPanelProps = {
   selectedCardTitle: string
   settings: StrybldrCameraSettings
+  disabled?: boolean
   previewImageUrl?: string | null
   onSettingsChange: (settings: StrybldrCameraSettings) => void
   onReframe: (settings: StrybldrCameraSettings) => void
@@ -388,6 +389,7 @@ function StrybldrCameraSphereGraphic({
 export function StrybldrCameraPanel({
   selectedCardTitle,
   settings,
+  disabled = false,
   previewImageUrl,
   onSettingsChange,
   onReframe,
@@ -415,7 +417,7 @@ export function StrybldrCameraPanel({
     >
       <section className="flex min-w-0 items-center justify-between gap-2">
         <section className="flex min-w-0 items-center gap-2">
-          <Camera className="h-4 w-4 shrink-0" strokeWidth={1.7} aria-hidden={true} />
+          <Camera className="h-4 w-4 shrink-0" aria-hidden={true} />
           <section className="min-w-0 text-xs font-semibold">Camera</section>
         </section>
         <section className={cn('min-w-0 truncate text-xs font-semibold uppercase tracking-normal', UI_THEME_TOKENS.text.tertiary)}>
@@ -423,11 +425,13 @@ export function StrybldrCameraPanel({
         </section>
       </section>
 
+      <fieldset disabled={disabled} className="contents" aria-label="Human camera controls">
       <section className="space-y-2" aria-label="Strybldr camera preview">
         <section
           ref={previewRef}
           className={cn(
             'relative aspect-[7/6] touch-none overflow-hidden rounded-[8px] border border-black/10 bg-white/70',
+            disabled ? 'pointer-events-none opacity-60' : '',
             draggingCamera ? 'cursor-grabbing' : 'cursor-grab',
           )}
           aria-label="Strybldr camera orbit sphere"
@@ -510,12 +514,13 @@ export function StrybldrCameraPanel({
         title={`Reframe ${selectedCardTitle}`}
         onClick={() => onReframe({ ...settings, note: settings.note.trim() })}
       >
-        <Layers className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden={true} />
+        <Layers className="h-3.5 w-3.5" aria-hidden={true} />
         Reframe
       </button>
       <section className={cn('sr-only')} aria-live="polite">
         {formatStrybldrCameraSettings(settings)}. Drag camera around the sphere to reframe.
       </section>
+      </fieldset>
     </section>
   )
 }

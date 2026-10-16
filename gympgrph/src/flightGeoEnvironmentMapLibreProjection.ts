@@ -204,8 +204,14 @@ function environmentFeatureCollection(
 export function flightGeoEnvironmentMapLibreFeatureCollection(
   overlay: FlightGeoOverlaySnapshot,
 ): FlightGeoEnvironmentFeatureCollection {
-  return overlay.environment
-    ? environmentFeatureCollection(overlay.environment)
+  return flightGeoEnvironmentProjectionFeatureCollection(overlay.environment)
+}
+
+export function flightGeoEnvironmentProjectionFeatureCollection(
+  environment: FlightGeoEnvironmentProjection | null | undefined,
+): FlightGeoEnvironmentFeatureCollection {
+  return environment
+    ? environmentFeatureCollection(environment)
     : { type: 'FeatureCollection', features: [] }
 }
 

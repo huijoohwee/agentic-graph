@@ -357,7 +357,7 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'Exit lifecycle and World disposal',
     'surface failure restoration',
     'Geo provider transport ownership',
-    'workspace seed authority',
+    'workspace seed authority', 'native website authoring mirror ownership',
     'browser error surface',
   ], 'Flight Sim browser verification inventory')
 

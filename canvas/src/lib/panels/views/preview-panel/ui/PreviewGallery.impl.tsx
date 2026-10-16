@@ -586,7 +586,7 @@ export default function PreviewGallery({
       >
         <section
           ref={dragImageContainerRef}
-          className={`flex items-stretch rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} shadow-md ${UI_RESPONSIVE_PREVIEW_GALLERY_DRAG_CARD_CLASSNAME}`}
+          className={`flex items-stretch rounded border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} shadow-[var(--kg-shadow-raised)] ${UI_RESPONSIVE_PREVIEW_GALLERY_DRAG_CARD_CLASSNAME}`}
         >
           <section
             ref={dragImageStripRef}

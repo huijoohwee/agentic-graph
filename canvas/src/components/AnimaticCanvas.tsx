@@ -1589,7 +1589,7 @@ export default function AnimaticCanvas({
     return (
       <section className="w-full h-full bg-[#0b0f17] text-slate-100" data-kg-timeline-disabled="1">
         <section className="h-full w-full flex items-center justify-center p-8">
-          <section className="max-w-xl rounded border border-slate-800 bg-slate-900/85 p-6 shadow-2xl">
+          <section className="max-w-xl rounded border border-slate-800 bg-slate-900/85 p-6 shadow-[var(--kg-shadow-overlay)]">
             <h2 className="text-lg font-semibold">Timeline Off</h2>
           </section>
         </section>
@@ -1601,7 +1601,7 @@ export default function AnimaticCanvas({
     return (
       <section className="w-full h-full bg-[#0b0f17] text-slate-100">
         <section className="h-full w-full flex items-center justify-center p-8">
-          <section className="max-w-xl rounded-2xl border border-slate-800 bg-slate-900/85 p-6 shadow-2xl">
+          <section className="max-w-xl rounded-2xl border border-slate-800 bg-slate-900/85 p-6 shadow-[var(--kg-shadow-overlay)]">
             <h2 className="text-lg font-semibold">2D Renderer: Animatic</h2>
             <p className="mt-3 text-sm leading-6 text-slate-300">
               Add beat-linked graph nodes or provide <code> timeline.beats </code> in Markdown frontmatter to populate the native timeline surface.

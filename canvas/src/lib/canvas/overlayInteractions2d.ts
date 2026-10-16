@@ -4,6 +4,15 @@ import { clampCanvasInteractionSpeedMultiplier, clampCanvasPanSpeedMultiplier } 
 import { readSnapGridConfigFromSchema, snapPointToGrid } from '@/lib/canvas/gridSnap'
 import type { GraphSchema } from '@/lib/graph/schema'
 
+export function constrainCanvasDraggedPoint2d(args: {
+  baseX: number; baseY: number; x: number; y: number; constraint?: string
+}): { x: number; y: number } {
+  if (args.constraint === 'axis-x') return { x: args.x, y: args.baseY }
+  if (args.constraint === 'axis-y') return { x: args.baseX, y: args.y }
+  if (args.constraint === 'none') return { x: args.baseX, y: args.baseY }
+  return { x: args.x, y: args.y }
+}
+
 export function computeOverlayPanTransform2d(args: {
   startTransform: d3.ZoomTransform
   dxClientPx: number
@@ -45,9 +54,5 @@ export function computeOverlayDraggedPoint2d(args: {
   const grid = readSnapGridConfigFromSchema(args.schema)
   const snap = args.snapToGrid !== false
   const snapped = snap && grid.enabled ? snapPointToGrid({ x: nx, y: ny }, grid) : { x: nx, y: ny }
-  const constraint = args.schema.behavior.dragConstraint || 'free'
-  if (constraint === 'axis-x') return { x: snapped.x, y: args.baseY }
-  if (constraint === 'axis-y') return { x: args.baseX, y: snapped.y }
-  if (constraint === 'none') return { x: args.baseX, y: args.baseY }
-  return { x: snapped.x, y: snapped.y }
+  return constrainCanvasDraggedPoint2d({ baseX: args.baseX, baseY: args.baseY, ...snapped, constraint: args.schema.behavior.dragConstraint })
 }

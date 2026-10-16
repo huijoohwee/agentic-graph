@@ -65,7 +65,7 @@ export default function PreviewOverlay({
     >
       <section
         className={[
-          `${UI_RESPONSIVE_PREVIEW_OVERLAY_PANEL_CLASSNAME} ${UI_THEME_TOKENS.panel.bg} rounded border ${UI_THEME_TOKENS.panel.border} shadow-lg`,
+          `${UI_RESPONSIVE_PREVIEW_OVERLAY_PANEL_CLASSNAME} ${UI_THEME_TOKENS.panel.bg} rounded border ${UI_THEME_TOKENS.panel.border} shadow-[var(--kg-shadow-overlay)]`,
           panelClassName || '',
         ].filter(Boolean).join(' ')}
         onMouseDown={(e) => e.stopPropagation()}

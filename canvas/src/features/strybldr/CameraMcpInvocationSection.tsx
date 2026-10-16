@@ -78,7 +78,7 @@ function CameraCatalogCard({
         role="img"
         aria-label={`${title} Camera runtime card`}
       >
-        <Icon className={cn('size-7', UI_THEME_TOKENS.text.tertiary)} strokeWidth={1.6} aria-hidden />
+        <Icon className={cn('size-7', UI_THEME_TOKENS.text.tertiary)} aria-hidden />
       </span>
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1" aria-label={`${title} Camera runtime summary`}>
         <header className="flex min-w-0 items-center justify-between gap-2" data-kg-floating-panel-card-row="title">

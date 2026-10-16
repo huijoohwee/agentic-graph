@@ -15,6 +15,10 @@ import {
 } from '@/features/game-city-sim/citySimModel'
 import { parseCitySimAuthoredSource } from '@/features/game-city-sim/citySimAuthoredSource'
 import {
+  createInitialCityGameplay,
+  moveCityGameplayPlayer,
+} from '@/features/game-city-sim/citySimGameplay'
+import {
   readAuthoritativeCitySimDocument,
   readAuthoritativeCitySimSource,
 } from './citySimAuthoritativeSource'
@@ -25,9 +29,9 @@ export function testCitySimAuthoredSourceInitializesCanonicalPoiZoning() {
   assert.equal(parsed.ok, true)
   const { city } = parsed.source
   assert.equal(city.regionalPoiProfileId, 'adm0:SGP:major-pois/v1')
-  assert.equal(city.rows, 2)
-  assert.equal(city.columns, 3)
-  assert.equal(city.parcels.length, 6)
+  assert.equal(city.rows, 3)
+  assert.equal(city.columns, 4)
+  assert.equal(city.parcels.length, 12)
   assert.deepEqual(city.parcels.map(parcel => parcel.id), [
     'marina-bay-sands',
     'singapore-flyer',
@@ -35,6 +39,12 @@ export function testCitySimAuthoredSourceInitializesCanonicalPoiZoning() {
     'esplanade-theatres-on-the-bay',
     'the-fullerton-hotel',
     'raffles-hotel',
+    'national-gallery-singapore',
+    'marina-barrage',
+    'merlion-park',
+    'suntec-singapore-convention-exhibition-centre',
+    'marina-bay-cruise-centre',
+    'the-shoppes-at-marina-bay-sands',
   ])
   assert.equal(city.tick, 0)
   assert.equal(city.treasuryCents, 100_000)
@@ -47,15 +57,19 @@ export function testCitySimAuthoredSourceInitializesCanonicalPoiZoning() {
   assert.equal(Object.isFrozen(city), true)
 
   for (const malformed of [
-    document.replace('  id: "city-sim"', '  id: "flight-sim"'),
     document.replace(/^  regional_poi_profile_id: [^\n]+\n/m, ''),
-    document.replace('  rows: 2', '  rows: 3'),
+    document.replace('  rows: 3', '  rows: 4'),
     document.replace('marina-bay-sands,0,0', 'r00c00,0,0'),
     document.replace('singapore-flyer,0,1', 'marina-bay-sands,0,1'),
   ]) {
     const rejected = parseCitySimAuthoredSource(malformed)
     assert.equal(rejected.ok, false)
   }
+  assert.equal(
+    parseCitySimAuthoredSource(document.replace('id: "city-sim"', 'id: "another-document"')).ok,
+    true,
+    'City capability follows authored content rather than the demo identifier',
+  )
 }
 
 export function testCitySimTickIsDeterministicAndAtomicOnOverflow() {
@@ -70,12 +84,12 @@ export function testCitySimTickIsDeterministicAndAtomicOnOverflow() {
   assert.equal(serializeCityGridDocument(source), sourceBytes, 'tick must not mutate its input')
   assert.deepEqual(first.delta, {
     tick: 1,
-    treasuryCents: 680,
-    population: 3,
+    treasuryCents: 1_500,
+    population: 5,
   })
   assert.equal(first.city.tick, 1)
-  assert.equal(first.city.treasuryCents, 100_680)
-  assert.equal(first.city.population, 18)
+  assert.equal(first.city.treasuryCents, 101_500)
+  assert.equal(first.city.population, 20)
   assert.deepEqual(
     first.city.parcels.slice(0, 5).map(parcel => ({
       id: parcel.id,
@@ -124,6 +138,31 @@ export function testCitySimInvalidZoningDoesNotMutate() {
   assert.equal(serializeCityGridDocument(source), sourceBytes)
   if (!unsupported.ok) assert.equal(unsupported.error.code, 'unsupported-zone')
   if (!unknown.ok) assert.equal(unknown.error.code, 'unknown-parcel')
+}
+
+export function testCityGameplayMovesPlayerAndRotatesPoiGoalsDeterministically() {
+  const city = readAuthoritativeCitySimSource().city
+  const start = createInitialCityGameplay(city)
+  assert.equal(start.playerPoiId, city.parcels[0].id)
+  assert.equal(start.taskPoiId, city.parcels[1].id)
+
+  const intermediate = moveCityGameplayPlayer(city, start, city.parcels[2].id)
+  assert.ok(intermediate.state)
+  assert.equal(intermediate.taskCompleted, false)
+  assert.equal(intermediate.state.playerPoiId, city.parcels[2].id)
+  assert.equal(intermediate.state.taskPoiId, start.taskPoiId)
+
+  const completed = moveCityGameplayPlayer(city, start, start.taskPoiId)
+  assert.ok(completed.state)
+  assert.equal(completed.taskCompleted, true)
+  assert.equal(completed.state.completedTasks, 1)
+  assert.equal(completed.state.playerPoiId, start.taskPoiId)
+  assert.notEqual(completed.state.taskPoiId, completed.state.playerPoiId)
+  assert.equal(completed.state.revision, 1)
+
+  const invalid = moveCityGameplayPlayer(city, start, 'not-a-regional-poi')
+  assert.equal(invalid.state, null)
+  assert.match(invalid.error, /Unknown City activity destination/)
 }
 
 export function testCitySimCodecCanonicalRoundTripRejectsMalformedBytes() {

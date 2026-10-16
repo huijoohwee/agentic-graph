@@ -313,7 +313,7 @@ export const KanbanCard = React.memo(function KanbanCard(props: KanbanCardProps)
 
               {menuOpen && props.canMutate ? (
                 <menu
-                  className={['kg-data-view-floating-menu absolute right-0 mt-2 rounded border shadow-sm p-2 z-10', UI_RESPONSIVE_DATA_VIEW_COMPACT_MENU_PANEL_CLASSNAME, UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}
+                  className={['kg-data-view-floating-menu absolute right-0 mt-2 rounded border shadow-[var(--kg-shadow-overlay)] p-2 z-10', UI_RESPONSIVE_DATA_VIEW_COMPACT_MENU_PANEL_CLASSNAME, UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}
                   role="menu"
                   aria-label={MARKDOWN_DATA_VIEW_COPY.cardActionsLabel}
                 >

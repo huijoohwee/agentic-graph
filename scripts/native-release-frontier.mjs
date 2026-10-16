@@ -10,6 +10,7 @@ export { NATIVE_PRESERVATION_IDENTITY, NATIVE_FRONTIER_ADAPTER, validateNativePr
 const readLaneRecords = root => Object.values(loadLaneRecords(root).lanes)
 const REPOSITORY = 'huijoohwee/agentic-graph'
 const SHA = /^[0-9a-f]{40}$/
+const LANE_REF = /^agent\/[a-z0-9][a-z0-9._-]{0,63}\/[a-z0-9][a-z0-9-]{0,127}$/u
 // Retained worktrees each include the full source tree. Bound each observation
 // at 1 GiB so normal multi-lane captures fit without omitting any source bytes.
 const LIMITS = { worktrees: 64, paths: 50_000, fileBytes: 64 * 1024 * 1024, totalBytes: 1024 * 1024 * 1024 }
@@ -33,6 +34,10 @@ const git = (cwd, args, binary = false) => execFileSync('git', args, {
   env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' }, stdio: ['ignore', 'pipe', 'pipe'],
 })
 const line = (cwd, args) => git(cwd, args).trim()
+const isAncestor = (cwd, older, newer) => {
+  try { git(cwd, ['merge-base', '--is-ancestor', older, newer]); return true }
+  catch (error) { if (error.status === 1) return false; throw error }
+}
 const splitNul = bytes => {
   if (!bytes.length) return []
   assert.equal(bytes.at(-1), 0, 'Git path list is incomplete')
@@ -111,7 +116,20 @@ const registeredWorktrees = root => {
   assert.equal(entries[0].path, root, 'release owner must be the primary canonical worktree')
   return entries.sort((a, b) => a.path.localeCompare(b.path))
 }
-const snapshotLane = (registration, root, common, records, budget) => {
+const localBranchHeads = root => {
+  const rows = line(root, ['for-each-ref', '--format=%(refname)%09%(objectname)', 'refs/heads'])
+  const heads = new Map()
+  for (const row of rows ? rows.split('\n') : []) {
+    const separator = row.indexOf('\t'), ref = row.slice(0, separator), head = row.slice(separator + 1)
+    assert.ok(separator > 0 && ref.startsWith('refs/heads/'),
+      'local branch inventory is malformed')
+    assert.match(head, SHA, 'local branch inventory has an invalid head')
+    assert.ok(!heads.has(ref), 'local branch inventory contains a duplicate ref')
+    heads.set(ref, head)
+  }
+  return heads
+}
+const snapshotLane = (registration, root, common, records, budget, branchHeads) => {
   // symbolic-ref exits one for detached HEAD, which is a valid retained state.
   const location = registration.path, identity = directoryIdentity(location)
   assert.ok(!registration.prunable && !registration.bare, 'invalid registered worktree')
@@ -144,15 +162,25 @@ const snapshotLane = (registration, root, common, records, budget) => {
     ? `refs/heads/${record.ref}` === branchRef : record.head === headRevision)
   assert.equal(matches.length, 1, `native lane metadata is missing or ambiguous: ${location}`)
   const record = matches[0]
+  const retainedLaneRefs = []
   for (const predecessor of history.filter(entry => entry !== record)) {
     assert.ok(['active', 'published', 'integrated'].includes(predecessor.state), 'historical lane metadata has invalid state')
     assert.match(predecessor.head || '', SHA, 'historical lane metadata must bind exact head')
-    assert.equal(line(location, ['merge-base', predecessor.head, headRevision]), predecessor.head,
-      'historical lane metadata must precede the current branch')
+    assert.match(predecessor.ref || '', LANE_REF, 'historical lane metadata has an invalid lane ref')
+    const ref = `refs/heads/${predecessor.ref}`, retainedHead = branchHeads.get(ref)
+    assert.match(retainedHead || '', SHA, 'historical lane metadata retained branch is missing')
+    assert.ok(isAncestor(location, predecessor.head, retainedHead),
+      'historical lane metadata commit must remain on its exact retained branch')
+    retainedLaneRefs.push({ ref, head: retainedHead, recordedHead: predecessor.head })
   }
   assert.ok(text(record.device) && text(record.scope), 'native lane attribution is missing')
-  if (branchRef) assert.equal(`refs/heads/${record.ref}`, branchRef, 'native lane metadata branch is stale')
+  if (branchRef) {
+    assert.equal(`refs/heads/${record.ref}`, branchRef, 'native lane metadata branch is stale')
+    assert.equal(branchHeads.get(branchRef), headRevision, 'native lane branch head differs from its checkout')
+    retainedLaneRefs.push({ ref: branchRef, head: headRevision, recordedHead: record.head ?? null })
+  }
   else assert.equal(record.head, headRevision, 'detached lane metadata must bind exact head')
+  retainedLaneRefs.sort((a, b) => a.ref.localeCompare(b.ref))
   if (record.head && record.head !== headRevision) {
     assert.equal(record.state, 'active', 'native lane metadata head is stale')
     assert.match(record.head, SHA, 'native active lane metadata must bind an exact head')
@@ -168,7 +196,7 @@ const snapshotLane = (registration, root, common, records, budget) => {
   const writeSet = { sourceRevision: line(root, ['rev-parse', 'HEAD']), mergeBaseRevision,
     headRevision, paths: [...new Set([...changed, ...pending, ...untracked])].sort(),
     indexDigest: state.indexDigest, contentDigest: state.contentDigest }
-  return { ...state, collaboration, writeSet, content }
+  return { ...state, retainedLaneRefs, collaboration, writeSet, content }
 }
 
 export const collectNativeReleaseFrontier = ({ repository, sourceRevision, sourceTree,
@@ -184,9 +212,10 @@ export const collectNativeReleaseFrontier = ({ repository, sourceRevision, sourc
     assert.equal(remote, sourceRevision, 'remote protected source drift')
     const records = readMetadata(root)
     assert.ok(Array.isArray(records) && records.length <= 1024, 'native metadata inventory exceeds limit')
-    const registrations = registeredWorktrees(root), budget = createNativeFrontierByteBudget()
+    const registrations = registeredWorktrees(root), budget = createNativeFrontierByteBudget(),
+      branchHeads = localBranchHeads(root)
     assert.ok(registrations.some(entry => entry.path === root), 'canonical owner is not registered')
-    const lanes = registrations.map(entry => snapshotLane(entry, root, common, records, budget))
+    const lanes = registrations.map(entry => snapshotLane(entry, root, common, records, budget, branchHeads))
     assert.equal(lanes.find(lane => lane.path === root).dirty, false, 'canonical source must be clean')
     return { registrations, metadataDigest: digest(records), lanes }
   }

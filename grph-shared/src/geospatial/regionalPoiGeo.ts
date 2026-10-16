@@ -36,7 +36,7 @@ export type RegionalPoiSourceReference = Readonly<{
 
 export type RegionalPoiAccuracy = Readonly<{
   footprint: 'source-polygon'
-  height: 'official-published' | 'source-recorded'
+  height: 'official-published' | 'source-recorded' | 'not-modelled'
   statement: string
 }>
 
@@ -278,6 +278,7 @@ function cloneSurface(
   if (
     input.accuracy.height !== 'source-recorded'
     && input.accuracy.height !== 'official-published'
+    && input.accuracy.height !== 'not-modelled'
   ) {
     throw new TypeError(`${label}.accuracy.height is unsupported`)
   }

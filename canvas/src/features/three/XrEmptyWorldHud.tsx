@@ -17,7 +17,7 @@ export function XrEmptyWorldHud() {
         Centers Mode
       </output>
       <figure
-        className="absolute bottom-3 left-3 h-20 w-20 rounded border border-sky-300/70 bg-slate-950/55 shadow-lg backdrop-blur-sm"
+        className="absolute bottom-3 left-3 h-20 w-20 rounded border border-sky-300/70 bg-slate-950/55 shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm"
         aria-label="XR world axes X Y Z"
       >
         <span className="absolute left-1/2 top-1/2 h-px w-12 -translate-x-1/2 bg-sky-200/70" />

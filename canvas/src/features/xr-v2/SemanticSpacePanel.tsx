@@ -1,3 +1,4 @@
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
@@ -482,7 +483,7 @@ export function SemanticSpacePanel({ inspectorOnly = false, entityId: inspectorE
       </fieldset>
       <label>Find entity <PanelTextInput className={fieldClass} value={query} onChange={event => setQuery(event.target.value)} placeholder="Label or category" /></label>
       <section className="grid min-w-0 max-h-48 gap-1 overflow-auto" aria-label="Matching confirmed entities">
-        {results.map(item => <button type="button" key={item.id} className={`${buttonClass} text-left ${selected?.id === item.id ? 'ring-2 ring-cyan-400' : ''}`}
+        {results.map(item => <button type="button" key={item.id} className={`${buttonClass} text-left ${uiSelectedRowStateClassName(selected?.id === item.id)}`}
           onClick={() => { setObservationIndex(document.observations.findIndex(view => view.id === item.observationId));
             const linked = linkedCanvasNode(document, item.id)
             if (linked) useGraphStore.getState().selectNode(linked.id)

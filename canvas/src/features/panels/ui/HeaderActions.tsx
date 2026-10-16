@@ -1,6 +1,9 @@
 import IconButton from '@/components/IconButton'
+import { FloatingPanelCloseButton } from '@/components/ui/FloatingPanel'
+import Tooltip from './Tooltip'
+import { UI_THEME_TOKENS } from 'grph-shared/ui/themeTokens'
 import { PinToggleIconButton } from '@/components/PinToggleIconButton'
-import { Search as SearchIcon, X as CloseIcon, Save as SaveIcon, RotateCcw as ResetIcon, Minimize2, Maximize2 } from 'lucide-react'
+import { Search as SearchIcon, Save as SaveIcon, RotateCcw as ResetIcon, Minimize2, Maximize2 } from 'lucide-react'
 import { UI_COPY, UI_LABELS } from '@/lib/config'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { getIconSizeClass } from '@/lib/ui'
@@ -34,6 +37,10 @@ export default function HeaderActions({
   const uiIconScale = useGraphStore(s => s.uiIconScale)
   const uiIconStrokeWidth = useGraphStore(s => s.uiIconStrokeWidth)
   const iconSizeClass = getIconSizeClass(uiIconScale)
+  const closeColor = useGraphStore(s => s.uiIconColorClass)
+  const closeHover = useGraphStore(s => s.uiIconHoverBgClass)
+  const closePadding = useGraphStore(s => s.uiIconButtonPaddingClass)
+  const closeMinimal = useGraphStore(s => s.uiIconFormat === 'minimal')
 
   const minimizeOrRestoreAction = onRestore ?? onMinimize
   const minimizeOrRestoreTitle = onRestore
@@ -105,9 +112,11 @@ export default function HeaderActions({
       )}
 
       {showCloseButton ? (
-        <IconButton className="App-toolbar__btn" title={UI_LABELS.close} onClick={onClose} showTooltip>
-          <CloseIcon className={iconSizeClass} strokeWidth={uiIconStrokeWidth} aria-hidden={true} />
-        </IconButton>
+        <Tooltip content={UI_LABELS.close} contentClassName={`${UI_THEME_TOKENS.tooltip.bg} pointer-events-none`}>
+          <FloatingPanelCloseButton label={UI_LABELS.close} onClose={onClose!} suppressTitle
+            iconClassName={iconSizeClass} strokeWidth={uiIconStrokeWidth}
+            colorClassName={closeColor} hoverClassName={closeHover} paddingClassName={closePadding} minimal={closeMinimal} />
+        </Tooltip>
       ) : null}
     </section>
   )

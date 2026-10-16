@@ -1,6 +1,6 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { SettingMeta } from './types'
-import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { UI_ICON_DEFAULTS, UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { themeSettingsRegistry } from './themeSettings'
 import { LS_KEYS } from '@/lib/config'
 import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
@@ -211,7 +211,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
     read: () => s().uiIconStrokeWidth,
     write: (v) => s().setUiIconStrokeWidth(Number(v)),
     docKey: 'uiIconStrokeWidth',
-    default: () => 2,
+    default: () => UI_ICON_DEFAULTS.strokeWidth,
   },
   {
     key: 'uiIconColorClass',

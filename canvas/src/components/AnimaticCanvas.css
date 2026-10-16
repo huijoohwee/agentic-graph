@@ -138,9 +138,7 @@
   overflow: hidden;
   height: 28px;
   min-height: 28px;
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 0.08),
-    0 8px 18px rgb(2 6 23 / 0.18);
+  box-shadow: none;
 }
 
 .timeline-editor-action-effect-effect0 {

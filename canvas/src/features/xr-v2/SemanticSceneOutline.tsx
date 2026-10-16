@@ -1,3 +1,4 @@
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import type { SpaceDocument } from './semanticSpaceRuntime'
@@ -41,7 +42,7 @@ export default function SemanticSceneOutline({ space, evidenceSha256, disabled =
     <ul className="m-0 grid max-h-64 list-none gap-1 overflow-auto p-0" aria-label="Scene object list">
       {outline.rows.map(row => <li key={row.id} className="flex min-w-0 items-stretch gap-1 rounded border">
         <button type="button" disabled={busy} aria-pressed={row.selected} aria-label={`Select ${row.label}`}
-          className={`min-h-11 min-w-0 flex-1 rounded px-2 py-1 text-left ${row.selected ? 'bg-blue-500/15 ring-1 ring-inset ring-blue-500' : ''}`}
+          className={`min-h-11 min-w-0 flex-1 rounded px-2 py-1 text-left ${uiSelectedRowStateClassName(row.selected)}`}
           onClick={() => void run(() => onSelect(row.id))}>
           <span className="block truncate font-medium">{row.label}</span>
           <span className="block text-xs opacity-70">{row.shape}{!row.visible ? ' · Hidden' : ''}{row.selected ? ' · Selected' : ''}</span>

@@ -15,6 +15,30 @@ demos:
         text: "After a completed flight, Share canvas embed copies an iframe for the same Graph scene and recorded flight. Replay never connects a receiver."
       - title: GameXR simulated bench
         text: "Send to GameXR opens a review tab with the flight path. Connect the simulated receiver, then Run. No physical aircraft or motors are controlled."
+  - id: flight-sim
+    title: Local Flight Simulator
+    source_path: /docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md
+    reply: "Open the source-authored local Flight Sim. Demo applies its canonical workspace seed and starts the existing deterministic practice runtime without creating another document or calling a model."
+    outputs:
+      - title: Canonical source
+        text: "Open /docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md directly. Its authored run_ready_demo identity owns Geo+XR presentation and the Flight Sim panel."
+      - title: Local practice
+        text: "The mission is a browser-local simulation. Start, pause, resume, restart, save, and exit remain explicit controls; no physical aircraft or external service is controlled."
+      - title: Map and evidence boundary
+        text: "The native MapLibre surface presents the authored local route and separately sourced observations. Geographic context does not establish clearance, sovereignty, or airport assignment."
+  - id: production-runtime-readiness
+    title: Production Runtime Readiness
+    demo_only_prompt: "Review this static, revision-bound runtime evidence. Opening Demo creates a local snapshot and submits no model request."
+    reply: "Review a revision-bound production marker beside a separate cross-repository readiness result. This is a static local example: Demo does not query or verify either record, call a model, write remotely, or deploy."
+    outputs:
+      - title: Verified Graph deployment marker
+        text: "Protected release run 37873261675 records Graph source a593e2d59e8db70c64e375099c77f4d128509c6f, Agentic OS docs/catalog f174f70555613885756b69035328edb88248f908, artifact 24041f546bbdd7f377d648ae4f094351241dd9eb339f230e9844574005a48e8e, and manifest 420d86200e11dc7dd9d623ddb1d4bf47e4aa08c1c0bee11789e6d9a101207309."
+      - title: Cross-repository composition boundary
+        text: "The recorded composition check returned productionRuntimeReady=false and did not execute candidate code. Missing owner evidence remains unresolved; this result does not invalidate the distinct Graph deployment marker."
+      - title: Editor walkthrough
+        text: "Open [the evidence guide](workspace:/docs/documents/production-runtime-ready-demo.md) in Source Files → Editor Workspace. This generated demo.md is an authored snapshot, not a live status page."
+      - title: Next proof
+        text: "Check the exact candidate in a browser at desktop and 360 × 800 CSS pixels, then record keyboard and network observations. No mobile, keyboard, or network result is claimed by this preset."
   - id: xr-physics
     title: Physics Playground
     background: xr-physics
@@ -68,6 +92,20 @@ demos:
           session, existing workaround and cost. Agree one measurable paid-pilot
           acceptance criterion. Keep demand, pricing and conversion assumptions
           explicitly unverified until customer evidence supports them.
+  - id: software-forensics
+    title: Agentic Reverse Engineering
+    reply: "Build a bounded dossier from an explicitly selected application and repository. Keep visible behavior, exact-hash source facts, graph relationships, registered binary metadata, inference, and unknowns distinct. Open [agentic-reverse-engineering-demo.md](workspace:/docs/workspace-seeds/agentic-reverse-engineering-demo.md) for the portable steps and evidence record."
+    outputs:
+      - title: Application observation
+        text: "Record only the visible route, state, timestamp, and inspection action. A control or declaration does not prove that an action succeeded."
+      - title: Indexed source
+        text: "Map and search only the selected root. Cite repository-relative paths, Git revision, current-byte hashes, and exact-hash reads; stale bytes remain unresolved."
+      - title: Source graph
+        text: "Use the local graph only when its query schema is available. Bind each relationship to graph identity, snapshot digest, parser identity, and diagnostics."
+      - title: Native binary metadata
+        text: "Use a registered bounded parser for declared metadata only. Unsupported formats stay unknown; do not load, execute, emulate, disassemble, or decompile targets."
+      - title: Evidence dossier
+        text: "Link each claim to evidence IDs, separate inference, record missing layers, and stop at the run budget. Opening this static example does not call a provider or acquire source."
   - id: video-agent
     title: Video Agent
     reply: "This example shows the planned outputs of a multilingual video package. Media generation still requires your script, configured provider and an explicit Run."

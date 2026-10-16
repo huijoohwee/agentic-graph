@@ -16,6 +16,7 @@ import {
 import { writeWorkspaceFileTextEnsuringFile } from '@/features/chat/chatWorkspaceFsWrite'
 import { ensureWorkspaceDocsMirrorFolder, upsertWorkspaceDocsMirrorText } from '@/features/workspace-fs/workspaceSeedProvider'
 import { buildMermaidGanttCodeFromNeutralTimelinePayload } from '@/lib/mermaid/mermaidDiagramCode'
+import { buildMermaidGanttTimelineModel } from '@/lib/mermaid/mermaidGanttBarInteraction'
 import { getYouTubeId } from 'grph-shared/rich-media/providers'
 import { joinWorkspacePath, normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
@@ -46,6 +47,8 @@ const TRANSCRIPT_PANEL_NODE_ID = 'video_agent_transcript_panel'
 const FRAME_ANALYSIS_PANEL_NODE_ID = 'video_agent_frame_analysis_panel'
 const FRAME_TABLE_PANEL_NODE_ID = 'video_agent_multi_dimensional_table_panel'
 const DATASET_PANEL_NODE_ID = 'video_agent_dataset_panel'
+const URL_IMPORT_PREVIEW_SAMPLE_LIMIT = 16
+const URL_IMPORT_DOCUMENT_BYTE_LIMIT = 500_000
 
 const cleanInline = (value: unknown): string => String(value || '').replace(/\s+/g, ' ').trim()
 
@@ -121,6 +124,7 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
     sourceUrl,
     intent: 'Load, parse, annotate, count zones, compile, generate, and stream the imported video.',
     durationMs: transcriptDurationMs || undefined,
+    maxFrameSamples: URL_IMPORT_PREVIEW_SAMPLE_LIMIT,
     workspaceOutputRoot,
   })
   if (result.ok === false) throw new Error(result.reason)
@@ -168,6 +172,13 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
   const mergedVisualDatasetJson = jsonBlock(pipeline.datasetRuntime.mergedVisualDataset)
   const zoneCountingJson = jsonBlock(pipeline.datasetRuntime.zoneCounting)
   const ganttCode = buildMermaidGanttCodeFromNeutralTimelinePayload(renderData)
+  const sourceVideoTrack = pipeline.timelineTracks.find(track => track.source === 'source-video')
+  const annotationTrack = pipeline.timelineTracks.find(track => track.source === 'frame-bounding-boxes')
+  const emittedSpans = buildMermaidGanttTimelineModel(ganttCode).taskSpans
+  const annotationSpan = annotationTrack && emittedSpans.find(span => (
+    span.raw.slice(span.raw.indexOf(':') + 1).split(',').some(token => token.trim() === annotationTrack.id)
+  ))
+  if (!sourceVideoTrack || !annotationTrack || !annotationSpan) throw new Error('Video import annotation source linkage is missing')
   const flowchartCode = buildVideoAgentProcessFlowchartCode(pipeline.stages)
   const youtubeId = getYouTubeId(sourceUrl)
 
@@ -179,6 +190,7 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
     'kgDocumentSemanticMode: "document"',
     'kgFrontmatterModeEnabled: true',
     'kgVideoAgentImport: true',
+    `kgVideoAgentPreviewSampleLimit: ${URL_IMPORT_PREVIEW_SAMPLE_LIMIT}`,
     `kgWorkspaceOutputRoot: ${yamlQuote(workspaceOutputRoot)}`,
   ]
   if (youtubeId) lines.push(`kgYoutubeVideoId: ${yamlQuote(youtubeId)}`)
@@ -189,10 +201,20 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
     '    originalName: "Video agent source"',
     `    sourceUrl: ${yamlQuote(sourceUrl)}`,
     '    importMode: "url"',
-    `    durationSeconds: ${Math.max(1, Math.round(renderSpec.durationMs / 1000))}`,
+    `    durationSeconds: ${Math.max(1, renderSpec.durationMs / 1000)}`,
     `    frameRate: ${renderSpec.fps}`,
     `    displayWidth: ${renderSpec.width}`,
     `    displayHeight: ${renderSpec.height}`,
+    'kgVideoSequenceAnnotations:',
+    '  - schema: "source-annotations/v1"',
+    `    videoTrackId: ${yamlQuote(sourceVideoTrack.id)}`,
+    `    annotationTrackId: ${yamlQuote(annotationTrack.id)}`,
+    '    sourceId: "video_agent_source"',
+    `    frameAnalysisNodeId: ${yamlQuote(FRAME_ANALYSIS_PANEL_NODE_ID)}`,
+    `    annotationStartMinutes: ${annotationSpan.startMinutes}`,
+    `    annotationDurationMinutes: ${annotationSpan.durationMinutes}`,
+    '    sourceStartSeconds: 0',
+    `    sourceEndSeconds: ${renderSpec.durationMs / 1000}`,
     'videoAgentRuntimeContract:',
     `  schema: ${yamlQuote(VIDEO_AGENT_SCHEMA_VERSION)}`,
     '  sourceUrls:',
@@ -501,7 +523,7 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
     '',
     '## Parsed Outputs',
     '',
-    `- Frame boxes: ${pipeline.frameBoundingBoxes.length}`,
+    `- Preview frame samples: ${pipeline.frameBoundingBoxes.length} (maximum ${URL_IMPORT_PREVIEW_SAMPLE_LIMIT}; full source duration retained)`,
     `- Transcript segments: ${transcriptArtifacts.sourceTranscript.segmentCount}`,
     `- Frame transcript rows: ${transcriptArtifacts.frameByFrameTranscript.length}`,
     `- Visual dataset samples: ${pipeline.datasetRuntime.visualDataset.samples.length}`,
@@ -515,7 +537,11 @@ export function buildVideoAgentUrlImportMarkdown(args: VideoAgentUrlImportDocume
   if (sourceText) {
     lines.push('## Source Transcript', '', sourceText, '')
   }
-  return lines.join('\n')
+  const markdown = lines.join('\n')
+  if (new TextEncoder().encode(markdown).byteLength > URL_IMPORT_DOCUMENT_BYTE_LIMIT) {
+    throw new Error('Video import exceeds the 500 KB preview document limit. Import a shorter transcript or segment.')
+  }
+  return markdown
 }
 
 export async function materializeVideoAgentUrlImportDocument(args: {

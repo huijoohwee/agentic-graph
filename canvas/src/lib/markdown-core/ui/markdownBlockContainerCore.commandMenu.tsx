@@ -1,3 +1,4 @@
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import { buildAgenticOsInvocationChipTitle, readAgenticOsInvocationTokenKind } from '@/features/agentic-os/agenticOsInvocationChips'
 import React from 'react'
 import { Search } from 'lucide-react'
@@ -136,7 +137,7 @@ export const MarkdownBlockContainerCommandMenu = (props: {
   return (
     <section aria-label={props.ariaLabel}>
       <label className={`mb-2 flex items-center gap-1 rounded border px-2 ${UI_THEME_TOKENS.input.bg} ${UI_THEME_TOKENS.input.border}`}>
-        <Search className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} strokeWidth={1.6} aria-hidden />
+        <Search className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} aria-hidden />
         <input
           ref={inputRef}
           className={`${props.inputClassName} border-0 px-0`}
@@ -172,7 +173,7 @@ export const MarkdownBlockContainerCommandMenu = (props: {
                 <button
                   id={`${props.ariaLabel}-${item.id}`}
                   type="button"
-                  className={`${className} ${selected ? 'bg-black/5 dark:bg-white/10' : ''}`}
+                  className={`${className} ${uiSelectedRowStateClassName(selected)}`}
                   disabled={item.disabled}
                   title={item.title || (readAgenticOsInvocationTokenKind(item.label) ? buildAgenticOsInvocationChipTitle(item.label) : [item.label, item.description].filter(Boolean).join("\n"))}
                   role="option"

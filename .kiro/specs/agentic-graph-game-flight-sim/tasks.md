@@ -96,4 +96,24 @@ Implement one browser-local, deterministic Flight Sim mission on the composed ag
 
 ## Proof Boundary
 
+- [x] 12. Add shared scenario-independent presentation and simulation pacing (Requirement 28).
+  - [x] Use one validated ephemeral settings owner and accessible shared HUD/FloatingPanel controls.
+  - [x] Keep critical objective/error/envelope/lifecycle controls visible and existing map/camera owners unchanged.
+  - [x] Preserve fixed-step physics; test rate changes, backpressure, disposal, and equal-input/equal-tick ECS captures.
+  - [x] Keep scenario-specific rehearsal content in the existing demo; add no runtime mission or location policy.
+  - [ ] Renew exact-candidate aggregate and two serial browser receipts; source checks alone do not complete Task 11.
+
+- [x] 13. Move the training catalog and failure policy into authored demo configuration (Requirement 29).
+  - [x] Validate one immutable source-bound profile through the existing frontmatter/SourceFile owner and asynchronous drift fence.
+  - [x] Consume authored missions, effects, window and recovery threshold; expose generic mission/failure controls and profile-authored compatibility aliases.
+  - [x] Keep no-profile headless Flight usable with training explicitly unavailable; reject malformed declared profiles before effects.
+  - [x] Prove different IDs/timing/parameters, missing/invalid profile behavior, source drift and unchanged fixed-step semantics.
+  - [x] Bind resumed and terminal runs to their admitted source and selected mission/failure; require explicit Restart after selection changes.
+
+- [x] 14. Move the Flight geographic reference into authored demo configuration (Requirement 30).
+  - [x] Validate an optional immutable source-bound anchor/bounds in the existing coordinate owner; add no module/store/dependency.
+  - [x] Use the same admitted reference for mission, aircraft, objective, timeline camera and local environment; preserve already-geographic POI rings.
+  - [x] Keep headless/local Flight usable without a sample location; clear unavailable geographic overlay and reject Geo+XR entry before preparation.
+  - [x] Prove different locations, missing/invalid references and source drift; preserve non-Flight map defaults.
+
 Checked implementation tasks describe source present in the repository. The final unchecked task is intentionally separate: no exact-HEAD browser, protected integration, production, or deployment claim follows from source completion alone.

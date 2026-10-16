@@ -224,7 +224,17 @@ async function resolveWorkspaceProjectionRoot(repositoryRoot) {
     if (error?.code === 'ENOENT') return null
     throw error
   }
-  return path.join(externalKiroRoot, 'specs', 'agentic-graph-game-flight-sim')
+  const projectionRoot = path.join(externalKiroRoot, 'specs', 'agentic-graph-game-flight-sim')
+  try {
+    const metadata = await lstat(projectionRoot)
+    if (!metadata.isDirectory() || metadata.isSymbolicLink()) {
+      throw new Error('workspace-root Flight Kiro projection must be a regular directory')
+    }
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null
+    throw error
+  }
+  return projectionRoot
 }
 
 function assertProjectionParity(authority, projection) {

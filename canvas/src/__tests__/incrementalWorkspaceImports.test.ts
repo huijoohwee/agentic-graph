@@ -8,6 +8,7 @@ import { importContentDigest, loadWorkspaceSourceIndex, setWorkspaceEntrySource 
 import { runWorkspaceWebsiteImport } from '@/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction'
 import { refreshIndexedSource } from '@/features/markdown-workspace/workspaceImport/refreshIndexedSource'
 import { clearPendingLocalImport, hydrateWorkspaceFileFromPendingLocalImport } from '@/features/markdown-workspace/workspaceImport/pendingLocalImport'
+import { findSavedUrlImport, recordUrlImport } from '@/features/markdown-workspace/workspaceImport/incrementalImport'
 
 function selectedFile(name: string, text: string, relative?: string): globalThis.File {
   const file = new File([text], name, { type: 'text/markdown', lastModified: 1 })
@@ -77,6 +78,24 @@ test('deferred folders reconnect selected files, retain hydrated receipts and re
   await fs.deleteEntry(path)
   assert.deepEqual((await run()).createdPaths, [path])
   assert.equal((await hydrateWorkspaceFileFromPendingLocalImport({ fs, path }))?.text, 'Saved note')
+})
+
+test('saved URL acceptance skips an earlier candidate without deleting it or changing generic reuse', async () => {
+  const { fs, writes } = countedFs(), url = 'https://example.invalid/accepted-source'
+  const earlier = await fs.createFile({ parentPath: '/', name: 'a-saved.md', text: 'Retained earlier source' })
+  const later = await fs.createFile({ parentPath: '/', name: 'z-saved.md', text: 'Accepted later source' })
+  await recordUrlImport(fs, earlier, url); await recordUrlImport(fs, later, url)
+  const before = writes()
+  const selected = await findSavedUrlImport(fs, url, async saved => saved.path === later)
+  assert.equal(selected?.path, later)
+  assert.equal((await findSavedUrlImport(fs, url))?.path, earlier)
+  assert.equal(await fs.readFileText(earlier), 'Retained earlier source'); assert.equal(writes(), before)
+  const decoyUrl = 'https://example.invalid/body-marker'
+  const decoy = await fs.createFile({ parentPath: '/', name: 'body-marker.md',
+    text: `---\nkgWebpageUrl: "${decoyUrl}"\n---\nkgVideoAgentImport: true\n${'漢'.repeat(180_000)}` })
+  const beforeDecoy = writes()
+  const generic = await importWorkspaceUrl({ fs, urlRaw: decoyUrl, fetchUrlContent: async () => { throw new Error('generic source must not fetch') } })
+  assert.deepEqual(generic.createdPaths, [decoy]); assert.equal(writes(), beforeDecoy)
 })
 
 test('source refresh sends validators, skips writes on unchanged data and preserves racing edits', async () => {

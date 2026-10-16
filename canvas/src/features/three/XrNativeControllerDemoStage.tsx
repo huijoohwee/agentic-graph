@@ -80,7 +80,7 @@ export function XrNativeControllerDemoStage({
     readFlightSimTrainingScenario,
     readFlightSimTrainingScenario,
   )
-  const night = resolveFlightSimTrainingMission(trainingScenario.missionId).night
+  const night = resolveFlightSimTrainingMission(trainingScenario.missionId)?.night ?? false
   const pressedCodesRef = React.useRef(new Set<string>())
   const playerRootRef = React.useRef<Group | null>(null)
   const ballRootRef = React.useRef<Group | null>(null)

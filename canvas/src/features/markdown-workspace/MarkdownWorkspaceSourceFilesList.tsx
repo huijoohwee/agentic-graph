@@ -28,6 +28,7 @@ import { AgentMissionSourceFile } from '@/features/agent-ready/agentMissionSourc
 import { selectAgentRunSource, useAgentRunFolderSelection } from '@/features/agent-ready/agentRunInspectionStore'
 import { DASHBOARD_TEMPLATE_PATH } from '@/components/DashboardCanvas/dashboardTemplateSource'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
+import { useGraphStore } from '@/hooks/useGraphStore'
 
 const WebsiteImportSelectionView = React.lazy(() => import('@/features/source-files/WebsiteImportSelectionView'))
 
@@ -74,6 +75,7 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
   const recoveryError = useWebsiteImportSelectionSession(state => state.recoveryError)
   React.useEffect(() => { restoreWebsiteImportSelectionDraft() }, [])
   const selectedMissionFolder = useAgentRunFolderSelection()
+  const pushUiToast = useGraphStore(state => state.pushUiToast)
   const selectedPath = selectedMissionFolder ?? activePath
   const [demoEntry, setDemoEntry] = React.useState<WorkspaceEntry | null>(null)
   React.useEffect(() => {
@@ -127,10 +129,20 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
     </>
   }
 
-  const buildShareUrl = React.useCallback((entry: WorkspaceEntry): string | null | Promise<string | null> => {
+  const buildShareUrl = React.useCallback(async (entry: WorkspaceEntry): Promise<string | null> => {
     if (entry.kind !== 'file') return null
-    return publishWorkspaceEntryShareUrl({ entry, sourcesByPath })
-  }, [sourcesByPath])
+    const url = await publishWorkspaceEntryShareUrl({ entry, sourcesByPath })
+    if (url && new URL(url).hash.startsWith('#kgShare=')) {
+      pushUiToast({
+        id: 'share:url:self-contained',
+        kind: 'warning',
+        message: 'This link includes a copy of the document. Anyone with it can read that copy; the file was not uploaded.',
+        ttlMs: 7000,
+        dismissible: true,
+      })
+    }
+    return url
+  }, [pushUiToast, sourcesByPath])
 
   const buildCanvasEmbedUrl = React.useCallback(async (entry: WorkspaceEntry): Promise<string | null> => {
     if (entry.kind !== 'file') return null

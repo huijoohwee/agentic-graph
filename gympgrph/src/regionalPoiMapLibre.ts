@@ -58,7 +58,22 @@ export const REGIONAL_POI_LABEL_OCCLUSION_CLEARANCE_PIXELS = Math.ceil(
     + REGIONAL_POI_LABEL_RADIAL_OFFSET_EM
   ) + REGIONAL_POI_LABEL_PADDING_PIXELS,
 )
-const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
+export type RegionalPoiMapLibreAppearance = 'default' | 'context'
+
+type RegionalPoiLayerDefinition = Readonly<{
+  filter?: unknown
+  id: string
+  layout?: unknown
+  paint?: unknown
+  source: string
+  type: string
+}>
+
+function regionalPoiLayerDefinitions(
+  appearance: RegionalPoiMapLibreAppearance = 'default',
+): readonly RegionalPoiLayerDefinition[] {
+  const context = appearance === 'context'
+  return Object.freeze([
   Object.freeze({
     id: REGIONAL_POI_LAYER_IDS.fill,
     type: 'fill',
@@ -70,7 +85,7 @@ const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
         ['feature-state', REGIONAL_POI_PRESENTATION_STATE_KEYS.fillColor],
         '#0ea5e9',
       ],
-      'fill-opacity': 0.42,
+      'fill-opacity': context ? 0.16 : 0.42,
     }),
   }),
   Object.freeze({
@@ -86,7 +101,7 @@ const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
         '#0ea5e9',
       ],
       'fill-extrusion-height': ['get', 'kgRegionalPoiHeightMeters'],
-      'fill-extrusion-opacity': 0.82,
+      'fill-extrusion-opacity': context ? 0.3 : 0.82,
       'fill-extrusion-vertical-gradient': true,
     }),
   }),
@@ -115,15 +130,15 @@ const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
           REGIONAL_POI_PRESENTATION_STATE_KEYS.outlineColor,
         ], '#0369a1'],
       ],
-      'line-opacity': 0.94,
+      'line-opacity': context ? 0.76 : 0.94,
       'line-width': [
         'case',
         ['boolean', [
           'feature-state',
           REGIONAL_POI_PRESENTATION_STATE_KEYS.selected,
         ], false],
-        4,
-        1.5,
+        context ? 3 : 4,
+        context ? 1 : 1.5,
       ],
     }),
   }),
@@ -137,7 +152,7 @@ const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
       'circle-opacity': 0.98,
       'circle-pitch-alignment': 'viewport',
       'circle-pitch-scale': 'viewport',
-      'circle-radius': 6,
+      'circle-radius': context ? 4.5 : 6,
       'circle-stroke-color': '#f8fafc',
       'circle-stroke-opacity': 1,
       'circle-stroke-width': 2,
@@ -160,7 +175,7 @@ const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
       'text-max-width': REGIONAL_POI_LABEL_MAX_WIDTH_EM,
       'text-padding': REGIONAL_POI_LABEL_PADDING_PIXELS,
       'text-radial-offset': REGIONAL_POI_LABEL_RADIAL_OFFSET_EM,
-      'text-size': REGIONAL_POI_LABEL_TEXT_SIZE_PIXELS,
+      'text-size': context ? 11 : REGIONAL_POI_LABEL_TEXT_SIZE_PIXELS,
       'text-variable-anchor': ['bottom', 'left', 'right', 'top'],
     }),
     paint: Object.freeze({
@@ -171,12 +186,14 @@ const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
     }),
   }),
 ] as const)
+}
 
 export const REGIONAL_POI_LAYER_ORDER = Object.freeze(
-  REGIONAL_POI_LAYER_DEFINITIONS.map(layer => layer.id),
+  Object.values(REGIONAL_POI_LAYER_IDS),
 )
 export type RegionalPoiViewMode = '2d' | '3d'
 export type RegionalPoiMapLibreOptions = Readonly<{
+  appearance?: RegionalPoiMapLibreAppearance
   beforeLayerId?: string | null
   viewMode: RegionalPoiViewMode
 }>
@@ -223,10 +240,10 @@ function readStyleLayer(map: any, layerId: string): unknown {
 
 function hasExactLayerDefinition(
   actual: unknown,
-  expected: typeof REGIONAL_POI_LAYER_DEFINITIONS[number],
+  expected: RegionalPoiLayerDefinition,
 ): boolean {
   if (!isPlainRecord(actual)) return false
-  const definition = expected as Readonly<Record<string, unknown>>
+  const definition = expected
   return actual.id === definition.id
     && actual.type === definition.type
     && actual.source === definition.source
@@ -355,7 +372,7 @@ function ensureSource(
 
 function ensureLayer(
   map: any,
-  expected: typeof REGIONAL_POI_LAYER_DEFINITIONS[number],
+  expected: RegionalPoiLayerDefinition,
   beforeLayerId: string | null,
 ): boolean {
   if (map.getLayer?.(expected.id)) {
@@ -435,8 +452,9 @@ export function mapHasExactRegionalPoiProfile(
 ): boolean {
   if (options.viewMode !== '2d' && options.viewMode !== '3d') return false
   try {
+    const layers = regionalPoiLayerDefinitions(options.appearance)
     return mapHasExactRegionalPoiSource(map, input)
-      && REGIONAL_POI_LAYER_DEFINITIONS.every(layer => (
+      && layers.every(layer => (
         hasExactLayerDefinition(readStyleLayer(map, layer.id), layer)
         && readVisibility(map, layer.id)
           === expectedVisibility(layer.id, options.viewMode)
@@ -455,10 +473,11 @@ export function applyRegionalPoiProfileToMap(
   if (!map || !isMapLibreStyleReady(map)) return false
   if (options.viewMode !== '2d' && options.viewMode !== '3d') return false
   try {
+    const layers = regionalPoiLayerDefinitions(options.appearance)
     const expected = regionalPoiFeatureCollection(input)
     if (!ensureSource(map, expected)) return false
     const beforeLayerId = resolvedBeforeLayerId(map, options.beforeLayerId)
-    for (const layer of REGIONAL_POI_LAYER_DEFINITIONS) {
+    for (const layer of layers) {
       if (!ensureLayer(map, layer, beforeLayerId)) return false
     }
     return positionLayers(map, beforeLayerId)

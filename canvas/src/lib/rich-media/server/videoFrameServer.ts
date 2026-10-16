@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import fs from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
@@ -12,6 +12,7 @@ import {
   parseYouTubeStartSeconds,
 } from 'grph-shared/rich-media/providers'
 import { buildWorkspaceTimestampedOutputFolderName } from '../../workspace/timestampedOutput'
+import { videoFrameWorkerPool, type VideoFrameWorkerPool } from './videoFrameWorker'
 
 type NextHandleFunction = (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) => void
 
@@ -22,6 +23,8 @@ type VideoFrameServerOptions = {
   withRepoPythonPath: (env: NodeJS.ProcessEnv) => NodeJS.ProcessEnv
   cacheRoot?: string
   publicPrefix?: string
+  workerPool?: VideoFrameWorkerPool
+  requestTimeoutMs?: number
 }
 
 type VideoFrameRequest = {
@@ -44,7 +47,8 @@ const MAX_VIDEO_FRAME_URL_LENGTH = 4096
 const MAX_VIDEO_FRAME_TIME_SECONDS = 12 * 60 * 60
 const VIDEO_FRAME_FILE_RE = /^frame-[a-f0-9]+-t\d+(?:_\d+)?\.(?:png|jpg)$/i
 const remoteVideoFrameOutputFolderName = buildWorkspaceTimestampedOutputFolderName()
-const inflightVideoFrameByOutputPath = new Map<string, Promise<VideoFrameResult>>()
+type FrameInflight = { contextKey: string; promise: Promise<VideoFrameResult>; controller: AbortController; subscribers: number }
+const inflightVideoFrameByOutputPath = new Map<string, FrameInflight>()
 
 export const readRemoteVideoFrameOutputFolderName = (): string => remoteVideoFrameOutputFolderName
 
@@ -144,121 +148,99 @@ const readFileSize = async (filePath: string): Promise<number> => {
   }
 }
 
-const runFrameExtraction = async (req: VideoFrameRequest, opts: VideoFrameServerOptions): Promise<VideoFrameResult> => {
-  const existingBytes = await readFileSize(req.outputPath)
-  if (existingBytes > 0) {
-    return {
-      ok: true,
-      publicUrl: req.publicUrl,
-      outputPath: req.outputPath,
-      semanticKey: req.semanticKey,
-      cached: true,
-      bytes: existingBytes,
-      timeSeconds: req.timeSeconds,
-      format: req.format,
+const frameResult = (req: VideoFrameRequest, bytes: number, cached: boolean): VideoFrameResult => ({
+  ok: true, publicUrl: req.publicUrl, outputPath: req.outputPath, semanticKey: req.semanticKey,
+  cached, bytes, timeSeconds: req.timeSeconds, format: req.format,
+})
+
+const abortable = <T>(promise: Promise<T>, signal: AbortSignal): Promise<T> => new Promise((resolve, reject) => {
+  const abort = () => { signal.removeEventListener('abort', abort); reject(new Error('Video frame request cancelled')) }
+  if (signal.aborted) { abort(); return }
+  signal.addEventListener('abort', abort, { once: true })
+  promise.then(value => { signal.removeEventListener('abort', abort); resolve(value) }, error => {
+    signal.removeEventListener('abort', abort); reject(error)
+  })
+})
+
+// Effective configuration stays in memory. Browser cookies use the worker's bounded
+// 75s snapshot lease; a new worker resolves credentials again. Cookie files are hashed.
+const prepareContext = async (req: VideoFrameRequest, opts: VideoFrameServerOptions, signal: AbortSignal) => {
+  const env = opts.withRepoPythonPath({ ...process.env })
+  const pythonBin = await abortable(opts.getPythonBin(), signal)
+  await fs.mkdir(path.dirname(req.outputPath), { recursive: true })
+  const outputRoot = await fs.realpath(path.dirname(req.outputPath))
+  const privateRoot = path.resolve(opts.repoRoot, '.tmp', 'video-frame-source-workers')
+  const digest = createHash('sha256').update(JSON.stringify([
+    req.sourceUrl, pythonBin, opts.repoRoot, outputRoot, privateRoot,
+    Object.entries(env).sort(([a], [b]) => a.localeCompare(b)),
+  ]))
+  const cookies = String(env.AG_VIDEO_FRAME_YTDLP_COOKIES || '').trim()
+  let cookieSnapshot: Buffer | undefined
+  if (cookies) {
+    const stream = createReadStream(path.resolve(opts.repoRoot, cookies), { signal })
+    const chunks: Buffer[] = []
+    let bytes = 0
+    for await (const chunk of stream) {
+      bytes += chunk.length
+      if (bytes > 256 * 1024) throw new Error('Video frame cookie file exceeds 256KiB snapshot limit')
+      digest.update(chunk)
+      chunks.push(chunk)
     }
+    cookieSnapshot = Buffer.concat(chunks)
   }
+  return { contextKey: digest.digest('hex'), env, pythonBin, outputRoot, privateRoot, cookieSnapshot }
+}
 
-  const existingInflight = inflightVideoFrameByOutputPath.get(req.outputPath)
-  if (existingInflight) return await existingInflight
+const subscribeFrame = (entry: FrameInflight, signal: AbortSignal): Promise<VideoFrameResult> => {
+  entry.subscribers += 1
+  return abortable(entry.promise, signal).catch(error => ({ ok: false as const, error: String(error) })).finally(() => {
+    entry.subscribers -= 1
+    if (!entry.subscribers) entry.controller.abort()
+  })
+}
 
-  const promise = (async (): Promise<VideoFrameResult> => {
-    await fs.mkdir(path.dirname(req.outputPath), { recursive: true })
-    const pythonBin = await opts.getPythonBin()
-    const timeoutMs = (() => {
-      const raw = Number(process.env.AG_VIDEO_FRAME_TIMEOUT_MS || '')
-      if (!Number.isFinite(raw) || raw <= 0) return 75_000
-      return Math.max(10_000, Math.min(60 * 60_000, Math.floor(raw)))
-    })()
-    return await new Promise<VideoFrameResult>((resolve) => {
-      const child = spawn(pythonBin, [
-        '-m',
-        'agentic_graph_parser',
-        'video-frame',
-        '--emit',
-        'json',
-        '--url',
-        req.sourceUrl,
-        '--time',
-        String(req.timeSeconds),
-        '--format',
-        req.format,
-        '--output',
-        req.outputPath,
-      ], {
-        cwd: opts.repoRoot,
-        env: opts.withRepoPythonPath(process.env),
-      })
-
-      let stdout = ''
-      let stderr = ''
-      let settled = false
-      const finish = (result: VideoFrameResult) => {
-        if (settled) return
-        settled = true
-        clearTimeout(timer)
-        resolve(result)
-      }
-      const timer = setTimeout(() => {
-        try {
-          child.kill()
-        } catch {
-          void 0
-        }
-        finish({ ok: false, error: `Video frame extraction timed out after ${timeoutMs}ms` })
-      }, timeoutMs)
-
-      child.stdout?.setEncoding('utf8')
-      child.stderr?.setEncoding('utf8')
-      child.stdout?.on('data', chunk => {
-        stdout += chunk
-      })
-      child.stderr?.on('data', chunk => {
-        stderr += chunk
-      })
-      child.on('error', err => {
-        finish({ ok: false, error: err.message || 'Video frame extraction process error' })
-      })
-      child.on('close', async (code) => {
-        if (settled) return
-        const out = stdout.trim()
-        try {
-          const parsed = out ? JSON.parse(out) as Record<string, unknown> : null
-          if (parsed?.ok === true) {
-            const bytes = await readFileSize(req.outputPath)
-            if (bytes > 0) {
-              finish({
-                ok: true,
-                publicUrl: req.publicUrl,
-                outputPath: req.outputPath,
-                semanticKey: req.semanticKey,
-                cached: parsed.cached === true,
-                bytes,
-                timeSeconds: req.timeSeconds,
-                format: req.format,
-              })
-              return
-            }
-          }
-          if (typeof parsed?.error === 'string' && parsed.error.trim()) {
-            finish({ ok: false, error: parsed.error.trim() })
-            return
-          }
-        } catch {
-          void 0
-        }
-        const detail = stderr.trim() || out || `Video frame extraction failed (exit ${code ?? 'unknown'})`
-        finish({ ok: false, error: detail })
-      })
-    })
-  })()
-
-  inflightVideoFrameByOutputPath.set(req.outputPath, promise)
+const runFrameExtraction = async (req: VideoFrameRequest, opts: VideoFrameServerOptions, signal: AbortSignal): Promise<VideoFrameResult> => {
   try {
-    return await promise
-  } finally {
-    inflightVideoFrameByOutputPath.delete(req.outputPath)
-  }
+    const existingBytes = await readFileSize(req.outputPath)
+    if (existingBytes > 0) return frameResult(req, existingBytes, true)
+    const context = await prepareContext(req, opts, signal)
+    const outputKey = path.join(context.outputRoot, req.fileName)
+    if (signal.aborted) return { ok: false, error: 'Video frame request cancelled' }
+    while (true) {
+      const owner = inflightVideoFrameByOutputPath.get(outputKey)
+      if (owner) {
+        const wasCancelled = owner.controller.signal.aborted
+        const result = await subscribeFrame(owner, signal)
+        if ((owner.contextKey === context.contextKey && !wasCancelled) || signal.aborted) return result
+        // Different source grants wait for the output owner. Its durable artifact
+        // remains authoritative; a failed owner permits a fresh isolated lease.
+        const bytes = await readFileSize(req.outputPath)
+        if (bytes > 0) return frameResult(req, bytes, true)
+        continue
+      }
+      const bytes = await readFileSize(req.outputPath)
+      if (bytes > 0) return frameResult(req, bytes, true)
+      if (!inflightVideoFrameByOutputPath.has(outputKey)) break
+    }
+    const controller = new AbortController()
+    const entry: FrameInflight = { contextKey: context.contextKey, controller, subscribers: 0, promise: undefined! }
+    entry.promise = (async (): Promise<VideoFrameResult> => {
+      await fs.mkdir(context.outputRoot, { recursive: true })
+      if (controller.signal.aborted) return { ok: false, error: 'Video frame request cancelled' }
+      const result = await (opts.workerPool || videoFrameWorkerPool).request({
+        ...context, sourceUrl: req.sourceUrl, repoRoot: opts.repoRoot, outputPath: outputKey,
+        timeSeconds: req.timeSeconds, format: req.format, signal: controller.signal,
+      })
+      if (result.ok !== true) return result
+      const writtenBytes = await readFileSize(req.outputPath)
+      if (writtenBytes <= 0) return { ok: false, error: 'Video frame worker did not write an image' }
+      return frameResult(req, writtenBytes, result.cached)
+    })().catch(error => ({ ok: false as const, error: String(error).slice(0, 2000) })).finally(() => {
+      if (inflightVideoFrameByOutputPath.get(outputKey) === entry) inflightVideoFrameByOutputPath.delete(outputKey)
+    })
+    inflightVideoFrameByOutputPath.set(outputKey, entry)
+    return await subscribeFrame(entry, signal)
+  } catch (error) { return { ok: false, error: String(error).slice(0, 2000) } }
 }
 
 const writeJson = (res: ServerResponse, statusCode: number, body: unknown): void => {
@@ -282,8 +264,11 @@ const pipeImage = async (res: ServerResponse, result: Extract<VideoFrameResult, 
   res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
   await new Promise<void>((resolve, reject) => {
     const stream = createReadStream(result.outputPath)
+    const close = () => { stream.destroy(); resolve() }
+    res.once('close', close)
     stream.on('error', reject)
     stream.on('end', resolve)
+    stream.once('close', () => res.removeListener('close', close))
     stream.pipe(res)
   })
 }
@@ -301,7 +286,27 @@ export function createRemoteVideoFrameHandler(opts: VideoFrameServerOptions): Ne
       else writeText(res, 400, frameReq.error)
       return
     }
-    const result = await runFrameExtraction(frameReq, opts)
+    const controller = new AbortController()
+    const abort = () => { if (!res.writableEnded) controller.abort() }
+    req.once('aborted', abort)
+    res.once('close', abort)
+    let timedOut = false
+    const timeoutMs = Math.max(1, Math.min(75_000, opts.requestTimeoutMs ?? 75_000))
+    const timer = setTimeout(() => { timedOut = true; controller.abort() }, timeoutMs)
+    let result: VideoFrameResult
+    try { result = await runFrameExtraction(frameReq, opts, controller.signal) } finally {
+      clearTimeout(timer)
+      req.removeListener('aborted', abort)
+      res.removeListener('close', abort)
+    }
+    if (res.destroyed) return
+    if (timedOut) {
+      const error = 'Video frame request deadline exceeded after ' + timeoutMs + 'ms'
+      if (emitJson) writeJson(res, 504, { ok: false, error })
+      else writeText(res, 504, error)
+      return
+    }
+    if (controller.signal.aborted) return
     if (result.ok !== true) {
       if (emitJson) writeJson(res, 502, result)
       else writeText(res, 502, result.error)
@@ -320,7 +325,7 @@ export function createRemoteVideoFrameHandler(opts: VideoFrameServerOptions): Ne
       })
       return
     }
-    await pipeImage(res, result)
+    try { await pipeImage(res, result) } catch (error) { if (!res.destroyed) next(error) }
   }
 }
 

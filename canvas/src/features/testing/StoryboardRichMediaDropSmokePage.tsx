@@ -182,7 +182,7 @@ function StoryboardDropDragButton(props: {
       type="button"
       draggable
       data-kg-storyboard-drop-smoke-source={props.surface}
-      className="rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-4 py-3 text-left shadow-sm transition hover:border-sky-400 hover:bg-slate-50"
+      className="rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-4 py-3 text-left shadow-none transition hover:border-sky-400 hover:bg-slate-50"
       onDragStart={event => startMediaDrag(event, props.payload)}
       onPointerDown={event => startMediaPointerDrag(event, props.payload)}
     >
@@ -392,7 +392,7 @@ export function StoryboardRichMediaDropSmokePage() {
         className="pointer-events-none fixed left-6 top-6 z-[500] flex w-[22rem] flex-col gap-4"
         aria-label="Storyboard drop smoke controls"
       >
-        <section className="pointer-events-auto rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-4 shadow-lg backdrop-blur">
+        <section className="pointer-events-auto rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-4 shadow-[var(--kg-shadow-overlay)] backdrop-blur">
           <header className="flex flex-col gap-2">
             <h1 className="text-base font-semibold">Storyboard Rich Media Drop Smoke</h1>
             <p className="text-xs text-[var(--kg-text-secondary)]">
@@ -401,7 +401,7 @@ export function StoryboardRichMediaDropSmokePage() {
           </header>
         </section>
 
-        <section className="pointer-events-auto rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-4 shadow-lg backdrop-blur">
+        <section className="pointer-events-auto rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-4 shadow-[var(--kg-shadow-overlay)] backdrop-blur">
             <h2 className="text-sm font-semibold">Drag Sources</h2>
             <p className="mt-1 text-xs text-[var(--kg-text-secondary)]">
               Drag each semantic button onto the canvas. The smoke verifier expects one image and one video Rich Media panel to be created.
@@ -412,7 +412,7 @@ export function StoryboardRichMediaDropSmokePage() {
             </section>
         </section>
 
-        <section className="pointer-events-auto rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-4 shadow-lg backdrop-blur">
+        <section className="pointer-events-auto rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-4 shadow-[var(--kg-shadow-overlay)] backdrop-blur">
             <h2 className="text-sm font-semibold">Runtime Readout</h2>
             <dl className="mt-3 grid gap-2 text-xs">
               <div className="flex items-start justify-between gap-3">

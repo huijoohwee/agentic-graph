@@ -2,9 +2,9 @@
 title: "MainPanel shared presentation — PRD-TAD-ADR-MVP-GTM"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 doc_id: "AG-MAINPANEL-PRESENTATION-001"
-version: "1.17.0"
+version: "1.18.1"
 status: "Accepted and implemented"
-date: "2026-09-29"
+date: "2026-10-05"
 authors: ["airvio"]
 owner: "Product maintainers"
 schema: "agentic-os-computing-flow/v1"
@@ -31,55 +31,55 @@ presenting the current value as a factory default. No new service or paid depend
 
 ## TAD
 
-- `MainPanel` and `MainPanelBody` inherit `usePanelTypography` for every active tab.
-- `CollapsibleSection` combines the shared section token with configured typography.
-- `MainPanelField` uses `CanvasEditableKeyTypeValueRow`, the existing responsive grid,
-  configured density, right-aligned value cell and central type-icon resolver.
-- Both static and editable Canvas row adapters support `MainPanelFieldHelp`.
-- `mainPanelRowHelp` reuses `buildRoleActionOutcomeTooltip` and
-  `buildSettingsValueTooltip`; hover and keyboard focus use the existing Tooltip.
-- `mainPanelHelpActionIconLibrary` contributes action metadata to the existing Help
-  registry; `MainPanelIconButton` reuses IconButton and semantic SVG names.
-- Collaboration, Research and Commerce provide field metadata. Settings retains its
-  existing metadata owner and shares the same key-help wrapper.
-- Import URL keeps shared directory controls and checkbox alignment. History and
-  Preview inherit panel text styling; action icons retain existing handlers.
+MainPanel and its body inherit the shared typography, density, KTV field rows,
+RAO help, named IconButton controls and Help registry. Tables, file trees and media
+retain their native semantics. Tab bodies remain lazy; source owners retain effects.
+
+MainPanel, FloatingPanel and BottomPanel share one bounded, transient panel order.
+Pointer-down capture and focus capture promote the selected panel without cancelling
+child controls, drag, pin, keyboard or scrolling. Layers remain below anchor menus and
+toasts. The MainPanel body portal, FloatingPanel root and BottomPanel viewport root
+apply that same order; nested visual content cannot establish a competing priority.
+
+Minimized panel chrome consumes the native toolbar's control height, compact padding,
+surface height, border and island radius. MainPanel has one horizontally scrollable
+header when minimized. Existing icon size, stroke and selected-state utilities apply
+across all three panels. The shared icon owner renders selection and keyboard focus
+as blue background/glyphs without borders or rings; keyboard focus deepens the blue wash.
 
 ## ADR
 
-Reuse the existing Collaboration row and Help registry owners. Add optional help
-metadata at the shared Canvas row seam; do not introduce another settings store,
-renderer, dialog or site-specific presentation. Preserve lazy tab loading. Shared
-icons expose an image role and accessible label by default; buttons expose their
-own action names and keep hidden text for assistive tooling.
+Reuse the native presentation owners and a bounded in-memory ordering helper. No
+persistence schema, additional service, dependency or imported application surface.
+The portable FloatingPanelShell accepts optional capture callbacks; its host owns
+stack policy and it remains store-free. Expanded MainPanel typography remains configurable.
 
-The reference is `schema/AgenticRAG/roles-actions-outcomes-schema.jsonld` in the
-huijoohwee.github.io repository (schemaVersion 3.1.0). Its serialization is reference
-material; field owners remain the authority for actual values and side effects.
+The field reference is `schema/AgenticRAG/roles-actions-outcomes-schema.jsonld`
+(schemaVersion 3.1.0) in huijoohwee.github.io; runtime field owners remain authoritative.
 
 ## MVP and verification
 
-Budget: 24 source modules, 100 KB changed, no dependency additions. Initial 30-minute
-implementation target extended for live tab and affected-suite verification.
+Current acceptance: select each of the three panels in alternating order, including
+child buttons and keyboard focus; verify the selected panel wins overlap hit-testing.
+Repeated activation must keep bounded layers and closing a panel releases its entry.
+Compare minimized height and radius with Main Toolbar, preserve restore/pin/drag,
+and check native icon geometry and selected backgrounds. Focused tests and local
+browser evidence accompany the candidate; they do not prove protected integration
+or Production. Budget: 14 changed files, 50 KB patch, no added dependencies.
 
-Focused checks cover accessible icon actions, disabled behavior, keyboard help,
-RAO text, numeric default/min/max/interval text, configured typography and density,
-Collaboration owner-only removal, Research and Commerce integration, and import
-selection controls. Live checks cover tab switching, shared row geometry, help
-visibility and panel containment. The native affected receipt binds the final
-commit; focused checks are not full-suite parity or production deployment proof.
+Observed desktop evidence (1106 × 952): all three minimized panels and Main Toolbar
+measure 38 px high, 8 px radius, 1 px border. Alternating pointer selection wins
+overlap hit-testing; Tab/Shift-Tab focus raises its panel. Six focused stack tests,
+TypeScript and three local browser-runtime tests pass. An additional toolbar-dock
+source-pattern check fails on unchanged Canvas.tsx; mobile parity remains unverified.
 
-Observed checks: 14 focused cases and 3 import-selection component cases pass.
-Desktop navigation covers all 13 tabs: 12 content tabs inherit 14 px panel text;
-Dashboard retains its existing canvas redirect. Collaboration and Research remain
-within a 390 × 844 viewport with no horizontal panel overflow. Numeric help shows
-the configured bounds, including an explicit absent upper limit for Research tokens.
-Help lists every registered icon. Shared Tooltip positions before paint so its
-viewport clamp survives the open effect. The component test checks settled
-bounds; live browser measurement changed from −11 px to the 8 px viewport inset.
-The native affected gate passed with the app-pinned TypeScript 5.8.3 compiler. A
-separate invocation of the parent TypeScript 5.9.3 reported 33 errors in unchanged
-files; that alternate compiler run was not the native release gate.
+Icon follow-up: live light/dark selected and keyboard-focus controls have no painted
+border or outline. Shared appearance audit, TypeScript and browser-runtime checks pass.
+
+## GTM and rollback
+
+Consistent overlapping controls improve the existing free, offline editor. Revert
+this panel-order/compact-chrome revision as a unit; no data migration is necessary.
 
 ## Spacing and typography follow-up
 

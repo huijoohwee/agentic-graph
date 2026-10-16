@@ -8,7 +8,7 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { getMediaOverlayAppearanceClassName, type MediaOverlayAppearance } from '@/lib/ui/mediaOverlayAppearance'
 
 const MEDIA_TRANSLUCENT_OVERLAY_CLASSNAME = [
-  'absolute z-10 inline-flex h-5 w-5 items-center justify-center rounded border shadow-sm backdrop-blur-sm',
+  'absolute z-10 inline-flex h-5 w-5 items-center justify-center rounded border shadow-none backdrop-blur-sm',
   UI_THEME_TOKENS.panel.border,
   'bg-[color:var(--kg-panel-bg)]/80',
   UI_THEME_TOKENS.text.secondary,
@@ -37,7 +37,7 @@ export function MediaKindOverlay({
       aria-label={label}
       data-kg-media-kind-overlay-icon={label}
     >
-      <Icon className="h-3 w-3" strokeWidth={1.7} aria-hidden />
+      <Icon className="h-3 w-3" aria-hidden />
     </span>
   )
 }
@@ -73,7 +73,7 @@ export function MediaOpenLinkOverlay({
       onClick={event => event.stopPropagation()}
       onPointerDown={event => event.stopPropagation()}
     >
-      <ExternalLink className="h-3 w-3" strokeWidth={1.7} aria-hidden />
+      <ExternalLink className="h-3 w-3" aria-hidden />
     </a>
   )
 }
@@ -110,7 +110,7 @@ export function MediaDownloadOverlay({
       onClick={event => event.stopPropagation()}
       onPointerDown={event => event.stopPropagation()}
     >
-      <Download className="h-3 w-3" strokeWidth={1.7} aria-hidden />
+      <Download className="h-3 w-3" aria-hidden />
     </a>
   )
 }
@@ -137,10 +137,10 @@ export function MediaInfoOverlay({
       data-kg-media-info-overlay="1"
       tabIndex={0}
     >
-      <Info className="h-3 w-3" strokeWidth={1.7} aria-hidden />
+      <Info className="h-3 w-3" aria-hidden />
       <span
         className={cn(
-          'pointer-events-none absolute bottom-full left-0 z-20 mb-1 hidden w-max max-w-[16rem] rounded border px-2 py-1 text-left text-xs leading-4 shadow-lg backdrop-blur-sm group-hover:block group-focus:block',
+          'pointer-events-none absolute bottom-full left-0 z-20 mb-1 hidden w-max max-w-[16rem] rounded border px-2 py-1 text-left text-xs leading-4 shadow-[var(--kg-shadow-overlay)] backdrop-blur-sm group-hover:block group-focus:block',
           UI_THEME_TOKENS.panel.border,
           'bg-[color:var(--kg-panel-bg)]/95',
           UI_THEME_TOKENS.text.secondary,
@@ -168,7 +168,7 @@ export function MediaPromptActionOverlay({
     <button
       type="button"
       className={cn(
-        'absolute left-1/2 top-1/2 z-20 inline-flex h-7 -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded border px-2 text-xs font-semibold shadow-sm backdrop-blur-sm',
+        'absolute left-1/2 top-1/2 z-20 inline-flex h-7 -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded border px-2 text-xs font-semibold shadow-none backdrop-blur-sm',
         UI_THEME_TOKENS.panel.border,
         'bg-[color:var(--kg-panel-bg)]/90',
         UI_THEME_TOKENS.text.secondary,
@@ -185,7 +185,7 @@ export function MediaPromptActionOverlay({
         onClick?.()
       }}
     >
-      <PencilLine className="h-3 w-3" strokeWidth={1.7} aria-hidden />
+      <PencilLine className="h-3 w-3" aria-hidden />
       <span>{label}</span>
     </button>
   )

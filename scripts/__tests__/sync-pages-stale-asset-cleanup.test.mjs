@@ -7,8 +7,13 @@ import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { buildPagesMirrorAgentReadyPlan } from '../pages-mirror-agent-ready.mjs'
+import {
+  buildOfflinePublicRoutePlan,
+  isBrowserRuntimeArtifactRelativePath,
+} from '../pages-mirror-sync.mjs'
 import { buildAgentReadyHeaders } from '../pages-mirror-headers.mjs'
 import { buildAgenticGraphRedirects } from '../production-pages-routing.mjs'
+import { offlinePrecacheEntries } from '../../canvas/vitePythonLearningOffline.mjs'
 import { productionRuntimeReadinessHeaderLines } from '../production-runtime-readiness-build.mjs'
 import {
   assertSealedLegacyContentInventory,
@@ -61,9 +66,8 @@ test('published durable tools use the source catalog with an older mirror harnes
 
 test('publish sync removes stale generated assets through a sealed legacy boundary', () => {
   assert.doesNotMatch(syncSource, /isRetainedAssetRelativePath/)
-  assert.match(syncSource, /const isPublicManagedRelativePath = relativePath => Boolean\(relativePath\)/)
   assert.match(syncSource, /filesToRemove\.push\(relativePath\)/)
-  assert.match(syncSource, /publicFilesToRemove\.push\(relativePath\)/)
+  assert.match(syncSource, /const publicFilesToRemove = publicRoutePlan\.removePaths/)
   assert.match(syncSource, /await createLegacyMigrationPlan\(\{ obsoleteGeneratedMirrorFiles \}\)/)
   assert.equal(
     syncSource.match(/await assertLegacyMirrorInventoryIsBounded\(\)/g)?.length,
@@ -76,6 +80,41 @@ test('publish sync removes stale generated assets through a sealed legacy bounda
   assert.match(inventorySource, /Legacy mirror root inventory drifted/)
   assert.match(inventorySource, /content drifted/)
   assert.match(inventorySource, /Legacy named-file inventory contains an unexpected, missing, or partially retired path/)
+})
+
+test('offline public fixtures are copied into the canonical service-worker scope', async () => {
+  const manifestPath = path.resolve(
+    repoRoot,
+    'canvas/src/features/evidence-analysis/profiles/offline-assets.json',
+  )
+  const declaredAssets = JSON.parse(await fsPromises.readFile(manifestPath, 'utf8'))
+  const entries = offlinePrecacheEntries(declaredAssets)
+  assert.ok(entries.length > 0, 'the offline fixture declaration must produce precache entries')
+  assert.deepEqual(entries.map(entry => entry.url), declaredAssets.map(asset => asset.path))
+  assert.ok(entries.every(entry => entry.url.startsWith('evidence-analysis/fixtures/')))
+  const offlinePaths = entries.map(entry => entry.url)
+  const sourceFiles = ['index.html', 'assets/app.js', ...offlinePaths]
+  const plan = buildOfflinePublicRoutePlan({
+    sourceFiles,
+    rootManagedPaths: ['agentic-graph-live-canvas-hero.md'],
+    existingPublicFiles: [
+      ...offlinePaths,
+      'evidence-analysis/fixtures/retired.json',
+      'evidence-analysis/other/retained.json',
+      'agentic-graph-live-canvas-hero.md',
+    ],
+    offlineAssetPaths: offlinePaths,
+  })
+  assert.deepEqual(plan.copyPaths, sourceFiles)
+  assert.ok(offlinePaths.every(relativePath => plan.copyPaths.includes(relativePath)))
+  assert.equal(isBrowserRuntimeArtifactRelativePath(offlinePaths[0]), false)
+  assert.equal(isBrowserRuntimeArtifactRelativePath('assets/app.js'), true)
+  assert.equal(isBrowserRuntimeArtifactRelativePath('sw.js'), true)
+  assert.deepEqual(plan.removePaths, ['evidence-analysis/fixtures/retired.json'])
+  assert.throws(() => buildOfflinePublicRoutePlan({
+    sourceFiles: ['index.html'],
+    offlineAssetPaths: [offlinePaths[0]],
+  }), /Missing declared offline public assets from the build output/)
 })
 
 test('legacy XR cleanup is sealed to the five protected-revision file digests', async () => {

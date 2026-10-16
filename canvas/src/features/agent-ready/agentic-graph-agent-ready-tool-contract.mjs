@@ -1,4 +1,5 @@
 import { buildDashboardWidgetToolContract } from '../../components/DashboardCanvas/dashboardWidgetToolContract.mjs'
+import { buildEvidenceAnalysisAgentReadyToolContracts } from './evidenceAnalysisAgentReadyContract.mjs'
 import {
   AGENTIC_OS_AGENT_SURFACE_OUTPUT_SCHEMA,
   buildAgenticGraphMcpNoauthSecuritySchemes,
@@ -22,7 +23,6 @@ import { buildSemanticSpaceAgentReadyToolContracts } from './semanticSpaceAgentR
 import { FETCH_OUTPUT_SCHEMA, RUNTIME_IDENTITY_OUTPUT_SCHEMA, SEARCH_OUTPUT_SCHEMA } from './agentic-graph-agent-ready-output-schemas.mjs'
 import { AGENTIC_OS_AGENT_READY_TOOL_IDS } from './agenticGraphAgentReadyToolIds.mjs'
 export { AGENTIC_OS_AGENT_READY_TOOL_IDS }
-
 export const AGENTIC_OS_AGENT_READY_WEB_MCP_NAMESPACE = 'agentic-graph'
 export const AGENTIC_OS_AGENT_READY_DEFAULT_WORKSPACE_ID = 'kgws:canonical-docs'
 const buildReadOnlyToolAnnotations = () => Object.freeze({
@@ -286,7 +286,7 @@ export const buildAgenticGraphWebMcpToolName = (
 export const buildAgenticGraphAgentReadyToolContracts = (args = {}) => {
   const defaultWorkspaceId = String(args.defaultWorkspaceId || '').trim()
   const includeBrowserOnlyTools = args.includeBrowserOnlyTools === true
-  const contracts = [
+  const contracts = [...(includeBrowserOnlyTools ? buildEvidenceAnalysisAgentReadyToolContracts() : []),
     {
       name: AGENTIC_OS_AGENT_READY_TOOL_IDS.search,
       webName: buildAgenticGraphWebMcpToolName(AGENTIC_OS_AGENT_READY_TOOL_IDS.search),

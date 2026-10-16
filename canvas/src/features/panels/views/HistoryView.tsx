@@ -26,12 +26,14 @@ import {
   uiToolbarRowScrollClassName,
 } from '@/features/toolbar/ui/toolbarStyles'
 
+const WorkspaceProjectPanel = React.lazy(() => import('@/features/workspace-project/WorkspaceProjectPanel'))
+
 const HistoryIcon = getMainPanelTypeIconComponent('mainPanel.history')
 const MessageCircle = getMainPanelTypeIconComponent('floatingPanel.chat')
 const ListChecks = getMainPanelTypeIconComponent('setting.list')
 const FileText = getMainPanelTypeIconComponent('setting.text')
 
-type HistorySubTab = 'chat' | 'history' | 'log'
+type HistorySubTab = 'chat' | 'history' | 'log' | 'projects'
 type HistorySectionTab = {
   id: HistorySubTab
   title: string
@@ -184,7 +186,7 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
   const [logFilter, setLogFilter] = React.useState<LogFilter>('all')
   React.useEffect(() => {
     if (!requestedHistorySubTab) return
-    const valid = requestedHistorySubTab === 'chat' || requestedHistorySubTab === 'history' || requestedHistorySubTab === 'log'
+    const valid = requestedHistorySubTab === 'chat' || requestedHistorySubTab === 'history' || requestedHistorySubTab === 'log' || requestedHistorySubTab === 'projects'
     if (valid) setTab(requestedHistorySubTab as HistorySubTab)
     requestHistorySubTab(null)
   }, [requestedHistorySubTab, requestHistorySubTab])
@@ -296,6 +298,7 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
       [
         { id: 'chat', title: 'Chat', Icon: MessageCircle },
         { id: 'history', title: UI_LABELS.history, Icon: HistoryIcon },
+        { id: 'projects', title: 'Projects', Icon: FileText },
         { id: 'log', title: UI_LABELS.log, Icon: ListChecks },
       ] satisfies HistorySectionTab[],
     [],
@@ -366,6 +369,7 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
         aria-labelledby={`history-${tab}-tab`}
         className="flex-1 overflow-auto px-3 py-2 space-y-6"
       >
+        {tab === 'projects' && <React.Suspense fallback={<p role="status">Loading projects…</p>}><WorkspaceProjectPanel /></React.Suspense>}
         {tab === 'history' && filteredRecent.length > 0 && (
           <section>
             <h3 className={`text-inherit font-semibold ${UI_THEME_TOKENS.text.secondary} mb-2 uppercase tracking-normal`}>

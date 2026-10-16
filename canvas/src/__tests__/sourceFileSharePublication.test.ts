@@ -8,6 +8,7 @@ import { syncAgenticGraphStorageNow } from '@/lib/storage/agentic-graph-storage-
 import { AGENTIC_OS_STORAGE_ROUTE_PATHS, buildAgenticGraphStorageDocPath } from '@/lib/storage/agentic-graph-storage-route-paths'
 import { hashAgenticGraphStorageContent } from '@/lib/storage/agentic-graph-storage-sync-contract'
 import { resolvePublishedDocIdentity } from '@/features/canvas/canvasDocShareToken.mjs'
+import { buildLocalDocumentShareUrl, parseLocalDocumentShareHash } from '@/features/canvas/localDocumentShare'
 import { publishWorkspaceEntriesToAgenticGraphStorage, publishWorkspaceEntryShareUrl } from '@/features/source-files/sourceFileShareUrl'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 
@@ -197,16 +198,21 @@ export async function testSourceShareRejectsOversizedAnonymousReadback() {
 
 export async function testSourceShareMemoryOnlyQueueCannotMintUrl() {
   const dom = initJsdomHarness()
+  dom.dom.reconfigure({ url: 'https://share.example/' })
   try {
     await __resetAgenticGraphStorageDbForTests()
     assert.equal((await getAgenticGraphStorageDb()).persistence.getState().mode, 'memory')
     let calls = 0
-    await assert.rejects(publishWorkspaceEntryShareUrl({ entry, workspaceId: 'kgws:share-memory', fetchImpl: async () => {
+    const shareUrl = await publishWorkspaceEntryShareUrl({ entry, workspaceId: 'kgws:share-memory', fetchImpl: async () => {
       calls += 1
       throw new Error('Memory-only browser sync must not reach a remote transport')
-    } }), /durable|sync|storage/i)
+    } })
+    assert.ok(shareUrl)
     assert.equal(calls, 0)
-    assert.equal((await (await getAgenticGraphStorageDb()).collections.documents.find().exec()).length, 1, 'failed sharing keeps the local document')
+    const parsed = parseLocalDocumentShareHash(new URL(shareUrl!).hash)
+    assert.equal(parsed?.status, 'shared')
+    if (parsed?.status === 'shared') assert.deepEqual(parsed.document, { title: entry.name, markdown: entry.text })
+    assert.equal((await (await getAgenticGraphStorageDb()).collections.documents.find().exec()).length, 0, 'local sharing must not create a cloud queue')
   } finally {
     try { await __resetAgenticGraphStorageDbForTests() } finally { dom.restore() }
   }
@@ -267,10 +273,12 @@ export async function testSourceShareReadOnlyMemberCannotPublishOrWrite() {
   await withBrowser('viewer', async (session, workspaceId) => {
     session.env.DB.workspaceMemberships.get(session.membershipId)!.role = 'viewer'
     let publications = 0
-    await assert.rejects(publishWorkspaceEntryShareUrl({ ...argsFor(session, workspaceId), fetchImpl: async (input, init) => {
+    const shareUrl = await publishWorkspaceEntryShareUrl({ ...argsFor(session, workspaceId), fetchImpl: async (input, init) => {
       if (new URL(createStorageWorkerRequest(input, init).url).pathname === AGENTIC_OS_STORAGE_ROUTE_PATHS.publications) publications += 1
       return session.fetch(input, init)
-    } }))
+    } })
+    assert.ok(shareUrl, 'a local read-only member can still create a self-contained share link')
+    assert.equal(parseLocalDocumentShareHash(new URL(shareUrl!).hash)?.status, 'shared')
     assert.equal(session.env.DB.documents.size, 0)
     assert.equal(session.env.DB.documentPublications.size, 0)
     assert.equal(publications, 0, 'failed sync authorization stops before publication')
@@ -325,11 +333,10 @@ export async function testSourceShareBacklogStopsBeforeUnsentDocumentPublication
 }
 
 export async function testSourceShareRequestsSessionBeforeQueueingUpload() {
-  const { AgenticGraphStorageSignInRequiredError } = await import('@/lib/storage/agentic-graph-storage-browser-session')
   for (const status of [401, 403, 503]) {
     await withBrowser(`session-${status}`, async (session, workspaceId) => {
       const calls: Request[] = []
-      await assert.rejects(publishWorkspaceEntryShareUrl({ ...argsFor(session, workspaceId), fetchImpl: async (input, init) => {
+      const createShare = publishWorkspaceEntryShareUrl({ ...argsFor(session, workspaceId), fetchImpl: async (input, init) => {
         const request = createStorageWorkerRequest(input, init)
         calls.push(request)
         assert.equal(new URL(request.url).pathname, AGENTIC_OS_STORAGE_ROUTE_PATHS.browserSession)
@@ -337,9 +344,18 @@ export async function testSourceShareRequestsSessionBeforeQueueingUpload() {
         assert.equal(request.credentials, 'same-origin')
         assert.equal(request.headers.has('authorization'), false)
         return Response.json({ ok: false }, { status })
-      } }), error => status === 503
-        ? error instanceof Error && error.message.includes('unavailable')
-        : error instanceof AgenticGraphStorageSignInRequiredError)
+      } })
+      if (status === 503) {
+        await assert.rejects(createShare, error => error instanceof Error && error.message.includes('unavailable'))
+      } else {
+        const shareUrl = await createShare
+        assert.ok(shareUrl)
+        const url = new URL(shareUrl)
+        assert.equal(url.search, '', 'document bytes must stay out of request/query strings')
+        const parsed = parseLocalDocumentShareHash(url.hash)
+        assert.equal(parsed?.status, 'shared')
+        if (parsed?.status === 'shared') assert.deepEqual(parsed.document, { title: entry.name, markdown: entry.text })
+      }
       assert.equal(calls.length, 1, 'Session failure must not be retried or upload document bytes')
       const db = await getAgenticGraphStorageDb()
       assert.equal((await db.collections.documents.find().exec()).length, 0)
@@ -347,4 +363,11 @@ export async function testSourceShareRequestsSessionBeforeQueueingUpload() {
       assert.equal(session.env.DB.documentPublications.size, 0)
     })
   }
+  assert.equal(buildLocalDocumentShareUrl({ title: 'large.md', markdown: 'x'.repeat(4_097), baseUrl: 'https://share.example/' }), null)
+  const boundaryUrl = buildLocalDocumentShareUrl({ title: 'limit.md', markdown: 'x'.repeat(4_096), baseUrl: 'https://share.example/' })
+  assert.ok(boundaryUrl, 'the inclusive 4,096-byte limit is accepted')
+  assert.equal(buildLocalDocumentShareUrl({ title: 'too-long-url.md', markdown: '# valid', baseUrl: `https://share.example/${'x'.repeat(8_200)}` }), null)
+  assert.equal(buildLocalDocumentShareUrl({ title: 'bad.md', markdown: '# valid', baseUrl: 'javascript:alert(1)' }), null)
+  assert.equal(parseLocalDocumentShareHash('#kgShare=not-a-valid-token')?.status, 'invalid')
+  assert.equal(parseLocalDocumentShareHash('#kgShare=_w')?.status, 'invalid', 'invalid UTF-8 must fail closed')
 }

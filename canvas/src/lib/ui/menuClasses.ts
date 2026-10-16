@@ -5,7 +5,7 @@ import { uiSelectableRowClassName } from 'grph-shared/ui/selectedRowClasses'
 export type UiMenuButtonVariant = 'default' | 'selected'
 
 export function uiMenuContainerClassName(extra?: string): string {
-  return cn('rounded border shadow-sm p-2 z-10', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border, extra)
+  return cn('rounded border shadow-[var(--kg-shadow-overlay)] p-2 z-10', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border, extra)
 }
 
 export function uiMenuDividerClassName(extra?: string): string {

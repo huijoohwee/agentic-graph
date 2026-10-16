@@ -11,8 +11,8 @@ const repository = 'huijoohwee/agentic-graph'
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
 const gh = (...args) => execFileSync('gh', args, { cwd: root, encoding: 'utf8', timeout: 30000, maxBuffer: 8 * 1024 * 1024 })
 export const historyArtifactName = binding => 'browser-preflight-' + createHash('sha256').update(canonicalJson(binding)).digest('hex')
-// A passed browser ledger remains evidence when a later read-only preflight
-// stops deployment. It never substitutes for fresh production authorization.
+// A passed browser ledger remains evidence when authorization or a read-only
+// preflight stops deployment. It never substitutes for fresh authorization.
 export function assertPreDeploymentStop(run, jobs) {
   assert.ok(Array.isArray(jobs), 'prior release jobs are required')
   const exactJob = name => {
@@ -29,13 +29,19 @@ export function assertPreDeploymentStop(run, jobs) {
   assert.equal(verify.conclusion, 'success', 'prior candidate verification did not pass')
   const deploy = exactJob('Human-Authorized Deploy, Verify, And Publish Mirror')
   assert.equal(deploy.conclusion, 'failure')
-  const stepResult = (name, conclusion) => {
+  const exactStep = name => {
     const matches = deploy.steps.filter(step => step.name === name)
     assert.equal(matches.length, 1, `prior ${name} step is missing or ambiguous`)
     assert.equal(matches[0].status, 'completed')
-    assert.equal(matches[0].conclusion, conclusion, `prior ${name} was not ${conclusion}`)
+    return matches[0]
   }
-  stepResult('Preflight protected travel mesh without mutation', 'failure')
+  const stepResult = (name, conclusion) =>
+    assert.equal(exactStep(name).conclusion, conclusion, `prior ${name} was not ${conclusion}`)
+  const authorization = 'Record exact human authorization and claim release controller'
+  const preflight = 'Preflight protected travel mesh without mutation'
+  const stoppedAtAuthorization = exactStep(authorization).conclusion === 'failure'
+  stepResult(authorization, stoppedAtAuthorization ? 'failure' : 'success')
+  stepResult(preflight, stoppedAtAuthorization ? 'skipped' : 'failure')
   for (const name of ['Deploy verified artifact', 'Capture authoritative candidate deployment',
     'Record exact Pages deployment receipt', 'Upload and activate exact-candidate travel mesh versions',
     'Reconcile canonical docs into D1', 'Publish exact canonical documents through the storage owner',
@@ -43,7 +49,7 @@ export function assertPreDeploymentStop(run, jobs) {
     'Roll back Pages to exact last-known-good deployment', 'Restore and reconcile last-known-good D1 state']) {
     stepResult(name, 'skipped')
   }
-  const allowedFailures = new Set(['Preflight protected travel mesh without mutation',
+  const allowedFailures = new Set([stoppedAtAuthorization ? authorization : preflight,
     'Require an exact successful deployment attempt'])
   assert.ok(deploy.steps.every(step => ['success', 'skipped'].includes(step.conclusion)
     || (step.conclusion === 'failure' && allowedFailures.has(step.name))), 'prior deployment has an unresolved failure')

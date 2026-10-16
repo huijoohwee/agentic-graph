@@ -67,3 +67,37 @@ export type GeoCommandRejection = {
 export const GEO_COMMAND_SCHEMA_ID = 'agentic-graph-geospatial-command/v1' as const
 export const EXTRUSION_MAX_HEIGHT_METERS = 10_000
 export const ENHANCED_LAYER_STATUS_MESSAGE_MAX_LENGTH = 140
+
+export type SourceGeospatialProperties = Readonly<{
+  role: 'surface' | 'volume' | 'path' | 'point'
+  label: string
+  color: string
+  sourceId: string
+  sourceHash: string
+  sourcePointer: string
+  observedAtUtc?: string
+  lastObservedAtUtc?: string
+  altitudeLabel?: string
+  gapSeconds?: number
+  status?: string
+  // Only resolved geometric heights above the rendered ground may be extruded.
+  baseMeters?: number
+  heightMeters?: number
+  heightReference?: 'map-ground-geometric'
+}>
+export type SourceGeospatialCoordinate = readonly [longitude: number, latitude: number]
+export type SourceGeospatialFeature = Readonly<{
+  type: 'Feature'
+  id: string
+  geometry:
+    | Readonly<{ type: 'Point'; coordinates: SourceGeospatialCoordinate }>
+    | Readonly<{ type: 'LineString'; coordinates: readonly SourceGeospatialCoordinate[] }>
+    | Readonly<{ type: 'Polygon'; coordinates: readonly (readonly SourceGeospatialCoordinate[])[] }>
+  properties: SourceGeospatialProperties
+}>
+export type SourceGeospatialSnapshot = Readonly<{
+  schema: 'source-geospatial/v1'
+  sourceKey: string
+  atUtc: string
+  collection: Readonly<{ type: 'FeatureCollection'; features: readonly SourceGeospatialFeature[] }>
+}>

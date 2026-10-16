@@ -121,7 +121,8 @@ export function buildKgTokenBundle(definitions: readonly KgTokenDef[]) {
 }
 export type KgTokenBundle = ReturnType<typeof buildKgTokenBundle>
 
-export function renderKgTokensCss(definitions: readonly KgTokenDef[], theme: KgTheme, selector: string, legacy = false): string {
+export function renderKgTokensCss(definitions: readonly KgTokenDef[], theme: KgTheme, selector: string, legacy = false,
+  options: { inheritLayout?: boolean } = {}): string {
   if (!themes.includes(theme)) fail('theme', 'unsupported theme')
   if (![':root', ":root[data-theme='dark']", ':root.dark', ':root[data-theme="dark"]',
     ':root.dark, :root[data-theme="dark"]',
@@ -129,7 +130,13 @@ export function renderKgTokensCss(definitions: readonly KgTokenDef[], theme: KgT
     ':root[data-theme="dark"][data-dark-variant="black"]'].includes(selector)) fail('selector', 'unsupported selector')
   const bundle = buildKgTokenBundle(definitions)
   const ordered = legacy ? definitions.map(t => bundle.tokens.find(resolved => resolved.name === t.name)!) : bundle.tokens
-  return boundKgTokenOutput(`${selector}${legacy ? '' : ' '}{\n${ordered.map(t => `  ${t.cssVar}: ${t.css[theme]};`).join('\n')}\n}\n`)
+  // Joined theme sheets inherit invariant layout from :root so responsive rules keep their authority.
+  // A standalone renderer and any explicit :root selector still emit the complete theme.
+  const emitted = options.inheritLayout && theme !== 'light' && selector !== ':root'
+    ? ordered.filter(t => !(['dimension', 'number'].includes(t.type)
+      && t.light === t.dark && t.dark === t.black
+      && t.css.light === t.css.dark && t.css.dark === t.css.black)) : ordered
+  return boundKgTokenOutput(`${selector}${legacy ? '' : ' '}{\n${emitted.map(t => `  ${t.cssVar}: ${t.css[theme]};`).join('\n')}\n}\n`)
 }
 
 export function serializeKgTokens(definitions: readonly KgTokenDef[], target: 'css' | 'json' | 'typescript'): string {
@@ -142,6 +149,6 @@ export function serializeKgTokens(definitions: readonly KgTokenDef[], target: 'c
     const selector = theme === 'light' ? ':root'
       : theme === 'black' ? ':root[data-theme="dark"][data-dark-variant="black"]'
         : ':root.dark, :root[data-theme="dark"]'
-    return renderKgTokensCss(definitions, theme, selector)
+    return renderKgTokensCss(definitions, theme, selector, false, { inheritLayout: true })
   }).join(''))
 }

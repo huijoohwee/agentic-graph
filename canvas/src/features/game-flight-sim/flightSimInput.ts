@@ -5,6 +5,7 @@ import {
   type FlightSimTickInput,
 } from './flightSimModel'
 import { mergeFlightSimInputs } from '../../../../packages/apple-spatial-input/src/input'
+import { isEditableTarget } from '@/lib/canvas/arrangeShortcuts'
 
 export type FlightSimTouchControl = 'pitch-up' | 'pitch-down' | 'roll-left' | 'roll-right'
   | 'yaw-left' | 'yaw-right' | 'throttle-up' | 'throttle-down'
@@ -174,11 +175,6 @@ export function readStandardFlightSimGamepad(
   return flightSimInputFromStandardGamepad(gamepad)
 }
 
-function isEditableTarget(target: EventTarget | null): boolean {
-  const element = target instanceof HTMLElement ? target : null
-  return Boolean(element && (element.isContentEditable || /^(INPUT|SELECT|TEXTAREA)$/.test(element.tagName)))
-}
-
 export function installFlightSimDesktopInput(
   element: HTMLElement,
   options: Readonly<{
@@ -204,7 +200,8 @@ export function installFlightSimDesktopInput(
     if (reason) options.onPause?.(reason)
   }
   const onKeyDown = (event: KeyboardEvent) => {
-    if (isEditableTarget(event.target)) return
+    if (event.defaultPrevented || isEditableTarget(event.target)
+      || (event.target as Element | null)?.closest?.('[role="separator"]')) return
     if (isFlightSimCameraCycleCode(event.code)) {
       if (!event.repeat) options.onCycleCamera?.()
       event.preventDefault()
@@ -216,8 +213,7 @@ export function installFlightSimDesktopInput(
     event.preventDefault()
   }
   const onKeyUp = (event: KeyboardEvent) => {
-    if (!CONTROL_CODES.has(event.code)) return
-    updateFlightSimPressedCode(pressedCodes, event.code, false)
+    if (!updateFlightSimPressedCode(pressedCodes, event.code, false)) return
     publishKeyboard()
     event.preventDefault()
   }

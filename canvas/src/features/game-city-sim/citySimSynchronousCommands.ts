@@ -15,6 +15,7 @@ import {
   publishCitySimSuccess as publishSuccess,
   type CitySimSnapshot,
 } from './citySimRuntimeState'
+import { isCityCoopGuestReadOnly } from './cityCoopState'
 
 type MalformedCityDocument = Readonly<{ message: string }>
 
@@ -31,7 +32,18 @@ type CitySimSynchronousCommandDependencies = Readonly<{
 export function createCitySimSynchronousCommands(
   dependencies: CitySimSynchronousCommandDependencies,
 ) {
+  function guestReadOnlyResult(operation: string): CitySimSnapshot {
+    dependencies.fenceTimer()
+    return publishFailure(
+      operation,
+      'guest-read-only',
+      'This City is a read-only host projection. Suggest a zone for host review instead.',
+      { phase: snapshot.active ? 'stopped' : snapshot.phase },
+    )
+  }
+
   function stopCitySim(): CitySimSnapshot {
+    if (isCityCoopGuestReadOnly()) return guestReadOnlyResult('stop')
     dependencies.fenceTimer()
     const malformedDocument = dependencies.readMalformedDocument()
     if (malformedDocument) {
@@ -50,6 +62,7 @@ export function createCitySimSynchronousCommands(
   }
 
   function advanceCitySimByFixedStep(): CitySimSnapshot {
+    if (isCityCoopGuestReadOnly()) return guestReadOnlyResult('tick')
     if (!snapshot.active || snapshot.phase !== 'running') return snapshot
     const result = advanceCityTick(snapshot.city)
     if (result.ok === false) {
@@ -74,6 +87,7 @@ export function createCitySimSynchronousCommands(
   }
 
   function restartCitySim(): CitySimSnapshot {
+    if (isCityCoopGuestReadOnly()) return guestReadOnlyResult('restart')
     dependencies.fenceTimer()
     const malformedDocument = dependencies.readMalformedDocument()
     if (malformedDocument) {
@@ -116,6 +130,7 @@ export function createCitySimSynchronousCommands(
   }
 
   function resetCitySim(): CitySimSnapshot {
+    if (isCityCoopGuestReadOnly()) return guestReadOnlyResult('reset')
     dependencies.invalidateAsyncOperations()
     dependencies.fenceTimer()
     dependencies.clearMalformedDocument()
@@ -164,6 +179,7 @@ export function createCitySimSynchronousCommands(
     parcelId: string,
     zoningType: CityZoningType,
   ): CitySimSnapshot {
+    if (isCityCoopGuestReadOnly()) return guestReadOnlyResult('zone')
     const previousCity = snapshot.city
     const result = zoneCityGridParcel(previousCity, parcelId, zoningType)
     if (result.ok === false) {

@@ -10,6 +10,8 @@ import { mapLimit } from '@/lib/async/mapLimit'
 import { resolveWebsiteImportNodeRelativeDocumentPath, safeWebsitePathSegment } from '@/lib/websites/websitePathUtils'
 import { fetchWebsiteImportArtifact } from '@/lib/websites/webpageIframeSrcdoc'
 import { convertWebpageUrlToMarkdownViaBrowser, looksLowFidelityWebpageMarkdown } from '@/lib/websites/webpageClientConvert'
+import { buildWebsiteCollectionTableMarkdown } from '@/lib/websites/websiteCollectionTableMarkdown'
+import { parseWebsiteCollectionRecordsFromConversionJson } from '@/lib/websites/websiteCollectionRecords'
 import { buildWebsiteSitemapMarkdown } from '@/lib/websites/websiteSitemapMarkdown'
 import { buildWebsiteCrawlCanvasMarkdown } from '@/lib/websites/websiteCrawlCanvasMarkdown'
 import type { WebsiteImportManifestV1, WebsiteImportNode } from '@/lib/websites/server/websiteImportTypes'
@@ -83,7 +85,7 @@ export async function createWebsiteImportWorkspaceWriter(args: {
   importJobRef: { current: number }
   jobId: number
   status: { setStatusProgress: (label: string, current?: number | null, total?: number | null) => void }
-}): Promise<{ writeNodes: (nodes: WebsiteImportNode[]) => Promise<void>; finalize: (manifest: WebsiteImportManifestV1) => Promise<{ created: WebsiteImportCreated; host: string; canvasPath: WorkspacePath | null }> }> {
+}): Promise<{ writeNodes: (nodes: WebsiteImportNode[]) => Promise<void>; finalize: (manifest: WebsiteImportManifestV1) => Promise<{ created: WebsiteImportCreated; host: string; canvasPath: WorkspacePath | null; collectionTablePath: WorkspacePath | null }> }> {
   const { fs, url, importId, settings, importJobRef, jobId, status } = args
   let rootUrl = url
   const host = resolveWebsiteImportHost(rootUrl)
@@ -297,7 +299,7 @@ export async function createWebsiteImportWorkspaceWriter(args: {
     if (destination) {
       if (!createdPaths.includes(destination)) throw new Error(`The requested page was not saved: ${settings.selectedUrls![0]}`)
       status.setStatusProgress('Writing', 1, 1)
-      return { created: { createdPaths, sources }, host, canvasPath: null }
+      return { created: { createdPaths, sources }, host, canvasPath: null, collectionTablePath: null }
     }
     {
       const sitemapText = buildWebsiteSitemapMarkdown({
@@ -320,6 +322,41 @@ export async function createWebsiteImportWorkspaceWriter(args: {
       sources.unshift({ path: sitemapPath, source: { kind: 'url', url: rootUrl, path: `workspace:${sitemapPath}` } })
     }
 
+    let collectionTablePath: WorkspacePath | null = null
+    const collectionRows = await mapLimit(
+      nodes.filter(node => String(node.status || '') === 'ok' && String(node.nodeId || '').trim()),
+      4,
+      async node => {
+        const nodeId = String(node.nodeId || '').trim()
+        if (!nodeId) return []
+        try {
+          const conversionJson = await fetchWebsiteImportArtifact({
+            importId,
+            nodeId,
+            outputDirRel: settings.outputDirRel || undefined,
+            kind: 'conversionJson',
+            signal: ctrl.signal,
+          })
+          const docLink = docLinkByNodeId[nodeId]
+          return parseWebsiteCollectionRecordsFromConversionJson(conversionJson).map(record => ({ ...record, nodeId, docLink }))
+        } catch {
+          return []
+        }
+      },
+      { signal: ctrl.signal, yieldEvery: 2 },
+    ).then(groups => groups.flat())
+    if (collectionRows.length > 0) {
+      const tableText = buildWebsiteCollectionTableMarkdown({
+        rootUrl,
+        importId,
+        outputDirRel: settings.outputDirRel || undefined,
+        rows: collectionRows,
+      })
+      collectionTablePath = await createCaptureFile(rootFolder, 'website.collection.table.md', tableText)
+      createdPaths.unshift(collectionTablePath)
+      sources.unshift({ path: collectionTablePath, source: { kind: 'url', url: rootUrl, path: `workspace:${collectionTablePath}` } })
+    }
+
     let canvasPath: WorkspacePath | null = null
     {
       const canvasText = buildWebsiteCrawlCanvasMarkdown({
@@ -334,8 +371,15 @@ export async function createWebsiteImportWorkspaceWriter(args: {
       sources.unshift({ path: canvasPath, source: { kind: 'url', url: rootUrl, path: `workspace:${canvasPath}` } })
     }
 
+    if (collectionTablePath) {
+      const tableIndex = createdPaths.indexOf(collectionTablePath)
+      if (tableIndex > 0) createdPaths.unshift(...createdPaths.splice(tableIndex, 1))
+      const sourceIndex = sources.findIndex(source => source.path === collectionTablePath)
+      if (sourceIndex > 0) sources.unshift(...sources.splice(sourceIndex, 1))
+    }
+
     status.setStatusProgress('Writing', createdPaths.length, createdPaths.length)
-    return { created: { createdPaths, sources }, host, canvasPath }
+    return { created: { createdPaths, sources }, host, canvasPath, collectionTablePath }
   }
 
   return { writeNodes, finalize }

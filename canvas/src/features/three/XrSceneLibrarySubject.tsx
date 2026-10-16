@@ -10,9 +10,12 @@ import * as THREE from 'three'
 import { getVoxelLabelTexture } from '@/features/three/voxelLabelTexture'
 import { THREE_RENDER_ORDER } from '@/features/three/renderOrder'
 import { resolveXrSceneLibraryAsset } from '@/features/three/xrSceneLibrary'
+import { createSingaporePoiDetailKitRecipe, resolveSingaporePoiDetailKitByPoiId } from './singaporePoiDetailKits'
+import { buildProceduralAsset, disposeProceduralAsset } from '@/features/image-to-glb/proceduralAssetBuilder'
 import { XrProceduralBallGeometry } from '@/features/three/XrProceduralBallGeometry'
 import { XrProceduralHouseGeometry } from '@/features/three/XrProceduralHouseGeometry'
 import { XrProceduralVehicleGeometry } from '@/features/three/XrProceduralVehicleGeometry'
+import { XrCinematicHumanoid } from '@/features/three/XrCinematicHumanoid'
 import {
   XR_MOTION_REFERENCE_SELECTION_COLOR,
   type XrMotionReferenceSubject,
@@ -58,6 +61,15 @@ function resolveXrSceneSubjectIdentificationBounds(
 
 function Material({ color }: { color: string }) {
   return <meshStandardMaterial color={color} roughness={0.78} metalness={0.04} />
+}
+
+function XrProceduralPoiDetailKit({ poiId }: { poiId: string }) {
+  const kit = resolveSingaporePoiDetailKitByPoiId(poiId)
+  const build = React.useMemo(() => kit ? buildProceduralAsset(createSingaporePoiDetailKitRecipe(kit)) : null, [kit])
+  React.useEffect(() => () => {
+    if (build) disposeProceduralAsset(build.scene)
+  }, [build])
+  return build ? <primitive object={build.scene} /> : null
 }
 
 function resolveCharacterSilhouette(label?: string): 'pig' | 'wolf' | 'person' {
@@ -132,8 +144,13 @@ function Humanoid({
       )) : null}
       {arm(-1)}
       {arm(1)}
-      <mesh position={[-width * 0.2, 0, height * 0.2 - crouchOffset * 0.3]} rotation={[degrees((pose?.crouch || 0) * 42), 0, 0]} castShadow><boxGeometry args={[width * 0.2, depth * 0.62, height * 0.4]} /><Material color={color} /></mesh>
-      <mesh position={[width * 0.2, 0, height * 0.2 - crouchOffset * 0.3]} rotation={[degrees((pose?.crouch || 0) * 42), 0, 0]} castShadow><boxGeometry args={[width * 0.2, depth * 0.62, height * 0.4]} /><Material color={color} /></mesh>
+      {([-1, 1] as const).map(side => (
+        <group key={`leg:${side}`}
+          position={[side * width * 0.2, 0, height * 0.2 - crouchOffset * 0.3]}
+          rotation={[degrees((side < 0 ? pose?.leftLegPitchDegrees : pose?.rightLegPitchDegrees) || 0) + degrees((pose?.crouch || 0) * 42), 0, 0]}>
+          <mesh castShadow><boxGeometry args={[width * 0.2, depth * 0.62, height * 0.4]} /><Material color={color} /></mesh>
+        </group>
+      ))}
     </group>
   )
 }
@@ -178,7 +195,10 @@ function Debris({ color, size }: { color: string; size: readonly [number, number
     [-0.08, 0.2, 0.58, 0.48, 0.24, 0.22],
     [0.3, 0.22, 0.16, 0.22, 0.42, 0.34],
   ] as const
-  return <group>{fragments.map((fragment, index) => <mesh key={index} position={[fragment[0] * width, fragment[1] * depth, fragment[2] * height]} rotation={[index * 0.31, index * 0.47, index * 0.23]}><boxGeometry args={[fragment[3] * width, fragment[4] * depth, fragment[5] * height]} /><Material color={color} /></mesh>)}</group>
+  return <group>{fragments.map((fragment, index) => <mesh key={index} position={[fragment[0] * width, fragment[1] * depth, fragment[2] * height]} scale={[fragment[3] * width, fragment[4] * depth, fragment[5] * height]} rotation={[index * 0.31, index * 0.47, index * 0.23]} castShadow receiveShadow>
+    <dodecahedronGeometry args={[0.5, 0]} />
+    <meshStandardMaterial color={color} roughness={index % 2 ? 0.78 : 0.52} metalness={index % 2 ? 0.14 : 0.42} flatShading />
+  </mesh>)}</group>
 }
 
 function Chair({ color, size }: { color: string; size: readonly [number, number, number] }) {
@@ -230,50 +250,49 @@ function Cart({ color, size }: { color: string; size: readonly [number, number, 
 
 function Tree({ color, size }: { color: string; size: readonly [number, number, number] }) {
   const [width, height, depth] = size
-  const crown = Math.min(width, depth) * 0.48
+  const crown = Math.min(width, depth) * 0.4
   const bark = '#6b4423'
+  const leafColors = [color, '#477d48', '#5b914d', '#6b9e58', '#397043']
+  const foliage = Array.from({ length: 34 }, (_, index) => {
+    const angle = index * 2.399963229728653
+    const vertical = ((index * 7) % 17) / 16 * 2 - 1
+    const ring = Math.sqrt(1 - vertical * vertical)
+    const radius = crown * (0.38 + (index % 5) * 0.115)
+    const leafRadius = crown * (0.2 + (index % 4) * 0.025)
+    return {
+      index,
+      position: [Math.cos(angle) * ring * radius, Math.sin(angle) * ring * radius, vertical * crown * 0.78] as const,
+      scale: [1 + (index % 3) * 0.12, 0.78 + (index % 4) * 0.08, 0.82 + (index % 5) * 0.08] as const,
+      leafRadius,
+      leafColor: leafColors[(index * 3) % leafColors.length],
+    }
+  })
   return (
     <group name="agentic_os_xr_procedural_tree">
-      <mesh position={[0, 0, height * 0.06]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[width * 0.16, width * 0.24, height * 0.12, 8]} />
+      <mesh position={[0, 0, height * 0.07]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[width * 0.19, width * 0.34, height * 0.14, 12]} />
         <meshStandardMaterial color="#5c3b1f" roughness={1} />
       </mesh>
-      <mesh position={[0, 0, height * 0.28]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-        <cylinderGeometry args={[width * 0.07, width * 0.12, height * 0.48, 10]} />
+      <mesh position={[0, 0, height * 0.37]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[width * 0.065, width * 0.2, height * 0.66, 12]} />
         <meshStandardMaterial color={bark} roughness={1} />
       </mesh>
-      {([-0.9, 0.85] as const).map(side => (
+      {([-1, 1] as const).map(side => (
         <mesh
           key={side}
-          position={[side * width * 0.08, depth * 0.02, height * 0.46]}
-          rotation={[Math.PI / 2, 0, side * 0.55]}
+          position={[side * width * 0.11, 0, height * 0.53]}
+          rotation={[0.45, 0, -side * 0.72]}
           castShadow
         >
-          <cylinderGeometry args={[width * 0.028, width * 0.04, width * 0.22, 6]} />
+          <cylinderGeometry args={[width * 0.025, width * 0.055, height * 0.42, 8]} />
           <meshStandardMaterial color={bark} roughness={1} />
         </mesh>
       ))}
-      <group position={[0, 0, height * 0.72]} scale={[1.08, 1.08, 0.78]}>
-        <mesh castShadow>
-          <sphereGeometry args={[crown, 16, 12]} />
-          <Material color={color} />
-        </mesh>
-        <mesh position={[crown * 0.42, crown * 0.16, crown * 0.18]} castShadow>
-          <sphereGeometry args={[crown * 0.62, 14, 10]} />
-          <Material color={color} />
-        </mesh>
-        <mesh position={[-crown * 0.38, -crown * 0.14, crown * 0.22]} castShadow>
-          <sphereGeometry args={[crown * 0.56, 14, 10]} />
-          <Material color={color} />
-        </mesh>
-        <mesh position={[crown * 0.08, -crown * 0.36, crown * 0.06]} castShadow>
-          <sphereGeometry args={[crown * 0.5, 12, 10]} />
-          <Material color={color} />
-        </mesh>
-        <mesh position={[-crown * 0.12, crown * 0.34, crown * 0.1]} castShadow>
-          <sphereGeometry args={[crown * 0.46, 12, 8]} />
-          <Material color={color} />
-        </mesh>
+      <group position={[0, 0, height * 0.77]}>
+        {foliage.map(leaf => <mesh key={leaf.index} position={leaf.position} scale={leaf.scale} castShadow receiveShadow>
+          <icosahedronGeometry args={[leaf.leafRadius, 1]} />
+          <meshStandardMaterial color={leaf.leafColor} roughness={0.96} flatShading />
+        </mesh>)}
       </group>
     </group>
   )
@@ -322,6 +341,10 @@ export function XrSceneLibraryAssetGeometry({
   const asset = resolveXrSceneLibraryAsset(assetId)
   const size = asset.dimensionsMeters
   const effectiveColor = color || asset.defaultColor
+  if (asset.poiDetailKitId) return <XrProceduralPoiDetailKit poiId={asset.poiDetailKitId} />
+  if (asset.shape === 'humanoid' && asset.visualProfile) {
+    return <XrCinematicHumanoid profile={asset.visualProfile} color={effectiveColor} pose={animationPose} size={size} />
+  }
   const character = asset.id === 'character-pig' ? 'pig' : asset.id === 'character-wolf' ? 'wolf' : asset.id === 'character-monkey' ? 'monkey' : resolveCharacterSilhouette(label)
   if (asset.shape === 'humanoid' && character !== 'person') return <XrStoryCharacter kind={character} color={effectiveColor} pose={animationPose} size={size} />
   if (asset.shape === 'sailboat') return <XrSailboatGeometry color={effectiveColor} size={size} />
@@ -375,7 +398,11 @@ export function XrSceneLibrarySubject({
     <group
       name={`agentic_os_xr_scene_subject_${subject.id}`}
       position={position}
-      rotation={[0, THREE.MathUtils.degToRad(subject.rotationYDegrees) + facingYRadians, 0]}
+      rotation={[
+        0,
+        THREE.MathUtils.degToRad(subject.rotationYDegrees + (asset.orientationOffsetYDegrees || 0)) + facingYRadians,
+        0,
+      ]}
       scale={stageScale * subject.scale}
       userData={{
         subjectId: subject.id,

@@ -205,19 +205,39 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
           )
           let mapPointerHit = null
           if (mapCanvas && mapRect) {
-            for (const ratioX of [0.18, 0.36, 0.5, 0.64, 0.82]) {
-              for (const ratioY of [0.28, 0.5, 0.72]) {
-                const point = {
-                  x: mapRect.left + mapRect.width * ratioX,
-                  y: mapRect.top + mapRect.height * ratioY,
-                }
-                if (!exposed(point)) continue
-                if (document.elementFromPoint(point.x, point.y) === mapCanvas) {
-                  mapPointerHit = point
-                  break
-                }
+            // Partition the live aperture; fixed map ratios can all land on UI.
+            // Pointer-only blockers do not alter the geographic layout contract.
+            const pointerRects = [
+              ...occluders.map(item => item.rect),
+              ...Array.from(document.querySelectorAll(
+                '[data-kg-strybldr-bottom-timeline-panel="1"], '
+                + '[data-kg-flight-sim-hud="1"] > .pointer-events-auto',
+              )).filter(element => getComputedStyle(element).pointerEvents !== 'none')
+                .map(rectOf).filter(rect => rect && overlaps(rect, mapRect)),
+            ].slice(0, 12)
+            const cuts = (low, high, near, far) => Array.from(new Set([
+              low, high, ...pointerRects.flatMap(rect => [near, far].map(
+                edge => Math.max(low, Math.min(high, rect[edge])),
+              )),
+            ])).sort((a, b) => a - b)
+            const xs = cuts(Math.max(2, mapRect.left + 2), Math.min(window.innerWidth - 2, mapRect.right - 2), 'left', 'right')
+            const ys = cuts(Math.max(2, mapRect.top + 2), Math.min(window.innerHeight - 2, mapRect.bottom - 2), 'top', 'bottom')
+            const candidates = []
+            for (let x = 1; x < xs.length; x++) {
+              for (let y = 1; y < ys.length; y++) {
+                const point = { x: (xs[x - 1] + xs[x]) / 2, y: (ys[y - 1] + ys[y]) / 2 }
+                if (!exposed(point) || pointerRects.some(rect => (
+                  point.x >= rect.left && point.x <= rect.right
+                  && point.y >= rect.top && point.y <= rect.bottom
+                ))) continue
+                candidates.push({ ...point, area: (xs[x] - xs[x - 1]) * (ys[y] - ys[y - 1]) })
               }
-              if (mapPointerHit) break
+            }
+            for (const point of candidates.sort((a, b) => b.area - a.area).slice(0, 64)) {
+              if (document.elementFromPoint(point.x, point.y) === mapCanvas) {
+                mapPointerHit = { x: point.x, y: point.y }
+                break
+              }
             }
           }
           const host = document.querySelector(

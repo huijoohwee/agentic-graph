@@ -1,0 +1,1 @@
+{"authorityRef":"refs/heads/main","authorityRepository":"github.com/huijoohwee/agentic-graph","evidenceRefPrefix":"refs/heads/adlc/authority/","schema":"agentic-os/github-transition-policy/v1","targetRepositories":["github.com/huijoohwee/agentic-graph"],"workflowPath":".github/workflows/adlc-transition.yml"}

@@ -187,6 +187,8 @@ const INGEST_INPUT_SCHEMA = Object.freeze({
     maxResolutionBytes: { type: "integer", minimum: 1, maximum: 256000000, default: 256000000 },
     maxDurationMs: { type: "integer", minimum: 100, maximum: 3600000, default: 300000 },
     projectionLimit: { type: "integer", minimum: 1, maximum: 1000, default: 200 },
+    projectionByteLimit: { type: "integer", minimum: 1, maximum: 2097152,
+      description: "Maximum UTF-8 bytes in a read-only graph projection; the canonical snapshot is unchanged." },
     useCache: { type: "boolean", default: true },
     strict: {
       type: "boolean",
@@ -228,6 +230,11 @@ const QUERY_INPUT_SCHEMA = Object.freeze({
     to: { type: "string", maxLength: 1000 },
     direction: { enum: ["outgoing", "incoming", "both"], default: "both" },
     edgeLabels: stringArray("Optional exact edge-label allowlist for traversal.", 64),
+    afterEdgeId: {
+      type: "string",
+      maxLength: 1024,
+      description: "Opaque continuation cursor returned by a one-hop neighbors result; supply with the same node and snapshot digest.",
+    },
     maxDepth: { type: "integer", minimum: 0, maximum: 12, default: 3 },
     maxTraversalNodes: {
       type: "integer",

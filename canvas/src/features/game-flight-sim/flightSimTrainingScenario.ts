@@ -1,71 +1,35 @@
 import {
   clampFlightSimUnit,
+  type FlightSimPhase,
   type FlightSimSnapshot,
   type FlightSimTickInput,
 } from './flightSimModel'
-
-export const FLIGHT_SIM_TRAINING_MISSIONS = Object.freeze([
-  {
-    id: 'circuit-foundation',
-    label: 'Circuit Foundation',
-    objective: 'Fly the ordered waterfront circuit and stabilize the marked landing.',
-    terrain: 'Procedural waterfront',
-    night: false,
-    targetSpeedMetersPerSecond: Object.freeze([8, 22] as const),
-    defaultFailure: 'none',
-    systemsChecklist: Object.freeze(['Controls free', 'Power set', 'Route briefed']),
-  },
-  {
-    id: 'night-circuit',
-    label: 'Night Circuit',
-    objective: 'Hold the circuit by instruments and runway lighting with reduced visual range.',
-    terrain: 'Procedural waterfront at night',
-    night: true,
-    targetSpeedMetersPerSecond: Object.freeze([9, 20] as const),
-    defaultFailure: 'instrument-uncertainty',
-    systemsChecklist: Object.freeze(['Lights checked', 'Instruments cross-checked', 'Stable approach']),
-  },
-  {
-    id: 'systems-recovery',
-    label: 'Systems Recovery',
-    objective: 'Recognize a bounded power loss, retain control, and recover before landing.',
-    terrain: 'Procedural waterfront recovery area',
-    night: false,
-    targetSpeedMetersPerSecond: Object.freeze([8, 18] as const),
-    defaultFailure: 'engine-power-loss',
-    systemsChecklist: Object.freeze(['Aviate', 'Diagnose power', 'Recover and land']),
-  },
-] as const)
-
-export type FlightSimTrainingMission = (typeof FLIGHT_SIM_TRAINING_MISSIONS)[number]
-export type FlightSimTrainingMissionId = FlightSimTrainingMission['id']
-
-export const FLIGHT_SIM_TRAINING_FAILURES = Object.freeze([
-  { id: 'none', label: 'No injected failure' },
-  { id: 'engine-power-loss', label: 'Engine power loss' },
-  { id: 'instrument-uncertainty', label: 'Unreliable airspeed' },
-  { id: 'control-bias', label: 'Control bias' },
-] as const)
-
-export type FlightSimTrainingFailureId =
-  (typeof FLIGHT_SIM_TRAINING_FAILURES)[number]['id']
+import type {
+  FlightSimTrainingProfile,
+  FlightSimTrainingMission,
+  FlightSimTrainingFailure,
+} from './flightSimTrainingProfile'
+import type { FlightSimGeographicReference } from './flightSimGeospatialCoordinates'
+export type { FlightSimTrainingMission } from './flightSimTrainingProfile'
+export type FlightSimTrainingMissionId = string
+export type FlightSimTrainingFailureId = string
 
 export type FlightSimTrainingScenarioSnapshot = Readonly<{
-  missionId: FlightSimTrainingMissionId
-  failureId: FlightSimTrainingFailureId
+  profile: FlightSimTrainingProfile | null
+  geographicReference: FlightSimGeographicReference | null
+  sourceKey: string
+  missionId: string
+  failureId: string
   voiceEnabled: boolean
   revision: number
+  runBinding: Readonly<{ runId: number; profileSourceKey: string; missionId: string; failureId: string }> | null
 }>
 
 type Listener = () => void
 const listeners = new Set<Listener>()
 let scenario: FlightSimTrainingScenarioSnapshot = Object.freeze({
-  missionId: 'circuit-foundation',
-  failureId: 'none',
-  voiceEnabled: false,
-  revision: 0,
+  profile: null, geographicReference: null, sourceKey: '', missionId: '', failureId: '', voiceEnabled: false, revision: 0, runBinding: null,
 })
-
 function publish(
   patch: Partial<Omit<FlightSimTrainingScenarioSnapshot, 'revision'>>,
 ): FlightSimTrainingScenarioSnapshot {
@@ -73,116 +37,129 @@ function publish(
   for (const listener of [...listeners]) listener()
   return scenario
 }
-
+function publishAdmitted(
+  patch: Partial<Omit<FlightSimTrainingScenarioSnapshot, 'revision'>>,
+  isCurrent?: () => boolean,
+  publicationName = 'profile',
+): FlightSimTrainingScenarioSnapshot {
+  const previous = scenario
+  try {
+    if (isCurrent && !isCurrent()) throw new Error(`Flight training admission is no longer current before ${publicationName} publication.`)
+    const next = publish(patch)
+    if (isCurrent && !isCurrent()) throw new Error(`Flight training admission is no longer current during ${publicationName} publication.`)
+    return next
+  } catch (error) {
+    scenario = previous
+    for (const listener of [...listeners]) { try { listener() } catch { /* retain the admission failure */ } }
+    throw error
+  }
+}
 export function readFlightSimTrainingScenario(): FlightSimTrainingScenarioSnapshot {
   return scenario
 }
-
 export function subscribeFlightSimTrainingScenario(listener: Listener): () => void {
   listeners.add(listener)
   return () => listeners.delete(listener)
 }
-
+/** The existing scenario owner is the sole admitted configuration and selection store. */
+export function admitFlightSimTrainingProfile(
+  profile: FlightSimTrainingProfile | null,
+  sourceKey: string,
+  phase: FlightSimPhase,
+  isCurrent?: () => boolean,
+  geographicReference: FlightSimGeographicReference | null = null,
+): FlightSimTrainingScenarioSnapshot {
+  if (scenario.sourceKey === sourceKey && JSON.stringify(scenario.profile) === JSON.stringify(profile)
+    && JSON.stringify(scenario.geographicReference) === JSON.stringify(geographicReference)) return scenario
+  if (phase !== 'stopped') {
+    throw new Error('Flight training source changed during an active run; stop before admitting another profile.')
+  }
+  const mission = profile?.missions.find(item => item.id === profile.defaultMissionId)
+  return publishAdmitted({ profile, geographicReference, sourceKey, missionId: mission?.id || '', failureId: mission?.defaultFailureId || '' }, isCurrent)
+}
+/** A retained run may resume only with the selection and source that governed it. */
+export function assertFlightSimTrainingRunBinding(runId: number): void {
+  const binding = scenario.runBinding
+  if (binding?.runId === runId && (binding.profileSourceKey !== scenario.sourceKey || binding.missionId !== scenario.missionId || binding.failureId !== scenario.failureId)) {
+    throw new Error('Flight training selection or source changed while stopped; Restart is required for a new run.')
+  }
+}
+export function bindFlightSimTrainingRun(flight: Pick<FlightSimSnapshot, 'active' | 'phase' | 'runId'>): void {
+  if (!flight.active || flight.phase === 'stopped' || flight.runId < 1) return
+  if (scenario.runBinding?.runId === flight.runId && scenario.runBinding.profileSourceKey === scenario.sourceKey && scenario.runBinding.missionId === scenario.missionId && scenario.runBinding.failureId === scenario.failureId) return
+  publish({ runBinding: Object.freeze({ runId: flight.runId, profileSourceKey: scenario.sourceKey, missionId: scenario.missionId, failureId: scenario.failureId }) })
+}
 export function resolveFlightSimTrainingMission(
-  missionId: FlightSimTrainingMissionId = scenario.missionId,
-): FlightSimTrainingMission {
-  return FLIGHT_SIM_TRAINING_MISSIONS.find(item => item.id === missionId)
-    ?? FLIGHT_SIM_TRAINING_MISSIONS[0]
+  missionId: string = scenario.missionId,
+): FlightSimTrainingMission | null {
+  return scenario.profile?.missions.find(item => item.id === missionId) || null
 }
-
-export function selectFlightSimTrainingMission(
-  missionId: FlightSimTrainingMissionId,
-): FlightSimTrainingScenarioSnapshot {
+export function resolveFlightSimTrainingFailure(): FlightSimTrainingFailure | null {
+  return scenario.profile?.failures.find(item => item.id === scenario.failureId) || null
+}
+export function selectFlightSimTrainingMission(missionId: string, isCurrent?: () => boolean): FlightSimTrainingScenarioSnapshot {
   const mission = resolveFlightSimTrainingMission(missionId)
-  return publish({ missionId: mission.id, failureId: mission.defaultFailure })
+  if (!mission) throw new Error(`Flight training mission is unavailable or unsupported: ${missionId}`)
+  return publishAdmitted({ missionId: mission.id, failureId: mission.defaultFailureId }, isCurrent, 'selection')
 }
-
-export function selectFlightSimTrainingFailure(
-  failureId: FlightSimTrainingFailureId,
-): FlightSimTrainingScenarioSnapshot {
-  const supported = FLIGHT_SIM_TRAINING_FAILURES.some(item => item.id === failureId)
-  if (!supported) throw new Error(`Unsupported Flight Sim training failure: ${failureId}`)
-  return publish({ failureId })
+export function selectFlightSimTrainingFailure(failureId: string, isCurrent?: () => boolean): FlightSimTrainingScenarioSnapshot {
+  if (!scenario.profile?.failures.some(item => item.id === failureId)) {
+    throw new Error(`Flight training failure is unavailable or unsupported: ${failureId}`)
+  }
+  return publishAdmitted({ failureId }, isCurrent, 'selection')
 }
-
-export function setFlightSimTrainingVoiceEnabled(
-  voiceEnabled: boolean,
-): FlightSimTrainingScenarioSnapshot {
+export function setFlightSimTrainingVoiceEnabled(voiceEnabled: boolean): FlightSimTrainingScenarioSnapshot {
   return publish({ voiceEnabled: Boolean(voiceEnabled) })
 }
-
 export function isFlightSimTrainingFailureActive(
   flight: Pick<FlightSimSnapshot, 'active' | 'phase' | 'tick'>,
 ): boolean {
   return isFlightSimTrainingFailureActiveAtTick(flight, flight.tick)
 }
-
 function isFlightSimTrainingFailureActiveAtTick(
   flight: Pick<FlightSimSnapshot, 'active' | 'phase'>,
   tick: number,
 ): boolean {
-  return flight.active
-    && (flight.phase === 'ready' || flight.phase === 'flying')
-    && tick >= 180
-    && tick < 420
-    && scenario.failureId !== 'none'
+  const window = scenario.profile?.failureWindow
+  const failure = resolveFlightSimTrainingFailure()
+  return Boolean(window && failure && failure.effect.kind !== 'none'
+    && flight.active && (flight.phase === 'ready' || flight.phase === 'flying')
+    && tick >= window.startTick && tick < window.endTickExclusive)
 }
-
 export function isFlightSimTrainingAirspeedReliable(
   flight: Pick<FlightSimSnapshot, 'active' | 'phase' | 'tick'>,
 ): boolean {
-  return scenario.failureId !== 'instrument-uncertainty'
+  return resolveFlightSimTrainingFailure()?.effect.kind !== 'airspeed-unreliable'
     || !isFlightSimTrainingFailureActive(flight)
 }
-
 export function applyFlightSimTrainingTickModifiers(args: Readonly<{
   flight: Pick<FlightSimSnapshot, 'active' | 'phase' | 'tick'> & Readonly<{
     aircraft: Pick<FlightSimSnapshot['aircraft'], 'throttle'>
   }>
   input: FlightSimTickInput
   throttleSetpoint: number | null
-}>): Readonly<{
-  input: FlightSimTickInput
-  throttleSetpoint: number | null
-}> {
+}>): Readonly<{ input: FlightSimTickInput; throttleSetpoint: number | null }> {
+  const effect = resolveFlightSimTrainingFailure()?.effect
   if (!isFlightSimTrainingFailureActiveAtTick(args.flight, args.flight.tick + 1)) {
-    return Object.freeze({
-      input: args.input,
-      throttleSetpoint: args.throttleSetpoint,
-    })
+    return Object.freeze({ input: args.input, throttleSetpoint: args.throttleSetpoint })
   }
-  if (scenario.failureId === 'engine-power-loss') {
+  if (effect?.kind === 'throttle-limit') {
     const requestedThrottle = args.throttleSetpoint ?? args.flight.aircraft.throttle
     return Object.freeze({
-      input: Object.freeze({
-        ...args.input,
-        throttleDelta: Math.min(args.input.throttleDelta, -0.7),
-      }),
-      throttleSetpoint: Math.min(requestedThrottle, 0.28),
+      input: Object.freeze({ ...args.input, throttleDelta: Math.min(args.input.throttleDelta, effect.throttleDelta) }),
+      throttleSetpoint: Math.min(requestedThrottle, effect.maxThrottle),
     })
   }
-  if (scenario.failureId === 'control-bias') {
-    return Object.freeze({
-      input: Object.freeze({
-        ...args.input,
-        roll: clampFlightSimUnit(args.input.roll + 0.22, 'Flight training roll bias'),
-        yaw: clampFlightSimUnit(args.input.yaw - 0.14, 'Flight training yaw bias'),
-      }),
-      throttleSetpoint: args.throttleSetpoint,
-    })
-  }
-  return Object.freeze({
-    input: args.input,
+  if (effect?.kind === 'input-bias') return Object.freeze({
+    input: Object.freeze({
+      ...args.input,
+      roll: clampFlightSimUnit(args.input.roll + effect.roll, 'Flight training roll bias'),
+      yaw: clampFlightSimUnit(args.input.yaw + effect.yaw, 'Flight training yaw bias'),
+    }),
     throttleSetpoint: args.throttleSetpoint,
   })
+  return Object.freeze({ input: args.input, throttleSetpoint: args.throttleSetpoint })
 }
-
 export function resetFlightSimTrainingScenarioForTests(): void {
-  scenario = Object.freeze({
-    missionId: 'circuit-foundation',
-    failureId: 'none',
-    voiceEnabled: false,
-    revision: scenario.revision + 1,
-  })
-  for (const listener of [...listeners]) listener()
+  publish({ profile: null, geographicReference: null, sourceKey: '', missionId: '', failureId: '', voiceEnabled: false, runBinding: null })
 }

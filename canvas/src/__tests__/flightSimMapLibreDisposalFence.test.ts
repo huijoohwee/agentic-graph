@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import test from 'node:test'
+import test, { type TestContext } from 'node:test'
 
 import {
   commitCanvasGeospatialSurfaceOwnership,
@@ -11,10 +11,177 @@ import {
 } from 'gympgrph/testkit/features/geospatial/mapLibreHostLease'
 import {
   claimMapLibreMapLease,
+  captureNativeGeospatialMapLibreLease,
   isGeospatialModeEnabled,
   NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
   setGeospatialModeEnabled,
 } from 'gympgrph'
+
+function controlSurfaceFrames(context: TestContext, readCanvas: () => HTMLCanvasElement | null = () => null) {
+  const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  const documentDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'document')
+  const frames = new Map<number, FrameRequestCallback>()
+  let scheduled = 0
+  let onOffCommit: (() => void) | null = null
+  setGeospatialModeEnabled(false)
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: {
+    cancelAnimationFrame: (id: number) => frames.delete(id),
+    dispatchEvent: (event: CustomEvent<{ enabled?: boolean }>) => {
+      if (event.detail?.enabled === false) onOffCommit?.()
+      return true
+    },
+    requestAnimationFrame: (callback: FrameRequestCallback) => {
+      frames.set(++scheduled, callback)
+      return scheduled
+    },
+  } })
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: { querySelector: readCanvas } })
+  context.after(() => {
+    onOffCommit = null
+    setGeospatialModeEnabled(false)
+    frames.clear()
+    if (windowDescriptor) Object.defineProperty(globalThis, 'window', windowDescriptor)
+    else delete (globalThis as { window?: unknown }).window
+    if (documentDescriptor) Object.defineProperty(globalThis, 'document', documentDescriptor)
+    else delete (globalThis as { document?: unknown }).document
+  })
+  return {
+    onOffCommit: (handler: () => void) => { onOffCommit = handler },
+    scheduledCount: () => scheduled,
+    pendingCount: () => frames.size,
+    waitForPending: async () => {
+      for (let attempt = 0; attempt < 100 && !frames.size; attempt += 1) await new Promise<void>(resolve => setTimeout(resolve, 5))
+      assert.ok(frames.size, 'the real owner must schedule its disposal frame')
+    },
+    flushNext: async () => {
+      const entry = frames.entries().next().value as [number, FrameRequestCallback] | undefined
+      assert.ok(entry)
+      frames.delete(entry[0])
+      entry[1](Date.now())
+      await new Promise<void>(resolve => setImmediate(resolve))
+    },
+  }
+}
+
+test('cold Geo off-to-off bootstrap has no owner and schedules no disposal frame', async context => {
+  const frames = controlSurfaceFrames(context)
+  let presentations = 0
+  assert.equal(captureNativeGeospatialMapLibreLease(), null)
+  await commitCanvasGeospatialSurfaceOwnership(false, { afterCommit: () => { presentations += 1 } })
+  assert.equal(isGeospatialModeEnabled(), false)
+  assert.equal(captureNativeGeospatialMapLibreLease(), null)
+  assert.equal(frames.scheduledCount(), 0)
+  assert.equal(frames.pendingCount(), 0)
+  assert.equal(presentations, 1)
+})
+
+test('a real Geo owner still releases through two consecutive disposal frames', async context => {
+  const canvas = { isConnected: true } as HTMLCanvasElement
+  const frames = controlSurfaceFrames(context, () => canvas.isConnected ? canvas : null)
+  let release = () => void 0
+  let disposals = 0
+  release = claimMapLibreMapLease({ map: { getCanvas: () => canvas }, root: null,
+    ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER, isPreparedForDisposal: () => true,
+    dispose: () => { disposals += 1; Object.assign(canvas, { isConnected: false }); release() },
+  })
+  context.after(release)
+  setGeospatialModeEnabled(true)
+  let settled = false
+  const operation = commitCanvasGeospatialSurfaceOwnership(false).then(() => { settled = true })
+  await frames.waitForPending()
+  assert.equal(disposals, 1)
+  await frames.flushNext()
+  assert.equal(settled, false)
+  assert.equal(frames.pendingCount(), 1)
+  await frames.flushNext()
+  await operation
+  assert.equal(settled, true)
+  assert.equal(frames.scheduledCount(), 2)
+})
+
+test('an off Geo mode with owned DOM cannot use the no-owner bootstrap path', async context => {
+  const canvas = { isConnected: true } as HTMLCanvasElement
+  const frames = controlSurfaceFrames(context, () => canvas.isConnected ? canvas : null)
+  let settled = false
+  const operation = commitCanvasGeospatialSurfaceOwnership(false).then(() => { settled = true })
+  await frames.waitForPending()
+  await frames.flushNext()
+  assert.equal(settled, false)
+  Object.assign(canvas, { isConnected: false })
+  await frames.flushNext()
+  assert.equal(settled, false)
+  await frames.flushNext()
+  await operation
+  assert.equal(frames.scheduledCount(), 3)
+})
+
+test('a late native lease without DOM cannot bypass the disposal fence', async context => {
+  const frames = controlSurfaceFrames(context)
+  let release = () => void 0
+  frames.onOffCommit(() => {
+    if (!captureNativeGeospatialMapLibreLease()) release = claimMapLibreMapLease({
+      map: {}, root: null, ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
+      isPreparedForDisposal: () => true,
+    })
+  })
+  context.after(() => release())
+  let settled = false
+  const operation = commitCanvasGeospatialSurfaceOwnership(false).then(() => { settled = true })
+  await frames.waitForPending()
+  assert.ok(captureNativeGeospatialMapLibreLease())
+  await frames.flushNext()
+  await frames.flushNext()
+  assert.equal(settled, false, 'an unreleased native lease remains an owner even without a canvas')
+  release()
+  await frames.flushNext()
+  assert.equal(settled, false)
+  await frames.flushNext()
+  await operation
+  assert.equal(captureNativeGeospatialMapLibreLease(), null)
+})
+
+test('a cold off-to-off request superseded during commit cannot publish presentation', async context => {
+  const frames = controlSurfaceFrames(context)
+  let current = true
+  let presentations = 0
+  frames.onOffCommit(() => { current = false })
+  await commitCanvasGeospatialSurfaceOwnership(false, {
+    isCurrent: () => current,
+    afterCommit: () => { presentations += 1 },
+  })
+  assert.equal(presentations, 0)
+  assert.equal(frames.scheduledCount(), 0)
+  assert.equal(isGeospatialModeEnabled(), false)
+})
+
+test('a lease observed during cold preparation retains the two-frame release fence', async context => {
+  let introduced = false
+  let disposals = 0
+  let release = () => void 0
+  const frames = controlSurfaceFrames(context, () => {
+    if (!introduced) {
+      introduced = true
+      queueMicrotask(() => {
+        release = claimMapLibreMapLease({ map: {}, root: null,
+          ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER, isPreparedForDisposal: () => true,
+          dispose: () => { disposals += 1; release() },
+        })
+      })
+    }
+    return null
+  })
+  context.after(() => release())
+  let settled = false
+  const operation = commitCanvasGeospatialSurfaceOwnership(false).then(() => { settled = true })
+  await frames.waitForPending()
+  assert.equal(disposals, 1)
+  assert.equal(captureNativeGeospatialMapLibreLease(), null)
+  await frames.flushNext()
+  assert.equal(settled, false)
+  await frames.flushNext()
+  await operation
+  assert.equal(frames.scheduledCount(), 2)
+})
 
 test('MapLibre disposal preparation remains fenced until every holder releases', context => {
   const map = {}

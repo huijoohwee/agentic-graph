@@ -89,9 +89,6 @@
   --kg-code-bg: rgba(2, 6, 23, 0.6);
   --kg-code-border: #1e293b;
   --kg-code-text: #e2e8f0;
-  --kg-control-height: 28px;
-  --kg-status-pill-height: 24px;
-  --kg-table-row-height: 44px;
   --kg-focus-ring: #60a5fa;
   --kg-accent: #60a5fa;
   --kg-accent-contrast: #020617;
@@ -119,7 +116,6 @@
   --kg-kanban-card-bg: #020b2a;
   --kg-kanban-card-bg-hover: rgba(11, 18, 32, 0.85);
   --kg-kanban-cell-bg: rgba(2, 6, 23, 0.55);
-  --kg-kanban-card-radius: 0.5rem;
   --kg-kanban-card-shadow: 0 1px 2px rgba(0,0,0,0.35);
   --kg-kanban-card-shadow-hover: 0 12px 30px rgba(0,0,0,0.50);
   --kg-panel-action-bg: rgba(255,255,255,0.06);
@@ -141,9 +137,6 @@
   --kg-code-bg: #0d0d0d;
   --kg-code-border: #343434;
   --kg-code-text: #e5e7eb;
-  --kg-control-height: 28px;
-  --kg-status-pill-height: 24px;
-  --kg-table-row-height: 44px;
   --kg-focus-ring: #60a5fa;
   --kg-accent: #60a5fa;
   --kg-accent-contrast: #000000;
@@ -171,7 +164,6 @@
   --kg-kanban-card-bg: #0a0a0a;
   --kg-kanban-card-bg-hover: rgba(23, 23, 23, 0.9);
   --kg-kanban-cell-bg: rgba(13, 13, 13, 0.9);
-  --kg-kanban-card-radius: 0.5rem;
   --kg-kanban-card-shadow: 0 1px 2px rgba(0,0,0,0.35);
   --kg-kanban-card-shadow-hover: 0 12px 30px rgba(0,0,0,0.50);
   --kg-panel-action-bg: rgba(255,255,255,0.06);

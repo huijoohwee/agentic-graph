@@ -1,3 +1,4 @@
+import { waitForAuthoredWorkspaceSource as waitForAuthoredSource } from './lib/mission-authored-state-readiness.mjs'
 import { selectMenuOption } from './lib/select-menu-option.mjs'
 import { configureMissionPage, verifyWorkspaceObservation } from './lib/verify-workspace-observation.mjs'
 import { showMissionFace, sourceText, waitForMissionAsync, openEditorWorkspace } from './lib/mission-card-face.mjs'
@@ -38,17 +39,15 @@ const waitForMissionExit = async () => {
   assert.equal(await page.evaluate(async () => (await import('/src/features/agent-ready/agentRunInspectionStore.ts')).readAgentRunWorkspace()), null)
   assert.equal(await selected.count(), 0, 'Leaving Mission must clear selected private evidence')
 }
-async function waitForAuthoredWorkspaceSource() {
-  await waitForAsync(async () => {
-    const { readSourceFilesBootstrapReady } = await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')
-    const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
-    const { useMarkdownExplorerStore } = await import('/src/features/markdown-explorer/store.ts')
-    const state = useGraphStore.getState(), path = useMarkdownExplorerStore.getState().activePath
-    return readSourceFilesBootstrapReady() && state.historyIndex >= 0 && !!path
-      && state.sourceFiles[0]?.source?.path === `workspace:${path}`
+const armMissionExpiryClock = async () => {
+  await page.clock.install({ time: new Date() })
+  await page.evaluate(async () => {
+    const inspection = await import('/src/features/agent-ready/agentRunInspectionStore.ts'), snapshot = inspection.readAgentRunInspectionSnapshot()
+    if (!snapshot) throw Error('Mission inspection is unavailable before expiry')
+    inspection.updateAgentRunInspection({ trace: snapshot.trace, scope: snapshot.scope, expiresAt: snapshot.expiresAt, spanId: snapshot.spanId })
   })
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
 }
+const waitForAuthoredWorkspaceSource = timeout => waitForAuthoredSource(page, timeout)
 const openRunSource = (scope = mission) => showMissionFace(scope, true)
 const showEvidence = (scope = mission) => showMissionFace(scope, false)
 const waitText = async (locator, text) => {
@@ -407,7 +406,6 @@ try {
     assert.deepEqual(errors, [])
     console.log('Focused Apex activation and workspace stream passed; full mission lifecycle remains a separate check.')
   } else {
-  await page.clock.install({ time: new Date() })
   await page.goto(process.env.AG_MISSION_SMOKE_BASE_URL + '/?kgPath=%2Fagentic-graph%2F&openEditorWorkspace=1', { waitUntil: 'domcontentloaded', timeout: 120000 })
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
@@ -420,7 +418,7 @@ try {
     await closeFloatingPanel(page, floating)
   }
   assert.equal(requests.length, 0, 'Dashboard must not load or poll before opening')
-  await verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored)
+  await verifyAgentMissionSourceFiles(page, authoredSnapshot, assertAuthored, waitForAuthoredWorkspaceSource)
   await openDashboard()
   await waitText(mission, '2 retained matches')
   await showEvidence(); await verifyDashboardWidgets(page)
@@ -465,6 +463,7 @@ try {
   })
   await page.mouse.move(point.x, point.y); await page.mouse.down()
   await page.mouse.move(point.x + 20, point.y + 20); await page.mouse.up()
+  await armMissionExpiryClock()
   await page.clock.fastForward(61000)
   await waitForMissionExit(); await page.clock.setSystemTime(new Date()); await openDashboard()
   await choose('baseline-run')

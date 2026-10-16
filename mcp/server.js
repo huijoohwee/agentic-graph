@@ -28,6 +28,7 @@ import { buildAgenticGraphAgentReadyResourceTemplateContracts, buildAgenticGraph
 import { SITE_ORIGIN } from "../cloudflare/pages/agentic-graph-agent-ready-shared.mjs";
 import { AGENTIC_OS_AGENT_READY_DEFAULT_WORKSPACE_ID } from "../canvas/src/features/agent-ready/agentic-graph-agent-ready-tool-contract.mjs";
 import { createPublishedAgentReadyToolExecutors } from "../canvas/src/features/agent-ready/publishedToolExecutors.mjs";
+import { isEvidenceToolName } from "../canvas/src/features/agent-ready/evidenceAnalysisAgentReadyContract.mjs";
 import { AGENTIC_OS_MCP_APP_RESOURCE_URI, buildAgenticGraphMcpAppsCapabilities, buildAgenticGraphMcpAppsResourceDescriptor, buildAgenticGraphMcpAppsResourceReadResult } from "../canvas/src/features/agent-ready/mcpAppsReadyContract.mjs";
 import { runLocalAgentRuntime } from "./local-agent-runtime.js";
 const MAX_OUTPUT_CHARS = Number(process.env.AGENTIC_OS_MCP_MAX_OUTPUT_CHARS ?? "20000"); const DEFAULT_TIMEOUT_MS = Number(process.env.AGENTIC_OS_MCP_TIMEOUT_MS ?? "600000"); const AGENTIC_OS_HTML_VIDEO_ENGINE = "AGENTIC_OS_HTML_VIDEO_ENGINE";
@@ -342,12 +343,11 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   const sourceFile = await LOCAL_PUBLISHED_SOURCE_TOOL_EXECUTORS[AGENTIC_OS_LOCAL_MCP_TOOL_NAMES.fetch]({ id: sourceFileId });
   return buildAgenticGraphSourceFileResourceReadResult({ uri, sourceFile });
 });
-
 server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   const toolName = request.params?.name;
   const args = request.params?.arguments ?? {};
-
   try {
+    if (isEvidenceToolName(toolName)) { const payload = await (await import("../canvas/src/features/evidence-analysis/tools/executeEvidence.mjs")).executeEvidence(toolName, args); return jsonToolResult(payload, payload.ok === false); }
     if (PAYMENT_RUNTIME.canHandle(toolName)) {
       const payload = await PAYMENT_RUNTIME.run(toolName, args, { signal: extra?.signal });
       return jsonToolResult(payload, payload.ok === false);

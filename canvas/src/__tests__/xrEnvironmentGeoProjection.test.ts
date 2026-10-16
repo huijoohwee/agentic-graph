@@ -62,6 +62,8 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
     !mediaLibrary.includes('<XrEnvironmentGeoButton')
     || mediaLibrary.includes('/game-flight-sim/')
     || !publisher.includes('const environment = projectXrEnvironmentToFlightGeo(')
+    || !publisher.includes('if (!reference) return null')
+    || !publisher.includes('readFlightSimTrainingScenario().geographicReference')
     || !publisher.includes('projectCityOverlay: projectCitySimToGeospatialOverlay')
     || !composition.includes('input.store.clearCityGeoOverlay()')
     || !composition.includes('input.store.setCityGeoOverlay(input.projectCityOverlay(input.city))')

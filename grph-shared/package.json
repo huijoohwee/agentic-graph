@@ -278,6 +278,11 @@
       "import": "./dist/geospatial/poiRichMedia.js",
       "default": "./dist/geospatial/poiRichMedia.js"
     },
+    "./geospatial/xrCatalogArtwork": {
+      "types": "./dist/geospatial/xrCatalogArtwork.d.ts",
+      "import": "./dist/geospatial/xrCatalogArtwork.js",
+      "default": "./dist/geospatial/xrCatalogArtwork.js"
+    },
     "./browser/apiNativeBrowserMcpSsot": {
       "types": "./dist/browser/apiNativeBrowserMcpSsot.d.ts",
       "import": "./dist/browser/apiNativeBrowserMcpSsot.js",

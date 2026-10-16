@@ -32,6 +32,7 @@ import {
   recoverPythonRuntimeGrammar,
 } from "./python-syntax-recovery.mjs";
 import { parseSqlSource, SQL_PARSER_ID, SQL_PARSER_VERSION } from "./sql-parser.mjs";
+import { createNativeBinaryParser, NATIVE_BINARY_PARSER_ID, NATIVE_BINARY_PARSER_VERSION } from "./native-binary-parser.mjs";
 import { SOURCE_PARSER_REGISTRY } from "./source-parser-registry.mjs";
 import {
   parseTypeScriptSource,
@@ -250,7 +251,7 @@ const PARSER_IDENTITIES = Object.freeze({
   sql: { parserId: SQL_PARSER_ID, parserVersion: SQL_PARSER_VERSION, fidelity: "structural-parser" }, markdown: { parserId: MARKDOWN_PARSER_ID, parserVersion: MARKDOWN_PARSER_VERSION, fidelity: "structural-parser" },
   "json-config": { parserId: JSON_CONFIG_PARSER_ID, parserVersion: JSON_CONFIG_PARSER_VERSION, fidelity: "ast" },
   "structural-config": { parserId: STRUCTURAL_CONFIG_PARSER_ID, parserVersion: STRUCTURAL_CONFIG_PARSER_VERSION, fidelity: "structural-parser" },
-  "brace-code": { parserId: BRACE_CODE_PARSER_ID, parserVersion: BRACE_CODE_PARSER_VERSION, fidelity: "structural-parser" }, "declarative-grammar": { parserId: DECLARATIVE_GRAMMAR_PARSER_ID, parserVersion: DECLARATIVE_GRAMMAR_PARSER_VERSION, fidelity: "ast" },
+  "brace-code": { parserId: BRACE_CODE_PARSER_ID, parserVersion: BRACE_CODE_PARSER_VERSION, fidelity: "structural-parser" }, "declarative-grammar": { parserId: DECLARATIVE_GRAMMAR_PARSER_ID, parserVersion: DECLARATIVE_GRAMMAR_PARSER_VERSION, fidelity: "ast" }, "native-binary": { parserId: NATIVE_BINARY_PARSER_ID, parserVersion: NATIVE_BINARY_PARSER_VERSION, fidelity: "structural-parser" },
   pdf: { parserId: PDF_PARSER_ID, parserVersion: PDF_PARSER_VERSION, fidelity: "pending" }, inventory: { parserId: SOURCE_INVENTORY_PARSER_ID, parserVersion: SOURCE_INVENTORY_PARSER_VERSION, fidelity: "inventory-only" },
 });
 
@@ -919,25 +920,21 @@ const parseDeclarativeGrammarSource = createDeclarativeGrammarSourceParser({
   sourceOnlyFragment,
 });
 
+const parseNativeBinarySource = createNativeBinaryParser({
+  parserDescriptorForSource,
+  sourceNodeFor,
+  sourceOnlyFragment,
+});
+
 const NATIVE_PARSER_ADAPTERS = Object.freeze({
   typescript: (source, options) => parseTypeScriptSource({ sourcePath: source.relativePath, text: source.text || "", contentHash: source.contentHash, byteSize: source.byteSize }, options),
   python: parsePythonSource,
   sql: (source, options) => parseSqlSource({ sourcePath: source.relativePath, text: source.text || "", contentHash: source.contentHash, byteSize: source.byteSize }, options),
   markdown: (source, options) => parseMarkdownStructure(source, parserDescriptorForSource(source, options), source.text || "", {}, options),
-  "json-config": parseJsonConfigSourceWithIsolation,
-  "structural-config": parseStructuralConfigSource,
-  "brace-code": (source, options) => parseBraceCodeSource({
-    sourcePath: source.relativePath,
-    text: source.text || "",
-    contentHash: source.contentHash,
-    byteSize: source.byteSize,
-    checkpoint: options.checkpoint,
-    limits: options.limits,
-    retainRecord: options.retainRecord,
-  }),
-  "declarative-grammar": parseDeclarativeGrammarSource,
-  pdf: parsePdfSource,
-  inventory: (source, options) => sourceOnlyFragment(source, parserDescriptorForSource(source, options)),
+  "json-config": parseJsonConfigSourceWithIsolation, "structural-config": parseStructuralConfigSource,
+  "brace-code": (source, options) => parseBraceCodeSource({ sourcePath: source.relativePath, text: source.text || "", contentHash: source.contentHash, byteSize: source.byteSize, checkpoint: options.checkpoint, limits: options.limits, retainRecord: options.retainRecord }),
+  "declarative-grammar": parseDeclarativeGrammarSource, "native-binary": parseNativeBinarySource,
+  pdf: parsePdfSource, inventory: (source, options) => sourceOnlyFragment(source, parserDescriptorForSource(source, options)),
 });
 
 export function createAgentGraphParserDispatch(parserRegistry = SOURCE_PARSER_REGISTRY) {

@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react'
 import { EdgesGeometry, ExtrudeGeometry } from 'three'
+import { buildProceduralAsset, disposeProceduralAsset } from '@/features/image-to-glb/proceduralAssetBuilder'
 import type { XrRegionalPoiSurface } from './regionalPoiXrPresentation'
 import { deriveXrObservationWheelSupports } from './xrObservationWheelPresentation'
+import { createSingaporePoiDetailKitRecipe, resolveSingaporePoiDetailKitByPoiId } from './singaporePoiDetailKits'
 import {
   createXrRegionalPoiExtrusionShape,
   createXrRegionalPoiSurfaceUserData,
@@ -63,6 +65,40 @@ function SurfaceMaterial({ color, metalness = 0, roughness = 0.78 }: {
   )
 }
 
+function XrRegionalPoiProceduralDetail({ surface }: { surface: XrRegionalPoiSurface }) {
+  const kit = resolveSingaporePoiDetailKitByPoiId(surface.poiId)
+  const build = useMemo(() => {
+    if (!kit) return null
+    const generated = buildProceduralAsset(createSingaporePoiDetailKitRecipe(kit))
+    generated.scene.userData = {
+      ...generated.scene.userData,
+      poiId: surface.poiId,
+      sourceSurfaceId: surface.id,
+      presentationRole: 'procedural-detail-only',
+      spatialAuthority: 'regional-profile-rings',
+    }
+    return generated
+  }, [kit, surface.id, surface.poiId])
+  React.useEffect(() => () => {
+    if (build) disposeProceduralAsset(build.scene)
+  }, [build])
+  if (!build) return null
+  const footprintScale = Math.max(0.12, Math.min(
+    0.85,
+    Math.min(surface.size[0], surface.size[2]) * 0.35,
+  ))
+  return (
+    <group
+      name={`agentic_os_procedural_poi_detail_${surface.poiId}`}
+      position={[surface.position[0], surface.topHeight, surface.position[2]]}
+      scale={footprintScale}
+      userData={{ poiId: surface.poiId, sourceSurfaceId: surface.id, proceduralDetailOnly: true }}
+    >
+      <primitive object={build.scene} />
+    </group>
+  )
+}
+
 function XrRegionalPoiPolygonExtrusion({
   shadows,
   surface,
@@ -76,29 +112,32 @@ function XrRegionalPoiPolygonExtrusion({
   )
   React.useEffect(() => () => resources.dispose(), [resources])
   return (
-    <group
-      name={`agentic_os_xr_regional_poi_surface_${surface.id}`}
-      position={[0, surface.baseHeight, 0]}
-      rotation={[-Math.PI / 2, 0, 0]}
-      userData={createXrRegionalPoiSurfaceUserData(surface)}
-    >
-      <mesh
-        geometry={resources.geometry}
-        castShadow={shadows}
-        receiveShadow={shadows}
+    <>
+      <group
+        name={`agentic_os_xr_regional_poi_surface_${surface.id}`}
+        position={[0, surface.baseHeight, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        userData={createXrRegionalPoiSurfaceUserData(surface)}
       >
-        <SurfaceMaterial color={surface.color} metalness={0.06} roughness={0.52} />
-      </mesh>
-      <lineSegments geometry={resources.edgeGeometry} renderOrder={1}>
-        <lineBasicMaterial
-          color={XR_REGIONAL_POI_EDGE_PRESENTATION.color}
-          depthWrite={false}
-          opacity={XR_REGIONAL_POI_EDGE_PRESENTATION.opacity}
-          toneMapped={false}
-          transparent
-        />
-      </lineSegments>
-    </group>
+        <mesh
+          geometry={resources.geometry}
+          castShadow={shadows}
+          receiveShadow={shadows}
+        >
+          <SurfaceMaterial color={surface.color} metalness={0.06} roughness={0.52} />
+        </mesh>
+        <lineSegments geometry={resources.edgeGeometry} renderOrder={1}>
+          <lineBasicMaterial
+            color={XR_REGIONAL_POI_EDGE_PRESENTATION.color}
+            depthWrite={false}
+            opacity={XR_REGIONAL_POI_EDGE_PRESENTATION.opacity}
+            toneMapped={false}
+            transparent
+          />
+        </lineSegments>
+      </group>
+      <XrRegionalPoiProceduralDetail surface={surface} />
+    </>
   )
 }
 

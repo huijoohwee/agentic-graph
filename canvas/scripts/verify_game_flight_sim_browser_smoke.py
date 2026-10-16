@@ -9,6 +9,11 @@ from urllib.parse import urlparse
 
 from playwright.sync_api import sync_playwright
 
+from lib.game_flight_sim_smoke_bootstrap import (
+    BoundedEvaluationPage,
+    STARTUP_PIPELINE_PROFILE_SCRIPT,
+    print_startup_pipeline_profile,
+)
 from lib.game_flight_sim_smoke_deadlines import (
     GAMEPLAY_WEBSOCKET_PROBE_PATH,
 )
@@ -17,8 +22,11 @@ from lib.game_flight_sim_smoke_ledger import (
     REQUIRED_BROWSER_VERIFICATION_NAMES,
 )
 from lib.game_flight_sim_smoke_network import (
+    assert_authoring_mirror_fixture,
+    assert_authoring_mirror_ownership,
     assert_transport_ownership,
     assert_workspace_seed_list_authority,
+    read_proof_authoring_mirror_request,
     request_is_geo_provider_read,
     request_is_proof_local_read,
     summarize_websocket_attempts,
@@ -97,6 +105,44 @@ def build_websocket_probe_url(base_url: str) -> str:
     ).geturl()
 
 
+class DeferredAuthoringMirrorReceipts:
+    """Retain real HTTP responses; decode bodies outside transport callbacks."""
+    def __init__(self) -> None:
+        self.requests: dict[Any, dict[str, Any]] = {}
+        self.responses: list[Any] = []
+        self.finished: set[Any] = set()
+
+    def admit(self, request: Any, mirror: dict[str, Any]) -> None:
+        self.requests[request] = mirror
+
+    def record_response(self, response: Any) -> None:
+        if response.request in self.requests:
+            self.responses.append(response)
+
+    def record_finished(self, request: Any) -> None:
+        if request in self.requests:
+            self.finished.add(request)
+
+    def decode(self, *, bootstrap_closed: bool) -> list[dict[str, Any]]:
+        if not bootstrap_closed:
+            raise AssertionError("native authoring bootstrap phase did not close")
+        receipts = []
+        for response in self.responses:
+            if response.request not in self.finished:
+                raise AssertionError("native authoring HTTP response did not finish")
+            mirror = self.requests[response.request]
+            try:
+                result = response.json()
+            except Exception:
+                result = None
+            receipts.append({
+                "workspacePath": mirror["workspacePath"], "sha256": mirror["sha256"],
+                "status": response.status, "contentType": response.headers.get("content-type", ""),
+                "result": result,
+            })
+        return receipts
+
+
 def main() -> None:
     if RUN_INDEX < 1 or RUN_INDEX > RUN_COUNT:
         raise AssertionError(
@@ -124,6 +170,13 @@ def main() -> None:
     target_url = f"{BASE_URL}/?kgFlightSimBrowserProof=1"
     websocket_probe_url = build_websocket_probe_url(BASE_URL)
     local_origin = urlparse(BASE_URL).netloc
+    repository_root = Path(__file__).resolve().parents[2]
+    expected_mirror_root = repository_root / "docs_"
+    owned_store_root = Path(os.environ.get("AGENTIC_OS_WORKSPACE_STORE_ROOT", ""))
+    assert_authoring_mirror_fixture(owned_store_root, repository_root)
+    authoring_bootstrap_open = True
+    authoring_mirror_requests = []
+    authoring_mirror_receipts = DeferredAuthoringMirrorReceipts()
     requests: list[dict[str, str]] = []
     blocked_requests: list[dict[str, str]] = []
     fs_list_requests: list[dict[str, Any]] = []
@@ -140,7 +193,7 @@ def main() -> None:
             executable_path=local_chromium_executable(),
             args=["--enable-webgl", "--use-angle=swiftshader"],
         )
-        context = browser.new_context(viewport={"width": 1100, "height": 962})
+        context = browser.new_context(viewport={"width": 1100, "height": 962}, service_workers="block")
 
         def route_websocket(websocket_route: Any) -> None:
             websocket_route_hits.append(str(websocket_route.url))
@@ -152,7 +205,19 @@ def main() -> None:
             ):
                 route.continue_()
                 return
-            blocked_requests.append(request_record(request))
+            authoring_diagnostic: dict[str, Any] = {}
+            mirror = read_proof_authoring_mirror_request(
+                request, local_origin, expected_mirror_root,
+                bootstrap_open=authoring_bootstrap_open,
+                owned_store_root=owned_store_root, repository_root=repository_root,
+                diagnostics=authoring_diagnostic,
+            )
+            if mirror is not None:
+                authoring_mirror_requests.append(mirror)
+                authoring_mirror_receipts.admit(request, mirror)
+                route.continue_()
+                return
+            blocked_requests.append({**request_record(request), **({"authoringDiagnostic": authoring_diagnostic} if authoring_diagnostic else {})})
             route.abort("blockedbyclient")
 
         def record_websocket(websocket: Any) -> None:
@@ -174,6 +239,7 @@ def main() -> None:
             )
 
         def record_response(response: Any) -> None:
+            authoring_mirror_receipts.record_response(response)
             if response.status < 400:
                 return
             failed_responses.append(
@@ -185,6 +251,8 @@ def main() -> None:
             )
 
         def reset_observed_errors() -> None:
+            nonlocal authoring_bootstrap_open
+            authoring_bootstrap_open = False
             requests.clear()
             blocked_requests.clear()
             console_errors.clear()
@@ -199,11 +267,15 @@ def main() -> None:
         context.route("**/*", route_request)
         context.on("request", record_request)
         context.on("response", record_response)
+        context.on("requestfinished", authoring_mirror_receipts.record_finished)
         # Routed sockets do not reach the server unless the handler calls
         # connect_to_server(), which this proof never does.
         context.route_web_socket("**/*", route_websocket)
 
-        page = context.new_page()
+        page = BoundedEvaluationPage(context.new_page())
+        startup_profile = os.environ.get("AG_GAME_FLIGHT_SIM_STARTUP_PROFILE") == "1"
+        if startup_profile:
+            page.add_init_script(STARTUP_PIPELINE_PROFILE_SCRIPT)
         # The Page observer supplies the WebSocket lifecycle event while the
         # pre-page context route owns the fail-closed connection boundary.
         page.on("websocket", record_websocket)
@@ -215,7 +287,9 @@ def main() -> None:
         )
         page.on("pageerror", lambda error: page_errors.append(str(error)))
         try:
-            ledger = BrowserVerificationLedger()
+            ledger = BrowserVerificationLedger(
+                checkpoint_path=OUTPUT_DIR / f"{OUTPUT_STEM}.partial.json"
+            )
             state = run_flight_runtime_verifications(
                 page,
                 expected_branch=EXPECTED_BRANCH,
@@ -309,6 +383,23 @@ def main() -> None:
             ledger.verify(
                 "workspace seed authority",
                 verify_workspace_seed_authority,
+            )
+            authoring_mirror_proof = ledger.verify(
+                "native website authoring mirror ownership",
+                lambda: assert_authoring_mirror_ownership(
+                    requests=authoring_mirror_requests,
+                    receipts=authoring_mirror_receipts.decode(bootstrap_closed=not authoring_bootstrap_open),
+                    store_root=owned_store_root,
+                    repository_root=repository_root,
+                    native_workspace_texts=page.evaluate(
+                        """async paths => {
+                          const module = await window.__kgFlightSimBrowserProof.importModule('workspaceFs')
+                          const fs = await module.getWorkspaceFs()
+                          return Object.fromEntries(await Promise.all(paths.map(async path => [path, await fs.readFileText(path)])))
+                        }""",
+                        list({item["workspacePath"] for item in authoring_mirror_requests}),
+                    ),
+                ),
             )
             ledger.verify(
                 "browser error surface",
@@ -468,6 +559,7 @@ def main() -> None:
                 "requests": requests,
                 "localRuntimeRequestPaths": local_runtime_paths,
                 "workspaceSeedListRequests": fs_list_requests,
+                "authoringMirrorProof": authoring_mirror_proof,
                 "consoleErrors": console_errors,
                 "pageErrors": page_errors,
                 "failedResponses": failed_responses,
@@ -481,6 +573,8 @@ def main() -> None:
             print(f"Evidence: {EVIDENCE_PATH}")
             print(f"Screenshot: {SCREENSHOT_PATH}")
         finally:
+            if startup_profile:
+                print_startup_pipeline_profile(page)
             browser.close()
 
 

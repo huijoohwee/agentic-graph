@@ -1,7 +1,36 @@
 import React from 'react'
 import type { TimelineMediaReaderThumbnail } from './timelineMediaReader'
-import { formatVideoSequenceTimelineSecondsOffset } from './videoSequenceTimeline'
 import type { MermaidGanttTimelineTaskSpan } from '@/lib/mermaid/mermaidGanttBarInteraction'
+
+export function VideoSequenceSourceAnnotationLayer({ samples, onSelect, selectedTimeSeconds, open, onOpenChange }: {
+  samples: readonly { timestampSeconds: number; url: string }[]
+  onSelect: (sample: { timestampSeconds: number; url: string }) => void
+  selectedTimeSeconds?: number
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}) {
+  return (
+    <details className="timeline-video-sequence-source-annotations" data-kg-source-annotation-layer="1" open={open}
+      onToggle={event => onOpenChange?.(event.currentTarget.open)}>
+      <summary>Annotations ({samples.length})</summary>
+      <ol aria-label="Source frame annotations">
+        {samples.map(sample => (
+          <li key={`${sample.timestampSeconds}:${sample.url}`}>
+            <button type="button" aria-label={`Inspect source frame at ${sample.timestampSeconds.toFixed(3)} seconds`}
+              aria-pressed={selectedTimeSeconds === sample.timestampSeconds}
+              data-kg-source-annotation-time={sample.timestampSeconds}
+              data-kg-source-annotation-url={sample.url}
+              onClick={() => onSelect(sample)}>
+              <time dateTime={`PT${sample.timestampSeconds.toFixed(3)}S`}>
+                {sample.timestampSeconds.toFixed(3)}s
+              </time>
+            </button>
+          </li>
+        ))}
+      </ol>
+    </details>
+  )
+}
 
 export function VideoSequenceFrameSampleRail({
   samples,
@@ -31,7 +60,7 @@ export function VideoSequenceFrameSampleRail({
           style={{ '--kg-video-sequence-frame-sample-index': index } as React.CSSProperties}
         >
           <time dateTime={`PT${sample.timestampSeconds.toFixed(3)}S`}>
-            {formatVideoSequenceTimelineSecondsOffset(sample.timestampSeconds)}
+            {sample.timestampSeconds.toFixed(3)}s
           </time>
         </li>
       ))}

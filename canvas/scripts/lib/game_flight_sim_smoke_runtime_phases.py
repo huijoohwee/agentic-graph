@@ -7,6 +7,7 @@ from typing import Any, Callable
 from playwright.sync_api import Page, expect
 
 from lib.game_flight_sim_smoke_camera import verify_flight_camera_runtime
+from lib.game_flight_sim_smoke_deadlines import _read_ready_frame_debug
 from lib.game_flight_sim_smoke_deadlines import verify_flight_deadline_contracts
 from lib.game_flight_sim_smoke_geo_xr import (
     prepare_canvas_view_standalone_flight_xr,
@@ -38,6 +39,7 @@ from lib.game_flight_sim_smoke_scene import (
     read_flight_scene,
 )
 from lib.game_flight_sim_smoke_source import (
+    _read_source_activation_diagnostic,
     apply_and_verify_exact_authored_source,
     prepare_authored_physics_surface,
 )
@@ -93,17 +95,16 @@ def verify_canvas_view_xr_to_geo_xr_handoff(page: Page) -> dict[str, Any]:
     )
     try:
         trigger = page.get_by_role(
-            "button", name="2D Mode: XR Mode", exact=True
+            "button", name="Canvas View Mode: XR Mode", exact=True
         )
         trigger.wait_for(state="visible", timeout=30_000)
         trigger.click(timeout=30_000)
         surface = page.get_by_role("button", name="Surface Mode", exact=True)
         surface.wait_for(state="visible", timeout=30_000)
-        # XR is the active child, so the shared menu expands Surface Mode on
-        # its next frame. Clicking during that transition can collapse it.
-        expect(surface).to_have_attribute(
-            "aria-expanded", "true", timeout=30_000
-        )
+        # The active renderer can own automatic expansion; open Surface explicitly.
+        if surface.get_attribute("aria-expanded") == "false":
+            surface.click(timeout=30_000)
+        expect(surface).to_have_attribute("aria-expanded", "true", timeout=30_000)
         parent_expanded = surface.get_attribute("aria-expanded")
         geo_xr = page.get_by_role("button", name="Geo+XR Mode", exact=True)
         geo_xr.wait_for(state="visible", timeout=30_000)
@@ -111,7 +112,7 @@ def verify_canvas_view_xr_to_geo_xr_handoff(page: Page) -> dict[str, Any]:
             raise AssertionError("Geo+XR Mode was disabled in the real menu")
         geo_xr.click(timeout=30_000)
         page.get_by_role(
-            "button", name="2D Mode: Geo+XR Mode", exact=True
+            "button", name="Canvas View Mode: Geo+XR Mode", exact=True
         ).wait_for(state="visible", timeout=30_000)
         handoff = wait_for_canvas_view_geo_xr_handoff(page, source_case)
     finally:
@@ -165,7 +166,6 @@ def run_flight_runtime_verifications(
     websocket_probe_route_hits: list[str],
 ) -> dict[str, Any]:
     state: dict[str, Any] = {}
-
     def source_apply() -> dict[str, Any]:
         prepare_stable_candidate_page(page, target_url)
         prepare_source_files_selection_surface(page)
@@ -177,14 +177,26 @@ def run_flight_runtime_verifications(
         wait_for_flight_hud_activation(page)
         hud = page.locator('[data-kg-flight-sim-hud="1"]').first
         expect(hud).to_be_visible(timeout=5_000)
-        page.wait_for_selector(
-            'canvas[data-kg-flight-sim-first-frame="1"]',
-            timeout=120_000,
-        )
+        def read_frame_debug(close_activation: bool = False) -> dict[str, Any]:
+            try:
+                native = _read_ready_frame_debug(page) | ({"timedActivation": _read_source_activation_diagnostic(page)} if close_activation else {})
+                native["firstFrameProof"] = page.evaluate("() => { const proof = window.__kgFlightSimFirstFrameProof; return proof ? Object.fromEntries(['startedAtMs', 'firstFrameAtMs', 'preExisting', 'firstFrameClassName', 'firstFrameSurface'].map(key => [key, typeof proof[key] === 'string' ? proof[key].slice(0, 160) : proof[key] ?? null])) : null }")
+                return native
+            except Exception as error:
+                return {"diagnosticError": str(error)[:500]}
+        before_first_frame = read_frame_debug()
+        try:
+            page.wait_for_selector(
+                'canvas[data-kg-flight-sim-first-frame="1"]',
+                timeout=120_000,
+            )
+        except Exception as error:
+            raise AssertionError(f"{error}; native ready-frame diagnostic: before={before_first_frame}, after={read_frame_debug(True)}") from error
+        source_application["timedActivation"] = read_frame_debug(True)
         runtime_identity = page.evaluate(
             """
             async () => {
-              const identity = await window.__kgFlightSimBrowserProof.importModule('agentic-graph-runtime-identity')
+              const identity = await window.__kgFlightSimBrowserProof.importModule('agenticGraphRuntimeIdentity')
               return identity.getAgenticGraphRuntimeIdentity()
             }
             """
@@ -246,7 +258,7 @@ def run_flight_runtime_verifications(
         ):
             raise AssertionError(
                 "Flight first playable frame was not newly produced within "
-                f"the source-apply deadline: {proof}"
+                f"the source-apply deadline: {proof}; timed activation={state['source']['sourceApplication'].get('timedActivation')}"
             )
         initial, ready_held = verify_initial_ready_hold(page)
         initial_airspeed = aircraft_airspeed(initial)

@@ -9,6 +9,7 @@ import { beginWebsiteImportExplorerUpdates, isWebsiteImportExplorerUpdate } from
 import { projectWorkspaceEntriesToSourceFilesExplorer, resolveWorkspaceSourceRootPaths } from '@/features/workspace-fs/workspaceSourceRoots'
 import type { WebsiteImportManifestV1, WebsiteImportNode } from '@/lib/websites/server/websiteImportTypes'
 import { parseCanvasWorkspaceFrontmatterPreset } from '@/lib/markdown/frontmatter'
+import { IMPORT_INDEX_NAME, importInventoryPath, readImportInventory } from '@/features/workspace-fs/importInventory'
 
 const node = (id: string, url: string): WebsiteImportNode => ({
   nodeId: id,
@@ -17,6 +18,13 @@ const node = (id: string, url: string): WebsiteImportNode => ({
   status: 'ok',
   artifacts: {},
 })
+
+function assertCanonicalInventory(path: string, text: string) {
+  const rows = readImportInventory(text)
+  assert.ok(rows.length > 0, 'generated inventory must contain canonical source rows')
+  for (const row of rows) assert.equal(importInventoryPath(row.source), path, 'inventory rows must belong to their canonical collection')
+  return rows
+}
 
 test('a large progressive import initializes and inventories the workspace once', async () => {
   const stored = createMemoryWorkspaceFs({ initialEntries: [{ path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 }] })
@@ -191,8 +199,13 @@ test('a running import refreshes and expands the first completed page before ter
       return fs.createFolder(args)
     },
     async createFile(args: Parameters<typeof fs.createFile>[0]) {
-      assert.equal(isWebsiteImportExplorerUpdate(`${args.parentPath}/${args.name}`), true,
-        'the first file mutation must already be guarded before its notification')
+      const path = `${args.parentPath}/${args.name}`
+      if (args.name === IMPORT_INDEX_NAME) assertCanonicalInventory(path, args.text)
+      // Inventory reconciliation also catalogs existing sources outside this crawl.
+      if (args.name !== IMPORT_INDEX_NAME || path.startsWith(`${root}/`)) {
+        assert.equal(isWebsiteImportExplorerUpdate(path), true,
+          'the first file mutation must already be guarded before its notification')
+      }
       return fs.createFile(args)
     },
   }
@@ -381,12 +394,13 @@ test('a discovered page materializes at its projected row without a new crawl fo
   const session = { id: 1, url: rootUrl, sourcePath: '/collection/index.md', pages: urls.map(url => ({ url, path: new URL(url).pathname })),
     selected: new Set<string>(), visited: new Set<string>(), busy: false, error: '', limited: false, query: '' }
   await fs.ensureSeed()
-  const initialFileCount = (await fs.listEntries()).filter(entry => entry.kind === 'file').length
+  const initialFilePaths = new Set((await fs.listEntries()).filter(entry => entry.kind === 'file').map(entry => entry.path))
   const projection = projectWebsiteImportTree(await fs.listEntries(), sources, session)
+  const destinationPaths = urls.map(url => [...projection.pageUrls].find(([, value]) => value === url)![0])
   const originalFetch = globalThis.fetch
   try {
     for (const [index, url] of urls.entries()) {
-      const destinationPath = [...projection.pageUrls].find(([, value]) => value === url)![0]
+      const destinationPath = destinationPaths[index]!
       const opened: string[] = [], importId = `capture-${index}`
       const manifest: WebsiteImportManifestV1 = { version: 1, importId, rootUrl, status: 'done', startedAtMs: 1,
         nodes: [node('selected', url), node('unrequested', 'https://example.invalid/unrequested')], errors: [] }
@@ -413,7 +427,21 @@ test('a discovered page materializes at its projected row without a new crawl fo
       assert.deepEqual([...saved.pageUrls].filter(([, value]) => value === url).map(([path]) => path), [destinationPath])
     }
     const entries = await fs.listEntries()
-    assert.equal(entries.filter(entry => entry.kind === 'file').length, initialFileCount + 2, 'only the two addressed pages are added')
+    const addedFiles = entries.filter(entry => entry.kind === 'file' && !initialFilePaths.has(entry.path))
+    assert.deepEqual(addedFiles.filter(entry => entry.name !== IMPORT_INDEX_NAME).map(entry => entry.path).sort(),
+      [...destinationPaths].sort(), 'only the two addressed pages are added alongside canonical inventory documents')
+    for (const inventory of addedFiles.filter(entry => entry.name === IMPORT_INDEX_NAME)) {
+      assertCanonicalInventory(inventory.path, String(await fs.readFileText(inventory.path)))
+    }
+    for (const [index, url] of urls.entries()) {
+      const path = importInventoryPath(url)
+      const rows = assertCanonicalInventory(path, String(await fs.readFileText(path)))
+      const row = rows.find(item => item.source === url)
+      assert.ok(row, 'the canonical inventory must retain each imported page')
+      assert.equal(row.status, 'imported')
+      assert.deepEqual(row.outputs?.map(output => output.path), [destinationPaths[index]])
+      assert.equal(row.outputs?.[0]?.receipt?.identity, `url:${url}`)
+    }
     assert.equal(entries.some(entry => /capture-|website\.(sitemap|crawl)/.test(entry.path)), false)
     assert.equal(await fs.readFileText('/collection/index.md'), '# Original index')
   } finally { globalThis.fetch = originalFetch }

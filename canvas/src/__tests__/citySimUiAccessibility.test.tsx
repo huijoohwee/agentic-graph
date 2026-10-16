@@ -7,15 +7,23 @@ import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
 import { CityPoiZoningControls } from '@/features/game-city-sim/CityPoiZoningControls'
 import { CitySimFloatingPanelView } from '@/features/game-city-sim/CitySimFloatingPanelView'
+import { createInitialCityGameplay } from '@/features/game-city-sim/citySimGameplay'
 import { resetCityInputQueueForTests, type CityInputSource } from '@/features/game-city-sim/citySimInputRuntime'
+import { readCitySimSnapshot } from '@/features/game-city-sim/citySimRuntime'
+import { resolveRegionalPoiProfile } from '@/features/geospatial/regionalPoiProfileCatalog'
 import { resetCitySimRuntimeForTests } from './citySimAuthoritativeSource'
 import {
   publishCitySimFailure,
   publishCitySimSnapshot,
   publishCitySimSuccess,
 } from '@/features/game-city-sim/citySimRuntimeState'
+import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
+import {
+  readAuthoritativeCitySimDocument,
+  readAuthoritativeCitySimSource,
+} from './citySimAuthoritativeSource'
 
 export async function testCitySimPoiControlsExposeCanonicalIdentityAndNormalizeInput() {
   const { dom, restore } = initJsdomHarness()
@@ -123,6 +131,81 @@ export async function testCitySimOperationStatusIsPoliteWithoutTickFlooding() {
   } finally {
     await unmountReactRoot(root)
     container.remove()
+    restore()
+  }
+}
+
+export async function testCityGameplayGoalCanBeReachedWithoutSelectingAMapPoi() {
+  const { dom, restore } = initJsdomHarness()
+  const container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container)
+  const previousStore = useGraphStore.getState()
+  const document = readAuthoritativeCitySimDocument()
+  const city = readAuthoritativeCitySimSource().city
+  const profile = resolveRegionalPoiProfile(city.regionalPoiProfileId)
+  resetCitySimRuntimeForTests({ webglSupported: true })
+  resetCityInputQueueForTests()
+
+  try {
+    useGraphStore.setState({
+      markdownDocumentName: '/docs/workspace-seeds/agentic-graph-game-city-building-sim-demo.md',
+      markdownDocumentText: document,
+    } as never)
+    const gameplay = createInitialCityGameplay(city)
+    const goalLabel = profile.pois.find(poi => poi.id === gameplay.taskPoiId)?.label
+    assert.ok(goalLabel)
+    publishCitySimSnapshot({
+      active: true,
+      phase: 'stopped',
+      gameplay,
+    })
+    await mountReactRoot(root, <CitySimFloatingPanelView />)
+
+    const goalAction = container.querySelector(
+      '[data-kg-city-gameplay-goal-action="1"]',
+    ) as HTMLButtonElement | null
+    assert.ok(goalAction, 'the marked goal has a direct travel action')
+    assert.equal(goalAction.disabled, false)
+    assert.equal(goalAction.textContent, `Go to ${goalLabel}`)
+    assert.equal(
+      goalAction.getAttribute('aria-label'),
+      `Travel to the next goal at ${goalLabel}`,
+    )
+    const controls = container.querySelector(
+      '[data-kg-city-gameplay-controls="1"]',
+    ) as HTMLDetailsElement | null
+    assert.ok(controls, 'travel instructions are available in a disclosure')
+    assert.equal(controls.querySelector('summary')?.textContent, 'How to travel')
+    assert.equal(controls.open, false, 'instructions start collapsed to preserve panel space')
+    assert.match(controls.textContent ?? '', /selecting a POI on the map or from Regional POI/)
+    assert.match(controls.textContent ?? '', /Tab, then Enter or Space/)
+    assert.equal(
+      container.querySelector('[data-kg-city-gameplay-travel="1"]'),
+      null,
+      'an optional detour control is hidden until another POI is selected',
+    )
+
+    await act(async () => {
+      Simulate.click(goalAction)
+    })
+
+    const moved = readCitySimSnapshot().gameplay
+    assert.ok(moved)
+    assert.equal(moved.playerPoiId, gameplay.taskPoiId)
+    assert.equal(moved.completedTasks, gameplay.completedTasks + 1)
+    assert.notEqual(moved.taskPoiId, gameplay.taskPoiId)
+    assert.equal(
+      container.querySelector('[data-kg-city-gameplay-overlay="1"]')
+        ?.getAttribute('data-kg-city-gameplay-player'),
+      gameplay.taskPoiId,
+      'the panel follows the player to the goal POI',
+    )
+  } finally {
+    await unmountReactRoot(root)
+    container.remove()
+    useGraphStore.setState(previousStore, true)
+    resetCitySimRuntimeForTests({ webglSupported: true })
     restore()
   }
 }

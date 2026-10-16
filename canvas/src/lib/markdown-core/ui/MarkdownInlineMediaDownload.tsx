@@ -8,7 +8,7 @@ import {
 import { buildMarkdownMediaDownloadHref, deriveMarkdownMediaDownloadFilename, type MarkdownMediaDownloadKind } from './mediaDownload'
 
 const DOWNLOAD_CLASS = [
-  `${UI_RESPONSIVE_MEDIA_OVERLAY_ACTION_SMALL_CLASSNAME} absolute right-1 top-1 z-10 rounded border shadow-sm`,
+  `${UI_RESPONSIVE_MEDIA_OVERLAY_ACTION_SMALL_CLASSNAME} absolute right-1 top-1 z-10 rounded border shadow-none`,
   UI_THEME_TOKENS.panel.border,
   UI_THEME_TOKENS.panel.bg,
   UI_THEME_TOKENS.text.primary,
@@ -39,7 +39,7 @@ export const renderInlineMediaWithDownload = (args: {
           try { event.stopPropagation() } catch { void 0 }
         }}
       >
-        <Download className={UI_RESPONSIVE_MEDIA_OVERLAY_ACTION_ICON_CLASSNAME} strokeWidth={1.8} aria-hidden="true" />
+        <Download className={UI_RESPONSIVE_MEDIA_OVERLAY_ACTION_ICON_CLASSNAME} aria-hidden="true" />
       </a>
     </span>
   )

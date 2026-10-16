@@ -72,6 +72,7 @@ export function useTimelinePreviewCollection(args: {
       openUrl: sourceItem.openUrl,
       source: 'video-sequence',
       src: sourceItem.src,
+      srcDoc: sourceItem.srcDoc,
       videoSequenceSource: sourceItem.source,
     }))
     const out = [...previewItems]

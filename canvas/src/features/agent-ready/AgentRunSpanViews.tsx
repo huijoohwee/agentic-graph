@@ -57,7 +57,7 @@ export function AgentRunSpanViews({ rows, selectedId, onSelect, search = '', met
   for (const { span } of rows) { const scope = span.timing.scope ?? ''; ends.set(scope, Math.max(ends.get(scope) ?? 1, (span.timing.offset ?? 0) + (span.timing.inclusive ?? 0))) }
   return <section aria-label="Span columns" data-agent-span-columns="" className="min-w-0 overflow-x-auto">
     <section style={{ minWidth: 348 + columns.length * 156 }}>
-    <header className="grid items-center gap-3 border-b border-l-4 border-b-[var(--kg-border)] border-l-transparent px-3 py-2 text-xs font-medium" style={{ gridTemplateColumns }}>
+    <header className="grid items-center gap-3 border-b border-x border-b-[var(--kg-border)] border-x-transparent px-3 py-2 text-xs font-medium" style={{ gridTemplateColumns }}>
       <span>Span</span>{columns.map(({ key, label }) => <span key={key} data-span-metric-heading={key} className="truncate" title={label}>{label}</span>)}
     </header>
     <ul ref={container} role="tree" aria-label="Span hierarchy" className="min-w-0 py-2">
@@ -95,7 +95,7 @@ export function AgentRunSpanViews({ rows, selectedId, onSelect, search = '', met
               <span aria-hidden="true" className="inline-block w-4 text-center font-mono">{expanded ? '−' : '+'}</span>
             </button>}</span>
             <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border"
-              style={{ background: tone.fill, color: tone.stroke, borderColor: tone.stroke }}><MainPanelTypeIcon iconKey={iconKey} className="h-5 w-5" strokeWidth={1.6} /></span>
+              style={{ background: tone.fill, color: tone.stroke, borderColor: tone.stroke }}><MainPanelTypeIcon iconKey={iconKey} className="h-5 w-5" /></span>
             <span className="min-w-0" data-span-description="">
               <span className="block truncate text-sm font-medium leading-5" title={span.operation}>{span.operation}</span>
               <span className="block truncate text-xs leading-4 opacity-70" aria-label="Span resources" title={summary}>{summary}</span>

@@ -1,3 +1,4 @@
+import { readSourceFilesBootstrapSource } from './helpers/sourceFilesBootstrapSource'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import Dexie from 'dexie'
@@ -151,7 +152,7 @@ export async function testStorageEnhancementProperty01DurableWritePrecedesTransp
 
 // Feature: agentic-graph-storage-sync-enhancement, Property 2: Offline retention preserves all local work
 export function testStorageEnhancementProperty02OfflineRetentionPreservesAllLocalWork() {
-  const bootstrap = sourceText('src/features/source-files/SourceFilesPersistenceBootstrap.tsx')
+  const bootstrap = readSourceFilesBootstrapSource(resolve(process.cwd(), 'src/features/source-files/SourceFilesPersistenceBootstrap.tsx'))
   assert(
     bootstrap.includes('if (!readAgenticGraphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) return null'),
     'expected offline mode to gate only the network follow-up',

@@ -7,6 +7,10 @@ export function CanvasRootRuntime(props: {
   uiToolbarOpacity: number
 }) {
   const { uiOverlayOpacity, uiPanelOpacity, uiToolbarOpacity } = props
+  const iconStrokeWidth = useGraphStore(s => s.uiIconStrokeWidth)
+  React.useEffect(() => {
+    document.documentElement.style.setProperty('--kg-icon-stroke-width', String(iconStrokeWidth))
+  }, [iconStrokeWidth])
   const setLifecycleStage = useGraphStore(s => s.setLifecycleStage)
 
   React.useEffect(() => {

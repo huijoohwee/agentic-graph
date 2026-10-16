@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { testTimelinePlayhead } from './timelinePlayhead.test'
 import { resolve } from 'node:path'
 import { buildVideoSequenceTimelineZoomTicks, resolveVideoSequenceTimelineAppendSpacePercent, resolveVideoSequenceTimelineContentZoom, resolveVideoSequenceTimelineFrameRate, resolveVideoSequenceTimelineScaleDurationSeconds, resolveVideoSequenceTimelineScaleMaxMinutes, resolveVideoSequenceTimelineWorkspaceLayout, resolveVideoSequenceTimelineZoomTickStepSeconds } from '@/components/timeline/videoSequenceTimelineZoom'
 import { resolveTimelineTransportGestureZoomStepCount, resolveTimelineTransportNextZoomIndex, resolveTimelineTransportZoom } from '@/components/timeline/timelineTransport'
@@ -10,6 +11,7 @@ function expectSourceIncludes(sourceText: string, tokens: readonly string[], mes
   for (const token of tokens) if (!sourceText.includes(token)) throw new Error(`${message}: ${token}`)
 }
 export function testVideoSequenceTimelineEditorEnhancementContracts() {
+  testTimelinePlayhead()
   const rulerText = readSource('components', 'timeline', 'VideoSequenceTimelineRuler.tsx')
   const rulerCssText = readSource('components', 'timeline', 'VideoSequenceTimelineRuler.css')
   const rulerTicksText = readSource('components', 'timeline', 'VideoSequenceTimelineRulerTicks.tsx')
@@ -21,7 +23,8 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
   const denseFbfCssText = readSource('components', 'timeline', 'VideoSequenceTimelineDenseFbf.css')
   const rulerGeometryText = readSource('components', 'timeline', 'videoSequenceTimelineRulerGeometry.ts')
   const mermaidTransportCssText = readSource('components', 'timeline', 'TimelineTransportControlsMermaidGantt.css')
-  const transportCssText = ['TimelineTransportControls.css', 'TimelineTransportPlayer.css', 'TimelineTransportControlsMermaidGantt.css'].map(file => readSource('components', 'timeline', file)).join('\n')
+  const laneCssText = readSource('components', 'timeline', 'TimelineTransportLane.css')
+  const transportCssText = ['TimelineTransportControls.css', 'TimelinePlayhead.css', 'TimelineTransportPlayer.css', 'TimelineTransportControlsMermaidGantt.css', 'TimelineTransportLane.css'].map(file => readSource('components', 'timeline', file)).join('\n')
   const timelineTransportText = readSource('components', 'timeline', 'timelineTransport.ts')
   const videoSequenceToolButtonText = readSource('components', 'timeline', 'VideoSequenceTimelineToolButton.tsx')
   const transportText = readSource('components', 'timeline', 'TimelineTransportControls.tsx')
@@ -36,7 +39,8 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
   const contextCssText = readSource('features', 'gitgraph', 'GanttTimelineTransportClipContext.css')
   const mediaPlayerText = readSource('features', 'gitgraph', 'GanttTimelineTransportMediaPlayer.tsx')
   const shellText = readSource('features', 'gitgraph', 'GanttTimelineTransportShell.tsx')
-  const editRailCssText = `${denseFbfCssText}\n${rulerCssText}`
+  const editRailCssText = `${laneCssText}\n${denseFbfCssText}\n${rulerCssText}`
+  if (!transportText.includes("import './TimelineTransportLane.css'") || [denseFbfCssText, mermaidTransportCssText].some(css => css.includes('.timeline-transport-time-axis-bar'))) throw new Error('expected one shared transport lane/bar style owner')
   expectSourceIncludes(rulerText, [
     'data-kg-video-sequence-active-track', 'data-kg-video-sequence-drag-mode={dragging ? draggingMode',
     'data-kg-compact-source-placeholder={compactSourcePlaceholder ?',
@@ -105,7 +109,7 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
   ], 'expected semantic time-axis tick token');
   expectSourceIncludes(rulerTimeAxisCssText, [
     '.timeline-transport-ruler--video-sequence .timeline-transport-ruler-tick',
-    'height: 24px',
+    'height: var(--kg-video-sequence-axis-height)',
     'justify-content: flex-start',
     'font-size: var(--kg-text-xs)',
     'font-variant-numeric: tabular-nums',
@@ -121,7 +125,7 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
     '.timeline-video-sequence-grid',
     '--kg-video-sequence-lane-sidebar-width: 112px',
     'grid-template-columns: var(--kg-video-sequence-lane-sidebar-width, 112px) minmax(0, 1fr)',
-    'repeat-x 0 24px / 25% calc(100% - 24px)',
+    'repeat-x 0 var(--kg-video-sequence-axis-height, 24px) / 25% calc(100% - var(--kg-video-sequence-axis-height, 24px))',
     '.timeline-video-sequence-ruler-scroll',
     'overflow: auto',
     '-webkit-overflow-scrolling: touch',
@@ -141,12 +145,7 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
     'cursor: ew-resize',
     'pointer-events: auto',
     'touch-action: none',
-    'z-index: 7',
-    'z-index: 8',
-    'top: -24px',
-    'top: 50%',
-    'transform: translate(-50%, -50%)',
-    '.timeline-video-sequence-ruler-playhead-marker',
+    'z-index: 20', 'top: 0', 'transform: translateX(-50%)', '.timeline-playhead-control.timeline-transport-playhead-marker',
     'padding-inline: 18px 12px',
     'border-bottom: var(--kg-surface-border)',
     'margin-top: 0',
@@ -253,16 +252,12 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
     'text-overflow: ellipsis',
   ], 'expected clip metadata style')
   expectSourceIncludes(editRailCssText, [
-    '--kg-compact-source-media-bar-height: calc(var(--kg-main-toolbar-height, 38px) * 1.5)',
+    '--kg-compact-source-media-bar-height: var(--kg-timeline-bar-height, var(--kg-toolbar-compact-surface-height))',
     '--kg-compact-source-placeholder-bar-height: var(--kg-compact-source-media-bar-height)',
     '.timeline-transport-track-clip[data-kg-timeline-clip-compact="1"]:not(.timeline-transport-track-clip--lane-fbf)',
     'height: var(--kg-compact-source-media-bar-height)',
-    'translate: 0 calc((var(--kg-video-sequence-lane-height, 61px) - var(--kg-compact-source-media-bar-height)) / 2)',
-    'border-color: var(--kg-border, rgb(226 232 240 / 1))',
-    'border-radius: 6px',
-    'background: color-mix(in srgb, var(--kg-panel-bg, #fff) 94%, var(--kg-canvas-accent, #2563eb) 3%)',
-    '.timeline-transport-track-clip--lane-image[data-kg-timeline-clip-compact="1"]', 'var(--kg-canvas-accent, #2563eb) 36%', 'max-width: 100%', 'color-mix(in srgb, var(--kg-canvas-accent, rgb(37 99 235 / 1)) 78%, var(--kg-text-primary, #0f172a) 22%)', 'font-weight: 400', 'background: color-mix(in srgb, var(--kg-panel-bg, #fff) 86%, transparent)', 'backdrop-filter: blur(2px)',
-    'border-width: 2px',
+    'translate: 0 calc((var(--kg-video-sequence-lane-height, 61px) - var(--kg-timeline-bar-height)) / 2)',
+    'border-radius: var(--island-radius)', 'border: var(--kg-surface-border)', 'background: var(--island-bg)', 'color: var(--kg-text-secondary)',
     'border-color: var(--kg-canvas-accent, rgb(59 130 246 / 1))',
     'box-shadow: none',
     'z-index: 9',
@@ -283,15 +278,6 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
     'cursor: grab',
     'cursor: grabbing',
     'background: transparent',
-    'data-kg-compact-source-placeholder="1"',
-    'height: var(--kg-compact-source-placeholder-bar-height)',
-    'border-style: dashed',
-    'var(--kg-canvas-accent, #2563eb) 22%',
-    'repeating-linear-gradient(90deg, transparent 0 14px',
-    'rgb(37 99 235 / 0.035)',
-    'var(--kg-canvas-accent, #2563eb) 3%',
-    'var(--kg-text-secondary, #64748b) 74%',
-    '.timeline-transport-track-clip[data-kg-compact-source-placeholder="1"].timeline-transport-track-clip--selected',
     'top: calc(100% + 6px)',
     'overflow: visible',
     'transform-origin: top center',
@@ -300,7 +286,7 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
     'left: var(--kg-video-sequence-clip-thumbnail-preview-left, 50%)',
     'inset: 0',
     '.timeline-transport-track-handle',
-    'top: 3px', 'left: 8px', 'top: -3px', 'bottom: -3px', 'data-kg-video-sequence-drag-mode="resize-start"', 'data-kg-video-sequence-clip-thumbnail-preview-suppressed="1"',
+    'position: static', 'top: -3px', 'bottom: -3px', 'data-kg-video-sequence-drag-mode="resize-start"', 'data-kg-video-sequence-clip-thumbnail-preview-suppressed="1"',
     'z-index: 14',
     'width: 6px',
     'cursor: ew-resize',
@@ -376,9 +362,7 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
   if (mermaidTransportCssText.includes('0 0 0 2px rgb(37 99 235 / 0.44)')) {
     throw new Error('expected scoped compact media selected chrome to avoid the heavy outer ring')
   }
-  if (!denseFbfCssText.includes('var(--kg-canvas-accent, #2563eb) 28%')) {
-    throw new Error('expected canonical placeholder selected chrome to keep the soft dashed border tone')
-  }
+  if (denseFbfCssText.includes('[data-kg-compact-source-placeholder="1"]') || denseFbfCssText.includes('backdrop-filter: blur(2px)')) throw new Error('expected compact clips to reuse neutral shared surfaces without placeholder or label-chip variants')
   if (
     denseFbfCssText.includes('inset 0 0 0 1px color-mix(in srgb, var(--kg-canvas-accent') ||
     mermaidTransportCssText.includes('inset 0 0 0 1px color-mix(in srgb, var(--kg-canvas-accent')
@@ -445,7 +429,7 @@ export function testVideoSequenceTimelineEditorEnhancementContracts() {
     'flex: 1 1 auto',
     '.timeline-transport-chrome--mermaid-gantt .timeline-transport-ruler--video-sequence',
     'border-top: 0',
-    'min-height: calc(76px + (var(--kg-video-sequence-lane-count, 4) * var(--kg-video-sequence-lane-height)))',
+    'min-height: 0',
     '.timeline-transport-chrome--mermaid-gantt .timeline-video-sequence-ruler-scroll-content',
     '.timeline-transport-chrome--mermaid-gantt .timeline-video-sequence-ruler-surface',
     '.timeline-transport-chrome--mermaid-gantt .timeline-transport-ruler-tick:not([data-kg-video-sequence-major-tick="1"]) .timeline-transport-ruler-tick-label',

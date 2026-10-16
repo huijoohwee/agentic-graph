@@ -1,3 +1,4 @@
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import React from 'react'
 import { DashboardMarkdown } from './DashboardMarkdown'
 import { useDashboardCardDrag } from './DashboardWidgetBoard'
@@ -51,7 +52,7 @@ export function DashboardMetricTile(input: {
   return (
     <section
       className={[
-        'relative min-h-[78px] min-w-0 rounded-md border px-3 py-2 shadow-sm transition-transform duration-150',
+        'relative min-h-[78px] min-w-0 rounded-md border px-3 py-2 shadow-none transition-transform duration-150',
         colors.chip,
         WIDGET_SELECTION_SURFACE_CLASS_NAME,
         metricDragVisualState.className,
@@ -145,7 +146,7 @@ function DashboardTableRows(props: {
           className={[
             'border-b border-[var(--kg-border)] px-2 py-2 last:border-b-0',
             rowMovable ? 'cursor-grab select-none active:cursor-grabbing' : '',
-            selected ? 'rounded border-b-transparent bg-blue-50/80' : '',
+            uiSelectedRowStateClassName(selected),
             dragging ? 'opacity-45' : '',
           ].join(' ')}
           data-kg-dashboard-table-row={row.id}
@@ -246,7 +247,7 @@ export function DashboardCardView(input: {
   return (
     <article
       className={[
-        `relative min-w-0 rounded-md border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-4 shadow-sm`,
+        `relative min-w-0 rounded-md border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-4 shadow-none`,
         'transition-transform duration-150',
         WIDGET_SELECTION_SURFACE_CLASS_NAME,
         cardDragVisualState.className,

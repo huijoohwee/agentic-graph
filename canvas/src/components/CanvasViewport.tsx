@@ -51,6 +51,8 @@ import {
 } from '@/lib/cards/mediaPreviewSurfaceSelection'
 import { XrPhysicsSemanticMediaSurface } from '@/features/three/XrPhysicsSemanticMediaSurface'
 import { useEmbeddedCanvasChatCommandReceiver } from '@/features/canvas/useEmbeddedCanvasChatCommandReceiver'
+import { useSupplyChainOverviewRoute } from '@/features/supply-chain/useSupplyChainOverviewRoute'
+import { SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH } from '@/features/supply-chain/supplyChainOverviewSource'
 const PythonLearningCanvasStatus = React.lazy(() => import('@/features/python-learning/LearningCanvasStatus').then(module => ({ default: module.PythonLearningCanvasStatus })))
 const LearningPlanViewLazy = React.lazy(() => import('@/features/python-learning/LearningPlanView'))
 const CanvasViewportGeospatialOverlayLazy = React.lazy(loadCanvasViewportGeospatialOverlay)
@@ -61,6 +63,7 @@ const GalleryCanvasLazy = React.lazy(() => importWithRetry(() => import('@/compo
 const MediaCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/MediaCanvas'), { retries: 2, retryDelayMs: 50 }))
 const MultiDimTableSurfaceLazy = React.lazy(() => importWithRetry(() => import('@/features/markdown-workspace/main/viewer/MultiDimTableSurface'), { retries: 2, retryDelayMs: 50 }).then(mod => ({ default: mod.MultiDimTableSurface })))
 const CanvasWorkspaceDataViewFloatingRegistrationBridgeLazy = React.lazy(() => importWithRetry(() => import('@/features/markdown-workspace/main/viewer/CanvasWorkspaceDataViewFloatingRegistrationBridge'), { retries: 2, retryDelayMs: 50 }).then(mod => ({ default: mod.CanvasWorkspaceDataViewFloatingRegistrationBridge })))
+const SequenceCanvasLazy = React.lazy(() => import('@/features/sequence/SequenceCanvas').then(module => ({ default: module.SequenceCanvas })))
 const MermaidGitGraphCanvasLazy = React.lazy(() => import('@/components/MermaidGitGraphCanvas'))
 const MermaidGanttCanvasLazy = React.lazy(() => import('@/components/MermaidGanttCanvas'))
 const FlowCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/FlowCanvas'), { retries: 2, retryDelayMs: 50 }))
@@ -73,6 +76,7 @@ const GameFpsHudLazy = React.lazy(() => import('@/features/game-fps/GameFpsHud')
 const MinimapLazy = React.lazy(() => import('@/features/minimap/Minimap'))
 const StrybldrTimelineBottomPanelLazy = React.lazy(() => import('@/features/strybldr/StrybldrTimelineBottomPanel').then(mod => ({ default: mod.StrybldrTimelineBottomPanel })))
 const LaunchSpotlightLazy = React.lazy(() => import('@/features/spotlight/LaunchSpotlight'))
+const SupplyChainOverviewLazy = React.lazy(() => import('@/features/supply-chain/SupplyChainOverview').then(module => ({ default: module.SupplyChainOverview })))
 const PaywallOverlayLazy = React.lazy(async (): Promise<{ default: React.ComponentType<{ portalTarget: HTMLElement | null }> }> => ({
   default: (await import('@/features/payments/PaywallOverlay')).PaywallOverlay,
 }))
@@ -100,6 +104,7 @@ function resolveLiveCanvasHeroEmbedPreviewSurface(variant: CanvasViewportVariant
   return isCanvas2dRendererId(renderer) ? getCanvas2dSurfaceId(renderer) : null
 }
 export function CanvasViewport(props: CanvasViewportProps) {
+  useSupplyChainOverviewRoute(props.variant)
   const inspection = useAgentRunWorkspace()
   const activityOpen = useGraphStore(state => !state.bottomSurfaceCollapsed && state.bottomSurfaceTab === 'activity')
   const learning = React.useSyncExternalStore(pythonLearningRuntime.subscribe, pythonLearningRuntime.read, pythonLearningRuntime.read)
@@ -143,12 +148,17 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
   const cityMapLibreSurfaceRequested = citySimActive
     || (citySimSourceIntent && citySim.lastResult?.operation !== 'exit')
   const gameplayOverlayActive = citySimActive || gameFpsActive || flightSimActive
-  const geospatialCompositionEnabled = geospatialModeEnabled
   const sourceFilesBootstrap = useSourceFilesBootstrapSnapshot()
   const sourceFilesBootstrapReady = sourceFilesBootstrap.phase === 'ready'
   const gameFpsHudVisible = gameFpsActive && sourceFilesBootstrapReady
   const flightSimHudVisible = flightSimActive && sourceFilesBootstrapReady
   const explorerActivePath = useMarkdownExplorerStore(s => s.activePath)
+  const supplyChainOverviewActive = variant === 'workspace'
+    && explorerActivePath === SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH
+  // This authored source owns a Geo+XR presentation. Keep its map on the
+  // shared geospatial host even when the user has not enabled the global map
+  // preference; leaving this source restores the user's normal canvas mode.
+  const geospatialCompositionEnabled = geospatialModeEnabled || supplyChainOverviewActive
   useFlightSimSurfacePreload({
     activePath: explorerActivePath,
     sourceFiles,
@@ -345,7 +355,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
                   ? 'Canvas Preview Only'
                   : 'Canvas viewport'}
     >
-      <CanvasViewContainer configurable={variant === 'workspace' && !learningScene} sizing={learningScene ? 'full' : undefined}><React.Suspense fallback={null}>
+      <CanvasViewContainer configurable={variant === 'workspace' && !learningScene && !supplyChainOverviewActive} sizing={learningScene || supplyChainOverviewActive ? 'full' : undefined}><React.Suspense fallback={null}>
         {liveCanvasHeroVisible && liveCanvasHeroSource ? (
           <LiveCanvasHeroPresetStageLazy source={liveCanvasHeroSource} sourceFiles={sourceFiles}
             visible={liveCanvasHeroVisible} onEnter={dismissLiveCanvasHero} />
@@ -399,6 +409,9 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
                 </section>
                 <section className={`absolute inset-0 ${active2dSurface === 'gitGraph' ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`} aria-hidden={active2dSurface !== 'gitGraph'}>
                   {active2dSurface === 'gitGraph' ? <MermaidGitGraphCanvasLazy active /> : null}
+                </section>
+                <section className={`absolute inset-0 ${active2dSurface === 'sequence' ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`} aria-hidden={active2dSurface !== 'sequence'}>
+                  {active2dSurface === 'sequence' ? <SequenceCanvasLazy active rendererId={canvas2dRenderer} mermaid={canvas2dRenderer === 'sequenceMermaid'} /> : null}
                 </section>
                 <section className={`absolute inset-0 ${active2dSurface === 'gantt' ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`} aria-hidden={active2dSurface !== 'gantt'}>
                   {active2dSurface === 'gantt' ? <MermaidGanttCanvasLazy active /> : null}
@@ -469,7 +482,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
                   },
                 } : undefined}
                 storyboardWidgetPanelsActive={geospatialCompositionEnabled && active2dSurface === 'storyboard'}
-                threeOverlayComposed={cityMapLibreSurfaceRequested ? false : geospatialXrModeEnabled}
+                threeOverlayComposed={geospatialXrModeEnabled}
               />
             )}
           </SemanticMediaFigure>
@@ -480,7 +493,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
             aria-label={`${CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].title} activation`}
             data-kg-canvas-heavy-runtime-intent={heavyRuntimeIntentSurface}
           >
-            <section className="w-full max-w-sm rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-5 py-5 text-left shadow-sm">
+            <section className="w-full max-w-sm rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-5 py-5 text-left shadow-none">
               <p className="text-xs font-semibold uppercase tracking-normal text-[var(--kg-text-secondary)]">
                 {CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].eyebrow}
               </p>
@@ -560,7 +573,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
                 className="absolute inset-0 z-[80] flex items-center justify-center bg-[var(--kg-canvas-bg)]"
                 aria-label={documentSwitchPendingLabel}
               >
-                <section className="rounded border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-4 py-3 text-center shadow-sm">
+                <section className="rounded border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-4 py-3 text-center shadow-none">
                   <p className="text-sm font-medium text-[var(--kg-text-primary)]">{documentSwitchPendingLabel}</p>
                   <p className="mt-1 text-xs text-[var(--kg-text-secondary)]">Preparing canvas view...</p>
                 </section>
@@ -569,6 +582,9 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
           </>
         ) : null}
       </React.Suspense>
+      {supplyChainOverviewActive && sourceFilesBootstrapReady && !documentSwitchBlocksCanvas && !homePreviewVisible ? (
+        <React.Suspense fallback={null}><SupplyChainOverviewLazy /></React.Suspense>
+      ) : null}
       {sourceFilesBootstrapReady && xrPhysicsRunReadyDemo && !gameplayOverlayActive && !homePreviewVisible ? <XrNativeControllerDemoHud /> : null}
       {gameFpsHudVisible ? <GameFpsHudLazy /> : null}
       {flightSimHudVisible ? (

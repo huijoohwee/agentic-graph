@@ -67,7 +67,7 @@ export function useGanttTimelineTransportShellModel(args: {
       'data-kg-video-sequence-timeline': args.timelineMode,
     } as React.HTMLAttributes<HTMLElement>,
     shellClassName: 'timeline-transport-shell--video-sequence',
-    showInlineProgress: false,
+    showInlineProgress: true,
     showRange: false,
     step: 1,
   }), [

@@ -1,5 +1,5 @@
 import React from 'react'
-import { pythonLearningRuntime } from '@/features/python-learning/learningRuntime'
+import { useWarehouseInspectionMode } from '@/features/python-learning/useWarehouseInspectionMode'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   CitySimPanelProjection,
@@ -31,8 +31,7 @@ const ImmersiveMediaPanelProjectionLazy = React.lazy(() =>
 )
 
 export function FloatingPanelXrSceneView({ view }: { view: FloatingPanelView }) {
-  const learning = React.useSyncExternalStore(pythonLearningRuntime.subscribe, pythonLearningRuntime.read, pythonLearningRuntime.read)
-  const drone = learning.document?.lessonId === 'drone'
+  const { available: warehouseAvailable } = useWarehouseInspectionMode()
   const xr = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
   const panel = view === 'media' ? <MediaCatalogPanelLazy />
     : view === 'animation' ? <XrAnimationFloatingPanelViewLazy />
@@ -60,14 +59,14 @@ export function FloatingPanelXrSceneView({ view }: { view: FloatingPanelView }) 
       >
         {immersiveMediaSurface ? <ImmersiveMediaPanelProjectionLazy surface={immersiveMediaSurface} /> : null}
         {projectionSurface ? <CitySimPanelProjection surface={projectionSurface} /> : null}
-        <div
+        <section
           className={`min-h-0 flex-1 ${view === 'media' ? 'overflow-auto' : 'overflow-hidden'}`}
           data-kg-city-sim-panel-scroll-owner={view === 'media' ? 'media' : undefined}
         >
           {panel}
-        </div>
+        </section>
       </section>
   )
-  return <React.Suspense fallback={null}>{view === 'media' && (xr || drone)
+  return <React.Suspense fallback={null}>{view === 'media' && (xr || warehouseAvailable)
     ? <XrWorkspaceMediaPanelLazy>{content}</XrWorkspaceMediaPanelLazy> : content}</React.Suspense>
 }

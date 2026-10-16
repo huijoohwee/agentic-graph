@@ -1,4 +1,4 @@
-import { normalizeSingleLineControlClassName } from 'grph-shared/ui/themeTokens'
+import { normalizeSingleLineControlClassName, normalizeUiIconStrokeWidth } from 'grph-shared/ui/themeTokens'
 import { normalizeUiTextClasses } from 'grph-shared/ui/typography'
 
 import type { StoreApi } from 'zustand'
@@ -193,7 +193,7 @@ export const createUiCoreActions = (set: SetGraph)=> ({
       }),
     setUiIconStrokeWidth: (width: number) =>
       set({
-        uiIconStrokeWidth: lsSetNum(LS_KEYS.iconStrokeWidth, Math.max(0.5, Math.min(4, width))),
+        uiIconStrokeWidth: lsSetFloat(LS_KEYS.iconStrokeWidth, normalizeUiIconStrokeWidth(width)),
       }),
     setUiIconColorClass: (className: string) =>
       set({

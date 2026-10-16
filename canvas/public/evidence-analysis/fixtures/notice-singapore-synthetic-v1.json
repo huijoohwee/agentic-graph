@@ -1,0 +1,19 @@
+{
+  "schema": "structured-notice/v1",
+  "classification": "synthetic",
+  "source": {
+    "id": "authored-notice-exercise",
+    "origin": "Authored synthetic structured-notice exercise in the Singapore study window; not an actual notice or official flight zone.",
+    "retrieved_at": "2026-10-03T10:31:00.000Z",
+    "rights": {"status": "synthetic-authored", "statement": "Project-authored synthetic geometry and times for local parser verification; no operational authority or real-notice provenance is claimed."}
+  },
+  "notice": {
+    "id": "synthetic-notice-01",
+    "label": "Singapore study notice · synthetic exercise",
+    "observed_at": "2026-10-03T10:30:00.000Z",
+    "geometry": {"type": "Polygon", "datum": "WGS84", "coordinates": [[[103.88, 1.23], [103.91, 1.23], [103.915, 1.25], [103.885, 1.255], [103.88, 1.23]]]},
+    "validity": {"fromUtc": "2026-10-03T10:37:00.000Z", "toUtc": "2026-10-03T10:53:00.000Z", "schedule": "continuous"},
+    "vertical": {"floor": {"value": 1000, "unit": "ft", "datum": "AMSL"}, "ceiling": {"value": 609.6, "unit": "m", "datum": "AMSL"}},
+    "freeText": null
+  }
+}

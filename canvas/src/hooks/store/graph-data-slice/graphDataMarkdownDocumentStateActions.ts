@@ -4,6 +4,7 @@ import { buildWorkspaceGraphMutationTransitionState } from '@/features/workspace
 import { preferCanonicalYamlFrontmatterFencedText } from '@/lib/markdown/frontmatter'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import { hashStringToHexSharedContentCached } from '@/lib/hash/textHashCache'
+import { normalizeComposedSourcePath } from '@/features/source-files/composedSourceSelection'
 import type { GetGraph, SetGraph } from './graphDataSliceAccess'
 
 function buildMarkdownDocumentSwitchMutationSemanticKey(args: {
@@ -32,6 +33,10 @@ export function createGraphDataMarkdownDocumentStateActions(set: SetGraph, get: 
       opts?: { autoEnableFrontmatter?: boolean; applyViewPreset?: boolean; forceRevision?: boolean },
     ) => {
       const state = get()
+      const previousDocumentPath = normalizeComposedSourcePath(state.markdownDocumentName)
+      const documentIdentityChanges = previousDocumentPath !== normalizeComposedSourcePath(name)
+      const resetDocumentTransport = documentIdentityChanges && !!previousDocumentPath
+        && normalizeComposedSourcePath(state.timelineTransportDocumentKey) === previousDocumentPath
       const nextText = state.markdownDocumentName === name
         ? preferCanonicalYamlFrontmatterFencedText({
             candidateText: String(text || ''),
@@ -80,6 +85,12 @@ export function createGraphDataMarkdownDocumentStateActions(set: SetGraph, get: 
         markdownTokensKey: null,
         markdownTokensMeta: null,
         markdownTokensStartLineOffset: null,
+        ...(documentIdentityChanges ? { mermaidDiagramSelectedRowKeyByKind: {}, gitGraphSelectedCommandLineIndex: null } : {}),
+        ...(resetDocumentTransport ? {
+          timelineTransportDocumentKey: String(name || '').trim(),
+          timelineTransportPosition: 0,
+          timelineTransportPlaying: false,
+        } : {}),
         ...(needsAutoEnable ? { frontmatterModeEnabled: true } : {}),
         ...transitionState,
       }))

@@ -9,11 +9,15 @@ import { getLocalStorage, resolveBrowserStorageKey } from '@/lib/persistence'
 import { applyThemeMode, getInitialDarkThemeVariant, getInitialThemeMode, isDarkThemeVariant } from '@/lib/ui/theme'
 import { ensureWorkspaceLayoutTokensInstalled } from '@/lib/workspace/workspaceLayoutSettings'
 import { AgenticGraphRuntimeIdentityRuntime } from '@/features/runtime-identity/agentic-graph-runtime-identity-runtime'
-import { XrMotionReferenceRuntimeBridge } from '@/features/three/XrMotionReferenceRuntimeBridge'
 import { CanvasSourceAuthorityBoundary } from '@/features/canvas/CanvasSourceAuthorityBoundary'
 import { AgenticOsRemoteGrammarAutoHydrationBoundary } from '@/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration'
+import { useSourceFilesBootstrapHasReachedReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
 
 const CanvasLazy = lazy(() => import('@/pages/Canvas'))
+const LocalDocumentSharePageLazy = lazy(() => import('@/pages/LocalDocumentSharePage'))
+const XrMotionReferenceRuntimeBridgeLazy = lazy(async () => ({
+  default: (await import('@/features/three/XrMotionReferenceRuntimeBridge')).XrMotionReferenceRuntimeBridge,
+}))
 const LearningCanvasEmbedLazy = lazy(() => import('@/features/python-learning/LearningCanvasEmbed'))
 const PerformanceAutomationReadoutLazy = lazy(async () => ({
   default: (await import('@/features/canvas/PerformanceAutomationReadout')).PerformanceAutomationReadout,
@@ -49,7 +53,19 @@ function AppThemeRuntime() {
   return null
 }
 
+function XrMotionReferenceRuntimeBridge() {
+  const sourceFilesBootstrapHasReachedReady = useSourceFilesBootstrapHasReachedReady()
+  if (!sourceFilesBootstrapHasReachedReady) return null
+  return (
+    <Suspense fallback={null}>
+      <XrMotionReferenceRuntimeBridgeLazy />
+    </Suspense>
+  )
+}
+
 export default function App() {
+  if (String(window.location.hash || '').startsWith('#kgShare='))
+    return <Suspense fallback={<main className="min-h-svh bg-white p-6 text-sm text-slate-600">Opening shared document…</main>}><LocalDocumentSharePageLazy /></Suspense>
   if (new URLSearchParams(window.location.search).get('kgLearningCanvas') === 'drone')
     return <Suspense fallback={<p>Loading shared Canvas…</p>}><LearningCanvasEmbedLazy /></Suspense>
   return <CanvasApplication />

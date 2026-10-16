@@ -1,8 +1,9 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
-import { isCitySimRunReadyDemoActive, isXrPhysicsRuntimeRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
-import { QUERY_PARAM_RUNTIME_IDENTITY_PROOF } from '@/lib/routing/queryParams'
+import { isXrPhysicsRuntimeRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { isCitySimAuthoredSourceCandidate } from '@/features/game-city-sim/citySimAuthoredSource'
+import { isExplicitOfflineWorkspace, QUERY_PARAM_RUNTIME_IDENTITY_PROOF } from '@/lib/routing/queryParams'
 
 const AgenticOsRemoteGrammarAutoHydrationContext = React.createContext(true)
 
@@ -10,8 +11,9 @@ export function resolveAgenticOsRemoteGrammarAutoHydration(args: {
   sourceFilesReady: boolean
   offlineNativeXrActive: boolean
   runtimeIdentityProofRequested: boolean
+  explicitOfflineWorkspace?: boolean
 }): boolean {
-  return args.sourceFilesReady
+  return !args.explicitOfflineWorkspace && args.sourceFilesReady
     && (args.runtimeIdentityProofRequested || !args.offlineNativeXrActive)
 }
 
@@ -26,15 +28,13 @@ export function AgenticOsRemoteGrammarAutoHydrationBoundary(props: {
       state.markdownDocumentName,
       state.markdownDocumentText,
     )
-    || isCitySimRunReadyDemoActive(
-      state.markdownDocumentName,
-      state.markdownDocumentText,
-    )
+    || isCitySimAuthoredSourceCandidate(state.markdownDocumentText)
   ))
   const autoHydrationAllowed = resolveAgenticOsRemoteGrammarAutoHydration({
     sourceFilesReady,
     offlineNativeXrActive,
     runtimeIdentityProofRequested,
+    explicitOfflineWorkspace: isExplicitOfflineWorkspace(),
   })
   return (
     <AgenticOsRemoteGrammarAutoHydrationContext.Provider value={autoHydrationAllowed}>

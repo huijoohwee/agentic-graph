@@ -1,13 +1,19 @@
+import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
+import { validateFlightSimGeographicReference } from '@/features/game-flight-sim/flightSimGeospatialCoordinates'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { SINGAPORE_MAJOR_POI_GEO_PROFILE } from 'grph-shared/geospatial/singaporeMajorPoiGeo'
-import { projectFlightSimToGeospatialOverlay } from '@/features/game-flight-sim/flightSimGeospatialProjection'
+import { projectFlightSimToGeospatialOverlay, projectFlightSimTimelineCameraToGeospatial } from '@/features/game-flight-sim/flightSimGeospatialProjection'
 import { projectXrEnvironmentToFlightGeo } from '@/features/game-flight-sim/flightSimGeoEnvironmentProjection'
 import { createFlightSimRuntime } from '@/features/game-flight-sim/flightSimRuntimeCore'
 import { readFlightSimXrSpatialProfile } from '@/features/game-flight-sim/flightSimSpatialProfile'
-import { projectSingaporeLocalMeters } from '@/lib/gympgrph/api'
+import { projectLocalMetersToGeospatial } from '@/lib/gympgrph/api'
+
+const geographicReference = validateFlightSimGeographicReference(
+  (parseMarkdownFrontmatter(splitMarkdownLines(readFileSync('../docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md', 'utf8'))).meta.geo_flight_overlay as { geographic_reference: unknown }).geographic_reference,
+)!
 
 const METERS_PER_LATITUDE_DEGREE = 111_320
 
@@ -245,7 +251,7 @@ test('Flight Geo bootstrap retains one map owner and stages pre-document ownersh
   )
 })
 
-test('Flight local mission coordinates project deterministically around Singapore', () => {
+test('Flight local mission coordinates project deterministically around authored geography', () => {
   const profile = readFlightSimXrSpatialProfile()
   const runtime = createFlightSimRuntime({
     profile,
@@ -264,7 +270,7 @@ test('Flight local mission coordinates project deterministically around Singapor
       rotationYDegrees: 0,
       scale: 1,
     }],
-  })
+  }, geographicReference)
   const overlay = projectFlightSimToGeospatialOverlay(
     runtime.read(),
     profile,
@@ -272,12 +278,13 @@ test('Flight local mission coordinates project deterministically around Singapor
     true,
     null,
     environment,
+    geographicReference,
   )
-
+  assert.ok(overlay)
   assert.equal(overlay.active, true)
   assert.equal(overlay.presentationOwner, 'flight')
   assert.equal(overlay.route.length, profile.waypoints.length + 2)
-  assert.deepEqual(overlay.route[0]?.coordinate, [103.851959, 1.29027])
+  assert.deepEqual(overlay.route[0]?.coordinate, geographicReference.anchor)
   assert.equal(overlay.route[0]?.kind, 'spawn')
   assert.equal(overlay.route.at(-1)?.kind, 'landing')
   assert.ok(overlay.objective)
@@ -309,7 +316,7 @@ test('Flight local mission coordinates project deterministically around Singapor
   const stageFootprint = environment.stageFootprint
   assert.deepEqual(
     stageFootprint[0],
-    projectSingaporeLocalMeters(-16, 12),
+    projectLocalMetersToGeospatial(-16, 12, geographicReference.anchor),
     'the first Singapore stage corner must remain the authored [-16, 0, -12] metre corner',
   )
   const stageFootprintMeters = projectedRingSizeMeters(stageFootprint)
@@ -386,7 +393,9 @@ test('Flight local mission coordinates project deterministically around Singapor
     profile,
     { source: 'fixed-follow', view: 'chase' },
     false,
+    null, null, geographicReference,
   )
+  assert.ok(completedOverlay)
   assert.equal(completedOverlay.route.at(-1)?.kind, 'landing')
   assert.equal(completedOverlay.route.at(-1)?.state, 'visited')
   assert.equal(completedOverlay.objective, null)
@@ -396,7 +405,9 @@ test('Flight local mission coordinates project deterministically around Singapor
     profile,
     { source: 'fixed-follow', view: 'cockpit' },
     false,
+    null, null, geographicReference,
   )
+  assert.ok(cockpit)
   assert.notDeepEqual(
     cockpit.camera.centerCoordinate,
     cockpit.aircraft.coordinate,
@@ -409,4 +420,31 @@ test('Flight local mission coordinates project deterministically around Singapor
     cockpit.camera.cockpitClearance.verticalMeters
       > profile.aircraftHalfSize[1],
   )
+})
+
+test('authored geography is bounded, immutable, and required only for geographic projection', () => {
+  assert.equal(validateFlightSimGeographicReference(undefined), null)
+  for (const invalid of [null, {}, { ...geographicReference, unknown: true },
+    { ...geographicReference, anchor: [NaN, 0] }, { ...geographicReference, anchor: [181, 0] },
+    { ...geographicReference, anchor: [0, 90] }, { ...geographicReference, anchor: [0, 89.99999999999999] },
+    { ...geographicReference, anchor: [0, 0] }, { ...geographicReference, presentationBounds: [[104, 2], [103, 1]] },
+  ]) assert.throws(() => validateFlightSimGeographicReference(invalid))
+  assert.throws(() => projectLocalMetersToGeospatial(1e308, 0, [0, 89.999999]))
+  assert.throws(() => projectLocalMetersToGeospatial(1000, 0, [179.999, 0]))
+  assert.throws(() => projectLocalMetersToGeospatial(0, 1000, [0, 89.999]))
+  assert.deepEqual(projectLocalMetersToGeospatial(0, 0, geographicReference.anchor), geographicReference.anchor)
+  const reference = validateFlightSimGeographicReference({ anchor: [-74, 40], presentationBounds: [[-75, 39], [-73, 41]] })!
+  assert.ok(Object.isFrozen(reference) && Object.isFrozen(reference.anchor) && Object.isFrozen(reference.presentationBounds))
+  const profile = readFlightSimXrSpatialProfile()
+  const runtime = createFlightSimRuntime({ profile, active: true, webglSupported: true })
+  const before = runtime.read()
+  assert.equal(projectFlightSimToGeospatialOverlay(before, profile, { source: 'fixed-follow', view: 'chase' }, false), null)
+  const environment = projectXrEnvironmentToFlightGeo({ stageId: 'tropical-playground', subjects: [] }, reference)
+  const overlay = projectFlightSimToGeospatialOverlay(before, profile, { source: 'fixed-follow', view: 'chase' }, false, null, environment, reference)!
+  assert.deepEqual(overlay.route[0]?.coordinate, reference.anchor)
+  assert.deepEqual(environment.anchor, reference.anchor)
+  assert.deepEqual(environment.presentationBounds, reference.presentationBounds)
+  const timeline = projectFlightSimTimelineCameraToGeospatial({ position: [0, 10, 0], target: profile.spawn.position.map(value => value / 20) } as never, profile, 0, reference)
+  assert.deepEqual(timeline.centerCoordinate, reference.anchor)
+  assert.equal(runtime.read(), before)
 })

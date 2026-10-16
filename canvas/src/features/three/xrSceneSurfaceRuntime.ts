@@ -1,4 +1,5 @@
 import { setMediaCatalogMode } from '@/features/command-menu/mediaCatalogModeRuntime'
+import { commitCanvasGeospatialSurfaceOwnership } from '@/features/geospatial/geospatialSurfaceOwnershipRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   GameOsError,
@@ -166,14 +167,18 @@ export function activateXrSceneSurface(
 ): boolean {
   const state = useGraphStore.getState()
   const alreadyXr = state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr'
-  if (!alreadyXr && !isCanvasSurfaceModeSelectable({
+  const surfaceSelection = {
     canvas2dRenderer: state.canvas2dRenderer,
     documentSemanticMode: state.documentSemanticMode,
     frontmatterModeEnabled: state.frontmatterModeEnabled === true,
     multiDimTableModeEnabled: state.multiDimTableModeEnabled === true,
     layoutMode: state.schema?.layout?.mode,
     schema: state.schema,
-  }, activation.geospatialComposite ? 'geo-xr' : 'xr')) return false
+  }
+  const targetSurface = activation.geospatialComposite ? 'geo-xr' : 'xr'
+  const hasGameplayOwner = gameplayModeRegistry.inspectSurface() !== null
+  if (!alreadyXr && !isCanvasSurfaceModeSelectable(surfaceSelection, targetSurface)) return false
+  if (alreadyXr && hasGameplayOwner && state.schema?.layout?.mode === 'radial') return false
   const previousSurface = Object.freeze({
     canvasRenderMode: state.canvasRenderMode,
     canvas3dMode: state.canvas3dMode,
@@ -235,6 +240,24 @@ export function activateXrSceneSurface(
     activeState.setBottomSurfaceCollapsed(false)
   }
   return true
+}
+
+/**
+ * Release the exclusive Geo/MapLibre owner before XR claims the Canvas.
+ * The shared ownership runtime restores Geo if the XR activation cannot
+ * commit, keeping the switch atomic for every document and XR panel.
+ */
+export async function activateXrSceneSurfaceAfterGeospatialExit(
+  activation: XrSceneSurfaceActivation = {},
+): Promise<boolean> {
+  let activated = false
+  await commitCanvasGeospatialSurfaceOwnership(false, {
+    afterCommit: () => {
+      activated = activateXrSceneSurface(activation)
+      return activated
+    },
+  })
+  return activated
 }
 
 registerSharedXrActivationHandler(() => activateXrSceneSurface())

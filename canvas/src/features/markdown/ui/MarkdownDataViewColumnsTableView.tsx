@@ -16,7 +16,7 @@ import { ColumnHeaderMenu } from '@/components/ui/ColumnHeaderMenu'
 import { Type } from 'lucide-react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { uiToolbarRowScrollClassName } from '@/features/toolbar/ui/toolbarStyles'
-import { UI_RESPONSIVE_ACTION_ROW_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_TABLE_FRAME_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_TABLE_PROGRESS_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_TABLE_VALUE_CLASSNAME, UI_RESPONSIVE_ELEMENT_ROW_CLASSNAME, UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
+import { UI_RESPONSIVE_ACTION_ROW_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_TABLE_PROGRESS_CLASSNAME, UI_RESPONSIVE_DATA_VIEW_TABLE_VALUE_CLASSNAME, UI_RESPONSIVE_ELEMENT_ROW_CLASSNAME, UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { UI_TEXT_TRUNCATE } from '@/lib/ui/textLayout'
 import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
 import { readMarkdownSigilDisplayText } from '@/lib/markdown/markdownSigil'
@@ -27,12 +27,11 @@ import { MarkdownDataViewInlineTextCellEditor } from './MarkdownDataViewInlineTe
 import { MarkdownDataViewNestedRowsBulkToggle } from './MarkdownDataViewNestedRowsBulkToggle'
 import { MarkdownDataViewColumnResizeHandle } from './MarkdownDataViewColumnResizeHandle'
 import { splitMultiValues } from './markdownDataViewValueUtils'
-import { MARKDOWN_DATA_VIEW_TABLE_STICKY_HEADER_CLASSNAME } from './markdownDataViewTableClasses'
+import { MarkdownDataViewTableCore, dataViewTableHeaderClassName, dataViewTableCellClassName, MARKDOWN_DATA_VIEW_TABLE_RENDER_ROW_INCREMENT } from './MarkdownDataViewTableCore'
 import { readMarkdownDataViewTableCellDisplayText, readMarkdownDataViewTableCellPreviewText } from './markdownDataViewCellPreview'
 import type { DataViewFieldLineMode } from '@/lib/ui/dataViewDensity'
 
 const MARKDOWN_DATA_VIEW_FIELD_COLUMN_ID = '__field'
-const MARKDOWN_DATA_VIEW_TABLE_RENDER_ROW_INCREMENT = 32
 
 type VisibleColumnMeta = { col: MarkdownDataView['columns'][number]; index: number }
 type VisibleNestedRowState = { row: MarkdownDataView['rows'][number]; depth: number; childCount: number }
@@ -84,15 +83,16 @@ export function MarkdownDataViewColumnsTableView(props: {
   const tableWidth = props.readColumnWidth(MARKDOWN_DATA_VIEW_FIELD_COLUMN_ID, 168)
     + props.visibleNestedRowStates.reduce((sum, { row }) => sum + props.readColumnWidth(`row:${row.id}`), 0)
   return (
-    <section className={`${UI_RESPONSIVE_DATA_VIEW_TABLE_FRAME_CLASSNAME} isolate`} aria-label="Table view">
-      <table className="min-w-max w-max table-fixed border-separate border-spacing-0 text-xs" style={{ width: tableWidth }}>
-        <colgroup>
-          <col style={{ width: props.readColumnWidth(MARKDOWN_DATA_VIEW_FIELD_COLUMN_ID, 168) }} />
-          {props.visibleNestedRowStates.map(({ row }) => <col key={row.id} style={{ width: props.readColumnWidth(`row:${row.id}`) }} />)}
-        </colgroup>
-        <thead className={`${MARKDOWN_DATA_VIEW_TABLE_STICKY_HEADER_CLASSNAME} sticky top-0 z-30 isolate ${UI_THEME_TOKENS.table.headerBg} ${UI_THEME_TOKENS.table.text}`}>
-          <tr>
-            <th className={`${props.headerPaddingClassName} relative z-[31] text-left font-semibold border-b ${UI_THEME_TOKENS.table.cellBorder} ${UI_THEME_TOKENS.table.headerBg}`}>
+    <MarkdownDataViewTableCore
+      columns={[
+        { id: MARKDOWN_DATA_VIEW_FIELD_COLUMN_ID, width: props.readColumnWidth(MARKDOWN_DATA_VIEW_FIELD_COLUMN_ID, 168) },
+        ...props.visibleNestedRowStates.map(({ row }) => ({ id: `row:${row.id}`, width: props.readColumnWidth(`row:${row.id}`) })),
+      ]}
+      rows={props.visibleColumnMeta}
+      rowKey={({ col }) => col.id}
+      tableStyle={{ width: tableWidth }}
+      renderHeader={() => <>
+            <th className={dataViewTableHeaderClassName(props.headerPaddingClassName)}>
               Field
               <MarkdownDataViewColumnResizeHandle columnId={MARKDOWN_DATA_VIEW_FIELD_COLUMN_ID} width={props.readColumnWidth(MARKDOWN_DATA_VIEW_FIELD_COLUMN_ID, 168)} onPreview={props.previewColumnResize} onCommit={props.commitColumnResize} />
             </th>
@@ -100,18 +100,17 @@ export function MarkdownDataViewColumnsTableView(props: {
               const label = String(row.cells[props.titleColumnIndex] ?? '').trim() || `Row ${rowIndex + 1}`
               const columnId = `row:${row.id}`
               return (
-                <th key={row.id} className={`${props.headerPaddingClassName} relative z-[31] text-left font-semibold border-b ${UI_THEME_TOKENS.table.cellBorder} ${UI_THEME_TOKENS.table.headerBg}`}>
+                <th key={row.id} className={dataViewTableHeaderClassName(props.headerPaddingClassName)}>
                   <span className={[UI_TEXT_TRUNCATE, 'block max-w-[14rem]'].join(' ')}>{readMarkdownDataViewTableCellPreviewText(label)}</span>
                   <MarkdownDataViewColumnResizeHandle columnId={columnId} width={props.readColumnWidth(columnId)} onPreview={props.previewColumnResize} onCommit={props.commitColumnResize} />
                 </th>
               )
             })}
-          </tr>
-        </thead>
-        <tbody className={UI_THEME_TOKENS.table.text}>
+      </>}
+      beforeRows={<>
           {props.hasNestedRowHierarchy ? (
             <tr data-kg-markdown-data-view-column-record-hierarchy-row="1">
-              <th className={`${props.headerPaddingClassName} text-left font-semibold border-b ${UI_THEME_TOKENS.table.cellBorder} ${UI_THEME_TOKENS.table.headerBg}`}>
+              <th className={dataViewTableHeaderClassName(props.headerPaddingClassName, false)}>
                 <span className={`${UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME} gap-1`}><MarkdownDataViewNestedRowsBulkToggle collapsed={props.areAllNestedRowsCollapsed} onToggle={props.toggleAllNestedRows} /><span>Hierarchy</span></span>
               </th>
               {props.visibleNestedRowStates.map(({ row, depth, childCount }) => (
@@ -119,7 +118,9 @@ export function MarkdownDataViewColumnsTableView(props: {
               ))}
             </tr>
           ) : null}
-          {props.visibleColumnMeta.map(({ col: column, index: colIndex }) => {
+
+      </>}
+      renderCells={({ col: column, index: colIndex }) => {
             const type = (props.columnTypesById && props.columnTypesById[column.id]) || defaultColumnTypeForInferredKind(column.kind)
             const Icon = iconByColumnType[type] || Type
             const allowTypeEdit = Boolean(props.canConfigure && props.onChangeColumnType)
@@ -128,9 +129,9 @@ export function MarkdownDataViewColumnsTableView(props: {
               : column.kind === 'select'
                 ? [{ key: 'equals', label: 'equals' }, { key: 'contains', label: 'contains' }]
                 : [{ key: 'contains', label: 'contains' }, { key: 'equals', label: 'equals' }]
-            return (
-              <tr key={column.id} className={`${UI_THEME_TOKENS.table.rowHoverHighlight} transition-colors`}>
-                <th className={`${props.headerPaddingClassName} text-left font-semibold border-b ${UI_THEME_TOKENS.table.cellBorder} ${UI_THEME_TOKENS.table.headerBg}`}>
+
+        return <>
+                <th className={dataViewTableHeaderClassName(props.headerPaddingClassName, false)}>
                   <ColumnHeaderPropertyTypeMenu ariaLabel={`Column type: ${column.name}`} label={column.name} Icon={Icon} portal portalPlacement="bottom-start" toggleTargets="icon+chevron" menu={({ close }) => (
                     <ColumnHeaderMenu
                       ariaLabel={`Column menu: ${column.name}`} closeMenu={close} typeSummaryLabel="Type" typeValueLabel={labelForMarkdownDataViewColumnType(type)} disableTypeChange={!allowTypeEdit}
@@ -146,7 +147,7 @@ export function MarkdownDataViewColumnsTableView(props: {
                   const uiType = (props.columnTypesById && props.columnTypesById[column.id]) || defaultColumnTypeForInferredKind(column.kind)
                   const baseKind = columnTypeToBaseKind(uiType)
                   const isEditing = props.editing?.rowId === row.id && props.editing?.colId === column.id
-                  const cellBase = `${props.cellPaddingClassName} overflow-hidden border-b ${UI_THEME_TOKENS.table.cellBorder} align-top`
+                  const cellBase = dataViewTableCellClassName(props.cellPaddingClassName)
                   if (isEditing) {
                     return (
                       <td key={`${row.id}:${column.id}`} className={cellBase}>
@@ -176,9 +177,9 @@ export function MarkdownDataViewColumnsTableView(props: {
                     </td>
                   )
                 })}
-              </tr>
-            )
-          })}
+        </>
+      }}
+      afterRows={<>
           {props.hiddenRowCount > 0 ? (
             <tr>
               <td colSpan={props.visibleNestedRowStates.length + 1} className={`${props.cellPaddingClassName} border-b ${UI_THEME_TOKENS.table.cellBorder}`}>
@@ -188,8 +189,7 @@ export function MarkdownDataViewColumnsTableView(props: {
               </td>
             </tr>
           ) : null}
-        </tbody>
-      </table>
-    </section>
+      </>}
+    />
   )
 }

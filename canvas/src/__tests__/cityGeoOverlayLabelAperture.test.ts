@@ -45,6 +45,7 @@ export function testCityGeoOverlayPreservesTheVisiblePanelAperture(): void {
   dom.window.document.body.append(viewport, workspace, floatingPanel)
 
   let fitOptions: Record<string, unknown> | null = null
+  const snapshot = createSyntheticCityGeoOverlaySnapshot()
   const map = {
     fitBounds: (_bounds: unknown, options: Record<string, unknown>) => {
       fitOptions = options
@@ -56,21 +57,22 @@ export function testCityGeoOverlayPreservesTheVisiblePanelAperture(): void {
   assert.equal(
     fitMapToCityPresentation(
       map,
-      createSyntheticCityGeoOverlaySnapshot(),
+      snapshot,
       '3d',
     ),
     true,
   )
   assert.ok(fitOptions)
   const padding = fitOptions.padding as Record<string, number>
-  const visibleApertureWidth = 1_000 - (500 + 16) - (250 + 16)
-  const responsiveClearance = visibleApertureWidth * 0.1
-  assert.equal(padding.left, 500 + 16 + responsiveClearance)
-  assert.equal(padding.right, 250 + 16 + responsiveClearance)
+  // The shared container owns layout; global panels cannot subtract the aperture again.
+  const visibleApertureWidth = 1_000 - 72 - 72
+  const responsiveClearance = Math.min(snapshot.profile!.framing['3d'].paddingPixels, visibleApertureWidth * 0.1)
+  assert.equal(padding.left, 72 + responsiveClearance)
+  assert.equal(padding.right, 72 + responsiveClearance)
   assert.ok(
     Math.abs(
       1_000 - padding.left - padding.right
-      - visibleApertureWidth * 0.8,
+      - (visibleApertureWidth - 2 * responsiveClearance),
     ) < Number.EPSILON * 1_000,
   )
   dom.window.close()

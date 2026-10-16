@@ -1,4 +1,5 @@
 import React from 'react'
+import { applyRichMediaTimelinePlaybackRate, isRichMediaTimelineRateSeekOnly } from '@/lib/render/richMediaTimelineSync'
 import {
   TIMELINE_TRANSPORT_PLAYBACK_REQUEST_EVENT,
   resolveVideoSequenceTimelineMediaSeconds,
@@ -195,7 +196,7 @@ export function useTimelineVideoPreviewSyncController(args: {
         applyVideoTime(video, args.readTransportSnapshot().position)
       }
       const writeTransportPosition = () => {
-        if (isVideoPlaybackGap(video)) return
+        if (isVideoPlaybackGap(video) || isRichMediaTimelineRateSeekOnly(video)) return
         const current = args.readTransportSnapshot()
         const sourceDurationSeconds = resolveTimelineVideoPreviewDurationSeconds({
           nativeDurationSeconds: video.duration,
@@ -218,7 +219,7 @@ export function useTimelineVideoPreviewSyncController(args: {
         }
       }
       const writePlaying = () => {
-        if (isVideoPlaybackGap(video)) return
+        if (isVideoPlaybackGap(video) || isRichMediaTimelineRateSeekOnly(video)) return
         if (video.paused || video.ended) writeTransportPosition()
         args.setTransportPlaying(!video.paused && !video.ended)
       }
@@ -267,8 +268,8 @@ export function useTimelineVideoPreviewSyncController(args: {
       if (!video) return
       applyVideoTime(video, detail.position)
       const nextPlaybackRate = resolveTimelineTransportPlaybackRate(detail.playbackRate, args.playbackRate)
-      if (video.playbackRate !== nextPlaybackRate) video.playbackRate = nextPlaybackRate
-      if (detail.playing) {
+      const nativeRate = applyRichMediaTimelinePlaybackRate(video, nextPlaybackRate)
+      if (detail.playing && nativeRate) {
         playbackFallbackRef.current = false
         clearVideoPlaybackFallback(video)
         enableVideoSequenceAudioPlayback(video)
@@ -290,8 +291,8 @@ export function useTimelineVideoPreviewSyncController(args: {
     const video = args.readVideo()
     if (!video) return
     applyVideoTime(video, args.playbackPosition)
-    if (video.playbackRate !== args.playbackRate) video.playbackRate = args.playbackRate
-    if (args.playing) {
+    const nativeRate = applyRichMediaTimelinePlaybackRate(video, args.playbackRate)
+    if (args.playing && nativeRate) {
       enableVideoSequenceAudioPlayback(video)
       if (video.paused && !isVideoPlaybackGap(video)) requestNativePlayback(video)
     } else if (!video.paused) {

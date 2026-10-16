@@ -107,6 +107,7 @@ async function waitForGeospatialSurfaceDisposal(
   ownedCanvas: HTMLCanvasElement | null,
   deadline: number,
   isRequestCurrent: () => boolean,
+  hasCurrentNativeLease: () => boolean,
 ): Promise<void> {
   if (
     typeof window === 'undefined'
@@ -125,7 +126,8 @@ async function waitForGeospatialSurfaceDisposal(
     if (!isRequestCurrent()) {
       throw new SupersededGeospatialSurfaceOwnershipError()
     }
-    const mapReleased = ownedLease == null || !ownedLease.isCurrent()
+    const mapReleased = (ownedLease == null || !ownedLease.isCurrent())
+      && !hasCurrentNativeLease()
     const ownedCanvasReleased = ownedCanvas == null || !ownedCanvas.isConnected
     const geoCanvasReleased = document.querySelector(
       '[data-kg-geo-xr-layer="geo-background"] canvas.maplibregl-canvas',
@@ -165,6 +167,9 @@ async function performCanvasGeospatialSurfaceOwnershipCommit(
           '[data-kg-geo-xr-layer="geo-background"] canvas.maplibregl-canvas',
       )
   )
+  const noInitialOwner = !previousEnabled
+    && typeof gympgrph.captureNativeGeospatialMapLibreLease === 'function'
+    && ownedLease == null && ownedCanvas == null
   const deadline = Date.now() + GEOSPATIAL_SURFACE_DISPOSAL_TIMEOUT_MS
   const preparedLeases = new Set<NonNullable<typeof ownedLease>>()
   let modeCommitted = false
@@ -206,12 +211,21 @@ async function performCanvasGeospatialSurfaceOwnershipCommit(
     }
     if (!enabled) {
       ownedLease?.dispose()
-      await waitForGeospatialSurfaceDisposal(
-        ownedLease,
-        ownedCanvas,
-        deadline,
-        isRequestCurrent,
-      )
+      const hasCurrentNativeLease = () => gympgrph.captureNativeGeospatialMapLibreLease?.() != null
+      const noCurrentOwner = !hasCurrentNativeLease() && (typeof document === 'undefined'
+        || document.querySelector('[data-kg-geo-xr-layer="geo-background"] canvas.maplibregl-canvas') == null)
+      // A cold off→off commit has no disposal to fence. Bootstrap must not wait
+      // for animation frames unless an initial or late Geo owner actually exists.
+      const noObservedOwner = ownedLease == null && ownedCanvas == null && preparedLeases.size === 0
+      if (!(noInitialOwner && noObservedOwner && noCurrentOwner)) {
+        await waitForGeospatialSurfaceDisposal(
+          ownedLease,
+          ownedCanvas,
+          deadline,
+          isRequestCurrent,
+          hasCurrentNativeLease,
+        )
+      }
     }
     if (!isRequestCurrent()) {
       throw new SupersededGeospatialSurfaceOwnershipError()

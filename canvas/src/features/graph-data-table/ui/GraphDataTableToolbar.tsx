@@ -150,7 +150,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
         portalPlacement="bottom-end"
         summary={<Columns2 className="w-4 h-4" aria-hidden="true" />}
         menu={({ close }) => (
-          <form className={['kg-graph-data-table-menu-form kg-graph-data-table-menu-form--narrow rounded border p-2 shadow-md', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}>
+          <form className={['kg-graph-data-table-menu-form kg-graph-data-table-menu-form--narrow rounded border p-2 shadow-[var(--kg-shadow-overlay)]', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}>
             <fieldset className="space-y-1">
               <legend className={`${UI_THEME_TOKENS.text.tertiary}`}>Visible columns</legend>
               {props.columns.map(c => (
@@ -179,7 +179,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
         portalPlacement="bottom-end"
         summary={<Filter className="w-4 h-4" aria-hidden="true" />}
         menu={
-          <form className={['kg-graph-data-table-menu-form rounded border p-2 shadow-md', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}>
+          <form className={['kg-graph-data-table-menu-form rounded border p-2 shadow-[var(--kg-shadow-overlay)]', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}>
             <fieldset className="space-y-2">
               <section className={menuRowClass}>
                 <PanelField label="Match" variant="section" layout="compact" className="min-w-0 flex-1" labelClassName={menuFieldLabelClass}>
@@ -290,7 +290,7 @@ export function GraphDataTableToolbar(props: GraphDataTableToolbarProps) {
         portalPlacement="bottom-end"
         summary={<ArrowUpDown className="w-4 h-4" aria-hidden="true" />}
         menu={
-          <form className={['kg-graph-data-table-menu-form rounded border p-2 shadow-md', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}>
+          <form className={['kg-graph-data-table-menu-form rounded border p-2 shadow-[var(--kg-shadow-overlay)]', UI_THEME_TOKENS.panel.bg, UI_THEME_TOKENS.panel.border].join(' ')}>
             <fieldset className="space-y-2">
               {props.sortRules.map(rule => (
                 <section key={rule.id} className={menuRowClass}>

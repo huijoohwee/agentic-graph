@@ -28,7 +28,7 @@ export function CanvasEmbedPanelShell(props: CanvasEmbedPanelShellProps) {
   return (
     <section className="pointer-events-auto fixed inset-0 z-[1250] flex items-center justify-center bg-black/45 p-4" aria-label={props.ariaLabel}>
       <article
-        className={`flex max-h-[min(44rem,calc(100dvh-2rem))] ${props.widthClassName || 'w-[min(46rem,100%)]'} flex-col overflow-hidden rounded-xl border shadow-2xl ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border}`}
+        className={`flex max-h-[min(44rem,calc(100dvh-2rem))] ${props.widthClassName || 'w-[min(46rem,100%)]'} flex-col overflow-hidden rounded-xl border shadow-[var(--kg-shadow-overlay)] ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

@@ -4,7 +4,7 @@ import type { VideoSequenceGeneratedFrameThumbnailOrigin } from './videoSequence
 import { formatVideoSequenceTimelineSecondsOffset } from './videoSequenceTimeline'
 import type { MermaidGanttTimelineTaskSpan } from '@/lib/mermaid/mermaidGanttBarInteraction'
 import { MEDIA_IMAGE_FORMAT_PREFERENCE_ATTR, MEDIA_VIDEO_FORMAT_PREFERENCE_ATTR } from '@/lib/media/mediaFormatPreference'
-import { beginMediaPointerDragPayload, finishMediaPointerDragPayloadForEvent, writeMediaDragPayload, type MediaDragPayload } from '@/lib/ui/mediaDragPayload'
+import { beginMediaPointerDragPayload, clearMediaPointerDragPayload, finishMediaPointerDragPayloadForEvent, writeMediaDragPayload, type MediaDragPayload } from '@/lib/ui/mediaDragPayload'
 
 type VideoSequenceClipThumbnailWindow = {
   sourceEndSeconds: number
@@ -73,6 +73,7 @@ export function VideoSequenceClipThumbnailStrip({
 }) {
   const [activeThumbnailIndex, setActiveThumbnailIndex] = React.useState<number | null>(null)
   const moveIntentRef = React.useRef<ThumbnailMoveIntent | null>(null)
+  const frameDragIntentRef = React.useRef<ThumbnailMoveIntent | null>(null)
   const suppressClickRef = React.useRef(false)
   if (!thumbnails.length) return null
   const sourceStart = thumbnails[0]?.timestampSeconds
@@ -100,11 +101,9 @@ export function VideoSequenceClipThumbnailStrip({
       onMouseLeave={() => setActiveThumbnailIndex(null)}
     >
       {thumbnails.map((thumbnail, thumbnailIndex) => (
-        <button
-          type="button"
+        <figure
           key={`thumbnail:${span.rowKey}:${thumbnail.timestampSeconds}:${thumbnail.width}x${thumbnail.height}`}
           className="timeline-video-sequence-clip-thumbnail"
-          aria-label={`${span.label} thumbnail ${formatVideoSequenceTimelineSecondsOffset(thumbnail.timestampSeconds)} ${thumbnail.format}/${thumbnail.rasterFormat}`}
           draggable={false}
           data-kg-video-sequence-clip-thumbnail="1"
           data-kg-video-sequence-clip-thumbnail-format={thumbnail.format}
@@ -148,26 +147,45 @@ export function VideoSequenceClipThumbnailStrip({
             onSelectRowPosition(span.rowKey, resolveVideoSequenceThumbnailTimelinePosition({ span, thumbnail, window: thumbnailWindow }))
           }}
         >
-          <img alt="" decoding="async" draggable={false} height={thumbnail.height} loading="lazy" src={resolveVideoSequenceThumbnailRenderUrl(thumbnail)} width={thumbnail.width} />
-          <span
+          <button
+            type="button"
+            className="timeline-video-sequence-clip-thumbnail-seek"
+            aria-label={`${span.label} thumbnail ${formatVideoSequenceTimelineSecondsOffset(thumbnail.timestampSeconds)} ${thumbnail.format}/${thumbnail.rasterFormat}`}
+          >
+            <img alt="" decoding="async" draggable={false} height={thumbnail.height} loading="lazy" src={resolveVideoSequenceThumbnailRenderUrl(thumbnail)} width={thumbnail.width} />
+          </button>
+          <button
+            type="button"
             className="timeline-video-sequence-clip-thumbnail-drag-affordance"
-            aria-hidden="true"
+            aria-label={`Drag ${span.label} frame ${formatVideoSequenceTimelineSecondsOffset(thumbnail.timestampSeconds)} or activate to seek`}
+            title="Drag frame image or activate to seek"
             draggable={true}
             data-kg-media-draggable="1"
             data-kg-video-sequence-clip-thumbnail-drag-affordance="1"
             data-kg-video-sequence-clip-thumbnail-drag-kind="image"
             onPointerDown={event => {
               event.stopPropagation()
-              beginMediaPointerDragPayload(buildVideoSequenceThumbnailDragPayload({ span, thumbnail }), { clientX: event.clientX, clientY: event.clientY })
+              if (event.button !== 0) return
+              clearMediaPointerDragPayload()
+              suppressClickRef.current = false
+              frameDragIntentRef.current = { clientX: event.clientX, clientY: event.clientY, pointerId: event.pointerId }
             }}
             onPointerMove={event => {
-              if (event.buttons !== 1) return
               event.stopPropagation()
-              beginMediaPointerDragPayload(buildVideoSequenceThumbnailDragPayload({ span, thumbnail }))
+              const intent = frameDragIntentRef.current
+              if (!intent || intent.pointerId !== event.pointerId || event.buttons !== 1) return
+              if (Math.hypot(event.clientX - intent.clientX, event.clientY - intent.clientY) < THUMBNAIL_MOVE_DRAG_THRESHOLD_PX) return
+              frameDragIntentRef.current = null
+              suppressClickRef.current = true
+              beginMediaPointerDragPayload(buildVideoSequenceThumbnailDragPayload({ span, thumbnail }), intent)
             }}
+            onPointerUp={event => { event.stopPropagation(); frameDragIntentRef.current = null }}
+            onPointerCancel={event => { event.stopPropagation(); frameDragIntentRef.current = null; suppressClickRef.current = false; clearMediaPointerDragPayload() }}
             onDragStart={event => {
               const payload = buildVideoSequenceThumbnailDragPayload({ span, thumbnail })
               event.stopPropagation()
+              frameDragIntentRef.current = null
+              suppressClickRef.current = true
               writeMediaDragPayload(event.dataTransfer, payload)
               beginMediaPointerDragPayload(payload, { clientX: event.clientX, clientY: event.clientY })
             }}
@@ -175,28 +193,41 @@ export function VideoSequenceClipThumbnailStrip({
               event.stopPropagation()
               finishMediaPointerDragPayloadForEvent(event.nativeEvent)
             }}
-          />
-          <span
+            onKeyDown={event => {
+              event.stopPropagation()
+              if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+                frameDragIntentRef.current = null
+                suppressClickRef.current = false
+                clearMediaPointerDragPayload()
+              }
+            }}
+            onClick={event => {
+              event.stopPropagation()
+              if (suppressClickRef.current) { suppressClickRef.current = false; return }
+              onSelectRowPosition(span.rowKey, resolveVideoSequenceThumbnailTimelinePosition({ span, thumbnail, window: thumbnailWindow }))
+            }}
+          >⠿</button>
+          <figcaption
             className="timeline-video-sequence-clip-thumbnail-caption"
-            aria-hidden="true"
             data-kg-video-sequence-clip-thumbnail-caption-format={`${thumbnail.format}/${thumbnail.rasterFormat}`}
             data-kg-video-sequence-clip-thumbnail-caption-time={formatVideoSequenceTimelineSecondsOffset(thumbnail.timestampSeconds)}
-          />
-        </button>
+          >
+            <time dateTime={`PT${Math.max(0, thumbnail.timestampSeconds)}S`}>{formatVideoSequenceTimelineSecondsOffset(thumbnail.timestampSeconds)}</time>
+          </figcaption>
+        </figure>
       ))}
       {activeThumbnail ? (
-        <span
+        <figure
           className="timeline-video-sequence-clip-thumbnail-preview timeline-video-sequence-clip-thumbnail-strip-preview"
-          aria-hidden="true"
           data-kg-video-sequence-clip-thumbnail-preview="1"
           style={activePreviewStyle}
         >
-          <img alt="" decoding="async" draggable={false} height={activeThumbnail.height} loading="lazy" src={resolveVideoSequenceThumbnailRenderUrl(activeThumbnail)} width={activeThumbnail.width} />
-          <span
+          <img alt={`${span.label} frame ${formatVideoSequenceTimelineSecondsOffset(activeThumbnail.timestampSeconds)}`} decoding="async" draggable={false} height={activeThumbnail.height} loading="lazy" src={resolveVideoSequenceThumbnailRenderUrl(activeThumbnail)} width={activeThumbnail.width} />
+          <figcaption
             className="timeline-video-sequence-clip-thumbnail-preview-caption"
             data-kg-video-sequence-clip-thumbnail-preview-caption={`${formatVideoSequenceTimelineSecondsOffset(activeThumbnail.timestampSeconds)} ${activeThumbnail.format}/${activeThumbnail.rasterFormat}`}
-          />
-        </span>
+          >{formatVideoSequenceTimelineSecondsOffset(activeThumbnail.timestampSeconds)}</figcaption>
+        </figure>
       ) : null}
     </section>
   )

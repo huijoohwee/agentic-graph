@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-
 import {
   checkAgentGraphBudget,
   compareStableStrings,
@@ -20,7 +19,7 @@ import {
   readStableSourceFile,
 } from "./safe-source-io.mjs";
 import { SOURCE_PARSER_REGISTRY } from "./source-parser-registry.mjs";
-
+import { NATIVE_BINARY_BOUNDS } from "./native-binary-contract.mjs";
 const HARD_EXCLUDED_SEGMENTS = new Set([
   ".git",
   ".hg",
@@ -28,7 +27,6 @@ const HARD_EXCLUDED_SEGMENTS = new Set([
   ".agentic-graph",
   ".agentic-graph-workspace",
 ]);
-
 const SOFT_EXCLUDED_SEGMENTS = new Set([
   ".next",
   ".nuxt",
@@ -42,9 +40,7 @@ const SOFT_EXCLUDED_SEGMENTS = new Set([
   "target",
   "vendor",
 ]);
-
 const normalizePattern = (value) => String(value || "").trim().replaceAll("\\", "/").replace(/^\.\//, "");
-
 function globPatternToRegExp(patternRaw) {
   let pattern = normalizePattern(patternRaw);
   const directoryOnly = pattern.endsWith("/");
@@ -65,7 +61,6 @@ function globPatternToRegExp(patternRaw) {
   const prefix = anchored ? "^" : pattern.includes("/") ? "^(?:.*?/)?" : "^(?:.*?/)?";
   return new RegExp(`${prefix}${source}${directoryOnly ? "(?:/.*)?" : ""}$`);
 }
-
 function buildOrderedIgnoreRules(lines) {
   const rules = [];
   for (const raw of lines) {
@@ -206,7 +201,7 @@ export async function hydrateKnowledgeSource(source, {
       sourcePath: source.relativePath,
     });
   }
-  return source.parserAdapter === "pdf" || (
+  return ["pdf", "native-binary"].includes(source.parserAdapter) || (
     !source.parserAdapter && source.kind === "pdf"
   )
     ? { ...source, bytes: opened.bytes }
@@ -429,10 +424,14 @@ export async function discoverKnowledgeSources(args) {
           complete: false,
         });
       }
+      const parserDescriptor = parserRegistry.match(relativePath);
+      const sourceByteLimit = parserDescriptor?.adapter === "native-binary"
+        ? Math.min(maxFileBytes, NATIVE_BINARY_BOUNDS.maxSourceBytes)
+        : maxFileBytes;
       const opened = await readStableSourceFile(
         absolutePath,
         rootPath,
-        maxFileBytes,
+        sourceByteLimit,
         relativePath,
         { abortSignal: args.abortSignal, deadline, stage: "source-discovery-read" },
       );
@@ -445,7 +444,6 @@ export async function discoverKnowledgeSources(args) {
           complete: false,
         });
       }
-      const parserDescriptor = parserRegistry.match(relativePath);
       const kind = parserDescriptor?.kind || "inventory";
       const parserRoute = parserDescriptor ? {
         parserAdapter: parserDescriptor.adapter,
@@ -460,7 +458,7 @@ export async function discoverKnowledgeSources(args) {
       };
       const sourceRepository = repositoryIdentity(repositoryPath);
       if (!opened.bytes) {
-        const diagnostic = { code: "file_too_large", sourcePath: relativePath, message: `Skipped ${relativePath}; ${stat.size} bytes exceeds ${maxFileBytes}.` };
+        const diagnostic = { code: "file_too_large", sourcePath: relativePath, message: `Skipped ${relativePath}; ${stat.size} bytes exceeds its ${sourceByteLimit}-byte source limit.` };
         diagnostics.push(diagnostic);
         counts.filesAdmitted += 1;
         counts.filesSkipped += 1;
@@ -485,7 +483,7 @@ export async function discoverKnowledgeSources(args) {
       });
       const isPdf = parserDescriptor?.adapter === "pdf";
       const inventoryOnly = !parserDescriptor || parserDescriptor.adapter === "inventory";
-      if (binary && !isPdf && !inventoryOnly) {
+      if (binary && !isPdf && !inventoryOnly && parserDescriptor?.adapter !== "native-binary") {
         const diagnostic = { code: "binary_unsupported", sourcePath: relativePath, message: `Recorded binary file ${relativePath} without content extraction.` };
         diagnostics.push(diagnostic);
         counts.filesAdmitted += 1;
@@ -516,7 +514,7 @@ export async function discoverKnowledgeSources(args) {
         ...parserRoute,
         status: "ready",
         ...sourceRepository,
-        ...(args.retainContent === true ? (isPdf ? { bytes } : { text: bytes.toString("utf8") }) : {}),
+        ...(args.retainContent === true ? (isPdf || parserDescriptor?.adapter === "native-binary" ? { bytes } : { text: bytes.toString("utf8") }) : {}),
         diagnostics: [],
       });
     }
@@ -593,7 +591,7 @@ export async function discoverKnowledgeSources(args) {
     admission: {
       complete: incompleteSources.length === 0,
       counts,
-      limits: { maxFiles, maxFileBytes, maxTotalBytes, maxDurationMs },
+      limits: { maxFiles, maxFileBytes, maxNativeBinaryBytes: NATIVE_BINARY_BOUNDS.maxSourceBytes, maxTotalBytes, maxDurationMs },
       incompleteSources,
       reasons: incompleteReasons,
     },

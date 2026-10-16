@@ -67,7 +67,9 @@ try {
   await page.waitForFunction(() => [...document.querySelectorAll('textarea')].some(editor => editor.value.trim().length > 0), undefined, { timeout: 60000 })
   // Exercise the actual Source Files owner before the separate offline lesson proof.
   await page.setViewportSize({ width: 1280, height: 900 })
-  await dismissVisibleFloatingPanel(page)
+  const startupFloatingPanel = page.locator('[data-kg-floating-panel-root="true"]:not([data-kg-strybldr-bottom-timeline-panel])').first()
+  await startupFloatingPanel.waitFor({ state: 'visible' })
+  assert.equal(await dismissVisibleFloatingPanel(page, startupFloatingPanel), true, 'Expected startup floating panel must close through its rendered control')
   for (const name of ['docs', 'python-lessons']) {
     await page.getByRole('button', { name: `Folder ${name}`, exact: true }).waitFor()
     const disclosure = page.getByRole('button', { name: `Expand folder ${name}`, exact: true })
@@ -83,7 +85,12 @@ try {
     await row.click(); await nativePane.waitFor()
     await page.waitForFunction(id => document.querySelector('button[data-kg-select="true"][aria-label="Python lesson"]')?.value === id, file.id)
     assert.equal(await nativePane.getAttribute('data-learning-state'), 'idle', 'opening a source file never runs it')
-    await page.getByRole('button', { name: `Local saved copy: ${file.name}. Sign in to sync this file.`, exact: true }).waitFor()
+    // Cloud status belongs to the native file actions, not the navigation row.
+    await row.click({ button: 'right' })
+    const actions = page.getByRole('toolbar', { name: `Actions for ${file.name}`, exact: true })
+    await actions.getByRole('button', { name: `Local saved copy: ${file.name}. Sign in to sync this file.`, exact: true }).waitFor()
+    await page.keyboard.press('Escape')
+    await expect(actions).toBeHidden()
   }
   await nativePane.getByRole('button', { name: 'Run', exact: true }).click()
   await page.locator('.python-learning[data-learning-state="completed"]').waitFor({ timeout: 15000 })

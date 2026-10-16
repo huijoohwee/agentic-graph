@@ -323,7 +323,7 @@ test('Flight Sim canonical cross-domain save blocks hydration without changing b
 
   await assert.rejects(
     () => loadFlightSimSavedDecisions({ workspace }),
-    /Unreadable \/game-flight-sim\/mission-1-decisions\.md: local Decision document is invalid\./,
+    /Unreadable \/game-flight-sim\/mission-1-decisions\.md: Flight Sim Decision missionId is invalid/,
   )
   const blocked = readFlightSimDecisionStore()
   assert.equal(blocked.status, 'error')
@@ -346,7 +346,7 @@ test('Flight Sim save rejects forbidden payload fields without changing bytes', 
 
   await assert.rejects(
     () => loadFlightSimSavedDecisions({ workspace }),
-    /Unreadable \/game-flight-sim\/mission-1-decisions\.md: local Decision document is invalid\./,
+    /Unreadable \/game-flight-sim\/mission-1-decisions\.md: Flight Sim Decision mission_completed payload must contain exactly event, landingPadId, missionId, runId, status, tick/,
   )
   assert.equal(readFlightSimDecisionStore().hydrationBlocked, true)
   assert.equal(await workspace.readFileText(FLIGHT_SIM_SAVE_PATH), invalidSave)

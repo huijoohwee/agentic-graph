@@ -313,7 +313,7 @@ export function GeoJsonGeoPanelRenderer(props: {
                 onClick={handleLoadGraphData}
                 showTooltip
               >
-                <Network className="w-4 h-4 LaunchButton__icon" aria-hidden="true" strokeWidth={1.5} />
+                <Network className="w-4 h-4 LaunchButton__icon" aria-hidden="true" />
               </IconButton>
             ) : null}
             {canAttemptRegister && datasetState !== 'registering' ? (
@@ -323,7 +323,7 @@ export function GeoJsonGeoPanelRenderer(props: {
                 onClick={handleRegisterDataset}
                 showTooltip
               >
-                <Database className="w-4 h-4 LaunchButton__icon" aria-hidden="true" strokeWidth={1.5} />
+                <Database className="w-4 h-4 LaunchButton__icon" aria-hidden="true" />
               </IconButton>
             ) : null}
             {canOpenPanel ? (
@@ -333,7 +333,7 @@ export function GeoJsonGeoPanelRenderer(props: {
                 onClick={() => requestOpen?.()}
                 showTooltip
               >
-                <MapIcon className="w-4 h-4 LaunchButton__icon" aria-hidden="true" strokeWidth={1.5} />
+                <MapIcon className="w-4 h-4 LaunchButton__icon" aria-hidden="true" />
               </IconButton>
             ) : null}
           </menu>

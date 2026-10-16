@@ -167,7 +167,7 @@ export function MediaLightbox({
                 onClose()
               }}
             >
-              <X className="h-4 w-4" strokeWidth={1.7} aria-hidden />
+              <X className="h-4 w-4" aria-hidden />
             </button>
           </li>
         </menu>
@@ -175,7 +175,7 @@ export function MediaLightbox({
           {!hasMediaSource ? (
             <section className="grid h-full w-full place-items-center p-6" data-kg-media-lightbox-empty-output="1">
               <section className={cn('grid min-h-48 w-[min(88vw,36rem)] place-items-center gap-3 rounded border border-dashed p-6 text-center', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)}>
-                <ImageIcon className={cn('h-8 w-8', UI_THEME_TOKENS.text.tertiary)} strokeWidth={1.7} aria-hidden />
+                <ImageIcon className={cn('h-8 w-8', UI_THEME_TOKENS.text.tertiary)} aria-hidden />
                 <p className={cn('m-0 max-w-sm text-sm', UI_THEME_TOKENS.text.secondary)}>Generated media will appear here.</p>
               </section>
             </section>
@@ -236,7 +236,7 @@ export function MediaLightbox({
           )}
         </section>
         {hasDetails ? (
-          <section className={cn('mx-auto mb-5 grid w-[min(92vw,38rem)] gap-3 rounded-lg border p-4 text-sm shadow-xl backdrop-blur-md', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.tooltip.bg, UI_THEME_TOKENS.tooltip.text)} aria-label={detailLabel || 'Prompt'} data-kg-media-lightbox-details="1" data-kg-media-lightbox-prompt-panel="1">
+          <section className={cn('mx-auto mb-5 grid w-[min(92vw,38rem)] gap-3 rounded-lg border p-4 text-sm shadow-[var(--kg-shadow-overlay)] backdrop-blur-md', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.tooltip.bg, UI_THEME_TOKENS.tooltip.text)} aria-label={detailLabel || 'Prompt'} data-kg-media-lightbox-details="1" data-kg-media-lightbox-prompt-panel="1">
             {editablePrompt ? (
               <section
                 className="grid gap-3"
@@ -312,7 +312,7 @@ export function MediaLightbox({
                     data-kg-media-lightbox-prompt-submit="1"
                     onClick={submitPrompt}
                   >
-                    <Wand2 className="h-3.5 w-3.5" strokeWidth={1.7} aria-hidden />
+                    <Wand2 className="h-3.5 w-3.5" aria-hidden />
                     <span className="sr-only">{promptSubmitLabel || 'Generate media'}</span>
                   </button>
                 </footer>

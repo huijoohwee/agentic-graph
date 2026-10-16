@@ -5,28 +5,53 @@ from typing import Any
 from playwright.sync_api import Page
 
 
-AUTHORED_XR_NODES = {
-    "agentic_os_graph_xr_stage",
-    "agentic_os_xr_native_controller_demo",
-    "agentic_os_xr_stage_preset_singapore",
-    "agentic_os_xr_playground_treasure",
-}
-CANONICAL_XR_TERRAIN_NODE = "agentic_os_xr_native_terrain_singapore"
+LOCAL_AUXILIARY_CANVAS_SELECTORS = (
+    '[data-kg-motion-control-preview="local-only"]', '.monaco-editor',
+    '[data-kg-minimap-overlay="1"]',
+    '[data-kg-xr-v2-spatial-capture="1"] canvas[aria-label="Synthesized left-eye preview"]',
+    '[data-kg-xr-v2-spatial-capture="1"] canvas[aria-label="Synthesized right-eye preview"]',
+    'canvas[data-kg-xr-v2-saved-depth-parallax="1"]',
+    'canvas[data-kg-xr-v2-connected-viewer-surface="1"]',
+)
 FORBIDDEN_SCENE_PREFIXES = ("agentic_os_game_fps", "agentic_os_xr_empty_world")
 def read_and_pin_authored_physics_baseline(
     page: Page,
     expected_source_sha256: str,
 ) -> dict[str, Any]:
     return page.evaluate(
-        """
-        async expectedSourceSha256 => {
+        r"""
+        async ({ expectedSourceSha256, auxiliarySelectors }) => {
           const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
           const physics = await window.__kgFlightSimBrowserProof.importModule('xrPhysicsRuntime')
           const controller = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerDemoRuntime')
           const camera = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerCameraRuntime')
           const catalog = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerCameraCatalog')
-          const presentation = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerPresentation')
+          const motion = await window.__kgFlightSimBrowserProof.importModule('xrMotionReferenceRuntime')
+          const library = await window.__kgFlightSimBrowserProof.importModule('xrSceneLibrary')
           const state = store.useGraphStore.getState()
+          const asRecord = value => value && typeof value === 'object' && !Array.isArray(value) ? value : null
+          // Contract-only mirror of resolveXrMotionReferencePersistedValue, used by the native runtime bridge.
+          const persistedValue = metadata => metadata?.kgXrMotionReference !== undefined
+            ? metadata.kgXrMotionReference : asRecord(metadata?.frontmatterMeta)?.kgXrMotionReference
+          const metadata = asRecord(state.graphData?.metadata) || {}
+          const persisted = persistedValue(metadata)
+          const authoredPlan = asRecord(persisted)
+          const motionRuntime = motion.readXrMotionReferenceRuntime()
+          const declaredStageId = String(authoredPlan?.stageId || '')
+          const stage = library.resolveXrMotionReferenceStage(declaredStageId)
+          const sourceText = String(state.markdownDocumentText || '')
+          const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(sourceText))
+          const sourceSha256 = Array.from(new Uint8Array(bytes), value => value.toString(16).padStart(2, '0')).join('')
+          const frontmatter = sourceText.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)?.[1] || ''
+          const declaredMode = key => frontmatter.match(new RegExp(`^${key}:\\s*([^\\r\\n]+)`, 'm'))?.[1]?.trim().replace(/^['"]|['"]$/g, '') || ''
+          let signature = null
+          try { signature = JSON.parse(motionRuntime.sourceSignature) } catch {}
+          const sourceBound = Boolean(sourceSha256 === expectedSourceSha256
+            && metadata.source === `markdown:${state.markdownDocumentName}`
+            && declaredStageId && stage.id === declaredStageId
+            && motionRuntime.plan.stageId === declaredStageId
+            && motionRuntime.dirty === false
+            && JSON.stringify(signature?.persistedValue) === JSON.stringify(persisted))
           const blob = await state.captureThreeGltfSnapshot()
           if (!blob) return { ready: false }
           const gltf = JSON.parse(await blob.text())
@@ -46,11 +71,14 @@ def read_and_pin_authored_physics_baseline(
           const auxiliaryCanvases = documentCanvases.filter(
             canvas => !rendererCanvases.includes(canvas),
           )
-          const auxiliaryCanvasesLocalOnly = auxiliaryCanvases.every(
-            canvas => Boolean(canvas.closest(
-              '[data-kg-motion-control-preview="local-only"], .monaco-editor',
-            )),
-          )
+          const auxiliaryCanvasOwners = auxiliaryCanvases.map(canvas => ({
+            owner: auxiliarySelectors.find(selector => canvas.closest(selector)) || null,
+            id: canvas.id, className: String(canvas.className || ''),
+            ariaLabel: canvas.getAttribute('aria-label'),
+            width: canvas.width, height: canvas.height,
+            parent: canvas.parentElement?.outerHTML?.slice(0, 600) || '',
+          }))
+          const auxiliaryCanvasesLocalOnly = auxiliaryCanvasOwners.every(value => value.owner)
           const namedNodeCounts = nodes.reduce((counts, node) => {
             const name = String(node?.name || '').trim()
             if (name) counts[name] = (counts[name] || 0) + 1
@@ -59,9 +87,14 @@ def read_and_pin_authored_physics_baseline(
           const identityNodeNames = [
             'agentic_os_graph_xr_stage',
             'agentic_os_xr_native_controller_demo',
-            'agentic_os_xr_stage_preset_singapore',
             'agentic_os_xr_playground_treasure',
-            'agentic_os_xr_native_terrain_singapore',
+            ...(declaredStageId === 'tropical-playground' ? [
+              'agentic_os_xr_native_tropical_playground',
+              'agentic_os_xr_tropical_playground_terrain',
+            ] : [
+              `agentic_os_xr_stage_preset_${declaredStageId}`,
+              `agentic_os_xr_native_terrain_${declaredStageId}`,
+            ]),
           ].sort()
           const nodeIdentity = identityNodeNames.map(name => {
             const node = nodes.find(candidate => candidate.name === name)
@@ -88,12 +121,9 @@ def read_and_pin_authored_physics_baseline(
           })
           const authoredSceneSignature = JSON.stringify(nodeIdentity)
           const atmosphereTerrainSignature = JSON.stringify({
-            skyColor: presentation.XR_NATIVE_CONTROLLER_SKY_COLOR,
-            fogColor: presentation.XR_NATIVE_CONTROLLER_FOG_COLOR,
+            appearance: motionRuntime.plan.appearance,
             terrainId: nativeController.terrainId,
-            terrainNode: nodeIdentity.find(
-              node => node.name === 'agentic_os_xr_native_terrain_singapore',
-            ),
+            terrainNodes: nodeIdentity.filter(node => node.name.includes('terrain') || node.name.includes('tropical_playground')),
           })
           const controllerAuthoritySignature = JSON.stringify({
             schema: nativeController.schema,
@@ -105,25 +135,32 @@ def read_and_pin_authored_physics_baseline(
           const requiredNodeNames = identityNodeNames.filter(
             name => namedNodeCounts[name] === 1,
           )
-          const ready = roots.length === 1
+          const ready = Boolean(roots.length === 1
+            && sourceBound
+            && store.useGraphStore.getState().markdownDocumentText === sourceText
+            && JSON.stringify(persistedValue(store.useGraphStore.getState().graphData?.metadata)) === JSON.stringify(persisted)
+            && motion.readXrMotionReferenceRuntime().sourceSignature === motionRuntime.sourceSignature
             && rootCanvases.length === 1
             && rendererCanvases.length === 1
             && rendererCanvases[0] === canvas
             && auxiliaryCanvasesLocalOnly
+            && document.querySelectorAll('canvas.maplibregl-canvas').length === 0
             && requiredNodeNames.length === identityNodeNames.length
-            && state.canvasRenderMode === '3d'
-            && state.canvas3dMode === 'xr'
-            && workspacePreset.canvasSurfaceMode === 'xr'
+            && declaredMode('kgCanvasRenderMode') === '3d'
+            && state.canvasRenderMode === declaredMode('kgCanvasRenderMode')
+            // XrPhysicsRunReadyDemoRuntime activates the authored xr-v2 seed through activateXrSceneSurface.
+            && declaredMode('kgCanvas3dMode') === '3d' && state.canvas3dMode === 'xr'
+            && workspacePreset.canvasSurfaceMode === declaredMode('kgCanvasSurfaceMode')
             && String(state.markdownDocumentName || '')
               .endsWith('agentic-graph-ar-vr-xr-runtime-readiness-demo.md')
             && nativeController.phase === 'running'
             && nativeFrame.phase === 'running'
             && nativeFrame.stepCount > 0
             && nativeFrame.bodies.length > 0
-            && nativeController.terrainId === 'singapore'
+            && nativeController.terrainId === declaredStageId
             && nativeController.followCamera === true
             && ['stopped', 'playing', 'paused'].includes(physicsRuntime.phase)
-            && physicsRuntime.world?.schema === 'agentic-graph-xr-physics-world/v1'
+            && physicsRuntime.world?.schema === 'agentic-graph-xr-physics-world/v1')
           if (ready) {
             window.__kgFlightSimCanvas = canvas
             window.__kgFlightSimBaselineSceneIdentity = {
@@ -140,12 +177,22 @@ def read_and_pin_authored_physics_baseline(
             renderMode: state.canvasRenderMode,
             canvas3dMode: state.canvas3dMode,
             surfaceMode: workspacePreset.canvasSurfaceMode || '',
+            declaredModes: { render: declaredMode('kgCanvasRenderMode'),
+              canvas3d: declaredMode('kgCanvas3dMode'), surface: declaredMode('kgCanvasSurfaceMode') },
             rootCount: roots.length,
             rootCanvasCount: rootCanvases.length,
             documentCanvasCount: documentCanvases.length,
             rendererCanvasCount: rendererCanvases.length,
             auxiliaryCanvasCount: auxiliaryCanvases.length,
             auxiliaryCanvasesLocalOnly,
+            auxiliaryCanvasOwners,
+            sourceBound,
+            sourceSha256,
+            declaredStageId,
+            persistedLocation: metadata.kgXrMotionReference !== undefined ? 'metadata' : 'metadata.frontmatterMeta',
+            persistedSchema: authoredPlan?.schema || '',
+            expectedNodeNames: identityNodeNames,
+            namedNodeCounts,
             canvasIdentityCaptured:
               ready && window.__kgFlightSimCanvas === canvas,
             requiredNodeNames,
@@ -173,14 +220,15 @@ def read_and_pin_authored_physics_baseline(
           }
         }
         """,
-        expected_source_sha256,
+        {"expectedSourceSha256": expected_source_sha256,
+         "auxiliarySelectors": LOCAL_AUXILIARY_CANVAS_SELECTORS},
     )
 
 
 def read_flight_scene(page: Page) -> dict[str, Any]:
     return page.evaluate(
         """
-        async () => {
+        async auxiliarySelectors => {
           const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
           const gympgrph = await window.__kgFlightSimBrowserProof.importModule('gympgrphStore')
           const controller = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerDemoRuntime')
@@ -212,9 +260,7 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
             ),
           )
           const auxiliaryCanvasesLocalOnly = auxiliaryCanvases.every(
-            canvas => Boolean(canvas.closest(
-              '[data-kg-motion-control-preview="local-only"], .monaco-editor',
-            )),
+            canvas => auxiliarySelectors.some(selector => canvas.closest(selector)),
           )
           const namedNodeCounts = nodes.reduce((counts, node) => {
             const name = String(node?.name || '').trim()
@@ -376,7 +422,8 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
             },
           }
         }
-        """
+        """,
+        LOCAL_AUXILIARY_CANVAS_SELECTORS,
     )
 
 

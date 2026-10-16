@@ -9,6 +9,7 @@ import {
   resolveStoryboardWidgetPortRowKeyForDiagramRow,
 } from '@/lib/storyboardWidget/storyboardWidgetDiagramSelection'
 import { parseMermaidDiagramCodeModel } from '@/lib/mermaid/mermaidDiagramCode'
+import { formatMermaidGanttFrameSamplesToken, formatMermaidGanttFrameThumbnailToken } from '@/lib/mermaid/mermaidGanttFrameThumbnailToken'
 
 export function testStoryboardWidgetFloatingPanelPortRowsUseTypedHandles() {
   const graphData: GraphData = {
@@ -283,6 +284,36 @@ export function testStoryboardWidgetDiagramSelectionBridgeMatchesSemanticRows() 
   const computeGitGraphRow = gitGraphModel.rows.find(row => row.key === computeGitGraphRowKey)
   if (!computeGitGraphRow?.raw.includes('compute_summary')) {
     throw new Error(`expected compute_summary KTV row to select the compute_summary GitGraph frame, got ${computeGitGraphRow?.raw || computeGitGraphRowKey}`)
+  }
+
+  const encodedUrl = `https://example.test/frame?data=${'AbCdEfGhIjKlMnOp'.repeat(8192)}`
+  const mediaTokens = [
+    formatMermaidGanttFrameSamplesToken([{ timestampSeconds: 0, url: encodedUrl }]),
+    formatMermaidGanttFrameThumbnailToken(encodedUrl),
+  ].join(', ')
+  const mediaRows = ingestTimelineModel.rows.map(row => (
+    row.kind === 'task' ? { ...row, raw: `${row.raw}, ${mediaTokens}` } : row
+  ))
+  const mediaRowsBefore = mediaRows.map(row => [row.key, row.raw])
+  const mediaBridge = buildStoryboardWidgetDiagramSelectionBridge({ diagramRows: mediaRows, flowRows: portRows })
+  if (JSON.stringify([...mediaBridge.diagramRowKeyToPortRowKey]) !== JSON.stringify([...ingestBridge.diagramRowKeyToPortRowKey])
+    || JSON.stringify([...mediaBridge.portRowKeyToDiagramRowKey]) !== JSON.stringify([...ingestBridge.portRowKeyToDiagramRowKey])) {
+    throw new Error('expected large encoded Gantt media payloads to leave semantic selection maps unchanged')
+  }
+  if (JSON.stringify(mediaRows.map(row => [row.key, row.raw])) !== JSON.stringify(mediaRowsBefore)) {
+    throw new Error('expected semantic matching to preserve authored diagram row keys and media payloads')
+  }
+  const sourceSpecPort = portRows.find(row => row.key === 'html_video_source_spec:output:data_json')!
+  const tiePorts = ['first-port', 'second-port'].map(key => ({ ...sourceSpecPort, key }))
+  const tieRows = ['first-diagram', 'second-diagram'].map(key => ({
+    ...ingestTimelineRow,
+    key,
+    raw: `${ingestTimelineRow.raw}, ${mediaTokens}`,
+  }))
+  const tieBridge = buildStoryboardWidgetDiagramSelectionBridge({ diagramRows: tieRows, flowRows: tiePorts })
+  if (tieRows.some(row => tieBridge.diagramRowKeyToPortRowKey.get(row.key) !== 'first-port')
+    || tiePorts.some(row => tieBridge.portRowKeyToDiagramRowKey.get(row.key) !== 'first-diagram')) {
+    throw new Error('expected equal semantic scores to retain the first authored row in both selection directions')
   }
 }
 

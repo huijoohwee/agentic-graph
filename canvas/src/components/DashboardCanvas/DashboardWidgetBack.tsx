@@ -47,7 +47,7 @@ export default function DashboardWidgetConfiguration(props: DashboardWidgetEdito
     setBusy(true); setError('')
     try { await operation(); props.onClose() } catch (failure) { setError((failure as Error).message); setBusy(false) }
   }
-  return <section aria-label="Widget settings" className="h-full min-h-0 min-w-0 overflow-y-auto overscroll-contain space-y-3 rounded-lg border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-4 shadow-sm"
+  return <section aria-label="Widget settings" className="h-full min-h-0 min-w-0 overflow-y-auto overscroll-contain space-y-3 rounded-lg border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-4 shadow-none"
     onKeyDown={event => { if (event.key === 'Escape' && !busy) { event.preventDefault(); props.onClose() } }}
     >
     <header className="flex items-center justify-between gap-2"><h4 className="text-sm font-semibold">Configure {props.title}</h4><button ref={cancelButton} type="button" className={button} disabled={busy} onClick={props.onClose}>Cancel</button></header>

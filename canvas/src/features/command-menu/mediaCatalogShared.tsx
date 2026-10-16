@@ -194,7 +194,7 @@ export function MediaThumbnailCaption(props: {
   if (!label) return null
   return (
     <span
-      className="pointer-events-none absolute bottom-1 left-1 z-20 max-w-[calc(100%-0.5rem)] truncate rounded bg-slate-950/75 px-1.5 py-0.5 text-xs font-semibold leading-3 text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+      className="pointer-events-none absolute bottom-1 left-1 z-20 max-w-[calc(100%-0.5rem)] truncate rounded bg-slate-950/75 px-1.5 py-0.5 text-xs font-semibold leading-3 text-white opacity-0 shadow-[var(--kg-shadow-overlay)] transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
       data-kg-command-menu-media-thumbnail-caption="1"
     >
       {label}
@@ -207,7 +207,7 @@ export function MediaListThumbnailIconFrame({ Icon, label, infoLabel }: { Icon: 
     <span className={mediaListThumbnailFrameClassName('items-center justify-center')}>
       <MediaKindOverlay Icon={Icon} label={label} appearance="hover" />
       <MediaInfoOverlay label={infoLabel || label} appearance="hover" />
-      <Icon className={cn('h-4 w-4', UI_THEME_TOKENS.text.tertiary)} strokeWidth={1.7} aria-hidden />
+      <Icon className={cn('h-4 w-4', UI_THEME_TOKENS.text.tertiary)} aria-hidden />
     </span>
   )
 }
@@ -335,7 +335,7 @@ export function MediaCandidatePreview({
       <MediaKindOverlay Icon={Icon} label={item.kind} appearance="hover" />
       <MediaInfoOverlay label={infoLabel} appearance="hover" />
       <MediaOpenLinkOverlay href={openHref} appearance="hover" />
-      <Icon className={cn('h-7 w-7', UI_THEME_TOKENS.text.tertiary)} strokeWidth={1.7} aria-hidden />
+      <Icon className={cn('h-7 w-7', UI_THEME_TOKENS.text.tertiary)} aria-hidden />
     </figure>
   )
 }
@@ -411,7 +411,7 @@ export function UploadedMediaPreview({
           <MediaThumbnailCaption format={generatedThumbnail.format} metadataLabel={generatedThumbnail.metadataLabel} rasterFormat={generatedThumbnail.rasterFormat} timestampSeconds={generatedThumbnail.timestampSeconds} />
         </>
       ) : (
-        <Icon className={cn('h-7 w-7', UI_THEME_TOKENS.text.tertiary)} strokeWidth={1.7} aria-hidden />
+        <Icon className={cn('h-7 w-7', UI_THEME_TOKENS.text.tertiary)} aria-hidden />
       )}
     </button>
   )
@@ -419,7 +419,7 @@ export function UploadedMediaPreview({
 
 export function mediaCardClassName(): string {
   return cn(
-    'min-w-0 cursor-grab overflow-hidden rounded border text-left shadow-sm transition-colors active:cursor-grabbing',
+    'min-w-0 cursor-grab overflow-hidden rounded border text-left shadow-none transition-colors active:cursor-grabbing',
     UI_THEME_TOKENS.panel.border,
     UI_THEME_TOKENS.panel.bg,
     UI_THEME_TOKENS.button.hoverBg,

@@ -4,7 +4,8 @@ import { webcrypto } from 'node:crypto'
 import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { installLearningOfflineOwner, createPythonLearningOfflinePlugin } from '../../vitePythonLearningOffline.mjs'
+import { installLearningOfflineOwner, createPythonLearningOfflinePlugin, offlinePrecacheEntries } from '../../vitePythonLearningOffline.mjs'
+import authoredPublicAssets from '../features/evidence-analysis/profiles/offline-assets.json'
 
 const scope = 'https://local.test/app/', prefix = 'kg-python-learning-v1-%2Fapp%2F-', first = '1'.repeat(40), second = '2'.repeat(40)
 const digest = async (bytes: Uint8Array) => Buffer.from(await webcrypto.subtle.digest('SHA-256', bytes)).toString('hex')
@@ -33,13 +34,13 @@ function environment() {
     }))
     return { owner, request, navigate: (rev = revision, route = 'python-learning-offline') => owner.__agLearningOffline!.read({ url: scope + '?' + route + '=' + rev, mode: 'navigate' }) }
   }
-  const publish = async (revision: string, change?: (manifest: any) => void) => {
-    const assets = { 'index.html': `<html>${revision}</html>`, [`assets/${revision}/pythonWorker.js`]: `// worker ${revision}` }
+  const publish = async (revision: string, change?: (manifest: any) => void, publicAssets: Record<string, string> = {}) => {
+    const assets = { 'index.html': `<html>${revision}</html>`, [`assets/${revision}/pythonWorker.js`]: `// worker ${revision}`, ...publicAssets }
     const files = await Promise.all(Object.entries(assets).map(async ([path, text]) => {
       downloads.set(scope + path, text); const bytes = new TextEncoder().encode(text)
       return { path, bytes: bytes.length, sha256: await digest(bytes) }
     }))
-    const manifest = { schema: 'python-learning-offline/v1', revision, files, bytes: files.reduce((sum, file) => sum + file.bytes, 0) }
+    const manifest = { schema: 'python-learning-offline/v1', revision, files, ...(Object.keys(publicAssets).length ? { publicAssets: Object.keys(publicAssets) } : {}), bytes: files.reduce((sum, file) => sum + file.bytes, 0) }
     change?.(manifest); downloads.set(scope + `learning-offline-manifest-${revision}.json`, JSON.stringify(manifest))
   }
   return { caches, downloads, ownerFor, publish, setQuota: (value: boolean) => { quota = value }, calls: () => calls,
@@ -153,4 +154,68 @@ test('upgrade retains the last complete pack when the current pack was evicted o
   assert.equal((await env.state()).previous.revision, first)
   assert.equal((await three.request('recover')).ok, true)
   assert.equal((await three.navigate(first)).status, 200)
+})
+
+test('declared public members are revision-bound offline and tampering fails closed', async () => {
+  const file = 'example/fixtures/source.json', env = environment()
+  await env.publish(first, undefined, { [file]: '{"version":1}' }); await env.ownerFor(first).request('install')
+  await env.publish(second, undefined, { [file]: '{"version":2}' }); const two = env.ownerFor(second); await two.request('install')
+  const read = (revision: string, path = file) => two.owner.__agLearningOffline!.read({ url: scope + path + '?revision=' + revision, mode: 'cors' })
+  const before = env.calls(); env.downloads.clear()
+  assert.equal(await (await read(first)).text(), '{"version":1}'); assert.equal(await (await read(second)).text(), '{"version":2}')
+  assert.equal(await read(second, 'example/fixtures/undeclared.json'), null)
+  assert.equal(await read('3'.repeat(40), 'example/fixtures/undeclared.json'), null, 'unknown revisions cannot claim an unrelated public URL')
+  assert.equal((await read('3'.repeat(40))).status, 503); assert.equal(env.calls(), before)
+  const current = (await env.state()).active, cache = env.caches.get(current.cache)!
+  await cache.put(scope + file, new Response('{"version":9}'))
+  assert.equal((await read(second)).status, 503); assert.equal((await two.request('verify')).ok, false)
+  assert.equal(await (await read(first)).text(), '{"version":1}', 'prior complete source bytes remain distinct')
+  cache.values.delete(scope + file); assert.equal((await read(second)).status, 503)
+})
+
+test('missing, undeclared and traversal public membership cannot replace a complete installation', async () => {
+  const file = 'example/fixtures/source.json', env = environment(); await env.publish(first); await env.ownerFor(first).request('install')
+  const before = JSON.stringify(await env.state()), two = env.ownerFor(second)
+  for (const change of [
+    (value: any) => { value.publicAssets = [] },
+    (value: any) => { value.publicAssets.push('example/fixtures/missing.json') },
+    (value: any) => { value.publicAssets[0] = 'example/../escape.json' },
+    (value: any) => { value.publicAssets[0] = 'https://foreign.test/source.json' },
+    (value: any) => { const file = value.files.find((entry: any) => value.publicAssets.includes(entry.path)); value.bytes += 500000 - file.bytes; file.bytes = 500000 },
+  ]) {
+    await env.publish(second, change, { [file]: '{}' }); const calls = env.calls()
+    assert.equal((await two.request('install')).ok, false); assert.equal(env.calls(), calls + 1)
+    assert.equal(JSON.stringify(await env.state()), before)
+  }
+  await env.publish(second, undefined, { [file]: '{}' }); env.downloads.delete(scope + file)
+  assert.equal((await two.request('install')).ok, false); assert.equal(JSON.stringify(await env.state()), before)
+})
+
+test('one bounded authored asset declaration supplies exact build and precache membership', async () => {
+  const entries = offlinePrecacheEntries(authoredPublicAssets)
+  assert.ok(entries.length > 0 && entries.length <= 40)
+  assert.deepEqual(entries, authoredPublicAssets.map(file => ({ url: file.path, revision: file.sha256 })))
+  const config = await readFile(new URL('../../vite.config.ts', import.meta.url), 'utf8')
+  assert.match(config, /createPythonLearningOfflinePlugin\(runtimeIdentity.sourceRevision, offlinePublicAssets\)/)
+  assert.match(config, /additionalManifestEntries: offlinePrecacheEntries\(offlinePublicAssets\)/)
+  for (const file of authoredPublicAssets) {
+    const bytes = await readFile(new URL(`../../public/${file.path}`, import.meta.url)); assert.equal(bytes.length, file.bytes); assert.equal(await digest(bytes), file.sha256)
+  }
+  const directory = await mkdtemp(join(tmpdir(), 'declared-offline-assets-'))
+  try {
+    const shell = ['index.html', `assets/${first}/pythonWorker.js`]
+    for (const file of shell) { await mkdir(join(directory, file, '..'), { recursive: true }); await writeFile(join(directory, file), file) }
+    for (const file of authoredPublicAssets) { await mkdir(join(directory, file.path, '..'), { recursive: true }); await writeFile(join(directory, file.path), await readFile(new URL(`../../public/${file.path}`, import.meta.url))) }
+    const plugin = createPythonLearningOfflinePlugin(first, authoredPublicAssets), bundle = Object.fromEntries(shell.map(path => [path, {}]))
+    await plugin.writeBundle.handler({ dir: directory }, bundle)
+    const manifest = JSON.parse(await readFile(join(directory, `learning-offline-manifest-${first}.json`), 'utf8'))
+    assert.deepEqual(manifest.publicAssets, authoredPublicAssets.map(file => file.path)); assert.equal(manifest.files.length, shell.length + authoredPublicAssets.length)
+    await writeFile(join(directory, authoredPublicAssets[0].path), 'changed')
+    await assert.rejects(plugin.writeBundle.handler({ dir: directory }, bundle), /differs from its declaration/)
+    await rm(join(directory, authoredPublicAssets[0].path))
+    await assert.rejects(plugin.writeBundle.handler({ dir: directory }, bundle), /ENOENT/)
+    assert.throws(() => offlinePrecacheEntries([...authoredPublicAssets, authoredPublicAssets[0]]), /Invalid offline public asset/)
+    assert.throws(() => offlinePrecacheEntries([{ ...authoredPublicAssets[0], path: 'example/../escape.json' }]), /Invalid offline public asset/)
+    assert.throws(() => offlinePrecacheEntries([{ ...authoredPublicAssets[0], bytes: 500000 }]), /Invalid offline public asset/)
+  } finally { await rm(directory, { recursive: true, force: true }) }
 })

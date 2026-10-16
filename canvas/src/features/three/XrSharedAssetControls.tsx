@@ -1,7 +1,8 @@
 import React from 'react'
 import { XrRehearsalStatus } from './XrRehearsalStatus'
-import { Clapperboard, Eraser, Hand, MapPin, Pause, Play, Target } from 'lucide-react'
+import { Clapperboard, Eraser, Hand, Keyboard, MapPin, Pause, Play, Target } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { emitMainPanelOpen } from '@/features/panels/utils/useMainPanelRect'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
@@ -167,6 +168,16 @@ export function XrSharedAssetControls({ embedded = false, onSelectedPresetIdChan
         </label> : surface !== 'animation' ? <button type="button" className="App-toolbar__btn justify-start" onClick={() => { const state = useGraphStore.getState(); state.setFloatingPanelView('animation'); state.setFloatingPanelOpen(true) }} data-kg-xr-animation-editor-link={surface}><Clapperboard className="size-3.5" aria-hidden /> Edit choreography and motions</button> : null}
       </section>
       <section className="flex min-w-0 flex-wrap items-center gap-1" aria-label="Shared XR asset actions">
+        <button
+          type="button"
+          className="App-toolbar__btn"
+          onClick={() => emitMainPanelOpen({ tab: 'help', searchQuery: 'WASD' })}
+          title="Open MainPanel Help shortcuts for WASD, arrow, and Camera controls"
+          aria-label="Open WASD and Camera shortcuts in MainPanel Help"
+          data-kg-xr-shared-asset-shortcut-help={surface}
+        >
+          <Keyboard className="size-3.5" aria-hidden /> Shortcuts
+        </button>
         {authorsMotion ? <><button
           type="button"
           className="App-toolbar__btn"

@@ -8,7 +8,7 @@ import type {
 import type { TraversalSummary } from '@/features/panels/utils/orchestratorTraversal'
 import type { TokenWithLines } from '@/features/markdown/ui/markdownPreviewLex'
 import type { MarkdownFrontmatter } from '@/lib/markdown'
-import type { ZoomCommandType, ZoomFitIntent, ZoomRequest, ZoomTransformIntent } from '@/lib/zoom/requests'
+import type { ZoomCommandType, ZoomRequestOptions, ZoomRequest, ZoomTransformIntent } from '@/lib/zoom/requests'
 import type {
   StoryboardWidgetLayoutRebalanceOptions,
   StoryboardWidgetLayoutRebalanceRequest,
@@ -66,7 +66,7 @@ export interface GraphStateCanvasRuntime {
   setZoomToSelectionMode: (v: boolean) => void;
   toggleZoomToSelectionMode: () => void;
   zoomRequest: ZoomRequest | null;
-  requestZoom: (type: ZoomCommandType, opts?: { intent?: ZoomFitIntent }) => void;
+  requestZoom: (type: ZoomCommandType, opts?: ZoomRequestOptions) => void;
   requestZoomTransform: (payload: { k: number; x: number; y: number }, opts?: { intent?: ZoomTransformIntent }) => void;
   requestZoomBounds: (payload: { bounds: { x: number; y: number; w: number; h: number }; insetPx?: number; origin?: { x: number; y: number } }) => void;
   clearZoomRequest: () => void;

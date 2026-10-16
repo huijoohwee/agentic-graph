@@ -442,7 +442,7 @@ export function MarkdownWorkspaceToolbar({
                   onChange={event => setDocumentVersionGraphOpen?.(event.currentTarget.checked)}
                   labelClassName={`kg-workspace-pane-toggle relative z-[260] ${UI_RESPONSIVE_LABEL_ROW_CLASSNAME} cursor-pointer`}
                   textClassName={paneToggleTextClassName}
-                  icon={<FileDiff className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} strokeWidth={1.6} aria-hidden="true" />}
+                  icon={<FileDiff className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} aria-hidden="true" />}
                   labelProps={{ 'data-kg-markdown-workspace-document-version-graph-toggle': '1' }}
                 />
               ) : null}
@@ -492,7 +492,7 @@ export function MarkdownWorkspaceToolbar({
               title="Presentation"
               onClick={() => setLayoutMode('presentation')}
             >
-              <LayoutPanelTop className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} strokeWidth={1.6} />
+              <LayoutPanelTop className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} />
             </button>
           </li>
         </menu>
@@ -513,7 +513,7 @@ export function MarkdownWorkspaceToolbar({
         <menu className={`${uiToolbarRowScrollListClassName} gap-1`} aria-label="Actions">
           <li className="list-none">
             <button type="button" className={TOOLBAR_BUTTON_CLASSNAME} title="Fullscreen" onClick={onToggleFullscreen}>
-              <Maximize2 className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} strokeWidth={1.6} />
+              <Maximize2 className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} />
             </button>
           </li>
           <li className="list-none">
@@ -531,7 +531,7 @@ export function MarkdownWorkspaceToolbar({
                 })
               }}
             >
-              <X className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} strokeWidth={1.6} />
+              <X className={MARKDOWN_WORKSPACE_TOOLBAR_GLYPH_CLASSNAME} />
             </button>
           </li>
         </menu>

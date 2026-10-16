@@ -1,10 +1,38 @@
-import type { FeatureCollection } from 'geojson'
+import type { Feature, FeatureCollection } from 'geojson'
+import { hashStringToHex } from 'grph-shared/hash/stringHash'
 import type { ExtrusionLayerConfig } from 'grph-shared/geospatial/enhancedLayerContract'
 import type { GeospatialPointStyleConfig } from './features/geospatial/pointStyleConfig.js'
 
 const EMPTY_FEATURE_COLLECTION: FeatureCollection = { type: 'FeatureCollection', features: [] }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+export function projectGeospatialAreaFeatures(value: unknown): Array<{ feature: Feature; signature: string }> {
+  if (!isRecord(value) || value.type !== 'FeatureCollection' || !Array.isArray(value.features)) return []
+  return value.features.flatMap((source, index) => {
+    if (!isRecord(source) || !isRecord(source.geometry)) return []
+    const geometryType = source.geometry.type
+    const coordinates = source.geometry.coordinates
+    if ((geometryType !== 'Polygon' && geometryType !== 'MultiPolygon') || !Array.isArray(coordinates) || !coordinates.length) return []
+    const properties = isRecord(source.properties) ? source.properties : {}
+    const rawId = source.id
+    const id = typeof rawId === 'string' || typeof rawId === 'number' ? String(rawId) : `kg-area:${index + 1}`
+    return [{
+      feature: {
+        type: 'Feature', id, geometry: { type: geometryType, coordinates } as Feature['geometry'],
+        properties: { ...properties, id },
+      },
+      signature: hashStringToHex(JSON.stringify(source)),
+    }]
+  })
+}
+
 const pointColorExpression = (fallbackColor: string, pointStyleConfig?: GeospatialPointStyleConfig) => [
+  'coalesce',
+  ['get', 'kgColor'],
+  [
   'match',
   ['get', 'kgCategory'],
   'airport',
@@ -16,6 +44,7 @@ const pointColorExpression = (fallbackColor: string, pointStyleConfig?: Geospati
   'route',
   pointStyleConfig?.colors.route || '#0f766e',
   pointStyleConfig?.colors.other || fallbackColor,
+  ],
 ]
 const pointRadiusByZoomExpression = (radiusMultiplier: number) => [
   'match',
@@ -202,6 +231,29 @@ export function ensureDatasetLayer(
     }
   }
 
+  addLayerOnce({
+    id: `${sourceId}:areas`,
+    type: 'fill',
+    source: sourceId,
+    filter: ['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']],
+    paint: {
+      'fill-color': ['coalesce', ['get', 'kgFillColor'], '#94a3b8'],
+      'fill-opacity': ['coalesce', ['get', 'kgFillOpacity'], 0.55],
+    },
+  })
+
+  addLayerOnce({
+    id: `${sourceId}:area-outlines`,
+    type: 'line',
+    source: sourceId,
+    filter: ['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']],
+    paint: {
+      'line-color': ['coalesce', ['get', 'kgStrokeColor'], '#475569'],
+      'line-width': ['coalesce', ['get', 'kgStrokeWidth'], 1],
+      'line-opacity': ['coalesce', ['get', 'kgStrokeOpacity'], 0.8],
+    },
+  })
+
   if (cluster) {
     addLayerOnce({
       id: `${sourceId}:cluster-bubbles`,
@@ -236,9 +288,21 @@ export function ensureDatasetLayer(
     source: sourceId,
     filter: ['all', ['==', ['geometry-type'], 'LineString'], ['==', ['get', 'kgCategory'], 'route']],
     paint: {
-      'line-color': options?.pointStyleConfig?.colors.route || color,
-      'line-width': 2.5,
-      'line-opacity': 0.88,
+      'line-color': ['coalesce', ['get', 'kgColor'], options?.pointStyleConfig?.colors.route || color],
+      'line-width': ['coalesce', ['get', 'kgWidth'], 2.5],
+      'line-opacity': ['coalesce', ['get', 'kgOpacity'], 0.88],
+    },
+  })
+
+  addLayerOnce({
+    id: `${sourceId}:infrastructure-lines`,
+    type: 'line',
+    source: sourceId,
+    filter: ['all', ['==', ['geometry-type'], 'LineString'], ['==', ['get', 'kgCategory'], 'infrastructure']],
+    paint: {
+      'line-color': ['coalesce', ['get', 'kgColor'], '#64748b'],
+      'line-width': ['coalesce', ['get', 'kgWidth'], 1.5],
+      'line-opacity': ['coalesce', ['get', 'kgOpacity'], 0.8],
     },
   })
 
@@ -257,6 +321,28 @@ export function ensureDatasetLayer(
       'circle-stroke-width': 1.5,
       'circle-stroke-opacity': 0.95,
       'circle-blur': 0.05,
+    },
+  })
+
+  addLayerOnce({
+    id: `${sourceId}:labels`,
+    type: 'symbol',
+    source: sourceId,
+    filter: ['all', ['==', ['geometry-type'], 'Point'], ['==', ['get', 'kgLabelVisible'], true]],
+    layout: {
+      'text-field': ['coalesce', ['get', 'label'], ['get', 'id']],
+      'text-font': ['Noto Sans Regular', 'Arial Unicode MS Regular'],
+      'text-size': ['interpolate', ['linear'], ['zoom'], 4, 9, 10, 11, 16, 13],
+      'text-offset': [0, 1.15],
+      'text-anchor': 'top',
+      'text-allow-overlap': false,
+      'text-optional': true,
+    },
+    paint: {
+      'text-color': '#172554',
+      'text-halo-color': '#ffffff',
+      'text-halo-width': 1.5,
+      'text-halo-blur': 0.3,
     },
   })
 }

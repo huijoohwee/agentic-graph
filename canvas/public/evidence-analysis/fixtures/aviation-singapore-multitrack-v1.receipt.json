@@ -1,0 +1,157 @@
+{
+  "schema": "readsb-multitrack-preparation/v1",
+  "preparedAt": "2026-10-04T02:28:02.330Z",
+  "authority": "research-output-only; no source changes or publication",
+  "dataset": {
+    "id": "singapore-wsss-multitrack-20261004-v1",
+    "title": "WSSS vicinity · three observed ADS-B tracks · 4 October 2026",
+    "classification": "imported"
+  },
+  "selectionWindow": {
+    "from": "2026-10-04T02:24:40.000Z",
+    "through": "2026-10-04T02:26:40.000Z"
+  },
+  "commonObservedSpan": {
+    "from": "2026-10-04T02:24:46.425Z",
+    "through": "2026-10-04T02:26:26.565Z"
+  },
+  "tracks": [
+    {
+      "entityId": "76d1ca",
+      "label": "76d1ca · 9V-TNJ · observed ADS-B",
+      "sourceUrl": "https://adsb.lol/data/traces/ca/trace_recent_76d1ca.json",
+      "retrievedAt": "2026-10-04T02:26:48.295Z",
+      "sourceFile": "trace_recent_76d1ca_20261004.json",
+      "sourceBytes": 18181,
+      "sourceSha256": "751c5dfec138589e0204bded74babc209a72da6fabd247dd1c1040587c7849df",
+      "callsigns": [
+        "TGW408"
+      ],
+      "positionCount": 31,
+      "factCount": 67,
+      "unknownCount": 5,
+      "firstObservedUtc": "2026-10-04T02:24:46.425Z",
+      "lastObservedUtc": "2026-10-04T02:26:26.565Z",
+      "maxObservedGapSeconds": 19.72,
+      "latitude": [
+        1.211929,
+        1.307373
+      ],
+      "longitude": [
+        103.9484,
+        103.976314
+      ],
+      "numericAltitudeFeet": [
+        2150,
+        3450
+      ],
+      "altitudeDatums": [
+        "pressure"
+      ],
+      "selectionFile": "selection-76d1ca.json",
+      "upstreamBytesRetained": true
+    },
+    {
+      "entityId": "76b44c",
+      "label": "76b44c · 9V-MBL · observed ADS-B",
+      "sourceUrl": "https://adsb.lol/data/traces/4c/trace_recent_76b44c.json",
+      "retrievedAt": "2026-10-04T02:26:48.257Z",
+      "sourceFile": "trace_recent_76b44c_20261004.json",
+      "sourceBytes": 18971,
+      "sourceSha256": "231e4f2d8ab1d1a8fb03dc447a359d60aac1952695e99084df4f7e7a15658790",
+      "callsigns": [
+        "SIA728"
+      ],
+      "positionCount": 37,
+      "factCount": 79,
+      "unknownCount": 5,
+      "firstObservedUtc": "2026-10-04T02:24:42.724Z",
+      "lastObservedUtc": "2026-10-04T02:26:36.184Z",
+      "maxObservedGapSeconds": 6.46,
+      "latitude": [
+        1.201932,
+        1.278557
+      ],
+      "longitude": [
+        103.952826,
+        104.022722
+      ],
+      "numericAltitudeFeet": [
+        3725,
+        4125
+      ],
+      "altitudeDatums": [
+        "pressure"
+      ],
+      "selectionFile": "selection-76b44c.json",
+      "upstreamBytesRetained": true
+    },
+    {
+      "entityId": "780de6",
+      "label": "780de6 · B-5976 · observed ADS-B",
+      "sourceUrl": "https://adsb.lol/data/traces/e6/trace_recent_780de6.json",
+      "retrievedAt": "2026-10-04T02:26:48.241Z",
+      "sourceFile": "trace_recent_780de6_20261004.json",
+      "sourceBytes": 18940,
+      "sourceSha256": "fb88004edcd61821b9edc13b06ba0a471460d809b9020ba0a98ef0720015be38",
+      "callsigns": [
+        "CES546"
+      ],
+      "positionCount": 17,
+      "factCount": 39,
+      "unknownCount": 5,
+      "firstObservedUtc": "2026-10-04T02:24:44.466Z",
+      "lastObservedUtc": "2026-10-04T02:26:38.156Z",
+      "maxObservedGapSeconds": 29.55,
+      "latitude": [
+        1.325226,
+        1.487411
+      ],
+      "longitude": [
+        103.972375,
+        104.009198
+      ],
+      "numericAltitudeFeet": [
+        8025,
+        11300
+      ],
+      "altitudeDatums": [
+        "pressure"
+      ],
+      "selectionFile": "selection-780de6.json",
+      "upstreamBytesRetained": true
+    }
+  ],
+  "bundle": {
+    "file": "aviation-singapore-multitrack-v1.json",
+    "bytes": 213122,
+    "sha256": "f8e3e92881fde1d7bfa36423ee1e031e71019697993153fd1829cd440a1f0082",
+    "identity": {
+      "originalSha256": "f8e3e92881fde1d7bfa36423ee1e031e71019697993153fd1829cd440a1f0082",
+      "derivedSha256": "ba489a9cdae7112ddd6266c6d9331a173f66864abb3bb476c4db21a39a3988d6"
+    },
+    "stats": {
+      "entityCount": 3,
+      "factCount": 185,
+      "sourceCount": 3,
+      "startUtc": "2026-10-04T02:24:42.724Z",
+      "endUtc": "2026-10-04T02:26:38.156Z"
+    }
+  },
+  "method": {
+    "adapter": "Existing Graph import-readsb.mjs unchanged; exact UTC epoch+offset milliseconds; non-stale adsb_icao positions only; source/fact IDs namespaced in derived envelopes before existing kernel admission.",
+    "interpolation": false,
+    "touchdownInference": false,
+    "airportAssignment": "Near authored WSSS study location, not evidence that each flight departed or arrived WSSS.",
+    "trajectory": "Segments join observed samples only; gaps and observation time must stay visible; no extrapolated present position.",
+    "airspace": "No official FIR, controlled-airspace geometry, clearance, restrictions or notice geometry is supplied by ADS-B traces."
+  },
+  "rights": {
+    "database": "ODbL-1.0",
+    "attribution": "ADSB.lol contributors — https://www.adsb.lol — ODbL-1.0",
+    "url": "https://www.adsb.lol/docs/open-data/api/",
+    "historyUrl": "https://www.adsb.lol/docs/open-data/historical/",
+    "licenseFile": "ADSBLOL-LICENSE-ODbL.txt",
+    "codeRightsSeparate": true
+  }
+}

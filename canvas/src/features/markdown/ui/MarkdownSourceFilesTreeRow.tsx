@@ -49,9 +49,9 @@ export function MarkdownSourceFilesTreeRow(props: MarkdownSourceFilesTreeRowProp
   const versionCount = Math.max(0, Math.floor(Number(node.versionCount || 0)))
   const rowClassName = [
     `border-b ${UI_THEME_TOKENS.panel.divider} last:border-b-0 px-2 py-1`,
-    'flex items-center gap-2 border-l-2',
+    'flex items-center gap-2',
     node.active ? UI_THEME_TOKENS.table.rowSelected : UI_THEME_TOKENS.table.rowHoverHighlight,
-    dragOverSourceFileId === node.fileId ? UI_THEME_TOKENS.table.rowSelectedBorder : '',
+    dragOverSourceFileId === node.fileId ? 'outline outline-1 outline-dashed outline-[var(--kg-primary)]' : '',
     isSelectedFolder ? UI_THEME_TOKENS.table.rowSelected : '',
     'min-w-0 overflow-hidden cursor-pointer select-none',
   ]
@@ -61,15 +61,15 @@ export function MarkdownSourceFilesTreeRow(props: MarkdownSourceFilesTreeRowProp
   const icon = isFolder ? (
     node.hasChildren ? (
       expanded ? (
-        <ChevronDown className={iconClassName} strokeWidth={1.5} aria-hidden="true" />
+        <ChevronDown className={iconClassName} aria-hidden="true" />
       ) : (
-        <ChevronRight className={iconClassName} strokeWidth={1.5} aria-hidden="true" />
+        <ChevronRight className={iconClassName} aria-hidden="true" />
       )
     ) : (
-      <ChevronRight className={`${iconClassName} opacity-30`} strokeWidth={1.5} aria-hidden="true" />
+      <ChevronRight className={`${iconClassName} opacity-30`} aria-hidden="true" />
     )
   ) : (
-    <FileText className={iconClassName} strokeWidth={1.5} aria-hidden="true" />
+    <FileText className={iconClassName} aria-hidden="true" />
   )
 
   if (isFolder) {
@@ -153,7 +153,7 @@ export function MarkdownSourceFilesTreeRow(props: MarkdownSourceFilesTreeRowProp
               void onDeleteFile(node.path)
             }}
           >
-            <Trash2 className={iconClassName} strokeWidth={1.5} aria-hidden="true" />
+            <Trash2 className={iconClassName} aria-hidden="true" />
           </button>
         ) : null}
       </article>

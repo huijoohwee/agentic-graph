@@ -1,4 +1,5 @@
 import type React from 'react'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 
 /** The native hierarchy guides shared by run spans and program blocks. */
 export function HierarchyGuides(props: {
@@ -47,8 +48,8 @@ export function HierarchyTreeRow(props: {
     aria-selected={props.selected} aria-level={props.depth + 1}
     aria-expanded={props.hasChildren ? props.expanded : undefined}
     onClick={props.onClick} onKeyDown={props.onKeyDown}
-    className={`relative grid w-full min-w-0 cursor-pointer items-center gap-3 border-l-4 px-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 ${span ? 'h-[60px] py-3' : 'min-h-14 py-2'}`}
-    style={{ gridTemplateColumns: props.gridTemplateColumns || 'minmax(0, 1fr)', borderLeftColor: props.selected ? '#3b82f6' : 'transparent', background: props.selected ? 'color-mix(in srgb, #3b82f6 22%, var(--kg-panel-bg, white))' : undefined }}>
+    className={`relative grid w-full min-w-0 cursor-pointer items-center gap-3 border border-transparent px-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 ${span ? 'h-[60px] py-3' : 'min-h-14 py-2'} ${uiSelectedRowStateClassName(props.selected)}`}
+    style={{ gridTemplateColumns: props.gridTemplateColumns || 'minmax(0, 1fr)' }}>
     <HierarchyGuides depth={props.depth} visibleDepths={props.visibleDepths} index={props.index}
       hasChildren={props.hasChildren} expanded={props.expanded} span={span} />
     <span className="relative flex min-w-0 items-center gap-3" style={{ paddingLeft: guides * 24 }}>{props.primary}</span>

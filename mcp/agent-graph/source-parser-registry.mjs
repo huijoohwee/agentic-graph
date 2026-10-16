@@ -71,6 +71,16 @@ export const SOURCE_PARSER_DESCRIPTORS = Object.freeze([
     priority: 50,
   },
   {
+    id: "native-binary",
+    kind: "native-binary",
+    adapter: "native-binary",
+    fidelity: "structural-parser",
+    extensions: [".a", ".ar", ".dylib", ".dll", ".exe", ".ko", ".lib", ".o", ".obj", ".sys", ".wasm", ".wasm32"],
+    basenames: [],
+    basenameFamilies: [".so"],
+    priority: 100,
+  },
+  {
     id: "pdf",
     kind: "pdf",
     adapter: "pdf",

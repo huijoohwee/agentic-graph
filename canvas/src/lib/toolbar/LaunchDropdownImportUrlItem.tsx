@@ -317,10 +317,10 @@ export function LaunchDropdownImportUrlItem(props: {
         data-kg-launch-import-url-skills-commands-target="skillsCommands"
         data-kg-launch-import-url-mcp-tool={IMPORT_URL_AGENT_READY_MCP_TOOL_NAME}
       >
-        <Link className={props.menuIconClass} strokeWidth={1.6} />
+        <Link className={props.menuIconClass} />
         <span className="truncate">Import URL</span>
         <WorkspaceLaunchRowValue label="Import URL" value="Configure" optionId="importUrl:configure" />
-        <ChevronDown className={`ml-auto ${props.menuIconClass} transition-transform ${urlInputOpen ? 'rotate-180' : ''}`} strokeWidth={1.6} aria-hidden="true" />
+        <ChevronDown className={`ml-auto ${props.menuIconClass} transition-transform ${urlInputOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
       </button>
       {urlInputOpen ? (
         <section id={importUrlControlsId} className="kg-launch-menu-children kg-click-expand-menu-children mt-1">
@@ -334,7 +334,7 @@ export function LaunchDropdownImportUrlItem(props: {
             autoFocus
             disabled={isImportingUrl}
             confirmLabel={agentGraphRepositoryMode || isLaunchAgentGraphRepositoryUrl(urlDraft) ? 'Import codebase graph' : 'Import URL into workspace'}
-            confirmIcon={<FileDown className={props.menuIconClass} strokeWidth={1.6} aria-hidden="true" />}
+            confirmIcon={<FileDown className={props.menuIconClass} aria-hidden="true" />}
             onConfirm={runImportUrl}
             rightAddon={
               <>
@@ -354,21 +354,21 @@ export function LaunchDropdownImportUrlItem(props: {
                       : IMPORT_URL_AGENT_READY_MCP_TOOL_NAME).catch(() => undefined)
                   }}
                 >
-                  <GitBranch className={props.menuIconClass} strokeWidth={1.6} aria-hidden />
+                  <GitBranch className={props.menuIconClass} aria-hidden />
                 </button>
                 <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', importUrlRenderer === DESIGN_IMPORT_URL_RENDERER_SELECTION ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)} title="Design renderer" aria-label="Design renderer" aria-pressed={importUrlRenderer === DESIGN_IMPORT_URL_RENDERER_SELECTION} onClick={() => setImportUrlRenderer(prev => (prev === DESIGN_IMPORT_URL_RENDERER_SELECTION ? 'default' : DESIGN_IMPORT_URL_RENDERER_SELECTION))}>
-                  <Palette className={props.menuIconClass} strokeWidth={1.6} aria-hidden={true} />
+                  <Palette className={props.menuIconClass} aria-hidden={true} />
                 </button>
                 <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', validationConfigOpen ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)} title="Video-agent validation config" aria-label="Video-agent validation config" aria-pressed={validationConfigOpen} onClick={() => setValidationConfigOpen(prev => !prev)}>
-                  <Workflow className={props.menuIconClass} strokeWidth={1.6} aria-hidden="true" />
+                  <Workflow className={props.menuIconClass} aria-hidden="true" />
                 </button>
                 {isVideoEligible ? (
                   <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', downloadOptionsOpen ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)} title="Download local video" aria-label="Download local video" aria-pressed={downloadOptionsOpen} onClick={() => setDownloadOptionsOpen(prev => !prev)}>
-                    <Download className={props.menuIconClass} strokeWidth={1.6} aria-hidden="true" />
+                    <Download className={props.menuIconClass} aria-hidden="true" />
                   </button>
                 ) : null}
                 <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)} title="Crawl website headlessly" aria-label="Crawl website headlessly" data-kg-launch-import-url-crawler-target={NATIVE_CRAWLER_COMMAND} disabled={isImportingUrl || !urlDraft.trim()} onClick={() => { void runWebsiteCrawl(urlDraft) }}>
-                  <Globe className={props.menuIconClass} strokeWidth={1.6} aria-hidden="true" />
+                  <Globe className={props.menuIconClass} aria-hidden="true" />
                 </button>
               </>
             }

@@ -3,6 +3,7 @@ import type { RichMediaPanelTab } from '@/lib/render/richMediaPanelState'
 import type { MediaDragPayload } from '@/lib/ui/mediaDragPayload'
 import type { ImageToThreeJsRenderMode } from '@/features/image-to-threejs/imageToThreeJsContract'
 import type { XrSceneMediaDragProjection } from '@/lib/ui/mediaDragPayload'
+import type { RichMediaTimelineTransportFrame } from '@/lib/render/richMediaTimelineSync'
 
 export type RichMediaKind = 'iframe' | 'image' | 'svg' | 'video' | 'audio' | 'model'
 
@@ -11,6 +12,8 @@ export type RichMediaPanelProps = {
   title: string
   url: string
   srcDoc?: string
+  sourcePlayback?: boolean
+  mapTimelineTransportFrame?: (frame: RichMediaTimelineTransportFrame) => RichMediaTimelineTransportFrame | null
   openUrl?: string
   kind?: RichMediaKind
   renderMode?: ImageToThreeJsRenderMode

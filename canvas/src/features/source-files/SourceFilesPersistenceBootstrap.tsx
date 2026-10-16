@@ -3,93 +3,40 @@ import { beginSourceFilesDocumentIntent, completeSourceFilesBootstrap, failSourc
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { __canvasStartupDebug } from '@/features/canvas/canvasStartupDebug'
 import { buildDocDeepLinkIntentKey } from '@/features/canvas/canvasDocDeepLink'
-import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
-import {
-  loadPersistedSourceFiles,
-  loadPersistedSourceFilesWorkspace,
-  persistSourceFiles,
-  persistSourceFilesWorkspace,
-} from '@/features/source-files/sourceFilesDb'
+import { loadPersistedSourceFiles, loadPersistedSourceFilesWorkspace, persistSourceFiles, persistSourceFilesWorkspace } from '@/features/source-files/sourceFilesDb'
 import { scheduleApplyComposedGraphFromSourceFiles } from '@/features/source-files/applyComposedGraphFromSourceFiles'
 import { scheduleWorkspaceSyncTask, cancelWorkspaceSyncTask } from '@/lib/async/workspaceSyncScheduler'
+import { WORKSPACE_SYNC_SCOPE_SOURCE_FILES_RUNTIME_PERSISTENCE, WORKSPACE_SYNC_SCOPE_AGENTIC_OS_STORAGE_RUNTIME_PERSISTENCE, WORKSPACE_SYNC_TASK_SOURCE_FILES_PERSIST, WORKSPACE_SYNC_TASK_SOURCE_FILES_WORKSPACE } from '@/lib/async/workspaceSyncKeys'
+import { readReusableWorkspaceEntriesSnapshot } from '@/features/source-files/sourceFilesRuntimeShared'
 import {
-  WORKSPACE_SYNC_SCOPE_SOURCE_FILES_RUNTIME_PERSISTENCE,
-  WORKSPACE_SYNC_SCOPE_AGENTIC_OS_STORAGE_RUNTIME_PERSISTENCE,
-  WORKSPACE_SYNC_TASK_AGENTIC_OS_STORAGE_QUEUE,
-  WORKSPACE_SYNC_TASK_SOURCE_FILES_PERSIST,
-  WORKSPACE_SYNC_TASK_SOURCE_FILES_WORKSPACE,
-} from '@/lib/async/workspaceSyncKeys'
-import {
-  buildActiveWorkspaceRuntimeSourceFilesSnapshot,
-  buildMaterializedWorkspaceActivePathKey,
-  buildMaterializedWorkspaceForceIncludePaths,
-  hydrateWorkspaceEntriesInlineText,
-  materializeActiveWorkspaceEntryIntoSourceFiles,
-  readWorkspaceActiveEntrySnapshot,
-  readReusableWorkspaceEntriesSnapshot,
-  resolveMaterializedWorkspaceActivePath,
-} from '@/features/source-files/sourceFilesRuntimeShared'
-import {
-  materializeBootstrapWorkspaceSourceFiles,
-  restoreBootstrapPersistedSourceFiles,
-  restoreBootstrapWorkspaceState,
-  runBootstrapSourceFileHydration,
-  applyBootstrapComposedGraphSync,
+  materializeBootstrapWorkspaceSourceFiles, restoreBootstrapPersistedSourceFiles, restoreBootstrapWorkspaceState,
+  runBootstrapSourceFileHydration, applyBootstrapComposedGraphSync,
 } from '@/features/source-files/sourceFilesBootstrapStartup'
-import { resolveWorkspaceSourceRootPaths } from '@/features/workspace-fs/workspaceSourceRoots'
 import {
-  areSourceFilesEqualByIdAndHash,
-  areRuntimeSourceFilesEqualByIdAndHash,
-  buildSourceFilesCompositionSignature,
-  buildSourceFilesPersistenceSignature,
-  type SourceFilesCompositionSignatureOptions,
+  areSourceFilesEqualByIdAndHash, areRuntimeSourceFilesEqualByIdAndHash, buildSourceFilesCompositionSignature,
+  buildSourceFilesPersistenceSignature, type SourceFilesCompositionSignatureOptions,
 } from '@/features/source-files/sourceFilesSignatures'
-import {
-  areSourceFilesWorkspaceStatesEqual,
-  buildSourceFilesWorkspaceStateSignature,
-  normalizeSourceFilesWorkspaceState,
-  type SourceFilesWorkspaceState,
-} from '@/features/source-files/sourceFilesWorkspaceState'
-import {
-  buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState,
-  buildSourceFilesStorageSyncSignature,
-} from '@/features/source-files/sourceFilesStorageSync'
+import { areSourceFilesWorkspaceStatesEqual, buildSourceFilesWorkspaceStateSignature, normalizeSourceFilesWorkspaceState, type SourceFilesWorkspaceState } from '@/features/source-files/sourceFilesWorkspaceState'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
-import { subscribeWorkspaceFsChanged } from '@/features/workspace-fs/workspaceFsEvents'
-import { isWebsiteImportExplorerUpdate } from '@/features/workspace-fs/websiteImportRefreshGuard'
 import { resolveWorkspaceSourceIndexSnapshot } from '@/features/workspace-fs/sourceIndex'
-import { buildWorkspaceEntriesSemanticKey } from '@/features/workspace-fs/workspaceEntriesSemanticKey'
-import { invalidateCachedWorkspaceActiveEntrySnapshot } from '@/features/source-files/workspaceActiveEntryCache'
 import {
-  readWorkspaceSeedSyncEnabledSetting,
-  readWorkspaceCloudSyncEnabledSetting,
-  readWorkspaceSeedSyncIdleMaxMsSetting,
-  readWorkspaceSeedSyncPollMsSetting,
-  readWorkspaceSourceFilesDocsOnlySetting,
-  readWorkspaceSourceFilesSyncDebounceMsSetting,
+  readWorkspaceSeedSyncEnabledSetting, readWorkspaceCloudSyncEnabledSetting, readWorkspaceSeedSyncIdleMaxMsSetting,
+  readWorkspaceSeedSyncPollMsSetting, readWorkspaceSourceFilesDocsOnlySetting, readWorkspaceSourceFilesSyncDebounceMsSetting,
   subscribeWorkspaceStoreSyncSettingsChanged,
 } from '@/lib/workspace/workspaceStoreSyncSettings'
-import { computeWorkspaceSeedSyncNextDelayMs } from '@/lib/workspace/workspaceSeedSyncBackoff'
-import { createWorkspaceSeedSyncDeferredScheduler } from '@/lib/workspace/workspaceSeedSyncDeferredScheduler'
-import { beginWorkspaceSeedSyncTask, runWorkspaceSeedSyncTask } from '@/lib/workspace/workspaceSeedSyncRuntime'
+import { runWorkspaceSeedSyncTask } from '@/lib/workspace/workspaceSeedSyncRuntime'
 import { type AgenticGraphStorageRuntimeDependencies } from '@/features/source-files/source-files-agentic-graph-storage-runtime'
+import { createAgenticGraphStorageLatestOperationRunner, createAgenticGraphStorageOperationTracker, createAgenticGraphStorageWorkspaceLifecycle, type AgenticGraphStorageWorkspaceOwnership } from '@/features/source-files/source-files-agentic-graph-storage-lifecycle'
+import { createActivePathSourceAuthorityCoordinator, type ActivePathMaterializationRequest } from '@/features/source-files/sourceFilesActivePathAuthority'
 import {
-  createAgenticGraphStorageCurrentOwnershipHandler,
-  createAgenticGraphStorageLatestOperationRunner,
-  createAgenticGraphStorageOperationTracker,
-  createAgenticGraphStorageWorkspaceLifecycle,
-  type AgenticGraphStorageWorkspaceOwnership,
-} from '@/features/source-files/source-files-agentic-graph-storage-lifecycle'
-import type { AgenticGraphStoragePulledChangesApplyArgs } from '@/lib/storage/agentic-graph-storage-client-types'
-import { readAgenticGraphStorageRuntimeSyncEnabled } from '@/features/source-files/source-files-agentic-graph-storage-settings'
-import {
-  createActivePathSourceAuthorityCoordinator,
-  materializeActivePathWithSourceAuthority,
-  resolveActivePathMaterializationSourceAuthority,
-  type ActivePathMaterializationRequest,
-} from '@/features/source-files/sourceFilesActivePathAuthority'
-const SOURCE_FILES_PERSIST_DELAY_MS = 600
-const ACTIVE_PATH_SWITCH_COMPOSE_SUPPRESS_MS = 800
+  SOURCE_FILES_PERSIST_DELAY_MS, WorkspaceRematerializeRequest, BootstrapMountRequest,
+  AgenticGraphStorageOwnedQueueRequest, SourceFilesPersistenceEffectRequest, SourceFilesComposeRequest,
+  BootstrapMountSideEffectsRequest, SourceFilesCloudQueueRunner,
+} from '@/features/source-files/sourceFilesPersistenceContracts'
+import { useSourceFilesWorkspaceRuntime } from '@/features/source-files/useSourceFilesWorkspaceRuntime'
+import { useSourceFilesSeedSync } from '@/features/source-files/useSourceFilesSeedSync'
+import { useSourceFilesCloudSync } from '@/features/source-files/useSourceFilesCloudSync'
+
 const markWorkspaceSeedSyncDebug = (source: string): void => {
   __canvasStartupDebug.workspaceSeedLastSyncAtMs = Date.now()
   __canvasStartupDebug.workspaceSeedLastSyncSource = String(source || '').trim()
@@ -150,14 +97,6 @@ function stripPersistedWorkspaceBackedSourceFiles(value: unknown) {
   })
 }
 
-const readCurrentSourceFilesWorkspaceState = (): SourceFilesWorkspaceState =>
-  normalizeSourceFilesWorkspaceState({
-    folderName: useGraphStore.getState().localMarkdownFolderName,
-    accessMode: useGraphStore.getState().localMarkdownFolderAccessMode,
-    folderCacheId: useGraphStore.getState().localMarkdownFolderCacheId,
-    selectedFolderPath: useGraphStore.getState().localMarkdownSelectedFolderPath,
-  })
-
 const hasEnabledNonWorkspaceSourceFile = (sourceFiles: ReturnType<typeof useGraphStore.getState>['sourceFiles']): boolean => {
   const list = Array.isArray(sourceFiles) ? sourceFiles : []
   return list.some(file => {
@@ -166,107 +105,6 @@ const hasEnabledNonWorkspaceSourceFile = (sourceFiles: ReturnType<typeof useGrap
     return !sourcePath.startsWith('workspace:')
   })
 }
-
-const hasNonWorkspaceSourceFile = (sourceFiles: ReturnType<typeof useGraphStore.getState>['sourceFiles']): boolean => {
-  const list = Array.isArray(sourceFiles) ? sourceFiles : []
-  return list.some(file => {
-    if (!file) return false
-    const sourcePath = String(file.source?.path || '')
-    return !sourcePath.startsWith('workspace:')
-  })
-}
-
-const hasWorkspaceSourceFile = (sourceFiles: ReturnType<typeof useGraphStore.getState>['sourceFiles']): boolean => {
-  const list = Array.isArray(sourceFiles) ? sourceFiles : []
-  return list.some(file => {
-    if (!file) return false
-    const sourcePath = String(file.source?.path || '')
-    return sourcePath.startsWith('workspace:')
-  })
-}
-
-type WorkspaceFsMutationRequest = {
-  op: string
-  changedPath: string
-  sourceFilesSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  activePathRequest: ActivePathMaterializationRequest | null
-}
-
-type WorkspaceRematerializeRequest = {
-  sourceFilesSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-}
-
-type BootstrapMountRequest = {
-  persistedWorkspace: SourceFilesWorkspaceState
-  bootstrapMaterialization: Awaited<ReturnType<typeof materializeBootstrapWorkspaceSourceFiles>> | null
-  bootstrapSideEffectsRequest: BootstrapMountSideEffectsRequest
-  initialActivePathRequest: ActivePathMaterializationRequest | null
-}
-
-type WorkspaceSeedSyncRequest = {
-  source: string
-}
-
-type PreparedWorkspaceSeedSyncRequest = WorkspaceSeedSyncRequest & {
-  sourceFilesSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-}
-
-type WorkspaceSeedSyncLifecycleState = {
-  cancelled: boolean
-  timer: number | null
-  idleStreak: number
-}
-
-type AgenticGraphStorageQueueRequest = {
-  workspaceId: string
-  sourceFilesSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  signature: string
-}
-
-type AgenticGraphStorageOwnedQueueRequest = { ownership: AgenticGraphStorageWorkspaceOwnership; request: AgenticGraphStorageQueueRequest }
-type AgenticGraphStorageWorkspaceRequest = {
-  workspaceId: string
-  workspaceState: SourceFilesWorkspaceState
-  sourceFilesSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  initialQueueRequest: AgenticGraphStorageQueueRequest | null
-}
-
-type AgenticGraphStorageWorkspaceSelection = {
-  workspaceState: SourceFilesWorkspaceState
-  sourceFilesSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-}
-
-type SourceFilesPersistenceEffectRequest = {
-  sourceFilesSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  agenticGraphStorageQueueRequest: AgenticGraphStorageQueueRequest | null
-  composeRequest: SourceFilesComposeRequest
-}
-
-type AgenticGraphStorageQueueSyncFollowUpRequest = {
-  workspaceId: string
-  delayMs: number
-  signature: string
-}
-
-type SourceFilesComposeRequest = {
-  shouldScheduleCompose: boolean
-  compositionSignature: string
-}
-type BootstrapMountSideEffectsRequest = {
-  sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  composeRequest: SourceFilesComposeRequest | null
-  rematerializeRequest: WorkspaceRematerializeRequest | null
-}
-
-type ActivePathMaterializationSelection = {
-  activePathSnapshot: string | null
-  sourceFilesSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  workspaceEntriesSnapshot: ReturnType<typeof readReusableWorkspaceEntriesSnapshot>
-}
-
-const WORKSPACE_SEED_SYNC_POLL_REQUEST: WorkspaceSeedSyncRequest = { source: 'bootstrap:poll' }
-const WORKSPACE_SEED_SYNC_WAKE_REQUEST: WorkspaceSeedSyncRequest = { source: 'bootstrap:wake' }
-const WORKSPACE_SEED_SYNC_MOUNT_REQUEST: WorkspaceSeedSyncRequest = { source: 'bootstrap:mount' }
 
 export function SourceFilesPersistenceBootstrap() {
   const runtimePersistenceScopeKey = WORKSPACE_SYNC_SCOPE_SOURCE_FILES_RUNTIME_PERSISTENCE
@@ -281,24 +119,10 @@ export function SourceFilesPersistenceBootstrap() {
   const lastQueuedAgenticGraphStorageSignatureRef = React.useRef('')
   const lastQueuedAgenticGraphStorageSourceFilesRef = React.useRef<ReturnType<typeof useGraphStore.getState>['sourceFiles']>([])
   const latestSourceFilesSnapshotRef = React.useRef<ReturnType<typeof useGraphStore.getState>['sourceFiles']>([])
-  const pendingAgenticGraphStorageQueueRequestRef = React.useRef<AgenticGraphStorageQueueRequest | null>(null)
   const activeAgenticGraphWorkspaceIdRef = React.useRef('')
-  const agenticGraphStorageLoopCleanupRef = React.useRef<(() => void) | null>(null)
   const agenticGraphInboundApplyOperations = React.useMemo(createAgenticGraphStorageOperationTracker, [])
   const agenticGraphStorageQueueOperations = React.useMemo(() => createAgenticGraphStorageLatestOperationRunner<AgenticGraphStorageOwnedQueueRequest>(), [])
-  const workspaceMaterializeQueuedRef = React.useRef(false)
-  const workspaceRematerializeSeedSyncScheduler = React.useMemo(
-    () => createWorkspaceSeedSyncDeferredScheduler<WorkspaceRematerializeRequest>({
-      clearTimeout: handle => window.clearTimeout(handle as number),
-      setTimeout: (callback, delayMs) => window.setTimeout(callback, delayMs),
-    }), [],
-  )
-  const scheduleWorkspaceRematerializeRef = React.useRef<((request?: WorkspaceRematerializeRequest | null) => void) | null>(null)
-  const activePathMaterializeInFlightRef = React.useRef(false)
-  const queuedActivePathMaterializeRef = React.useRef<ActivePathMaterializationRequest | null>(null)
-  const pendingEnsureSeedMutationRequestRef = React.useRef<WorkspaceFsMutationRequest | null>(null)
   const suppressComposeUntilMsRef = React.useRef(0)
-  const lastWorkspaceEntriesSignatureRef = React.useRef('')
   const reusableWorkspaceFsRef = React.useRef<Awaited<ReturnType<typeof getWorkspaceFs>> | null>(null)
   const reusableWorkspaceEntriesRef = React.useRef<ReturnType<typeof readReusableWorkspaceEntriesSnapshot>>(undefined)
   const reusableWorkspaceSourcesByPathRef = React.useRef<ReturnType<typeof resolveWorkspaceSourceIndexSnapshot> | null>(null)
@@ -373,13 +197,6 @@ export function SourceFilesPersistenceBootstrap() {
     agenticGraphStorageWorkspaceLifecycle.loadDependencies(ownership)
   ), [agenticGraphStorageWorkspaceLifecycle])
 
-  const resolvePreparedWorkspaceSeedSyncRequest = React.useCallback((
-    request: WorkspaceSeedSyncRequest,
-  ): PreparedWorkspaceSeedSyncRequest => ({
-    source: String(request.source || '').trim(),
-    sourceFilesSnapshot: readCallerOwnedSourceFilesSnapshot(),
-  }), [readCallerOwnedSourceFilesSnapshot])
-
   const readSourceFilesCompositionSignature = React.useCallback((args: {
     sourceFilesSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
     compositionSignature?: string
@@ -406,404 +223,24 @@ export function SourceFilesPersistenceBootstrap() {
     }
   }, [readSourceFilesCompositionSignature])
 
-  const hasWorkspaceRematerializeCandidates = React.useCallback((
-    sourceFiles?: ReturnType<typeof useGraphStore.getState>['sourceFiles'],
-  ): boolean => {
-    const snapshot = readCallerOwnedSourceFilesSnapshot(sourceFiles)
-    return hasNonWorkspaceSourceFile(snapshot) || hasWorkspaceSourceFile(snapshot)
-  }, [readCallerOwnedSourceFilesSnapshot])
+  const {
+    resolveWorkspaceRematerializeRequest, resolveActivePathMaterializationRequest, shouldSkipActivePathMaterializationRequest,
+    workspaceRematerializeSeedSyncScheduler, scheduleWorkspaceRematerializeRef, prepareEnsureSeedMutationRequest,
+    clearPreparedEnsureSeedMutationRequest, applyPreparedWorkspaceSeedSyncRequest, subscribeWorkspaceFsRuntime,
+    subscribeActiveWorkspacePath,
+  } = useSourceFilesWorkspaceRuntime({
+    workspaceHydratedRef, workspaceSourceFilesDocsOnly, workspaceSourceFilesSyncDebounceMs,
+    readCallerOwnedSourceFilesSnapshot, readReusableWorkspaceFs, readReusableWorkspaceSourceIndexSnapshot,
+    reusableWorkspaceFsRef, reusableWorkspaceEntriesRef, reusableWorkspaceSourcesByPathRef,
+    latestSourceFilesSnapshotRef, lastMaterializedActivePathRef, suppressComposeUntilMsRef,
+    activePathSourceAuthorityRef, workspaceSeedSyncLifecycleAbortControllerRef, markWorkspaceSeedSyncDebug
+  })
 
-  const resolveWorkspaceRematerializeRequest = React.useCallback((args?: {
-    sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  }): WorkspaceRematerializeRequest | null => {
-    if (!workspaceHydratedRef.current) {
-      workspaceMaterializeQueuedRef.current = true
-      return null
-    }
-    const sourceFilesSnapshot = readCallerOwnedSourceFilesSnapshot(args?.sourceFilesSnapshot)
-    if (!hasWorkspaceRematerializeCandidates(sourceFilesSnapshot)) {
-      workspaceMaterializeQueuedRef.current = true
-      return null
-    }
-    return {
-      sourceFilesSnapshot,
-    }
-  }, [hasWorkspaceRematerializeCandidates, readCallerOwnedSourceFilesSnapshot])
-
-  const rematerializeWorkspaceBackedSourceFilesOnce = React.useCallback(async (args?: {
-    sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  }): Promise<ReturnType<typeof useGraphStore.getState>['sourceFiles']> => {
-    const sourceFilesSnapshot = readCallerOwnedSourceFilesSnapshot(args?.sourceFilesSnapshot)
-    const fs = await readReusableWorkspaceFs()
-    const activePath = resolveMaterializedWorkspaceActivePath({ explorerActivePath: useMarkdownExplorerStore.getState().activePath })
-    if (!activePath) return sourceFilesSnapshot
-    const forceIncludePaths = buildMaterializedWorkspaceForceIncludePaths({ activePathOverride: activePath })
-    const workspaceEntries = await readWorkspaceActiveEntrySnapshot({
-      fs,
-      activePath,
-      workspaceEntries: reusableWorkspaceEntriesRef.current,
-    })
-    const hydratedWorkspaceEntries = await hydrateWorkspaceEntriesInlineText({ fs, workspaceEntries, forceIncludePaths })
-    const signature = buildWorkspaceEntriesSemanticKey({
-      entries: hydratedWorkspaceEntries,
-      docsOnly: workspaceSourceFilesDocsOnly,
-      forceIncludePaths,
-      forceIncludeOnly: true,
-      workspaceSourceRootPaths: resolveWorkspaceSourceRootPaths({
-        chatLocalStorageRootPath: useGraphStore.getState().chatLocalStorageRootPath,
-      }),
-    })
-    if (signature === lastWorkspaceEntriesSignatureRef.current) return sourceFilesSnapshot
-    lastWorkspaceEntriesSignatureRef.current = signature
-    const sourcesByPath = readReusableWorkspaceSourceIndexSnapshot()
-    reusableWorkspaceEntriesRef.current = readReusableWorkspaceEntriesSnapshot(hydratedWorkspaceEntries)
-    reusableWorkspaceSourcesByPathRef.current = sourcesByPath
-    const existing = sourceFilesSnapshot
-    const {
-      runtimeSourceFiles,
-    } = buildActiveWorkspaceRuntimeSourceFilesSnapshot({
-      activePath,
-      existingSourceFiles: existing,
-      workspaceEntries: hydratedWorkspaceEntries,
-      sourcesByPath: sourcesByPath || undefined,
-      workspaceDocsOnly: workspaceSourceFilesDocsOnly,
-      workspaceSourceRootPaths: resolveWorkspaceSourceRootPaths({
-        chatLocalStorageRootPath: useGraphStore.getState().chatLocalStorageRootPath,
-      }),
-    })
-    const runtimeMerged = runtimeSourceFiles
-    if (runtimeMerged !== existing) {
-      useGraphStore.getState().setSourceFiles(runtimeMerged)
-    }
-    await materializeActiveWorkspaceEntryIntoSourceFiles({
-      activePathOverride: activePath,
-      fs,
-      activeWorkspaceEntriesSnapshot: readReusableWorkspaceEntriesSnapshot(hydratedWorkspaceEntries),
-      sourceFilesSnapshot: runtimeMerged,
-      sourcesByPath,
-      premergedSourceFiles: runtimeMerged,
-    })
-    return runtimeMerged
-  }, [readCallerOwnedSourceFilesSnapshot, readReusableWorkspaceFs, readReusableWorkspaceSourceIndexSnapshot, workspaceSourceFilesDocsOnly])
-
-  const isWorkspaceSourceRootMutationPath = React.useCallback((path: string): boolean => {
-    if (!path) return false
-    const roots = resolveWorkspaceSourceRootPaths({
-      chatLocalStorageRootPath: useGraphStore.getState().chatLocalStorageRootPath,
-    })
-    for (let i = 0; i < roots.length; i += 1) {
-      const root = String(roots[i] || '').trim()
-      if (!root || root === '/') continue
-      if (path === root || path.startsWith(`${root}/`)) return true
-    }
-    return false
-  }, [])
-
-  const runWorkspaceRematerializeRequest = React.useCallback(async (request: WorkspaceRematerializeRequest) => {
-    return rematerializeWorkspaceBackedSourceFilesOnce({
-      sourceFilesSnapshot: request.sourceFilesSnapshot,
-    })
-  }, [rematerializeWorkspaceBackedSourceFilesOnce])
-
-  React.useEffect(() => {
-    workspaceRematerializeSeedSyncScheduler.configure({
-      delayMs: workspaceSourceFilesSyncDebounceMs,
-      run: request => {
-        workspaceMaterializeQueuedRef.current = false
-        return runWorkspaceRematerializeRequest(request)
-      },
-    })
-  }, [runWorkspaceRematerializeRequest, workspaceRematerializeSeedSyncScheduler, workspaceSourceFilesSyncDebounceMs])
-
-  const scheduleWorkspaceRematerializeRequest = React.useCallback((request: WorkspaceRematerializeRequest | null) => {
-    workspaceRematerializeSeedSyncScheduler.schedule(request)
-  }, [workspaceRematerializeSeedSyncScheduler])
-
-  const scheduleWorkspaceRematerialize = React.useCallback((args?: {
-    sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  }) => {
-    scheduleWorkspaceRematerializeRequest(resolveWorkspaceRematerializeRequest(args))
-  }, [resolveWorkspaceRematerializeRequest, scheduleWorkspaceRematerializeRequest])
-
-  const resolveActivePathMaterializationRequest = React.useCallback((args?: {
-    activePathSnapshot?: string | null
-    sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-    workspaceEntriesSnapshot?: ReturnType<typeof readReusableWorkspaceEntriesSnapshot>
-  }): ActivePathMaterializationRequest | null => {
-    const activePath = resolveMaterializedWorkspaceActivePath({
-      activePathOverride: args?.activePathSnapshot ?? null,
-      explorerActivePath: args?.activePathSnapshot == null ? useMarkdownExplorerStore.getState().activePath : null,
-    })
-    if (!activePath) return null
-    const store = useGraphStore.getState()
-    const workspaceEntriesSnapshot = args?.workspaceEntriesSnapshot === undefined
-      ? reusableWorkspaceEntriesRef.current
-      : args.workspaceEntriesSnapshot
-    const activePathKey = buildMaterializedWorkspaceActivePathKey({
-      activePathOverride: activePath,
-      workspaceEntriesSnapshot,
-      markdownDocumentName: store.markdownDocumentName,
-      markdownDocumentText: store.markdownDocumentText,
-      markdownDocumentApplyViewPreset: store.markdownDocumentApplyViewPreset,
-    })
-    return {
-      activePath,
-      activePathKey,
-      ...resolveActivePathMaterializationSourceAuthority(activePath),
-      sourceFilesSnapshot: readCallerOwnedSourceFilesSnapshot(args?.sourceFilesSnapshot),
-      workspaceEntriesSnapshot,
-    }
-  }, [readCallerOwnedSourceFilesSnapshot])
-
-  const clearActivePathMaterializationRequest = React.useCallback(() => {
-    lastMaterializedActivePathRef.current = ''
-    queuedActivePathMaterializeRef.current = null
-    activePathSourceAuthorityRef.current.clear()
-  }, [])
-
-  const queueActivePathMaterializationRequest = React.useCallback((request: ActivePathMaterializationRequest) => {
-    queuedActivePathMaterializeRef.current = request
-  }, [])
-
-  const shouldSkipActivePathMaterializationRequest = React.useCallback((request: ActivePathMaterializationRequest): boolean => {
-    const activePathKey = request.activePathKey
-    if (lastMaterializedActivePathRef.current === activePathKey) return true
-    return false
-  }, [])
-
-  const runActivePathMaterialization = React.useCallback(async (request: ActivePathMaterializationRequest): Promise<void> => {
-    activePathMaterializeInFlightRef.current = true
-    suppressComposeUntilMsRef.current = Date.now() + ACTIVE_PATH_SWITCH_COMPOSE_SUPPRESS_MS
-    lastMaterializedActivePathRef.current = request.activePathKey
-    const signal = workspaceSeedSyncLifecycleAbortControllerRef.current.signal
-    try {
-      await runWorkspaceSeedSyncTask(signal, async () => {
-        await materializeActivePathWithSourceAuthority(request, {
-          activeWorkspaceEntriesSnapshot: request.workspaceEntriesSnapshot,
-          fs: reusableWorkspaceFsRef.current || undefined,
-          sourcesByPath: reusableWorkspaceSourcesByPathRef.current || undefined,
-        })
-      })
-    } catch (error) {
-      if (lastMaterializedActivePathRef.current === request.activePathKey) {
-        lastMaterializedActivePathRef.current = ''
-      }
-      if (signal.aborted) return
-      throw error
-    } finally {
-      activePathMaterializeInFlightRef.current = false
-      const queuedRequest = queuedActivePathMaterializeRef.current
-      queuedActivePathMaterializeRef.current = null
-      if (!signal.aborted && queuedRequest && !shouldSkipActivePathMaterializationRequest(queuedRequest)) {
-        activePathSourceAuthorityRef.current.launch(queuedRequest, runActivePathMaterialization)
-      }
-    }
-  }, [shouldSkipActivePathMaterializationRequest])
-
-  const syncActivePathMaterialization = React.useCallback((args?: {
-    activePathSnapshot?: string | null
-    sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-    workspaceEntriesSnapshot?: ReturnType<typeof readReusableWorkspaceEntriesSnapshot>
-  }) => {
-    if (!workspaceHydratedRef.current) return
-    const request = resolveActivePathMaterializationRequest(args)
-    if (!request) {
-      clearActivePathMaterializationRequest()
-      return
-    }
-    if (activePathMaterializeInFlightRef.current) {
-      activePathSourceAuthorityRef.current.begin(request)
-      queueActivePathMaterializationRequest(request)
-      return
-    }
-    if (shouldSkipActivePathMaterializationRequest(request)) return
-    activePathSourceAuthorityRef.current.launch(request, runActivePathMaterialization)
-  }, [clearActivePathMaterializationRequest, queueActivePathMaterializationRequest, resolveActivePathMaterializationRequest, runActivePathMaterialization, shouldSkipActivePathMaterializationRequest])
-
-  const resolveWorkspaceFsMutationRequest = React.useCallback((detail?: {
-    op?: unknown
-    path?: unknown
-  }, args?: {
-    sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-    activePathRequest?: ActivePathMaterializationRequest | null
-  }): WorkspaceFsMutationRequest | null => {
-    if (!workspaceHydratedRef.current) {
-      workspaceMaterializeQueuedRef.current = true
-      return null
-    }
-    const sourceFilesSnapshot = readCallerOwnedSourceFilesSnapshot(args?.sourceFilesSnapshot)
-    if (!hasWorkspaceRematerializeCandidates(sourceFilesSnapshot)) {
-      workspaceMaterializeQueuedRef.current = true
-      return null
-    }
-    const op = String(detail?.op || '')
-    if (!op) return null
-    const changedPath = String(detail?.path || '').trim()
-    if (op !== 'ensureSeed' && op !== 'batch' && op !== 'writeFileText' && op !== 'createFile' && op !== 'deleteEntry') {
-      return null
-    }
-    if (op === 'ensureSeed' && !changedPath) {
-      const preparedRequest = pendingEnsureSeedMutationRequestRef.current
-      if (preparedRequest) {
-        pendingEnsureSeedMutationRequestRef.current = null
-        return preparedRequest
-      }
-    }
-    return {
-      op,
-      changedPath,
-      sourceFilesSnapshot,
-      activePathRequest: args?.activePathRequest === undefined
-        ? resolveActivePathMaterializationRequest({
-            sourceFilesSnapshot,
-            workspaceEntriesSnapshot: reusableWorkspaceEntriesRef.current,
-          })
-        : args.activePathRequest,
-    }
-  }, [hasWorkspaceRematerializeCandidates, readCallerOwnedSourceFilesSnapshot, resolveActivePathMaterializationRequest])
-  const handleWorkspaceFsMutation = React.useCallback((request: WorkspaceFsMutationRequest) => {
-    if (request.op === 'batch' || (request.op === 'ensureSeed' && !request.changedPath)) {
-      invalidateCachedWorkspaceActiveEntrySnapshot()
-    } else if (request.changedPath) {
-      invalidateCachedWorkspaceActiveEntrySnapshot(request.changedPath)
-    }
-    reusableWorkspaceSourcesByPathRef.current = null
-    if (isWebsiteImportExplorerUpdate(request.changedPath)) return
-    const activePath = request.activePathRequest?.activePath || ''
-    if ((request.op === 'writeFileText' || request.op === 'batch') && !!request.changedPath && !!activePath && request.changedPath === activePath) {
-      return
-    }
-    if (workspaceSourceFilesDocsOnly) {
-      const hasPath = !!request.changedPath
-      const isSourceRootPath = hasPath && isWorkspaceSourceRootMutationPath(request.changedPath)
-      if (hasPath && !isSourceRootPath) return
-    }
-    if (request.op === 'ensureSeed') {
-      const sourceFilesSnapshot = readCallerOwnedSourceFilesSnapshot()
-      const finishSeedSyncTask = beginWorkspaceSeedSyncTask()
-      if (finishSeedSyncTask) {
-        void materializeActiveWorkspaceEntryIntoSourceFiles({
-          activePathOverride: request.activePathRequest?.activePath,
-          fs: reusableWorkspaceFsRef.current || undefined,
-          sourceFilesSnapshot,
-          sourcesByPath: readReusableWorkspaceSourceIndexSnapshot(),
-          refreshActiveText: true,
-        }).catch(() => {
-          void 0
-        }).finally(finishSeedSyncTask)
-      }
-    }
-    markWorkspaceSeedSyncDebug(`workspace-fs:${request.op}`)
-    scheduleWorkspaceRematerializeRef.current?.({ sourceFilesSnapshot: request.sourceFilesSnapshot })
-  }, [isWorkspaceSourceRootMutationPath, readCallerOwnedSourceFilesSnapshot, readReusableWorkspaceSourceIndexSnapshot, workspaceSourceFilesDocsOnly])
-
-  const prepareEnsureSeedMutationRequest = React.useCallback((args?: {
-    sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  }): WorkspaceFsMutationRequest | null => {
-    const sourceFilesSnapshot = readCallerOwnedSourceFilesSnapshot(args?.sourceFilesSnapshot)
-    const activePathRequest = resolveActivePathMaterializationRequest({
-      sourceFilesSnapshot,
-      workspaceEntriesSnapshot: reusableWorkspaceEntriesRef.current,
-    })
-    pendingEnsureSeedMutationRequestRef.current = null
-    const request = resolveWorkspaceFsMutationRequest(
-      { op: 'ensureSeed' },
-      { sourceFilesSnapshot, activePathRequest },
-    )
-    pendingEnsureSeedMutationRequestRef.current = request
-    return request
-  }, [readCallerOwnedSourceFilesSnapshot, resolveActivePathMaterializationRequest, resolveWorkspaceFsMutationRequest])
-
-  const clearPreparedEnsureSeedMutationRequest = React.useCallback(() => {
-    pendingEnsureSeedMutationRequestRef.current = null
-  }, [])
-
-  const applyPreparedWorkspaceSeedSyncRequest = React.useCallback((request: PreparedWorkspaceSeedSyncRequest) => {
-    markWorkspaceSeedSyncDebug(request.source)
-    prepareEnsureSeedMutationRequest({
-      sourceFilesSnapshot: request.sourceFilesSnapshot,
-    })
-  }, [prepareEnsureSeedMutationRequest])
-
-  const clearWorkspaceSeedSyncTimer = React.useCallback((lifecycleState: WorkspaceSeedSyncLifecycleState) => {
-    if (lifecycleState.timer == null) return
-    window.clearTimeout(lifecycleState.timer)
-    lifecycleState.timer = null
-  }, [])
-
-  const resetWorkspaceSeedSyncWakeLifecycle = React.useCallback((lifecycleState: WorkspaceSeedSyncLifecycleState) => {
-    lifecycleState.idleStreak = 0
-    clearWorkspaceSeedSyncTimer(lifecycleState)
-  }, [clearWorkspaceSeedSyncTimer])
-
-  const scheduleNextWorkspaceSeedSync = React.useCallback((args: {
-    changed: boolean
-    nextRequest: WorkspaceSeedSyncRequest
-    lifecycleState: WorkspaceSeedSyncLifecycleState
-    runWorkspaceSeedSync: (request: WorkspaceSeedSyncRequest) => void
-  }) => {
-    const { lifecycleState } = args
-    const next = computeWorkspaceSeedSyncNextDelayMs({
-      basePollMs: workspaceSeedSyncPollMs,
-      idleMaxMs: workspaceSeedSyncIdleMaxMs,
-      docsOnly: workspaceSourceFilesDocsOnly,
-      changed: args.changed,
-      idleStreak: lifecycleState.idleStreak,
-    })
-    lifecycleState.idleStreak = next.nextIdleStreak
-    if (lifecycleState.cancelled) return
-    lifecycleState.timer = window.setTimeout(() => {
-      lifecycleState.timer = null
-      args.runWorkspaceSeedSync(args.nextRequest)
-    }, next.nextDelayMs)
-  }, [workspaceSeedSyncIdleMaxMs, workspaceSeedSyncPollMs, workspaceSourceFilesDocsOnly])
-
-  const scheduleNextWorkspaceSeedSyncPoll = React.useCallback((args: {
-    changed: boolean
-    lifecycleState: WorkspaceSeedSyncLifecycleState
-    runWorkspaceSeedSync: (request: WorkspaceSeedSyncRequest) => void
-  }) => {
-    scheduleNextWorkspaceSeedSync({
-      changed: args.changed,
-      nextRequest: WORKSPACE_SEED_SYNC_POLL_REQUEST,
-      lifecycleState: args.lifecycleState,
-      runWorkspaceSeedSync: args.runWorkspaceSeedSync,
-    })
-  }, [scheduleNextWorkspaceSeedSync])
-
-  const handleWorkspaceSeedSyncRequestSuccess = React.useCallback((args: {
-    changed: boolean
-    preparedRequest: PreparedWorkspaceSeedSyncRequest
-    lifecycleState: WorkspaceSeedSyncLifecycleState
-    runWorkspaceSeedSync: (request: WorkspaceSeedSyncRequest) => void
-  }) => {
-    if (args.changed) {
-      applyPreparedWorkspaceSeedSyncRequest(args.preparedRequest)
-    }
-    scheduleNextWorkspaceSeedSyncPoll({
-      changed: args.changed,
-      lifecycleState: args.lifecycleState,
-      runWorkspaceSeedSync: args.runWorkspaceSeedSync,
-    })
-  }, [applyPreparedWorkspaceSeedSyncRequest, scheduleNextWorkspaceSeedSyncPoll])
-
-  const handleWorkspaceSeedSyncRequestFailure = React.useCallback((args: {
-    lifecycleState: WorkspaceSeedSyncLifecycleState
-    runWorkspaceSeedSync: (request: WorkspaceSeedSyncRequest) => void
-  }) => {
-    clearPreparedEnsureSeedMutationRequest()
-    scheduleNextWorkspaceSeedSyncPoll({
-      changed: false,
-      lifecycleState: args.lifecycleState,
-      runWorkspaceSeedSync: args.runWorkspaceSeedSync,
-    })
-  }, [clearPreparedEnsureSeedMutationRequest, scheduleNextWorkspaceSeedSyncPoll])
-
-  const cleanupWorkspaceSeedSyncLifecycle = React.useCallback((lifecycleState: WorkspaceSeedSyncLifecycleState) => {
-    lifecycleState.cancelled = true
-    clearPreparedEnsureSeedMutationRequest()
-    clearWorkspaceSeedSyncTimer(lifecycleState)
-  }, [clearPreparedEnsureSeedMutationRequest, clearWorkspaceSeedSyncTimer])
+  const subscribeWorkspaceSeedSync = useSourceFilesSeedSync({
+    workspaceSeedSyncEnabled, workspaceSeedSyncPollMs, workspaceSeedSyncIdleMaxMs,
+    workspaceSourceFilesDocsOnly, readCallerOwnedSourceFilesSnapshot, readReusableWorkspaceFs,
+    prepareEnsureSeedMutationRequest, clearPreparedEnsureSeedMutationRequest, applyPreparedWorkspaceSeedSyncRequest
+  })
 
   const readBootstrapMountSourceFilesSnapshot = React.useCallback((args: {
     bootstrapMaterialization: Awaited<ReturnType<typeof materializeBootstrapWorkspaceSourceFiles>> | null
@@ -859,11 +296,11 @@ export function SourceFilesPersistenceBootstrap() {
     workspaceRematerializeSeedSyncScheduler.retainPending(request)
     scheduleWorkspaceRematerializeRef.current?.(request)
     return true
-  }, [workspaceRematerializeSeedSyncScheduler])
+  }, [scheduleWorkspaceRematerializeRef, workspaceRematerializeSeedSyncScheduler])
 
   const applyBootstrapFallbackRematerializeRequest = React.useCallback(() => {
     scheduleWorkspaceRematerializeRef.current?.()
-  }, [])
+  }, [scheduleWorkspaceRematerializeRef])
 
   const applyBootstrapComposeRequest = React.useCallback((args: {
     composeRequest: SourceFilesComposeRequest | null
@@ -916,176 +353,7 @@ export function SourceFilesPersistenceBootstrap() {
     reusableWorkspaceSourcesByPathRef.current = null
   }, [workspaceSyncSettingsRev])
 
-  const readAgenticGraphStorageWorkspaceId = React.useCallback((args?: {
-    workspaceId?: string
-    workspaceState?: SourceFilesWorkspaceState
-  }): string => (
-    String(args?.workspaceId || '').trim()
-    || activeAgenticGraphWorkspaceIdRef.current
-    || buildAgenticGraphWorkspaceIdFromSourceFilesWorkspaceState(args?.workspaceState || readCurrentSourceFilesWorkspaceState())
-  ), [])
-
-  const readAgenticGraphStorageSyncSignature = React.useCallback((args: {
-    sourceFilesSnapshot: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-    storageSyncSignature?: string
-  }): string => (
-    String(args.storageSyncSignature || '').trim()
-    || buildSourceFilesStorageSyncSignature(args.sourceFilesSnapshot)
-  ), [])
-
-  const resolveAgenticGraphStorageQueueRequest = React.useCallback((args?: {
-    workspaceId?: string
-    workspaceState?: SourceFilesWorkspaceState
-    sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-    storageSyncSignature?: string
-  }): AgenticGraphStorageQueueRequest | null => {
-    const workspaceId = readAgenticGraphStorageWorkspaceId({
-      workspaceId: args?.workspaceId,
-      workspaceState: args?.workspaceState,
-    })
-    if (!workspaceId) return null
-    const sourceFilesSnapshot = readCallerOwnedSourceFilesSnapshot(args?.sourceFilesSnapshot)
-    const storageSyncSignature = readAgenticGraphStorageSyncSignature({
-      sourceFilesSnapshot,
-      storageSyncSignature: args?.storageSyncSignature,
-    })
-    return {
-      workspaceId,
-      sourceFilesSnapshot,
-      signature: `${workspaceId}:${storageSyncSignature}`,
-    }
-  }, [readCallerOwnedSourceFilesSnapshot, readAgenticGraphStorageSyncSignature, readAgenticGraphStorageWorkspaceId])
-
-  const rememberAgenticGraphStorageQueuedSnapshot = React.useCallback((request: AgenticGraphStorageQueueRequest) => {
-    lastQueuedAgenticGraphStorageSignatureRef.current = request.signature
-    lastQueuedAgenticGraphStorageSourceFilesRef.current = request.sourceFilesSnapshot
-  }, [])
-
-  const applyAgenticGraphStorageQueueTransition = React.useCallback((args?: {
-    workspaceId?: string
-    workspaceState?: SourceFilesWorkspaceState
-    sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  }): AgenticGraphStorageQueueRequest | null => {
-    const request = resolveAgenticGraphStorageQueueRequest(args)
-    if (!request) return null
-    rememberAgenticGraphStorageQueuedSnapshot(request)
-    return request
-  }, [rememberAgenticGraphStorageQueuedSnapshot, resolveAgenticGraphStorageQueueRequest])
-
-  const clearAgenticGraphStorageQueueState = React.useCallback(() => {
-    pendingAgenticGraphStorageQueueRequestRef.current = null
-    agenticGraphStorageQueueOperations.clearPending()
-    lastQueuedAgenticGraphStorageSignatureRef.current = ''
-    lastQueuedAgenticGraphStorageSourceFilesRef.current = []
-  }, [agenticGraphStorageQueueOperations])
-
-  const handleAgenticGraphStorageSyncCompleted = React.useCallback((result: {
-    workspaceId: string
-  }) => {
-    if (activeAgenticGraphWorkspaceIdRef.current !== result.workspaceId) return
-    const ownership = agenticGraphStorageWorkspaceLifecycle.readOwnership()
-    if (!ownership) return
-    const deps = agenticGraphStorageWorkspaceLifecycle.readDependencies()
-    if (deps) {
-      deps.notifyAgenticGraphStorageConflictUx(result as Parameters<AgenticGraphStorageRuntimeDependencies['notifyAgenticGraphStorageConflictUx']>[0])
-      return
-    }
-    void ensureAgenticGraphStorageRuntimeDependencies(ownership).then(runtimeDeps => {
-      if (!agenticGraphStorageWorkspaceLifecycle.isCurrent(ownership)) return
-      if (activeAgenticGraphWorkspaceIdRef.current !== result.workspaceId) return
-      runtimeDeps.notifyAgenticGraphStorageConflictUx(result as Parameters<AgenticGraphStorageRuntimeDependencies['notifyAgenticGraphStorageConflictUx']>[0])
-    }).catch(() => undefined)
-  }, [ensureAgenticGraphStorageRuntimeDependencies, agenticGraphStorageWorkspaceLifecycle])
-
-  const createAgenticGraphStoragePulledChangesHandler = React.useCallback((
-    ownership: AgenticGraphStorageWorkspaceOwnership,
-  ) => createAgenticGraphStorageCurrentOwnershipHandler(
-    agenticGraphStorageWorkspaceLifecycle,
-    ownership,
-    async (args: AgenticGraphStoragePulledChangesApplyArgs) => {
-      if (activeAgenticGraphWorkspaceIdRef.current !== args.workspaceId) return
-      if (!readAgenticGraphStorageRuntimeSyncEnabled()) return
-      const deps = agenticGraphStorageWorkspaceLifecycle.readDependencies()
-      if (!deps) return
-      const operation = agenticGraphInboundApplyOperations.begin()
-      try {
-        const result = deps.applyPulledAgenticGraphStorageChangesToSourceFiles({
-          workspaceId: args.workspaceId,
-          changes: args.changes,
-          signal: args.signal,
-          taskContext: args.taskContext,
-        })
-        if (result.applied) {
-          applyAgenticGraphStorageQueueTransition({
-            workspaceId: args.workspaceId,
-            sourceFilesSnapshot: result.sourceFilesSnapshot,
-          })
-        }
-        await result.completion
-      } finally {
-        agenticGraphInboundApplyOperations.finish(operation)
-      }
-    },
-  ), [applyAgenticGraphStorageQueueTransition, agenticGraphInboundApplyOperations, agenticGraphStorageWorkspaceLifecycle])
-
-  const resolveAgenticGraphStorageQueueSyncFollowUpRequest = React.useCallback((args: {
-    request: AgenticGraphStorageQueueRequest
-    queuedMutationCount: number
-  }): AgenticGraphStorageQueueSyncFollowUpRequest | null => {
-    const { request, queuedMutationCount } = args
-    if (queuedMutationCount <= 0) return null
-    if (!readAgenticGraphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) return null
-    return {
-      workspaceId: request.workspaceId,
-      delayMs: 0,
-      signature: `${request.signature}:${queuedMutationCount}`,
-    }
-  }, [workspaceCloudSyncEnabled])
-
-  const runAgenticGraphStorageQueueSyncFollowUpRequest = React.useCallback((request: AgenticGraphStorageQueueSyncFollowUpRequest) => {
-    const ownership = agenticGraphStorageWorkspaceLifecycle.readOwnership()
-    if (!ownership) return
-    void ensureAgenticGraphStorageRuntimeDependencies(ownership).then(deps => {
-      if (!agenticGraphStorageWorkspaceLifecycle.isCurrent(ownership)) return
-      deps.scheduleAgenticGraphStorageSync({
-        workspaceId: request.workspaceId,
-        delayMs: request.delayMs,
-        signature: request.signature,
-        signal: ownership.signal,
-        onSyncCompleted: handleAgenticGraphStorageSyncCompleted,
-        onPulledChangesApplied: createAgenticGraphStoragePulledChangesHandler(ownership),
-      })
-    }).catch(() => undefined)
-  }, [createAgenticGraphStoragePulledChangesHandler, ensureAgenticGraphStorageRuntimeDependencies, handleAgenticGraphStorageSyncCompleted, agenticGraphStorageWorkspaceLifecycle])
-
-  const scheduleAgenticGraphStorageQueueSyncFollowUp = React.useCallback((args: {
-    request: AgenticGraphStorageQueueRequest
-    queuedMutationCount: number
-  }) => {
-    const request = resolveAgenticGraphStorageQueueSyncFollowUpRequest(args)
-    if (!request) return
-    runAgenticGraphStorageQueueSyncFollowUpRequest(request)
-  }, [resolveAgenticGraphStorageQueueSyncFollowUpRequest, runAgenticGraphStorageQueueSyncFollowUpRequest])
-
-  const handleAgenticGraphStorageQueueRequestSuccess = React.useCallback((args: {
-    request: AgenticGraphStorageQueueRequest
-    queuedMutationCount: number
-  }) => {
-    const { request, queuedMutationCount } = args
-    rememberAgenticGraphStorageQueuedSnapshot(request)
-    scheduleAgenticGraphStorageQueueSyncFollowUp({
-      request,
-      queuedMutationCount,
-    })
-  }, [rememberAgenticGraphStorageQueuedSnapshot, scheduleAgenticGraphStorageQueueSyncFollowUp])
-
-  const handleAgenticGraphStorageQueueRequestFailure = React.useCallback((request: AgenticGraphStorageQueueRequest) => {
-    if (lastQueuedAgenticGraphStorageSignatureRef.current === request.signature) {
-      lastQueuedAgenticGraphStorageSignatureRef.current = ''
-    }
-  }, [])
-
-  const runAgenticGraphStorageQueueRequest = React.useCallback((request: AgenticGraphStorageQueueRequest) => {
+  const runAgenticGraphStorageQueueRequest = React.useCallback<SourceFilesCloudQueueRunner>((request, handleAgenticGraphStorageQueueRequestSuccess, handleAgenticGraphStorageQueueRequestFailure) => {
     const ownership = agenticGraphStorageWorkspaceLifecycle.readOwnership()
     if (!ownership) return
     agenticGraphStorageQueueOperations.enqueue({ ownership, request }, async ownedRequest => {
@@ -1113,28 +381,14 @@ export function SourceFilesPersistenceBootstrap() {
         handleAgenticGraphStorageQueueRequestFailure(queuedRequest)
       }
     })
-  }, [ensureAgenticGraphStorageRuntimeDependencies, handleAgenticGraphStorageQueueRequestFailure, handleAgenticGraphStorageQueueRequestSuccess, agenticGraphStorageQueueOperations, agenticGraphStorageWorkspaceLifecycle])
+  }, [ensureAgenticGraphStorageRuntimeDependencies, agenticGraphStorageQueueOperations, agenticGraphStorageWorkspaceLifecycle])
 
-  const drainAgenticGraphStorageQueueRequest = React.useCallback(() => {
-    const nextRequest = pendingAgenticGraphStorageQueueRequestRef.current
-    pendingAgenticGraphStorageQueueRequestRef.current = null
-    if (!nextRequest) return
-    runAgenticGraphStorageQueueRequest(nextRequest)
-  }, [runAgenticGraphStorageQueueRequest])
-
-  const scheduleAgenticGraphStorageQueueRequest = React.useCallback((request: AgenticGraphStorageQueueRequest | null) => {
-    if (!request) return
-    if (lastQueuedAgenticGraphStorageSignatureRef.current === request.signature) return
-    if (pendingAgenticGraphStorageQueueRequestRef.current?.signature === request.signature) return
-    pendingAgenticGraphStorageQueueRequestRef.current = request
-    const taskKey = WORKSPACE_SYNC_TASK_AGENTIC_OS_STORAGE_QUEUE
-    scheduleWorkspaceSyncTask(
-      taskKey,
-      drainAgenticGraphStorageQueueRequest,
-      SOURCE_FILES_PERSIST_DELAY_MS,
-      { signature: request.signature, scopeKey: agenticGraphStorageScopeKey },
-    )
-  }, [drainAgenticGraphStorageQueueRequest, agenticGraphStorageScopeKey])
+  const { readAgenticGraphStorageSyncSignature, resolveAgenticGraphStorageQueueRequest, scheduleAgenticGraphStorageQueueRequest, subscribeCloudWorkspace } = useSourceFilesCloudSync({
+    workspaceCloudSyncEnabled, agenticGraphStorageScopeKey, readCallerOwnedSourceFilesSnapshot,
+    latestSourceFilesSnapshotRef, lastQueuedAgenticGraphStorageSignatureRef, lastQueuedAgenticGraphStorageSourceFilesRef,
+    activeAgenticGraphWorkspaceIdRef, agenticGraphInboundApplyOperations, agenticGraphStorageQueueOperations,
+    agenticGraphStorageWorkspaceLifecycle, ensureAgenticGraphStorageRuntimeDependencies, runAgenticGraphStorageQueueRequest
+  })
 
   const resolveSourceFilesPersistenceEffectRequest = React.useCallback((
     sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles'],
@@ -1188,109 +442,6 @@ export function SourceFilesPersistenceBootstrap() {
     applySourceFilesPersistenceComposeRequest(request)
   }, [applySourceFilesPersistenceComposeRequest, applySourceFilesPersistenceStorageRequest])
 
-  const readActivePathMaterializationSelection = React.useCallback((
-    state?: ReturnType<typeof useMarkdownExplorerStore.getState>,
-  ): ActivePathMaterializationSelection => {
-    const snapshot = state || useMarkdownExplorerStore.getState()
-    return {
-      activePathSnapshot: snapshot.activePath ?? null,
-      sourceFilesSnapshot: latestSourceFilesSnapshotRef.current,
-      workspaceEntriesSnapshot: reusableWorkspaceEntriesRef.current,
-    }
-  }, [])
-
-  const readAgenticGraphStorageWorkspaceSelection = React.useCallback((
-    state?: ReturnType<typeof useGraphStore.getState>,
-  ): AgenticGraphStorageWorkspaceSelection => {
-    const snapshot = state || useGraphStore.getState()
-    return {
-      workspaceState: normalizeSourceFilesWorkspaceState({
-        folderName: snapshot.localMarkdownFolderName,
-        accessMode: snapshot.localMarkdownFolderAccessMode,
-        folderCacheId: snapshot.localMarkdownFolderCacheId,
-        selectedFolderPath: snapshot.localMarkdownSelectedFolderPath,
-      }),
-      sourceFilesSnapshot: latestSourceFilesSnapshotRef.current,
-    }
-  }, [])
-
-  const resolveAgenticGraphStorageWorkspaceRequest = React.useCallback((args: {
-    workspaceState: SourceFilesWorkspaceState
-    sourceFilesSnapshot?: ReturnType<typeof useGraphStore.getState>['sourceFiles']
-  }): AgenticGraphStorageWorkspaceRequest | null => {
-    const workspaceId = readAgenticGraphStorageWorkspaceId({
-      workspaceState: args.workspaceState,
-    })
-    if (!workspaceId) return null
-    const sourceFilesSnapshot = readCallerOwnedSourceFilesSnapshot(args.sourceFilesSnapshot)
-    const storageSyncSignature = readAgenticGraphStorageSyncSignature({
-      sourceFilesSnapshot,
-    })
-    return {
-      workspaceId,
-      workspaceState: args.workspaceState,
-      sourceFilesSnapshot,
-      initialQueueRequest: resolveAgenticGraphStorageQueueRequest({
-        workspaceId,
-        workspaceState: args.workspaceState,
-        sourceFilesSnapshot,
-        storageSyncSignature,
-      }),
-    }
-  }, [readCallerOwnedSourceFilesSnapshot, readAgenticGraphStorageSyncSignature, readAgenticGraphStorageWorkspaceId, resolveAgenticGraphStorageQueueRequest])
-
-  const stopAgenticGraphStorageWorkspaceRuntime = React.useCallback((args?: {
-    clearActiveWorkspaceId?: boolean
-  }) => {
-    const workspaceId = activeAgenticGraphWorkspaceIdRef.current
-    const deps = agenticGraphStorageWorkspaceLifecycle.readDependencies()
-    agenticGraphStorageWorkspaceLifecycle.stop()
-    cancelWorkspaceSyncTask(WORKSPACE_SYNC_TASK_AGENTIC_OS_STORAGE_QUEUE)
-    if (agenticGraphStorageLoopCleanupRef.current) {
-      agenticGraphStorageLoopCleanupRef.current()
-      agenticGraphStorageLoopCleanupRef.current = null
-    }
-    if (workspaceId && deps) deps.cancelAgenticGraphStorageSync(workspaceId)
-    if (args?.clearActiveWorkspaceId !== false) {
-      activeAgenticGraphWorkspaceIdRef.current = ''
-    }
-    clearAgenticGraphStorageQueueState()
-  }, [clearAgenticGraphStorageQueueState, agenticGraphStorageWorkspaceLifecycle])
-
-  const startAgenticGraphStorageWorkspaceRuntime = React.useCallback((request: AgenticGraphStorageWorkspaceRequest) => {
-    const ownership = agenticGraphStorageWorkspaceLifecycle.begin()
-    void ensureAgenticGraphStorageRuntimeDependencies(ownership).then(deps => {
-      if (!agenticGraphStorageWorkspaceLifecycle.isCurrent(ownership)) return
-      if (!readAgenticGraphStorageRuntimeSyncEnabled()) return
-      agenticGraphStorageLoopCleanupRef.current = deps.startAgenticGraphStorageSyncLoop({
-        workspaceId: request.workspaceId,
-        baseUrl: deps.baseUrl,
-        initialDelayMs: 0,
-        signal: ownership.signal,
-        onSyncCompleted: handleAgenticGraphStorageSyncCompleted,
-        onPulledChangesApplied: createAgenticGraphStoragePulledChangesHandler(ownership),
-      })
-    }).catch(() => undefined)
-  }, [
-    ensureAgenticGraphStorageRuntimeDependencies,
-    createAgenticGraphStoragePulledChangesHandler,
-    handleAgenticGraphStorageSyncCompleted,
-    agenticGraphStorageWorkspaceLifecycle,
-  ])
-
-  const applyAgenticGraphStorageWorkspaceRequest = React.useCallback((request: AgenticGraphStorageWorkspaceRequest) => {
-    if (activeAgenticGraphWorkspaceIdRef.current === request.workspaceId) return
-    stopAgenticGraphStorageWorkspaceRuntime({
-      clearActiveWorkspaceId: false,
-    })
-    activeAgenticGraphWorkspaceIdRef.current = request.workspaceId
-    startAgenticGraphStorageWorkspaceRuntime(request)
-    scheduleAgenticGraphStorageQueueRequest(request.initialQueueRequest)
-  }, [
-    scheduleAgenticGraphStorageQueueRequest,
-    startAgenticGraphStorageWorkspaceRuntime,
-    stopAgenticGraphStorageWorkspaceRuntime,
-  ])
   React.useEffect(() => {
     __canvasStartupDebug.sourceBootstrapMounted = true
     return () => {
@@ -1298,109 +449,9 @@ export function SourceFilesPersistenceBootstrap() {
     }
   }, [])
 
-  React.useEffect(() => {
-    if (!workspaceSeedSyncEnabled) return
-    const lifecycleState: WorkspaceSeedSyncLifecycleState = {
-      cancelled: false,
-      timer: null,
-      idleStreak: 0,
-    }
-    const runWorkspaceSeedSync = async (request: WorkspaceSeedSyncRequest) => {
-      if (lifecycleState.cancelled) return
-      const runNextWorkspaceSeedSync = (nextRequest: WorkspaceSeedSyncRequest) => {
-        void runWorkspaceSeedSync(nextRequest)
-      }
-      const finishSeedSyncTask = beginWorkspaceSeedSyncTask()
-      if (!finishSeedSyncTask) {
-        scheduleNextWorkspaceSeedSyncPoll({
-          changed: false,
-          lifecycleState,
-          runWorkspaceSeedSync: runNextWorkspaceSeedSync,
-        })
-        return
-      }
-      try {
-        const preparedRequest = resolvePreparedWorkspaceSeedSyncRequest(request)
-        const fs = await readReusableWorkspaceFs()
-        const changed = await fs.ensureSeed()
-        handleWorkspaceSeedSyncRequestSuccess({
-          changed,
-          preparedRequest,
-          lifecycleState,
-          runWorkspaceSeedSync: runNextWorkspaceSeedSync,
-        })
-      } catch {
-        handleWorkspaceSeedSyncRequestFailure({
-          lifecycleState,
-          runWorkspaceSeedSync: runNextWorkspaceSeedSync,
-        })
-      } finally {
-        finishSeedSyncTask()
-      }
-    }
-    const handleWorkspaceSeedSyncWake = () => {
-      if (document.visibilityState === 'hidden') return
-      resetWorkspaceSeedSyncWakeLifecycle(lifecycleState)
-      void runWorkspaceSeedSync(WORKSPACE_SEED_SYNC_WAKE_REQUEST)
-    }
-    void runWorkspaceSeedSync(WORKSPACE_SEED_SYNC_MOUNT_REQUEST)
-    window.addEventListener('focus', handleWorkspaceSeedSyncWake)
-    document.addEventListener('visibilitychange', handleWorkspaceSeedSyncWake)
-    return () => {
-      cleanupWorkspaceSeedSyncLifecycle(lifecycleState)
-      window.removeEventListener('focus', handleWorkspaceSeedSyncWake)
-      document.removeEventListener('visibilitychange', handleWorkspaceSeedSyncWake)
-    }
-  }, [
-    prepareEnsureSeedMutationRequest,
-    applyPreparedWorkspaceSeedSyncRequest,
-    cleanupWorkspaceSeedSyncLifecycle,
-    clearPreparedEnsureSeedMutationRequest,
-    handleWorkspaceSeedSyncRequestFailure,
-    handleWorkspaceSeedSyncRequestSuccess,
-    readReusableWorkspaceFs,
-    resetWorkspaceSeedSyncWakeLifecycle,
-    resolvePreparedWorkspaceSeedSyncRequest,
-    workspaceSeedSyncEnabled,
-  ])
+  React.useEffect(subscribeWorkspaceSeedSync, [subscribeWorkspaceSeedSync])
 
-  React.useEffect(() => {
-    if (!readAgenticGraphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) {
-      stopAgenticGraphStorageWorkspaceRuntime()
-      return
-    }
-    const startForWorkspaceSelection = (selection: AgenticGraphStorageWorkspaceSelection) => {
-      const request = resolveAgenticGraphStorageWorkspaceRequest({
-        workspaceState: selection.workspaceState,
-        sourceFilesSnapshot: selection.sourceFilesSnapshot,
-      })
-      if (!request) {
-        stopAgenticGraphStorageWorkspaceRuntime()
-        return
-      }
-      applyAgenticGraphStorageWorkspaceRequest(request)
-    }
-    startForWorkspaceSelection(readAgenticGraphStorageWorkspaceSelection())
-    const unsubscribe = useGraphStore.subscribe(
-      s => readAgenticGraphStorageWorkspaceSelection(s),
-      selection => {
-        startForWorkspaceSelection(selection)
-      },
-      {
-        equalityFn: (left, right) => areSourceFilesWorkspaceStatesEqual(left?.workspaceState, right?.workspaceState),
-      },
-    )
-    return () => {
-      unsubscribe()
-      stopAgenticGraphStorageWorkspaceRuntime()
-    }
-  }, [
-    applyAgenticGraphStorageWorkspaceRequest,
-    readAgenticGraphStorageWorkspaceSelection,
-    resolveAgenticGraphStorageWorkspaceRequest,
-    stopAgenticGraphStorageWorkspaceRuntime,
-    workspaceCloudSyncEnabled,
-  ])
+  React.useEffect(subscribeCloudWorkspace, [subscribeCloudWorkspace])
 
   React.useEffect(() => {
     let cancelled = false
@@ -1420,6 +471,7 @@ export function SourceFilesPersistenceBootstrap() {
       await runBootstrapSourceFileHydration()
       if (cancelled) return
       const bootstrapMaterialization = await materializeBootstrapWorkspaceSourceFiles({
+        signal: controller.signal,
         existingSourceFiles: lastPersistedRef.current,
         sourcesByPath: readReusableWorkspaceSourceIndexSnapshot(),
       })
@@ -1445,54 +497,10 @@ export function SourceFilesPersistenceBootstrap() {
       cancelled = true
       controller.abort(new Error('Source Files bootstrap lifecycle ended'))
     }
-  }, [applyBootstrapMountRequest, resolveBootstrapMountRequest])
+  }, [applyBootstrapMountRequest, readReusableWorkspaceSourceIndexSnapshot, resolveBootstrapMountRequest])
 
-  React.useEffect(() => {
-    scheduleWorkspaceRematerializeRef.current = request => {
-      if (request) {
-        scheduleWorkspaceRematerializeRequest(request)
-        return
-      }
-      scheduleWorkspaceRematerialize()
-    }
-    lastWorkspaceEntriesSignatureRef.current = ''
-    scheduleWorkspaceRematerialize()
-    const unsubscribe = subscribeWorkspaceFsChanged(detail => {
-      const request = resolveWorkspaceFsMutationRequest(detail)
-      if (!request) return
-      handleWorkspaceFsMutation(request)
-    })
-    const unsubscribeWorkspaceSeedSyncResumed =
-      workspaceRematerializeSeedSyncScheduler.subscribeResume()
-    return () => {
-      if (scheduleWorkspaceRematerializeRef.current) {
-        scheduleWorkspaceRematerializeRef.current = null
-      }
-      unsubscribe()
-      unsubscribeWorkspaceSeedSyncResumed()
-      workspaceRematerializeSeedSyncScheduler.cleanup()
-    }
-  }, [handleWorkspaceFsMutation, resolveWorkspaceFsMutationRequest, scheduleWorkspaceRematerialize, scheduleWorkspaceRematerializeRequest, workspaceRematerializeSeedSyncScheduler])
-
-  React.useEffect(() => {
-    let lastObservedActivePath = useMarkdownExplorerStore.getState().activePath
-    const syncForActivePathSelection = (selection: ActivePathMaterializationSelection) => {
-      syncActivePathMaterialization({
-        activePathSnapshot: selection.activePathSnapshot,
-        sourceFilesSnapshot: selection.sourceFilesSnapshot,
-        workspaceEntriesSnapshot: selection.workspaceEntriesSnapshot,
-      })
-    }
-    const unsubscribeActivePath = useMarkdownExplorerStore.subscribe(state => {
-      const activePath = state.activePath
-      if (Object.is(activePath, lastObservedActivePath)) return
-      lastObservedActivePath = activePath
-      syncForActivePathSelection(readActivePathMaterializationSelection(state))
-    })
-    return () => {
-      unsubscribeActivePath()
-    }
-  }, [readActivePathMaterializationSelection, syncActivePathMaterialization])
+  React.useEffect(subscribeWorkspaceFsRuntime, [subscribeWorkspaceFsRuntime])
+  React.useEffect(subscribeActiveWorkspacePath, [subscribeActiveWorkspacePath])
 
   React.useEffect(() => {
     const taskKey = WORKSPACE_SYNC_TASK_SOURCE_FILES_PERSIST

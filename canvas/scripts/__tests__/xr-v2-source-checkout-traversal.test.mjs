@@ -2,10 +2,10 @@ import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { resolve } from 'node:path'
+import { basename, resolve } from 'node:path'
 import test from 'node:test'
 
-import { resolveXrV2SourceAheadGitArgs } from '../lib/xr-v2-source-checkout-traversal.mjs'
+import { assertXrV2SourceUpstreamEvidence, readXrV2SourceUpstream, resolveXrV2SourceAheadGitArgs } from '../lib/xr-v2-source-checkout-traversal.mjs'
 
 function git(repositoryRoot, args) {
   return execFileSync('git', args, {
@@ -105,4 +105,68 @@ test('synthetic merge traversal counts only the candidate-to-merge edge', t => {
       sourceUpstreamRef: 'refs/remotes/origin/base',
     }),
   )), 1)
+})
+
+function localLane(t) {
+  let { repositoryRoot: root, candidateRevision } = createSyntheticPullRequestMerge(t)
+  root = git(root, ['rev-parse', '--show-toplevel'])
+  git(root, ['switch', 'task'])
+  const branch = 'agent/device/test'
+  git(root, ['branch', '-m', branch])
+  git(root, ['remote', 'add', 'origin', 'https://github.com/huijoohwee/agentic-graph.git'])
+  const baseRevision = git(root, ['rev-parse', 'origin/base'])
+  git(root, ['update-ref', 'refs/remotes/origin/main', baseRevision])
+  const ctx = { sourceBranch: branch, sourceCandidateRevision: candidateRevision, sourceCheckoutState: 'attached', sourceLane: 'task-review' }
+  const sel = { digest: 'a'.repeat(64), manifest: { allocations: [{ state: 'active', ref: branch, path: root, worktreeId: basename(root), headRevision: candidateRevision, baseRevision }] } }
+  const dec = { status: 'eligible', authority: false, dependencyCoverage: 'declared', manifestDigest: sel.digest, fingerprint: 'b'.repeat(64) }
+  const svc = {
+    readSelectedWorkflow: () => sel,
+    assertWorkflowEffect: () => dec,
+    remoteTransport: () => ({ fetchUrl: 'https://github.com/huijoohwee/agentic-graph.git', urlDigest: 'c'.repeat(64) }),
+    remoteRefSha: (_, ref, cwd) => { assert.equal(ref, branch); assert.equal(cwd, root); return null },
+  }
+  return { root, ctx, sel, svc }
+}
+
+test('unpublished lane has no remote proof', t => {
+  const { root, ctx, svc } = localLane(t)
+  const result = readXrV2SourceUpstream(root, ctx, svc)
+  const source = { ...result.checkoutContext, ...result, sourceRevision: ctx.sourceCandidateRevision, sourceHeadTree: git(root, ['rev-parse', 'HEAD^{tree}']), sourceAheadCount: null, sourceBehindCount: null, sourceDescendsFromUpstream: null, upstreamSynchronized: null, sourceDescendsFromOriginMain: true }
+  assertXrV2SourceUpstreamEvidence(source)
+})
+
+test('stale admission and remote errors fail', t => {
+  const { root, ctx, sel, svc } = localLane(t)
+  const reject = overrides => assert.throws(() => readXrV2SourceUpstream(root, ctx, { ...svc, ...overrides }))
+  reject({ readSelectedWorkflow: () => null })
+  reject({ assertWorkflowEffect: () => ({}) })
+  const allocation = sel.manifest.allocations[0]
+  for (const change of [{ path: `${root}/wrong` }, { headRevision: allocation.baseRevision }]) {
+    reject({ readSelectedWorkflow: () => ({ ...sel, manifest: { allocations: [{ ...allocation, ...change }] } }) })
+  }
+  reject({ remoteRefSha: () => ctx.sourceCandidateRevision })
+  const failure = new Error('remote failure')
+  assert.throws(() => readXrV2SourceUpstream(root, ctx, { ...svc, remoteRefSha: () => { throw failure } }), error => error === failure)
+})
+
+test('main and PR cannot admit nullable evidence', t => {
+  const { root, ctx, svc } = localLane(t)
+  for (const change of [{ sourceBranch: 'main', sourceLane: 'canonical-main' }, { sourceCheckoutState: 'github-pull-request-merge', sourceLane: 'pull-request-integration' }]) {
+    assert.throws(() => readXrV2SourceUpstream(root, { ...ctx, ...change }, svc))
+  }
+})
+
+test('configured upstream is strict', t => {
+  const { root, ctx } = localLane(t)
+  const branch = ctx.sourceBranch, ref = `origin/${branch}`
+  git(root, ['update-ref', `refs/remotes/${ref}`, ctx.sourceCandidateRevision])
+  git(root, ['config', `branch.${branch}.remote`, 'origin'])
+  git(root, ['config', `branch.${branch}.merge`, `refs/heads/${branch}`])
+  const result = readXrV2SourceUpstream(root, ctx)
+  assert.equal(result.sourceUpstreamRef, ref)
+  assert.equal(result.sourceUpstreamRevision, ctx.sourceCandidateRevision)
+  assert.equal(result.sourceAllocationEvidence, null)
+  assert.throws(() => assertXrV2SourceUpstreamEvidence({ ...ctx, ...result, sourceUpstreamRef: 'origin/main' }))
+  git(root, ['update-ref', '-d', `refs/remotes/${ref}`])
+  assert.throws(() => readXrV2SourceUpstream(root, ctx))
 })

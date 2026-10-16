@@ -220,13 +220,12 @@ export const GraphFieldsListRow = React.memo(function GraphFieldsListRow({
       <section
         className={[
           `${UI_RESPONSIVE_GRAPH_FIELDS_LIST_ROW_CLASSNAME} border-b ${UI_THEME_TOKENS.panel.divider} last:border-b-0`,
-          'flex items-center gap-2 border-l-2',
+          'flex items-center gap-2',
           active ? UI_THEME_TOKENS.table.rowSelected : UI_THEME_TOKENS.table.rowHoverHighlight,
           isDragOver ? ['ring-1', UI_RING_PRIMARY_BLUE_INDICATOR].join(' ') : '',
         ]
           .filter(Boolean)
           .join(' ')}
-        style={borderColor ? { borderLeftColor: borderColor } : undefined}
         draggable
         onClick={() => {
           if (graphFieldId) setSelectedFieldId(graphFieldId)

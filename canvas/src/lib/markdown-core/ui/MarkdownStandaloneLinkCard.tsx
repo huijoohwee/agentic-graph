@@ -41,7 +41,7 @@ export const StandaloneLinkCard = React.memo(function StandaloneLinkCard({ href,
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={`sm:flex ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border} border rounded-xl shadow-sm hover:shadow-md transition-shadow no-underline text-inherit block`}
+      className={`sm:flex ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.panel.border} border rounded-xl shadow-none hover:shadow-none transition-shadow no-underline text-inherit block`}
       onClick={e => e.stopPropagation()}
     >
       <section className="shrink-0 relative w-full rounded-t-xl overflow-hidden sm:rounded-s-xl sm:rounded-se-none sm:max-w-20 bg-gray-100 dark:bg-gray-800">

@@ -1,4 +1,6 @@
 import React from 'react'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { getIconSizeClass } from '@/lib/ui/icons'
 import { ArrowLeftRight, ArrowUpDown, Filter, Layers, LayoutGrid, MoreHorizontal, Plus, Search, SlidersHorizontal } from 'lucide-react'
 import { PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -54,7 +56,7 @@ export function WorkspaceDataViewHeader(props: {
   const searchInputRef = React.useRef<HTMLInputElement | null>(null)
 
   const icon12Class = [UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME, UI_THEME_TOKENS.icon.color].join(' ')
-  const icon14Class = ['w-4 h-4 shrink-0', UI_THEME_TOKENS.icon.color].join(' ')
+  const icon14Class = getIconSizeClass(useGraphStore(s => s.uiIconScale))
   const squareIconButtonClassName = getDataViewIconButtonClassName({
     className: ['shrink-0', UI_THEME_TOKENS.button.square].join(' '),
   })

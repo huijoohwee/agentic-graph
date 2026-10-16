@@ -5,6 +5,7 @@ import {
   type FlightGeoOverlayPresentation,
   type FlightGeoOverlayPresentationOwner,
   type FlightGeoOverlaySnapshot,
+  type FlightGeoEnvironmentProjection,
 } from '../../flightGeoOverlay.js'
 import {
   applyFlightGeoOverlayCameraToMap,
@@ -14,13 +15,14 @@ import {
 } from '../../flightGeoOverlayMapLibre.js'
 import {
   geoMapViewportPaddingKey,
-  observeGeoMapOcclusionChanges,
   readGeoMapViewportPadding,
 } from '../../geoMapViewport.js'
 import {
   applyFlightGeoEnvironmentToMap,
+  applyFlightGeoEnvironmentProjectionToMap,
   clearFlightGeoEnvironmentFromMap,
 } from '../../flightGeoEnvironmentMapLibre.js'
+import { GAME_MODE_GEO_OVERLAY_LAYER_IDS } from '../../gameModeGeoOverlayMapLibre.js'
 import {
   canMapLibreFlightOverlayPresent,
   requestMapLibreFlightPresentationBootstrap,
@@ -78,6 +80,8 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
   graphRevision: number
   map: any | null
   mapLibreRuntimeEnabled: boolean
+  /** Shared Media terrain can remain on the map while Flight Mode is inactive. */
+  sceneEnvironment?: FlightGeoEnvironmentProjection | null
   onPresented?: (presentation: FlightGeoOverlayPresentation) => void
   rootRef: React.RefObject<HTMLElement | null>
   styleRevision: number
@@ -149,7 +153,9 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       }
     }
   }, [
+    options.active,
     options.map,
+    options.mapLibreRuntimeEnabled,
     options.rootRef,
     restoreMapPadding,
   ])
@@ -184,9 +190,9 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     const map = options.map
     let pendingCameraFrame = 0
     let gate: FlightOverlayPresentationGate | null = null
-    const disposeGate = () => {
+    const disposeGate = (clearCanvas = true) => {
       gate?.cancel()
-      gate?.clearCanvas()
+      if (clearCanvas) gate?.clearCanvas()
       gate?.resetPresented()
       gate?.dispose()
       gate = null
@@ -253,7 +259,16 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         disposeGate()
         transitionPresentationOwner(null)
         clearFlightGeoOverlayFromMap(map)
-        clearFlightGeoEnvironmentFromMap(map)
+        if (options.sceneEnvironment) {
+          applyFlightGeoEnvironmentProjectionToMap(
+            map,
+            options.sceneEnvironment,
+            options.viewMode,
+            { beforeLayerId: GAME_MODE_GEO_OVERLAY_LAYER_IDS.assets },
+          )
+        } else {
+          clearFlightGeoEnvironmentFromMap(map)
+        }
         return
       }
       if (isMapLibreMapPreparingForDisposal(map)) {
@@ -280,7 +295,10 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       if (flightGate && overlay.phase === 'stopped') flightGate.clearCanvas()
       const environmentApplied = applyFlightGeoEnvironmentToMap(
         map,
-        overlay,
+        overlay.environment ? overlay : {
+          ...overlay,
+          environment: options.sceneEnvironment || null,
+        },
         options.viewMode,
       )
       const applied = applyFlightGeoOverlayToMap(map, overlay)
@@ -344,9 +362,6 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     map?.on?.('style.load', scheduleFinalApply)
     map?.on?.('load', scheduleFinalApply)
     map?.on?.('resize', scheduleFinalApply)
-    const root = options.rootRef.current
-    const observedRoot = root || map?.getContainer?.()
-    const stopObservingOcclusion = observeGeoMapOcclusionChanges(observedRoot || null, scheduleFinalApply)
     return () => {
       unsubscribe()
       unsubscribeBootstrapSettled()
@@ -354,8 +369,9 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       map?.off?.('style.load', scheduleFinalApply)
       map?.off?.('load', scheduleFinalApply)
       map?.off?.('resize', scheduleFinalApply)
-      stopObservingOcclusion()
-      disposeGate()
+      // Graph/style effect restarts retain proof earned by this same canvas.
+      // Map/activation ownership cleanup and stopped/inactive apply clear it.
+      disposeGate(false)
       transitionPresentationOwner(null)
       if (pendingCameraFrame && typeof window !== 'undefined') {
         window.cancelAnimationFrame(pendingCameraFrame)
@@ -369,6 +385,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     options.mapLibreRuntimeEnabled,
     options.onPresented,
     options.rootRef,
+    options.sceneEnvironment,
     captureMapPadding,
     restoreMapPadding,
     options.styleRevision,

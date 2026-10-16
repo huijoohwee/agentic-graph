@@ -13,6 +13,7 @@ export type GanttTimelineTransportShellProps = {
   chromeModel: GanttTimelineTransportChromeModel
   mediaPlayerModel: GanttTimelineTransportMediaPlayerModel
   renderClipOverlay?: VideoSequenceTimelineClipOverlayRenderer
+  renderLaneOverlay?: VideoSequenceTimelineClipOverlayRenderer
   rulerModel: GanttTimelineTransportRulerModel
   shellModel: GanttTimelineTransportShellModel
   supplementalLanes?: React.ReactNode
@@ -41,11 +42,11 @@ export function GanttTimelineTransportShell(args: GanttTimelineTransportShellPro
       playing={args.shellModel.playing}
       shellClassName={args.shellModel.shellClassName}
       rootProps={args.shellModel.rootProps}
-      headerAside={args.transportControls ? <section aria-label="Timeline transport actions" className="flex min-w-0 flex-wrap items-center gap-1">
+      headerAside={args.transportControls ? <section aria-label="Timeline transport actions" className="timeline-transport-header-tools">
         {args.transportControls}<GanttTimelineTransportHeaderTools model={args.chromeModel.headerTools} />
       </section> : <GanttTimelineTransportHeaderTools model={args.chromeModel.headerTools} />}
       mediaPlayer={args.mediaPlayerModel.active ? <GanttTimelineTransportMediaPlayer model={args.mediaPlayerModel} /> : null}
-      ruler={<GanttTimelineTransportRuler model={args.rulerModel.ruler} renderClipOverlay={args.renderClipOverlay} timeAxisControls={args.timeAxisControls} timeRulerOverlay={args.timeRulerOverlay} timelineInsertedLanes={args.timelineInsertedLanes} />}
+      ruler={<GanttTimelineTransportRuler model={args.rulerModel.ruler} renderClipOverlay={args.renderClipOverlay} renderLaneOverlay={args.renderLaneOverlay} timeAxisControls={args.timeAxisControls} timeRulerOverlay={args.timeRulerOverlay} timelineInsertedLanes={args.timelineInsertedLanes} />}
       rulerClassName={args.rulerModel.chrome.rulerClassName}
       rulerProps={args.rulerModel.chrome.rulerProps}
       supplementalLanes={args.supplementalLanes}

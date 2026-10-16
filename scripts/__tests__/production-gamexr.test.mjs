@@ -5,9 +5,21 @@ import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import YAML from 'yaml'
-import { admitGameXr, assertAnalyticsDisabled, fetchGameXrBytes, validateGameXrPin, verifyGameXrArtifact, verifyGameXrFragments } from '../production-gamexr.mjs'
+import { admitGameXr, assertAnalyticsDisabled, fetchGameXrBytes, GAME_XR_INSTALL_STEPS,
+  validateGameXrPin, verifyGameXrArtifact, verifyGameXrFragments } from '../production-gamexr.mjs'
 
 const hash = value => createHash('sha256').update(value).digest('hex')
+
+test('GameXR admission keeps WebKit system packages separate and time-bounded', () => {
+  assert.deepEqual(GAME_XR_INSTALL_STEPS.map(({ command, args, timeoutMs }) => ({
+    command, args: [...args], timeoutMs,
+  })), [
+    { command: 'npm', args: ['ci', '--ignore-scripts'], timeoutMs: 300_000 },
+    { command: 'npx', args: ['playwright', 'install-deps', 'webkit'], timeoutMs: 900_000 },
+    { command: 'npx', args: ['playwright', 'install', 'webkit'], timeoutMs: 300_000 },
+  ])
+})
+
 const fixture = async t => {
   const temp = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'gamexr-admission-')))
   t.after(() => fs.rm(temp, { recursive: true, force: true }))
@@ -120,4 +132,35 @@ test('canonical shell redirect preserves byte verification and refuses cross-ori
     await assert.rejects(fetchGameXrBytes(url, async () => new Response(null, { status: 308, headers: { location } })), /same-origin/)
   }
   await assert.rejects(fetchGameXrBytes('https://example.test/gamexr/sw.js', async () => new Response(null, { status: 308, headers: { location: '/gamexr/' } })), /HTTP status/)
+})
+
+test('canonical per-game HTML redirect preserves byte verification through content rewrites', async () => {
+  const url = 'https://example.test/gamexr/games/huhou/index.html'
+  const calls = []
+  const result = await fetchGameXrBytes(url, async target => {
+    calls.push(target)
+    if (target === url) return new Response(null, { status: 308, headers: { location: '/content/gamexr/games/huhou/' } })
+    if (target === 'https://example.test/content/gamexr/games/huhou/') {
+      return new Response(null, { status: 301, headers: { location: '/gamexr/games/huhou/' } })
+    }
+    return new Response('sealed')
+  })
+  assert.deepEqual(calls, [
+    'https://example.test/gamexr/games/huhou/index.html',
+    'https://example.test/content/gamexr/games/huhou/',
+    'https://example.test/gamexr/games/huhou/',
+  ])
+  assert.equal(result.bytes.toString(), 'sealed')
+  await assert.rejects(fetchGameXrBytes(url, async target => target === url
+    ? new Response(null, { status: 308, headers: { location: '/content/gamexr/games/huhou/?drift=1' } })
+    : new Response('sealed')), /same-origin/)
+})
+
+test('nested per-game asset paths remain immutable at live verification time', () => {
+  const nestedAsset = 'games/huhou/assets/character-sheet.jpg'
+  const rootAsset = 'assets/index-abc123.js'
+  const html = 'games/huhou/index.html'
+  assert.equal(/(?:^|\/)assets\/.+/u.test(nestedAsset), true)
+  assert.equal(/(?:^|\/)assets\/.+/u.test(rootAsset), true)
+  assert.equal(/(?:^|\/)assets\/.+/u.test(html), false)
 })

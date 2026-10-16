@@ -307,7 +307,7 @@ export async function runWorkspaceWebsiteImport(args: {
       },
     })
     if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
-    const { created, host, canvasPath } = await (await getWriter(importId)).finalize(manifest)
+    const { created, host, canvasPath, collectionTablePath } = await (await getWriter(importId)).finalize(manifest)
     if (!fs) throw new Error('Website workspace unavailable')
 
     if (!isWebsiteImportJobCurrent(args.importJobRef, args.jobId)) throw new Error('cancelled')
@@ -319,7 +319,7 @@ export async function runWorkspaceWebsiteImport(args: {
     const selectedUrl = settings.selectedUrls?.length === 1 ? settings.selectedUrls[0] : null
     const selectedPagePath = selectedUrl ? pagePathsByUrl.get(selectedUrl) : null
     if (selectedUrl && !selectedPagePath) throw new Error(`The requested page was not saved: ${selectedUrl}`)
-    const activationPath = selectedPagePath || canvasPath || created.createdPaths[0]
+    const activationPath = selectedPagePath || collectionTablePath || canvasPath || created.createdPaths[0]
     if (settings.applyToCanvas && activationPath) {
       const { applyWorkspaceImportToCanvasBestEffort } = await import('./importRuntimeActions')
       await applyWorkspaceImportToCanvasBestEffort({

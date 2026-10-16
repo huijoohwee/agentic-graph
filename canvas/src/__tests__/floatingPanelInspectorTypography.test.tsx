@@ -7,6 +7,7 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
 
 export async function testInspectorTypographyUsesUiSettings() {
   const storage = new MemoryStorage()
@@ -123,6 +124,35 @@ export async function testInspectorTypographyUsesUiSettings() {
     const taClass = String(textarea.getAttribute('class') || '')
     if (!taClass.includes('text-[13px]')) {
       throw new Error(`expected textarea to use monospace size class, got ${JSON.stringify(taClass)}`)
+    }
+
+    const analysis = { id: 'frame-analysis', label: 'Video Agent Frame Analysis', type: FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID,
+      properties: { outputSrcDoc: '<!doctype html><html><body><p>analysis-frame-content</p></body></html>' } }
+    const playback = { id: 'source-playback', label: 'Source Playback', type: FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID,
+      properties: { outputSrcDoc: '<!doctype html><html><body><p>source-playback-content</p></body></html>' } }
+    await act(async () => {
+      api.setGraphData({ type: 'Graph', nodes: [playback, analysis], edges: [] })
+      api.selectNodesExpanded({ nodeIds: [analysis.id], activeNodeId: analysis.id, edgeIds: [], groupIds: [] })
+      root.render(React.createElement(GraphRecordInspector, {
+        columns, row: { tableId: 'nodes', rowId: analysis.id, order: 1, data: analysis },
+        onClose: () => void 0, onDeleteRow: () => void 0, onChangeCell: () => void 0,
+      }))
+      await tick()
+    })
+    await act(async () => { await import('@/features/graph-inspector/ui/NodeImpactInspector') })
+    const widget = container.querySelector('section[aria-label="Widget"]')
+    if (!widget) throw new Error('expected selected Frame Analysis widget in Inspector')
+    const frame = widget.querySelector('iframe')
+    if (!frame) throw new Error('expected selected Frame Analysis iframe in Inspector')
+    const srcDoc = frame.getAttribute('srcdoc') || ''
+    if (!srcDoc.includes('analysis-frame-content') || srcDoc.includes('source-playback-content')) {
+      throw new Error('expected Inspector iframe to resolve selected Analysis content, not sibling Playback')
+    }
+    if (widget.textContent?.includes('Waiting for text content')) throw new Error('resolved Analysis must not render empty text fallback')
+    const impact = container.querySelector('section[aria-label="Find a node"]')
+    if (!impact) throw new Error('expected preserved impact inspection landmark')
+    if (!(widget.compareDocumentPosition(impact) & dom.window.Node.DOCUMENT_POSITION_FOLLOWING)) {
+      throw new Error('expected selected media widget before impact inspection')
     }
   } finally {
     try {

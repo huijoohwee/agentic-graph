@@ -208,7 +208,7 @@ function MediaCandidateNameEditor({
             setEditing(true)
           }}
         >
-          <Pencil className="h-3 w-3" strokeWidth={1.7} aria-hidden />
+          <Pencil className="h-3 w-3" aria-hidden />
         </button>
       </span>
     )
@@ -322,7 +322,7 @@ function MediaSourceMetadataThumbnail({ item, rounded = true }: { item: MediaCat
 export function MediaSourceMetadataRow({ item }: { item: MediaCatalogSourceMetadataItem }) {
   const tags = buildSourceMetadataTags(item)
   return (
-    <article className={cn('grid min-w-0 gap-2 rounded border p-2 text-left shadow-sm', 'grid-cols-[6.875rem_minmax(0,1fr)]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-media-source-metadata="video-sequence" data-kg-command-menu-media-kind="video" {...sourceMetadataAttrs(item)}>
+    <article className={cn('grid min-w-0 gap-2 rounded border p-2 text-left shadow-none', 'grid-cols-[6.875rem_minmax(0,1fr)]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-media-source-metadata="video-sequence" data-kg-command-menu-media-kind="video" {...sourceMetadataAttrs(item)}>
       <MediaSourceMetadataThumbnail item={item} />
       <section className="grid min-w-0 grid-rows-[auto_auto_auto] gap-1" aria-label={`${item.name} source metadata`}>
         <header className="flex min-w-0 items-center justify-between gap-2" data-kg-media-list-row-section="title">
@@ -461,7 +461,7 @@ export function MediaActionCard({
       <figure className={cn('group relative m-0 grid aspect-[16/9] w-full place-items-center border-b', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)}>
         <MediaKindOverlay Icon={Icon} label={mediaKind || action.label} appearance="hover" />
         <MediaInfoOverlay label={action.description} appearance="hover" />
-        <Icon className={cn('h-7 w-7', UI_THEME_TOKENS.text.tertiary)} strokeWidth={1.7} aria-hidden />
+        <Icon className={cn('h-7 w-7', UI_THEME_TOKENS.text.tertiary)} aria-hidden />
       </figure>
       <header className="flex min-w-0 items-start justify-between gap-2 px-2 pt-2">
         <section className="min-w-0">

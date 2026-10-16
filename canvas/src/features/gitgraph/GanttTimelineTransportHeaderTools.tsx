@@ -20,38 +20,39 @@ const PRIMARY_CLIP_EDIT_ACTIONS = new Set([
 ])
 
 function renderUtilityActionIcon(icon: GanttTimelineTransportChromeModel['headerTools']['actionButtons'][number]['icon']) {
-  if (icon === 'audio') return <FileAudio className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="File Audio" />
-  if (icon === 'retry') return <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Rotate Ccw" />
-  return <Download className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Download" />
+  if (icon === 'audio') return <FileAudio className="h-3.5 w-3.5" role="img" aria-label="File Audio" />
+  if (icon === 'retry') return <RotateCcw className="h-3.5 w-3.5" role="img" aria-label="Rotate Ccw" />
+  return <Download className="h-3.5 w-3.5" role="img" aria-label="Download" />
 }
 
 function renderZoomActionIcon(icon: GanttTimelineTransportChromeModel['headerTools']['zoomControls']['actionButtons'][number]['icon']) {
-  if (icon === 'zoom-out') return <ZoomOut className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Zoom Out" />
-  if (icon === 'zoom-in') return <ZoomIn className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Zoom In" />
-  if (icon === 'fit') return <Maximize2 className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Maximize2" />
-  return <LocateFixed className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Locate Fixed" />
+  if (icon === 'zoom-out') return <ZoomOut className="h-3.5 w-3.5" role="img" aria-label="Zoom Out" />
+  if (icon === 'zoom-in') return <ZoomIn className="h-3.5 w-3.5" role="img" aria-label="Zoom In" />
+  if (icon === 'fit') return <Maximize2 className="h-3.5 w-3.5" role="img" aria-label="Maximize2" />
+  return <LocateFixed className="h-3.5 w-3.5" role="img" aria-label="Locate Fixed" />
 }
 
 function renderClipActionIcon(icon: GanttTimelineTransportChromeModel['headerTools']['clipActionButtons'][number]['icon']) {
-  if (icon === 'bookmark') return <BookmarkPlus className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Bookmark Plus" />
-  if (icon === 'delete') return <Trash2 className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Trash2" />
-  if (icon === 'duplicate') return <Copy className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Copy" />
-  if (icon === 'extract-audio') return <FileAudio className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="File Audio" />
-  if (icon === 'ripple') return <MoveRight className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Move Right" />
-  if (icon === 'snapping') return <Magnet className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Magnet" />
-  if (icon === 'split') return <Scissors className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Scissors" />
-  if (icon === 'split-left') return <StepBack className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Step Back" />
-  if (icon === 'split-right') return <StepForward className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Step Forward" />
-  if (icon === 'nudge-back') return <ChevronsLeft className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Chevrons Left" />
-  if (icon === 'nudge-forward') return <ChevronsRight className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Chevrons Right" />
-  if (icon === 'trim-start-back' || icon === 'trim-end-back') return <StepBack className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Step Back" />
-  if (icon === 'trim-start-forward' || icon === 'trim-end-forward') return <StepForward className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Step Forward" />
-  return <MoveHorizontal className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Move Horizontal" />
+  if (icon === 'bookmark') return <BookmarkPlus className="h-3.5 w-3.5" role="img" aria-label="Bookmark Plus" />
+  if (icon === 'delete') return <Trash2 className="h-3.5 w-3.5" role="img" aria-label="Trash2" />
+  if (icon === 'duplicate') return <Copy className="h-3.5 w-3.5" role="img" aria-label="Copy" />
+  if (icon === 'extract-audio') return <FileAudio className="h-3.5 w-3.5" role="img" aria-label="File Audio" />
+  if (icon === 'ripple') return <MoveRight className="h-3.5 w-3.5" role="img" aria-label="Move Right" />
+  if (icon === 'snapping') return <Magnet className="h-3.5 w-3.5" role="img" aria-label="Magnet" />
+  if (icon === 'split') return <Scissors className="h-3.5 w-3.5" role="img" aria-label="Scissors" />
+  if (icon === 'split-left') return <StepBack className="h-3.5 w-3.5" role="img" aria-label="Step Back" />
+  if (icon === 'split-right') return <StepForward className="h-3.5 w-3.5" role="img" aria-label="Step Forward" />
+  if (icon === 'nudge-back') return <ChevronsLeft className="h-3.5 w-3.5" role="img" aria-label="Chevrons Left" />
+  if (icon === 'nudge-forward') return <ChevronsRight className="h-3.5 w-3.5" role="img" aria-label="Chevrons Right" />
+  if (icon === 'trim-start-back' || icon === 'trim-end-back') return <StepBack className="h-3.5 w-3.5" role="img" aria-label="Step Back" />
+  if (icon === 'trim-start-forward' || icon === 'trim-end-forward') return <StepForward className="h-3.5 w-3.5" role="img" aria-label="Step Forward" />
+  return <MoveHorizontal className="h-3.5 w-3.5" role="img" aria-label="Move Horizontal" />
 }
 
 export function GanttTimelineTransportHeaderTools(args: GanttTimelineTransportHeaderToolsProps) {
   const zoomButtonByKey = new Map(args.model.zoomControls.actionButtons.map(button => [button.key, button]))
   const primaryClipActionButtons = args.model.clipActionButtons.filter(button => PRIMARY_CLIP_EDIT_ACTIONS.has(button.action))
+  const secondaryClipActionButtons = args.model.clipActionButtons.filter(button => !PRIMARY_CLIP_EDIT_ACTIONS.has(button.action))
   const renderZoomButton = (key: GanttTimelineTransportChromeModel['headerTools']['zoomControls']['actionButtons'][number]['key']) => {
     const button = zoomButtonByKey.get(key)
     if (!button) return null
@@ -71,10 +72,9 @@ export function GanttTimelineTransportHeaderTools(args: GanttTimelineTransportHe
   }
   const renderClipActionButton = (
     button: GanttTimelineTransportChromeModel['headerTools']['clipActionButtons'][number],
-    keyPrefix = '',
   ) => (
     <button
-      key={`${keyPrefix}${button.key}`}
+      key={button.key}
       type="button"
       aria-label={button.ariaLabel}
       aria-pressed={button.active ?? undefined}
@@ -82,16 +82,16 @@ export function GanttTimelineTransportHeaderTools(args: GanttTimelineTransportHe
       disabled={button.disabled}
       data-kg-video-sequence-clip-edit={button.action}
       data-kg-video-sequence-clip-edit-active={button.active ? '1' : undefined}
-      data-kg-video-sequence-primary-clip-edit={keyPrefix === 'primary-' ? button.action : undefined}
+      data-kg-video-sequence-primary-clip-edit={PRIMARY_CLIP_EDIT_ACTIONS.has(button.action) ? button.action : undefined}
       data-kg-video-sequence-tool-active={button.active ? '1' : undefined}
       onClick={button.onClick}
     >
       {renderClipActionIcon(button.icon)}
     </button>
   )
-  const renderMediaPlayerButton = (keyPrefix = '') => (
+  const renderMediaPlayerButton = () => (
     <button
-      key={`${keyPrefix}media-player`}
+      key="media-player"
       type="button"
       aria-label={args.model.mediaPlayerButton.ariaLabel}
       aria-pressed={args.model.mediaPlayerButton.active}
@@ -102,12 +102,12 @@ export function GanttTimelineTransportHeaderTools(args: GanttTimelineTransportHe
       data-kg-video-sequence-tool-active={args.model.mediaPlayerButton.active ? '1' : undefined}
       onClick={args.model.mediaPlayerButton.onClick}
     >
-      <MonitorPlay className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Monitor Play" />
+      <MonitorPlay className="h-3.5 w-3.5" role="img" aria-label="Monitor Play" />
     </button>
   )
-  const renderTimingSyncButton = (keyPrefix = '') => (
+  const renderTimingSyncButton = () => (
     <button
-      key={`${keyPrefix}timing-sync`}
+      key="timing-sync"
       type="button"
       aria-label={args.model.syncModeButton.ariaLabel}
       title={args.model.syncModeButton.title}
@@ -118,19 +118,19 @@ export function GanttTimelineTransportHeaderTools(args: GanttTimelineTransportHe
       onClick={args.model.syncModeButton.onClick}
     >
       {args.model.syncModeButton.mode === 'grouped'
-        ? <Link2 className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Link2" />
-        : <Unlink2 className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Unlink2" />}
+        ? <Link2 className="h-3.5 w-3.5" role="img" aria-label="Link2" />
+        : <Unlink2 className="h-3.5 w-3.5" role="img" aria-label="Unlink2" />}
     </button>
   )
 
   return (
-    <section className="timeline-transport-header-tools" aria-label="Timeline tools">
+    <section className="timeline-transport-header-tools" aria-label="Timeline command groups">
       {!args.model.runtimeOnly ? <nav className="timeline-video-sequence-tool-strip" aria-label="Video sequence editing tools">
         {renderMediaPlayerButton()}
         {renderTimingSyncButton()}
         <details className="timeline-tool-menu timeline-tool-menu--edit">
           <summary aria-label="Video sequence edit tools" title="Video sequence edit tools">
-            <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Sliders Horizontal" />
+            <SlidersHorizontal className="h-3.5 w-3.5" role="img" aria-label="Sliders Horizontal" />
           </summary>
           <nav className="timeline-tool-menu-panel" aria-label="Video sequence edit tools">
             {args.model.toolButtons.map(tool => (
@@ -147,14 +147,14 @@ export function GanttTimelineTransportHeaderTools(args: GanttTimelineTransportHe
           </nav>
         </details>
         <section className="timeline-video-sequence-primary-clip-actions" aria-label="Primary clip edit tools">
-          {primaryClipActionButtons.map(button => renderClipActionButton(button, 'primary-'))}
+          {primaryClipActionButtons.map(button => renderClipActionButton(button))}
         </section>
         <details className="timeline-tool-menu timeline-tool-menu--clip">
           <summary aria-label="Clip nudge and trim tools" title="Clip nudge and trim tools">
-            <MoveHorizontal className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Move Horizontal" />
+            <MoveHorizontal className="h-3.5 w-3.5" role="img" aria-label="Move Horizontal" />
           </summary>
           <nav className="timeline-tool-menu-panel" aria-label="Clip nudge and trim tools">
-            {args.model.clipActionButtons.map(button => renderClipActionButton(button))}
+            {secondaryClipActionButtons.map(button => renderClipActionButton(button))}
           </nav>
         </details>
       </nav> : null}
@@ -170,7 +170,7 @@ export function GanttTimelineTransportHeaderTools(args: GanttTimelineTransportHe
         {renderZoomButton('zoom-in')}
         <details className="timeline-tool-menu timeline-tool-menu--zoom">
           <summary aria-label="Timeline fit and center tools" title="Timeline fit and center tools">
-            <Maximize2 className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="Maximize2" />
+            <Maximize2 className="h-3.5 w-3.5" role="img" aria-label="Maximize2" />
           </summary>
           <nav className="timeline-tool-menu-panel" aria-label="Timeline fit and center tools">
             {renderZoomButton('fit')}
@@ -180,35 +180,9 @@ export function GanttTimelineTransportHeaderTools(args: GanttTimelineTransportHe
       </nav>
       {!args.model.runtimeOnly ? <details className="timeline-tool-menu timeline-tool-menu--utilities">
         <summary aria-label="Timeline utility tools" title="Timeline utility tools">
-          <MoreHorizontal className="h-3.5 w-3.5" strokeWidth={2} role="img" aria-label="More Horizontal" />
+          <MoreHorizontal className="h-3.5 w-3.5" role="img" aria-label="More Horizontal" />
         </summary>
         <nav className="timeline-transport-chrome-actions timeline-tool-menu-panel" aria-label="Gantt timeline tools">
-          <section className="timeline-overflow-action-group timeline-overflow-action-group--transport" aria-label="Collapsed transport tools">
-            {renderMediaPlayerButton('overflow-')}
-            {renderTimingSyncButton('overflow-')}
-          </section>
-          <section className="timeline-overflow-action-group timeline-overflow-action-group--edit" aria-label="Collapsed edit tools">
-            {args.model.toolButtons.map(tool => (
-              <TimelineVideoSequenceToolButton
-                key={`overflow-tool-${tool.id}`}
-                id={tool.id}
-                label={tool.label}
-                title={tool.title}
-                active={tool.active}
-                disabled={tool.disabled}
-                onClick={tool.onClick}
-              />
-            ))}
-          </section>
-          <section className="timeline-overflow-action-group timeline-overflow-action-group--clip-primary" aria-label="Collapsed primary clip tools">
-            {primaryClipActionButtons.map(button => renderClipActionButton(button, 'overflow-primary-'))}
-          </section>
-          <section className="timeline-overflow-action-group timeline-overflow-action-group--clip" aria-label="Collapsed clip tools">
-            {args.model.clipActionButtons.map(button => renderClipActionButton(button, 'overflow-'))}
-          </section>
-          <section className="timeline-overflow-action-group timeline-overflow-action-group--zoom" aria-label="Collapsed zoom tools">
-            {args.model.zoomControls.actionButtons.map(button => renderZoomButton(button.key))}
-          </section>
           {args.model.actionButtons.map(button => (
             <button
               key={button.key}

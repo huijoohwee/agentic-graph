@@ -14,8 +14,10 @@ import {
   resolveVideoSequenceTimelineLane,
   resolveVisibleVideoSequenceTimelineDisplayLanes,
   resolveVisibleVideoSequenceTimelineLanes,
+  resolveVisibleVideoSequenceTimelineLaneCount,
 } from '@/components/timeline/videoSequenceTimeline'
 import { readMermaidGanttFrameSamples } from '@/lib/mermaid/mermaidGanttFrameThumbnailToken'
+import { buildVideoSequenceTimelineZoomTicks } from '@/components/timeline/videoSequenceTimelineZoom'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -46,6 +48,30 @@ export function testVideoAgentTimelineKeepsSecondsScaleForBottomPanel() {
   if (!sourceAudio || Math.abs(sourceAudio.durationMinutes - 1) > 0.0001 || model.durationMinutes > 1.01) {
     throw new Error(`expected one-minute source audio to keep BottomPanel duration near 1:00, got ${JSON.stringify(model)}`)
   }
+  for (const zoom of [1, 6]) {
+    const args = { displayTicks: [], frameRate: 24, maxMinutes: 1, mediaDurationSeconds: 52, timelineZoom: zoom }
+    const baseline = buildVideoSequenceTimelineZoomTicks(args)
+    for (const width of [236, 492, 1200]) {
+      const ticks = buildVideoSequenceTimelineZoomTicks({ ...args, rulerWidthPx: width })
+      if (ticks.length !== baseline.length || ticks.some((tick, index) => tick.minutes !== baseline[index].minutes || tick.percent !== baseline[index].percent)) {
+        throw new Error('responsive tick labels must preserve frame ticks and seek positions')
+      }
+      const visible = ticks.filter(tick => tick.label)
+      if (visible[0] !== ticks[0] || visible[visible.length - 1] !== ticks[ticks.length - 1]) {
+        throw new Error('responsive labels must retain both timeline endpoints')
+      }
+      for (let index = 1; index < visible.length; index++) {
+        if ((visible[index].percent - visible[index - 1].percent) * (width - 28) / 100 < 56 - 0.001) {
+          throw new Error('measured narrow ruler labels overlap their reserved spacing')
+        }
+      }
+    }
+    const narrow = buildVideoSequenceTimelineZoomTicks({ ...args, rulerWidthPx: 236 })
+    const wide = buildVideoSequenceTimelineZoomTicks({ ...args, rulerWidthPx: 1200 })
+    if (narrow.filter(tick => tick.label).length >= wide.filter(tick => tick.label).length) {
+      throw new Error('responsive ruler must restore label density when resized wider')
+    }
+  }
 }
 
 export function testSourceMediaTimelineChromeUsesSemanticLaneLabels() {
@@ -60,6 +86,23 @@ export function testSourceMediaTimelineChromeUsesSemanticLaneLabels() {
   section Source audio
   Source audio waveform : audio_neutral_hash, kgpos_0, 0.25m`
   const spans = buildMermaidGanttTimelineModel(code).taskSpans
+  const hiddenOptions = { disabledLaneIds: ['video', 'fbf', 'audio'] as const }
+  const emptyInputs = [[], buildMermaidGanttTimelineModel('gantt\n  title No authored clips').taskSpans]
+  for (const emptySpans of emptyInputs) {
+    if (resolveVisibleVideoSequenceTimelineLanes(emptySpans).length
+      || resolveVisibleVideoSequenceTimelineDisplayLanes(emptySpans).length
+      || resolveVisibleVideoSequenceTimelineLaneCount(emptySpans)) {
+      throw new Error('expected empty timelines to expose no fabricated media lanes')
+    }
+  }
+  if (resolveVisibleVideoSequenceTimelineLanes(spans, hiddenOptions).length
+    || resolveVisibleVideoSequenceTimelineDisplayLanes(spans, hiddenOptions).length
+    || resolveVisibleVideoSequenceTimelineLaneCount(spans, hiddenOptions)) {
+    throw new Error('expected hidden authored lanes to stay empty without replacement lanes')
+  }
+  if (resolveVisibleVideoSequenceTimelineLanes(spans).map(lane => lane.id).join(',') !== 'video,fbf,audio') {
+    throw new Error('expected authored lane semantics to survive empty-lane cleanup')
+  }
   if (!spans.length || !spans.every(span => isCompactSourceMediaSpan(span, resolveVideoSequenceTimelineLane(span)))) {
     throw new Error(`expected semantic source-media labels to activate shared compact timeline chrome: ${JSON.stringify(spans)}`)
   }

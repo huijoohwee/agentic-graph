@@ -35,7 +35,7 @@ This root document exists as the auto-generated workflow preset table surface us
 <!-- WORKFLOW_PRESETS_TABLE_START -->
 
 | Preset ID | Dataset | Schema | Primary use case |
-| --------- | ------- | ------ | ------------ |
+| --- | --- | --- | --- |
 | `sample-investors-top3-3d` | `public/unicorn-investors-top-3-3d.json` | `data/config/schema/agentic-graph-universal-schema-config.jsonld` | Demo: Sample Investors Top-3 (3D) |
 | `ai-kg-viz` | `data/test-data/neutral-kg.jsonld` | `data/config/schema/agentic-graph-universal-schema-config.jsonld` | Demo: AI KG Visualization |
 | `example-workflow` | `docs/assets/example-workflow.jsonld` | `data/config/schema/agentic-graph-example-workflow-schema-config.jsonld` | Demo: Example Workflow (semantic clusters hidden) |

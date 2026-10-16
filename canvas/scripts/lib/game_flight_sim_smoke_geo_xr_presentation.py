@@ -153,9 +153,11 @@ def verify_flight_geo_xr_city_handoff(
     ).first
     city_source_button.wait_for(state="visible", timeout=30_000)
     city_source_button.click(timeout=30_000)
-    city_source_surface_transition = close_source_files_selection_surface(page)
     city_panel = page.locator('[data-kg-city-sim-floating-panel="1"]').first
     city_panel.wait_for(state="visible", timeout=30_000)
+    city_source_surface_transition = close_source_files_selection_surface(page)
+    if not city_panel.is_visible():
+        raise AssertionError("City panel disappeared after Source Files Close")
 
     city = _wait_for_browser_contract(
         page,
@@ -463,7 +465,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
                 expected_provider_host=provider_host,
                 expected_view=view_mode,
                 expected_projection=projection,
-                expected_style_url=style_url,
+                expected_style_url=style_url, require_regional_scene=True,
             )
             restore_flight_sim_panel(page)
             observed = _wait_for_view(
@@ -471,7 +473,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
                 expected_provider_host=provider_host,
                 expected_view=view_mode,
                 expected_projection=projection,
-                expected_style_url=style_url,
+                expected_style_url=style_url, require_regional_scene=True,
                 require_visual_layout=True,
             )
             exact_contract = {

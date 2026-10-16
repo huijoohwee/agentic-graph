@@ -21,6 +21,7 @@ import {
   transitionImmersiveMedia,
   zoomImmersiveMedia,
 } from '@/features/immersive-media/immersiveMediaRuntime'
+import { bindImmersiveMediaCameraPointerControls } from '@/features/immersive-media/immersiveMediaCameraPointerControls'
 
 export function testImmersiveMediaDefaultsAreZeroConfigAndCapabilityComplete() {
   resetImmersiveMediaRuntimeForTests()
@@ -100,6 +101,55 @@ export function testImmersiveMediaContextControlsPublishObservableFeedback() {
   assert.match(panelSource, /focusImmersiveMediaMarker\('marker-custom-element', 'map'\)/)
   assert.match(panelSource, /role=\{snapshot\.error \? 'alert' : 'status'\}/)
   assert.match(panelSource, /data-kg-immersive-media-selected-marker/)
+}
+
+export function testImmersiveMediaCameraPointerControlsDriveTheSharedView() {
+  resetImmersiveMediaRuntimeForTests()
+  const listeners = new Map<string, (event: any) => void>()
+  const target = {
+    addEventListener: (type: string, listener: (event: any) => void) => listeners.set(type, listener),
+    removeEventListener: (type: string) => listeners.delete(type),
+    setPointerCapture: () => void 0,
+    hasPointerCapture: () => false,
+  }
+  const unbind = bindImmersiveMediaCameraPointerControls(target as any)
+  const fire = (type: string, input: Record<string, unknown> = {}) => {
+    let prevented = false
+    listeners.get(type)?.({
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+      deltaY: 0,
+      defaultPrevented: false,
+      pointerId: 1,
+      shiftKey: false,
+      target: { closest: () => null },
+      preventDefault: () => { prevented = true },
+      ...input,
+    })
+    return prevented
+  }
+
+  fire('pointerdown')
+  fire('pointermove', { clientX: 120, clientY: 110 })
+  assert.ok(Math.abs(readImmersiveMediaSnapshot().view.yawDegrees + 2.8) < 1e-9)
+  assert.ok(Math.abs(readImmersiveMediaSnapshot().view.pitchDegrees - 1.2) < 1e-9)
+  fire('pointerup')
+  assert.equal(fire('wheel', { deltaY: 1 }), true)
+  assert.equal(readImmersiveMediaSnapshot().view.fieldOfViewDegrees, 78)
+  fire('dblclick', { shiftKey: true })
+  assert.equal(readImmersiveMediaSnapshot().view.fieldOfViewDegrees, 88)
+
+  fire('pointerdown', {
+    target: { closest: (selector: string) => selector.includes('button') ? {} : null },
+  })
+  fire('pointermove', { clientX: 160, clientY: 140 })
+  assert.ok(Math.abs(readImmersiveMediaSnapshot().view.yawDegrees + 2.8) < 1e-9, 'marker buttons keep their selection gesture')
+  assert.ok(Math.abs(readImmersiveMediaSnapshot().view.pitchDegrees - 1.2) < 1e-9)
+
+  unbind()
+  assert.equal(listeners.size, 0, 'camera gesture listeners are released with their surface')
+  resetImmersiveMediaRuntimeForTests()
 }
 
 export async function testImmersiveMediaNativeInvocationIsStrict() {
@@ -223,6 +273,7 @@ export function testImmersiveMediaReusesPanelRendererAndCameraOwnership() {
   const controlsSource = readFileSync(resolve(process.cwd(), 'src/features/three/Controls.tsx'), 'utf8')
   const stageSource = readFileSync(resolve(process.cwd(), 'src/features/immersive-media/ImmersiveMediaStage.tsx'), 'utf8')
   const geoProjectionSource = readFileSync(resolve(process.cwd(), 'src/features/immersive-media/ImmersiveMediaGeoProjection.tsx'), 'utf8')
+  const pointerControlsSource = readFileSync(resolve(process.cwd(), 'src/features/immersive-media/immersiveMediaCameraPointerControls.ts'), 'utf8')
   const projectionSource = readFileSync(resolve(process.cwd(), 'src/features/immersive-media/ImmersiveMediaMarkerProjections.tsx'), 'utf8')
   for (const surface of ['media', 'animation', 'motionControl', 'gameMode', 'flightSim', 'camera']) {
     assert.match(panelSource, new RegExp(`view === '${surface}'`))
@@ -240,6 +291,9 @@ export function testImmersiveMediaReusesPanelRendererAndCameraOwnership() {
   assert.match(graphSource, /<ThreeGraphImmersiveMediaHud geospatialComposite=\{geospatialComposite\}/)
   assert.match(geoProjectionSource, /data-kg-immersive-media-geo-projection="active"/)
   assert.match(geoProjectionSource, /pointer-events-none/)
+  assert.match(geoProjectionSource, /bindImmersiveMediaCameraPointerControls\(element\)/)
+  assert.match(geoProjectionSource, /data-kg-immersive-media-camera-input="1"/)
+  assert.match(pointerControlsSource, /element\.addEventListener\('wheel', onWheel, \{ passive: false \}\)/)
   assert.match(geoProjectionSource, /<figure/)
   assert.match(geoProjectionSource, /<figcaption/)
   assert.match(geoProjectionSource, /<figure[\s\S]*className="pointer-events-auto/)

@@ -14,6 +14,27 @@ export type StoryboardWidgetDiagramSelectionBridge = {
 
 const MIN_FLOW_DIAGRAM_SELECTION_SCORE = 4
 const VIDEO_AGENT_TIMELINE_AFFINITY_SCORE = 96
+const OPAQUE_GANTT_MEDIA_TOKEN_RE = /\bkg(?:thumb|frames)_[A-Za-z0-9_-]+/g
+
+type DiagramComparable = {
+  key: string
+  kind: string
+  primaryLabels: string[]
+  textKey: string
+  tokens: Set<string>
+  taskId: string
+}
+
+type PortComparable = {
+  row: StoryboardWidgetPortRow
+  nodeLabels: string[]
+  nodeTokens: Set<string>
+  portTokens: Set<string>
+  portKey: string
+  portKeyComparable: string
+  socketTypeComparable: string
+  videoAgentSourceSpec: boolean
+}
 
 const VIDEO_AGENT_STAGE_TASK_IDS = new Set([
   'video_agent_source_video',
@@ -104,12 +125,13 @@ const readComparableTokens = (values: ReadonlyArray<unknown>): Set<string> => {
 
 const countSharedTokens = (left: Set<string>, right: Set<string>): number => {
   let count = 0
+  const relatedTokens = Array.from(right)
   left.forEach(token => {
     if (right.has(token)) {
       count += 1
       return
     }
-    const hasRelatedToken = Array.from(right).some(candidate => (
+    const hasRelatedToken = relatedTokens.some(candidate => (
       token.length >= 5
       && candidate.length >= 5
       && (token.startsWith(candidate) || candidate.startsWith(token))
@@ -143,6 +165,24 @@ const isFlowSelectableDiagramRow = (row: DiagramSelectionRow): boolean => {
   return kind !== 'title' && kind !== 'section'
 }
 
+const buildDiagramComparable = (row: DiagramSelectionRow, index: number): DiagramComparable => {
+  // Encoded media belongs to playback; it has no semantic selection labels.
+  // Keep the authored row/key intact and remove payloads only before matching.
+  const comparableRow = {
+    ...row,
+    label: String(row.label || '').replace(OPAQUE_GANTT_MEDIA_TOKEN_RE, ''),
+    raw: String(row.raw || '').replace(OPAQUE_GANTT_MEDIA_TOKEN_RE, ''),
+  }
+  return {
+    key: resolveDiagramRowKey(row, index),
+    kind: normalizeDiagramSelectionText(row.kind),
+    primaryLabels: readPrimaryDiagramLabels(comparableRow).map(normalizeDiagramSelectionText).filter(Boolean),
+    textKey: normalizeComparableKey(readDiagramComparableText(comparableRow)),
+    tokens: isFlowSelectableDiagramRow(row) ? readComparableTokens(readDiagramLabels(comparableRow)) : new Set(),
+    taskId: readMermaidTaskId(comparableRow),
+  }
+}
+
 const isVideoAgentSourceSpecPort = (portRow: StoryboardWidgetPortRow): boolean => {
   const tokens = readComparableTokens([portRow.nodeId, portRow.nodeLabel, portRow.nodeType, portRow.socketType])
   return (
@@ -152,12 +192,26 @@ const isVideoAgentSourceSpecPort = (portRow: StoryboardWidgetPortRow): boolean =
   )
 }
 
-const scoreVideoAgentTimelineAffinity = (diagramRow: DiagramSelectionRow, portRow: StoryboardWidgetPortRow): number => {
-  if (normalizeDiagramSelectionText(diagramRow.kind) !== 'task') return 0
-  const taskId = readMermaidTaskId(diagramRow)
-  const diagramText = normalizeComparableKey(readDiagramComparableText(diagramRow))
-  const normalizedPortKey = normalizeComparableKey(portRow.portKey)
-  const normalizedSocketType = normalizeComparableKey(portRow.socketType)
+const buildPortComparable = (row: StoryboardWidgetPortRow): PortComparable => {
+  const nodeLabels = [row.nodeLabel, row.nodeId, row.nodeType]
+  return {
+    row,
+    nodeLabels: nodeLabels.map(normalizeDiagramSelectionText).filter(Boolean),
+    nodeTokens: readComparableTokens(nodeLabels),
+    portTokens: readComparableTokens([row.portKey, row.socketType, row.direction]),
+    portKey: normalizeDiagramSelectionText(row.portKey),
+    portKeyComparable: normalizeComparableKey(row.portKey),
+    socketTypeComparable: normalizeComparableKey(row.socketType),
+    videoAgentSourceSpec: isVideoAgentSourceSpecPort(row),
+  }
+}
+
+const scoreVideoAgentTimelineAffinity = (diagram: DiagramComparable, port: PortComparable): number => {
+  if (diagram.kind !== 'task') return 0
+  const taskId = diagram.taskId
+  const diagramText = diagram.textKey
+  const normalizedPortKey = port.portKeyComparable
+  const normalizedSocketType = port.socketTypeComparable
   let score = 0
 
   if (
@@ -166,100 +220,44 @@ const scoreVideoAgentTimelineAffinity = (diagramRow: DiagramSelectionRow, portRo
   ) {
     score += VIDEO_AGENT_TIMELINE_AFFINITY_SCORE
     if (normalizedSocketType === 'annotationjson') score += 24
-    if (isVideoAgentSourceSpecPort(portRow)) score += 12
+    if (port.videoAgentSourceSpec) score += 12
   }
 
   if (!VIDEO_AGENT_STAGE_TASK_IDS.has(taskId)) return score
   if (VIDEO_AGENT_SOURCE_STAGE_TASK_IDS.has(taskId)) {
     if (normalizedPortKey === 'datajson') score += VIDEO_AGENT_TIMELINE_AFFINITY_SCORE
     if (normalizedSocketType === 'htmlvideospec') score += 36
-    if (portRow.direction === 'output') score += 12
-    if (isVideoAgentSourceSpecPort(portRow)) score += 24
+    if (port.row.direction === 'output') score += 12
+    if (port.videoAgentSourceSpec) score += 24
   } else if (taskId === 'stream') {
     if (normalizedPortKey === 'outputsrcdoc' || normalizedPortKey === 'videourl') score += VIDEO_AGENT_TIMELINE_AFFINITY_SCORE
     if (normalizedSocketType === 'htmlvideoartifact' || normalizedSocketType === 'richmediainlinehtml') score += 36
-    if (isVideoAgentSourceSpecPort(portRow)) score += 12
+    if (port.videoAgentSourceSpec) score += 12
   }
   return score
 }
 
-const scoreDiagramRowAgainstPortRow = (diagramRow: DiagramSelectionRow, portRow: StoryboardWidgetPortRow): number => {
-  if (!isFlowSelectableDiagramRow(diagramRow)) return 0
-  const diagramLabels = readDiagramLabels(diagramRow)
-  const diagramTokens = readComparableTokens(diagramLabels)
-  if (!diagramTokens.size) return 0
-
-  const normalizedPrimaryDiagramLabels = readPrimaryDiagramLabels(diagramRow).map(normalizeDiagramSelectionText).filter(Boolean)
-  const nodeLabels = [portRow.nodeLabel, portRow.nodeId, portRow.nodeType]
-  const normalizedNodeLabels = nodeLabels.map(normalizeDiagramSelectionText).filter(Boolean)
-  const hasExactOrContainedNodeLabel = normalizedPrimaryDiagramLabels.some(diagramLabel => {
-    return normalizedNodeLabels.some(nodeLabel => {
+const scoreDiagramRowAgainstPortRow = (diagram: DiagramComparable, port: PortComparable): number => {
+  if (!diagram.tokens.size) return 0
+  const hasExactOrContainedNodeLabel = diagram.primaryLabels.some(diagramLabel => {
+    return port.nodeLabels.some(nodeLabel => {
       return diagramLabel === nodeLabel || nodeLabel.includes(diagramLabel) || diagramLabel.includes(nodeLabel)
     })
   })
 
-  const normalizedPortKey = normalizeDiagramSelectionText(portRow.portKey)
-  const hasExactOrContainedPortKey = normalizedPortKey
-    ? normalizedPrimaryDiagramLabels.some(diagramLabel => {
-      return diagramLabel === normalizedPortKey || diagramLabel.includes(normalizedPortKey) || normalizedPortKey.includes(diagramLabel)
+  const hasExactOrContainedPortKey = port.portKey
+    ? diagram.primaryLabels.some(diagramLabel => {
+      return diagramLabel === port.portKey || diagramLabel.includes(port.portKey) || port.portKey.includes(diagramLabel)
     })
     : false
 
-  const nodeTokens = readComparableTokens(nodeLabels)
-  const portTokens = readComparableTokens([portRow.portKey, portRow.socketType, portRow.direction])
-  const sharedNodeTokens = countSharedTokens(diagramTokens, nodeTokens)
-  const sharedPortTokens = countSharedTokens(diagramTokens, portTokens)
-  let score = sharedNodeTokens * 8 + sharedPortTokens * 3 + scoreVideoAgentTimelineAffinity(diagramRow, portRow)
+  const sharedNodeTokens = countSharedTokens(diagram.tokens, port.nodeTokens)
+  const sharedPortTokens = countSharedTokens(diagram.tokens, port.portTokens)
+  let score = sharedNodeTokens * 8 + sharedPortTokens * 3 + scoreVideoAgentTimelineAffinity(diagram, port)
   if (hasExactOrContainedNodeLabel) score += 32
   if (hasExactOrContainedPortKey) score += 24
-  if (portRow.connectedEdgeCount > 0) score += 1
+  if (port.row.connectedEdgeCount > 0) score += 1
   return score
-}
-
-const buildBestFlowPortByDiagramRow = (
-  diagramRows: readonly DiagramSelectionRow[],
-  flowRows: readonly StoryboardWidgetPortRow[],
-): Map<string, string> => {
-  const out = new Map<string, string>()
-  diagramRows.forEach((diagramRow, index) => {
-    const diagramRowKey = resolveDiagramRowKey(diagramRow, index)
-    if (!diagramRowKey) return
-    let bestScore = 0
-    let bestPortRowKey = ''
-    for (const flowRow of flowRows) {
-      const score = scoreDiagramRowAgainstPortRow(diagramRow, flowRow)
-      if (score <= bestScore) continue
-      bestScore = score
-      bestPortRowKey = flowRow.key
-    }
-    if (bestScore >= MIN_FLOW_DIAGRAM_SELECTION_SCORE && bestPortRowKey) {
-      out.set(diagramRowKey, bestPortRowKey)
-    }
-  })
-  return out
-}
-
-const buildBestDiagramRowByFlowPort = (
-  diagramRows: readonly DiagramSelectionRow[],
-  flowRows: readonly StoryboardWidgetPortRow[],
-): Map<string, string> => {
-  const out = new Map<string, string>()
-  for (const flowRow of flowRows) {
-    let bestScore = 0
-    let bestDiagramRowKey = ''
-    diagramRows.forEach((diagramRow, index) => {
-      const score = scoreDiagramRowAgainstPortRow(diagramRow, flowRow)
-      if (score <= bestScore) return
-      const rowKey = resolveDiagramRowKey(diagramRow, index)
-      if (!rowKey) return
-      bestScore = score
-      bestDiagramRowKey = rowKey
-    })
-    if (bestScore >= MIN_FLOW_DIAGRAM_SELECTION_SCORE && bestDiagramRowKey) {
-      out.set(flowRow.key, bestDiagramRowKey)
-    }
-  }
-  return out
 }
 
 export const buildStoryboardWidgetDiagramSelectionBridge = ({
@@ -269,10 +267,32 @@ export const buildStoryboardWidgetDiagramSelectionBridge = ({
   diagramRows: readonly DiagramSelectionRow[]
   flowRows: readonly StoryboardWidgetPortRow[]
 }): StoryboardWidgetDiagramSelectionBridge => {
-  return {
-    diagramRowKeyToPortRowKey: buildBestFlowPortByDiagramRow(diagramRows, flowRows),
-    portRowKeyToDiagramRowKey: buildBestDiagramRowByFlowPort(diagramRows, flowRows),
+  const diagrams = diagramRows.map(buildDiagramComparable)
+  const ports = flowRows.map(buildPortComparable)
+  const diagramRowKeyToPortRowKey = new Map<string, string>()
+  const portRowKeyToDiagramRowKey = new Map<string, string>()
+  const bestDiagrams = ports.map(() => ({ score: 0, key: '' }))
+  for (const diagram of diagrams) {
+    if (!diagram.key) continue
+    let bestPortScore = 0
+    let bestPortKey = ''
+    ports.forEach((port, index) => {
+      const score = scoreDiagramRowAgainstPortRow(diagram, port)
+      if (score > bestPortScore) {
+        bestPortScore = score
+        bestPortKey = port.row.key
+      }
+      if (score > bestDiagrams[index].score) bestDiagrams[index] = { score, key: diagram.key }
+    })
+    if (bestPortScore >= MIN_FLOW_DIAGRAM_SELECTION_SCORE && bestPortKey) {
+      diagramRowKeyToPortRowKey.set(diagram.key, bestPortKey)
+    }
   }
+  ports.forEach((port, index) => {
+    const best = bestDiagrams[index]
+    if (best.score >= MIN_FLOW_DIAGRAM_SELECTION_SCORE && best.key) portRowKeyToDiagramRowKey.set(port.row.key, best.key)
+  })
+  return { diagramRowKeyToPortRowKey, portRowKeyToDiagramRowKey }
 }
 
 export const resolveStoryboardWidgetPortRowKeyForDiagramRow = (

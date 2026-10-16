@@ -35,7 +35,7 @@ function CloudflareMediaAssetServiceType({
   const Icon = getCloudflareMediaAssetServiceIcon(service.id)
   return (
     <span className="inline-flex min-w-0 max-w-full items-center justify-start gap-1 overflow-hidden sm:justify-end" title={service.owner}>
-      <Icon className={cn('h-3.5 w-3.5 shrink-0', UI_THEME_TOKENS.text.secondary)} strokeWidth={1.7} aria-hidden />
+      <Icon className={cn('h-3.5 w-3.5 shrink-0', UI_THEME_TOKENS.text.secondary)} aria-hidden />
       <span className={cn('min-w-0 truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{service.owner}</span>
     </span>
   )

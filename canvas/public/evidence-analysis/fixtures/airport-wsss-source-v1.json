@@ -1,0 +1,145 @@
+{
+  "schema": "airport-source/v1",
+  "id": "ourairports-wsss-20261004",
+  "title": "WSSS runway community records, pinned 4 October 2026",
+  "classification": "community-geographic-context",
+  "origin": {
+    "url": "https://raw.githubusercontent.com/davidmegginson/ourairports-data/07f86e80d3f15296c3ff971f49c33ddb331c8d8a/runways.csv",
+    "commit": "07f86e80d3f15296c3ff971f49c33ddb331c8d8a",
+    "committedAt": "2026-10-04T01:53:17Z",
+    "retrievedAt": "2026-10-04T02:27:24.818614+00:00",
+    "retrievedByteRanges": [
+      "0-1023",
+      "3617102-3967101"
+    ],
+    "fullSourceBytes": 3967102
+  },
+  "rights": {
+    "license": "Public Domain",
+    "url": "https://ourairports.com/data/",
+    "attribution": "OurAirports contributors",
+    "statement": "The publisher releases its data to the Public Domain, without accuracy or fitness guarantees; code and data rights are separate."
+  },
+  "original": {
+    "media_type": "text/csv",
+    "text": "\"id\",\"airport_ref\",\"airport_ident\",\"length_ft\",\"width_ft\",\"surface\",\"lighted\",\"closed\",\"le_ident\",\"le_latitude_deg\",\"le_longitude_deg\",\"le_elevation_ft\",\"le_heading_degT\",\"le_displaced_threshold_ft\",\"he_ident\",\"he_latitude_deg\",\"he_longitude_deg\",\"he_elevation_ft\",\"he_heading_degT\",\"he_displaced_threshold_ft\"\n238866,26887,\"WSSS\",13123,197,\"PEM\",1,0,\"02C\",1.3288,103.985001,15,23,,\"20C\",1.36213,103.999001,15,203,\n238868,26887,\"WSSS\",13123,197,\"PEM\",1,0,\"02L\",1.34897,103.977997,22,23,,\"20R\",1.38241,103.991997,14,203,2429\n238867,26887,\"WSSS\",13123,197,\"ASP\",1,1,\"02R\",1.32239,104,16,23,,\"20L\",1.35568,104.014,15,203,\n",
+    "sha256": "a1747c5790f9ce98923f725c5a4401f960093ae8a0ce2881891451343362e416",
+    "selection": "Exact original header and three complete rows with airport_ident WSSS; original order and row bytes preserved."
+  },
+  "rows": [
+    {
+      "id": "238866",
+      "airport_ref": "26887",
+      "airport_ident": "WSSS",
+      "length_ft": "13123",
+      "width_ft": "197",
+      "surface": "PEM",
+      "lighted": "1",
+      "closed": "0",
+      "le_ident": "02C",
+      "le_latitude_deg": "1.3288",
+      "le_longitude_deg": "103.985001",
+      "le_elevation_ft": "15",
+      "le_heading_degT": "23",
+      "le_displaced_threshold_ft": "",
+      "he_ident": "20C",
+      "he_latitude_deg": "1.36213",
+      "he_longitude_deg": "103.999001",
+      "he_elevation_ft": "15",
+      "he_heading_degT": "203",
+      "he_displaced_threshold_ft": ""
+    },
+    {
+      "id": "238868",
+      "airport_ref": "26887",
+      "airport_ident": "WSSS",
+      "length_ft": "13123",
+      "width_ft": "197",
+      "surface": "PEM",
+      "lighted": "1",
+      "closed": "0",
+      "le_ident": "02L",
+      "le_latitude_deg": "1.34897",
+      "le_longitude_deg": "103.977997",
+      "le_elevation_ft": "22",
+      "le_heading_degT": "23",
+      "le_displaced_threshold_ft": "",
+      "he_ident": "20R",
+      "he_latitude_deg": "1.38241",
+      "he_longitude_deg": "103.991997",
+      "he_elevation_ft": "14",
+      "he_heading_degT": "203",
+      "he_displaced_threshold_ft": "2429"
+    },
+    {
+      "id": "238867",
+      "airport_ref": "26887",
+      "airport_ident": "WSSS",
+      "length_ft": "13123",
+      "width_ft": "197",
+      "surface": "ASP",
+      "lighted": "1",
+      "closed": "1",
+      "le_ident": "02R",
+      "le_latitude_deg": "1.32239",
+      "le_longitude_deg": "104",
+      "le_elevation_ft": "16",
+      "le_heading_degT": "23",
+      "le_displaced_threshold_ft": "",
+      "he_ident": "20L",
+      "he_latitude_deg": "1.35568",
+      "he_longitude_deg": "104.014",
+      "he_elevation_ft": "15",
+      "he_heading_degT": "203",
+      "he_displaced_threshold_ft": ""
+    }
+  ],
+  "airportReference": {
+    "coordinate": [
+      103.994003,
+      1.35019
+    ],
+    "elevationFeetMsl": 22,
+    "url": "https://ourairports.com/airports/WSSS/runways.html",
+    "retrievedAt": "2026-10-04T02:25:44.930586Z",
+    "sourcePageSha256": "0f9c8059fde0c87d8a160254c5f81f672517fdd7837be48eb204fe7250c6bd56",
+    "publisherReportedAirportRecordUpdatedAt": "2021-04-09T01:37:42Z"
+  },
+  "qualification": {
+    "currentOperationalStatus": "unverified; preserve each community closed flag",
+    "horizontalDatum": "Not explicitly specified in the selected OurAirports dictionary; decimal degrees interpreted as geographic coordinates for display only.",
+    "verticalDatum": "MSL",
+    "effectiveFrom": null,
+    "effectiveUntil": null,
+    "geometricAccuracy": "not independently surveyed or verified",
+    "runwayMeaning": "Original coordinates are runway-end centres; displaced thresholds are separate source facts.",
+    "airportAssignment": "No aircraft arrival/departure or clearance is inferred from proximity."
+  },
+  "derivation": {
+    "centerline": "Straight visual connection between original runway-end centres; not a surveyed centreline.",
+    "footprint": "Four derived corners offset half the declared width perpendicular to the endpoint bearing on a fixed sphere; not an original airport polygon or survey.",
+    "sphereRadiusMeters": 6371008.8,
+    "feetToMeters": 0.3048,
+    "status": "closed=1 retained on 02R/20L; other rows closed=0. Current operational status remains unverified."
+  },
+  "airspaceQualification": {
+    "status": "unavailable",
+    "rights": "No verified redistribution grant; reference metadata only, no official geometry copied.",
+    "sourceEffectiveFrom": "2026-09-03",
+    "publicationSnapshot": "2026-09-17",
+    "references": [
+      {
+        "label": "CAAS WSSS AD2.17 ATS airspace, dated reference",
+        "url": "https://aim-sg.caas.gov.sg/aim-content/uploads/aip/17-SEP-2026/AIP/2026-09-03-000000/html/eAIP/SG-AD-2-WSSS-en-GB.html"
+      },
+      {
+        "label": "CAAS ENR2.1 surrounding ATS airspace, dated reference",
+        "url": "https://aim-sg.caas.gov.sg/aim-content/uploads/aip/17-SEP-2026/AIP/2026-09-03-000000/html/eAIP/SG-ENR-2.1-en-GB.html"
+      },
+      {
+        "label": "CAAS reuse terms, checked 4 October 2026",
+        "url": "https://www.caas.gov.sg/terms-of-use/"
+      }
+    ]
+  }
+}

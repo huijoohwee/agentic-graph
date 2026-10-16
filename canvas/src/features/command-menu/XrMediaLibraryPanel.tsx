@@ -62,6 +62,10 @@ import { isXrMediaInvocationMetadataReady } from './xrMediaInvocationMetadata'
 import { buildXrMediaLibraryProjection } from './xrMediaLibrarySearch'
 import { buildXrMediaInvocationControlInput } from './xrMediaInvocationRuntime'
 import { resolveXrSceneDocumentReady } from '@/features/three/xrSceneDocumentReadiness'
+import { CinematicControlModeSelect } from '@/features/cinema/CinematicControlModeSelect'
+
+const CinemaReferenceAssetsPanel = React.lazy(() => import('@/features/cinema/CinemaShotTimeline').then(module => ({ default: module.CinemaReferenceAssetsPanel })))
+
 type XrSceneLibraryFilter = 'all' | XrSceneLibraryCategory
 
 const XR_LIBRARY_SECTION_KEYS = ['environments', 'subjects-props', 'simulation'] as const
@@ -91,7 +95,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
   const [subjectView, setSubjectView] = React.useState<'catalog' | 'scene'>('scene')
   const [categoryFilter, setCategoryFilter] = React.useState<XrSceneLibraryFilter>('all')
   const [nextLabel, setNextLabel] = React.useState('')
-  const [selectedAssetId, setSelectedAssetId] = React.useState<string>(XR_SCENE_LIBRARY_DEFAULT_ASSET_ID)
+  const [selectedAssetId, setSelectedAssetId] = React.useState<string>('')
   const [assetTransitions, setAssetTransitions] = React.useState<Record<string, XrSceneTransition>>({})
   const {
     allCollapsed: allLibrarySectionsCollapsed,
@@ -125,7 +129,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
   )
   const sourceMetadataReady = isXrMediaInvocationMetadataReady(grammarCatalog)
   const runControl = React.useCallback((input: XrSceneControlInput) => {
-    const result = controlLocalXrScene(input)
+    const result = controlLocalXrScene(input, 'human')
     pushUiToast({
       id: result.ok ? 'media:xr-library:updated' : 'media:xr-library:error',
       kind: result.ok ? 'success' : sceneReady ? 'error' : 'warning',
@@ -160,8 +164,8 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
     ? runtime.selectedShotTargetId
     : ''
 
-  const catalog = React.useMemo(() => buildXrMediaLibraryProjection({ categoryFilter, searchText, selectedAssetId }), [categoryFilter, searchText, selectedAssetId])
-  const { featuredAssets, selectedAsset, visibleAssets, visibleEnvironments } = catalog
+  const catalog = React.useMemo(() => buildXrMediaLibraryProjection({ categoryFilter, searchText, selectedAssetId, selectedStageId: runtime.plan.stageId }), [categoryFilter, searchText, selectedAssetId, runtime.plan.stageId])
+  const { featuredAssets, selectedAsset, visibleAssets, visibleEnvironments, visiblePoiDetailAssets } = catalog
   const stageObjects = resolveXrStageObjects(runtime.plan.stageId).filter(object => (categoryFilter === 'all' || object.category === categoryFilter) && object.label.toLowerCase().includes(searchText.trim().toLowerCase()))
   const sceneObjectCount = runtime.plan.subjects.length + resolveXrStageObjects(runtime.plan.stageId).length
   const visibleSubjects = runtime.plan.subjects.filter(subject => (categoryFilter === 'all' || subject.category === categoryFilter)
@@ -170,14 +174,17 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
   return (
     <section
       className="grid min-w-0 gap-3"
-      aria-label="3D for XR library"
+      aria-label="Shared 3D for XR library"
       data-kg-media-xr-library="1"
+      data-kg-media-xr-catalog-scope="shared"
+      data-kg-media-xr-composition-scope="source-document"
       data-kg-media-xr-assets-mcp="agentic-graph.control_local_xr_scene"
       data-kg-media-xr-scene-ready={sceneReady ? '1' : '0'}
       data-kg-media-xr-metadata-status={grammarCatalog.hydration.status}
       data-kg-media-xr-metadata-version={String(grammarCatalog.version)}
     >
       {presentation === 'full' && <><header className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}>
+        <CinematicControlModeSelect />
         <section className="flex items-start gap-2">
           <XrMediaLibrarySummary metadataReady={sourceMetadataReady} metadataStatus={grammarCatalog.hydration.status} />
           <section className="flex shrink-0 items-center gap-1">
@@ -263,7 +270,7 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
                   color={active ? '#38bdf8' : '#94a3b8'}
                   label={stage.label}
                   description={stage.description}
-                  metadata={`${stage.environmentKind}${stage.id === XR_MOTION_REFERENCE_DEFAULT_STAGE_ID ? ' · default' : ''} · ${stage.sizeMeters.join(' × ')} m · ${stage.id === 'tropical-playground' ? 'procedural island' : stage.id === 'singapore' ? 'procedural city' : 'grey-box stage'}`}
+                  metadata={`${stage.environmentKind}${stage.id === XR_MOTION_REFERENCE_DEFAULT_STAGE_ID ? ' · default' : ''} · ${stage.scaleSummary || `${stage.sizeMeters.join(' × ')} m · ${stage.id === 'tropical-playground' ? 'island terrain' : stage.id === 'singapore' ? 'urban waterfront' : 'rehearsal environment'}`}`}
                   dragPayload={buildXrStageMediaDragPayload(stage)}
                   active={active}
                   dataAttributes={{ 'data-kg-media-xr-environment': stage.id }}
@@ -276,7 +283,33 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
             })}
           </section>
         </section>
-      </CollapsibleSection></>}
+      </CollapsibleSection>
+      {visiblePoiDetailAssets.length ? <CollapsibleSection
+        title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Regional POI Details</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{visiblePoiDetailAssets.length}</output></span>}
+        defaultCollapsed={false}
+        flushTop
+        headerClassName="px-0"
+        className="mt-1 border-t pt-1"
+        id="xr-media-regional-poi-detail-assets"
+      >
+        <section className="grid gap-2" aria-label="Regional procedural POI detail assets" data-kg-media-xr-poi-detail-assets="1">
+          <p className={cn('text-xs', UI_THEME_TOKENS.text.tertiary)}>
+            Local scale details accompany the selected regional profile; mapped facility footprints remain the spatial reference.
+          </p>
+          {visiblePoiDetailAssets.map(asset => (
+            <XrLibraryCard
+              key={asset.id}
+              Icon={Building2}
+              color={asset.defaultColor}
+              label={asset.label}
+              description={asset.description}
+              metadata={`regional detail · ${asset.dimensionsMeters.join(' × ')} m · local`}
+              dataAttributes={{ 'data-kg-media-xr-poi-detail-asset': asset.id }}
+              footer={<XrInvocationButton invocation={buildXrPlaceInvocation(asset.id, 'hold')} disabled={!sceneReady} onInvoke={runInvocation} />}
+            />
+          ))}
+        </section>
+      </CollapsibleSection> : null}</>}
 
       <CollapsibleSection
         title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Subjects &amp; Props</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{subjectView === 'scene' ? visibleSubjects.length + stageObjects.length : visibleAssets.length}</output></span>}
@@ -367,6 +400,9 @@ export function XrMediaLibraryPanel({ searchText, presentation = 'full' }: { sea
       </CollapsibleSection>
 
       {presentation === 'full' && <>
+      <React.Suspense fallback={<p role="status" className="text-xs opacity-70">Opening local cinema assets…</p>}>
+        <CinemaReferenceAssetsPanel sourceText={markdownDocumentText} />
+      </React.Suspense>
       <CollapsibleSection
         title={<span className="flex min-w-0 items-center justify-between gap-2"><span className="truncate text-xs font-semibold uppercase">Simulation</span><output className={cn('shrink-0 text-xs', UI_THEME_TOKENS.text.tertiary)}>{runtime.plan.subjects.length} subjects</output></span>}
         collapsed={collapsedLibrarySectionKeys.has('simulation')}

@@ -17,6 +17,9 @@ import {
   XR_SCENE_LIBRARY_DEFAULT_ASSET_ID,
   XR_SCENE_LIBRARY_FEATURED_ASSET_IDS,
 } from '@/features/three/xrSceneLibrary'
+import { buildProceduralAsset, disposeProceduralAsset } from '@/features/image-to-glb/proceduralAssetBuilder'
+import { buildXrMediaLibraryProjection } from '@/features/command-menu/xrMediaLibrarySearch'
+import { createSingaporePoiDetailKitRecipe, SINGAPORE_POI_DETAIL_KITS } from '@/features/three/singaporePoiDetailKits'
 
 type InspectedXrCatalog = Readonly<{
   catalogDefaults?: { terrainId?: unknown; assetId?: unknown }
@@ -70,6 +73,33 @@ export function assertXrSceneCatalogAndVehiclePlacements(): void {
     || featuredAssets.map(asset => asset!.label).join('|') !== 'Helicopter|Car|Ball'
     || new Set(XR_SCENE_LIBRARY_ASSETS.map(asset => asset.id)).size !== XR_SCENE_LIBRARY_ASSETS.length) {
     throw new Error(`expected unique default Helicopter, Car, and Ball asset provisions, got ${JSON.stringify(featuredAssets)}`)
+  }
+  const regionalPoiAssets = XR_SCENE_LIBRARY_ASSETS.filter(asset => Boolean(asset.poiDetailKitId))
+  const mediaProjection = buildXrMediaLibraryProjection({
+    categoryFilter: 'all',
+    searchText: '',
+    selectedAssetId: XR_SCENE_LIBRARY_DEFAULT_ASSET_ID,
+  })
+  if (SINGAPORE_POI_DETAIL_KITS.length !== 6
+    || regionalPoiAssets.length !== SINGAPORE_POI_DETAIL_KITS.length
+    || mediaProjection.visiblePoiDetailAssets.length !== SINGAPORE_POI_DETAIL_KITS.length
+    || buildXrMediaLibraryProjection({ categoryFilter: 'all', searchText: 'Marina Barrage', selectedAssetId: XR_SCENE_LIBRARY_DEFAULT_ASSET_ID }).visiblePoiDetailAssets[0]?.poiDetailKitId !== 'marina-barrage') {
+    throw new Error(`expected six searchable regional procedural detail assets in the shared Media library, got ${regionalPoiAssets.length}`)
+  }
+  for (const kit of SINGAPORE_POI_DETAIL_KITS) {
+    const asset = regionalPoiAssets.find(candidate => candidate.id === kit.assetId)
+    const recipe = createSingaporePoiDetailKitRecipe(kit)
+    const repeatedRecipe = createSingaporePoiDetailKitRecipe(kit)
+    const generated = buildProceduralAsset(recipe)
+    try {
+      if (!asset || asset.poiDetailKitId !== kit.poiId || asset.dimensionsMeters.join('|') !== kit.dimensionsMeters.join('|')
+        || JSON.stringify(recipe) !== JSON.stringify(repeatedRecipe)
+        || generated.evidence.providerCalls !== 0 || generated.evidence.parts < 3 || generated.evidence.triangles > 2_000) {
+        throw new Error(`expected ${kit.label} to resolve to a bounded, repeatable local procedural detail asset`)
+      }
+    } finally {
+      disposeProceduralAsset(generated.scene)
+    }
   }
   hydrateXrMotionReferenceRuntime({ sceneKey: 'vehicle-packing-scene', nodes: [], persistedValue: null })
   for (const assetId of ['vehicle-helicopter', 'vehicle-sedan']) addXrMotionReferenceSubject({ assetId })

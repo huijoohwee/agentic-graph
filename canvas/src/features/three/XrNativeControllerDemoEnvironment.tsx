@@ -46,7 +46,7 @@ export function XrNativeControllerDemoSceneAtmosphere({ stageScale, appearance =
     readFlightSimTrainingScenario,
     readFlightSimTrainingScenario,
   )
-  const night = resolveFlightSimTrainingMission(trainingScenario.missionId).night
+  const night = resolveFlightSimTrainingMission(trainingScenario.missionId)?.night ?? false
   return <XrSceneSkyAtmosphere appearance={appearance} night={night} stageScale={stageScale} />
 }
 

@@ -48,7 +48,7 @@ export function MarkdownDataViewAddColumnMenu(props: {
       <menu
         className={[
           props.menuPositionClassName,
-          'rounded border shadow-sm p-2 z-40',
+          'rounded border shadow-[var(--kg-shadow-overlay)] p-2 z-40',
           UI_THEME_TOKENS.panel.bg,
           UI_THEME_TOKENS.panel.border,
         ].join(' ')}

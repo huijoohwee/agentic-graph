@@ -10,6 +10,8 @@ export const AGENT_RUN_CANVAS_VIEWS = Object.freeze({
 
 export const CANVAS_VIEW_CONTROL_OPTION_IDS = Object.freeze([
   ...Object.keys(AGENT_RUN_CANVAS_VIEWS).map(view => `agent-run:${view}`),
+  'renderer:sequence',
+  'renderer:sequenceMermaid',
   'renderer:d3',
   'renderer:dashboard',
   'renderer:gallery',

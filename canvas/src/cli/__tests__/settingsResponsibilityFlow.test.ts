@@ -6,6 +6,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  utimesSync,
   writeFileSync,
 } from 'node:fs'
 import os from 'node:os'
@@ -17,6 +18,7 @@ import {
   assertUniqueSettingKeys,
   buildSettingsFlowArtifacts,
   findStaleSettingsFlowArtifacts,
+  writeSettingsFlowArtifacts,
   type SettingsFlowArtifact,
 } from '../settings-responsibility-flow'
 import {
@@ -26,6 +28,22 @@ import {
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(currentDirectory, '../../../..')
+
+test('unchanged artifacts preserve file identity and timestamps during concurrent dev checks', () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'settings-flow-noop-'))
+  try {
+    const artifact = { relativePath: 'settings.json', absolutePath: path.join(directory, 'settings.json'), content: '{"value":1}\n' }
+    writeSettingsFlowArtifacts([artifact])
+    utimesSync(artifact.absolutePath, 1, 1)
+    const before = statSync(artifact.absolutePath)
+    writeSettingsFlowArtifacts([artifact])
+    const after = statSync(artifact.absolutePath)
+    assert.equal(after.ino, before.ino)
+    assert.equal(after.mtimeMs, before.mtimeMs)
+    writeSettingsFlowArtifacts([{ ...artifact, content: '{"value":2}\n' }])
+    assert.equal(readFileSync(artifact.absolutePath, 'utf8'), '{"value":2}\n')
+  } finally { rmSync(directory, { recursive: true, force: true }) }
+})
 
 test('responsibility flow generation is complete, traceable, and deterministic', () => {
   const first = buildSettingsFlowArtifacts(repoRoot)

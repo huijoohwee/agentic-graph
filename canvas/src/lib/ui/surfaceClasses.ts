@@ -1,5 +1,7 @@
+import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+
 export const UI_SURFACE_CARD =
-  'rounded-lg border border-[color:var(--kg-border)] bg-[var(--kg-panel-bg)] shadow-sm'
+  `rounded-lg ${UI_THEME_TOKENS.border.outline} ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.shadow.flat}`
 
 export const UI_SURFACE_SUBTLE = 'bg-[var(--kg-panel-bg-hover)]'
 

@@ -1057,8 +1057,8 @@ export function testHeavyFeatureSurfacesUseTargetedLazyLoadingGates() {
   if (!viteConfigText.includes("nodeRequire.resolve('three/src/Three.js')")) {
     throw new Error('expected vite config to resolve three through its source barrel so coarse subchunks can split cleanly')
   }
-  if (!viteConfigText.includes("path.dirname(nodeRequire.resolve('maplibre-gl/package.json')), 'src/index.ts'")) {
-    throw new Error('expected vite config to resolve maplibre through its source entry so subchunks can split cleanly')
+  if (!viteConfigText.includes("nodeRequire.resolve('maplibre-gl/dist/maplibre-gl.mjs')")) {
+    throw new Error('expected published MapLibre ESM to preserve initialized typed arrays across app class-field transforms')
   }
   if (!viteConfigText.includes("if (moduleId.includes('/node_modules/three/examples/')) return 'three-examples'")) {
     throw new Error('expected vite config to split three examples into a separate coarse lazy chunk')

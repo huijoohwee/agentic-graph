@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
@@ -60,6 +60,25 @@ const KIRO_FIXTURE = Object.freeze({
     'no exact-HEAD browser, protected integration, production, or deployment claim follows from source completion alone',
     '',
   ].join('\n'),
+})
+
+test('an absent optional Flight projection permits unrelated workspace specs; present projections fail closed', async t => {
+  const { repositoryRoot, workspaceRoot } = await createRepository()
+  t.after(() => rm(workspaceRoot, { recursive: true, force: true }))
+  await writeKiroFixture(repositoryRoot)
+  await Promise.all(FLIGHT_SIM_KIRO_TRACKED_REFERENCES.map(relativePath => (
+    write(repositoryRoot, relativePath, `tracked reference: ${relativePath}\n`)
+  )))
+  await execFileAsync('git', ['add', '--', FLIGHT_SIM_KIRO_ROOT, ...FLIGHT_SIM_KIRO_TRACKED_REFERENCES], { cwd: repositoryRoot })
+  await write(workspaceRoot, '.kiro/specs/unrelated-feature/requirements.md', 'Unrelated workspace authority.\n')
+  assert.deepEqual((await assertFlightSimKiroReadiness({ repositoryRoot })).projection, { checked: false, sha256: null })
+
+  await writeKiroFixture(workspaceRoot)
+  await rm(path.join(workspaceRoot, FLIGHT_SIM_KIRO_ROOT, 'tasks.md'))
+  await assert.rejects(assertFlightSimKiroReadiness({ repositoryRoot }), /inventory|tasks\.md/)
+  await rm(path.join(workspaceRoot, FLIGHT_SIM_KIRO_ROOT), { recursive: true })
+  await symlink(path.join(repositoryRoot, FLIGHT_SIM_KIRO_ROOT), path.join(workspaceRoot, FLIGHT_SIM_KIRO_ROOT))
+  await assert.rejects(assertFlightSimKiroReadiness({ repositoryRoot }), /projection must be a regular directory/)
 })
 
 async function createRepository() {

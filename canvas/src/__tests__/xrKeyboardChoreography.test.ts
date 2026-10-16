@@ -172,7 +172,7 @@ export function testXrKeyboardChoreographySharesBrowserAndMcpMotion(): void {
   if (!browserAdapter.includes('resolveThreeCameraKeyboardFraming')
     || !browserAdapter.includes('resolveXrSubjectKeyboardMotion')
     || !browserAdapter.includes('[data-kg-floating-panel-view-trigger="camera"]')
-    || !readFileSync(resolve(process.cwd(), 'src', 'lib', 'toolbar', 'ToolbarToolMenu.impl.tsx'), 'utf8').includes('data-kg-floating-panel-view-trigger={spec.view}')
+    || !readFileSync(resolve(process.cwd(), 'src', 'features', 'toolbar', 'FloatingPanelViewTabs.tsx'), 'utf8').includes('data-kg-floating-panel-view-trigger={spec.view}')
     || !cameraWebMcp.includes('async input => controlLocalCamera(input || {})')
     || !shortcutCatalogSource.includes('buildCameraKeyboardInvocation')
     || !shortcutCatalogSource.includes('buildXrAnimationObjectMoveInvocation')

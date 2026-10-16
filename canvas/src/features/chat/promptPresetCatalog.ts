@@ -43,8 +43,13 @@ export type PromptPresetInvocationMode = PromptPresetResponseMode | 'mcp-invocat
 
 export const PROMPT_PRESET_ACTIVE_LLM_CHAT_ROUTE = 'active Chat provider, endpoint, and model' as const
 export const PROMPT_PRESET_ACTIVE_NATIVE_CHAT_ROUTE = 'active native shared runtime' as const
+export const FLIGHT_SIM_PROMPT_PRESET_ID = 'flight-sim' as const
+export const FLIGHT_SIM_PROMPT_PRESET_SOURCE_PATH = '/docs/workspace-seeds/agentic-graph-game-flight-sim-demo.md' as const
+export const FLIGHT_SIM_PROMPT_PRESET_INVOCATION = '/flight.sim @canvas #flight operation=open' as const
+export const FLIGHT_SIM_PROMPT_PRESET_MCP_TOOL = 'agentic-graph.control_local_flight_sim' as const
 export const PROMPT_PRESET_REQUIRED_IDS = [
   'xr-physics',
+  'software-forensics',
   'video-agent',
   IMAGE_TO_THREEJS_PROMPT_PRESET_ID,
   IMAGE_TO_GLB_PROMPT_PRESET_ID,
@@ -69,9 +74,10 @@ export type PromptPreset = {
   chatRoute: typeof PROMPT_PRESET_ACTIVE_LLM_CHAT_ROUTE | typeof PROMPT_PRESET_ACTIVE_NATIVE_CHAT_ROUTE | typeof PROCEDURAL_ASSET_PRESET_CHAT_ROUTE
   executionSurface?: 'card-run'
   pendingSurfaces?: typeof PROCEDURAL_ASSET_PENDING_SURFACES
-  mcpTool: typeof AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME
+  mcpTool: typeof AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME | typeof FLIGHT_SIM_PROMPT_PRESET_MCP_TOOL
   mcpToken: `/${string}`
   prompt: string
+  sourcePath?: typeof FLIGHT_SIM_PROMPT_PRESET_SOURCE_PATH
 }
 
 export type PromptPresetCatalogResult =
@@ -122,6 +128,10 @@ const parsePreset = (value: unknown): PromptPreset | null => {
   const mcpTool = String(value.mcp_tool || '').trim()
   const mcpToken = normalizeSlashCommand(value.mcp_token)
   const prompt = String(value.prompt || '').trim()
+  const sourcePath = String(value.source_path || '').trim()
+  const expectedMcpTool = id === FLIGHT_SIM_PROMPT_PRESET_ID
+    ? FLIGHT_SIM_PROMPT_PRESET_MCP_TOOL
+    : AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME
   if (
     !id
     || !label
@@ -136,10 +146,17 @@ const parsePreset = (value: unknown): PromptPreset | null => {
     || invocationModes[1] !== 'mcp-invocation'
     || (responseMode === 'llm-chat-response' && chatRoute !== PROMPT_PRESET_ACTIVE_LLM_CHAT_ROUTE)
     || (responseMode === 'native-chat-response' && chatRoute !== (id === PROCEDURAL_ASSET_PROMPT_PRESET_ID ? PROCEDURAL_ASSET_PRESET_CHAT_ROUTE : PROMPT_PRESET_ACTIVE_NATIVE_CHAT_ROUTE))
-    || mcpTool !== AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME
+    || mcpTool !== expectedMcpTool
     || mcpToken !== runtimeCommand
   ) return null
-  if (id === PROCEDURAL_ASSET_PROMPT_PRESET_ID) {
+  if (id === FLIGHT_SIM_PROMPT_PRESET_ID) {
+    if (runtimeCommand !== '/flight.sim' || slashCommand !== '/flight-sim-prompt-preset'
+      || activation !== 'source-backed-canvas' || responseMode !== 'native-chat-response'
+      || sourcePath !== FLIGHT_SIM_PROMPT_PRESET_SOURCE_PATH
+      || prompt.replace(/\s+/g, ' ') !== FLIGHT_SIM_PROMPT_PRESET_INVOCATION) return null
+  } else if (sourcePath) {
+    return null
+  } else if (id === PROCEDURAL_ASSET_PROMPT_PRESET_ID) {
     if (responseMode !== 'native-chat-response' || !isProceduralAssetPromptPreset(value)) return null
   } else if (id === PROGRAMMATIC_DRONE_PRESET_ID) {
     if (runtimeCommand !== '/python.learning' || slashCommand !== '/programmatic-drone-flight-prompt-preset'
@@ -150,6 +167,11 @@ const parsePreset = (value: unknown): PromptPreset | null => {
     if (runtimeCommand !== '/xr.physics' || activation !== 'source-backed-canvas'
       || responseMode !== 'native-chat-response' || invocation?.action !== 'physics'
       || invocation.physics.scope !== 'controller') return null
+  } else if (id === 'software-forensics') {
+    const invocation = parseChatSkillSlashInvocation(prompt)
+    if (runtimeCommand !== '/software.forensics' || activation !== 'source-backed-canvas'
+      || responseMode !== 'native-chat-response'
+      || invocation?.skill.slashCommand !== runtimeCommand) return null
   } else if (id === IMAGE_TO_THREEJS_PROMPT_PRESET_ID) {
     if (
       slashCommand !== '/image.to-threejs'
@@ -181,6 +203,9 @@ const parsePreset = (value: unknown): PromptPreset | null => {
   } else if (runtimeCommand === '/crawler-agent') {
     const invocation = parseNativeCrawlerInvocation(prompt)
     if (!invocation || invocation.command !== runtimeCommand || activation !== 'chat-agent') return null
+  } else if (activation === 'source-backed-canvas') {
+    const leadingCommand = /^\/[A-Za-z0-9][A-Za-z0-9_.-]*(?=\s|$)/.exec(prompt)?.[0]
+    if (leadingCommand !== runtimeCommand) return null
   } else {
     const invocation = parseChatSkillSlashInvocation(prompt)
     if (!invocation || invocation.skill.slashCommand !== runtimeCommand || activation !== 'chat-agent') return null
@@ -197,9 +222,10 @@ const parsePreset = (value: unknown): PromptPreset | null => {
     activation,
     invocationModes: [responseMode, 'mcp-invocation'],
     chatRoute: typedChatRoute,
-    mcpTool: AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
+    mcpTool: expectedMcpTool,
     mcpToken,
     prompt,
+    ...(sourcePath ? { sourcePath: FLIGHT_SIM_PROMPT_PRESET_SOURCE_PATH } : {}),
     ...(id === PROCEDURAL_ASSET_PROMPT_PRESET_ID ? { executionSurface: 'card-run' as const, pendingSurfaces: PROCEDURAL_ASSET_PENDING_SURFACES } : {}),
   }
 }

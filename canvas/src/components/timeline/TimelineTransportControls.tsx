@@ -9,6 +9,7 @@ import {
 } from './timelineTransport'
 import './TimelineTransportControls.css'
 import './TimelineTransportControlsMermaidGantt.css'
+import './TimelineTransportLane.css'
 
 export type TimelineTransportControlsProps = {
   ariaLabel: string
@@ -121,7 +122,6 @@ export function TimelineTransportTimeAxisClip({
         className,
       )}
       aria-label={rootProps['aria-label'] || 'Timeline time-axis control lane'}
-      data-kg-timeline-clip-compact="1"
       data-kg-timeline-time-axis-clip={laneStyle}
     >
       <section className="timeline-transport-inline-clip-content timeline-transport-time-axis-clip-content">
@@ -131,15 +131,55 @@ export function TimelineTransportTimeAxisClip({
   )
 }
 
+const timeAxisMarkHandlers = new WeakMap<HTMLElement, TimelineTransportTimeAxisMarkProps>()
+
+function nearestTimeAxisMark(root: HTMLElement, clientX: number): HTMLElement {
+  let nearest = root
+  let distance = Infinity
+  for (const sibling of Array.from(root.parentElement?.children || [])) {
+    if (!(sibling instanceof HTMLElement) || !timeAxisMarkHandlers.has(sibling) || sibling.getAttribute('aria-disabled') === 'true') continue
+    const bounds = sibling.getBoundingClientRect()
+    const next = Math.abs(clientX - bounds.left - bounds.width / 2)
+    if (next < distance) { nearest = sibling; distance = next }
+  }
+  return nearest
+}
+
 export function TimelineTransportTimeAxisMark({
   children,
   className,
   laneStyle,
   ...rootProps
 }: TimelineTransportTimeAxisMarkProps) {
+  const markRef = React.useRef<HTMLElement>(null)
+  React.useLayoutEffect(() => {
+    const mark = markRef.current
+    if (!mark) return
+    timeAxisMarkHandlers.set(mark, { children, laneStyle, ...rootProps })
+    return () => { timeAxisMarkHandlers.delete(mark) }
+  })
   return (
     <article
       {...rootProps}
+      ref={markRef}
+      onKeyDown={rootProps.onKeyDown || (event => {
+        if (rootProps.role !== 'button' || rootProps['aria-disabled'] === true || rootProps['aria-disabled'] === 'true') return
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        if (!event.repeat) event.currentTarget.click()
+      })}
+      onPointerDown={event => {
+        if (event.currentTarget.getAttribute('aria-disabled') === 'true') return
+        const mark = nearestTimeAxisMark(event.currentTarget, event.clientX)
+        mark.focus({ preventScroll: true })
+        timeAxisMarkHandlers.get(mark)?.onPointerDown?.(event)
+      }}
+      onClick={event => {
+        if (event.currentTarget.getAttribute('aria-disabled') === 'true') return
+        const mark = event.detail === 0 ? event.currentTarget : nearestTimeAxisMark(event.currentTarget, event.clientX)
+        mark.focus({ preventScroll: true })
+        timeAxisMarkHandlers.get(mark)?.onClick?.(event)
+      }}
       className={cn(
         'timeline-transport-track-clip',
         `timeline-transport-track-clip--lane-${laneStyle}`,
@@ -227,7 +267,7 @@ export function TimelineTransportControls(props: TimelineTransportControlsProps)
       data-kg-timeline-transport="shared"
       style={{ '--kg-timeline-progress': `${progressPercent}%` } as React.CSSProperties}
     >
-      <section className="timeline-player">
+      <section className="timeline-player" aria-label="Timeline playback controls">
         <button
           type="button"
           className="play-control"
@@ -236,7 +276,7 @@ export function TimelineTransportControls(props: TimelineTransportControlsProps)
           disabled={disabled}
           onClick={onTogglePlayback}
         >
-          {playing ? <Pause className="h-4 w-4" strokeWidth={2} role="img" aria-label="Pause" /> : <Play className="h-4 w-4" strokeWidth={2} role="img" aria-label="Play" />}
+          {playing ? <Pause className="h-4 w-4" role="img" aria-label="Pause" /> : <Play className="h-4 w-4" role="img" aria-label="Play" />}
         </button>
         <section className="time timeline-timecode" aria-live="polite">
           <time className="timeline-timecode-current">{currentLabel}</time>
@@ -317,7 +357,8 @@ export function TimelineTransportChrome(props: TimelineTransportChromeProps) {
     titleLabel,
     ...transportProps
   } = props
-  const rootClassName = cn('timeline-transport-chrome', chromeClassName)
+  const { panelTextClass } = usePanelTypography()
+  const rootClassName = cn('timeline-transport-chrome', chromeClassName, panelTextClass)
   const rulerRootClassName = cn('timeline-transport-ruler', rulerClassName)
   const inlineHeaderAside = !titleLabel && !subtitleLabel ? headerAside : null
   const headerAsideContent = inlineHeaderAside ? null : headerAside

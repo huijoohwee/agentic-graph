@@ -299,13 +299,13 @@ export default function MainPanel({
       searchQuery={search}
       onSearchChange={setSearch}
       tabs={MAIN_PANEL_TABS}
-      tabVariant="icon"
       tabIconByKey={MAIN_PANEL_TAB_TYPE_ICON_BY_KEY}
       activeTab={tab}
       onTabChange={(key) => {
         if (!isMainPanelTabKey(key)) return
         setSearchOpen(false)
         setTab(key)
+        if (collapsed) onRestore?.()
       }}
       tabIdBase="main-panel"
       rightSlot={

@@ -21,7 +21,7 @@ import { parseHtmlFragmentCached } from './markdownHtmlParseCache'
 import { buildMarkdownMediaDownloadHref, deriveMarkdownMediaDownloadFilename, type MarkdownMediaDownloadKind } from './mediaDownload'
 
 const mediaFrameClassName = `rounded border ${UI_THEME_TOKENS.panel.border}`
-const tableShellClassName = `${UI_RESPONSIVE_MARKDOWN_SAFE_HTML_TABLE_SHELL_CLASSNAME} mt-4 mb-4 overflow-auto rounded-lg border ${UI_THEME_TOKENS.panel.border} shadow-sm`
+const tableShellClassName = `${UI_RESPONSIVE_MARKDOWN_SAFE_HTML_TABLE_SHELL_CLASSNAME} mt-4 mb-4 overflow-auto rounded-lg border ${UI_THEME_TOKENS.panel.border} shadow-none`
 const tableHeaderClassName = `${UI_THEME_TOKENS.table.headerBg} ${UI_THEME_TOKENS.text.primary}`
 const tableCellBorderClassName = `border-b ${UI_THEME_TOKENS.table.cellBorder} align-top`
 const preBlockClassName = `mt-3 mb-3 overflow-x-auto p-3 rounded border ${UI_THEME_TOKENS.panel.border}`
@@ -150,7 +150,7 @@ const renderDownloadControl = (src: string, kind: MarkdownMediaDownloadKind, key
       title="Download media"
       aria-label="Download media"
       className={[
-        `${UI_RESPONSIVE_MEDIA_OVERLAY_ACTION_DEFAULT_CLASSNAME} absolute right-2 top-2 z-10 rounded border shadow-sm`,
+        `${UI_RESPONSIVE_MEDIA_OVERLAY_ACTION_DEFAULT_CLASSNAME} absolute right-2 top-2 z-10 rounded border shadow-none`,
         UI_THEME_TOKENS.panel.border,
         UI_THEME_TOKENS.panel.bg,
         UI_THEME_TOKENS.text.primary,
@@ -160,7 +160,7 @@ const renderDownloadControl = (src: string, kind: MarkdownMediaDownloadKind, key
         try { event.stopPropagation() } catch { void 0 }
       }}
     >
-      <Download className={UI_RESPONSIVE_MEDIA_OVERLAY_ACTION_ICON_CLASSNAME} strokeWidth={1.8} aria-hidden="true" />
+      <Download className={UI_RESPONSIVE_MEDIA_OVERLAY_ACTION_ICON_CLASSNAME} aria-hidden="true" />
     </a>
   )
 }

@@ -23,6 +23,7 @@ import {
   ensureWorkspaceDocsMirrorFolder,
   readCanonicalWorkspaceSeedMirrorEntries,
   readWorkspaceInitializationDocsMirrorEntries,
+  isExplicitRepoLocalDocsProjectionConfigured,
   upsertWorkspaceDocsMirrorText,
   upsertWorkspaceInitializationSeedText,
 } from './workspaceSeedProvider'
@@ -181,7 +182,7 @@ export function createWorkspacePersistedFs(resolveDb = getDb): WorkspaceFs {
     const docsOnlyMode = readWorkspaceSourceFilesDocsOnlySetting()
     const sourceDocsMirrorEntries = !docsOnlyMode
       ? []
-      : isWorkspaceRepoLocalRunReadyBootstrap()
+      : isWorkspaceRepoLocalRunReadyBootstrap() && !isExplicitRepoLocalDocsProjectionConfigured()
         ? await readCanonicalWorkspaceSeedMirrorEntries()
         : await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
     const docsMirrorEntries = docsOnlyMode

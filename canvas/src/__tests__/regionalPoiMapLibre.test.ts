@@ -441,7 +441,42 @@ function testMapLibreApplyRepairModesAndClear(): void {
   assert.ok(map.getLayer(TEST_LAYER_ANCHOR))
 }
 
+function testContextAppearanceKeepsCityGeometryReadableBelowGameplay(): void {
+  const profile = createSyntheticRegionalPoiProfile()
+  const map = new TestMapLibreMap()
+  const options = {
+    appearance: 'context' as const,
+    beforeLayerId: TEST_LAYER_ANCHOR,
+    viewMode: '3d' as const,
+  }
+
+  assert.equal(applyRegionalPoiProfileToMap(map, profile, options), true)
+  assert.equal(mapHasExactRegionalPoiProfile(map, profile, options), true)
+  assert.equal(
+    map.getLayer(REGIONAL_POI_LAYER_IDS.extrusion)?.paint['fill-extrusion-opacity'],
+    0.3,
+  )
+  assert.equal(
+    map.getLayer(REGIONAL_POI_LAYER_IDS.locator)?.paint['circle-radius'],
+    4.5,
+  )
+  assert.equal(mapHasExactRegionalPoiProfile(map, profile, {
+    beforeLayerId: TEST_LAYER_ANCHOR,
+    viewMode: '3d',
+  }), false)
+
+  assert.equal(applyRegionalPoiProfileToMap(map, profile, {
+    beforeLayerId: TEST_LAYER_ANCHOR,
+    viewMode: '3d',
+  }), true)
+  assert.equal(
+    map.getLayer(REGIONAL_POI_LAYER_IDS.extrusion)?.paint['fill-extrusion-opacity'],
+    0.82,
+  )
+}
+
 export function testRegionalPoiMapLibre(): void {
   testProjectionPreservesGeographyAndProvenance()
   testMapLibreApplyRepairModesAndClear()
+  testContextAppearanceKeepsCityGeometryReadableBelowGameplay()
 }

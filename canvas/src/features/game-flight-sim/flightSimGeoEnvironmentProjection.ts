@@ -1,10 +1,10 @@
 import {
-  SINGAPORE_FLIGHT_GEO_REFERENCE,
-  projectSingaporeLocalMeters,
+  projectLocalMetersToGeospatial,
   type FlightGeoEnvironmentProjection,
   type FlightGeoEnvironmentSurface,
   type GeospatialCoordinate,
 } from '@/lib/gympgrph/api'
+import type { FlightSimGeographicReference } from './flightSimGeospatialCoordinates'
 import type {
   XrMotionReferencePlan,
   XrMotionReferenceSubject,
@@ -34,13 +34,26 @@ const TONE_COLORS: Readonly<Record<XrGreyBoxStructure['tone'], string>> =
 /**
  * XR environment stages, structures, and subjects use local metres. Regional
  * POI surfaces already carry geographic rings and real-metre heights, so they
- * bypass this local projection entirely.
+ * bypass this local projection entirely. Authors must choose a stage compatible
+ * with the reference; relocating local geometry never relocates those POIs.
  */
 function projectEnvironmentLocalMetersToGeospatial(
   xMeters: number,
   zMeters: number,
+  reference: FlightSimGeographicReference,
+  localLayoutFrame?: FlightGeoEnvironmentProjection['localLayoutFrame'],
 ): GeospatialCoordinate {
-  return projectSingaporeLocalMeters(xMeters, -zMeters)
+  if (localLayoutFrame) {
+    const [[minX, minZ], [maxX, maxZ]] = localLayoutFrame.sourceBoundsMeters
+    const [southwest, northeast] = reference.presentationBounds
+    const xFraction = maxX > minX ? (xMeters - minX) / (maxX - minX) : 0.5
+    const zFraction = maxZ > minZ ? (zMeters - minZ) / (maxZ - minZ) : 0.5
+    return Object.freeze([
+      southwest[0] + xFraction * (northeast[0] - southwest[0]),
+      northeast[1] - zFraction * (northeast[1] - southwest[1]),
+    ]) as GeospatialCoordinate
+  }
+  return projectLocalMetersToGeospatial(xMeters, -zMeters, reference.anchor)
 }
 
 function projectLocalRectangle(input: Readonly<{
@@ -49,7 +62,8 @@ function projectLocalRectangle(input: Readonly<{
   depthMeters: number
   rotationDegrees?: number
   widthMeters: number
-}>): readonly GeospatialCoordinate[] {
+}>, reference: FlightSimGeographicReference,
+localLayoutFrame?: FlightGeoEnvironmentProjection['localLayoutFrame']): readonly GeospatialCoordinate[] {
   const rotationRadians = (input.rotationDegrees || 0) * Math.PI / 180
   const cosine = Math.cos(rotationRadians)
   const sine = Math.sin(rotationRadians)
@@ -62,15 +76,31 @@ function projectLocalRectangle(input: Readonly<{
     [-halfWidth, halfDepth],
   ] as const
   const ring = corners.map(([offsetX, offsetZ]) => {
-    const x = input.centerX + offsetX * cosine + offsetZ * sine
-    const z = input.centerZ - offsetX * sine + offsetZ * cosine
-    return projectEnvironmentLocalMetersToGeospatial(x, z)
+    const rotatedX = offsetX * cosine + offsetZ * sine
+    const rotatedZ = -offsetX * sine + offsetZ * cosine
+    if (!localLayoutFrame) {
+      return projectEnvironmentLocalMetersToGeospatial(
+        input.centerX + rotatedX,
+        input.centerZ + rotatedZ,
+        reference,
+      )
+    }
+    const center = projectEnvironmentLocalMetersToGeospatial(
+      input.centerX,
+      input.centerZ,
+      reference,
+      localLayoutFrame,
+    )
+    // Fit object positions to the region while retaining each footprint's metre size.
+    return projectLocalMetersToGeospatial(rotatedX, -rotatedZ, center)
   })
   return Object.freeze([...ring, ring[0]])
 }
 
 function projectStructure(
   structure: XrGreyBoxStructure,
+  reference: FlightSimGeographicReference,
+  localLayoutFrame?: FlightGeoEnvironmentProjection['localLayoutFrame'],
 ): FlightGeoEnvironmentSurface {
   const baseHeightMeters = Math.max(
     0,
@@ -97,7 +127,7 @@ function projectStructure(
         centerZ: structure.position[2],
         depthMeters: structure.size[2],
         widthMeters: structure.size[0],
-      }),
+      }, reference, localLayoutFrame),
     ]),
   })
 }
@@ -135,6 +165,8 @@ function projectRegionalPoiSurface(
 
 function projectSubject(
   subject: XrMotionReferenceSubject,
+  reference: FlightSimGeographicReference,
+  localLayoutFrame?: FlightGeoEnvironmentProjection['localLayoutFrame'],
 ): FlightGeoEnvironmentSurface {
   const asset = resolveXrSceneLibraryAsset(subject.assetId)
   const scale = Number.isFinite(subject.scale) && subject.scale > 0
@@ -162,24 +194,79 @@ function projectSubject(
         depthMeters,
         rotationDegrees: subject.rotationYDegrees,
         widthMeters,
-      }),
+      }, reference, localLayoutFrame),
     ]),
   })
 }
 
+function deriveLocalLayoutFrame(
+  stage: ReturnType<typeof resolveXrMotionReferenceStage>,
+  plan: Pick<XrMotionReferencePlan, 'subjects'> & Partial<Pick<XrMotionReferencePlan, 'cast'>>,
+): FlightGeoEnvironmentProjection['localLayoutFrame'] {
+  const points: Array<readonly [number, number]> = []
+  const subjectIds = new Set(plan.subjects.map(subject => subject.id))
+  for (const subject of plan.subjects) {
+    points.push([subject.position[0], subject.position[2]])
+  }
+  for (const track of plan.cast || []) {
+    if (!subjectIds.has(track.actorId)) continue
+    for (const mark of track.marks) points.push([mark.position[0], mark.position[2]])
+  }
+  for (const structure of stage.structures) {
+    if (stage.regionalPoiProfile && structure.kind === 'poi') continue
+    const halfWidth = Math.max(0, structure.size[0] / 2)
+    const halfDepth = Math.max(0, structure.size[2] / 2)
+    points.push(
+      [structure.position[0] - halfWidth, structure.position[2] - halfDepth],
+      [structure.position[0] + halfWidth, structure.position[2] + halfDepth],
+    )
+  }
+  if (points.length === 0) {
+    points.push(
+      [-stage.sizeMeters[0] / 2, -stage.sizeMeters[1] / 2],
+      [stage.sizeMeters[0] / 2, stage.sizeMeters[1] / 2],
+    )
+  }
+  const xValues = points.map(point => point[0])
+  const zValues = points.map(point => point[1])
+  return Object.freeze({
+    sourceBoundsMeters: Object.freeze([
+      Object.freeze([Math.min(...xValues), Math.min(...zValues)] as const),
+      Object.freeze([Math.max(...xValues), Math.max(...zValues)] as const),
+    ] as const),
+  })
+}
+
 export function projectXrEnvironmentToFlightGeo(
-  plan: Pick<XrMotionReferencePlan, 'stageId' | 'subjects'>,
+  plan: Pick<XrMotionReferencePlan, 'stageId' | 'subjects'>
+    & Partial<Pick<XrMotionReferencePlan, 'cast'>>,
+  reference: FlightSimGeographicReference,
+  options: Readonly<{
+    fitLocalContentToPresentationBounds?: boolean
+    includeSubjectSurfaces?: boolean
+  }> = {},
 ): FlightGeoEnvironmentProjection {
   const stage = resolveXrMotionReferenceStage(plan.stageId)
-  const stageFootprint = projectLocalRectangle({
-    centerX: 0,
-    centerZ: 0,
-    depthMeters: stage.sizeMeters[1],
-    widthMeters: stage.sizeMeters[0],
-  })
+  const localLayoutFrame = options.fitLocalContentToPresentationBounds
+    ? deriveLocalLayoutFrame(stage, plan)
+    : undefined
+  const stageFootprint = localLayoutFrame
+    ? Object.freeze([
+      reference.presentationBounds[0],
+      Object.freeze([reference.presentationBounds[1][0], reference.presentationBounds[0][1]] as const),
+      reference.presentationBounds[1],
+      Object.freeze([reference.presentationBounds[0][0], reference.presentationBounds[1][1]] as const),
+      reference.presentationBounds[0],
+    ])
+    : projectLocalRectangle({
+      centerX: 0,
+      centerZ: 0,
+      depthMeters: stage.sizeMeters[1],
+      widthMeters: stage.sizeMeters[0],
+    }, reference)
   const footprintSurface: FlightGeoEnvironmentSurface = Object.freeze({
     baseHeightMeters: 0,
-    color: '#0f766e',
+    color: stage.visualProfile === 'night-waterfront' ? '#0b1824' : '#0f766e',
     heightMeters: 0.08,
     id: `${stage.id}:footprint`,
     kind: 'stage-footprint',
@@ -204,18 +291,23 @@ export function projectXrEnvironmentToFlightGeo(
     !profile || structure.kind !== 'poi'
   ))
   const surfaces = Object.freeze([
-    footprintSurface,
-    ...localStructures.map(projectStructure),
+    ...(localLayoutFrame ? [] : [footprintSurface]),
+    ...localStructures.map(structure => projectStructure(structure, reference, localLayoutFrame)),
     ...regionalPoiSurfaces,
-    ...plan.subjects.map(projectSubject),
+    ...(options.includeSubjectSurfaces === false
+      ? []
+      : plan.subjects.map(subject => projectSubject(subject, reference, localLayoutFrame))),
   ])
   return Object.freeze({
-    anchor: projectSingaporeLocalMeters(0, 0),
+    anchor: reference.anchor,
     id: stage.id,
     label: stage.label,
-    presentationBounds: SINGAPORE_FLIGHT_GEO_REFERENCE.presentationBounds,
+    ...(localLayoutFrame ? { localLayoutFrame } : {}),
+    presentationBounds: reference.presentationBounds,
     revision: [
       stage.id,
+      JSON.stringify(reference),
+      localLayoutFrame ? JSON.stringify(localLayoutFrame) : '',
       profile?.id || '',
       profile?.revision || '',
       ...surfaces.map(surface => [

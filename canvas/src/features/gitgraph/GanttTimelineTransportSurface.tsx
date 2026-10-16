@@ -20,14 +20,14 @@ export function GanttTimelineTransportSurface(args: GanttTimelineTransportSurfac
       <GanttTimelineTransportShell
         chromeModel={args.model.chromeModel}
         mediaPlayerModel={args.model.mediaPlayerModel}
-        renderClipOverlay={args.renderClipOverlay}
+        renderClipOverlay={args.renderClipOverlay} renderLaneOverlay={args.model.renderAnnotationOverlay}
         rulerModel={args.model.rulerModel}
         shellModel={args.model.shellModel}
         supplementalLanes={args.supplementalLanes}
         transportControls={args.transportControls}
         timeAxisControls={args.timeAxisControls}
         timeRulerOverlay={args.timeRulerOverlay}
-        timelineInsertedLanes={args.timelineInsertedLanes}
+        timelineInsertedLanes={[...(args.timelineInsertedLanes || []), ...(args.model.annotationLanes || [])]}
       />
       <GanttTimelineTransportAudioPlaybackBridge model={args.model.audioPlaybackBridgeModel} />
     </>

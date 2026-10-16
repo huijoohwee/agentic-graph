@@ -63,6 +63,7 @@ export type VideoAgentPipelineInput = {
   height?: number
   fps?: number
   durationMs?: number
+  maxFrameSamples?: number
   engineHint?: string
   workspaceOutputRoot?: string
 }
@@ -415,7 +416,7 @@ export function buildVideoAgentPipeline(input: VideoAgentPipelineInput): VideoAg
   const workspaceOutputRoot = normalizeVideoAgentWorkspaceOutputRootPath(input.workspaceOutputRoot)
   const stages = buildStages(capabilities, durationMs)
   const reasoningArtifacts = buildReasoningArtifacts(capabilities, workspaceOutputRoot)
-  const frameBoundingBoxes = buildVideoAgentFrameBoundingBoxes(durationMs, sourceUrl)
+  const frameBoundingBoxes = buildVideoAgentFrameBoundingBoxes(durationMs, sourceUrl, input.maxFrameSamples)
   const datasetRuntime = buildVideoAgentDatasetRuntime({
     frameBoundingBoxes,
     saveFilename: buildVideoAgentWorkspaceOutputPath('visual-dataset.json', workspaceOutputRoot),

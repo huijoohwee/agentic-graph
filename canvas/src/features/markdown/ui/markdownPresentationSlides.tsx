@@ -260,7 +260,7 @@ export const buildSlideBody = (args: BuildSlideBodyArgs): React.ReactNode => {
         >
           <section className="flex items-center gap-2">
             <section className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white">
-              <LayoutPanelTop className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden={true} />
+              <LayoutPanelTop className="h-3.5 w-3.5" aria-hidden={true} />
             </section>
             <section className="font-medium text-blue-700">
               {UI_COPY.markdownPresentationEmptyTitle}

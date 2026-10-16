@@ -115,11 +115,13 @@ This is a deterministic structural path:
 
 - supported code is parsed with a registered local AST adapter
 - supported documentation, SQL schemas, configuration, and PDFs contribute only locally observable structure and source locations
+- recognized ELF, thin Mach-O, PE, WebAssembly, and `ar` inputs contribute bounded format, architecture, section, dependency, symbol, short member-name, or WebAssembly import/export metadata through a local deterministic parser; the adapter caps each binary at 8 MiB, each result at 96 references, section tables at 256 entries, and archive walks at 65,536 members; arbitrary strings and instruction disassembly are outside this adapter
 - every edge retains enough source evidence for `agentic-graph.agent_graph.explain_edge`; no opaque similarity edge is accepted
 - query uses lexical matching and graph traversal, not embeddings or a vector store
 - bounded query results report explicit completeness, truncation, and limit/depth reasons rather than presenting a partial traversal as exhaustive
 - local-directory ingest, parsing, query, and edge explanation make no model or network call; an explicit repository URL may use the network only during bounded immutable-revision acquisition
 - missing parser coverage, malformed or unreadable input, encrypted or image-only PDF content, unresolved references, and unsupported syntax return explicit diagnostics rather than guessed graph facts
+- malformed native headers or tables return partial diagnostics; files above the native adapter's 8 MiB cap return a typed size-limit omission; unknown signatures and extensionless native files remain inventory-only
 
 The focused authority for coverage, provenance, diagnostics, and security is the [deterministic agent-graph runtime contract](../docs/documents/agentic-graph-deterministic-agent-graph-runtime.md).
 
@@ -130,6 +132,7 @@ Host configuration keeps arbitrary-codebase access explicit:
 - Snapshots use bounded content-addressed source, deterministically chunked repository-resolution, index, and manifest shards behind one atomic current pointer. Non-strict ingest records an oversized source artifact as explicit `limited` evidence with `source_artifact_limit_exceeded`; strict ingest and oversized single resolution records fail before pointer replacement, preserving the prior ready snapshot.
 - A cross-process, dead-owner-recoverable per-graph ingest lease fences publication and rollback. Source shards are written incrementally while only cross-source resolution records remain in memory. The ingest schema exposes hard-bounded aggregate record and serialized-byte ceilings across retained inputs and derived edges; ambiguous evidence keeps the exact count and a deterministic bounded candidate set containing the edge target. Exceeding a ceiling returns a typed failure, rolls back newly created unpublished objects, and does not replace the current pointer.
 - `AGENTIC_OS_AGENT_GRAPH_PDF_TIMEOUT_MS` and `AGENTIC_OS_AGENT_GRAPH_PDF_MAX_OUTPUT_BYTES` bound the native local PDF adapter.
+- Native binaries are never loaded, emulated, or executed; this adapter reads bounded headers and selected tables only and does not prove runtime behavior.
 - `AGENTIC_OS_PYTHON` selects the local Python 3 interpreter used only for stdlib AST extraction; an unavailable or invalid interpreter produces a typed parser failure, and strict ingest preserves the previous artifact instead of falling back.
 - Query and explain calls must send the exact `expectedSnapshotDigest` returned by ingest alongside its opaque `graphId`, so a replaced or tampered snapshot fails closed.
 

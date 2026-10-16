@@ -29,7 +29,7 @@ export function isWorkspaceMirrorReadPathAllowed(candidate: string, allowedRoots
 
 // On-demand compatibility projection for the persisted flat documentation IDs.
 export async function readNativeWorkspaceDocs(rootAbsPath: string, graphRoot: string, maxFiles: number) {
-  if (!rootAbsPath.endsWith('/agentic-os/catalog/dictionaries')) return null
+  if (!rootAbsPath.endsWith('/catalog/dictionaries')) return null
   const { resolveAgenticCanvasOsDocsRoot } = requireNative('../mcp/agentic-canvas-os-docs-runtime.js')
   if (rootAbsPath !== resolveAgenticCanvasOsDocsRoot({ rootDir: graphRoot })) return null
   const { readRuntimeDocsSources } = requireNative('../scripts/runtime-docs-sources.mjs') as typeof import('../scripts/runtime-docs-sources.mjs')

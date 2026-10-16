@@ -1,3 +1,4 @@
+import { UI_ICON_DEFAULTS } from '@/lib/ui/theme-tokens'
 import React from 'react'
 
 import IconButton from '@/components/IconButton'
@@ -54,7 +55,7 @@ export function StoryboardWidgetPanelChromeHeader(props: {
     headerClassName = '',
     microLabelClass = '',
     uiIconScale,
-    uiIconStrokeWidth = 1.8,
+    uiIconStrokeWidth = UI_ICON_DEFAULTS.strokeWidth,
     richMediaHeader = false,
     dragHandle = true,
     onHeaderPointerDown,

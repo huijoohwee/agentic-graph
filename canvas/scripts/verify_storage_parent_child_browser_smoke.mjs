@@ -60,10 +60,17 @@ const sourceObservation = () => {
   }
 }
 const output = process.env.AG_STORAGE_RECOVERY_RESULT_PATH
+const proofStartedAt = Date.now()
+const progress = phase => console.log(`[storage-proof] ${Date.now() - proofStartedAt}ms ${phase}`)
+progress('verifier entry')
+progress('source observation before:begin')
 const before = sourceObservation()
+progress('source observation before:end')
 const results = []
 const executablePath = findLocalChromiumExecutable('', chromium.executablePath())
+progress('Chromium launch:begin')
 const browser = await chromium.launch({ headless: true, ...(executablePath ? { executablePath } : {}) })
+progress('Chromium launch:end')
 const browserVersion = browser.version()
 const html = `<!doctype html><html><body><main>Local storage recovery proof</main><script type="module">
 import RefreshRuntime from '/@react-refresh'; RefreshRuntime.injectIntoGlobalHook(window);
@@ -151,10 +158,14 @@ async function choose(page, workspaceId, childId, choice) {
 
 async function runCase(choice, contended) {
   const started = Date.now(), name = `${choice}:${contended ? 'concurrent-tab' : 'reviewed'}`
-  const context = await browser.newContext({ serviceWorkers: 'block' })
+  let phase = 'context:create:begin'
+  const mark = next => { phase = next; progress(`${name} ${phase}`) }
   const rejectedRequests = [], pageErrors = []
-  let deadline
+  let deadline, context
   try {
+  mark(phase)
+  context = await browser.newContext({ serviceWorkers: 'block' })
+  mark('context:create:end')
   await context.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url())
     if (request.url() === proofUrl) return route.fulfill({ contentType: 'text/html', body: html })
@@ -165,15 +176,23 @@ async function runCase(choice, contended) {
     }
     return route.continue()
   })
+  mark('pages:create:begin')
   const first = await context.newPage(), second = await context.newPage()
+  mark('pages:create:end')
   for (const page of [first, second]) page.on('pageerror', error => pageErrors.push(error.message))
-    await Promise.race([new Promise((_, reject) => { deadline = setTimeout(() => reject(new Error(`${name} exceeded 20 seconds`)), 20_000) }), (async () => {
+    await Promise.race([new Promise((_, reject) => { deadline = setTimeout(() => reject(new Error(`${name} exceeded 20 seconds during ${phase}`)), 20_000) }), (async () => {
+      mark('initialize:begin')
       await Promise.all([initialize(first), initialize(second)])
-      const workspaceId = `browser:recovery:${choice}:${contended}`, fixture = await seed(first, workspaceId)
+      mark('initialize:end')
+      const workspaceId = `browser:recovery:${choice}:${contended}`
+      mark('seed:begin')
+      const fixture = await seed(first, workspaceId)
+      mark('seed:end')
       assert.deepEqual((await snapshot(second, workspaceId)).children.find(row => row.id === fixture.child.id), fixture.child,
         'the second tab must read the first tab native IndexedDB write')
       let authored = null
       if (contended) {
+        mark('contention:prepare')
         await first.exposeFunction('__storageRecoverySecondCommit', async () => {
           authored = await second.evaluate(async ({ workspaceId, fixture }) => {
             const p = window.__storageProof, row = await p.db.collections.syncOutbox.findOne(fixture.childId).exec()
@@ -200,7 +219,10 @@ async function runCase(choice, contended) {
           window.__storageProof.restoreCommit = () => { db.compareAndWriteWithRevisions = original }
         })
       }
+      mark('action:begin')
       assert.equal(await choose(first, workspaceId, fixture.childId, choice), true)
+      mark('action:end')
+      mark('snapshot:after-action')
       const visible = await snapshot(first, workspaceId)
       const stored = await snapshot(second, workspaceId)
       assert.equal(stored.persistence.mode, 'indexeddb'); assert.equal(stored.persistence.status, 'active')
@@ -228,23 +250,42 @@ async function runCase(choice, contended) {
         assert.equal(stored.children.some(row => row.id === fixture.child.id), false)
         assert.equal(visible.source.some(row => row.id === 'recovery-parent'), false)
       }
+      mark('reopen:begin')
       await Promise.all([first.evaluate(() => window.__storageProof.db.db.close()), second.evaluate(() => window.__storageProof.db.db.close())])
       await Promise.all([initialize(first), initialize(second)])
+      mark('reopen:loaded')
       const reopened = await snapshot(second, workspaceId)
       for (const key of ['documents', 'children', 'outbox', 'conflicts', 'history']) assert.deepEqual(reopened[key], stored[key], `${key} survives closing both tabs' connections and reloading`)
+      mark('reopen:end')
       if (contended) {
+        mark('retry-action:begin')
         await choose(first, workspaceId, fixture.childId, 'restore-family')
         const retry = await snapshot(second, workspaceId)
         assert.ok(retry.outbox.every(row => row.lastAckStatus === ''), 'fresh explicit recovery must complete')
         assert.equal(retry.outbox.find(row => row.id === fixture.childId)?.payload.record.markdown, authored.payload.record.markdown)
         assert.equal(retry.outbox.find(row => row.id === authored.addedId)?.payload.record.markdown, authored.added.markdown)
+        mark('retry-action:end')
       }
       assert.deepEqual(pageErrors, [], 'uncaught browser errors invalidate the proof')
       assert.deepEqual(rejectedRequests, [], 'unexpected network attempts invalidate the isolated local proof')
       results.push({ name, status: 'passed', durationMs: Date.now() - started, realIndexedDb: true, tabs: 2,
         faultInjection: contended ? 'pause-before-native-cleanup-transaction' : null, rejectedRequests })
     })()])
-  } finally { clearTimeout(deadline); await context.close() }
+  } catch (error) {
+    console.error(`[storage-proof] ${name} failed during ${phase} ${JSON.stringify({
+      error: String(error?.stack || error).slice(0, 1500),
+      pageErrors: pageErrors.slice(0, 4).map(message => String(message).slice(0, 256)),
+      rejectedRequests: rejectedRequests.slice(0, 4).map(row => ({
+        method: String(row.method).slice(0, 12), origin: String(row.origin).slice(0, 128), path: String(row.path).slice(0, 256),
+      })),
+    })}`)
+    throw error
+  } finally {
+    clearTimeout(deadline)
+    mark('cleanup:begin')
+    if (context) await context.close()
+    mark('cleanup:end')
+  }
 }
 
 let failure
@@ -252,8 +293,12 @@ try {
   for (const choice of ['restore-family', 'discard-family']) for (const contended of [false, true]) await runCase(choice, contended)
 } catch (error) { failure = error; process.exitCode = 1 }
 finally {
+  progress('browser cleanup:begin')
   await browser.close()
+  progress('browser cleanup:end')
+  progress('source observation after:begin')
   const after = sourceObservation(), stable = JSON.stringify(before) === JSON.stringify(after)
+  progress('source observation after:end')
   const receipt = { schema: 'agentic-graph-storage-parent-child-browser-proof/v1', status: failure || !stable ? 'failed' : 'passed',
     before, after, stable, browserVersion, executablePath, cases: results, error: failure?.stack || null,
     limitations: ['Chromium local IndexedDB only', 'Explicit transaction-pause fault injection in contention cases',

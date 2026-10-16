@@ -146,3 +146,64 @@ test('Flight handoff settles the debounced docs mirror before suspending source 
   })
   releaseSuspension()
 })
+
+test('bundled graph source writes stay browser-local while local copies and nested seed paths retain host mirrors', async (t) => {
+  const { restore } = initJsdomHarness()
+  const previousFetch = globalThis.fetch
+  const previousDocsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
+  const docsRoot = '/tmp/agentic-graph-bundled-queue-test'
+  const requests: Array<Record<string, unknown>> = []
+  process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = docsRoot
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (String(input) === '/__agentic_os_fs_write' && init?.method === 'POST') {
+      requests.push(JSON.parse(String(init.body)))
+      return new Response(JSON.stringify({ ok: true }), { status: 200 })
+    }
+    return new Response('', { status: 404 })
+  }) as typeof fetch
+  resetWorkspaceFsForTests()
+  resetWorkspaceSeedSyncRuntimeForTests()
+  t.after(async () => {
+    await settleWorkspaceSourceTextWrites()
+    resetWorkspaceFsForTests()
+    resetWorkspaceSeedSyncRuntimeForTests()
+    globalThis.fetch = previousFetch
+    if (previousDocsRoot === undefined) delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
+    else process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsRoot
+    restore()
+  })
+
+  const workspaceFs = await getWorkspaceFs()
+  for (const [parentPath, name] of [['/', 'docs'], ['/docs', 'workspace-seeds'], ['/docs/workspace-seeds', 'team']] as const) {
+    const path = `${parentPath === '/' ? '' : parentPath}/${name}`
+    if (!(await workspaceFs.listEntries()).some(entry => entry.path === path)) {
+      await workspaceFs.createFolder({ parentPath, name, mirrorToHost: false })
+    }
+  }
+  const basename = 'agentic-graph-game-flight-sim-demo.md'
+  for (const parentPath of ['/docs/workspace-seeds', '/docs', '/docs/workspace-seeds/team'] as const) {
+    const path = `${parentPath}/${basename}`
+    const before = `# Before ${parentPath}`
+    const after = `# Queued ${parentPath}`
+    if ((await workspaceFs.listEntries()).some(entry => entry.path === path)) {
+      await workspaceFs.writeFileText(path, before, { mirrorToHost: false })
+    } else {
+      assert.equal(await workspaceFs.createFile({ parentPath, name: basename, text: before, mirrorToHost: false }), path)
+    }
+    requests.length = 0
+    assert.equal(await enqueueWorkspaceSourceTextWrite(path, after), true)
+    await settleWorkspaceSourceTextWrites()
+    assert.equal(await workspaceFs.readFileText(path), after, 'queued source bytes reach browser storage')
+    if (parentPath === '/docs/workspace-seeds') {
+      assert.deepEqual(requests, [], 'automatic bundled-example edits must not mutate the host source')
+      await workspaceFs.writeFileText(path, '# Explicit source edit')
+      await settleWorkspaceSourceTextWrites()
+      assert.equal(requests.length, 1, 'explicit source writes retain their host authority')
+      assert.equal(requests[0].workspacePath, path)
+    } else {
+      assert.equal(requests.length, 1, 'ordinary source writes retain their host mirror')
+      if (parentPath === '/docs') assert.equal(requests[0].path, `${docsRoot}/${basename}`)
+      else assert.equal(requests[0].workspacePath, path, 'custom seed namespace retains logical host authority')
+    }
+  }
+})

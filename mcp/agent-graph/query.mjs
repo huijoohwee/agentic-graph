@@ -156,35 +156,123 @@ function retainBest(entries, entry, limit, compare) {
   if (entries.length > limit) entries.pop();
 }
 
+function createBoundedBest(capacity, compare) {
+  const heap = [];
+  const worse = (left, right) => compare(left, right) > 0;
+  const siftUp = (index) => {
+    while (index > 0) {
+      const parent = Math.floor((index - 1) / 2);
+      if (!worse(heap[index], heap[parent])) break;
+      [heap[index], heap[parent]] = [heap[parent], heap[index]];
+      index = parent;
+    }
+  };
+  const siftDown = (index) => {
+    for (;;) {
+      const left = index * 2 + 1, right = left + 1;
+      let worst = index;
+      if (left < heap.length && worse(heap[left], heap[worst])) worst = left;
+      if (right < heap.length && worse(heap[right], heap[worst])) worst = right;
+      if (worst === index) break;
+      [heap[index], heap[worst]] = [heap[worst], heap[index]];
+      index = worst;
+    }
+  };
+  return {
+    add(entry) {
+      if (heap.length < capacity) { heap.push(entry); siftUp(heap.length - 1); }
+      else if (capacity && compare(entry, heap[0]) < 0) { heap[0] = entry; siftDown(0); }
+    },
+    values() { return heap.sort(compare); },
+  };
+}
+
+function retainConnectedProjectionWithinBytes({ nodes, edges, seeds, degreeByNodeId, limit, maxBytes }) {
+  const baseBytes = Buffer.byteLength('{"context":"agentic-graph-agent-graph-projection","type":"Graph","nodes":[],"edges":[]}');
+  const nodeBytes = new Map(nodes.map((node) => [node.id, Buffer.byteLength(JSON.stringify(node))]));
+  const edgeBytes = new Map(edges.map((edge) => [edge.id, Buffer.byteLength(JSON.stringify(edge))]));
+  const retainedNodes = new Map(), retainedEdges = new Map();
+  let retainedNodeBytes = 0, retainedEdgeBytes = 0;
+  const fits = (nodeCount, edgeCount, nodeCost, edgeCost) => baseBytes + nodeCost + Math.max(0, nodeCount - 1)
+    + edgeCost + Math.max(0, edgeCount - 1) <= maxBytes;
+  const addNode = (node) => {
+    if (retainedNodes.has(node.id) || retainedNodes.size >= limit) return retainedNodes.has(node.id);
+    const cost = nodeBytes.get(node.id);
+    if (!Number.isFinite(cost) || !fits(retainedNodes.size + 1, retainedEdges.size, retainedNodeBytes + cost, retainedEdgeBytes)) return false;
+    retainedNodes.set(node.id, node); retainedNodeBytes += cost; return true;
+  };
+  const addEdge = (edge) => {
+    if (retainedEdges.has(edge.id) || !retainedNodes.has(edge.source) || !retainedNodes.has(edge.target)) return false;
+    const cost = edgeBytes.get(edge.id);
+    if (!Number.isFinite(cost) || !fits(retainedNodes.size, retainedEdges.size + 1, retainedNodeBytes, retainedEdgeBytes + cost)) return false;
+    retainedEdges.set(edge.id, edge); retainedEdgeBytes += cost; return true;
+  };
+  const comparePriority = (left, right) => (
+    (degreeByNodeId.get(right.id) || 0) - (degreeByNodeId.get(left.id) || 0)
+      || compareStableStrings(left.id, right.id)
+  );
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  for (const id of seeds) { const node = nodeById.get(id); if (node) addNode(node); }
+  for (const edge of edges) {
+    if (!retainedNodes.has(edge.source) && !retainedNodes.has(edge.target)) continue;
+    const endpoints = [nodeById.get(edge.source), nodeById.get(edge.target)].filter(Boolean).sort(comparePriority);
+    for (const node of endpoints) addNode(node);
+    addEdge(edge);
+  }
+  for (const node of [...nodes].sort(comparePriority)) addNode(node);
+  return {
+    nodes: [...retainedNodes.values()],
+    edges: [...retainedEdges.values()],
+    truncated: retainedNodes.size !== nodes.length || retainedEdges.size !== edges.length,
+  };
+}
+
 export async function projectAgentGraphSnapshot(snapshot, limitRaw = 200, options = {}) {
   const checkpoint = createQueryCheckpoint(options, "snapshot-projection");
   const limit = boundedInteger(limitRaw, 200, 1, 1000);
   const projectionByteLimit = normalizeAgentGraphProjectionByteLimit(options.projectionByteLimit);
-  const candidateNodes = [];
-  const candidateEdges = [];
+  // Seed a small connected core, then spend the remaining projection budget
+  // on its strongest neighbors instead of unrelated global hubs.
+  const seedLimit = snapshot.manifest.graph.nodes <= limit
+    ? limit
+    : Math.min(limit, Math.max(1, Math.min(16, Math.ceil(limit * 0.05))));
+  const degreeByNodeId = new Map();
   for await (const { shard } of iterateAgentGraphSnapshotShards(snapshot, {
     ...options,
     checkpoint,
   })) {
-    for (const node of shard.nodes || []) {
-      checkpoint();
-      retainBest(candidateNodes, node, limit, (left, right) => compareStableStrings(left.id, right.id));
-    }
     for (const edge of shard.edges || []) {
       checkpoint();
-      retainBest(candidateEdges, edge, limit, (left, right) => compareStableStrings(left.id, right.id));
+      degreeByNodeId.set(edge.source, (degreeByNodeId.get(edge.source) || 0) + 1);
+      degreeByNodeId.set(edge.target, (degreeByNodeId.get(edge.target) || 0) + 1);
     }
   }
-  const endpointIds = new Set();
-  const edges = [];
-  for (const edge of candidateEdges) {
-    checkpoint();
-    const nextIds = new Set([...endpointIds, edge.source, edge.target]);
-    if (nextIds.size > limit) continue;
-    edges.push(edge);
-    endpointIds.add(edge.source);
-    endpointIds.add(edge.target);
+  const compareConnectedNodes = (left, right) => (
+    right[1] - left[1] || compareStableStrings(left[0], right[0])
+  );
+  const seedIds = new Set([...degreeByNodeId.entries()]
+    .sort(compareConnectedNodes).slice(0, seedLimit).map(([id]) => id));
+  if (seedIds.size < seedLimit) {
+    const isolated = createBoundedBest(seedLimit - seedIds.size,
+      (left, right) => compareStableStrings(left.id, right.id));
+    for await (const { shard } of iterateAgentGraphSnapshotShards(snapshot, { ...options, checkpoint })) {
+      for (const node of shard.nodes || []) {
+        checkpoint();
+        if (!degreeByNodeId.has(node.id)) isolated.add(node);
+      }
+    }
+    for (const node of isolated.values()) seedIds.add(node.id);
   }
+
+  const compareConnectedEdges = (left, right) => {
+    const rank = edge => {
+      const source = degreeByNodeId.get(edge.source) || 0, target = degreeByNodeId.get(edge.target) || 0;
+      return [Number(seedIds.has(edge.source)) + Number(seedIds.has(edge.target)), Math.max(source, target), Math.min(source, target)];
+    };
+    const a = rank(left), b = rank(right);
+    return b[0] - a[0] || b[1] - a[1] || b[2] - a[2] || compareStableStrings(left.id, right.id);
+  };
+  const candidateEdges = createBoundedBest(limit, compareConnectedEdges);
   const nodeById = new Map();
   for await (const { shard } of iterateAgentGraphSnapshotShards(snapshot, {
     ...options,
@@ -192,15 +280,39 @@ export async function projectAgentGraphSnapshot(snapshot, limitRaw = 200, option
   })) {
     for (const node of shard.nodes || []) {
       checkpoint();
-      if (endpointIds.has(node.id)) nodeById.set(node.id, node);
+      if (seedIds.has(node.id)) nodeById.set(node.id, node);
+    }
+    for (const edge of shard.edges || []) {
+      checkpoint();
+      if (seedIds.has(edge.source) || seedIds.has(edge.target)) candidateEdges.add(edge);
     }
   }
-  for (const node of candidateNodes) {
-    if (nodeById.size >= limit) break;
-    nodeById.set(node.id, node);
+  const nodeIds = new Set(seedIds), edges = [];
+  for (const edge of candidateEdges.values()) {
+    const added = Number(!nodeIds.has(edge.source)) + Number(!nodeIds.has(edge.target));
+    if (nodeIds.size + added > limit) continue;
+    edges.push(edge); nodeIds.add(edge.source); nodeIds.add(edge.target);
   }
-  const nodes = [...nodeById.values()].sort((left, right) => compareStableStrings(left.id, right.id));
-  const projectedEdges = edges.filter((edge) => nodeById.has(edge.source) && nodeById.has(edge.target));
+  if (nodeById.size < nodeIds.size) {
+    for await (const { shard } of iterateAgentGraphSnapshotShards(snapshot, { ...options, checkpoint })) {
+      for (const node of shard.nodes || []) {
+        checkpoint();
+        if (nodeIds.has(node.id) && !nodeById.has(node.id)) nodeById.set(node.id, node);
+      }
+      if (nodeById.size === nodeIds.size) break;
+    }
+  }
+  const candidateNodes = [...nodeById.values()];
+  const candidateEdgeList = candidateEdges.values().filter((edge) => (
+    nodeById.has(edge.source) && nodeById.has(edge.target)
+  ));
+  const connectedFit = retainConnectedProjectionWithinBytes({ nodes: candidateNodes, edges: candidateEdgeList,
+    seeds: [...seedIds].sort((left, right) => compareConnectedNodes(
+      [left, degreeByNodeId.get(left) || 0], [right, degreeByNodeId.get(right) || 0])),
+    degreeByNodeId, limit, maxBytes: projectionByteLimit });
+  const nodes = connectedFit.nodes.sort((left, right) => compareStableStrings(left.id, right.id));
+  const retainedNodeIds = new Set(nodes.map((node) => node.id));
+  const projectedEdges = connectedFit.edges.filter((edge) => retainedNodeIds.has(edge.source) && retainedNodeIds.has(edge.target));
   const graph = snapshot.manifest.graph;
   const byteBounded = fitAgentGraphProjectionRecords({
     nodes,
@@ -208,7 +320,8 @@ export async function projectAgentGraphSnapshot(snapshot, limitRaw = 200, option
     maxBytes: projectionByteLimit,
   });
   const countTruncated = graph.nodes > nodes.length || graph.edges > projectedEdges.length;
-  const truncated = countTruncated || byteBounded.truncated;
+  const byteTruncated = connectedFit.truncated || byteBounded.truncated;
+  const truncated = countTruncated || byteTruncated;
   const corpusComplete = (snapshot.manifest.completeness?.complete
     ?? snapshot.manifest.admission?.complete) === true;
   return {
@@ -225,7 +338,7 @@ export async function projectAgentGraphSnapshot(snapshot, limitRaw = 200, option
     limit,
     reason: !corpusComplete
       ? "ingest_incomplete"
-      : byteBounded.truncated
+      : byteTruncated
         ? "projection_byte_limit"
         : countTruncated
           ? "projection_limit"

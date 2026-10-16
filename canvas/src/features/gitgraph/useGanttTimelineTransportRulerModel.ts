@@ -85,9 +85,7 @@ export function useGanttTimelineTransportRulerModel(args: {
 }): GanttTimelineTransportRulerModel {
   return React.useMemo(() => ({
     chrome: {
-      rulerClassName: args.compact
-        ? 'timeline-transport-ruler--compact timeline-transport-ruler--tracks timeline-transport-ruler--video-sequence'
-        : 'timeline-transport-ruler--tracks timeline-transport-ruler--video-sequence',
+      rulerClassName: 'timeline-transport-ruler--video-sequence',
       rulerProps: {
         'data-kg-gantt-timeline-ruler': 'bottomPanel',
         'data-kg-gantt-timeline-pinch-zoom': '1',

@@ -11,9 +11,10 @@ export const FLIGHT_SIM_AGENT_READY_TOOL_IDS = Object.freeze({
 const buildStructuredOperationSchema = (operation) => ({
   type: 'object',
   additionalProperties: false,
-  required: operation === 'throttle' ? ['operation', 'throttle'] : ['operation'],
+  required: operation === 'throttle' ? ['operation', 'throttle'] : ['mission', 'failure'].includes(operation) ? ['operation', `${operation}Id`] : ['operation'],
   properties: {
     operation: { const: operation },
+    ...(['mission', 'failure'].includes(operation) ? { [`${operation}Id`]: { type: 'string', minLength: 1, maxLength: 96, pattern: '^[a-zA-Z0-9][a-zA-Z0-9._-]*$' } } : {}),
     ...(operation === 'throttle'
       ? { throttle: { type: 'number', minimum: 0, maximum: 1 } }
       : {}),
@@ -36,6 +37,7 @@ const FLIGHT_SIM_INPUT_SCHEMA = Object.freeze({
       },
     },
     ...FLIGHT_SIM_CONTROL_OPERATIONS.map(buildStructuredOperationSchema),
+    { type: 'object', additionalProperties: false, required: ['operation'], properties: { operation: { type: 'string', minLength: 1, maxLength: 96, pattern: '^[a-z][a-z0-9-]*$', not: { enum: [...FLIGHT_SIM_CONTROL_OPERATIONS] }, description: 'An alias declared by the admitted authored training profile; unknown aliases are rejected by the runtime.' } } },
   ],
 })
 

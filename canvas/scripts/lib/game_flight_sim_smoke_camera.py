@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
+from contextlib import contextmanager
+from typing import Any, Iterator
 
 from playwright.sync_api import Page
 
@@ -15,6 +16,139 @@ from lib.game_flight_sim_smoke_camera_tracking import (
     verify_live_fixed_follow_tracking,
     verify_map_pointer_drag,
 )
+
+
+@contextmanager
+def _timeline_camera_probe(page: Page) -> Iterator[dict[str, Any]]:
+    """Temporarily author probe marks, restoring the exact admitted scene on every exit."""
+    baseline = page.evaluate(
+        """
+        async () => {
+          const motion = await window.__kgFlightSimBrowserProof.importModule('xrMotionReferenceRuntime')
+          const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
+          const state = store.useGraphStore.getState()
+          return {
+            previousRuntime: motion.readXrMotionReferenceRuntime(),
+            previousTransport: {
+              documentKey: state.timelineTransportDocumentKey,
+              position: state.timelineTransportPosition,
+              playing: state.timelineTransportPlaying,
+              playbackRate: state.timelineTransportPlaybackRate,
+            },
+          }
+        }
+        """
+    )
+    timeline_setup = None
+    try:
+        timeline_setup = page.evaluate(
+            """
+            async () => {
+              const motion = await window.__kgFlightSimBrowserProof.importModule('xrMotionReferenceRuntime')
+              const playback = await window.__kgFlightSimBrowserProof.importModule('xrCameraPlaybackControlsRuntime')
+              const timeline = await window.__kgFlightSimBrowserProof.importModule('xrMotionReferenceTimeline')
+              const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
+              const runtime = motion.readXrMotionReferenceRuntime()
+              const anchors = runtime.plan.cast.slice(0, 2)
+              if (anchors.length < 2) {
+                return { ok: false, reason: 'fewer than two authored camera anchors' }
+              }
+              const state = store.useGraphStore.getState()
+              for (const mark of runtime.plan.camera) {
+                motion.removeXrMotionReferenceCameraMark(mark.id)
+              }
+              const endTime = Math.min(4, runtime.plan.durationSeconds)
+              motion.setXrMotionReferenceCameraMark({
+                timeSeconds: 0,
+                anchorId: anchors[0].actorId,
+                rig: 'dolly',
+                easing: 'linear',
+                settings: {
+                  angle: 'front',
+                  level: 'eye-level',
+                  shot: 'medium',
+                  note: '',
+                  orbitX: 0,
+                  orbitY: 0,
+                  sensorId: 'super-35',
+                  focalLengthMm: 35,
+                  focusDistanceMeters: 6,
+                  aspectRatio: '16:9',
+                },
+              })
+              motion.setXrMotionReferenceCameraMark({
+                timeSeconds: endTime,
+                anchorId: anchors[1].actorId,
+                rig: 'drone',
+                easing: 'linear',
+                settings: {
+                  angle: 'right-side',
+                  level: 'high-angle',
+                  shot: 'wide',
+                  note: '',
+                  orbitX: 0.5,
+                  orbitY: -0.4,
+                  sensorId: 'full-frame',
+                  focalLengthMm: 70,
+                  focusDistanceMeters: 4,
+                  aspectRatio: '2.39:1',
+                },
+              })
+              const documentKey = timeline.xrMotionReferenceTimelineDocumentKey(
+                state.markdownDocumentName,
+              )
+              motion.setXrMotionReferencePlayhead(0)
+              state.setTimelineTransportState({
+                documentKey,
+                position: 0,
+                playing: true,
+              })
+              playback.requestXrMotionReferenceCameraPlaybackReapply()
+              return {
+                ok: true,
+                anchorIds: anchors.map(anchor => anchor.actorId),
+                cameraMarks:
+                  motion.readXrMotionReferenceRuntime().plan.camera.length,
+                documentKey,
+                endTime,
+              }
+            }
+            """
+        )
+        if (
+            timeline_setup.get("ok") is not True
+            or timeline_setup.get("cameraMarks") != 2
+        ):
+            raise AssertionError(f"Timeline camera setup failed: {timeline_setup}")
+        yield timeline_setup
+    finally:
+        cleaned_up = page.evaluate(
+            """
+            async cleanup => {
+              const motion = await window.__kgFlightSimBrowserProof.importModule('xrMotionReferenceRuntime')
+              const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
+              motion.restoreXrMotionReferenceRuntimeSnapshot(cleanup.previousRuntime)
+              store.useGraphStore.getState().setTimelineTransportState(cleanup.previousTransport)
+              const { revision, ...runtime } = motion.readXrMotionReferenceRuntime()
+              const state = store.useGraphStore.getState()
+              return {
+                runtime,
+                transport: {
+                  documentKey: state.timelineTransportDocumentKey,
+                  position: state.timelineTransportPosition,
+                  playing: state.timelineTransportPlaying,
+                  playbackRate: state.timelineTransportPlaybackRate,
+                },
+              }
+            }
+            """,
+            baseline,
+        )
+        expected_runtime = {key: value for key, value in baseline["previousRuntime"].items() if key != "revision"}
+        if cleaned_up != {"runtime": expected_runtime, "transport": baseline["previousTransport"]}:
+            raise AssertionError(f"Timeline camera smoke state was not restored: {cleaned_up}")
+        if timeline_setup is not None:
+            timeline_setup["cleanedUp"] = cleaned_up
 
 
 def verify_flight_camera_runtime(page: Page) -> dict[str, Any]:
@@ -148,210 +282,73 @@ def verify_flight_camera_runtime(page: Page) -> dict[str, Any]:
     finally:
         page.keyboard.up("KeyW")
 
-    timeline_setup = page.evaluate(
-        """
-        async () => {
-          const motion = await window.__kgFlightSimBrowserProof.importModule('xrMotionReferenceRuntime')
-          const playback = await window.__kgFlightSimBrowserProof.importModule('xrCameraPlaybackControlsRuntime')
-          const timeline = await window.__kgFlightSimBrowserProof.importModule('xrMotionReferenceTimeline')
-          const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
-          const runtime = motion.readXrMotionReferenceRuntime()
-          const anchors = runtime.plan.cast.slice(0, 2)
-          if (runtime.plan.camera.length !== 0) {
-            return {
-              ok: false,
-              reason: 'authored Flight seed already contained camera marks',
-              cameraMarks: runtime.plan.camera.length,
-            }
-          }
-          if (anchors.length < 2) {
-            return { ok: false, reason: 'fewer than two authored camera anchors' }
-          }
-          const state = store.useGraphStore.getState()
-          const previousTransport = {
-            documentKey: state.timelineTransportDocumentKey,
-            position: state.timelineTransportPosition,
-            playing: state.timelineTransportPlaying,
-            playbackRate: state.timelineTransportPlaybackRate,
-          }
-          const endTime = Math.min(4, runtime.plan.durationSeconds)
-          motion.setXrMotionReferenceCameraMark({
-            timeSeconds: 0,
-            anchorId: anchors[0].actorId,
-            rig: 'dolly',
-            easing: 'linear',
-            settings: {
-              angle: 'front',
-              level: 'eye-level',
-              shot: 'medium',
-              note: '',
-              orbitX: 0,
-              orbitY: 0,
-              sensorId: 'super-35',
-              focalLengthMm: 35,
-              focusDistanceMeters: 6,
-              aspectRatio: '16:9',
-            },
-          })
-          motion.setXrMotionReferenceCameraMark({
-            timeSeconds: endTime,
-            anchorId: anchors[1].actorId,
-            rig: 'drone',
-            easing: 'linear',
-            settings: {
-              angle: 'right-side',
-              level: 'high-angle',
-              shot: 'wide',
-              note: '',
-              orbitX: 0.5,
-              orbitY: -0.4,
-              sensorId: 'full-frame',
-              focalLengthMm: 70,
-              focusDistanceMeters: 4,
-              aspectRatio: '2.39:1',
-            },
-          })
-          const documentKey = timeline.xrMotionReferenceTimelineDocumentKey(
-            state.markdownDocumentName,
-          )
-          motion.setXrMotionReferencePlayhead(0)
-          state.setTimelineTransportState({
-            documentKey,
-            position: 0,
-            playing: true,
-          })
-          playback.requestXrMotionReferenceCameraPlaybackReapply()
-          return {
-            ok: true,
-            anchorIds: anchors.map(anchor => anchor.actorId),
-            cameraMarks:
-              motion.readXrMotionReferenceRuntime().plan.camera.length,
-            documentKey,
-            endTime,
-            previousRuntime: runtime,
-            previousTransport,
-          }
-        }
-        """
-    )
-    if (
-        timeline_setup.get("ok") is not True
-        or timeline_setup.get("cameraMarks") != 2
-    ):
-        raise AssertionError(f"Timeline camera setup failed: {timeline_setup}")
-
-    timeline_start = _poll(
-        page,
-        lambda: _read_camera_state(page),
-        lambda value: value.get("mapCamera") is not None
-        and value["source"]["selected"] == "free-orbit"
-        and value["source"]["effectiveOwner"] == "timeline-playback"
-        and timeline_map_camera_matches_overlay(value),
-        label="Timeline camera ownership at the first mark",
-    )
-    page.evaluate(
-        """
-        async endTime => {
-          const motion = await window.__kgFlightSimBrowserProof.importModule('xrMotionReferenceRuntime')
-          const playback = await window.__kgFlightSimBrowserProof.importModule('xrCameraPlaybackControlsRuntime')
-          const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
-          motion.setXrMotionReferencePlayhead(endTime)
-          store.useGraphStore.getState().setTimelineTransportState({
-            position: endTime / 60,
-          })
-          playback.requestXrMotionReferenceCameraPlaybackReapply()
-        }
-        """,
-        timeline_setup["endTime"],
-    )
-    timeline_end = _poll(
-        page,
-        lambda: _read_camera_state(page),
-        lambda value: (
-            value.get("mapCamera") is not None
-            and value["source"]["effectiveOwner"] == "timeline-playback"
-            and _map_camera_changed(
-                timeline_start["mapCamera"],
-                value["mapCamera"],
-            )
-            and timeline_map_camera_matches_overlay(value)
-            and value["flight"]["tick"] > timeline_start["flight"]["tick"]
-        ),
-        label="Timeline camera position, target, and Flight tick change",
-    )
-
-    page.evaluate(
-        """
-        async () => {
-          const flight = await window.__kgFlightSimBrowserProof.importModule('flightSimRuntime')
-          const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
-          flight.stopFlightSim()
-          store.useGraphStore.getState().setTimelineTransportState({
-            playing: false,
-          })
-        }
-        """
-    )
-
-    returned = _poll(
-        page,
-        lambda: _read_camera_state(page),
-        lambda value: (
-            value.get("pose") is not None
+    with _timeline_camera_probe(page) as timeline_setup:
+        timeline_start = _poll(
+            page,
+            lambda: _read_camera_state(page),
+            lambda value: value.get("mapCamera") is not None
             and value["source"]["selected"] == "free-orbit"
-            and value["source"]["effectiveOwner"] == "free-orbit"
-            and value["flight"]["active"] is True
-            and value["flight"]["phase"] == "stopped"
-        ),
-        label="most-recent Free Orbit owner after Timeline playback",
-    )
-    page.evaluate(
-        """
-        async cleanup => {
-          const motion = await window.__kgFlightSimBrowserProof.importModule('xrMotionReferenceRuntime')
-          const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
-          motion.restoreXrMotionReferenceRuntimeSnapshot(
-            cleanup.previousRuntime,
-          )
-          store.useGraphStore.getState().setTimelineTransportState(
-            cleanup.previousTransport,
-          )
-        }
-        """,
-        {
-            "previousRuntime": timeline_setup["previousRuntime"],
-            "previousTransport": timeline_setup["previousTransport"],
-        },
-    )
-    cleaned_up = page.evaluate(
-        """
-        async () => {
-          const motion = await window.__kgFlightSimBrowserProof.importModule('xrMotionReferenceRuntime')
-          const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
-          const state = store.useGraphStore.getState()
-          return {
-            cameraMarks:
-              motion.readXrMotionReferenceRuntime().plan.camera.length,
-            dirty: motion.readXrMotionReferenceRuntime().dirty,
-            documentKey: state.timelineTransportDocumentKey,
-            playing: state.timelineTransportPlaying,
-            playbackRate: state.timelineTransportPlaybackRate,
-            position: state.timelineTransportPosition,
-          }
-        }
-        """
-    )
-    if cleaned_up != {
-        "cameraMarks": 0,
-        "dirty": timeline_setup["previousRuntime"]["dirty"],
-        "documentKey": timeline_setup["previousTransport"]["documentKey"],
-        "playing": timeline_setup["previousTransport"]["playing"],
-        "playbackRate": timeline_setup["previousTransport"]["playbackRate"],
-        "position": timeline_setup["previousTransport"]["position"],
-    }:
-        raise AssertionError(
-            f"Timeline camera smoke state was not restored: {cleaned_up}"
+            and value["source"]["effectiveOwner"] == "timeline-playback"
+            and timeline_map_camera_matches_overlay(value),
+            label="Timeline camera ownership at the first mark",
         )
+        page.evaluate(
+            """
+            async endTime => {
+              const motion = await window.__kgFlightSimBrowserProof.importModule('xrMotionReferenceRuntime')
+              const playback = await window.__kgFlightSimBrowserProof.importModule('xrCameraPlaybackControlsRuntime')
+              const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
+              motion.setXrMotionReferencePlayhead(endTime)
+              store.useGraphStore.getState().setTimelineTransportState({
+                position: endTime / 60,
+              })
+              playback.requestXrMotionReferenceCameraPlaybackReapply()
+            }
+            """,
+            timeline_setup["endTime"],
+        )
+        timeline_end = _poll(
+            page,
+            lambda: _read_camera_state(page),
+            lambda value: (
+                value.get("mapCamera") is not None
+                and value["source"]["effectiveOwner"] == "timeline-playback"
+                and _map_camera_changed(
+                    timeline_start["mapCamera"],
+                    value["mapCamera"],
+                )
+                and timeline_map_camera_matches_overlay(value)
+                and value["flight"]["tick"] > timeline_start["flight"]["tick"]
+            ),
+            label="Timeline camera position, target, and Flight tick change",
+        )
+
+        page.evaluate(
+            """
+            async () => {
+              const flight = await window.__kgFlightSimBrowserProof.importModule('flightSimRuntime')
+              const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
+              flight.stopFlightSim()
+              store.useGraphStore.getState().setTimelineTransportState({
+                playing: false,
+              })
+            }
+            """
+        )
+
+        returned = _poll(
+            page,
+            lambda: _read_camera_state(page),
+            lambda value: (
+                value.get("pose") is not None
+                and value["source"]["selected"] == "free-orbit"
+                and value["source"]["effectiveOwner"] == "free-orbit"
+                and value["flight"]["active"] is True
+                and value["flight"]["phase"] == "stopped"
+            ),
+            label="most-recent Free Orbit owner after Timeline playback",
+        )
+    cleaned_up = timeline_setup["cleanedUp"]
     resumed = page.evaluate(
         """
         async () => {

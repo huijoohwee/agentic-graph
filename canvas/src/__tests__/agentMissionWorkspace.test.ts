@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { agentMissionWorkspace, resolveAgentMissionSource } from '@/features/agent-ready/agentMissionWorkspace'
+import { agentMissionWorkspace, agentMissionSourceDocument, resolveAgentMissionSource } from '@/features/agent-ready/agentMissionWorkspace'
 import { readWorkflowImport } from '@/features/agent-ready/agentWorkflowImport'
 import { resolveMarkdownWorkspaceInitialPaneVisibility } from '@/features/markdown-workspace/main/types'
 
@@ -28,31 +28,45 @@ export async function testAgentMissionWorkspaceLifecycle() {
   const start = await importBoundary('mission-1', 'start', 1), projection = agentMissionWorkspace(start)
   assert.equal(projection.root, '/.workspace/mission-1')
   assert.equal(projection.manifestPath, '/.workspace/mission-1/agent-mission.manifest.json')
+  const document = agentMissionSourceDocument(start, projection.manifestPath)
+  assert.equal(document?.kind, 'manifest')
+  assert.equal(document?.path, projection.manifestPath)
+  assert.equal(document?.text, start.workflowManifest?.text, 'Preserve exact archive whitespace and trailing newline')
   assert.equal(projection.references.size, 3)
   assert.equal(projection.references.get(`${projection.root}/codebase-index.ref.json`)?.status, 'unobserved')
   assert.equal(resolveAgentMissionSource(start, `${projection.root}/codebase-index.ref.json`), `${projection.root}/codebase-index.ref.json`)
   assert(projection.entries.some(row => row.path === '/.workspace/mission-1/.worktrees/os/manifest.ref.json'))
   assert.equal(projection.references.get('/.workspace/mission-1/.worktrees/graph/manifest.ref.json')?.digest, 'b'.repeat(64))
+  const memberDocument = agentMissionSourceDocument(start, '/.workspace/mission-1/.worktrees/graph/manifest.ref.json')
+  assert.equal(memberDocument?.kind, 'reference')
+  assert.equal(JSON.parse(memberDocument!.text).digest, 'b'.repeat(64))
   assert.equal(new Set(projection.entries.map(row => row.path)).size, projection.entries.length)
   assert.equal(resolveMarkdownWorkspaceInitialPaneVisibility({ activeDocumentKey: projection.manifestPath }).json, true)
   assert.equal(resolveAgentMissionSource(start, undefined), projection.manifestPath)
   assert.equal(resolveAgentMissionSource(start, '/agent-mission/agent-mission.md'), projection.manifestPath)
   assert.equal(resolveAgentMissionSource(start, projection.markdownPath), projection.markdownPath)
   assert.equal(resolveAgentMissionSource(start, null), null)
+  for (const path of [null, undefined, '/etc/passwd', projection.markdownPath, `${projection.root}/../agent-mission.manifest.json`])
+    assert.equal(agentMissionSourceDocument(start, path), null, 'Only exact native documents can be resolved')
   const codebase = { index: { path: '/.workspace/codebase-index/source/index.manifest.json', text: '{}',
     value: { graphId: 'kg:graph:source', snapshotDigest: 'c'.repeat(64) } },
     reference: { path: `${projection.root}/codebase-index.ref.json`, value: { workflowId: 'mission-1' } } }
   const indexed = agentMissionWorkspace(start, codebase)
   assert.equal(indexed.references.get(`${projection.root}/codebase-index.manifest.json`), codebase.index.value)
+  assert.equal(JSON.parse(agentMissionSourceDocument(start, `${projection.root}/codebase-index.manifest.json`, codebase)!.text).snapshotDigest, 'c'.repeat(64))
   assert.equal(resolveAgentMissionSource(start, `${projection.root}/codebase-index.manifest.json`, codebase), `${projection.root}/codebase-index.manifest.json`)
   assert.equal(resolveAgentMissionSource(start, undefined, codebase), projection.manifestPath)
   const end = await importBoundary('mission-1', 'end', 2)
   assert.equal(agentMissionWorkspace(end).manifestPath, projection.manifestPath)
   assert.notEqual(end.workflowManifest?.digest, start.workflowManifest?.digest)
+  assert.equal(agentMissionSourceDocument(end, projection.manifestPath)?.text, end.workflowManifest?.text)
+  assert.notEqual(agentMissionSourceDocument(end, projection.manifestPath)?.text, document?.text)
   assert.equal(end.status, 'running'); assert.equal(end.partial, true)
   const next = await importBoundary('mission-2', 'start', 1)
   assert.notEqual(agentMissionWorkspace(next).root, projection.root)
   assert.equal(resolveAgentMissionSource(next, projection.manifestPath), agentMissionWorkspace(next).manifestPath)
   assert.equal(resolveAgentMissionSource(next, projection.markdownPath), agentMissionWorkspace(next).manifestPath)
+  assert.equal(agentMissionSourceDocument(next, projection.manifestPath), null, 'Never relabel another mission path with current archive bytes')
+  assert.equal(agentMissionSourceDocument(null, projection.manifestPath), null)
   assert(agentMissionWorkspace({ ...start, workflowManifest: undefined }).manifestPath.endsWith('inspection.json'))
 }

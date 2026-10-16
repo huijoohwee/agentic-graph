@@ -132,4 +132,20 @@ export function testMarkdownWorkspaceSelectionBootstrapCentralizesStartupAndFall
   if (preserveStaleMissingActivePath !== null) {
     throw new Error(`expected stale missing active path to remain owned by the caller instead of falling back to an arbitrary first file, got ${String(preserveStaleMissingActivePath)}`)
   }
+
+  for (const entries of [defaultSeedEntries, [
+    ...defaultSeedEntries,
+    buildFileEntry('/docs/python-lessons/01-variables-in-motion.py'),
+  ]]) {
+    const remountedSelection = resolveMarkdownWorkspaceBootstrapActivePath({
+      entriesIndex: buildWorkspaceEntriesIndex(entries),
+      activePath: '/docs/python-lessons/01-variables-in-motion.py' as never,
+      lastSetActivePath: null,
+      lastRequestedActivePath: null,
+      nowMs: 10_000,
+    })
+    if (remountedSelection !== null) {
+      throw new Error(`expected Explorer remount to preserve the authored selection with a complete or partial seed inventory, got ${String(remountedSelection)}`)
+    }
+  }
 }

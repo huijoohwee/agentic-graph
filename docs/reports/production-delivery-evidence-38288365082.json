@@ -1,0 +1,203 @@
+{
+  "schema": "agentic-graph-production-delivery-evidence/v1",
+  "status": "deployed-and-runtime-verified",
+  "repository": "huijoohwee/agentic-graph",
+  "recordedForSourceRevision": "e1ee295aa1dffbaba4656a25e0f59f41ccc9736b",
+  "candidate": {
+    "lifecycleCandidateDigest": "77b7a6576916ed2ef9a354acc4e81226ad706a6d8e5286077cee0564924f5d88",
+    "terminalCandidateDigest": "2706461d8aa8585e36322852f10f13c0e48c270d803795239e0479a8e8d49f48",
+    "targetDigest": "978b38723276f4c256352b5eb6c09e0266d77ba1c79e9933d455c1f3671de748",
+    "sourceRevision": "e1ee295aa1dffbaba4656a25e0f59f41ccc9736b",
+    "sourceTree": "c2a7d055ad60cc411bb3a621f91cca501acd74eb",
+    "agenticOsRevision": "7203c926b54d58b04f6c07c014f9d75b589f4768",
+    "artifactDigest": "e7da18b925bd9a253c5bdd23110d06febd94e9e3892a6853cda55a9f4c3b926a",
+    "immutableManifestDigest": "3d9a1b9ebb2c0f969d03afa84c53f6bd88664d3001146fb278c335fb1ff4d710"
+  },
+  "development": {
+    "status": "reviewed",
+    "runtimeReviewReceipt": {
+      "schema": "agentic-runtime-review-receipt/v1",
+      "status": "reviewed",
+      "integrationReceiptDigest": "6e64ee48848d945c297b6613a78a9f839d01d51da037ea2211d52ee9a5b59464",
+      "sourceDigest": "9087708c9edf9e93e494ba1dbd2e9be0909829b4d5ebff199ce72d82a0b24ec5",
+      "dependencyClosureDigest": "e2b30177395dad578b58b0a209db01edd8a3ac1df01f62f1653e3189ddb43196",
+      "reviewSurfaceDigest": "e09e46b5f6403f510ef248b812260b6dba045f35494311b6853c87c5ea96aae0",
+      "policyDigest": "6c932a9ae65e3714265c03053606ddd15d3aa14ad21753100c68299edacee3ba",
+      "probesDigest": "e09e46b5f6403f510ef248b812260b6dba045f35494311b6853c87c5ea96aae0",
+      "reviewerId": "localhost:turn-end:d565f1475a8d3515a614d97394623db3af3a88aafcb65b5b637d120443a8482d",
+      "issuedAt": "2026-10-12T18:10:19.000Z",
+      "expiresAt": "2026-10-13T18:10:19.000Z",
+      "receiptDigest": "104087ad47d014c39a994f3e3304a5cb60b03ce23da91ba88d1d983a5664c9a9"
+    },
+    "protectedIntegrationChecks": [
+      {
+        "pullRequest": 1692,
+        "head": "e666e8f4514478d70c9dd09ea47331a1e0f8a972",
+        "workflowRunId": "38272441477",
+        "checkRunUrl": "https://github.com/huijoohwee/agentic-graph/actions/runs/38272441477/job/114889863866"
+      },
+      {
+        "pullRequest": 1693,
+        "head": "0ad7fa3013f0465f754c6ad09d60afc33b86e593",
+        "workflowRunId": "38282393335",
+        "checkRunUrl": "https://github.com/huijoohwee/agentic-graph/actions/runs/38282393335/job/114922655671"
+      }
+    ]
+  },
+  "productionRelease": {
+    "status": "deployed-and-published",
+    "workflowRunId": "38288365082",
+    "workflowRunUrl": "https://github.com/huijoohwee/agentic-graph/actions/runs/38288365082",
+    "sourceReleaseReceiptDigest": "6e64ee48848d945c297b6613a78a9f839d01d51da037ea2211d52ee9a5b59464",
+    "humanAuthorizationReceiptDigest": "fea706669baa11648fdb36552cceffaadd18aab71984ec023b63f0617da0e423",
+    "humanActorId": "github-user:8945812:huijoohwee",
+    "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/38288365082#environment-production",
+    "authorizedAt": "2026-10-13T00:11:30.602Z",
+    "deploymentReceipt": {
+      "schema": "agentic-deployment-receipt/v1",
+      "status": "deployed",
+      "consumedAuthorizationReceiptDigest": "fea706669baa11648fdb36552cceffaadd18aab71984ec023b63f0617da0e423",
+      "candidateDigest": "77b7a6576916ed2ef9a354acc4e81226ad706a6d8e5286077cee0564924f5d88",
+      "targetDigest": "978b38723276f4c256352b5eb6c09e0266d77ba1c79e9933d455c1f3671de748",
+      "releaseKey": "7c91aa1dcf7d3b9eb903f21675fe51cf9ef5ff306827bde713f5b84beb3d37d2",
+      "controllerId": "github-actions:38288365082:1:deploy",
+      "deploymentAdapterId": "cloudflare-pages/wrangler-output-v1",
+      "immutableDeploymentId": "45b5d2b9-6d19-42aa-a622-6a0c80f60116",
+      "immutableDeploymentOrigin": "https://45b5d2b9.joohwee.pages.dev",
+      "deployedAt": "2026-10-13T00:14:25.206Z",
+      "deployedArtifactDigest": "e7da18b925bd9a253c5bdd23110d06febd94e9e3892a6853cda55a9f4c3b926a",
+      "rollbackTargetDigest": "36524e27ba8d75958fed2239a1e1c6bf3cae5564793a74adc51d4ebb6a488210",
+      "receiptDigest": "41d3d4406db0c72c1bbd077666d0baa3fc746706b2870a947340a11baeeb0462"
+    },
+    "publicationReceipt": {
+      "schema": "agentic-publication-receipt/v2",
+      "status": "published",
+      "liveVerificationReceiptDigest": "b4ec91a477e29bb66bae8629759a31191a9cc7463051fecfc496cd606ac28b5a",
+      "candidateDigest": "77b7a6576916ed2ef9a354acc4e81226ad706a6d8e5286077cee0564924f5d88",
+      "targetDigest": "978b38723276f4c256352b5eb6c09e0266d77ba1c79e9933d455c1f3671de748",
+      "publicationIdentitiesDigest": "c83fe8c5a733a1e9090bae5db79ead4425896313ff9a54f9fdb0c76a0efa2d78",
+      "publishedAt": "2026-10-13T00:20:28.000Z",
+      "receiptDigest": "cb629a6964f0b6b4d6dfecec3a4a8bb81f7955a39e2d962077b8eda9a7d8d167"
+    },
+    "stateReconciliationReceipt": {
+      "schema": "agentic-state-reconciliation-receipt/v1",
+      "status": "reconciled",
+      "deploymentReceiptDigest": "41d3d4406db0c72c1bbd077666d0baa3fc746706b2870a947340a11baeeb0462",
+      "candidateDigest": "77b7a6576916ed2ef9a354acc4e81226ad706a6d8e5286077cee0564924f5d88",
+      "targetDigest": "978b38723276f4c256352b5eb6c09e0266d77ba1c79e9933d455c1f3671de748",
+      "controllerId": "github-actions:38288365082:1:deploy",
+      "stateContractDigest": "6fdf1d10dacdfbb891d5d47a0d7b8ebf2c5c173fd6d2c9788a3ef29628ba3628",
+      "operationsDigest": "9f3fd213030847e9f6fcb43d1791bb6beee930ee05b1e5f826b6f539ce6d781a",
+      "operationCount": 76,
+      "operationLimit": 10000,
+      "readbackAdapterId": "cloudflare-wrangler-d1-direct-readback/v1",
+      "readbackKind": "direct-authoritative",
+      "readbackDigest": "cf19b4910f4e14bb9be6003b28ef760c1727a908ef981267bcc63c7bcde0c34d",
+      "expectedCounts": {
+        "documentCount": 31,
+        "chunkCount": 10,
+        "graphCount": 0
+      },
+      "observedCounts": {
+        "documentCount": 31,
+        "chunkCount": 10,
+        "graphCount": 0
+      },
+      "pathHashParity": true,
+      "contentParity": true,
+      "reconciledAt": "2026-10-13T00:15:00.605Z",
+      "receiptDigest": "29aa0a73d9004f4de5c2e7cad8b6dd9ccde523e617389e674720030553942232"
+    }
+  },
+  "runtime": {
+    "status": "verified",
+    "verificationReceipt": {
+      "schema": "agentic-live-verification-receipt/v2",
+      "status": "verified",
+      "deploymentReceiptDigest": "41d3d4406db0c72c1bbd077666d0baa3fc746706b2870a947340a11baeeb0462",
+      "stateReconciliationReceiptDigest": "29aa0a73d9004f4de5c2e7cad8b6dd9ccde523e617389e674720030553942232",
+      "candidateDigest": "77b7a6576916ed2ef9a354acc4e81226ad706a6d8e5286077cee0564924f5d88",
+      "targetDigest": "978b38723276f4c256352b5eb6c09e0266d77ba1c79e9933d455c1f3671de748",
+      "controllerId": "github-actions:38288365082:1:deploy",
+      "deployedArtifactDigest": "e7da18b925bd9a253c5bdd23110d06febd94e9e3892a6853cda55a9f4c3b926a",
+      "rollbackTargetDigest": "36524e27ba8d75958fed2239a1e1c6bf3cae5564793a74adc51d4ebb6a488210",
+      "observedRuntimeDigest": "a879522d9c9d60f0503c37ff47b4bc15a869c7c15d5c0a8a6dfd41a99cde7ebd",
+      "immutableOriginProbesDigest": "f77149138c9edf0a0194ea55e2efd8e67034bfbb5c753280d3c6deac12a81a02",
+      "publicRouteProbesDigest": "2489a09718f6a642f5443cf737e941ae781e61cbfdc2b2824596eee5836e5591",
+      "browserFidelityDigest": "234e691754a3bb34c452c490fa4d26c7d49430f5d8b73cdf23ea34a9fe215eca",
+      "clientCacheConvergenceDigest": "9854b2f4fba5af39e5ee13e2dbcc0b4f0fea80c635a2f5d9bc24cd9309977f0a",
+      "markerParityDigest": "2489a09718f6a642f5443cf737e941ae781e61cbfdc2b2824596eee5836e5591",
+      "markerBytesParity": true,
+      "verifiedAt": "2026-10-13T00:19:17.000Z",
+      "receiptDigest": "b4ec91a477e29bb66bae8629759a31191a9cc7463051fecfc496cd606ac28b5a"
+    },
+    "transport": {
+      "status": "passed",
+      "evidenceDigest": "2489a09718f6a642f5443cf737e941ae781e61cbfdc2b2824596eee5836e5591",
+      "immutableManifestDigest": "3d9a1b9ebb2c0f969d03afa84c53f6bd88664d3001146fb278c335fb1ff4d710",
+      "markerBytesParity": true,
+      "transports": [
+        {
+          "id": "immutable",
+          "origin": "https://45b5d2b9.joohwee.pages.dev",
+          "readinessSourceRevision": "e1ee295aa1dffbaba4656a25e0f59f41ccc9736b",
+          "agenticOsRevision": "7203c926b54d58b04f6c07c014f9d75b589f4768",
+          "artifactDigest": "e7da18b925bd9a253c5bdd23110d06febd94e9e3892a6853cda55a9f4c3b926a",
+          "manifestDigest": "3d9a1b9ebb2c0f969d03afa84c53f6bd88664d3001146fb278c335fb1ff4d710",
+          "apexStatus": 200,
+          "appStatus": 200,
+          "apexRouteStatus": 200,
+          "appRouteStatus": 200
+        },
+        {
+          "id": "stable-pages",
+          "origin": "https://joohwee.pages.dev",
+          "readinessSourceRevision": "e1ee295aa1dffbaba4656a25e0f59f41ccc9736b",
+          "agenticOsRevision": "7203c926b54d58b04f6c07c014f9d75b589f4768",
+          "artifactDigest": "e7da18b925bd9a253c5bdd23110d06febd94e9e3892a6853cda55a9f4c3b926a",
+          "manifestDigest": "3d9a1b9ebb2c0f969d03afa84c53f6bd88664d3001146fb278c335fb1ff4d710",
+          "apexStatus": 200,
+          "appStatus": 200,
+          "apexRouteStatus": 200,
+          "appRouteStatus": 200
+        },
+        {
+          "id": "public",
+          "origin": "https://airvio.co",
+          "readinessSourceRevision": "e1ee295aa1dffbaba4656a25e0f59f41ccc9736b",
+          "agenticOsRevision": "7203c926b54d58b04f6c07c014f9d75b589f4768",
+          "artifactDigest": "e7da18b925bd9a253c5bdd23110d06febd94e9e3892a6853cda55a9f4c3b926a",
+          "manifestDigest": "3d9a1b9ebb2c0f969d03afa84c53f6bd88664d3001146fb278c335fb1ff4d710",
+          "apexStatus": 200,
+          "appStatus": 200,
+          "apexRouteStatus": 200,
+          "appRouteStatus": 200
+        }
+      ]
+    },
+    "browserFidelity": {
+      "status": "passed",
+      "evidenceDigest": "234e691754a3bb34c452c490fa4d26c7d49430f5d8b73cdf23ea34a9fe215eca",
+      "sourceRevision": "e1ee295aa1dffbaba4656a25e0f59f41ccc9736b",
+      "agenticOsRevision": "7203c926b54d58b04f6c07c014f9d75b589f4768",
+      "artifactDigest": "e7da18b925bd9a253c5bdd23110d06febd94e9e3892a6853cda55a9f4c3b926a"
+    }
+  },
+  "d1": {
+    "status": "reconciled",
+    "receiptDigest": "29aa0a73d9004f4de5c2e7cad8b6dd9ccde523e617389e674720030553942232",
+    "observedCounts": {
+      "documentCount": 31,
+      "chunkCount": 10,
+      "graphCount": 0
+    },
+    "pathHashParity": true,
+    "contentParity": true
+  },
+  "integrity": {
+    "immutablePagesDeploymentId": "45b5d2b9-6d19-42aa-a622-6a0c80f60116",
+    "immutablePagesOrigin": "https://45b5d2b9.joohwee.pages.dev",
+    "rollbackTargetDigest": "36524e27ba8d75958fed2239a1e1c6bf3cae5564793a74adc51d4ebb6a488210",
+    "allReceiptsBindCandidate": "77b7a6576916ed2ef9a354acc4e81226ad706a6d8e5286077cee0564924f5d88"
+  }
+}

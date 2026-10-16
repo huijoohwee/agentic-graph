@@ -4,6 +4,7 @@ import {
   openCitySimSurface,
 } from '@/features/game-city-sim/citySimRuntime'
 import {
+  isCitySimAuthoredSourceCandidate,
   parseCitySimAuthoredSource,
   type CitySimAuthoredSource,
 } from '@/features/game-city-sim/citySimAuthoredSource'
@@ -11,12 +12,10 @@ import {
   captureCitySimPreviousCanvasSurface,
   type CitySimPreviousCanvasSurface,
 } from '@/features/game-city-sim/citySimSurfaceOwnership'
-import { isCitySimRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
 
 export function CitySimRunReadyDemoRuntime() {
-  const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
   const markdownDocumentText = useGraphStore(state => state.markdownDocumentText)
   const canvasRenderMode = useGraphStore(state => state.canvasRenderMode)
   const canvas3dMode = useGraphStore(state => state.canvas3dMode)
@@ -24,10 +23,11 @@ export function CitySimRunReadyDemoRuntime() {
   const canvasRenderModeIsAuto = useGraphStore(state => state.canvasRenderModeIsAuto)
   const floatingPanelOpen = useGraphStore(state => state.floatingPanelOpen)
   const floatingPanelView = useGraphStore(state => state.floatingPanelView)
-  const active = isCitySimRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
   const sourceResult = React.useMemo(
-    () => active ? parseCitySimAuthoredSource(markdownDocumentText) : null,
-    [active, markdownDocumentText],
+    () => isCitySimAuthoredSourceCandidate(markdownDocumentText)
+      ? parseCitySimAuthoredSource(markdownDocumentText)
+      : null,
+    [markdownDocumentText],
   )
   const ownsDocumentLaunchRef = React.useRef(false)
   const launchedSourceRef = React.useRef<CitySimAuthoredSource | null>(null)
@@ -40,7 +40,7 @@ export function CitySimRunReadyDemoRuntime() {
   React.useLayoutEffect(() => {
     const generation = launchGenerationRef.current + 1
     launchGenerationRef.current = generation
-    if (!active) {
+    if (!sourceResult) {
       launchedSourceRef.current = null
       reportedSourceErrorRef.current = null
       previousCanvasSurfaceRef.current = Object.freeze({
@@ -58,7 +58,7 @@ export function CitySimRunReadyDemoRuntime() {
       }
       return
     }
-    if (!sourceResult || sourceResult.ok === false) {
+    if (sourceResult.ok === false) {
       const message = sourceResult && sourceResult.ok === false
         ? sourceResult.error.message
         : 'City source is unavailable.'
@@ -114,7 +114,6 @@ export function CitySimRunReadyDemoRuntime() {
         })
       })
   }, [
-    active,
     canvas3dMode,
     canvasRenderMode,
     canvasRenderModeIsAuto,
@@ -129,7 +128,8 @@ export function CitySimRunReadyDemoRuntime() {
     launchGenerationRef.current = teardownGeneration
     queueMicrotask(() => {
       if (launchGenerationRef.current !== teardownGeneration) return
-      if (!ownsDocumentLaunchRef.current || isCitySimRunReadyDemoActive()) return
+      if (!ownsDocumentLaunchRef.current
+        || isCitySimAuthoredSourceCandidate(useGraphStore.getState().markdownDocumentText)) return
       ownsDocumentLaunchRef.current = false
       launchedSourceRef.current = null
       exitCitySimSurface({ restorePreviousSurface: false })
