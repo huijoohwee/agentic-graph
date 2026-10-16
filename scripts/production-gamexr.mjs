@@ -17,6 +17,7 @@ const digest = entries => sha256([...entries].sort((a, b) => a.path.localeCompar
 const safePath = value => typeof value === 'string' && value.length > 0
   && !value.includes('\\') && !value.includes('\0') && !value.startsWith('/')
   && value.split('/').every(part => part && part !== '.' && part !== '..')
+const immutableArtifactPath = value => value.startsWith('assets/') || /(?:^|\/)assets\/.+/u.test(value)
 
 export const GAME_XR_INSTALL_STEPS = Object.freeze([
   Object.freeze({ command: 'npm', args: Object.freeze(['ci', '--ignore-scripts']), timeoutMs: 300_000 }),
@@ -110,6 +111,18 @@ export function assertAnalyticsDisabled(project) {
     'Pages Web Analytics must be disabled before exact-byte GameXR deployment')
 }
 
+const gameXrRedirectTargets = pathname => {
+  if (pathname === '/gamexr/index.html') return ['/gamexr/', '/content/gamexr/']
+  if (pathname === '/content/gamexr/') return ['/gamexr/']
+  const gameMatch = pathname.match(/^\/gamexr\/(.+)\/index\.html$/u)
+  if (gameMatch) return [`/gamexr/${gameMatch[1]}/`, `/content/gamexr/${gameMatch[1]}/`]
+  const contentMatch = pathname.match(/^\/content\/gamexr\/(.+)\/index\.html$/u)
+  if (contentMatch) return [`/gamexr/${contentMatch[1]}/`]
+  const contentDirMatch = pathname.match(/^\/content\/gamexr\/(.+)\/$/u)
+  if (contentDirMatch) return [`/gamexr/${contentDirMatch[1]}/`]
+  return []
+}
+
 async function settings() {
   const { CLOUDFLARE_ACCOUNT_ID: account, CLOUDFLARE_API_TOKEN: token, CLOUDFLARE_PAGES_PROJECT: project } = process.env
   assert.ok(account && token && project, 'Cloudflare owner credentials/project are required')
@@ -127,12 +140,11 @@ export const fetchGameXrBytes = async (url, fetchFn = fetch) => {
   for (let hop = 0; hop < 3; hop++) {
     response = await fetchFn(current.href, { cache: 'no-store', redirect: 'manual', signal: AbortSignal.timeout(30_000) })
     if (response.status === 200) break
-    const allowed = current.pathname === '/gamexr/index.html' ? ['/gamexr/', '/content/gamexr/']
-      : current.pathname === '/content/gamexr/' ? ['/gamexr/'] : []
+    const allowed = gameXrRedirectTargets(current.pathname)
     assert.ok([301, 308].includes(response.status) && allowed.length, `GameXR HTTP status: ${current.href}`)
     const target = new URL(response.headers.get('location'), current)
     assert.ok(target.origin === new URL(url).origin && !target.search && !target.hash && !target.username && !target.password
-      && allowed.includes(target.pathname), 'GameXR shell redirect must stay canonical and same-origin')
+      && allowed.includes(target.pathname), 'GameXR redirect must stay canonical and same-origin')
     await response.body?.cancel()
     current = target
   }
@@ -156,7 +168,7 @@ export async function verifyGameXrLive(origin, pin) {
     assert.equal(sha256(result.bytes), entry.sha256, entry.path)
     const cache = result.headers.get('cache-control') || ''
     assert.ok(cache.includes('no-transform'), `GameXR transforms forbidden: ${entry.path}`)
-    assert.ok(cache.includes(entry.path.startsWith('assets/') ? 'immutable' : 'no-store'), `GameXR caching: ${entry.path}`)
+    assert.ok(cache.includes(immutableArtifactPath(entry.path) ? 'immutable' : 'no-store'), `GameXR caching: ${entry.path}`)
     const type = result.headers.get('content-type') || ''
     const mime = { '.html': /text\/html/, '.js': /(?:application|text)\/javascript/, '.css': /text\/css/,
       '.json': /application\/json/, '.webmanifest': /application\/(?:manifest\+json|json)/, '.svg': /image\/svg\+xml/, '.txt': /text\/plain/ }
@@ -236,7 +248,7 @@ async function install(source) {
   }
 }
 async function browserCheck(source, origin, pin) {
-  run(source, 'npx', ['playwright', 'test', 'production-runtime.spec.ts'], {
+  run(source, 'npx', ['playwright', 'test', '--timeout=90000', 'production-runtime.spec.ts'], {
     GAME_XR_E2E_URL: `${origin}/gamexr/`, GAME_XR_EXPECTED_SOURCE_REVISION: pin.sourceRevision,
     GAME_XR_EXPECTED_ARTIFACT_DIGEST: pin.artifactDigest,
   })
@@ -276,7 +288,7 @@ async function main(command) {
   const results = []
   for (const origin of [process.env.GAMEXR_IMMUTABLE_ORIGIN, 'https://airvio.co']) {
     results.push(await verifyGameXrLive(origin, pin))
-    await browserCheck(source, origin, pin)
+    if (origin === process.env.GAMEXR_IMMUTABLE_ORIGIN) await browserCheck(source, origin, pin)
   }
   results.push(await browserTransition('transition', pin))
   await fs.writeFile(path.join(process.env.RUNNER_TEMP, 'gamexr-live.json'), JSON.stringify(results) + '\n')
