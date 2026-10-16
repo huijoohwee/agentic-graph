@@ -8,6 +8,7 @@ import { useSupplyChainViewStore, type SupplyChainSelection } from './supplyChai
 import { GanttTimelineTransportPanel } from '@/features/gitgraph/GanttTimelineTransportPanel'
 import { READ_ONLY_GANTT_TIMELINE_COMMAND_ADAPTER } from '@/features/gitgraph/ganttTimelineTransportCommandAdapter'
 import { TimelineTransportTimeAxisClip } from '@/components/timeline/TimelineTransportControls'
+import { openXrMediaLibrary } from '@/features/xr-v2/openXrMediaLibrary'
 import { resolveVideoSequenceTimelineScaleDurationSeconds } from '@/components/timeline/videoSequenceTimelineZoom'
 import {
   projectSupplyChainScenario,
@@ -71,7 +72,8 @@ function SupplyChainMap({
       <span className="h-3 w-px bg-slate-200" />
       <span className="whitespace-nowrap text-[9px] font-medium text-slate-500">12 facilities · road, rail, air and sea · forward and return flows</span>
     </div>
-    <div className="pointer-events-auto absolute right-3 top-[116px] z-10 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-sm" aria-label="Network display controls">
+    <div className="pointer-events-auto absolute right-3 top-[116px] z-10 flex max-w-[calc(100%-24px)] flex-wrap items-center justify-end gap-1.5 rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-sm" aria-label="Network display controls">
+      <button type="button" onClick={openXrMediaLibrary} className={`${smallButtonClass} !min-h-8 !px-2 !text-[10px]`} aria-label="Open shared Media 3D for XR assets" title="Open Media → 3D for XR → Terrain / Environment Kits and Subjects & Props"><Boxes size={12}/><span className="hidden sm:inline">3D assets</span><span className="sm:hidden">Assets</span></button>
       <label className="sr-only" htmlFor="supply-chain-entity-filter">Filter network entities</label>
       <select id="supply-chain-entity-filter" value={entityFilter} onChange={event => onEntityFilter(event.target.value as 'all' | 'infrastructure' | 'resources')} aria-label="Filter network entities" className="h-8 max-w-[150px] rounded-lg border border-slate-200 bg-white px-2 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
         <option value="all">All entities</option><option value="infrastructure">Infrastructure</option><option value="resources">Resources</option>
@@ -79,6 +81,65 @@ function SupplyChainMap({
       <button type="button" onClick={onToggleLabels} aria-pressed={showLabels} className={`${smallButtonClass} !min-h-8 !px-2 !text-[10px] ${showLabels ? '!border-blue-200 !bg-blue-50 !text-blue-700' : ''}`}><span>Labels {showLabels ? 'on' : 'off'}</span></button>
       <button type="button" onClick={onReset} aria-label="Reset overview" className={`${smallButtonClass} !min-h-8 !px-2 !text-[10px]`}><RotateCcw size={12}/><span>Reset</span></button>
     </div>
+  </section>
+}
+
+function OfflineSupplyChainMap({
+  entityFilter, modeFilter, selectedFacilityId, showLabels, timeSeconds, onSelectFacility, onSelectConsignment,
+}: {
+  entityFilter: 'all' | 'infrastructure' | 'resources'
+  modeFilter: SupplyChainMode | 'all'
+  selectedFacilityId?: string
+  showLabels: boolean
+  timeSeconds: number
+  onSelectFacility: (facility: SupplyChainFacility) => void
+  onSelectConsignment: (consignment: SupplyChainConsignment) => void
+}) {
+  const longitudes = SCENARIO.facilities.map(facility => facility.geo[0])
+  const latitudes = SCENARIO.facilities.map(facility => facility.geo[1])
+  const minLng = Math.min(...longitudes), maxLng = Math.max(...longitudes)
+  const minLat = Math.min(...latitudes), maxLat = Math.max(...latitudes)
+  const point = (geo: SupplyChainFacility['geo']): [number, number] => [
+    40 + (geo[0] - minLng) / Math.max(maxLng - minLng, 0.0001) * 920,
+    550 - (geo[1] - minLat) / Math.max(maxLat - minLat, 0.0001) * 500,
+  ]
+  return <section className="pointer-events-auto absolute inset-0 z-0 overflow-hidden bg-[#e9f0ed]" aria-label="Offline supply chain schematic" data-supply-chain-offline-map="true">
+    <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet" role="group" aria-label="Synthetic relative positions of the supply-chain network">
+      <defs><pattern id="supply-chain-offline-grid" width="44" height="44" patternUnits="userSpaceOnUse"><path d="M44 0H0V44" fill="none" stroke="#d9e4e0" /></pattern></defs>
+      <rect width="1000" height="600" fill="#e9f0ed" /><rect width="1000" height="600" fill="url(#supply-chain-offline-grid)" />
+      <path d="M0 465 C210 390 302 493 493 419 S790 356 1000 427" fill="none" stroke="#c5dcd9" strokeWidth="48" />
+      <path d="M0 465 C210 390 302 493 493 419 S790 356 1000 427" fill="none" stroke="#f7fbfa" strokeWidth="38" />
+      {entityFilter !== 'resources' && SCENARIO.legs.filter(leg => modeFilter === 'all' || leg.mode === modeFilter).map(leg => {
+        const from = scenarioFacility(SCENARIO, leg.from), to = scenarioFacility(SCENARIO, leg.to)
+        if (!from || !to) return null
+        const [x1, y1] = point(from.geo), [x2, y2] = point(to.geo)
+        return <path key={leg.id} d={`M${x1} ${y1}L${x2} ${y2}`} fill="none" stroke={MODE_COLORS[leg.mode]} strokeWidth="3" strokeOpacity=".48" strokeDasharray={leg.mode === 'air' || leg.mode === 'sea' ? '8 7' : undefined} />
+      })}
+      {entityFilter !== 'resources' && SCENARIO.facilities.map(facility => {
+        const [x, y] = point(facility.geo)
+        return <g key={facility.id} role="button" tabIndex={0} aria-label={`Select ${facility.name}`} aria-pressed={selectedFacilityId === facility.id}
+          onClick={() => onSelectFacility(facility)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectFacility(facility) } }} className="cursor-pointer outline-none">
+          <circle cx={x} cy={y} r={selectedFacilityId === facility.id ? 10 : 7} fill={selectedFacilityId === facility.id ? '#1d4ed8' : '#fff'} stroke="#1e3a5f" strokeWidth="3" />
+          {showLabels && <text x={x + 12} y={y - 9} className="fill-slate-700 text-[13px] font-semibold">{facility.code}</text>}
+        </g>
+      })}
+      {entityFilter !== 'infrastructure' && SCENARIO.resources.map(resource => {
+        if (modeFilter !== 'all' && !resource.modes.includes(modeFilter)) return null
+        const consignment = scenarioConsignment(SCENARIO, resource.consignmentId)
+        if (!consignment) return null
+        const projection = projectSupplyChainScenario(SCENARIO, timeSeconds, consignment.id)
+        const event = projection.latestEvent || projection.nextEvent
+        const facility = event && scenarioFacility(SCENARIO, event.facilityId)
+        if (!facility) return null
+        const [x, y] = point(facility.geo)
+        return <g key={resource.id} role="button" tabIndex={0} aria-label={`Select ${resource.name} and ${consignment.reference}`}
+          onClick={() => onSelectConsignment(consignment)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectConsignment(consignment) } }} className="cursor-pointer outline-none">
+          <circle cx={x} cy={y} r="6" fill="#f59e0b" stroke="#7c2d12" strokeWidth="2" />
+          {showLabels && <text x={x + 10} y={y + 16} className="fill-slate-700 text-[11px] font-semibold">{resource.code}</text>}
+        </g>
+      })}
+    </svg>
+    <p className="pointer-events-none absolute bottom-[208px] left-1/2 z-10 -translate-x-1/2 rounded-lg border border-white/80 bg-white/90 px-3 py-1.5 text-[10px] font-medium text-slate-600 shadow-sm">Offline network schematic · synthetic positions · no external map tiles</p>
   </section>
 }
 
@@ -208,6 +269,7 @@ export function SupplyChainOverview() {
   const setShowLabels = useSupplyChainViewStore(state => state.setShowLabels)
   const [search, setSearch] = React.useState('')
   const [showEvents, setShowEvents] = React.useState(true)
+  const [offline, setOffline] = React.useState(() => typeof navigator !== 'undefined' && navigator.onLine === false)
   const selectedMapNodeId = useGraphStore(state => state.selectedNodeId)
   const transport = useGraphStore(useShallow(state => ({
     documentKey: state.timelineTransportDocumentKey || '',
@@ -221,8 +283,14 @@ export function SupplyChainOverview() {
       const leg = scenarioLeg(SCENARIO, legId)
       return leg?.from === selection.id || leg?.to === selection.id
     }))?.id || SCENARIO.consignments[0].id
+  React.useEffect(() => {
+    const update = () => setOffline(navigator.onLine === false)
+    window.addEventListener('offline', update)
+    window.addEventListener('online', update)
+    return () => { window.removeEventListener('offline', update); window.removeEventListener('online', update) }
+  }, [])
   const selectedConsignment = scenarioConsignment(SCENARIO, selectedConsignmentId)!
-  const chooseConsignment = React.useCallback((consignment: SupplyChainConsignment) => setSelection({ kind: 'consignment', id: consignment.id }), [])
+  const chooseConsignment = React.useCallback((consignment: SupplyChainConsignment) => setSelection({ kind: 'consignment', id: consignment.id }), [setSelection])
   const chooseFacility = React.useCallback((facility: SupplyChainFacility) => {
     setSelection({ kind: 'facility', id: facility.id })
     const bounds = getSupplyChainFacilityBounds(facility.id)
@@ -322,6 +390,8 @@ export function SupplyChainOverview() {
         onToggleLabels={() => setShowLabels(!showLabels)}
         onReset={resetOverview}
       />
+      {offline && <OfflineSupplyChainMap entityFilter={entityFilter} modeFilter={modeFilter} selectedFacilityId={activeFacilityId}
+        showLabels={showLabels} timeSeconds={timeSeconds} onSelectFacility={chooseFacility} onSelectConsignment={chooseConsignment} />}
       <aside className="pointer-events-auto absolute bottom-[202px] left-3 top-[158px] z-20 hidden w-[244px] overflow-y-auto rounded-xl border border-slate-200/90 bg-white/95 p-3 shadow-[0_8px_28px_rgba(15,23,42,.10)] backdrop-blur xl:block" aria-label="Geospatial panel">
         <header className="mb-3 flex items-start justify-between"><div><p className="text-[9px] font-bold uppercase tracking-[.14em] text-blue-600">Global movement</p><h2 className="mt-0.5 text-[13px] font-bold text-slate-900">Connected network</h2></div><span className="rounded-md bg-blue-50 px-1.5 py-1 text-[9px] font-bold text-blue-700">12 sites</span></header>
         <div className="mb-2 flex items-center gap-2 rounded-lg bg-slate-50 px-2 py-1.5"><span className="grid h-7 w-7 place-items-center rounded-md bg-white text-blue-600 shadow-sm"><Activity size={14}/></span><div className="min-w-0"><p className="text-[10px] font-semibold text-slate-700">Scenario clock</p><p className="text-[9px] text-slate-400">{formatClock(timeSeconds)} elapsed · {transport.playing ? 'playing' : 'paused'}</p></div><span className="ml-auto rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8px] font-semibold text-emerald-700">LOCAL</span></div>

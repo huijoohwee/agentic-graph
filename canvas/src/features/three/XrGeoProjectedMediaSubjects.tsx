@@ -16,6 +16,17 @@ import {
   subscribeXrSharedAssetControlRuntime,
 } from './xrSharedAssetControlRuntime'
 import { XrSceneLibrarySubject } from './XrSceneLibrarySubject'
+import { XrNightWaterfrontCinemaBackdrop, XrNightWaterfrontKit } from './XrNightWaterfrontKit'
+import { XrHongKongIslandGeoKit } from './XrHongKongIslandGeoKit'
+import { XrCinemaLocationSet } from './XrCinemaLocationSet'
+import { useGeoXrNightMapGrade } from './useGeoXrNightMapGrade'
+import { resolveXrMotionReferenceStage, resolveXrSceneLibraryAsset } from './xrSceneLibrary'
+import { resolveXrCinemaShotPerformance, type XrCinemaShotRole } from './xrCinemaShotActing'
+import {
+  readCinemaShotSchedule,
+  resolveCinemaShotStaging,
+  subscribeCinemaShotFocus,
+} from '../cinema/cinemaShotFocus'
 
 const SHARED_MEDIA_MAP_SOURCE_ID = GAME_MODE_GEO_OVERLAY_SOURCE_ID
 const SHARED_MEDIA_ACTOR_QUERY_INTERVAL_MS = 250
@@ -119,6 +130,19 @@ function mercatorCoordinate(coordinate: readonly [number, number]): MercatorCoor
   })
 }
 
+const CINEMA_SHOT_BLOCKING_SCALE = 0.7
+
+function resolveCinemaShotRole(category: string, castIndex: number): XrCinemaShotRole {
+  if (category === 'vehicles') return 'vehicle'
+  if (category === 'props' || category === 'furniture') return 'prop'
+  return castIndex === 0 ? 'lead' : 'support'
+}
+
+function authoredYawRadians(subject: Readonly<{ assetId: string; rotationYDegrees: number }>): number {
+  const asset = resolveXrSceneLibraryAsset(subject.assetId)
+  return (Number(subject.rotationYDegrees || 0) + Number(asset.orientationOffsetYDegrees || 0)) * Math.PI / 180
+}
+
 function localMetersFromMercatorCoordinate(
   coordinate: readonly [number, number],
   origin: readonly [number, number],
@@ -141,7 +165,8 @@ function readMapWorldProjectionMatrix(
 ): Matrix4 | null {
   try {
     const mapCanvas = map.getCanvas?.() as HTMLCanvasElement | undefined
-    const projectionData = map.transform?.getProjectionDataForCustomLayer?.()
+    const transform = map.transform || map._camera?.transform
+    const projectionData = transform?.getProjectionDataForCustomLayer?.(false)
     const matrix = projectionData?.mainMatrix as ArrayLike<number> | undefined
     if (
       !mapCanvas
@@ -175,7 +200,7 @@ function readMapWorldProjectionMatrix(
     const clipAdjustment = new Matrix4().set(
       scaleX, 0, 0, translateX,
       0, scaleY, 0, translateY,
-      0, 0, 1, 0,
+      0, 0, 0.5, -0.5,
       0, 0, 0, 1,
     )
     return clipAdjustment.multiply(mapProjection)
@@ -235,6 +260,7 @@ export function XrGeoProjectedMediaSubjects() {
     readXrSharedAssetControlRevision,
   )
   const selectedTargetId = inspectXrSharedAssetControls().selectedTargetId
+  const stage = resolveXrMotionReferenceStage(runtime.plan.stageId)
   const { motionActorId, livePose } = useMotionControlAnimationPose()
   const sharedMediaProjection = React.useSyncExternalStore(
     subscribeGeoXrSharedMediaProjection,
@@ -245,16 +271,47 @@ export function XrGeoProjectedMediaSubjects() {
     () => new Map(sharedMediaProjection.assets.map(asset => [asset.id, asset.coordinate] as const)),
     [sharedMediaProjection],
   )
+  const shotSchedule = React.useSyncExternalStore(
+    subscribeCinemaShotFocus,
+    readCinemaShotSchedule,
+    readCinemaShotSchedule,
+  )
+  const staging = React.useMemo(() => {
+    const resolved = resolveCinemaShotStaging(runtime.plan.stageId, runtime.playheadSeconds, shotSchedule)
+    return resolved && resolved.cast.length > 0 ? resolved : null
+  }, [runtime.plan.stageId, runtime.playheadSeconds, shotSchedule])
   const playbackBySubjectId = React.useMemo(() => new Map(runtime.plan.subjects.map(subject => {
     const track = runtime.plan.cast.find(candidate => candidate.actorId === subject.id)
-    return [subject.id, sampleXrMotionReferenceSubjectPlayback(
+    const playback = sampleXrMotionReferenceSubjectPlayback(
       subject,
       track,
       runtime.playheadSeconds,
       resolveMotionControlSubjectPose(subject, motionActorId, livePose),
-    )] as const
-  })), [livePose, motionActorId, runtime.plan.cast, runtime.plan.subjects, runtime.playheadSeconds])
+    )
+    const castIndex = staging ? staging.cast.indexOf(subject.id) : -1
+    if (!staging || castIndex < 0) return [subject.id, { ...playback, performance: null }] as const
+    const performance = resolveXrCinemaShotPerformance(
+      playback.animationPose,
+      staging.acting,
+      resolveCinemaShotRole(subject.category, castIndex),
+      staging.localSeconds,
+      staging.progress,
+    )
+    return [subject.id, { ...playback, animationPose: performance.pose, performance }] as const
+  })), [livePose, motionActorId, runtime.plan.cast, runtime.plan.subjects, runtime.playheadSeconds, staging])
+  const stagedBlocking = React.useMemo(() => {
+    if (!staging) return null
+    const members = runtime.plan.subjects.filter(subject => staging.cast.includes(subject.id))
+    if (members.length === 0) return null
+    const centroid = members.reduce((sum, subject) => [sum[0] + subject.position[0] / members.length, sum[1] + subject.position[2] / members.length] as const, [0, 0] as const)
+    // Faces the shot camera: MapLibre bearing is clockwise from north; local +Z is south.
+    const cameraYaw = -staging.camera.bearing * Math.PI / 180
+    return { members: new Set(members.map(subject => subject.id)), centroid, cameraYaw }
+  }, [runtime.plan.subjects, staging])
   const groupRefs = React.useRef(new Map<string, Group>())
+  const waterfrontRef = React.useRef<Group | null>(null)
+  const geoKitRef = React.useRef<Group | null>(null)
+  const cinemaSetRef = React.useRef<Group | null>(null)
   const activeMapRef = React.useRef<any | null>(null)
   const coordinatesRef = React.useRef(new Map<string, readonly [number, number]>())
   const coordinatesReadAtRef = React.useRef(0)
@@ -262,6 +319,8 @@ export function XrGeoProjectedMediaSubjects() {
   const cameraStateRef = React.useRef<CameraState | null>(null)
   const { camera, gl, invalidate } = useThree()
   invalidateRef.current = invalidate
+  const nightWaterfront = stage.visualProfile === 'night-waterfront'
+  useGeoXrNightMapGrade(nightWaterfront)
 
   React.useEffect(() => {
     let disposed = false
@@ -312,6 +371,9 @@ export function XrGeoProjectedMediaSubjects() {
     if (!map || !canvas.isConnected) {
       if (cameraStateRef.current) restoreCameraState(camera, cameraStateRef.current)
       for (const group of groupRefs.current.values()) group.visible = false
+      if (waterfrontRef.current) waterfrontRef.current.visible = false
+      if (geoKitRef.current) geoKitRef.current.visible = false
+      if (cinemaSetRef.current) cinemaSetRef.current.visible = false
       return
     }
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
@@ -327,22 +389,67 @@ export function XrGeoProjectedMediaSubjects() {
     const mapWorldProjection = origin ? readMapWorldProjectionMatrix(map, canvas, origin) : null
     if (mapWorldProjection && origin) {
       setMapCameraProjection(camera, mapWorldProjection)
+      if (waterfrontRef.current) {
+        waterfrontRef.current.visible = stage.visualProfile === 'night-waterfront'
+        waterfrontRef.current.position.set(0, 0, 0)
+        waterfrontRef.current.quaternion.identity()
+        waterfrontRef.current.scale.setScalar(1)
+        waterfrontRef.current.renderOrder = 0
+      }
+      if (geoKitRef.current) {
+        const kitOrigin = sharedMediaProjection.origin
+        geoKitRef.current.visible = stage.visualProfile === 'night-waterfront'
+          && Boolean(kitOrigin && kitOrigin[0] === origin[0] && kitOrigin[1] === origin[1])
+        const kitState = geoKitRef.current.visible ? 'metric' : 'hidden'
+        if (canvas.dataset.kgXrGeoIslandKit !== kitState) canvas.dataset.kgXrGeoIslandKit = kitState
+      }
+      if (cinemaSetRef.current) {
+        const anchor = staging ? localMetersFromMercatorCoordinate(staging.location.coordinate, origin) : null
+        cinemaSetRef.current.visible = Boolean(anchor && staging)
+        if (anchor && staging) {
+          cinemaSetRef.current.position.set(anchor.east, staging.location.elevationMeters, anchor.south)
+          cinemaSetRef.current.rotation.y = -staging.camera.bearing * Math.PI / 180
+          cinemaSetRef.current.renderOrder = 1
+          canvas.dataset.kgXrCinemaSet = `location-${staging.location.index}`
+        }
+      }
       for (const subject of runtime.plan.subjects) {
         const group = groupRefs.current.get(subject.id)
         const coordinate = canonicalCoordinates.get(subject.id) || coordinatesRef.current.get(subject.id)
-        if (!group || !coordinate) {
-          if (group) group.visible = false
+        if (!group) continue
+        const playback = playbackBySubjectId.get(subject.id)
+        if (staging && stagedBlocking) {
+          const anchor = stagedBlocking.members.has(subject.id)
+            ? localMetersFromMercatorCoordinate(staging.location.coordinate, origin)
+            : null
+          if (!anchor || !playback) {
+            group.visible = false
+            continue
+          }
+          const offset = playback.performance?.offsetMeters || [0, 0, 0]
+          const markEast = (Number(playback.position[0]) - stagedBlocking.centroid[0]) * CINEMA_SHOT_BLOCKING_SCALE
+          const markSouth = (Number(playback.position[2]) - stagedBlocking.centroid[1]) * CINEMA_SHOT_BLOCKING_SCALE
+          const cos = Math.cos(stagedBlocking.cameraYaw)
+          const sin = Math.sin(stagedBlocking.cameraYaw)
+          const localX = markEast + offset[0]
+          const localZ = markSouth + offset[2]
+          group.visible = true
+          group.position.set(
+            anchor.east + localX * cos + localZ * sin,
+            staging.location.elevationMeters + (Number(playback.position[1]) || 0) + offset[1],
+            anchor.south - localX * sin + localZ * cos,
+          )
+          group.quaternion.identity()
+          group.scale.setScalar(1)
+          group.renderOrder = 0
           continue
         }
-        const localPosition = localMetersFromMercatorCoordinate(coordinate, origin)
+        const localPosition = coordinate ? localMetersFromMercatorCoordinate(coordinate, origin) : null
         if (!localPosition) {
           group.visible = false
           continue
         }
-        // Geo+XR local axes are east, up, south, matching the subject's
-        // authored XR position and MapLibre's Mercator world transform.
         group.visible = true
-        const playback = playbackBySubjectId.get(subject.id)
         group.position.set(localPosition.east, Number(playback?.position[1]) || 0, localPosition.south)
         group.quaternion.identity()
         group.scale.setScalar(1)
@@ -361,12 +468,25 @@ export function XrGeoProjectedMediaSubjects() {
     const adjacentPlanePoint = pointOnCameraPlane(camera, width / 2 + 1, height / 2, width, height)
     const worldUnitsPerPixel = centerPlanePoint.distanceTo(adjacentPlanePoint)
     if (!Number.isFinite(worldUnitsPerPixel) || worldUnitsPerPixel <= 0) return
+    if (geoKitRef.current) {
+      geoKitRef.current.visible = false
+      if (canvas.dataset.kgXrGeoIslandKit !== 'hidden') canvas.dataset.kgXrGeoIslandKit = 'hidden'
+    }
+    if (cinemaSetRef.current) cinemaSetRef.current.visible = false
+    const waterfront = waterfrontRef.current
+    const originPixel = origin ? mapPointToOverlayPixel(map, canvas, origin) : null
+    if (waterfront) {
+      if (originPixel && stage.visualProfile === 'night-waterfront') {
+        waterfront.visible = true
+        waterfront.position.copy(pointOnCameraPlane(camera, originPixel.x, originPixel.y, width, height))
+        waterfront.quaternion.copy(cameraQuaternion)
+        waterfront.scale.setScalar(worldUnitsPerPixel * mapPixelsPerMeter(map, origin!))
+        waterfront.renderOrder = 100
+      } else waterfront.visible = false
+    }
 
     for (const subject of runtime.plan.subjects) {
       const group = groupRefs.current.get(subject.id)
-      // The projection runtime is derived from the same snapshot used to build
-      // the MapLibre source. Source queries remain a fallback for older maps,
-      // but must never make the shared catalog vanish during a style reload.
       const coordinate = canonicalCoordinates.get(subject.id) || coordinatesRef.current.get(subject.id)
       if (!group || !coordinate) {
         if (group) group.visible = false
@@ -398,8 +518,41 @@ export function XrGeoProjectedMediaSubjects() {
 
   return (
     <group name="agentic_os_geo_xr_shared_media_subjects" userData={{ source: 'shared-media-catalog', subjectCount: runtime.plan.subjects.length }}>
-      <ambientLight intensity={1.3} />
-      <directionalLight position={[4, 8, 10]} intensity={1.7} />
+      <ambientLight intensity={nightWaterfront ? 0.62 : 1.3} color={nightWaterfront ? '#7f9fc8' : '#ffffff'} />
+      <directionalLight position={[4, 8, 10]} intensity={nightWaterfront ? 1.1 : 1.7} color={nightWaterfront ? '#b7d0f2' : '#ffffff'} />
+      {nightWaterfront ? <hemisphereLight args={['#365b87', '#211821', 0.58]} /> : null}
+      {stage.visualProfile === 'night-waterfront' ? (
+        <group
+          ref={node => { waterfrontRef.current = node }}
+          visible={false}
+          name="agentic_os_geo_xr_environment_kit_night_waterfront"
+        >
+          <XrNightWaterfrontKit
+            stage={stage}
+            scale={1}
+            groundY={0}
+            appearance={runtime.plan.appearance}
+            shadows
+            geoAnchored
+          />
+        </group>
+      ) : null}
+      {stage.visualProfile === 'night-waterfront' && sharedMediaProjection.origin ? (
+        <group ref={node => { geoKitRef.current = node }} visible={false}>
+          <XrHongKongIslandGeoKit
+            origin={sharedMediaProjection.origin}
+            shadows={false}
+            focusedLocationIndex={staging?.location.index ?? null}
+            showReferenceBeacons={!staging}
+          />
+        </group>
+      ) : null}
+      {stage.visualProfile === 'night-waterfront' ? (
+        <group ref={node => { cinemaSetRef.current = node }} visible={false}>
+          {staging ? <XrCinemaLocationSet locationIndex={staging.location.index} seconds={runtime.playheadSeconds} /> : null}
+          {staging && [1, 11].includes(staging.location.index) ? <XrNightWaterfrontCinemaBackdrop /> : null}
+        </group>
+      ) : null}
       {runtime.plan.subjects.map(subject => {
         const playback = playbackBySubjectId.get(subject.id)
         return (
@@ -419,7 +572,9 @@ export function XrGeoProjectedMediaSubjects() {
           <XrSceneLibrarySubject
             animationPose={playback?.animationPose}
             presentation={playback?.presentation}
-            facingYRadians={playback?.facingYRadians}
+            facingYRadians={playback?.performance && stagedBlocking
+              ? stagedBlocking.cameraYaw + playback.performance.yawRadians - authoredYawRadians(subject)
+              : playback?.facingYRadians}
             subject={subject}
             position={[0, 0, 0]}
             stageScale={1}

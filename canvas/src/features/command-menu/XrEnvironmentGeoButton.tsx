@@ -1,6 +1,11 @@
 import React from 'react'
 import { MapPinned } from 'lucide-react'
 import { emitFloatingPanelOpen } from '@/features/canvas/utils'
+import { requestGeospatialFitToBounds } from '@/features/geospatial/gympgrphBridge'
+import {
+  XR_MOTION_REFERENCE_STAGE_PRESETS,
+  resolveXrMotionReferenceStagePreviewBounds,
+} from '@/features/three/xrSceneLibrary'
 
 type EnvironmentSelectionResult = Readonly<{ ok: boolean }>
 
@@ -12,6 +17,14 @@ export function requestXrEnvironmentGeoHandoff(
   return Promise.resolve().then(async () => {
     const result = selectEnvironment(stageId)
     if (!result.ok) return false
+    const stage = XR_MOTION_REFERENCE_STAGE_PRESETS.find(candidate => candidate.id === stageId)
+    const context = stage?.geospatialContext
+    if (context?.purpose === 'regional-viewport-only') {
+      const previewBounds = stage
+        ? resolveXrMotionReferenceStagePreviewBounds(stage.id)
+        : null
+      if (previewBounds) await requestGeospatialFitToBounds(previewBounds)
+    }
     await prepareBeforeRoute?.()
     emitFloatingPanelOpen({ tab: 'geo', open: true })
     return true

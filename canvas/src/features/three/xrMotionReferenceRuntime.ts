@@ -1,4 +1,5 @@
 import { readXrSubjectConstruction, readXrSubjectPartIds } from './xrSubjectAuthoring'
+import { applyXrMotionReferenceCameraSettingsAtPlayhead } from './xrMotionReferenceCameraSettingsAtPlayhead'
 import type { XrSceneAppearance } from './xrSceneAppearance'
 import { createInitialXrMotionReferenceSnapshot, freezeXrMotionReferenceSnapshot as freezeSnapshot, type XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntimeSnapshot'
 export type { XrMotionReferenceRuntimeSnapshot } from './xrMotionReferenceRuntimeSnapshot'
@@ -192,9 +193,7 @@ export function setXrMotionReferenceAppearance(patch: Partial<XrSceneAppearance>
   return updatePlan({ ...planRecord(snapshot.plan), appearance: { ...snapshot.plan.appearance, ...patch } })
 }
 
-export function setXrMotionReferenceFps(fps: number): XrMotionReferenceRuntimeSnapshot {
-  return updatePlan({ ...planRecord(snapshot.plan), fps })
-}
+export function setXrMotionReferenceFps(fps: number): XrMotionReferenceRuntimeSnapshot { return updatePlan({ ...planRecord(snapshot.plan), fps }) }
 
 function applySubjectEdit(
   edit: XrMotionReferenceSubjectEdit | null,
@@ -576,6 +575,13 @@ export function setXrMotionReferenceCastMarkChoreography(args: {
 export function setXrMotionReferenceCameraMarkChoreography(args: Readonly<{ markId: string; easing?: XrChoreographyEasing; settings?: StrybldrCameraSettings }>): XrMotionReferenceRuntimeSnapshot {
   const edit = buildCameraMarkChoreographyEdit(snapshot.plan, args)
   return edit ? updatePlan(edit) : snapshot
+}
+
+/** Applies framing at the shared playhead, creating a camera key when needed. */
+export function setXrMotionReferenceCameraSettingsAtPlayhead(settings: StrybldrCameraSettings): XrMotionReferenceRuntimeSnapshot {
+  return applyXrMotionReferenceCameraSettingsAtPlayhead(snapshot, settings, {
+    publish, setCameraMarkChoreography: setXrMotionReferenceCameraMarkChoreography,
+    setCameraMark: setXrMotionReferenceCameraMark })
 }
 
 export function markXrMotionReferenceSaved(persistedValue: unknown): XrMotionReferenceRuntimeSnapshot {
