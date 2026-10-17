@@ -52,7 +52,7 @@
     "validate:animatic-interactions": "python3 ./scripts/validate_animatic_timeline_interactions.py",
     "validate:multi-user-collaboration:e2e": "tsx ./scripts/verify-multi-user-collaboration-e2e.ts",
     "validate:strybldr-generated-video": "node ./scripts/verify-strybldr-generated-video-e2e.mjs",
-    "build": "vite build --configLoader runner",
+    "build": "node ./scripts/build-with-pwa.mjs",
     "lint": "eslint .",
     "preview": "vite preview --configLoader runner",
     "precheck": "npm run prepare:linked-packages",
