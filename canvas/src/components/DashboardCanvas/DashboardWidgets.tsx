@@ -55,6 +55,8 @@ export function DashboardMetricTile(input: {
     <DashboardWidgetCard
       id={metric.id}
       label={`Dashboard metric ${metric.label}`}
+      dataAttributes={{ 'data-kg-dashboard-metric': metric.id,
+        'data-kg-dashboard-metric-draggable': cardDragProps.draggable ? '1' : undefined }}
       title={<section data-kg-dashboard-metric-drag-region="1">{labelEditor}</section>}
       className={`${colors.chip} min-h-[78px] p-2`}
       selectionSurfaceClassName={WIDGET_SELECTION_SURFACE_CLASS_NAME}
@@ -272,6 +274,8 @@ export function DashboardCardView(input: {
     <DashboardWidgetCard
       id={card.id}
       label={`Dashboard card ${card.title}`}
+      dataAttributes={{ 'data-kg-dashboard-card': card.id,
+        'data-kg-dashboard-card-draggable': cardDragProps.draggable ? '1' : undefined }}
       title={<section className="min-w-0 cursor-grab select-none active:cursor-grabbing" data-kg-dashboard-card-drag-region="1">{titleEditor}</section>}
       subtitle={subtitleEditor}
       footnote={footnoteEditor}
