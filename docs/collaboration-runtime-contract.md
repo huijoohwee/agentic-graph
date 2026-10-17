@@ -453,7 +453,6 @@ fallback_commands:
 ## Authority
 
 This opening YAML frontmatter is the machine source of truth for collaboration grammar, local source identity, deployment isolation, and affected-scope CI selection. Runtime scripts parse it directly; workflow files must not duplicate its source registry or path-to-command mapping.
-
 The protected Git guideline and checker under `huijoohwee.github.io/scripts/` are an external advisory projection. This contract and its repository-owned executable checks remain `agentic-graph`'s collaboration source of truth. `agentic-graph` may consume the upstream rule intent and exact protected revision, but it must not copy that guideline, checker implementation, rule catalog, or fixtures into this repository.
 
 An exact-path CI scope may narrow only its own composite command when the complete

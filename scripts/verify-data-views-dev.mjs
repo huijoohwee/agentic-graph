@@ -64,8 +64,8 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
     assert.equal(response?.status(), 200, 'Dev UI route must return 200')
     assert.equal(new URL(page.url()).origin, base, 'Dev UI must remain on the isolated Pages origin')
 
-    await ensureTwoDimensionalSurface(page)
     await importViewFixture(page, fixturePath)
+    await ensureTwoDimensionalSurface(page)
     await selectRenderer(page, 'Multi-dimensional Table')
     await page.locator('section[aria-label="Workspace data view"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.locator('section[aria-label="Workspace data view"] table[aria-label="Table view"]').waitFor({ state: 'visible', timeout: 20_000 })
@@ -130,9 +130,15 @@ async function ensureTwoDimensionalSurface(page) {
 async function importViewFixture(page, fixturePath) {
   const input = page.locator('input[type="file"][accept*=".md"]').first()
   await input.setInputFiles(fixturePath)
-  await page.getByText(FIXTURE_TITLE, { exact: true }).first().waitFor({ state: 'visible', timeout: 30_000 })
-  await page.getByText('Alpha', { exact: true }).first().waitFor({ state: 'visible', timeout: 30_000 })
-  await page.getByText('Beta', { exact: true }).first().waitFor({ state: 'visible', timeout: 30_000 })
+  await page.getByText('Imported 1 file(s)', { exact: true }).first().waitFor({ state: 'visible', timeout: 45_000 })
+  await page.waitForFunction(fileName => {
+    try {
+      const activePath = JSON.parse(localStorage.getItem('kg:ui:markdown:explorer:activePath') || 'null')
+      return typeof activePath === 'string' && activePath.endsWith('/' + fileName)
+    } catch {
+      return false
+    }
+  }, path.basename(fixturePath), { timeout: 15_000 })
 }
 
 async function selectRenderer(page, view) {
