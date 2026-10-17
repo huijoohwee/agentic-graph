@@ -1,17 +1,19 @@
 import { waitForMissionAsync } from './mission-card-face.mjs'
 
+export const BASE_FLOATING_PANEL_ROOT_SELECTOR = '[data-agentic-base-floating-panel="true"]'
+
 const readFloatingPanelOpen = targetPage => targetPage.evaluate(
   async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen === true,
 )
 const floatingPanelCard = (targetPage, candidates) => candidates.and(targetPage.locator(
-  '[data-kg-floating-panel-root="true"]:not([data-kg-strybldr-bottom-timeline-panel])',
+  `${BASE_FLOATING_PANEL_ROOT_SELECTOR}:not([data-kg-strybldr-bottom-timeline-panel])`,
 )).first()
 
 // Use the rendered control so this also works against the production preview,
 // where source-module imports are unavailable.
 export async function dismissVisibleFloatingPanel(
   targetPage,
-  floatingPanel = targetPage.locator('[data-kg-floating-panel-root="true"]'),
+  floatingPanel = targetPage.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR),
 ) {
   const panel = floatingPanelCard(targetPage, floatingPanel)
   if (!(await panel.isVisible())) return false
@@ -22,7 +24,7 @@ export async function dismissVisibleFloatingPanel(
 
 export async function closeFloatingPanel(
   targetPage,
-  floatingPanel = targetPage.locator('[data-kg-floating-panel-root="true"]'),
+  floatingPanel = targetPage.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR),
 ) {
   if (!(await readFloatingPanelOpen(targetPage))) return
   const panel = floatingPanelCard(targetPage, floatingPanel)

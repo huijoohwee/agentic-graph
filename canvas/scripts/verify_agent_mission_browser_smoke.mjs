@@ -2,7 +2,7 @@ import { waitForAuthoredWorkspaceSource as waitForAuthoredSource } from './lib/m
 import { selectMenuOption } from './lib/select-menu-option.mjs'
 import { configureMissionPage, verifyWorkspaceObservation } from './lib/verify-workspace-observation.mjs'
 import { showMissionFace, sourceText, waitForMissionAsync, openEditorWorkspace } from './lib/mission-card-face.mjs'
-import { closeFloatingPanel, closePanelRegion } from './lib/panel-close-helpers.mjs'
+import { BASE_FLOATING_PANEL_ROOT_SELECTOR, closeFloatingPanel, closePanelRegion } from './lib/panel-close-helpers.mjs'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -115,7 +115,7 @@ async function openDesktopDashboard() {
 async function verifyWorkspace(label, revoke = false) {
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
-  const floatingPanel = page.locator('[data-kg-floating-panel-root="true"]')
+  const floatingPanel = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR)
   if (await floatingPanel.isVisible()) await closeFloatingPanel(page, floatingPanel)
   await refreshMission() // Each cold workspace phase receives a fresh authorized minute.
   await showEvidence()
@@ -137,7 +137,7 @@ async function verifyWorkspace(label, revoke = false) {
   await editor.getByRole('checkbox', { name: 'Show Viewer preview pane', exact: true }).check()
   await editor.getByRole('region', { name: 'Viewer', exact: true }).getByRole('heading', { name: /Agent run/ }).waitFor({ state: 'visible' })
   assert.equal(await editor.getByRole('button', { name: 'Insert slash command trigger', exact: true }).count(), 0)
-  assert.equal(await page.locator('[data-kg-floating-panel-root="true"]').count(), 0, 'Run handoff must leave inspection unobscured')
+  assert.equal(await page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR).count(), 0, 'Run handoff must leave inspection unobscured')
   await page.screenshot({ path: resolve(output, label + '-workspace.png') })
   await closePanelRegion(editor, page)
   await waitTopology(canvas)
@@ -313,7 +313,7 @@ async function verifyApexActivation(width) {
   assertAuthored(await authoredSnapshot(), before, 'Apex discovery must preserve authored work')
   await waitForAsync(async () => (await import('/src/features/toolbar/floatingPanelBridge.ts')).isFloatingPanelBridgeReady())
   await page.getByRole('button', { name: 'Create Node', exact: true }).click()
-  const latePanel = page.locator('[data-kg-floating-panel-root="true"]')
+  const latePanel = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR)
   await latePanel.getByRole('region', { name: 'Props Panel', exact: true }).waitFor()
   await latePanel.locator('[data-kg-floating-panel-view-trigger="media"]').waitFor()
   await latePanel.getByRole('button', { name: 'Close', exact: true }).click()
@@ -413,7 +413,7 @@ try {
     const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
     return useGraphStore.getState().floatingPanelOpen
   })
-  let floating = page.locator('[data-kg-floating-panel-root="true"]')
+  let floating = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR)
   if (initialPanelOpen) {
     await closeFloatingPanel(page, floating)
   }
