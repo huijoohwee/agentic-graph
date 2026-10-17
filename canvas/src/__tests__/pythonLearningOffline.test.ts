@@ -5,6 +5,7 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { installLearningOfflineOwner, createPythonLearningOfflinePlugin, offlinePrecacheEntries } from '../../vitePythonLearningOffline.mjs'
+import { createPwaPrecacheAdmission } from '../../vitePwaPrecacheAdmission.mjs'
 import authoredPublicAssets from '../features/evidence-analysis/profiles/offline-assets.json'
 
 const scope = 'https://local.test/app/', prefix = 'kg-python-learning-v1-%2Fapp%2F-', first = '1'.repeat(40), second = '2'.repeat(40)
@@ -196,15 +197,39 @@ test('one bounded authored asset declaration supplies exact build and precache m
   assert.ok(entries.length > 0 && entries.length <= 40)
   assert.deepEqual(entries, authoredPublicAssets.map(file => ({ url: file.path, revision: file.sha256 })))
   const config = await readFile(new URL('../../vite.config.ts', import.meta.url), 'utf8')
-  assert.match(config, /const precacheAdmission = createPwaPrecacheAdmission\(\)/)
+  assert.match(config, /createPwaPrecacheAdmission\(\)/)
+  assert.match(config, /VitePWA\(\{ disable: Boolean\(process\.env\.VITE_OBSERVABILITY_WORKSPACE_MANIFEST\)/)
   assert.match(config, /createPythonLearningOfflinePlugin\(runtimeIdentity.sourceRevision, offlinePublicAssets\)/)
   assert.match(config, /precacheAdmission\.plugin/)
+  assert.match(config, /integration: \{ closeBundleOrder: 'post' \}/)
   assert.match(config, /manifestTransforms: \[precacheAdmission\.manifestTransform\]/)
   for (const file of authoredPublicAssets) {
     const bytes = await readFile(new URL(`../../public/${file.path}`, import.meta.url)); assert.equal(bytes.length, file.bytes); assert.equal(await digest(bytes), file.sha256)
   }
   const directory = await mkdtemp(join(tmpdir(), 'declared-offline-assets-'))
   try {
+    const appPath = `assets/${first}`
+    const main = `${appPath}/main.js`, shared = `${appPath}/shared.mjs`, leaf = `${appPath}/leaf.js`
+    const appBundle = {
+      main: { type: 'chunk', fileName: main, isEntry: true, imports: [shared], dynamicImports: [`${appPath}/deferred.js`] },
+      shared: { type: 'chunk', fileName: shared, imports: [leaf] },
+      leaf: { type: 'chunk', fileName: leaf, imports: [] },
+      deferred: { type: 'chunk', fileName: `${appPath}/deferred.js`, imports: [] },
+      unrelated: { type: 'chunk', fileName: `${appPath}/unrelated.js`, imports: [] },
+    }
+    const manifestAdmission = createPwaPrecacheAdmission(directory)
+    manifestAdmission.plugin.generateBundle.handler({}, appBundle)
+    manifestAdmission.plugin.generateBundle.handler({}, {
+      worker: { type: 'chunk', fileName: 'sw.mjs', isEntry: true, imports: [] },
+    })
+    const admitted = await manifestAdmission.manifestTransform([
+      { url: main }, { url: shared }, { url: leaf },
+      { url: `${appPath}/deferred.js` }, { url: `${appPath}/unrelated.js` },
+      { url: 'assets/theme.css' }, { url: 'manifest.webmanifest' },
+    ])
+    assert.deepEqual(admitted.manifest.map(entry => entry.url), [
+      main, shared, leaf, 'assets/theme.css', 'manifest.webmanifest',
+    ])
     const shell = ['index.html', `assets/${first}/pythonWorker.js`]
     for (const file of shell) { await mkdir(join(directory, file, '..'), { recursive: true }); await writeFile(join(directory, file), file) }
     for (const file of authoredPublicAssets) { await mkdir(join(directory, file.path, '..'), { recursive: true }); await writeFile(join(directory, file.path), await readFile(new URL(`../../public/${file.path}`, import.meta.url))) }
@@ -219,5 +244,22 @@ test('one bounded authored asset declaration supplies exact build and precache m
     assert.throws(() => offlinePrecacheEntries([...authoredPublicAssets, authoredPublicAssets[0]]), /Invalid offline public asset/)
     assert.throws(() => offlinePrecacheEntries([{ ...authoredPublicAssets[0], path: 'example/../escape.json' }]), /Invalid offline public asset/)
     assert.throws(() => offlinePrecacheEntries([{ ...authoredPublicAssets[0], bytes: 500000 }]), /Invalid offline public asset/)
+  } finally { await rm(directory, { recursive: true, force: true }) }
+})
+
+test('Workbox closure fails closed when the in-memory bundle or a required manifest asset is unavailable', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'pwa-bundle-closure-'))
+  try {
+    const admission = createPwaPrecacheAdmission(directory)
+    await assert.rejects(admission.manifestTransform([{ url: 'assets/app.js' }]), /in-memory application bundle observation is unavailable/)
+    assert.throws(() => admission.plugin.generateBundle.handler({}, {
+      app: { type: 'chunk', fileName: 'assets/app.js', isEntry: true, imports: ['assets/missing.js'] },
+    }), error => error instanceof Error && error.message.includes('required emitted JavaScript chunk is missing: assets/missing.js'))
+    const complete = createPwaPrecacheAdmission(directory)
+    complete.plugin.generateBundle.handler({}, {
+      app: { type: 'chunk', fileName: 'assets/app.js', isEntry: true, imports: [] },
+    })
+    await assert.rejects(complete.manifestTransform([{ url: 'assets/unrelated.js' }]), error =>
+      error instanceof Error && error.message.includes('required asset is absent from manifest: assets/app.js'))
   } finally { await rm(directory, { recursive: true, force: true }) }
 })
