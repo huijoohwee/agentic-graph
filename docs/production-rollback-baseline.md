@@ -24,6 +24,18 @@ rollback identity, and provenance. It explicitly says `productionAuthorized: fal
 The protected source checkout keeps full `main` history (without fetching tags) so the
 ancestry check can validate an older live deployment against the current source frontier.
 
+The Cloudflare Pages API's `deploymentCommitRevision` identifies the deployment transport
+commit; the runtime readiness marker's `sourceRevision` identifies the Graph source. Keep
+both values in the rollback identity. Current-state capture accepts the Pages commit when it
+is either the exact Graph source revision or a commit associated with exactly one merged PR
+to the captured publication-mirror `main`, with that PR's merge commit reachable from the
+captured mirror revision. The Graph marker must still be in current Graph `main`, and its
+full readiness record must match the mirror. Missing, ambiguous, unmerged, or unjoined
+deployment commits fail closed. A full 100-entry API page also fails closed because it may be
+truncated and cannot establish unique association. This records present rollback identity only;
+it does not reconstruct or authorize the earlier deployment. Successful-release recapture and
+candidate deployment attribution retain their exact Graph commit checks.
+
 This current-state baseline is a rollback target only. It does not qualify a release or
 approve a deployment. The protected Production Release workflow binds these exact bytes to
 the preserved source frontier and independently rechecks current provider state before it

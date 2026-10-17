@@ -3,30 +3,57 @@ title: "Production browser preflight"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 status: "active"
 continuity_id: "GRAPH-BROWSER-PREFLIGHT-001"
-revision: 10
+revision: 11
 owner: "agentic-graph"
 frontmatter_contract: "required"
-version: "0.1.2"
-date: "2026-10-09"
+version: "0.1.3"
+date: "2026-10-17"
 lang: "en-US"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-cba000d3779d--planning-v27"
+worktree_id: "device-0232231d4a19--production-pages-rollback-identity"
 agent_id: "codex-01a0940a"
 guideline_revision: "2.7.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/e8d2a10a8d3e5735c43edf350a22523df05fdf91/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
-reviewed_source_revision: "ada248796c97276bc375bd7f922ad650fcc50aa4"
-previous_document_version: "0.1.0"
-prd_revision: "0.1.2"
-tad_revision: "0.1.2"
-adr_revision: "0.1.2"
-mvp_revision: "0.1.2"
-gtm_revision: "0.1.2"
+reviewed_source_revision: "5a1a29fa87049f630635d0364d104a0554a502e3"
+previous_document_version: "0.1.2"
+prd_revision: "0.1.3"
+tad_revision: "0.1.3"
+adr_revision: "0.1.3"
+mvp_revision: "0.1.3"
+gtm_revision: "0.1.3"
 ---
 
 # Production browser preflight
+
+## Revision 11: Separate Pages transport and runtime source identities
+
+The current-observed rollback baseline preserves the Cloudflare Pages deployment commit and
+the embedded Graph runtime source as separate identities. A Pages deployment commit is valid
+for this observation when it is the exact embedded Graph source, or when GitHub associates it
+with exactly one merged PR to the publication-mirror `main` and that PR's merge commit is
+reachable from the exact captured mirror revision. The runtime source remains required to be
+in protected Graph `main`; the Pages and mirror readiness markers must still match exactly.
+
+PRD: retain the currently served Pages deployment as a precise rollback target when a separate
+publication mirror owns the deployed transport commit.
+
+TAD: bind the Pages deployment ID, provider commit, runtime source, exact mirror revision, and
+one merged mirror PR whose merge commit is an ancestor of that mirror revision.
+
+ADR: do not equate repository-scoped SHAs. Current-observed capture may use the verified mirror
+PR path; successful historical recapture and new candidate deployment still require the exact
+Graph source SHA and protected release attribution.
+
+MVP: cover direct Graph commits, a merged mirror-PR commit, and rejection of absent, ambiguous,
+unmerged, unreachable, or potentially truncated mirror PR evidence. Preserve repeated provider
+observations and the existing readiness, ancestry, D1, and candidate-specific authorization checks.
+
+GTM: reuse GitHub, Pages, and the existing mirror; add no paid service, dependency, or deployment
+effect. The resulting baseline establishes current rollback identity only and does not claim
+historical deployment authorization.
 
 ## Revision 10: Dev-to-Prod dependency parity
 

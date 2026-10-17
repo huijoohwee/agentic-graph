@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import YAML from 'yaml'
-import { createObservedCurrentRollbackBaseline, createObservedRollbackBaseline } from '../lib/production-rollback-baseline.mjs'
+import { createObservedCurrentRollbackBaseline, createObservedRollbackBaseline,
+  createPagesDeploymentCommitProvenance } from '../lib/production-rollback-baseline.mjs'
 import { digest } from '../lib/production-release-lifecycle-evidence.mjs'
 import { currentBaselineCaptureSummary } from '../production-rollback-baseline.mjs'
 
@@ -52,6 +53,11 @@ const currentRound = start => {
   return value
 }
 
+const currentCommitProvenance = second => createPagesDeploymentCommitProvenance({
+  pagesIdentity: second.pages.identity, sourceRevision: second.pages.identity.sourceRevision,
+  mirror: second.mirror,
+})
+
 test('fresh stable provider observations recover only a rollback target', () => {
   const value = fixture()
   const { recapture, provenance } = createObservedRollbackBaseline(value)
@@ -69,6 +75,7 @@ test('fresh current provider observations name a rollback target without rebuild
     first, second, repositoryId: 99, candidateSourceRevision: '9'.repeat(40),
     captureRunId: '7001',
     captureWorkflowRef: 'huijoohwee/agentic-graph/.github/workflows/production-rollback-baseline-capture.yml@refs/heads/main',
+    deploymentCommitProvenance: currentCommitProvenance(second),
     assembledAt: at(30),
   })
   assert.equal(recapture.rollbackIdentity.pages.sourceRevision, sha)
@@ -80,12 +87,56 @@ test('fresh current provider observations name a rollback target without rebuild
   assert.equal(provenance.productionAuthorized, false)
   assert.equal(provenance.historicalLifecycleReconstructed, false)
   assert.equal(provenance.captureRunId, 7001)
+  assert.equal(provenance.deploymentCommitProvenance.kind, 'graph-source')
+})
+
+test('current baseline links a mirror deployment commit without confusing it with the Graph source', () => {
+  const first = currentRound(10), second = currentRound(20)
+  const mirrorCommit = 'f'.repeat(40), mirrorMerge = '8'.repeat(40)
+  for (const observation of [first, second]) {
+    observation.pages.identity.deploymentCommitRevision = mirrorCommit
+    observation.deployment.deployment_trigger.metadata.commit_hash = mirrorCommit
+  }
+  const pullRequest = { number: 100, state: 'closed', merged_at: at(15), merge_commit_sha: mirrorMerge,
+    html_url: 'https://github.com/huijoohwee/huijoohwee/pull/100',
+    base: { ref: 'main', repo: { full_name: 'huijoohwee/huijoohwee' } },
+    head: { repo: { full_name: 'huijoohwee/huijoohwee' } } }
+  const deploymentCommitProvenance = createPagesDeploymentCommitProvenance({
+    pagesIdentity: second.pages.identity, sourceRevision: sha, mirror: second.mirror,
+    associatedPullRequests: [pullRequest], isMirrorMergeAncestor: (merge, mirror) => merge === mirrorMerge && mirror === second.mirror.revision,
+  })
+  const { recapture, provenance } = createObservedCurrentRollbackBaseline({
+    first, second, repositoryId: 99, candidateSourceRevision: '9'.repeat(40), captureRunId: '7001',
+    captureWorkflowRef: 'huijoohwee/agentic-graph/.github/workflows/production-rollback-baseline-capture.yml@refs/heads/main',
+    deploymentCommitProvenance, assembledAt: at(30),
+  })
+  assert.equal(recapture.rollbackIdentity.pages.deploymentCommitRevision, mirrorCommit)
+  assert.equal(recapture.rollbackIdentity.pages.sourceRevision, sha)
+  assert.equal(provenance.deploymentCommitProvenance.kind, 'published-mirror-pull-request')
+  assert.equal(provenance.deploymentCommitProvenance.pullRequest.number, 100)
+  assert.equal(provenance.historicalLifecycleReconstructed, false)
+  assert.equal(provenance.productionAuthorized, false)
+  const provenanceInput = { pagesIdentity: second.pages.identity, sourceRevision: sha, mirror: second.mirror }
+  for (const [label, associatedPullRequests, isMirrorMergeAncestor] of [
+    ['missing', [], () => false],
+    ['unmerged', [{ ...pullRequest, state: 'open', merged_at: null }], () => true],
+    ['unreachable', [pullRequest], () => false],
+    ['ambiguous', [pullRequest, { ...pullRequest, number: 101,
+      html_url: 'https://github.com/huijoohwee/huijoohwee/pull/101' }], () => true],
+  ]) {
+    assert.throws(() => createPagesDeploymentCommitProvenance({ ...provenanceInput,
+      associatedPullRequests, isMirrorMergeAncestor }), /one merged PR/, label)
+  }
+  assert.throws(() => createPagesDeploymentCommitProvenance({ ...provenanceInput,
+    associatedPullRequests: Array(100).fill(pullRequest) }), /may be truncated/)
 })
 
 test('current baseline capture summary binds its rollback identity digest', () => {
   const rollbackIdentity = { pages: { sourceRevision: sha }, mirror: { revision: 'd'.repeat(40) } }
-  const summary = currentBaselineCaptureSummary({ status: 'current-rollback-baseline-observed' }, { rollbackIdentity })
+  const summary = currentBaselineCaptureSummary({ status: 'current-rollback-baseline-observed',
+    deploymentCommitProvenance: { kind: 'graph-source' } }, { rollbackIdentity })
   assert.deepEqual(summary, { status: 'current-rollback-baseline-observed', productionAuthorized: false,
+    pagesDeploymentCommitKind: 'graph-source',
     rollbackTargetDigest: digest(rollbackIdentity) })
 })
 
@@ -104,7 +155,9 @@ for (const [label, mutate] of [
   const value = { first: currentRound(10), second: currentRound(20), repositoryId: 99,
     candidateSourceRevision: '9'.repeat(40), captureRunId: '7001',
     captureWorkflowRef: 'huijoohwee/agentic-graph/.github/workflows/production-rollback-baseline-capture.yml@refs/heads/main',
+    deploymentCommitProvenance: null,
     assembledAt: at(30) }
+  value.deploymentCommitProvenance = currentCommitProvenance(value.first, value.second)
   mutate(value)
   assert.throws(() => createObservedCurrentRollbackBaseline(value))
 })
