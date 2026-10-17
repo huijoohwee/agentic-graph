@@ -38,14 +38,14 @@ export function collectRequiredStaticJavaScriptFiles(bundle, isRoot = () => true
   return required
 }
 
-/** Capture only the app bundle before Workbox reads its emitted files. */
+/** Capture only the app bundle after Rollup writes it and before Workbox reads it. */
 export function createPwaPrecacheAdmission(outputDirectory = defaultOutputDirectory) {
   const manifestDirectory = resolve(outputDirectory)
   const metadataPath = join(manifestDirectory, metadataFileName)
   return {
     plugin: {
       name: 'agentic-graph-pwa-static-precache', apply: 'build', enforce: 'post',
-      generateBundle: { order: 'post', async handler(options, bundle) {
+      writeBundle: { order: 'post', sequential: true, async handler(options, bundle) {
         const chunks = Object.values(bundle ?? {}).filter(item => item?.type === 'chunk')
         const entries = chunks.filter(item => item.isEntry === true)
         if (!chunks.length || (entries.length && entries.every(item => isServiceWorker(item.fileName)))) return
@@ -64,8 +64,9 @@ export function createPwaPrecacheAdmission(outputDirectory = defaultOutputDirect
             entryFiles: entries.slice(0, 6).map(item => emittedPath(item.fileName)),
           },
         }
-        await mkdir(bundleDirectory, { recursive: true })
-        await writeFile(join(bundleDirectory, metadataFileName), JSON.stringify(metadata))
+        await mkdir(manifestDirectory, { recursive: true })
+        await writeFile(metadataPath, JSON.stringify(metadata))
+        process.stdout.write(`[PWA static precache] ${JSON.stringify({ stage: 'writeBundle', metadataPath, ...metadata.observation })}\n`)
       } },
     },
     async manifestTransform(entries) {

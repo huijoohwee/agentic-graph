@@ -208,7 +208,8 @@ test('one bounded authored asset declaration supplies exact build and precache m
   const directory = await mkdtemp(join(tmpdir(), 'declared-offline-assets-'))
   try {
     const admission = createPwaPrecacheAdmission(directory)
-    await admission.plugin.generateBundle.handler.call({}, { dir: directory }, {
+    const rollupDirectory = join(directory, 'rollup-output')
+    await admission.plugin.writeBundle.handler.call({}, { dir: rollupDirectory }, {
       'main.js': { type: 'chunk', fileName: `assets/${first}/main.js`, isEntry: true,
         imports: [`assets/${first}/shared.mjs`], dynamicImports: [`assets/${first}/deferred.js`] },
       'shared.mjs': { type: 'chunk', fileName: `assets/${first}/shared.mjs`, imports: [] },
@@ -219,10 +220,10 @@ test('one bounded authored asset declaration supplies exact build and precache m
     assert.deepEqual(metadata, {
       schema: 'agentic-graph-pwa-static-closure/v2',
       required: [`assets/${first}/main.js`, `assets/${first}/shared.mjs`],
-      observation: { bundleDirectory: directory, chunkCount: 3, entryCount: 1, entryFiles: [`assets/${first}/main.js`] },
+      observation: { bundleDirectory: rollupDirectory, chunkCount: 3, entryCount: 1, entryFiles: [`assets/${first}/main.js`] },
     })
     const manifestAdmission = createPwaPrecacheAdmission(directory)
-    await manifestAdmission.plugin.generateBundle.handler.call({}, { dir: directory }, {
+    await manifestAdmission.plugin.writeBundle.handler.call({}, { dir: directory }, {
       'sw.mjs': { type: 'chunk', fileName: 'sw.mjs', isEntry: true, imports: [] },
     })
     const admitted = await manifestAdmission.manifestTransform([
