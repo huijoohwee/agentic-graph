@@ -117,6 +117,8 @@ Publish-mirror and sibling-schema parity are release checks after ephemeral sync
 
 ## Validation Checklist
 
+- [ ] The same protected release controller verifies a static-only agentic-graph-dev Pages deployment and Base-owned view controls before it can mutate production; the Dev project has no Git integration, Functions, bindings, custom domains, or cross-origin data access
+
 - [ ] `main` requires pull requests before merge
 - [ ] `main` requires one approval when more than one human maintainer is active
 - [ ] `Integration Gate` is marked as the sole required status check
@@ -130,6 +132,7 @@ Publish-mirror and sibling-schema parity are release checks after ephemeral sync
 ---
 
 ## Role-Action-Outcome
+
 
 - **Role: Repository Admin**  
 -> Action: configures branch protection and required checks in GitHub  
