@@ -10,7 +10,7 @@ import { preview } from 'vite'
 import { chromium } from 'playwright'
 import { expect } from 'playwright/test'
 import { tsImport } from 'tsx/esm/api'
-import { dismissVisibleFloatingPanel } from './lib/panel-close-helpers.mjs'
+import { BASE_FLOATING_PANEL_ROOT_SELECTOR, dismissVisibleFloatingPanel } from './lib/panel-close-helpers.mjs'
 import { proveWarehouseRehearsal } from './lib/warehouse-rehearsal-proof.mjs'
 
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
@@ -67,7 +67,7 @@ try {
   await page.waitForFunction(() => [...document.querySelectorAll('textarea')].some(editor => editor.value.trim().length > 0), undefined, { timeout: 60000 })
   // Exercise the actual Source Files owner before the separate offline lesson proof.
   await page.setViewportSize({ width: 1280, height: 900 })
-  const startupFloatingPanel = page.locator('[data-kg-floating-panel-root="true"]:not([data-kg-strybldr-bottom-timeline-panel])').first()
+  const startupFloatingPanel = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR).first()
   await startupFloatingPanel.waitFor({ state: 'visible' })
   assert.equal(await dismissVisibleFloatingPanel(page, startupFloatingPanel), true, 'Expected startup floating panel must close through its rendered control')
   for (const name of ['docs', 'python-lessons']) {

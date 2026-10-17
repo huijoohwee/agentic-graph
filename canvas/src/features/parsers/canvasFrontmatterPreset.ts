@@ -1,4 +1,5 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { wasFloatingPanelPresetDismissedForDocument } from './floatingPanelPresetDismissal'
 import type { DocumentSemanticMode } from '@/hooks/store/types'
 import type { GraphData } from '@/lib/graph/types'
 import type { Canvas2dRendererId, Canvas3dModeId } from '@/lib/config'
@@ -404,7 +405,10 @@ export function applyCanvasFrontmatterPreset(args: {
   }
   if (preset?.floatingPanelOpen === true && !preserveLiveXrWorkspace && !(sharedXrSurfaceRouted && xrScenePanelView)) {
     const current = useGraphStore.getState()
-    if (current.floatingPanelOpen !== true) {
+    if (
+      current.floatingPanelOpen !== true
+      && !wasFloatingPanelPresetDismissedForDocument(current.markdownDocumentName)
+    ) {
       current.setFloatingPanelOpen(true)
       changed = true
     }
