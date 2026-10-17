@@ -6,15 +6,15 @@ import type { DataViewCandidate } from './markdownWorkspaceDataViewCandidates'
 import type { MarkdownWorkspaceDerivedViewerMode } from './MarkdownWorkspaceDerivedViewer'
 
 export function useWorkspaceDataViewConfig(selected: DataViewCandidate | null, activeDocumentPath: string | null | undefined,
-  viewerMode: MarkdownWorkspaceDerivedViewerMode, ephemeral = false) {
+  viewerMode: MarkdownWorkspaceDerivedViewerMode, ephemeral = false, canvasDataViewSurface = false) {
   const layout = viewerMode === 'calendar' ? 'calendar' : viewerMode === 'kanban' ? 'kanban' : 'table'
   const saved = useSavedWorkspaceDataView({ activeDocumentPath: activeDocumentPath ?? null, tableId: selected?.id ?? null, ephemeral,
     fallback: defaultWorkspaceDataViewConfig({ title: layout === 'calendar' ? 'Calendar View' : layout === 'kanban' ? 'Kanban View' : 'Table View', layout, groupByColumnId: selected?.view.groupByColumnId ?? null }),
   })
   const commitViewConfig = React.useCallback((next: WorkspaceDataViewConfig) => {
     saved.setViewConfig(next)
-    if (!ephemeral && (saved.viewConfig?.graphEnabled === true) !== (next.graphEnabled === true)) useGraphStore.getState().setMultiDimTableModeEnabled(next.graphEnabled === true)
-  }, [saved.setViewConfig, saved.viewConfig?.graphEnabled, ephemeral])
+    if (!ephemeral && !canvasDataViewSurface && (saved.viewConfig?.graphEnabled === true) !== (next.graphEnabled === true)) useGraphStore.getState().setMultiDimTableModeEnabled(next.graphEnabled === true)
+  }, [saved.setViewConfig, saved.viewConfig?.graphEnabled, ephemeral, canvasDataViewSurface])
   const appliedIntent = React.useRef('')
   React.useEffect(() => {
     if (!selected || !saved.viewConfig) return

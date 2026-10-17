@@ -130,6 +130,7 @@ export function MultiDimTableSurface(props: { active?: boolean; ariaLabel?: stri
     <section className={`${UI_VIEW_EDIT_SURFACE_AREA_CLASS_NAME} ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.primary}`} aria-label={props.ariaLabel || 'Multi-dimensional Table'} {...UI_VIEW_EDIT_SURFACE_DATA_ATTRIBUTES}>
       <MarkdownWorkspaceDerivedViewer
         viewerKind="markdown"
+        canvasDataViewSurface={true}
         viewerMode={viewerMode}
         onChangeViewerMode={mode => useGraphStore.getState().setCanvas2dRenderer(mode === 'kanban' ? 'kanban' : mode === 'calendar' ? 'calendar' : 'multiDimTable')}
         dataViewSource={props.dataViewSource}
