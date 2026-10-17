@@ -48,7 +48,7 @@ export function createPwaPrecacheAdmission(outputDirectory = defaultOutputDirect
       writeBundle: { order: 'post', sequential: true, async handler(options, bundle) {
         const chunks = Object.values(bundle ?? {}).filter(item => item?.type === 'chunk')
         const entries = chunks.filter(item => item.isEntry === true)
-        if (!chunks.length || (entries.length && entries.every(item => isServiceWorker(item.fileName)))) return
+        if (entries.length && entries.every(item => isServiceWorker(item.fileName))) return
         const appEntries = entries.filter(item => !isServiceWorker(item.fileName))
         const bundleDirectory = typeof options?.dir === 'string' ? resolve(options.dir) : manifestDirectory
         const required = appEntries.length
@@ -79,7 +79,7 @@ export function createPwaPrecacheAdmission(outputDirectory = defaultOutputDirect
       }
       if (metadata?.schema !== metadataSchema || !Array.isArray(metadata.required) || metadata.required.length === 0
           || metadata.required.some(path => typeof path !== 'string'))
-        fail(`emitted app bundle graph is invalid (path=${metadataPath}; observation=${JSON.stringify(metadata?.observation ?? null)})`)
+        fail(`emitted app bundle graph is invalid (path=${metadataPath}; observation=${JSON.stringify(metadata?.observation ?? null)}; manifestEntries=${entries.length}; manifestSample=${JSON.stringify(entries.slice(0, 6).map(entry => entry?.url ?? null))})`)
       const required = new Set(metadata.required.map(path => {
         const canonical = emittedPath(path)
         if (!isJavaScript(canonical)) fail(`required emitted asset is not JavaScript: ${canonical}`)

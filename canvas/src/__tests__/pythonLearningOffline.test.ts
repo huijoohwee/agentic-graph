@@ -253,3 +253,20 @@ test('one bounded authored asset declaration supplies exact build and precache m
     assert.throws(() => offlinePrecacheEntries([{ ...authoredPublicAssets[0], bytes: 500000 }]), /Invalid offline public asset/)
   } finally { await rm(directory, { recursive: true, force: true }) }
 })
+
+test('empty app bundles produce bounded Workbox diagnostics and fail closed', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'empty-pwa-bundle-'))
+  try {
+    const admission = createPwaPrecacheAdmission(directory)
+    await admission.plugin.writeBundle.handler.call({}, { dir: directory }, {
+      'index.html': { type: 'asset', fileName: 'index.html', source: '<html></html>' },
+    })
+    const metadata = JSON.parse(await readFile(join(directory, 'agentic-pwa-static-closure.json'), 'utf8'))
+    assert.deepEqual(metadata, {
+      schema: 'agentic-graph-pwa-static-closure/v2', required: [],
+      observation: { bundleDirectory: directory, chunkCount: 0, entryCount: 0, entryFiles: [] },
+    })
+    await assert.rejects(admission.manifestTransform([{ url: 'assets/app.js' }]), error =>
+      error instanceof Error && error.message.includes('chunkCount') && error.message.includes('assets/app.js'))
+  } finally { await rm(directory, { recursive: true, force: true }) }
+})
