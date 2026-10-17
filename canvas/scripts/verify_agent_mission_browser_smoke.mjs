@@ -312,6 +312,11 @@ async function verifyApexActivation(width) {
   await canvas.waitFor({ timeout: 60000 }); await page.locator('[data-agent-mission-mode="workspace"]').waitFor(); await waitText(evidence, '2 retained matches')
   assertAuthored(await authoredSnapshot(), before, 'Apex discovery must preserve authored work')
   await waitForAsync(async () => (await import('/src/features/toolbar/floatingPanelBridge.ts')).isFloatingPanelBridgeReady())
+  const activePanel = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR)
+  if (await activePanel.count()) {
+    const close = activePanel.getByRole('button', { name: 'Close', exact: true })
+    if (await close.isVisible()) await close.click()
+  }
   await showEvidence(evidence)
   await page.getByRole('button', { name: 'Create Node', exact: true }).click()
   const latePanel = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR)
