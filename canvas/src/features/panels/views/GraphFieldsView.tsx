@@ -1,4 +1,5 @@
 import './graph-fields/graphFieldLayout.css'
+import { FieldWorkbench } from '@agentic-base/views-react/settings'
 import { PanelSelect } from '@/lib/ui/panelFormControls'
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -22,7 +23,6 @@ import { cn } from '@/lib/utils'
 import {
   GRAPH_FIELDS_MAIN_LIST_PANE_CLASS_NAME,
   GRAPH_FIELDS_MAIN_SETTINGS_PANE_CLASS_NAME,
-  GRAPH_FIELDS_MAIN_SPLIT_GRID_CLASS_NAME,
 } from '@/features/panels/views/graph-fields/graphFieldResponsiveClasses'
 import {
   isGraphFieldsSelectionInspectorEntryLabel,
@@ -266,46 +266,54 @@ export default function GraphFieldsView({
       data-kg-anchor={UI_ANCHORS.graphFields}
     >
       <section className="h-full min-h-0">
-        <section className={GRAPH_FIELDS_MAIN_SPLIT_GRID_CLASS_NAME}>
-          <section className={GRAPH_FIELDS_MAIN_LIST_PANE_CLASS_NAME}>
-            <GraphFieldsListPanel
-            graphData={graphData}
-            graphDataRevision={graphDataRevision}
-            fields={fields}
-            visibleFieldIds={visibleFieldIds}
-            selectedFieldId={selectedFieldId}
-            setSelectedFieldId={setSelectedFieldId}
-            selectedGlobalView={selectedGlobalView}
-            setSelectedGlobalView={setSelectedGlobalView}
-            settingsById={settingsById}
-            patchGraphFieldSetting={patchGraphFieldSetting}
-            graphDataTableVisibleColumns={graphDataTableVisibleColumns}
-            graphDataTableColumnOrder={graphDataTableColumnOrder}
-            setGraphDataTableVisibleColumns={setGraphDataTableVisibleColumns}
-            setGraphDataTableColumnOrder={setGraphDataTableColumnOrder}
-            onStatusChange={onStatusChange}
-            />
-          </section>
-          <section ref={fieldSettingsPaneRef} className={GRAPH_FIELDS_MAIN_SETTINGS_PANE_CLASS_NAME}>
-            {selectedGlobalView?.kind === 'selectionInspector' ? (
-              <React.Suspense fallback={null}>
-                <GraphRecordSelectionInspectorLazy />
-              </React.Suspense>
-            ) : (
-              <FieldSettingsPanel
-              graphData={graphData}
-              selectedField={selectedField}
-              selectedGlobalView={selectedGlobalView}
-              setSelectedGlobalView={setSelectedGlobalView}
-              settingsById={settingsById}
-              patchGraphFieldSetting={patchGraphFieldSetting}
-              removeGraphFieldSetting={removeGraphFieldSetting}
-              onResync={resync}
-              onStatusChange={onStatusChange}
+        <FieldWorkbench
+          ariaLabel="Graph Fields workspace"
+          listLabel="Graph Fields"
+          detailLabel="Field Settings"
+          className="kg-graph-fields-base-workbench"
+          listContent={(
+            <section className={GRAPH_FIELDS_MAIN_LIST_PANE_CLASS_NAME}>
+              <GraphFieldsListPanel
+                graphData={graphData}
+                graphDataRevision={graphDataRevision}
+                fields={fields}
+                visibleFieldIds={visibleFieldIds}
+                selectedFieldId={selectedFieldId}
+                setSelectedFieldId={setSelectedFieldId}
+                selectedGlobalView={selectedGlobalView}
+                setSelectedGlobalView={setSelectedGlobalView}
+                settingsById={settingsById}
+                patchGraphFieldSetting={patchGraphFieldSetting}
+                graphDataTableVisibleColumns={graphDataTableVisibleColumns}
+                graphDataTableColumnOrder={graphDataTableColumnOrder}
+                setGraphDataTableVisibleColumns={setGraphDataTableVisibleColumns}
+                setGraphDataTableColumnOrder={setGraphDataTableColumnOrder}
+                onStatusChange={onStatusChange}
               />
-            )}
-          </section>
-        </section>
+            </section>
+          )}
+          detailContent={(
+            <section ref={fieldSettingsPaneRef} className={GRAPH_FIELDS_MAIN_SETTINGS_PANE_CLASS_NAME}>
+              {selectedGlobalView?.kind === 'selectionInspector' ? (
+                <React.Suspense fallback={null}>
+                  <GraphRecordSelectionInspectorLazy />
+                </React.Suspense>
+              ) : (
+                <FieldSettingsPanel
+                  graphData={graphData}
+                  selectedField={selectedField}
+                  selectedGlobalView={selectedGlobalView}
+                  setSelectedGlobalView={setSelectedGlobalView}
+                  settingsById={settingsById}
+                  patchGraphFieldSetting={patchGraphFieldSetting}
+                  removeGraphFieldSetting={removeGraphFieldSetting}
+                  onResync={resync}
+                  onStatusChange={onStatusChange}
+                />
+              )}
+            </section>
+          )}
+        />
       </section>
     </article>
   )

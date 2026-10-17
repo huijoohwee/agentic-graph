@@ -5,7 +5,6 @@ import { useDashboardCardDrag } from './DashboardWidgetBoard'
 import { WIDGET_SELECTION_SURFACE_CLASS_NAME } from '@/components/StoryboardWidget/storyboardWidgetPanelChromeClassName'
 import { UI_RESPONSIVE_VIEWPORT_FIT_GRID_CLASSNAME, buildResponsiveViewportFitGridStyle } from '@/lib/ui/responsiveViewportFitGrid'
 import { buildKanbanCardDropIntentLabel } from '@/features/markdown/ui/kanban/kanbanDragIntent'
-import { getKanbanCardDragVisualState } from '@/features/markdown/ui/kanban/kanbanDragVisualState'
 import { KanbanCardDropPreview } from '@/features/markdown/ui/kanban/KanbanDropPreview'
 import { isInteractiveEventTarget } from '@/features/markdown/ui/kanban/kanbanMenu'
 import { areKanbanRowIdsEqual, moveKanbanRowIdBeforeTarget, reconcileKanbanRowIds } from '@/features/markdown/ui/kanban/kanbanOrderState'
@@ -17,6 +16,7 @@ import { UI_RESPONSIVE_CARD_MULTILINE_EDITOR_CLASSNAME, UI_RESPONSIVE_CARD_TITLE
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import type { DashboardCard, DashboardMetric, DashboardTableRow } from './dashboardModel'
 import { DashboardBarChart, DashboardLineAreaChart, TONE_COLORS } from './DashboardCharts'
+import { DashboardWidgetCard } from '@agentic-base/views-react/dashboard'
 export type DashboardCardTextField = 'title' | 'subtitle' | 'footnote'
 const EMPTY_DASHBOARD_ROW: DashboardTableRow = { id: 'empty', label: 'No rows', value: '0' }
 const noop = () => {}
@@ -41,36 +41,30 @@ export function DashboardMetricTile(input: {
     ...(shared ? { cardDragProps: shared.cardDragProps, cardDropProps: shared.cardDropProps, draggingMetricId: shared.dragging, dragOverMetricId: shared.over, dragOverPosition: shared.position, commitFlashMetricId: shared.flash, registerMetricElement: shared.register } : {}), ...input }
   const { cardDragProps, cardDropProps, dragOverMetricId, dragOverPosition, draggingMetricId, metric } = props
   const colors = TONE_COLORS[metric.tone]
-  const dragging = draggingMetricId === metric.id
   const dropTarget = dragOverMetricId === metric.id
-  const metricDragVisualState = getKanbanCardDragVisualState({
-    hasActiveDrag: draggingMetricId !== null,
-    isDragging: dragging,
-    isDropTarget: dropTarget,
-    isCommitFlash: props.commitFlashMetricId === metric.id,
-  })
+  const labelEditor = <CardInlineTextEditor
+    value={metric.label}
+    ariaLabel={`Dashboard metric label for ${metric.id}`}
+    placeholder="Add metric label"
+    canEdit={props.canEdit}
+    onCommit={nextValue => props.onCommitMetricLabel(metric.id, nextValue)}
+    displayClassName="m-0 truncate text-xs font-medium"
+    editorClassName={`${UI_RESPONSIVE_CARD_TITLE_EDITOR_CLASSNAME} text-xs font-medium leading-5`}
+  />
   return (
-    <section
-      className={[
-        'relative min-h-[78px] min-w-0 rounded-md border px-3 py-2 shadow-none transition-transform duration-150',
-        colors.chip,
-        WIDGET_SELECTION_SURFACE_CLASS_NAME,
-        metricDragVisualState.className,
-      ].join(' ')}
-      style={metricDragVisualState.style}
-      data-kg-dashboard-metric={metric.id}
-      data-kg-dashboard-metric-draggable={cardDragProps.draggable ? '1' : undefined}
-      ref={element => props.registerMetricElement(metric.id, element)}
-      role="group"
-      tabIndex={0}
-      aria-label={`Dashboard metric ${metric.label}`}
-      aria-grabbed={cardDragProps.draggable ? dragging : undefined}
-      {...cardDropProps}
-      draggable={cardDragProps.draggable}
-      onDragStart={cardDragProps.onDragStart}
-      onDragEnd={cardDragProps.onDragEnd}
-    >
-      {dropTarget ? (
+    <DashboardWidgetCard
+      id={metric.id}
+      label={`Dashboard metric ${metric.label}`}
+      title={<section data-kg-dashboard-metric-drag-region="1">{labelEditor}</section>}
+      className={`${colors.chip} min-h-[78px] p-2`}
+      selectionSurfaceClassName={WIDGET_SELECTION_SURFACE_CLASS_NAME}
+      cardDragProps={cardDragProps}
+      cardDropProps={cardDropProps}
+      draggingId={draggingMetricId}
+      dragOverId={dragOverMetricId}
+      commitFlashId={props.commitFlashMetricId}
+      registerElement={props.registerMetricElement}
+      dropPreview={dropTarget ? (
         <KanbanCardDropPreview
           position={dragOverPosition}
           label={buildKanbanCardDropIntentLabel({
@@ -79,19 +73,9 @@ export function DashboardMetricTile(input: {
             targetLaneLabel: 'Dashboard metrics',
           })}
         />
-      ) : null}
+      ) : undefined}
+    >
       <section className="flex h-full min-h-0 flex-col overflow-y-auto pr-1" data-kg-dashboard-metric-scrollable="1">
-        <section className="min-w-0 cursor-grab select-none active:cursor-grabbing" data-kg-dashboard-metric-drag-region="1">
-          <CardInlineTextEditor
-            value={metric.label}
-            ariaLabel={`Dashboard metric label for ${metric.id}`}
-            placeholder="Add metric label"
-            canEdit={props.canEdit}
-            onCommit={nextValue => props.onCommitMetricLabel(metric.id, nextValue)}
-            displayClassName="m-0 truncate text-xs font-medium"
-            editorClassName={`${UI_RESPONSIVE_CARD_TITLE_EDITOR_CLASSNAME} text-xs font-medium leading-5`}
-          />
-        </section>
         <p className="m-0 mt-1 truncate text-xl font-semibold leading-tight">{metric.value}</p>
         <CardInlineTextEditor
           value={metric.detail}
@@ -103,7 +87,7 @@ export function DashboardMetricTile(input: {
           editorClassName={`${UI_RESPONSIVE_CARD_TITLE_EDITOR_CLASSNAME} mt-1 text-xs leading-5`}
         />
       </section>
-    </section>
+    </DashboardWidgetCard>
   )
 }
 
@@ -235,37 +219,72 @@ export function DashboardCardView(input: {
     dragOverPosition: 'before' as KanbanDropPosition, registerCardElement: noop,
     ...(shared ? { cardDragProps: shared.cardDragProps, cardDropProps: shared.cardDropProps, draggingCardId: shared.dragging, dragOverCardId: shared.over, dragOverPosition: shared.position, commitFlashCardId: shared.flash, registerCardElement: shared.register } : {}), ...input }
   const { card, cardDragProps, cardDropProps, dragOverCardId, dragOverPosition, draggingCardId, gridEnabled } = props
-  const dragging = draggingCardId === card.id
   const dropTarget = dragOverCardId === card.id
   const cardInlineMediaCommandContext = React.useMemo(() => buildInlineMediaCommandContextFromRecord(card), [card])
-  const cardDragVisualState = getKanbanCardDragVisualState({
-    hasActiveDrag: draggingCardId !== null,
-    isDragging: dragging,
-    isDropTarget: dropTarget,
-    isCommitFlash: props.commitFlashCardId === card.id,
-  })
+  const titleEditor = <section className="min-w-0" data-kg-dashboard-card-inline-edit="title">
+    <CardInlineTextEditor
+      value={card.title}
+      ariaLabel={`Dashboard card title for ${card.id}`}
+      placeholder="Add card title"
+      canEdit={props.canEditCardText}
+      onCommit={nextValue => props.onCommitCardText?.(card.id, 'title', nextValue)}
+      displayClassName={`m-0 truncate text-sm font-semibold ${UI_THEME_TOKENS.text.primary}`}
+      editorClassName={`${UI_RESPONSIVE_CARD_TITLE_EDITOR_CLASSNAME} text-sm font-semibold leading-5`}
+    />
+  </section>
+  const subtitleEditor = <section className="min-w-0" data-kg-dashboard-card-inline-edit="subtitle">
+    <CardInlineTextEditor
+      value={card.subtitle}
+      ariaLabel={`Dashboard card subtitle for ${card.id}`}
+      placeholder="Add card subtitle"
+      canEdit={props.canEditCardText}
+      onCommit={nextValue => props.onCommitCardText?.(card.id, 'subtitle', nextValue)}
+      displayClassName={`m-0 mt-1 truncate text-xs ${UI_THEME_TOKENS.text.tertiary}`}
+      editorClassName={`${UI_RESPONSIVE_CARD_TITLE_EDITOR_CLASSNAME} mt-1 text-xs leading-5`}
+    />
+  </section>
+  const footnoteEditor = card.footnote || props.canEditCardText ? (
+    <section className="mt-3 border-t border-[var(--kg-border)] pt-3" data-kg-dashboard-card-inline-edit="footnote">
+      <CardInlineTextEditor
+        value={card.footnote || ''}
+        ariaLabel={`Dashboard card footnote for ${card.id}`}
+        placeholder="Add card note"
+        canEdit={props.canEditCardText}
+        multiline
+        markdownPreview="auto"
+        markdownCommandContextText={cardInlineMediaCommandContext}
+        rows={3}
+        onCommit={nextValue => props.onCommitCardText?.(card.id, 'footnote', nextValue)}
+        displayClassName={`m-0 text-xs leading-5 ${UI_THEME_TOKENS.text.secondary}`}
+        editorClassName={`${UI_RESPONSIVE_CARD_MULTILINE_EDITOR_CLASSNAME} text-xs leading-5`}
+      />
+    </section>
+  ) : undefined
+  const body = props.children ?? (card.markdown ? <DashboardMarkdown text={card.markdown} /> : card.kind === 'table' ? (
+    <DashboardTableRows card={card} selectedNodeId={props.selectedNodeId} canEditRows={props.canEditRows}
+      onSelectRow={props.onSelectRow} onCommitRowLabel={props.onCommitRowLabel} />
+  ) : card.kind === 'bar' ? (
+    <DashboardBarChart series={card.series} tone={card.tone} gridEnabled={gridEnabled} />
+  ) : (
+    <DashboardLineAreaChart series={card.series} tone={card.tone} gridEnabled={gridEnabled} area={card.kind === 'area'} />
+  ))
   return (
-    <article
-      className={[
-        `relative min-w-0 rounded-md border ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-4 shadow-none`,
-        'transition-transform duration-150',
-        WIDGET_SELECTION_SURFACE_CLASS_NAME,
-        cardDragVisualState.className,
-      ].join(' ')}
-      style={cardDragVisualState.style}
-      ref={element => props.registerCardElement(card.id, element)}
-      data-kg-dashboard-card={card.id}
-      data-kg-dashboard-card-draggable={cardDragProps.draggable ? '1' : undefined}
-      tabIndex={0}
-      role="group"
-      aria-label={`Dashboard card ${card.title}`}
-      aria-grabbed={cardDragProps.draggable ? dragging : undefined}
-      {...cardDropProps}
-      draggable={cardDragProps.draggable}
-      onDragStart={cardDragProps.onDragStart}
-      onDragEnd={cardDragProps.onDragEnd}
-    >
-      {dropTarget ? (
+    <DashboardWidgetCard
+      id={card.id}
+      label={`Dashboard card ${card.title}`}
+      title={<section className="min-w-0 cursor-grab select-none active:cursor-grabbing" data-kg-dashboard-card-drag-region="1">{titleEditor}</section>}
+      subtitle={subtitleEditor}
+      footnote={footnoteEditor}
+      canEditFootnote={props.canEditCardText}
+      className={`${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} p-4`}
+      selectionSurfaceClassName={WIDGET_SELECTION_SURFACE_CLASS_NAME}
+      cardDragProps={cardDragProps}
+      cardDropProps={cardDropProps}
+      draggingId={draggingCardId}
+      dragOverId={dragOverCardId}
+      commitFlashId={props.commitFlashCardId}
+      registerElement={props.registerCardElement}
+      dropPreview={dropTarget ? (
         <KanbanCardDropPreview
           position={dragOverPosition}
           label={buildKanbanCardDropIntentLabel({
@@ -274,67 +293,12 @@ export function DashboardCardView(input: {
             targetLaneLabel: props.sectionLabel,
           })}
         />
-      ) : null}
-      <header className="mb-3 min-w-0 cursor-grab select-none active:cursor-grabbing" data-kg-dashboard-card-drag-region="1">
-        <section className="min-w-0" data-kg-dashboard-card-inline-edit="title">
-          <CardInlineTextEditor
-            value={card.title}
-            ariaLabel={`Dashboard card title for ${card.id}`}
-            placeholder="Add card title"
-            canEdit={props.canEditCardText}
-            onCommit={nextValue => props.onCommitCardText?.(card.id, 'title', nextValue)}
-            displayClassName={`m-0 truncate text-sm font-semibold ${UI_THEME_TOKENS.text.primary}`}
-            editorClassName={`${UI_RESPONSIVE_CARD_TITLE_EDITOR_CLASSNAME} text-sm font-semibold leading-5`}
-          />
-        </section>
-        <section className="min-w-0" data-kg-dashboard-card-inline-edit="subtitle">
-          <CardInlineTextEditor
-            value={card.subtitle}
-            ariaLabel={`Dashboard card subtitle for ${card.id}`}
-            placeholder="Add card subtitle"
-            canEdit={props.canEditCardText}
-            onCommit={nextValue => props.onCommitCardText?.(card.id, 'subtitle', nextValue)}
-            displayClassName={`m-0 mt-1 truncate text-xs ${UI_THEME_TOKENS.text.tertiary}`}
-            editorClassName={`${UI_RESPONSIVE_CARD_TITLE_EDITOR_CLASSNAME} mt-1 text-xs leading-5`}
-          />
-        </section>
-      </header>
-      <section data-kg-dashboard-card-body="1" className={props.children ? "min-w-0 overflow-auto" : "h-[178px] min-w-0 overflow-hidden"}>
-        {props.children ?? (card.markdown ? <DashboardMarkdown text={card.markdown} /> : card.kind === 'table' ? (
-          <DashboardTableRows
-            card={card}
-            selectedNodeId={props.selectedNodeId}
-            canEditRows={props.canEditRows}
-            onSelectRow={props.onSelectRow}
-            onCommitRowLabel={props.onCommitRowLabel}
-          />
-        ) : card.kind === 'bar' ? (
-          <DashboardBarChart series={card.series} tone={card.tone} gridEnabled={gridEnabled} />
-        ) : (
-          <DashboardLineAreaChart series={card.series} tone={card.tone} gridEnabled={gridEnabled} area={card.kind === 'area'} />
-        ))}
+      ) : undefined}
+    >
+      <section data-kg-dashboard-card-body="1" className={props.children ? 'min-w-0 overflow-auto' : 'h-[178px] min-w-0 overflow-hidden'}>
+        {body}
       </section>
-      {card.footnote || props.canEditCardText ? (
-        <section
-          className="mt-3 border-t border-[var(--kg-border)] pt-3"
-          data-kg-dashboard-card-inline-edit="footnote"
-        >
-          <CardInlineTextEditor
-            value={card.footnote || ''}
-            ariaLabel={`Dashboard card footnote for ${card.id}`}
-            placeholder="Add card note"
-            canEdit={props.canEditCardText}
-            multiline
-            markdownPreview="auto"
-            markdownCommandContextText={cardInlineMediaCommandContext}
-            rows={3}
-            onCommit={nextValue => props.onCommitCardText?.(card.id, 'footnote', nextValue)}
-            displayClassName={`m-0 text-xs leading-5 ${UI_THEME_TOKENS.text.secondary}`}
-            editorClassName={`${UI_RESPONSIVE_CARD_MULTILINE_EDITOR_CLASSNAME} text-xs leading-5`}
-          />
-        </section>
-      ) : null}
-    </article>
+    </DashboardWidgetCard>
   )
 }
 

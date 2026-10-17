@@ -1,14 +1,14 @@
 ---
-title: "Workspace data views: Table, Kanban and Calendar"
+title: "Workspace data views: Table, Multi-dimensional Table, Kanban and Calendar"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "workspace-data-views"
-version: "1.3.4"
-prd_revision: "1.3.4"
-tad_revision: "1.3.4"
-adr_revision: "1.3.4"
-mvp_revision: "1.3.4"
-gtm_revision: "1.3.4"
-date: "2026-10-02"
+version: "1.5.0"
+prd_revision: "1.5.0"
+tad_revision: "1.5.0"
+adr_revision: "1.5.0"
+mvp_revision: "1.5.0"
+gtm_revision: "1.5.0"
+date: "2026-10-17"
 lang: "en-US"
 owner: "Workspace data-view product function"
 frontmatter_contract: "required"
@@ -19,15 +19,16 @@ universal_scope: false
 lifecycle_status: "implemented"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/code-toolbar-border-alignment"
-agent_id: "codex-workspace-data-view-author"
+worktree_id: "device-0232231d4a19--workspace-view-controls"
+agent_id: "codex"
 source_docs:
   - "Reference implementation: agentic-graph@8b258a4a116cd7ef70718acd28307fc4a62af897"
+  - "Reference implementation: agentic-base@56f73a9cbb6c8498830d0195b35f35876e70f77e:packages/views-react"
   - "Reference implementation: authoring guidelines 3.4.0 at 82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
   - "Reference implementation: parent kg-node-cluster-edge@0.6.5"
 ---
 
-# Workspace data views: Table, Kanban and Calendar
+# Workspace data views: Table, Multi-dimensional Table, Kanban and Calendar
 
 `workspace-data-views@1.3.4` joins all five roles below. After the specification-first checkpoint,
 the operator authorized implementation on 2026-10-02. Shared settings, versioned queries and native
@@ -589,3 +590,10 @@ files, under 8 KB diff, 15 active minutes plus required checks, zero dependencie
 ## Global appearance continuation — 2026-10-02
 
 The next implemented UI increment is joined under [ui-appearance@1.0.0](./prd-tad-adr-mvp-gtm-ui-appearance.md): shared 1.5 icon stroke, 1 px borders, flat selected icon controls with blue fill, and global enforcement. Earlier checkpoints above remain historical evidence; the new design guide supersedes local icon/elevation recipes.
+
+## Checkpoint — Agentic Base shared view owner, 2026-10-17
+`workspace-data-views@1.5.0` makes private `agentic-base` the sole source of shared Table, Multi-dimensional Table, Kanban, Calendar, Dashboard, settings, FloatingPanel, and Workflow Manager field-workbench visuals. Graph pins Base React at `56f73a9cbb6c8498830d0195b35f35876e70f77e`; its two host adapters pass Graph data/schema, theme tokens, actions, and persistence. Graph keeps query, mutation, placement, graph-specific controls, and outer lifecycle; duplicate Graph table cores are removed.
+**ADR:** keep Base private during internal migration, with scoped read-only GitHub CI access for Graph and Commerce; make no public-distribution or license claim. The exact package and lockfile commit is the boundary. No customer data, remote store, sync protocol, paid service, or deployment is added.
+**MVP / VCC:** require exact-source, affected-view, TypeScript/build, desktop/mobile live, and protected `Integration Gate` evidence on the candidate. Graph-owned records/actions must continue to work. Preserve the bounded offline browser artifact; Shoply parity and cutover remain open.
+**Rollback and bound:** do not merge a failing candidate; the protected Graph tree remains recoverable, and any rollback restores the Base pin with removed local sources. Use one existing lane, 42 Graph paths, one exact pin, two host adapters, ≤2,700 changed lines, no data migration, and zero paid spend/deployment. Local validation has a 60-minute ceiling; external CI wait has no ETA. Table, Kanban, and Calendar components load on intent. Current evidence: affected plan 18/18, publish-sync 307/307, and PWA/build/chunk checks pass; engine chunk is 415.40 kB. Full integration is blocked by five unreserved edits and the unrecoverable empty START lock; PR #1470 is closed/DIRTY. No publish or merge occurred.
+**GTM:** this internal reuse does not establish buyer pain, WTP, revenue, production readiness, or public FOSS distribution. Measure integration effort after each authorized consumer cutover; the $1 first-dollar idea remains an experiment, not a forecast.

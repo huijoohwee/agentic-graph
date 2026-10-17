@@ -25,8 +25,8 @@ import {
   type MarkdownDataViewColumnType,
 } from './markdownDataViewColumnType'
 import { serializeMarkdownDataViewToTableLines } from './markdownDataViewSerialize'
-import { MarkdownDataViewKanbanView } from './MarkdownDataViewKanbanView'
-import { MarkdownDataViewTableView } from './MarkdownDataViewTableView'
+const MarkdownDataViewKanbanView = React.lazy(() => import('./MarkdownDataViewKanbanView').then(module => ({ default: module.MarkdownDataViewKanbanView })))
+const MarkdownDataViewTableView = React.lazy(() => import('./MarkdownDataViewTableView').then(module => ({ default: module.MarkdownDataViewTableView })))
 import { WorkspaceDataViewHeader } from '@/features/markdown-workspace/main/viewer/WorkspaceDataViewHeader'
 import type { WorkspaceDataViewHeaderState } from '@/features/markdown-workspace/main/viewer/WorkspaceDataViewHeader'
 import {
@@ -388,6 +388,7 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
       />
 
       <section className={UI_THEME_TOKENS.panel.bg}>
+        <React.Suspense fallback={<p role="status">Loading data view…</p>}>
         {viewerMode === 'calendar' ? (
           <WorkspaceDataViewCalendarSurface view={displayedView} config={viewConfig} onChangeConfig={setViewConfig} canMutate={canMutate} onUpdateCell={handleUpdateCell} onNewRecord={handleNewRecord} />
         ) : viewerMode === 'kanban' ? (
@@ -404,6 +405,7 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
         ) : (
           <MarkdownDataViewTableView
             view={displayedView}
+            multiDimensional={viewerMode === 'multiDimTable'}
             canMutate={canMutate}
             canConfigure={true}
             onUpdateCell={handleUpdateCell}
@@ -419,6 +421,7 @@ export const MarkdownDataViewBlock = React.memo(function MarkdownDataViewBlock(p
             onSetColumnSort={handleSetColumnSort}
           />
         )}
+        </React.Suspense>
       </section>
     </article>
   )

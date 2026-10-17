@@ -221,7 +221,7 @@ export function assertPhase2(fixture: SourceFixture) {
   }
 
   if (!kanbanDragHook.includes('const [dragOutcomeSequence, setDragOutcomeSequence] = React.useState(0)') || !kanbanDragHook.includes('setDragOutcomeSequence(value => value + 1)') || !kanbanView.includes('kanbanDrag.dragOutcomeSequence')) {
-    throw new Error('Expected Markdown kanban repeated outcome announcements to be driven by a shared outcome sequence instead of local live-region retries')
+    throw new Error('Expected the canonical Base Kanban view to use its shared outcome sequence for repeated announcements')
   }
 
   if (!kanbanDragHook.includes('clearCommitFeedback()') || !kanbanDragHook.includes("kind: 'no-op'")) {
@@ -260,8 +260,8 @@ export function assertPhase2(fixture: SourceFixture) {
     throw new Error('Expected Markdown kanban keyboard reorder, boundary feedback, and focus recovery to stay rooted in the shared drag owner and card registration path')
   }
 
-  if (!dataViewGroups.includes('export function projectDataViewGroups') || !kanbanView.includes('projectDataViewGroups(view, groupById)')) {
-    throw new Error('Expected Markdown kanban lane ordering to reuse the shared data-view group projection owner')
+  if (!dataViewGroups.includes('export function projectDataViewGroups') || !kanbanView.includes('projectDataViewGroups(view, groupById, host.copy.ungroupedLabel)')) {
+    throw new Error('Expected Markdown kanban lane ordering to reuse Base group projection with consumer-owned labels')
   }
 
   if (!kanbanGroup.includes('KanbanLaneDragOverIndicator') || !kanbanGroup.includes('KanbanLaneDropPreview') || kanbanGroup.includes('h-[2px]') || !kanbanView.includes('showLaneDropPreview=')) {

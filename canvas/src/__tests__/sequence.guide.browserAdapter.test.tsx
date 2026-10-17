@@ -44,10 +44,10 @@ test('native shell and inspector keep their markup and optional controller slots
       selectedId="event" onSelect={() => {}} textClassName="font-sans text-sm"
       beforeItems={<p>Branch selector</p>} footer={<p>Offline controls</p>} />
   </FloatingPanelShell>)
-  assert.match(markup, /data-kg-floating-panel-root="true"/)
-  assert.match(markup, /ModalContainer/)
-  assert.match(markup, /kg-responsive-panel-header-row/)
-  assert.match(markup, /cursor-move/)
+  assert.match(markup, /data-agentic-base-floating-panel="true"/)
+  assert.match(markup, /agentic-base-floating-panel-inner/)
+  assert.match(markup, /agentic-base-floating-panel-header/)
+  assert.match(markup, /agentic-base-floating-panel-draggable/)
   assert.match(markup, /sequence-flow sequence-inspector font-sans text-sm/)
   assert.match(markup, /<strong>7\. Request<\/strong>/)
   assert.match(markup, /aria-pressed="true"/)

@@ -1,6 +1,16 @@
-.kg-graph-fields-surface { container: graph-fields / inline-size; }
-.kg-graph-fields-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .kg-graph-fields-list, .kg-graph-fields-settings { overscroll-behavior: contain; }
-@container graph-fields (max-width: 680px) {
-  .kg-graph-fields-split { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(160px, 1fr) minmax(220px, 1fr); }
+.kg-graph-fields-base-workbench {
+  height: 100%;
+  min-height: 0;
+  background: transparent;
+  --agentic-base-settings-border: var(--kg-border);
+  --agentic-base-settings-text: var(--kg-text-primary);
+  --agentic-base-settings-surface: var(--kg-panel-bg);
+  --agentic-base-settings-header: var(--kg-panel-header-bg, var(--kg-panel-bg));
+  --agentic-base-settings-muted: var(--kg-text-tertiary);
 }
+.kg-graph-fields-base-workbench .agentic-base-field-workbench-split { height: 100%; min-height: 0; }
+.kg-graph-fields-base-workbench .agentic-base-field-workbench-list-header,
+.kg-graph-fields-base-workbench .agentic-base-field-workbench-detail-header { display: none; }
+.kg-graph-fields-base-workbench .agentic-base-field-workbench-list-content,
+.kg-graph-fields-base-workbench .agentic-base-field-workbench-detail-content { height: 100%; min-height: 0; padding: 0; }

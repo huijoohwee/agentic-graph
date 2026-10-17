@@ -10,7 +10,6 @@ export function testGraphFieldsFieldGridsUseSharedResponsiveOwner() {
   const denseGridLiteral = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-1'
   const tripleGridLiteral = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2'
   const denseTripleGridLiteral = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-1'
-  const mainSplitGridLiteral = 'kg-graph-fields-split grid h-full min-h-0 min-w-0 gap-2'
   const spaciousConsumers = [
     'FieldSchemaSection.tsx',
     'FieldSettingsPanel.tsx',
@@ -34,9 +33,6 @@ export function testGraphFieldsFieldGridsUseSharedResponsiveOwner() {
   }
   if (!ownerText.includes(`GRAPH_FIELDS_DENSE_TRIPLE_FIELD_GRID_CLASS_NAME = '${denseTripleGridLiteral}'`)) {
     throw new Error('expected dense three-field Graph Fields rows to define one mobile-first shared owner')
-  }
-  if (!ownerText.includes(`GRAPH_FIELDS_MAIN_SPLIT_GRID_CLASS_NAME = '${mainSplitGridLiteral}'`)) {
-    throw new Error('expected Graph Fields main split to define one mobile-first shared owner')
   }
   for (const fileName of spaciousConsumers) {
     const text = readUtf8(`src/features/panels/views/graph-fields/${fileName}`)
@@ -74,7 +70,10 @@ export function testGraphFieldsFieldGridsUseSharedResponsiveOwner() {
     throw new Error('expected FieldGraphLayersSection to avoid the stale fixed three-column grid literal')
   }
   const graphFieldsViewText = readUtf8('src/features/panels/views/GraphFieldsView.tsx')
-  for (const ownerName of ['GRAPH_FIELDS_MAIN_SPLIT_GRID_CLASS_NAME', 'GRAPH_FIELDS_MAIN_LIST_PANE_CLASS_NAME', 'GRAPH_FIELDS_MAIN_SETTINGS_PANE_CLASS_NAME']) {
+  if (!graphFieldsViewText.includes("import { FieldWorkbench } from '@agentic-base/views-react/settings'")) {
+    throw new Error('expected Graph Fields main split to reuse the Base Workflow Manager field workbench')
+  }
+  for (const ownerName of ['GRAPH_FIELDS_MAIN_LIST_PANE_CLASS_NAME', 'GRAPH_FIELDS_MAIN_SETTINGS_PANE_CLASS_NAME']) {
     if (!graphFieldsViewText.includes(ownerName)) {
       throw new Error(`expected GraphFieldsView to consume shared ${ownerName}`)
     }

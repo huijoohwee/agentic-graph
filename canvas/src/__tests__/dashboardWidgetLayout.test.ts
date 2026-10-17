@@ -55,7 +55,7 @@ export async function testDashboardMissionCardColumns() {
   }
   const items = ['codebase', 'tree'].map(id => ({ id: 'mission:' + id, cardId: id, content: React.createElement(Card, { id }) }))
   const renderBoard = () => root.render(React.createElement(DashboardWidgetBoard, { id: 'mission', items }))
-  const find = (id: string) => container.querySelector<HTMLElement>('[data-kg-dashboard-card="' + id + '"]')!
+  const find = (id: string) => container.querySelector<HTMLElement>('[data-agentic-base-dashboard-card="' + id + '"]')!
   const transfer = new Map<string, string>()
   const event = (name: string, x = 280, y = 50) => {
     const e = new dom.window.Event(name, { bubbles: true, cancelable: true })
@@ -94,7 +94,7 @@ export async function testDashboardMissionCardColumns() {
     await waitFor(() => container.querySelectorAll('[data-dashboard-columns="1"]').length === 2)
     assert.equal(mounts, 2)
     await act(async () => { root.render(null); await tick(); renderBoard(); await tick() })
-    assert.deepEqual([...container.querySelectorAll('[data-kg-dashboard-card]')].map(node => node.getAttribute('data-kg-dashboard-card')), ['codebase', 'tree'], 'saved row placement survives remount')
+    assert.deepEqual([...container.querySelectorAll('[data-agentic-base-dashboard-card]')].map(node => node.getAttribute('data-agentic-base-dashboard-card')), ['codebase', 'tree'], 'saved row placement survives remount')
     // Empty workspace activation must keep its single observer mounted through snapshot arrival.
     await act(async () => { root.render(null); closeAgentRunInspection(); activateAgentRunWorkspace('tree'); await tick() })
     mounts = 0

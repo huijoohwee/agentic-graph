@@ -99,6 +99,7 @@
     "pretest:ci:standalone-export": "npm run check:html-viewer-runtime"
   },
   "dependencies": {
+    "@agentic-base/views-react": "git+ssh://git@github.com/huijoohwee/agentic-base.git#56f73a9cbb6c8498830d0195b35f35876e70f77e",
     "@huggingface/transformers": "3.8.1",
     "@litertjs/core": "^2.5.3",
     "@react-three/fiber": "^8.17.8",

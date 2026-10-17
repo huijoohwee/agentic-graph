@@ -348,7 +348,7 @@ export async function testAgentGraphLaunchImportUrlTargetsFloatingPanelSkillsCom
     assert.equal(target.mcpTool, IMPORT_URL_AGENT_READY_MCP_TOOL_NAME)
     assert.equal(target.resolution?.invocation.action, IMPORT_URL_COMMAND)
 
-    const shell = container.querySelector('[data-kg-floating-panel-root="true"]')
+    const shell = container.querySelector('[data-agentic-base-floating-panel="true"]')
     assert.ok(shell, 'expected the actual FloatingPanel shell to remain mounted')
     const panel = shell.querySelector('[data-kg-floating-panel-skills-commands-view="true"]')
     assert.equal(panel?.getAttribute('data-kg-floating-panel-skills-commands-mcp-target-status'), 'ready')
@@ -378,7 +378,7 @@ export async function testAgentGraphLaunchImportUrlTargetsFloatingPanelSkillsCom
       closeButton.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       await waitForTasks(1)
     })
-    assert.equal(container.querySelector('[data-kg-floating-panel-root="true"]'), null)
+    assert.equal(container.querySelector('[data-agentic-base-floating-panel="true"]'), null)
     assert.equal(readSkillsCommandsMcpTarget().status, 'idle')
   } finally {
     await unmountReactRoot(root, { window: dom.window as unknown as Window, tasks: 1 })

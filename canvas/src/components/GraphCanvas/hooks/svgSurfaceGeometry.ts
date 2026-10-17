@@ -165,7 +165,7 @@ export const readSvgSurfaceFitViewportRect = (
   let width = fallback.width
   let height = fallback.height
   const selectors = [
-    '[data-kg-floating-panel-root="true"]',
+    '[data-kg-floating-panel-root="true"], [data-agentic-base-floating-panel="true"]',
     '[data-kg-strybldr-bottom-timeline-panel="1"]',
   ].join(',')
   for (const overlay of Array.from(document.querySelectorAll(selectors))) {

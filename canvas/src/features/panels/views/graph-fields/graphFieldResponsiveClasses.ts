@@ -3,6 +3,5 @@ export const GRAPH_FIELDS_COMPACT_FIELD_GRID_CLASS_NAME = 'grid min-w-0 grid-col
 export const GRAPH_FIELDS_DENSE_FIELD_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-1'
 export const GRAPH_FIELDS_TRIPLE_FIELD_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2'
 export const GRAPH_FIELDS_DENSE_TRIPLE_FIELD_GRID_CLASS_NAME = 'grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-1'
-export const GRAPH_FIELDS_MAIN_SPLIT_GRID_CLASS_NAME = 'kg-graph-fields-split grid h-full min-h-0 min-w-0 gap-2'
 export const GRAPH_FIELDS_MAIN_LIST_PANE_CLASS_NAME = 'kg-graph-fields-list min-h-0 min-w-0 overflow-auto'
 export const GRAPH_FIELDS_MAIN_SETTINGS_PANE_CLASS_NAME = 'kg-graph-fields-settings min-h-0 min-w-0 overflow-auto'

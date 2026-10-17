@@ -27,9 +27,12 @@ const inputs = new Set(['canvas/scripts/build-data-view-adapter.mjs', 'package.j
 const read = async file => { inputs.add(relative(file)); return fs.readFile(path.resolve(root, file), 'utf8') }
 const options = { absWorkingDir: root, bundle: true, write: false, metafile: true,
   preserveSymlinks: true, alias: { '@': path.join(root, 'canvas/src'), 'grph-shared': path.join(root, 'grph-shared/src') },
+  loader: { '.css': 'empty' },
   logLevel: 'silent' }
 const collect = result => {
-  for (const file of Object.keys(result.metafile.inputs)) if (!file.startsWith('<')) {
+  const retained = new Set(Object.values(result.metafile.outputs).flatMap(output =>
+    Object.entries(output.inputs).filter(([, details]) => details.bytesInOutput > 0).map(([file]) => file)))
+  for (const file of retained) if (!file.startsWith('<')) {
     const label = relative(file)
     assert(!label.startsWith('../') && !path.isAbsolute(label), `Build input escapes checkout: ${label}`)
     inputs.add(label)
@@ -97,15 +100,27 @@ const projectRootTokens = (source, properties) => {
 // Match index.css import order: generated tokens, borders, responsive controls, then local root declarations.
 const controlTokens = projectRootTokens(responsiveCss, new Set(['--kg-control-height']))
 const viewportTokens = projectRootTokens(indexCss, viewportProperties)
-const tokens = [tokenRules.toString(), ...borderTokens, ...controlTokens, ...viewportTokens].join('\n')
+const baseTokenMapping = `:host {
+  --agentic-base-text: var(--kg-text-primary);
+  --agentic-base-surface: var(--kg-panel-bg);
+  --agentic-base-border: var(--kg-border);
+  --agentic-base-muted: var(--kg-text-secondary);
+  --agentic-base-header: var(--kg-panel-bg);
+  --agentic-base-selected: color-mix(in srgb, var(--kg-accent) 12%, var(--kg-panel-bg));
+  --agentic-base-hover: color-mix(in srgb, var(--kg-accent) 7%, var(--kg-panel-bg));
+  --agentic-base-focus: var(--kg-accent);
+}`
+const tokens = [tokenRules.toString(), ...borderTokens, ...controlTokens, ...viewportTokens, baseTokenMapping].join('\n')
 
 // Token-only sheet is safe for host applications. Layout/reset utilities stay in the ShadowRoot sheet.
 const tokenCss = (await esbuild.transform(tokens, { loader: 'css', minify: true, legalComments: 'inline' })).code
 const shadowScope = text => text.replace(/:root((?:\[[^\]]+\])*)/g, (_, attributes) => attributes ? `:host(${attributes})` : ':host')
 const nativeStyles = []
-for (const file of ['shared-borders.css', 'application-typography.css', 'markdown-data-view-table.css']) {
+for (const file of ['shared-borders.css', 'application-typography.css']) {
   nativeStyles.push(shadowScope(await read('canvas/src/styles/' + file)).replace(/\bbody\s*\{/g, ':host {'))
 }
+nativeStyles.push(shadowScope(await read('node_modules/@agentic-base/views-react/packages/views-react/dist/browser-data-view.css')))
+nativeStyles.push(shadowScope(await read('node_modules/@agentic-base/views-react/packages/views-react/src/panels/floatingPanelShell.css')))
 // Preserve exact owner declarations and at-rules; exclude unrelated selectors from shared rules.
 const projectRules = (source, accepts, required) => {
   const rules = [], selected = new Set()
@@ -118,11 +133,10 @@ const projectRules = (source, accepts, required) => {
   assert(required.every(selector => selected.has(selector)), `Native CSS owner missing: ${required.filter(selector => !selected.has(selector)).join(', ')}`)
   return rules
 }
-const frameSelectors = ['.kg-data-view-table-frame', '.kg-safe-viewport-panel', '.kg-responsive-panel-header-row',
-  '.kg-responsive-panel-header-actions', '.kg-row-scroll', '.kg-responsive-element-row', '.kg-icon-button', '.kg-default-glyph']
+const frameSelectors = ['.kg-responsive-element-row', '.kg-icon-button', '.kg-default-glyph']
 nativeStyles.push(...projectRules(responsiveCss,
   selector => frameSelectors.some(base => selector === base || selector.startsWith(base + ' ')), frameSelectors))
-const shellSelectors = ['.ModalContainer', '.App-toolbar__btn']
+const shellSelectors = ['.App-toolbar__btn']
 nativeStyles.push(...projectRules(indexCss, selector => shellSelectors.includes(selector), shellSelectors))
 nativeStyles.push(...projectRules(postcss.parse(await read('canvas/src/features/sequence/SequenceFlow.css')),
   selector => selector === '.sequence-flow' || selector === '.sequence-flow select' || /^\.sequence-inspector(?:\s|$)/.test(selector),
@@ -163,8 +177,8 @@ for (const [name, bytes] of Object.entries(files)) assert(bytes.length > 0 && by
 const sourceRevision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim()
 const sourceDirty = Boolean(execFileSync('git', ['status', '--porcelain', '--untracked-files=normal'], { cwd: root, encoding: 'utf8' }).trim())
 const dependencies = {}
-for (const name of ['esbuild', 'tailwindcss', '@tailwindcss/node', '@tailwindcss/oxide', 'postcss', 'react', 'react-dom', 'scheduler', 'lucide-react']) {
-  const directory = runtimePackages[name] || 'node_modules/' + name
+for (const name of ['esbuild', 'tailwindcss', '@tailwindcss/node', '@tailwindcss/oxide', 'postcss', 'react', 'react-dom', 'scheduler', 'lucide-react', '@agentic-base/views-react']) {
+  const directory = runtimePackages[name] || (name === '@agentic-base/views-react' ? 'node_modules/@agentic-base/views-react' : 'node_modules/' + name)
   dependencies[name] = JSON.parse(await read(directory + '/package.json')).version
 }
 const records = await Promise.all([...inputs].sort().map(async file => {
@@ -175,7 +189,9 @@ const records = await Promise.all([...inputs].sort().map(async file => {
   assert(before.mtimeMs <= startedAt && before.mtimeMs === after.mtimeMs && before.size === after.size, `Input changed during build; retry: ${file}`)
   return { path: file, bytes: bytes.length, sha256: sha256(bytes) }
 }))
-assert(records.length <= MAX_INPUTS && records.reduce((total, row) => total + row.bytes, 0) <= MAX_TOTAL_INPUT_BYTES, 'Native input inventory exceeds its bound')
+const totalInputBytes = records.reduce((total, row) => total + row.bytes, 0)
+assert(records.length <= MAX_INPUTS && totalInputBytes <= MAX_TOTAL_INPUT_BYTES,
+  `Native input inventory exceeds its bound: ${records.length}/${MAX_INPUTS} files, ${totalInputBytes}/${MAX_TOTAL_INPUT_BYTES} bytes`)
 const manifest = { schema: 'agentic-graph/data-view-artifact/v1', sourceRevision, sourceDirty, entry,
   browserExport: 'mountDataView', browserExports, cssScope: 'shadow-root', hostTokens: 'graph-ui-tokens.css', dependencies, licenses,
   inputDigest: sha256(JSON.stringify(records)), inputs: records,

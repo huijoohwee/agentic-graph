@@ -1,90 +1,46 @@
 import { readFileSync } from 'node:fs'
 
-export function testDashboardCanvasReusesStoryboardCardContracts() {
-  const source = readFileSync(new URL('../components/DashboardCanvas/index.tsx', import.meta.url), 'utf8')
+export function testDashboardCanvasReusesBaseVisuals() {
+  const canvas = readFileSync(new URL('../components/DashboardCanvas/index.tsx', import.meta.url), 'utf8')
+  const widgets = readFileSync(new URL('../components/DashboardCanvas/DashboardWidgets.tsx', import.meta.url), 'utf8')
+  const charts = readFileSync(new URL('../components/DashboardCanvas/DashboardCharts.tsx', import.meta.url), 'utf8')
+
   for (const snippet of [
+    'import { DashboardWidgetCard } from \'@agentic-base/views-react/dashboard\'',
+    'titleEditor',
+    'subtitleEditor',
+    'footnoteEditor',
+    'cardDragProps={cardDragProps}',
+    'cardDropProps={cardDropProps}',
+    'registerElement={props.registerCardElement}',
     'CardInlineTextEditor',
-    'UI_RESPONSIVE_CARD_MULTILINE_EDITOR_CLASSNAME',
+    'DashboardWidgetBoard',
+    'DashboardWidgetContainer',
+    'KanbanCardDropPreview',
+  ]) {
+    if (!widgets.includes(snippet)) throw new Error(`expected Graph dashboard host to compose Base visuals and retain consumer actions: ${snippet}`)
+  }
+  for (const snippet of [
+    'DashboardBarChart',
+    'DashboardLineAreaChart',
+    'DASHBOARD_CHART_TONE_COLORS',
+    "from '@agentic-base/views-react/dashboard'",
+  ]) {
+    if (!charts.includes(snippet)) throw new Error(`expected Graph dashboard charts to consume Base rendering: ${snippet}`)
+  }
+  for (const snippet of [
     'CanvasGridOverlaySurface',
-    'DashboardChartTooltipOverlay',
-    'data-kg-dashboard-chart-tooltip="1"',
-    'data-kg-dashboard-chart-hit="1"',
-    'data-kg-dashboard-chart-hover-line="1"',
-    'onMouseMove={() => showTooltip(point, index)}',
-    'onMouseMove={showTooltip}',
-    'absolute inset-0 overflow-auto',
+    'DashboardWidgetBoard',
     'data-kg-dashboard-scroll-surface="1"',
-    'useContainerDims',
-    'readCanvasGridRenderConfigFromSchema',
-    'const canvasGrid = React.useMemo(() => readCanvasGridRenderConfigFromSchema(schema), [schema])',
-    'surfaceId="dashboard"',
-    'UI_RESPONSIVE_VIEWPORT_FIT_CONTENT_CLASSNAME',
-    'UI_RESPONSIVE_VIEWPORT_FIT_GRID_CLASSNAME',
-    'buildResponsiveViewportFitContentStyle',
-    'buildResponsiveViewportFitGridStyle',
-    'const DASHBOARD_CONTENT_STYLE = buildResponsiveViewportFitContentStyle()',
-    'DASHBOARD_METRICS_GRID_STYLE',
-    'const DASHBOARD_METRICS_GRID_STYLE = buildResponsiveViewportFitGridStyle()',
-    'data-kg-dashboard-responsive-width="1"',
     'data-kg-dashboard-sections-board="1"',
     'data-kg-dashboard-metrics-board="1"',
-    'data-kg-dashboard-metrics-cards="1"',
-    'data-kg-dashboard-metric-scrollable="1"',
-    'data-kg-dashboard-metric-draggable="1"',
-    'data-kg-dashboard-metric-drag-region="1"',
-    'data-kg-dashboard-section-cards="1"',
-    'data-kg-dashboard-card-scrollable="1"',
-    'data-kg-dashboard-table-row-draggable',
-    "const metricDragProps = dashboardDrag.createCardDragProps({ rowId: metric.id, groupKey: DASHBOARD_METRICS_GROUP_KEY })",
-    "const metricDropProps = dashboardDrag.createCardDropProps({ rowId: metric.id, groupKey: DASHBOARD_METRICS_GROUP_KEY })",
-    "commitMetricTextOverride(metricId, 'label', nextValue)",
-    "commitMetricTextOverride(metricId, 'detail', nextValue)",
-    "type DashboardCardTextField = 'title' | 'subtitle' | 'footnote'",
-    'type DashboardCardTextOverride = Partial<Record<DashboardCardTextField, string>>',
-    'cardTextOverrides',
-    'commitCardTextOverride',
-    'readDashboardCardTextField',
-    'data-kg-dashboard-card-inline-edit="title"',
-    'data-kg-dashboard-card-inline-edit="subtitle"',
-    'data-kg-dashboard-card-inline-edit="footnote"',
-    'Dashboard card title for',
-    'Dashboard card subtitle for',
-    'Dashboard card footnote for',
-    'markdownPreview="auto"',
-    'useKanbanDragAndDrop',
-    'reorderKanbanRowIds',
-    'KanbanCardDropPreview',
-    'getKanbanCardDragVisualState',
-    'buildKanbanCardDropIntentLabel',
-    'const cardDragProps = dashboardDrag.createCardDragProps({ rowId: card.id, groupKey: section.id })',
-    'const cardDropProps = dashboardDrag.createCardDropProps({ rowId: card.id, groupKey: section.id })',
-    'draggable={cardDragProps.draggable}',
-    'onDragStart={cardDragProps.onDragStart}',
-    'onDragEnd={cardDragProps.onDragEnd}',
   ]) {
-    if (!source.includes(snippet)) {
-      throw new Error(`expected DashboardCanvas to retain shared Storyboard/Kanban card contract snippet: ${snippet}`)
-    }
+    if (!canvas.includes(snippet)) throw new Error(`expected Graph to retain dashboard product composition: ${snippet}`)
   }
-  for (const forbidden of [
-    'DashboardCardDragState',
-    'absolute inset-0 flex h-full w-full flex-col overflow-hidden',
-    'DASHBOARD_METRIC_CARD_MIN_INLINE_SIZE',
-    'repeat(auto-fit, minmax(min(100%,',
-    'max-w-[1420px]',
-    'min-w-[760px]',
-    'grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5',
-    'data-kg-dashboard-metrics-scrollable="1"',
-    'max-h-[124px]',
-    '<DashboardMetricTile key={metric.id} metric={metric} />',
-    '<h3 className={`m-0 truncate text-sm font-semibold',
-    '{card.footnote ? <p className=',
-    'setCardDragState',
-    'handleCardDragStart',
-    'handleCardDrop',
-  ]) {
-    if (source.includes(forbidden)) {
-      throw new Error(`expected DashboardCanvas to avoid local card drag state: ${forbidden}`)
-    }
+  for (const source of [widgets, charts]) {
+    if (source.includes('getKanbanCardDragVisualState')) throw new Error('dashboard drag visuals must have one owner in Base')
+  }
+  if (charts.includes('function ChartGridLines') || charts.includes('<svg')) {
+    throw new Error('dashboard chart geometry must have one owner in Base')
   }
 }

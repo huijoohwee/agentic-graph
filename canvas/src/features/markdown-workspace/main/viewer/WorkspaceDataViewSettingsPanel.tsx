@@ -3,6 +3,7 @@ import { WorkspaceDataViewSettingsCalendarSection } from './WorkspaceDataViewSet
 import { WorkspaceDataViewSettingsLifecycle } from './WorkspaceDataViewSettingsLifecycle'
 import { filterRuleCount as countFilterRules } from './workspaceDataViewFilterTree'
 import React from 'react'
+import { SettingsPanelShell } from '@agentic-base/views-react/settings'
 import { ArrowLeftRight, ArrowUpDown, CalendarDays, Filter, Globe2, LayoutGrid, RotateCcw, SlidersHorizontal, Table as TableIcon } from 'lucide-react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { MARKDOWN_DATA_VIEW_COPY } from '@/lib/config-copy/markdownDataViewCopy'
@@ -23,7 +24,6 @@ import {
 } from '@/lib/ui/dataViewDensity'
 import { PanelField, PanelSelect, PanelTextInput, readPanelChoiceSurfaceClassName } from '@/lib/ui/panelFormControls'
 import { MAIN_PANEL_SETTINGS_DROPDOWN_SELECT_CLASSNAME } from '@/features/panels/ui/mainPanelSettingsSelectClass'
-import { MainPanelSettingsPanelShell } from '@/features/panels/ui/MainPanelSettingsPanelShell'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
 import ExpandCollapseAllButton from '@/features/panels/ui/ExpandCollapseAllButton'
 import { UI_TEXT_TRUNCATE } from '@/lib/ui/textLayout'
@@ -43,6 +43,13 @@ type WorkspaceDataViewSettingsPanelProps = Omit<WorkspaceDataViewFloatingBinding
 }
 
 const VIEW_SECTION_HEADER_SPACING_CLASS_NAME = 'pt-[3px] pb-[3px]'
+const baseSettingsThemeStyle = {
+  '--agentic-base-settings-border': 'var(--kg-border)',
+  '--agentic-base-settings-text': 'var(--kg-text-primary)',
+  '--agentic-base-settings-surface': 'var(--kg-panel-bg)',
+  '--agentic-base-settings-header': 'var(--kg-panel-header-bg, var(--kg-panel-bg))',
+  '--agentic-base-settings-muted': 'var(--kg-text-tertiary)',
+} as React.CSSProperties
 
 export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsPanelProps) {
   const layoutModeOptions = React.useMemo(
@@ -202,9 +209,10 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
   }, [sectionSummaries])
 
   return (
-    <MainPanelSettingsPanelShell
+    <div className="h-full min-h-0 min-w-0" style={baseSettingsThemeStyle}>
+    <SettingsPanelShell
       ariaLabel={MARKDOWN_DATA_VIEW_COPY.viewSettingsLabel}
-      titleNode={(
+      title={(
         <section className="flex min-w-0 max-w-full flex-col gap-1">
           <h3 className={['text-base font-semibold min-w-0', UI_TEXT_TRUNCATE, UI_THEME_TOKENS.text.primary].join(' ')}>
             {title}
@@ -214,17 +222,17 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
           </p>
         </section>
       )}
-      secondaryNode={(
-        <ExpandCollapseAllButton
-          allCollapsed={allCollapsed}
-          onExpandAll={expandAll}
-          onCollapseAll={collapseAll}
-          titleExpand="Expand"
-          titleCollapse="Collapse (Default)"
-        />
+      summary={(
+        <div className={`${UI_RESPONSIVE_DATA_VIEW_HEADER_ACTIONS_CLASSNAME} flex shrink-0 items-center justify-end gap-1 text-right`}>
+          <ExpandCollapseAllButton
+            allCollapsed={allCollapsed}
+            onExpandAll={expandAll}
+            onCollapseAll={collapseAll}
+            titleExpand="Expand"
+            titleCollapse="Collapse (Default)"
+          />
+        </div>
       )}
-      secondaryNodeClassName={`${UI_RESPONSIVE_DATA_VIEW_HEADER_ACTIONS_CLASSNAME} flex shrink-0 items-center justify-end gap-1 text-right`}
-      uiPanelKeyValueTextSizeClass="text-xs"
       className="kg-data-view-settings-panel h-full rounded-none border-0"
       headerClassName={['px-3 py-3 border-b', UI_THEME_TOKENS.panel.divider].join(' ')}
       bodyClassName="p-0"
@@ -530,6 +538,7 @@ export function WorkspaceDataViewSettingsPanel(props: WorkspaceDataViewSettingsP
         </section>
       </main>
       </fieldset>
-    </MainPanelSettingsPanelShell>
+    </SettingsPanelShell>
+    </div>
   )
 }
