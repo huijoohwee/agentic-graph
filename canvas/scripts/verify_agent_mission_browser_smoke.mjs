@@ -317,19 +317,20 @@ async function verifyApexActivation(width) {
   const latePanel = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR)
   await latePanel.getByRole('region', { name: 'Props Panel', exact: true }).waitFor()
   await latePanel.locator('[data-kg-floating-panel-view-trigger="media"]').waitFor()
-  console.log('late panel close layers', JSON.stringify(await latePanel.getByRole('button', { name: 'Close', exact: true }).evaluate(button => {
-    const rect = button.getBoundingClientRect()
-    const ancestors = []
-    let current = button
-    while (current && ancestors.length < 12) {
-      const style = getComputedStyle(current)
-      const bounds = current.getBoundingClientRect()
-      ancestors.push({ tag: current.tagName, className: current.className, position: style.position, zIndex: style.zIndex, transform: style.transform, overflow: style.overflow, bounds: [bounds.x, bounds.y, bounds.width, bounds.height] })
-      current = current.parentElement
-    }
-    const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)
-    return { button: [rect.x, rect.y, rect.width, rect.height], hit: hit && { tag: hit.tagName, className: hit.className }, ancestors }
-  })))
+  const panelLayer = await latePanel.evaluate(panel => {
+    const root = panel.closest('.agentic-base-floating-panel-root')
+    const bounds = root.getBoundingClientRect()
+    const close = panel.querySelector('button[aria-label="Close"]')
+    const closeBounds = close.getBoundingClientRect()
+    const hit = document.elementFromPoint(closeBounds.x + closeBounds.width / 2, closeBounds.y + closeBounds.height / 2)
+    return { position: getComputedStyle(root).position, width: bounds.width, height: bounds.height,
+      viewportWidth: window.innerWidth, viewportHeight: window.innerHeight,
+      closeReceivesPointer: hit === close || close.contains(hit) }
+  })
+  assert.equal(panelLayer.position, 'fixed', 'Shared panel host root must cover the viewport')
+  assert.ok(panelLayer.width >= panelLayer.viewportWidth && panelLayer.height >= panelLayer.viewportHeight,
+    'Shared panel host root must stay viewport-sized above dashboard surfaces')
+  assert.equal(panelLayer.closeReceivesPointer, true, 'Shared panel must receive pointer input above dashboard cards')
   await latePanel.getByRole('button', { name: 'Close', exact: true }).click()
   await openRunSource(evidence)
   const refresh = evidence.getByRole('button', { name: 'Refresh runs', exact: true })

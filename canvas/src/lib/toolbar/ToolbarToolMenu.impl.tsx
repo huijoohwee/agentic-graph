@@ -226,7 +226,12 @@ export function ToolbarToolMenu({
     setManagedHeaderActions(actions)
   }, [])
   const panelStack = usePanelStack('floating', resolveFloatingPanelZIndex(floatingPanelZIndex, floatingPanelPinned, workspaceEditorOverlayOpen))
-  const floatingPanelRootStyle = { zIndex: panelStack.zIndex }
+  const floatingPanelRootStyle: React.CSSProperties = {
+    position: 'fixed',
+    inset: 0,
+    pointerEvents: 'none',
+    zIndex: panelStack.zIndex,
+  }
 
   const floatingPanelSizeStyle = React.useMemo(() => {
     return {
