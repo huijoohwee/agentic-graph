@@ -8,8 +8,10 @@ import type { MarkdownWorkspaceDerivedViewerMode } from './MarkdownWorkspaceDeri
 export function useWorkspaceDataViewConfig(selected: DataViewCandidate | null, activeDocumentPath: string | null | undefined,
   viewerMode: MarkdownWorkspaceDerivedViewerMode, ephemeral = false, canvasDataViewSurface = false) {
   const layout = viewerMode === 'calendar' ? 'calendar' : viewerMode === 'kanban' ? 'kanban' : 'table'
+  const fallback = defaultWorkspaceDataViewConfig({ title: layout === 'calendar' ? 'Calendar View' : layout === 'kanban' ? 'Kanban View' : 'Table View', layout, groupByColumnId: selected?.view.groupByColumnId ?? null })
+  if (viewerMode === 'multiDimTable') fallback.graphEnabled = true
   const saved = useSavedWorkspaceDataView({ activeDocumentPath: activeDocumentPath ?? null, tableId: selected?.id ?? null, ephemeral,
-    fallback: defaultWorkspaceDataViewConfig({ title: layout === 'calendar' ? 'Calendar View' : layout === 'kanban' ? 'Kanban View' : 'Table View', layout, groupByColumnId: selected?.view.groupByColumnId ?? null }),
+    fallback,
   })
   const commitViewConfig = React.useCallback((next: WorkspaceDataViewConfig) => {
     saved.setViewConfig(next)

@@ -6365,7 +6365,7 @@ function applyWorkspaceInitializationDocsAbsRootDefault(command: string): string
 }
 
 export default defineConfig(({ command, mode }) => {
-  const precacheAdmission = createPwaPrecacheAdmission()
+  const pwaBuildPhase = process.env.AGENTIC_GRAPH_PWA_BUILD_PHASE || 'single'; const isPwaFinalizer = command === 'build' && pwaBuildPhase === 'finalize'; const precacheAdmission = createPwaPrecacheAdmission(undefined, pwaBuildPhase)
   const workspaceInitializationDocsAbsRoot = applyWorkspaceInitializationDocsAbsRootDefault(command); const fileEnv = loadEnv(mode, __dirname, ''); const agenticGraphStorageDevProxyTarget = resolveAgenticGraphStorageDevProxyTarget({ processEnv: process.env, fileEnv })
   const grphSharedAliasRoot = path.resolve(
     __dirname,
@@ -6428,7 +6428,7 @@ export default defineConfig(({ command, mode }) => {
       ],
     },
   },
-  build: {
+  build: { ...(isPwaFinalizer ? { emptyOutDir: false } : {}),
     sourcemap: process.env.AG_BUILD_SOURCEMAP === '1' ? 'hidden' : false,
     minify: process.env.AG_LOW_MEM_BUILD === '1' ? false : 'esbuild',
     reportCompressedSize: process.env.AG_LOW_MEM_BUILD === '1' ? false : true,
@@ -6438,7 +6438,7 @@ export default defineConfig(({ command, mode }) => {
     },
     // Keep Vite quiet for known lazy vendor chunks; hygiene keeps tighter per-chunk budgets for regressions.
     chunkSizeWarningLimit: 3000,
-    rollupOptions: {
+    rollupOptions: { ...(isPwaFinalizer ? { input: path.resolve(__dirname, 'sw.ts') } : {}),
       output: { ...buildVersionedAssetFileNames(runtimeIdentity.sourceRevision),
         ...(process.env.AG_LOW_MEM_BUILD === '1'
           ? { inlineDynamicImports: true as const }
@@ -6557,9 +6557,9 @@ export default defineConfig(({ command, mode }) => {
     stripMermaidArchitectureDetectorPlugin,
     stripMermaidCoseBilkentLayoutPlugin,
     react(),
-    inlineHtmlStylesheetAssetsPlugin(), precacheAdmission.plugin, createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision), createPythonLearningOfflinePlugin(runtimeIdentity.sourceRevision, offlinePublicAssets),
-    VitePWA({
-      registerType: 'autoUpdate', strategies: 'injectManifest', srcDir: '.', filename: 'sw.ts',
+    inlineHtmlStylesheetAssetsPlugin(), ...(isPwaFinalizer ? [] : [precacheAdmission.plugin, createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision), createPythonLearningOfflinePlugin(runtimeIdentity.sourceRevision, offlinePublicAssets)]),
+    VitePWA({ disable: Boolean(process.env.VITE_OBSERVABILITY_WORKSPACE_MANIFEST),
+      registerType: 'autoUpdate', strategies: 'injectManifest', srcDir: '.', filename: 'sw.ts', integration: { closeBundleOrder: 'post' },
       injectRegister: null,
       devOptions: { enabled: false },
       manifest: {
