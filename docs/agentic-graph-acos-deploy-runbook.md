@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Protected Release Runbook"
 id: "md:agentic-graph-acos-deploy-runbook"
 doc_type: "Release Runbook"
-version: "2.3.0"
-date: "2026-10-11"
+version: "2.4.0"
+date: "2026-10-17"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.release.runbook"
@@ -55,9 +55,11 @@ The protected production workflow currently:
 4. builds and verifies an immutable Pages/mirror candidate;
 5. waits at the protected environment for the candidate-digest-bound interactive terminal
    command to submit its approval evidence;
-6. owns the complete ordered Production mutation: Pages Direct Upload, exact-candidate travel-mesh
-   Worker version activation, direct D1 reconciliation, immutable/stable/custom transport probes,
-   and mirror publication;
+6. creates or validates the isolated static-only Dev Pages project, deploys the exact verified UI
+   artifact, records its attempt and candidate receipts, and checks the exact marker and shared
+   Base-owned renderer controls in a browser; only then owns the ordered Production mutation:
+   Pages Direct Upload, exact-candidate travel-mesh Worker version activation, direct D1
+   reconciliation, immutable/stable/custom transport probes, and mirror publication;
 7. emits Deployment v1, State Reconciliation v1, Live Verification v2, and Publication v2
    receipts in that order; and
 8. closes `agentic-collaborative-release-lifecycle/v2` as the only authoritative terminal carrier.
@@ -68,12 +70,21 @@ candidate-bound authorization covers their activation and receipt. It publishes 
 operations outside that exact travel-mesh plan, and DNS publication, require their own authority,
 evidence and rollback path.
 
+The Dev project is `agentic-graph-dev`, a separate Cloudflare Pages Direct Upload project under the
+same protected controller. The controller derives it from the exact verified artifact, removes the
+`functions/` tree, `_worker.js`, and `_routes.json`, and adds same-origin
+`connect-src` and `form-action` policy. It refuses Git integration, bindings, analytics
+injection, custom domains, or project creation above the Pages Free project limit. A failed Dev
+candidate preserves all observed receipts and blocks production; it does not auto-delete the project
+or claim a rollback. PR and local jobs never create or deploy the Dev project.
+
 ## Lane model
 
 | Lane | Owner | Permitted action | Promotion evidence |
 |---|---|---|---|
 | Authoring | scoped task branch and protected integration | edit/test/review source | exact candidate SHA, checks, manifest |
 | Mirror | release verify job | build a digest-bound non-public candidate | immutable candidate/digest and parity checks |
+| Dev | protected release job | static-only Direct Upload and isolated view smoke | exact marker, no Functions or cross-origin calls, view receipt |
 | Delivery | protected release job | deploy, verify, publish receipt/mirror | terminal-evidenced environment approval, live checks, rollback target |
 
 | Boundary | From → To | Evidence Reference | Operator instruction reference | Rollback path and check | State |
