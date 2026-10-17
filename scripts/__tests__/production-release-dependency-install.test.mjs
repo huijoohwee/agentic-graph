@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import fsp from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -15,19 +16,34 @@ test('verify and deploy install dependencies before consuming the mirror runtime
     const install = steps.findIndex(step => step.run === 'bash ./scripts/install-production-release-dependencies.sh')
     assert.ok(install >= 0)
     assert.equal(steps[install]['working-directory'], 'agentic-graph')
+    assert.ok(steps[install].env.AGENTIC_BASE_READ_KEY.includes('secrets.AGENTIC_BASE_READ_KEY'))
     assert.ok(steps.findIndex(step => step.name === consumer) > install)
   }
+  const rollback = workflow.jobs.deploy.steps.find(step => step.name === 'Install rollback dependencies')
+  assert.equal(rollback['working-directory'], 'rollback-agentic-graph')
+  assert.equal(rollback.run, 'source ./scripts/install-agentic-graph-dependencies.sh')
+  assert.ok(rollback.env.AGENTIC_BASE_READ_KEY.includes('secrets.AGENTIC_BASE_READ_KEY'))
 })
-const runInstaller = (t, { mirrorRoot = '', graphFailures = 0, mirrorFailures = 0 } = {}) => {
+const runInstaller = (t, { mirrorRoot = '', graphFailures = 0, mirrorFailures = 0, readKey = 'test-read-key' } = {}) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'release-dependency-install-'))
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   const bin = path.join(root, 'bin'), cwd = path.join(root, 'agentic-graph')
   fs.mkdirSync(bin); fs.mkdirSync(cwd)
   const log = path.join(root, 'calls.jsonl')
+  fs.writeFileSync(log, '')
   const shim = `#!${process.execPath}
 const fs = require('node:fs'), path = require('node:path');
 const command = path.basename(process.argv[1]), args = process.argv.slice(2);
-fs.appendFileSync(process.env.LC_INSTALL_LOG, JSON.stringify([command, ...args]) + '\\n');
+const keyDir = fs.readdirSync(process.env.LC_INSTALL_KEY_DIR).find(name => name.startsWith('agentic-base-read.'));
+const keyFile = keyDir ? path.join(process.env.LC_INSTALL_KEY_DIR, keyDir, 'id_ed25519') : '';
+const keyExists = fs.existsSync(keyFile);
+fs.appendFileSync(process.env.LC_INSTALL_LOG, JSON.stringify({
+    command, args,
+  rawKeyPresent: Object.hasOwn(process.env, 'AGENTIC_BASE_READ_KEY'),
+  sshConfigured: Boolean(process.env.GIT_SSH_COMMAND),
+  keyExists,
+  keyMode: keyExists ? fs.statSync(keyFile).mode & 0o777 : null,
+}) + '\\n');
 if (command === 'npm' && args.includes('ci')) {
   const mirror = args.includes('--prefix');
   const counter = process.env.LC_INSTALL_LOG + (mirror ? '.mirror' : '.graph');
@@ -40,20 +56,29 @@ if (command === 'npm' && args.includes('ci')) {
   const result = spawnSync('bash', [installer], { cwd, encoding: 'utf8', timeout: 10_000,
     env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`,
       AGENTIC_OS_PUBLISH_REPOSITORY_ROOT: mirrorRoot, LC_INSTALL_LOG: log,
+      AGENTIC_BASE_READ_KEY: readKey, LC_INSTALL_KEY_DIR: root, RUNNER_TEMP: root,
       LC_INSTALL_GRAPH_FAILURES: String(graphFailures), LC_INSTALL_MIRROR_FAILURES: String(mirrorFailures) } })
   if (result.error) throw result.error
-  return { ...result, calls: fs.readFileSync(log, 'utf8').trim().split('\n').map(line => JSON.parse(line)) }
+  const observations = fs.readFileSync(log, 'utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line))
+  return { ...result, observations, calls: observations.map(({ command, args }) => [command, ...args]), root }
 }
 
-test('release setup installs the mirror lockfile and development dependency before runtime preparation', t => {
+test('release setup installs the mirror lockfile and development dependency before runtime preparation', async t => {
   const result = runInstaller(t)
   assert.equal(result.status, 0, result.stderr)
+  assert.deepEqual(result.observations[0], {
+    command: 'npm', args: ['ci', '--ignore-scripts', '--no-audit', '--no-fund'], rawKeyPresent: false,
+    sshConfigured: true, keyExists: true, keyMode: 0o600,
+  })
   assert.deepEqual(result.calls, [
-    ['npm', 'ci'],
+    ['npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund'],
+    ['npm', 'rebuild', '--no-audit', '--no-fund'],
     ['npm', '--prefix', '../huijoohwee', 'ci', '--ignore-scripts', '--include=dev'],
     ['npm', 'run', 'smoke:prepare'],
     ['npx', 'playwright', 'install', '--with-deps', 'chromium'],
   ])
+  assert.ok(result.observations.slice(1).every(item => !item.rawKeyPresent && !item.sshConfigured && !item.keyExists))
+  assert.deepEqual((await fsp.readdir(result.root)).filter(name => name.startsWith('agentic-base-read.')), [])
 })
 
 test('release setup preserves the configured mirror path without splitting spaces', t => {
@@ -73,7 +98,15 @@ test('first source or mirror install failure stops without rerunning or preparin
     assert.ok(result.calls.every(call => !call.includes('smoke:prepare') && call[0] !== 'npx'))
     const installs = result.calls.filter(call => call.includes('ci'))
     assert.equal(installs.length, failures.graphFailures ? 1 : 2)
+    assert.deepEqual(fs.readdirSync(result.root).filter(name => name.startsWith('agentic-base-read.')), [])
   }
+})
+
+test('missing private Base key fails before any package install', t => {
+  const result = runInstaller(t, { readKey: '' })
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /AGENTIC_BASE_READ_KEY is required/)
+  assert.deepEqual(result.calls, [])
 })
 
 

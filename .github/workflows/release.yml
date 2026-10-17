@@ -35,9 +35,7 @@ jobs:
       - { name: Capture execution guideline revision, id: guideline_revision, working-directory: huijoohwee.github.io, run: 'echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"' }
       - { name: Setup Node, uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 , with: { node-version: 22, cache: npm, cache-dependency-path: "agentic-graph/package-lock.json" } }
       - { name: Setup Python, uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 , with: { python-version: '3.11' } }
-      - name: Install dependencies
-        working-directory: agentic-graph
-        run: bash ./scripts/install-production-release-dependencies.sh
+      - { name: Install dependencies, working-directory: agentic-graph, env: { AGENTIC_BASE_READ_KEY: '${{ secrets.AGENTIC_BASE_READ_KEY }}' }, run: 'bash ./scripts/install-production-release-dependencies.sh' }
       - { name: Initialize native release gate trust, working-directory: agentic-graph, run: 'git fetch origin main && test "$(git rev-parse origin/main)" = "$RELEASE_SHA" && git switch main && test "$(git rev-parse HEAD)" = "$RELEASE_SHA" && npm run agentic-os:setup' }
       - name: Validate travel mesh release plan and local rollback simulation
         working-directory: agentic-graph
@@ -152,9 +150,7 @@ jobs:
       - { name: Checkout production mirror, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: huijoohwee/huijoohwee, ref: '${{ needs.verify.outputs.mirror_revision }}', path: huijoohwee, token: '${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}' } }
       - { name: Checkout exact Agentic Canvas OS docs SSOT, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 , with: { repository: '${{ needs.verify.outputs.docs_repository }}', ref: '${{ needs.verify.outputs.docs_revision }}', path: agentic-os, fetch-depth: 0 } }
       - { name: Setup Node, uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 , with: { node-version: 22, cache: npm, cache-dependency-path: "agentic-graph/package-lock.json" } }
-      - name: Install dependencies
-        working-directory: agentic-graph
-        run: bash ./scripts/install-production-release-dependencies.sh
+      - { name: Install dependencies, working-directory: agentic-graph, env: { AGENTIC_BASE_READ_KEY: '${{ secrets.AGENTIC_BASE_READ_KEY }}' }, run: 'bash ./scripts/install-production-release-dependencies.sh' }
       - { name: Download verified artifacts, uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c , with: { name: 'production-${{ inputs.source_sha }}', path: '${{ runner.temp }}/production-mirror-artifact' } }
       - { name: Validate canonical document sources before deployment, working-directory: agentic-graph, run: 'npm run --silent storage:d1:seed:docs -- --dry-run' }
       - name: Reconcile verified artifact into exact mirror base
@@ -202,6 +198,9 @@ jobs:
       - name: Revalidate last-known-good rollback identity
         working-directory: agentic-graph
         run: test "$(git -C ../huijoohwee ls-remote origin refs/heads/main | cut -f1)" = "${{ needs.verify.outputs.mirror_revision }}" && node scripts/check-runtime-docs-parity.mjs
+      - { name: Promote isolated Pages Dev and verify shared data views, id: dev_promotion, working-directory: agentic-graph, env: { CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}', CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}', CLOUDFLARE_PAGES_PROJECT: '${{ vars.CLOUDFLARE_PAGES_PROJECT }}', PRODUCTION_ARTIFACT_DIR: '${{ runner.temp }}/production-mirror-artifact', DEV_ARTIFACT_DIR: '${{ runner.temp }}/agentic-graph-dev-artifact', DEV_EVIDENCE_DIR: '${{ runner.temp }}/pages-dev-evidence', IMMUTABLE_MANIFEST_DIGEST: '${{ needs.verify.outputs.manifest_digest }}' }, run: 'node scripts/run-pages-dev-promotion.mjs' }
+      - { name: Bind Dev receipt to exact candidate, run: 'test "${{ steps.dev_promotion.outputs.source_revision }}" = "${{ inputs.source_sha }}" && test "${{ steps.dev_promotion.outputs.manifest_digest }}" = "${{ needs.verify.outputs.manifest_digest }}" && test -n "${{ steps.dev_promotion.outputs.deployment_id }}" && test -n "${{ steps.dev_promotion.outputs.deployment_url }}" && [[ "${{ steps.dev_promotion.outputs.promotion_digest }}" =~ ^[0-9a-f]{64}$ ]]' }
+      - { name: Persist isolated Dev receipts, if: always() && steps.dev_promotion.outcome != 'skipped', uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a, with: { name: 'pages-dev-evidence-${{ inputs.source_sha }}-${{ github.run_id }}', path: '${{ runner.temp }}/pages-dev-evidence', if-no-files-found: error, retention-days: 7 } }
       - name: Enforce sole deployment ownership
         working-directory: agentic-graph
         env: *cloudflare_release_environment
@@ -233,10 +232,7 @@ jobs:
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
           npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
           node ./scripts/travel-mesh-release.mjs preflight --source-sha "$RELEASE_SHA" --candidate-digest "$PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST" --authorization "$RUNNER_TEMP/production-lifecycle/consumed-human-authorization-receipt.json" --output "$RUNNER_TEMP/travel-mesh-preflight.json" --github-output
-      - name: Prewarm returning-user service worker profile
-        working-directory: agentic-graph
-        env: { PRODUCTION_SW_PROFILE_ORIGIN: '${{ steps.previous.outputs.production_origin }}', PRODUCTION_SW_PROFILE_DIR: '${{ runner.temp }}/agentic-graph-production-sw-profile', PRODUCTION_SW_EVIDENCE_PATH: '${{ runner.temp }}/agentic-graph-production-sw-evidence.json', PRODUCTION_BROWSER_HEADLESS: 'false' }
-        run: timeout --foreground --kill-after=30s 8m xvfb-run --auto-servernum npm run production:sw-upgrade:prewarm
+      - { name: Prewarm returning-user service worker profile, working-directory: agentic-graph, env: { PRODUCTION_SW_PROFILE_ORIGIN: '${{ steps.previous.outputs.production_origin }}', PRODUCTION_SW_PROFILE_DIR: '${{ runner.temp }}/agentic-graph-production-sw-profile', PRODUCTION_SW_EVIDENCE_PATH: '${{ runner.temp }}/agentic-graph-production-sw-evidence.json', PRODUCTION_BROWSER_HEADLESS: 'false' }, run: 'timeout --foreground --kill-after=30s 8m xvfb-run --auto-servernum npm run production:sw-upgrade:prewarm' }
       - { name: Prewarm returning GameXR browser, working-directory: agentic-graph, run: 'node scripts/production-gamexr.mjs prewarm' }
       - name: Deploy verified artifact
         id: deploy_pages
@@ -503,7 +499,7 @@ jobs:
         if: always() && steps.rollback_eligibility.outputs.eligible == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { ref: '${{ fromJSON(inputs.release_evidence).rollbackIdentity.pages.sourceRevision }}', path: rollback-agentic-graph }
-      - { name: Install rollback dependencies, if: always() && steps.checkout_rollback_source.outcome == 'success', id: install_rollback_dependencies, working-directory: rollback-agentic-graph, run: npm ci }
+      - { name: Install rollback dependencies, if: always() && steps.checkout_rollback_source.outcome == 'success', id: install_rollback_dependencies, working-directory: rollback-agentic-graph, env: { AGENTIC_BASE_READ_KEY: '${{ secrets.AGENTIC_BASE_READ_KEY }}' }, run: 'source ./scripts/install-agentic-graph-dependencies.sh' }
       - name: Resolve rollback docs dependency
         if: always() && steps.install_rollback_dependencies.outcome == 'success'
         id: rollback_docs
