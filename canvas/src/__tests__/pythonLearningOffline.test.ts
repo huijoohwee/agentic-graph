@@ -209,7 +209,6 @@ test('one bounded authored asset declaration supplies exact build and precache m
   try {
     const admission = createPwaPrecacheAdmission()
     admission.plugin.writeBundle.handler({}, {
-      'index.html': { type: 'asset', fileName: 'index.html' },
       'main.js': { type: 'chunk', fileName: `assets/${first}/main.js`, isEntry: true,
         imports: [`assets/${first}/shared.mjs`], dynamicImports: [`assets/${first}/deferred.js`] },
       'shared.mjs': { type: 'chunk', fileName: `assets/${first}/shared.mjs`, imports: [] },

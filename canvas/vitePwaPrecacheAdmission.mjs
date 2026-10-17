@@ -8,12 +8,12 @@ function emittedPath(value) {
   return value
 }
 
-export function collectRequiredStaticJavaScriptFiles(bundle) {
+export function collectRequiredStaticJavaScriptFiles(bundle, isRoot = () => true) {
   if (!bundle || typeof bundle !== 'object' || Array.isArray(bundle)) fail('Rollup output must be an object')
   const chunks = new Map(Object.values(bundle)
     .filter(item => item?.type === 'chunk')
     .map(chunk => [emittedPath(chunk.fileName), chunk]))
-  const roots = [...chunks.values()].filter(chunk => chunk.isEntry === true)
+  const roots = [...chunks.values()].filter(chunk => chunk.isEntry === true && isRoot(chunk))
   if (!roots.length) fail('emitted JavaScript entry roots are missing')
   const required = new Set(), pending = roots.map(chunk => chunk.fileName)
   while (pending.length) {
@@ -37,9 +37,10 @@ export function createPwaPrecacheAdmission() {
     plugin: {
       name: 'agentic-graph-pwa-static-precache', apply: 'build', enforce: 'post',
       writeBundle: { order: 'post', handler(_options, bundle) {
-        const hasHtmlEntry = Object.values(bundle ?? {}).some(item => item?.type === 'asset'
-          && typeof item.fileName === 'string' && /\.html?$/i.test(item.fileName))
-        if (hasHtmlEntry) required = collectRequiredStaticJavaScriptFiles(bundle)
+        const entries = Object.values(bundle ?? {}).filter(item => item?.type === 'chunk' && item.isEntry === true)
+        const appEntries = entries.filter(item => !/(?:^|\/)(?:sw|service-worker)\.(?:c?js|mjs)$/i.test(item.fileName))
+        if (appEntries.length) required = collectRequiredStaticJavaScriptFiles(bundle,
+          item => !/(?:^|\/)(?:sw|service-worker)\.(?:c?js|mjs)$/i.test(item.fileName))
       } },
     },
     async manifestTransform(entries) {
