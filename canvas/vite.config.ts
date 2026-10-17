@@ -6365,7 +6365,7 @@ function applyWorkspaceInitializationDocsAbsRootDefault(command: string): string
 }
 
 export default defineConfig(({ command, mode }) => {
-  const precacheAdmission = createPwaPrecacheAdmission()
+  const precacheAdmission = createPwaPrecacheAdmission(path.resolve(__dirname, 'dist/.vite/manifest.json'))
   const workspaceInitializationDocsAbsRoot = applyWorkspaceInitializationDocsAbsRootDefault(command); const fileEnv = loadEnv(mode, __dirname, ''); const agenticGraphStorageDevProxyTarget = resolveAgenticGraphStorageDevProxyTarget({ processEnv: process.env, fileEnv })
   const grphSharedAliasRoot = path.resolve(
     __dirname,
@@ -6428,7 +6428,7 @@ export default defineConfig(({ command, mode }) => {
       ],
     },
   },
-  build: {
+  build: { manifest: process.env.VITE_OBSERVABILITY_WORKSPACE_MANIFEST ? false : '.vite/manifest.json',
     sourcemap: process.env.AG_BUILD_SOURCEMAP === '1' ? 'hidden' : false,
     minify: process.env.AG_LOW_MEM_BUILD === '1' ? false : 'esbuild',
     reportCompressedSize: process.env.AG_LOW_MEM_BUILD === '1' ? false : true,
@@ -6557,7 +6557,7 @@ export default defineConfig(({ command, mode }) => {
     stripMermaidArchitectureDetectorPlugin,
     stripMermaidCoseBilkentLayoutPlugin,
     react(),
-    inlineHtmlStylesheetAssetsPlugin(), precacheAdmission.plugin, createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision), createPythonLearningOfflinePlugin(runtimeIdentity.sourceRevision, offlinePublicAssets),
+    inlineHtmlStylesheetAssetsPlugin(), createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision), createPythonLearningOfflinePlugin(runtimeIdentity.sourceRevision, offlinePublicAssets),
     VitePWA({
       registerType: 'autoUpdate', strategies: 'injectManifest', srcDir: '.', filename: 'sw.ts',
       injectRegister: null,
