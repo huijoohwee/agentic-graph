@@ -33,18 +33,22 @@ export function collectRequiredStaticJavaScriptFiles(bundle, isRoot = () => true
 /** Capture only the app bundle before Workbox reads its emitted files. */
 export function createPwaPrecacheAdmission() {
   let required = null
+  const captureObservations = []
   return {
     plugin: {
       name: 'agentic-graph-pwa-static-precache', apply: 'build', enforce: 'post',
       generateBundle: { order: 'post', handler(_options, bundle) {
-        const entries = Object.values(bundle ?? {}).filter(item => item?.type === 'chunk' && item.isEntry === true)
+        const chunks = Object.values(bundle ?? {}).filter(item => item?.type === 'chunk')
+        const entries = chunks.filter(item => item.isEntry === true)
+        captureObservations.push({ chunks: chunks.length, entries: entries.map(item => item.fileName).slice(0, 4) })
+        if (captureObservations.length > 4) captureObservations.shift()
         const appEntries = entries.filter(item => !/(?:^|\/)(?:sw|service-worker)\.(?:c?js|mjs)$/i.test(item.fileName))
         if (appEntries.length) required = collectRequiredStaticJavaScriptFiles(bundle,
           item => !/(?:^|\/)(?:sw|service-worker)\.(?:c?js|mjs)$/i.test(item.fileName))
       } },
     },
     async manifestTransform(entries) {
-      if (!required) fail('app bundle graph is unavailable before Workbox admission')
+      if (!required) fail(`app bundle graph is unavailable before Workbox admission; capture observations: ${JSON.stringify(captureObservations)}`)
       if (!Array.isArray(entries)) fail('manifest must be an array')
       const present = new Set()
       const manifest = entries.filter(entry => {
