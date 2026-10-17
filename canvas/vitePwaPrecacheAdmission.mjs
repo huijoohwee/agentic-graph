@@ -1,13 +1,12 @@
+import { readFile, unlink } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 const isJavaScript = path => /\.(?:js|mjs|cjs)$/.test(path)
 const fail = message => { throw new Error(`PWA static precache: ${message}`) }
-const statesSymbol = Symbol.for('agentic-graph.pwa-static-admission.v1')
-const states = globalThis[statesSymbol] ??= new Map()
-
-function admissionState() {
-  const key = [process.cwd(), process.env.VITE_BASE_PATH ?? '', process.env.VITE_OBSERVABILITY_WORKSPACE_MANIFEST ?? ''].join('\0')
-  if (!states.has(key)) states.set(key, { required: null, captureObservations: [] })
-  return states.get(key)
-}
+const metadataFileName = 'agentic-pwa-static-closure.json'
+const metadataSchema = 'agentic-graph-pwa-static-closure/v1'
+const defaultOutputDirectory = join(dirname(fileURLToPath(import.meta.url)), 'dist')
 
 function emittedPath(value) {
   if (typeof value !== 'string' || !value || value.startsWith('/') || value.includes('\\')
@@ -39,35 +38,47 @@ export function collectRequiredStaticJavaScriptFiles(bundle, isRoot = () => true
 }
 
 /** Capture only the app bundle before Workbox reads its emitted files. */
-export function createPwaPrecacheAdmission() {
-  // Rollup and VitePWA can hold different config instances for one build.
-  const state = admissionState()
+export function createPwaPrecacheAdmission(outputDirectory = defaultOutputDirectory) {
   return {
     plugin: {
       name: 'agentic-graph-pwa-static-precache', apply: 'build', enforce: 'post',
       generateBundle: { order: 'post', handler(_options, bundle) {
         const chunks = Object.values(bundle ?? {}).filter(item => item?.type === 'chunk')
         const entries = chunks.filter(item => item.isEntry === true)
-        state.captureObservations.push({ chunks: chunks.length, entries: entries.map(item => item.fileName).slice(0, 4) })
-        if (state.captureObservations.length > 4) state.captureObservations.shift()
         const appEntries = entries.filter(item => !/(?:^|\/)(?:sw|service-worker)\.(?:c?js|mjs)$/i.test(item.fileName))
-        if (appEntries.length) state.required = collectRequiredStaticJavaScriptFiles(bundle,
-          item => !/(?:^|\/)(?:sw|service-worker)\.(?:c?js|mjs)$/i.test(item.fileName))
+        if (appEntries.length) {
+          const required = [...collectRequiredStaticJavaScriptFiles(bundle,
+            item => !/(?:^|\/)(?:sw|service-worker)\.(?:c?js|mjs)$/i.test(item.fileName))]
+          this.emitFile({ type: 'asset', fileName: metadataFileName,
+            source: JSON.stringify({ schema: metadataSchema, required }) })
+        }
       } },
     },
     async manifestTransform(entries) {
-      if (!state.required) fail(`app bundle graph is unavailable before Workbox admission; capture observations: ${JSON.stringify(state.captureObservations)}`)
       if (!Array.isArray(entries)) fail('manifest must be an array')
+      let metadata
+      try { metadata = JSON.parse(await readFile(join(outputDirectory, metadataFileName), 'utf8')) }
+      catch { fail('emitted app bundle graph is unavailable before Workbox admission') }
+      if (metadata?.schema !== metadataSchema || !Array.isArray(metadata.required) || metadata.required.length === 0
+          || metadata.required.some(path => typeof path !== 'string')) fail('emitted app bundle graph is invalid')
+      const required = new Set(metadata.required.map(path => {
+        const canonical = emittedPath(path)
+        if (!isJavaScript(canonical)) fail(`required emitted asset is not JavaScript: ${canonical}`)
+        return canonical
+      }))
+      if (required.size !== metadata.required.length) fail('emitted app bundle graph contains duplicate assets')
+      await unlink(join(outputDirectory, metadataFileName))
       const present = new Set()
       const manifest = entries.filter(entry => {
         if (!entry || typeof entry.url !== 'string') fail('manifest URL is missing')
+        if (entry.url === metadataFileName) return false
         if (!isJavaScript(entry.url)) return true
-        if (!state.required.has(entry.url)) return false
+        if (!required.has(entry.url)) return false
         if (present.has(entry.url)) fail(`duplicate required asset: ${entry.url}`)
         present.add(entry.url)
         return true
       })
-      for (const path of state.required) if (!present.has(path)) fail(`required asset is absent from manifest: ${path}`)
+      for (const path of required) if (!present.has(path)) fail(`required asset is absent from manifest: ${path}`)
       return { manifest, warnings: [] }
     },
   }
