@@ -25,7 +25,7 @@ const sourceRoot = path.resolve(
 const EVALUATOR_DEPENDENCY_LOCK_PATHS = Object.freeze([
   "node_modules/ajv",
   "node_modules/fast-deep-equal",
-  "node_modules/ajv/node_modules/fast-uri",
+  "node_modules/fast-uri",
   "node_modules/json-schema-traverse",
   "node_modules/require-from-string",
 ]);
