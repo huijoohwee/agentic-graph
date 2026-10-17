@@ -70,21 +70,31 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
     await page.locator('section[aria-label="Workspace data view"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.locator('section[aria-label="Workspace data view"] table[aria-label="Table view"]').waitFor({ state: 'visible', timeout: 20_000 })
 
-    const settingsToggle = page.locator('button[aria-label="View settings"]')
+    const workspace = page.locator('section[aria-label="Workspace data view"]')
+    const settingsToggle = workspace.locator('button[aria-label="View settings"]')
     await settingsToggle.waitFor({ state: 'visible', timeout: 15_000 })
-    await settingsToggle.click()
     const settings = page.locator('[aria-label="View settings panel"]')
+    if (!(await settings.isVisible())) {
+      await settingsToggle.focus()
+      await settingsToggle.press('Enter')
+    }
     await settings.waitFor({ state: 'visible', timeout: 10_000 })
+    const layoutSection = settings.getByRole('button', { name: /Layout/ }).first()
+    if (await layoutSection.getAttribute('aria-expanded') === 'false') await layoutSection.click()
 
     for (const layout of BASE_LAYOUTS) {
-      const option = settings.getByRole('button', { name: layout.label, exact: true })
+      if (await layoutSection.getAttribute('aria-expanded') === 'false') await layoutSection.click()
+      const option = settings.locator('button').filter({ hasText: layout.label }).first()
       await option.waitFor({ state: 'visible', timeout: 10_000 })
       await option.click()
       await verifyBaseLayout(page, layout.id)
       verifiedViews.push(layout.id)
     }
 
-    if (await settings.count()) await settingsToggle.click()
+    if (await settings.isVisible()) {
+      await settingsToggle.focus()
+      await settingsToggle.press('Enter')
+    }
     await selectRenderer(page, 'Dashboard')
     const dashboardCards = page.locator('.agentic-base-dashboard-card[aria-label^="Dashboard"]')
     await dashboardCards.first().waitFor({ state: 'visible', timeout: 20_000 })
@@ -129,6 +139,7 @@ async function ensureTwoDimensionalSurface(page) {
 
 async function importViewFixture(page, fixturePath) {
   const input = page.locator('input[type="file"][accept*=".md"]').first()
+  await input.waitFor({ state: 'attached', timeout: 45_000 })
   await input.setInputFiles(fixturePath)
   await page.getByText('Imported 1 file(s)', { exact: true }).first().waitFor({ state: 'visible', timeout: 45_000 })
   await page.waitForFunction(fileName => {
