@@ -317,6 +317,19 @@ async function verifyApexActivation(width) {
   const latePanel = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR)
   await latePanel.getByRole('region', { name: 'Props Panel', exact: true }).waitFor()
   await latePanel.locator('[data-kg-floating-panel-view-trigger="media"]').waitFor()
+  console.log('late panel close layers', JSON.stringify(await latePanel.getByRole('button', { name: 'Close', exact: true }).evaluate(button => {
+    const rect = button.getBoundingClientRect()
+    const ancestors = []
+    let current = button
+    while (current && ancestors.length < 12) {
+      const style = getComputedStyle(current)
+      const bounds = current.getBoundingClientRect()
+      ancestors.push({ tag: current.tagName, className: current.className, position: style.position, zIndex: style.zIndex, transform: style.transform, overflow: style.overflow, bounds: [bounds.x, bounds.y, bounds.width, bounds.height] })
+      current = current.parentElement
+    }
+    const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)
+    return { button: [rect.x, rect.y, rect.width, rect.height], hit: hit && { tag: hit.tagName, className: hit.className }, ancestors }
+  })))
   await latePanel.getByRole('button', { name: 'Close', exact: true }).click()
   await openRunSource(evidence)
   const refresh = evidence.getByRole('button', { name: 'Refresh runs', exact: true })
