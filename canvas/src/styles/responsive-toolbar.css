@@ -2647,7 +2647,7 @@
 
     .kg-anchored-popover { max-inline-size: calc(100vw - var(--kg-safe-left) - var(--kg-safe-right) - 1rem); }
 
-    [data-kg-floating-panel-root="true"]:not(.App-toolbar) {
+    :is([data-kg-floating-panel-root="true"], [data-agentic-base-floating-panel="true"]):not(.App-toolbar) {
       --kg-floating-tool-menu-bottom-offset: var(--kg-mobile-bottom-dock-clearance);
       top: auto !important;
       left: calc(var(--kg-safe-left) + var(--kg-canvas-viewport-edge-gap)) !important;

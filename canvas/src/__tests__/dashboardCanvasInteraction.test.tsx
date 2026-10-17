@@ -149,17 +149,17 @@ export async function testDashboardCanvasCardDragReordersWithinSection() {
 
     const readOrder = () => {
       const cards = Array.prototype.slice.call(
-        container.querySelectorAll('[data-kg-dashboard-section="structure"] [data-kg-dashboard-card]'),
+        container.querySelectorAll('[data-kg-dashboard-section="structure"] [data-agentic-base-dashboard-card]'),
       ) as Element[]
-      return cards.map(card => card.getAttribute('data-kg-dashboard-card') || '')
+      return cards.map(card => card.getAttribute('data-agentic-base-dashboard-card') || '')
     }
     const beforeOrder = readOrder()
     if (beforeOrder.join(',') !== 'node-types,edge-types,degree-leaders') {
       throw new Error(`expected initial dashboard card order, got ${beforeOrder.join(',')}`)
     }
 
-    const sourceCard = container.querySelector('[data-kg-dashboard-card="degree-leaders"]')
-    const targetCard = container.querySelector('[data-kg-dashboard-card="node-types"]')
+    const sourceCard = container.querySelector('[data-agentic-base-dashboard-card="degree-leaders"]')
+    const targetCard = container.querySelector('[data-agentic-base-dashboard-card="node-types"]')
     if (!sourceCard || !targetCard) throw new Error('expected dashboard drag source and target cards')
     stubCardRect(sourceCard)
     stubCardRect(targetCard)
@@ -188,17 +188,17 @@ export async function testDashboardCanvasCardDragReordersWithinSection() {
 
     const readMetricOrder = () => {
       const metrics = Array.prototype.slice.call(
-        container.querySelectorAll('[data-kg-dashboard-metric]'),
+        container.querySelector('[data-kg-dashboard-metrics-board]')?.querySelectorAll('[data-agentic-base-dashboard-card]') ?? [],
       ) as Element[]
-      return metrics.map(metric => metric.getAttribute('data-kg-dashboard-metric') || '')
+      return metrics.map(metric => metric.getAttribute('data-agentic-base-dashboard-card') || '')
     }
     const beforeMetricOrder = readMetricOrder()
     if (beforeMetricOrder.join(',') !== 'nodes,edges,clusters,density,signals,grid') {
       throw new Error(`expected initial dashboard metric order, got ${beforeMetricOrder.join(',')}`)
     }
 
-    const sourceMetric = container.querySelector('[data-kg-dashboard-metric="grid"]')
-    const targetMetric = container.querySelector('[data-kg-dashboard-metric="nodes"]')
+    const sourceMetric = container.querySelector('[data-agentic-base-dashboard-card="grid"]')
+    const targetMetric = container.querySelector('[data-agentic-base-dashboard-card="nodes"]')
     if (!sourceMetric || !targetMetric) throw new Error('expected dashboard metric drag source and target cards')
     stubCardRect(sourceMetric)
     stubCardRect(targetMetric)
@@ -275,7 +275,7 @@ export async function testDashboardCanvasCardFlipConfiguration() {
       await waitFrame()
     })
 
-    const cardSelector = '[data-kg-dashboard-card="node-types"]'
+    const cardSelector = '[data-agentic-base-dashboard-card="node-types"]'
     if (container.querySelector('form[aria-label="Widget configuration"]')) throw Error('Configuration must be absent on the front')
     const front = container.querySelector(cardSelector)!
     await act(async () => { Simulate.click(front); await waitFrame() })
@@ -363,7 +363,7 @@ export async function testDashboardEvidenceMetricsReuseReadOnlyWidgets() {
   dom.window.document.body.appendChild(container)
   try {
     await act(async () => { root.render(<DashboardMetricGrid metrics={[{ id: 'tokens', label: 'Tokens', value: 'Unknown', detail: 'No observation', tone: 'slate' }]} />); await waitFrame() })
-    const metric = container.querySelector('[data-kg-dashboard-metric="tokens"]')
+    const metric = container.querySelector('[data-agentic-base-dashboard-card="tokens"]')
     if (!metric || metric.getAttribute('draggable') !== 'false' || !metric.textContent?.includes('Unknown')) throw Error('Evidence must reuse immutable Dashboard metrics without inventing zero')
     await act(async () => { metric.querySelector('[data-kg-card-inline-edit]')?.dispatchEvent(new dom.window.MouseEvent('dblclick', { bubbles: true, detail: 2 })); await waitFrame() })
     if (container.querySelector('[contenteditable="true"], input, textarea')) throw Error('Evidence labels cannot be authored')

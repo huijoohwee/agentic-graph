@@ -10,7 +10,7 @@ import { preview } from 'vite'
 import { chromium } from 'playwright'
 import { expect } from 'playwright/test'
 import { tsImport } from 'tsx/esm/api'
-import { dismissVisibleFloatingPanel } from './lib/panel-close-helpers.mjs'
+import { BASE_FLOATING_PANEL_ROOT_SELECTOR, dismissVisibleFloatingPanel } from './lib/panel-close-helpers.mjs'
 import { proveWarehouseRehearsal } from './lib/warehouse-rehearsal-proof.mjs'
 
 const canvas = resolve(dirname(fileURLToPath(import.meta.url)), '..'), root = resolve(canvas, '..')
@@ -67,7 +67,7 @@ try {
   await page.waitForFunction(() => [...document.querySelectorAll('textarea')].some(editor => editor.value.trim().length > 0), undefined, { timeout: 60000 })
   // Exercise the actual Source Files owner before the separate offline lesson proof.
   await page.setViewportSize({ width: 1280, height: 900 })
-  const startupFloatingPanel = page.locator('[data-kg-floating-panel-root="true"]:not([data-kg-strybldr-bottom-timeline-panel])').first()
+  const startupFloatingPanel = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR).first()
   await startupFloatingPanel.waitFor({ state: 'visible' })
   assert.equal(await dismissVisibleFloatingPanel(page, startupFloatingPanel), true, 'Expected startup floating panel must close through its rendered control')
   for (const name of ['docs', 'python-lessons']) {
@@ -346,6 +346,18 @@ try {
   await pane.getByText(/Goal reached · 4\/4 checks · position \(4\.00, 0\.00\) m · output: True/).waitFor()
   await pane.getByRole('button', { name: 'Save source', exact: true }).click()
   await awaitStoredSource(lessons[0].solution)
+  const savedReload = await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
+  assert.equal(savedReload?.status(), 200, 'offline reload must rematerialize the saved source from local storage')
+  await pane.waitFor({ timeout: 60000 })
+  await selectPython()
+  await pane.getByRole('button', { name: 'Code', exact: true }).click()
+  await selectMenuOption(pane.getByLabel('Python lesson', { exact: true }), lessons[0].id)
+  await awaitSource(lessons[0].solution)
+  if (await richEditor.isVisible()) await richEditor.click()
+  await pane.locator('.monaco-editor .view-lines').waitFor({ timeout: 30000 })
+  await pane.getByRole('button', { name: 'Results', exact: true }).click()
+  await pane.getByRole('button', { name: 'Load saved debriefs', exact: true }).click()
+  await pane.getByText(`${lessons.length} matching debriefs`, { exact: false }).waitFor()
   await page.screenshot({ path: join(output, 'offline-desktop.png'), fullPage: true })
   await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await pane.locator('.python-learning-result').evaluate(element => { element.scrollTop = 0 })

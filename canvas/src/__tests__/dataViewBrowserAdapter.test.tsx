@@ -9,7 +9,12 @@ import {
   type DataViewBrowserState,
 } from '../features/markdown/ui/dataViewBrowserAdapter'
 
-const fixture = (): DataViewBrowserState => ({
+type MutableDataViewBrowserState = Omit<DataViewBrowserState, 'columns' | 'rows'> & {
+  columns: Array<{ id: string; name: string }>
+  rows: Array<{ id: string; cells: string[] }>
+}
+
+const fixture = (): MutableDataViewBrowserState => ({
   columns: [{ id: 'name', name: 'Name' }, { id: 'value', name: 'Value' }],
   rows: [{ id: 'one', cells: ['First', 'One'] }, { id: 'two', cells: ['Second', 'Two'] }],
   ariaLabel: 'Commerce records', selectedRowId: null,

@@ -29,14 +29,14 @@ export async function testCalendarDayInteractions() {
   const click = (label: string) => flushSync(() => button(label).click())
   try {
     flushSync(render)
-    assert.equal(host.querySelectorAll('.kg-calendar-month-grid tbody tr').length, 5)
+    assert.equal(host.querySelectorAll('.base-calendar-month-grid tbody tr').length, 5)
     assert.equal(host.querySelectorAll('ol[aria-label="Day preview 2026-10-15"] li').length, 3)
     assert.equal(button('Open record: Untitled').textContent, 'Untitled', 'blank titles remain meaningful')
     click('Open record: Untitled')
     const recordDialog = host.querySelector('dialog')!
     assert.equal(recordDialog.open, true)
-    assert.ok(button('Close record').querySelector('svg'), 'close action reuses the native icon')
-    assert.equal(button('Close record').textContent, '')
+    assert.equal(button('Close record').getAttribute('aria-label'), 'Close record')
+    assert.equal(button('Close record').textContent?.trim(), 'Close', 'shared calendar keeps a visible close label')
     const typeSummary = recordDialog.querySelector<HTMLElement>('summary[aria-label="Column type: Title"]')!
     assert.ok(typeSummary)
     flushSync(() => typeSummary.click()) // Keyboard/assistive activation targets the summary itself.
@@ -53,23 +53,23 @@ export async function testCalendarDayInteractions() {
     assert.equal(recordDialog.open, true)
     click('Close record')
     assert.equal(recordDialog.open, false)
-    assert.equal(button('Open record: Untitled').getAttribute('aria-pressed'), 'true', 'selection survives closing details')
+    assert.equal(button('Open record: Untitled').getAttribute('aria-pressed'), 'false', 'closing details clears the dialog record selection')
     click('Open record: Record 1')
     assert.equal(button('Open record: Untitled').getAttribute('aria-pressed'), 'false')
     assert.equal(button('Open record: Record 1').getAttribute('aria-pressed'), 'true')
     flushSync(() => recordDialog.dispatchEvent(new dom.window.Event('cancel')))
     assert.equal(recordDialog.open, false)
     assert.equal(writes.length, 0, 'record selection and dismissal do not write source')
-    click('New row on 2026-10-16')
-    assert.equal(host.querySelectorAll('form[aria-label^="New row on"]').length, 1)
-    assert.equal(activeElement()?.getAttribute('aria-label'), 'New row title on 2026-10-16')
-    click('Add row')
+    click('New record on 2026-10-16')
+    assert.equal(host.querySelectorAll('form[aria-label^="New record on"]').length, 1)
+    assert.equal(activeElement()?.getAttribute('aria-label'), 'New record title on 2026-10-16')
+    click('Add record')
     assert.deepEqual(writes, [{ title: 'Untitled', date: '2026-10-16' }], 'day-local creation uses the existing source seed')
-    click('New row on 2026-10-17'); click('Cancel'); assert.equal(writes.length, 1)
+    click('New record on 2026-10-17'); click('Cancel'); assert.equal(writes.length, 1)
     click('Show all 24 records on 2026-10-15')
     assert.equal(host.querySelectorAll('ol[aria-label="Records for selected 2026-10-15"] li').length, 20)
     click('Next'); assert.equal(host.querySelectorAll('ol[aria-label="Records for selected 2026-10-15"] li').length, 4)
-    const picker = host.querySelector('details.kg-calendar-navigator') as HTMLDetailsElement
+    const picker = host.querySelector('details.base-calendar-navigator') as HTMLDetailsElement
     picker.open = true
     const dateButton = button('Go to 2026-10-15'); dateButton.focus()
     dateButton.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
@@ -79,7 +79,7 @@ export async function testCalendarDayInteractions() {
     click('Next month'); assert.equal(config.calendar.month, '2026-11')
     assert.equal(writes.length, 1, 'navigation does not mutate source records')
     canMutate = false; flushSync(render)
-    assert.equal(host.querySelectorAll('.kg-calendar-new-row').length, 0, 'read-only mode has no creation controls')
-    assert.equal(host.querySelectorAll('div,[aria-hidden="true"]').length, 0, 'new UI has semantic selectable wrappers')
+    assert.equal(host.querySelectorAll('.base-calendar-new-row').length, 0, 'read-only mode has no creation controls')
+    assert.equal(host.querySelectorAll('section[aria-label="Calendar view"] div').length, 0, 'shared calendar content uses semantic wrappers')
   } finally { flushSync(() => root.unmount()); host.remove(); restore() }
 }

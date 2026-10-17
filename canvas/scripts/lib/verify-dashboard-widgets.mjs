@@ -1,4 +1,5 @@
 import { selectMenuOption } from './select-menu-option.mjs'
+import { BASE_FLOATING_PANEL_ROOT_SELECTOR } from './panel-close-helpers.mjs'
 import assert from 'node:assert/strict'
 
 export async function verifyFullCanvas(page) {
@@ -73,7 +74,7 @@ export async function verifyDashboardWidgets(page) {
   assert.equal(await dashboard.locator('[data-kg-dashboard-card="agent-tree"]').count(), 1)
   assert.equal(await dashboard.getByRole('button', { name: 'Props Panel', exact: true }).count(), 0)
   await page.getByRole('button', { name: 'Create Node', exact: true }).click()
-  const floating = page.locator('[data-kg-floating-panel-root="true"]')
+  const floating = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR)
   await floating.getByRole('region', { name: 'Props Panel', exact: true }).waitFor()
   assert.equal(await floating.count(), 1)
   await floating.locator('[data-kg-floating-panel-view-trigger="media"]').waitFor()

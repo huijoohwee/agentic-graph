@@ -92,8 +92,8 @@ export function testMultiDimTableSurfacePreservesWorkspaceModeOwners() {
   if (!derivedViewerText.includes('rowHeightPreset={structuredSourcePresentation?.rowHeightPreset ?? viewConfig?.rowHeightPreset}') || !derivedViewerText.includes('fieldLineMode={structuredSourcePresentation?.fieldLineMode ?? viewConfig?.fieldLineMode}')) {
     throw new Error('expected derived viewer to use readable structured-source density defaults without overriding user settings')
   }
-  if (!dataViewTableText.includes('renderAllRows?: boolean') || !dataViewTableText.includes('props.renderAllRows ? view.rows : view.rows.slice')) {
-    throw new Error('expected MarkdownDataViewTableView to preserve default progressive rendering behind a source-table opt-in')
+  if (!dataViewTableText.includes("from '@agentic-base/views-react/table'") || !dataViewTableText.includes("from '@agentic-base/views-react/table/multi-dimensional'")) {
+    throw new Error('expected source-table row rendering and progressive loading to remain owned by the canonical Base table views')
   }
 }
 
@@ -460,18 +460,10 @@ export function testMultiDimTableSupportsRowsColumnsPivot() {
   const headerPath = path.resolve(process.cwd(), 'src', 'features', 'markdown-workspace', 'main', 'viewer', 'WorkspaceDataViewHeader.tsx')
   const derivedViewerPath = path.resolve(process.cwd(), 'src', 'features', 'markdown-workspace', 'main', 'viewer', 'MarkdownWorkspaceDerivedViewer.tsx')
   const tableViewPath = path.resolve(process.cwd(), 'src', 'features', 'markdown', 'ui', 'MarkdownDataViewTableView.tsx')
-  const columnsTableViewPath = path.resolve(process.cwd(), 'src', 'features', 'markdown', 'ui', 'MarkdownDataViewColumnsTableView.tsx')
-  const tableCorePath = path.resolve(process.cwd(), 'src', 'features', 'markdown', 'ui', 'MarkdownDataViewTableCore.tsx')
-  const chipStylesPath = path.resolve(process.cwd(), 'src', 'features', 'markdown', 'ui', 'dataViewChipStyles.ts')
-  const columnSizingPath = path.resolve(process.cwd(), 'src', 'features', 'markdown', 'ui', 'markdownDataViewColumnSizing.ts')
   const configPath = path.resolve(process.cwd(), 'src', 'features', 'markdown-workspace', 'main', 'viewer', 'workspaceDataViewConfig.ts')
   const headerText = fs.readFileSync(headerPath, { encoding: 'utf8' })
   const derivedViewerText = fs.readFileSync(derivedViewerPath, { encoding: 'utf8' })
   const tableViewText = fs.readFileSync(tableViewPath, { encoding: 'utf8' })
-  const columnsTableViewText = fs.readFileSync(columnsTableViewPath, { encoding: 'utf8' })
-  const tableCoreText = fs.readFileSync(tableCorePath, { encoding: 'utf8' })
-  const chipStylesText = fs.readFileSync(chipStylesPath, { encoding: 'utf8' })
-  const columnSizingText = fs.readFileSync(columnSizingPath, { encoding: 'utf8' })
   const configText = fs.readFileSync(configPath, { encoding: 'utf8' })
 
   if (!configText.includes("export type WorkspaceDataViewOrientation = 'rows' | 'columns'") || !configText.includes("orientation: 'rows'")) {
@@ -524,34 +516,12 @@ export function testMultiDimTableSupportsRowsColumnsPivot() {
   if (!derivedViewerText.includes("orientation={viewConfig?.orientation === 'columns' ? 'columns' : 'rows'}")) {
     throw new Error('expected MarkdownWorkspaceDerivedViewer to pass persisted pivot orientation to the table renderer')
   }
-  if (!tableViewText.includes("orientation?: 'rows' | 'columns'") || !tableViewText.includes("if (orientation === 'columns')") || !tableViewText.includes('MarkdownDataViewColumnsTableView') || !tableViewText.includes('MarkdownDataViewColumnResizeHandle') || !tableViewText.includes('<MarkdownDataViewTableCore') || !tableViewText.includes('readMarkdownDataViewDefaultColumnWidth') || !tableViewText.includes('tableStyle={tableStyle}') || !tableViewText.includes("? { minWidth: rowRecordTableWidth, width: '100%' }") || !tableViewText.includes(': { width: rowRecordTableWidth }')) {
-    throw new Error('expected MarkdownDataViewTableView to render row-column pivot mode and resize columns through the shared table renderer')
-  }
-  const sharedStructure = ['<colgroup>', 'props.columns.map', 'style={props.tableStyle}', 'overflow-hidden border-b', 'border-separate border-spacing-0', 'sticky top-0 z-30 isolate', 'relative z-[31]', 'props.renderHeader()', 'props.renderCells(row)']
-  if (sharedStructure.some(part => !tableCoreText.includes(part))) {
-    throw new Error('expected one native table core to retain fixed columns, clipped cells, opaque sticky headers and renderer slots')
-  }
-  for (const source of [tableViewText, columnsTableViewText]) {
-    if (source.includes('<table ') || !source.includes('dataViewTableHeaderClassName(') || !source.includes('dataViewTableCellClassName(')) {
-      throw new Error('expected both native orientations to delegate structure and cell styling to the same table core')
-    }
-  }
-  if (!tableViewText.includes('rowKey={({ row }) => row.id}') || !tableViewText.includes('rowDepth={({ depth }) => depth}') || !tableViewText.includes('selectedRowId={props.selectedRowId}') || !tableViewText.includes('onActivateRow={onActivateRow}') || !columnsTableViewText.includes('rowKey={({ col }) => col.id}') || !tableCoreText.includes('const id = props.rowKey(row)') || !tableCoreText.includes('key={id}') || !tableCoreText.includes('props.onActivateRow?.(id)') || !tableCoreText.includes("event.key === 'Enter' || event.key === ' '") || !tableCoreText.includes('uiSelectedRowStateClassName(props.selectedRowId === id)')) {
-    throw new Error('expected the extracted core to preserve record/field identities, hierarchy, selection and pointer/keyboard activation')
-  }
-  if (!columnSizingText.includes('MARKDOWN_DATA_VIEW_DEFAULT_COLUMN_WIDTH_PX = 192') || !columnSizingText.includes("normalized === 'Value' || /^.+ Value$/.test(normalized)") || !columnSizingText.includes('return 184')) {
-    throw new Error('expected Markdown data-view column sizing to keep type-specific value columns compact by default')
-  }
-  if (!columnsTableViewText.includes('Show ${Math.min(props.hiddenRowCount, MARKDOWN_DATA_VIEW_TABLE_RENDER_ROW_INCREMENT)} more columns') || !columnsTableViewText.includes('MarkdownDataViewColumnResizeHandle') || !columnsTableViewText.includes('<MarkdownDataViewTableCore') || !columnsTableViewText.includes('tableStyle={{ width: tableWidth }}') || !columnsTableViewText.includes('beforeRows={') || !columnsTableViewText.includes('afterRows={')) {
-    throw new Error('expected extracted MarkdownDataViewColumnsTableView to keep column-record pivot resize behavior')
-  }
-  if (!chipStylesText.includes('min-w-0 max-w-full overflow-hidden')) {
-    throw new Error('expected data-view chips to ellipsize inside fixed-width columns instead of stretching column width')
-  }
-  const resizeHandlePath = path.resolve(process.cwd(), 'src', 'features', 'markdown', 'ui', 'MarkdownDataViewColumnResizeHandle.tsx')
-  const resizeHandleText = fs.readFileSync(resizeHandlePath, { encoding: 'utf8' })
-  if (!resizeHandleText.includes('bindResizeSeparatorDragRuntime') || !resizeHandleText.includes("cursor: 'col-resize'") || !resizeHandleText.includes('data-kg-markdown-data-view-column-resize')) {
-    throw new Error('expected Markdown data-view column resize to reuse the shared resize separator drag runtime')
+  if (!tableViewText.includes("from '@agentic-base/views-react/table'")
+    || !tableViewText.includes("from '@agentic-base/views-react/table/multi-dimensional'")
+    || !tableViewText.includes('TableHostProvider') || !tableViewText.includes('graphTableHost')
+    || !tableViewText.includes('const View = multiDimensional ? MultiDimTableView : TableView')
+    || !tableViewText.includes('<View {...tableProps}')) {
+    throw new Error('expected Table and Multi-dimensional Table visuals to come only from the canonical Base views while Graph supplies its host adapter')
   }
 }
 

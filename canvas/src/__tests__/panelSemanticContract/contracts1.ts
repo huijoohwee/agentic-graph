@@ -56,25 +56,27 @@ export const testPanelShellUsesResponsiveRowScrolling = () => {
   const floatingPanelController = readUtf8(floatingPanelPath)
   if (!floatingPanelController.includes('<FloatingPanelShell') || !floatingPanelController.includes("from '@/components/ui/FloatingPanel'")) throw new Error('Expected native floating panel to delegate to the shared shell')
   const floatingPanel = floatingPanelController + readUtf8(path.resolve(root, 'src/components/ui/FloatingPanel.tsx'))
+  const basePanelSourceRoot = path.resolve(root, '..', 'node_modules', '@agentic-base', 'views-react', 'packages', 'views-react', 'src', 'panels')
+  const baseFloatingPanelShell = readUtf8(path.resolve(basePanelSourceRoot, 'FloatingPanelShell.tsx'))
+  const baseFloatingPanelStyles = readUtf8(path.resolve(basePanelSourceRoot, 'floatingPanelShell.css'))
   const responsiveCss = readUtf8(responsiveCssPath)
   const responsiveElementClasses = readUtf8(responsiveElementClassesPath)
   const iconHelpers = readUtf8(iconHelpersPath)
-  if (!floatingPanel.includes('UI_RESPONSIVE_SAFE_VIEWPORT_PANEL_CLASSNAME') || floatingPanel.includes('w-80') || !responsiveElementClasses.includes('kg-safe-viewport-panel') || !responsiveCss.includes('.kg-safe-viewport-panel') || !responsiveCss.includes('--kg-safe-viewport-panel-width')) {
-    throw new Error('Expected FloatingPanel shell to cap width through the shared safe viewport panel class')
+  if (!floatingPanel.includes('BaseFloatingPanelShell') || floatingPanel.includes('kg-safe-viewport-panel') || floatingPanel.includes('w-80') || !baseFloatingPanelShell.includes('agentic-base-floating-panel') || !baseFloatingPanelStyles.includes('max-width: calc(100vw - 1rem)') || !baseFloatingPanelStyles.includes('max-height: calc(100dvh - 1rem)')) {
+    throw new Error('Expected FloatingPanel to delegate viewport sizing and chrome to the canonical Base shell')
   }
   if (
     !tabHeader.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
-    !floatingPanel.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
     !responsiveElementClasses.includes('UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME') ||
     !responsiveCss.includes('.kg-responsive-panel-header-row') ||
     !responsiveCss.includes('--kg-responsive-panel-header-row-min-height') ||
     tabHeader.includes('min-h-[36px]') ||
     floatingPanel.includes('min-h-[36px]')
   ) {
-    throw new Error('Expected panel header row height to use the shared responsive row-height owner')
+    throw new Error('Expected Graph panel headers to use their shared responsive row-height owner')
   }
-  if (!floatingPanel.includes('uiToolbarRowScrollJustifyBetweenClassName') || !floatingPanel.includes('uiToolbarRowScrollClassName')) {
-    throw new Error('Expected FloatingPanel header shell to use toolbar row-scroll helpers')
+  if (!baseFloatingPanelShell.includes('agentic-base-floating-panel-header') || !baseFloatingPanelStyles.includes('min-height: var(--base-control-height, 2.25rem)') || !baseFloatingPanelStyles.includes('justify-content: space-between')) {
+    throw new Error('Expected FloatingPanel header row sizing and alignment to be owned by the canonical Base shell')
   }
 
   const iconButton = readUtf8(iconButtonPath)

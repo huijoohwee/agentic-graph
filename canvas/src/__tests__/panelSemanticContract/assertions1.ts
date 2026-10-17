@@ -266,8 +266,8 @@ export function assertPhase1(fixture: SourceFixture) {
     throw new Error('Expected Data View header to remove the legacy local More dropdown after View-panel consolidation')
   }
 
-  if (!dataViewPanel.includes('kg-data-view-settings-layout flex h-full min-h-0 flex-col') || !dataViewPanel.includes('secondaryNode={(') || !dataViewPanel.includes('UI_RESPONSIVE_DATA_VIEW_HEADER_ACTIONS_CLASSNAME') || dataViewPanel.includes('max-w-[45%]')) {
-    throw new Error('Expected Data View settings panel to consolidate shared header actions into the shell header using the shared right-edge action lane')
+  if (!dataViewPanel.includes('kg-data-view-settings-layout flex h-full min-h-0 flex-col') || !dataViewPanel.includes("from '@agentic-base/views-react/settings'") || !dataViewPanel.includes('summary={(') || !dataViewPanel.includes('UI_RESPONSIVE_DATA_VIEW_HEADER_ACTIONS_CLASSNAME') || dataViewPanel.includes('max-w-[45%]')) {
+    throw new Error('Expected Data View settings to use Base SettingsPanelShell and keep host actions in its shared header lane')
   }
 
   if (!dataViewPanel.includes('<ExpandCollapseAllButton') || !dataViewPanel.includes('titleCollapse="Collapse (Default)"') || !dataViewPanel.includes('<CollapsibleSection') || dataViewPanel.includes('kg-data-view-settings-nav') || dataViewPanel.includes('<ToolbarDropdownSelect') || dataViewPanel.includes('uiToolbarResponsiveRowScrollClassName') || dataViewPanel.includes('onMouseEnter={() => setActivePanel(') || dataViewPanel.includes('w-[220px]') || dataViewPanel.includes('border-r')) {

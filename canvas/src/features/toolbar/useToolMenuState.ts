@@ -7,6 +7,7 @@ import { beginOverlayPanelPositionDrag } from '@/lib/ui/overlayPanelDrag'
 import { createRafValueScheduler } from '@/lib/react/rafValueScheduler'
 import { createRafOnceScheduler } from '@/lib/react/rafOnceScheduler'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { recordFloatingPanelPresetDismissal } from '@/features/parsers/floatingPanelPresetDismissal'
 import {
   FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS,
   FLOATING_PANEL_CANVAS_TOP_INSET_CSS,
@@ -103,12 +104,14 @@ export function useToolMenuState() {
   }, [toolMenuDragPos])
 
   const closeToolMenu = useCallback(() => {
+    recordFloatingPanelPresetDismissal(useGraphStore.getState().markdownDocumentName)
     setFloatingPanelOpen(false)
     const pinned = lsBool(LS_KEYS.floatingPanelPinned, false)
     if (!pinned) setToolMenuDragPos(null)
   }, [setFloatingPanelOpen])
 
   const toggleToolMenu = useCallback(() => {
+    if (isToolMenuOpen) recordFloatingPanelPresetDismissal(useGraphStore.getState().markdownDocumentName)
     setFloatingPanelOpen(!isToolMenuOpen)
     if (isToolMenuOpen) {
       const pinned = lsBool(LS_KEYS.floatingPanelPinned, false)

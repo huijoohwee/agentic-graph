@@ -86,7 +86,7 @@ test('Integration Gate propagates the first dependency failure without rerunning
   const log = path.join(root, 'calls')
   fs.writeFileSync(path.join(root, 'npm'), '#!/bin/sh\nprintf "install\\n" >> "$LC_INSTALL_LOG"\nexit 17\n', { mode: 0o755 })
   const result = spawnSync('bash', ['-e', '-c', installs[0].run], { encoding: 'utf8', timeout: 1000,
-    env: { ...process.env, PATH: `${root}${path.delimiter}${process.env.PATH}`, LC_INSTALL_LOG: log } })
+    env: { ...process.env, PATH: `${root}${path.delimiter}${process.env.PATH}`, LC_INSTALL_LOG: log, RUNNER_TEMP: root } })
   assert.equal(result.status, 17, result.stderr)
   assert.equal(fs.readFileSync(log, 'utf8'), 'install\n')
 })

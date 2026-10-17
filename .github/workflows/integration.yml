@@ -185,15 +185,33 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Stage read-only Agentic Base dependency access
+        working-directory: agentic-graph
+        env:
+          AGENTIC_BASE_READ_KEY: ${{ secrets.AGENTIC_BASE_READ_KEY }}
+        run: |
+          test -n "$AGENTIC_BASE_READ_KEY"
+          umask 077
+          printf '%s\n' "$AGENTIC_BASE_READ_KEY" > "$RUNNER_TEMP/agentic-base-read-key"
+          printf '%s\n' 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "$RUNNER_TEMP/agentic-base-known-hosts"
+          chmod 600 "$RUNNER_TEMP/agentic-base-read-key" "$RUNNER_TEMP/agentic-base-known-hosts"
+
       - name: Install dependencies
         working-directory: agentic-graph
         env:
-          GIT_CONFIG_COUNT: '1'
+          GIT_CONFIG_COUNT: '2'
           GIT_CONFIG_KEY_0: url.https://github.com/.insteadOf
           GIT_CONFIG_VALUE_0: ssh://git@github.com/
+          # Keep the private Base package on SSH so the scoped read-only deploy key is used.
+          GIT_CONFIG_KEY_1: url.ssh://git@github.com/huijoohwee/agentic-base.git.insteadOf
+          GIT_CONFIG_VALUE_1: ssh://git@github.com/huijoohwee/agentic-base.git
           GIT_TERMINAL_PROMPT: '0'
-        # Fail once with the original cause; unchanged reruns repeat lifecycle scripts.
-        run: npm ci
+        run: |
+          set -euo pipefail
+          trap 'rm -f "$RUNNER_TEMP/agentic-base-read-key" "$RUNNER_TEMP/agentic-base-known-hosts"' EXIT
+          GIT_SSH_COMMAND="ssh -i $RUNNER_TEMP/agentic-base-read-key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/agentic-base-known-hosts" npm ci --ignore-scripts
+          rm -f "$RUNNER_TEMP/agentic-base-read-key" "$RUNNER_TEMP/agentic-base-known-hosts"
+          npm rebuild --no-audit --no-fund
 
       - name: Install Playwright Chromium
         working-directory: agentic-graph

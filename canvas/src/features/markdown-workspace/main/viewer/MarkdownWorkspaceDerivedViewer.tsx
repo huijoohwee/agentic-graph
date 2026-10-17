@@ -22,8 +22,8 @@ import {
   type MarkdownDataViewColumnKind,
 } from '@/features/markdown/ui/markdownDataViewModel'
 import { serializeMarkdownDataViewToTableLines } from '@/features/markdown/ui/markdownDataViewSerialize'
-import { MarkdownDataViewKanbanView } from '@/features/markdown/ui/MarkdownDataViewKanbanView'
-import { MarkdownDataViewTableView } from '@/features/markdown/ui/MarkdownDataViewTableView'
+const MarkdownDataViewKanbanView = React.lazy(() => import('@/features/markdown/ui/MarkdownDataViewKanbanView').then(module => ({ default: module.MarkdownDataViewKanbanView })))
+const MarkdownDataViewTableView = React.lazy(() => import('@/features/markdown/ui/MarkdownDataViewTableView').then(module => ({ default: module.MarkdownDataViewTableView })))
 import {
   columnTypeToBaseKind,
   defaultColumnTypeForInferredKind,
@@ -467,10 +467,12 @@ export function MarkdownWorkspaceDerivedViewer(props: {
           <section className="p-4" aria-label="No data views">
             <p className={`${UI_THEME_TOKENS.text.tertiary} ${panelTypography.microLabelClass}`}>No eligible Markdown tables found.</p>
           </section>
-        ) : props.viewerMode === 'calendar' && viewConfig ? (
-          <WorkspaceDataViewCalendarSurface view={displayedView || selected.view} config={viewConfig} onChangeConfig={commitViewConfig} canMutate={canMutate} onUpdateCell={onUpdateCell} onNewRecord={onNewRecord} />
-        ) : props.viewerMode === 'kanban' ? (
-          <MarkdownDataViewKanbanView
+        ) : (
+          <React.Suspense fallback={<p role="status" className="p-4">Loading data view…</p>}>
+          {props.viewerMode === 'calendar' && viewConfig ? (
+            <WorkspaceDataViewCalendarSurface view={displayedView || selected.view} config={viewConfig} onChangeConfig={commitViewConfig} canMutate={canMutate} onUpdateCell={onUpdateCell} onNewRecord={onNewRecord} />
+          ) : props.viewerMode === 'kanban' ? (
+            <MarkdownDataViewKanbanView
             view={displayedView || selected.view}
             visibleColumnIds={visibleColumnIds}
             hiddenGroupIds={viewConfig?.hiddenGroupIds}
@@ -480,9 +482,9 @@ export function MarkdownWorkspaceDerivedViewer(props: {
             onReorderRows={onReorderRows}
             onNewRecord={onNewRecord}
             onActivateRow={onActivateRow}
-          />
-        ) : (
-          <MarkdownDataViewTableView
+            />
+          ) : (
+            <MarkdownDataViewTableView
             view={displayedView || selected.view}
             visibleColumnIds={visibleColumnIds}
             columnTypesById={columnTypesById}
@@ -501,7 +503,9 @@ export function MarkdownWorkspaceDerivedViewer(props: {
             onSetColumnSort={onSetColumnSort}
             renderAllRows={selected.structuredSource === true}
             orientation={viewConfig?.orientation === 'columns' ? 'columns' : 'rows'}
-          />
+            />
+          )}
+          </React.Suspense>
         )}
       </main>
     </section>

@@ -1,14 +1,14 @@
 ---
-title: "Workspace data views: Table, Kanban and Calendar"
+title: "Workspace data views: Table, Multi-dimensional Table, Kanban and Calendar"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "workspace-data-views"
-version: "1.3.4"
-prd_revision: "1.3.4"
-tad_revision: "1.3.4"
-adr_revision: "1.3.4"
-mvp_revision: "1.3.4"
-gtm_revision: "1.3.4"
-date: "2026-10-02"
+version: "1.5.1"
+prd_revision: "1.5.1"
+tad_revision: "1.5.1"
+adr_revision: "1.5.1"
+mvp_revision: "1.5.1"
+gtm_revision: "1.5.1"
+date: "2026-10-17"
 lang: "en-US"
 owner: "Workspace data-view product function"
 frontmatter_contract: "required"
@@ -19,15 +19,16 @@ universal_scope: false
 lifecycle_status: "implemented"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "agent/device-0232231d4a19/code-toolbar-border-alignment"
-agent_id: "codex-workspace-data-view-author"
+worktree_id: "device-0232231d4a19--workspace-view-controls"
+agent_id: "codex"
 source_docs:
   - "Reference implementation: agentic-graph@8b258a4a116cd7ef70718acd28307fc4a62af897"
-  - "Reference implementation: authoring guidelines 3.4.0 at 82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
+  - "Reference implementation: agentic-base@529f1d866974453327977595a457d5065a8dbc45:packages/views-react"
+  - "Reference implementation: authoring guidelines 3.4.0 at 82835ac37d524643faa6b9703cb077ea9474ab15:guidelines/prd-tad-adr-mvp-gtm-guidelines.md; Agentic OS latest selected-source integration at PR #482, 255114403e0910f240081d37d2a6e97267fcba36"
   - "Reference implementation: parent kg-node-cluster-edge@0.6.5"
 ---
 
-# Workspace data views: Table, Kanban and Calendar
+# Workspace data views: Table, Multi-dimensional Table, Kanban and Calendar
 
 `workspace-data-views@1.3.4` joins all five roles below. After the specification-first checkpoint,
 the operator authorized implementation on 2026-10-02. Shared settings, versioned queries and native
@@ -589,3 +590,10 @@ files, under 8 KB diff, 15 active minutes plus required checks, zero dependencie
 ## Global appearance continuation — 2026-10-02
 
 The next implemented UI increment is joined under [ui-appearance@1.0.0](./prd-tad-adr-mvp-gtm-ui-appearance.md): shared 1.5 icon stroke, 1 px borders, flat selected icon controls with blue fill, and global enforcement. Earlier checkpoints above remain historical evidence; the new design guide supersedes local icon/elevation recipes.
+
+## Checkpoint — Agentic Base shared view owner, 2026-10-17
+`workspace-data-views@1.5.0` makes private `agentic-base` the sole source of shared Table, Multi-dimensional Table, Kanban, Calendar, Dashboard, settings, FloatingPanel, and Workflow Manager field-workbench visuals. Graph pins Base React at `529f1d866974453327977595a457d5065a8dbc45`, observed as `agentic-base` `origin/main`; its two host adapters pass Graph data/schema, theme tokens, actions, and persistence. Graph keeps query, mutation, placement, graph-specific controls, and outer lifecycle; duplicate Graph table cores are removed.
+**ADR:** keep Base private during internal migration, with scoped read-only GitHub CI access for Graph and Commerce; make no public-distribution or license claim. The exact package and lockfile commit is the boundary. No customer data, remote store, sync protocol, paid service, or deployment is added.
+**MVP / VCC:** require exact-source, affected-view, TypeScript/build, desktop/mobile live, and protected `Integration Gate` evidence on the candidate. Graph-owned records/actions must continue to work. Preserve the bounded offline browser artifact; Shoply parity and cutover remain open.
+**Rollback and bound:** do not merge a failing candidate; the protected Graph tree remains recoverable, and any rollback restores the exact Base pin with the removed Graph implementations retained in history. Use one existing lane, 133 reserved paths, one exact Base pin, two Graph host adapters, ≤3,000 changed lines, no data migration, and zero paid spend/deployment. Local validation has a 60-minute ceiling; external CI wait has no ETA. Table, Kanban, and Calendar components load on intent. PR #1716 passed its 17/17 integration plan but failed hygiene because its browser smoke runner was 617 lines; its offline proof exposed stale Graph source materialization after save. PR #1717 brought the runner below budget; #1718 aligned Agentic OS to canonical `255114403e0910f240081d37d2a6e97267fcba36`. Exact offline validation then showed the development-only authored-readiness helper cannot be imported in the production offline preview. This successor removes that runtime import and reloads from the exact locally saved source before checking Canvas Results. Offline and full integration reruns remain pending. START-lock recovery is implemented in merged Agentic OS PR #476. Base deploy keys for Graph and Commerce are `read_only: true`; both repositories have the `AGENTIC_BASE_READ_KEY` Actions secret. PRs #1470, #1715, #1716, #1717, and #1718 remain open until a successor integrates; nothing is integrated or deployed.
+**GTM:** this internal reuse does not establish buyer pain, WTP, revenue, production readiness, or public FOSS distribution. Measure integration effort after each authorized consumer cutover; the $1 first-dollar idea remains an experiment, not a forecast.

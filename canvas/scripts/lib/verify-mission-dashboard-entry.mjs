@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { closeFloatingPanel } from './panel-close-helpers.mjs'
 import { waitForMissionAsync } from './mission-card-face.mjs'
+import { BASE_FLOATING_PANEL_ROOT_SELECTOR } from './panel-close-helpers.mjs'
 
 const SETTINGS_BODY_CONTROL = '#main-panel-settings-panel button[aria-label="Expand all sections"], #main-panel-settings-panel button[aria-label="Collapse all sections"]'
 const MAIN_PANEL_SHELL = '[data-kg-main-panel-shell="true"]'
@@ -71,7 +72,7 @@ export async function verifyMissionDashboardEntry(page, { baseUrl, authoredSnaps
   await page.waitForFunction(() => window.__AG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 120000 })
   await waitForMissionAsync(page, async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   if (await page.evaluate(async () => (await import('/src/hooks/useGraphStore.ts')).useGraphStore.getState().floatingPanelOpen)) {
-    await closeFloatingPanel(page, page.locator('[data-kg-floating-panel-root="true"]'))
+    await closeFloatingPanel(page, page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR))
   }
   const before = await authoredSnapshot()
   await installEntryObservation(page)

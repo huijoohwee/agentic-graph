@@ -43,7 +43,8 @@ export function testGalleryCardsReuseSharedDashboardPrimitives() {
   const slidePreviewBuilder = readRepoFile('canvas/src/features/markdown/ui/markdownPresentationSlides.tsx')
   const appCss = readRepoFile('canvas/src/index.css')
   const galleryCss = readRepoFile('canvas/src/styles/markdown-gallery-responsive.css')
-  const dashboardCanvas = readRepoFile('canvas/src/components/DashboardCanvas/index.tsx')
+  const dashboardCanvas = readRepoFile('canvas/src/components/DashboardCanvas/DashboardWidgets.tsx')
+  const dashboardCharts = readRepoFile('canvas/src/components/DashboardCanvas/DashboardCharts.tsx')
 
   for (const token of [
     'useKanbanDragAndDrop',
@@ -55,15 +56,18 @@ export function testGalleryCardsReuseSharedDashboardPrimitives() {
     'UI_RESPONSIVE_VIEWPORT_FIT_GRID_CLASSNAME',
   ]) {
     if (!gallerySurface.includes(token)) throw new Error(`Expected Gallery cards to reuse ${token}`)
-    if (!dashboardCanvas.includes(token)) throw new Error(`Expected Dashboard to keep owning ${token} usage`)
   }
 
-  if (!gallerySurface.includes('reconcileKanbanRowIds')) {
-    throw new Error('Expected Gallery cards to reuse shared kanban order reconciliation')
+  if (!dashboardCanvas.includes("from '@agentic-base/views-react/dashboard'") || !dashboardCanvas.includes('DashboardWidgetCard')) {
+    throw new Error('Expected Dashboard card surfaces to reuse Base-owned visuals')
   }
-  if (!dashboardCanvas.includes('reconcileKanbanRowIds')) {
-    throw new Error('Expected Dashboard to reuse shared kanban order reconciliation')
+  if (!dashboardCharts.includes("from '@agentic-base/views-react/dashboard'") || dashboardCharts.includes('<svg')) {
+    throw new Error('Expected Dashboard chart visuals to have one owner in Base')
   }
+  if (dashboardCanvas.includes('getKanbanCardDragVisualState')) {
+    throw new Error('Expected Dashboard card drag visuals to have one owner in Base')
+  }
+  if (!gallerySurface.includes('reconcileKanbanRowIds')) throw new Error('Expected Gallery cards to reuse shared kanban order reconciliation')
   if (!gallerySurface.includes('data-kg-markdown-gallery-card-inline-edit')) {
     throw new Error('Expected Gallery cards to expose inline edit surfaces')
   }

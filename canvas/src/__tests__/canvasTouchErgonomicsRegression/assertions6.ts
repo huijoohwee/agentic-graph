@@ -133,7 +133,7 @@ export function assertPhase6(fixture: SourceFixture) {
     throw new Error('expected Import URL controls to stack and keep touch-sized actions from shared mobile CSS')
   }
 
-  if (!responsiveToolbarCssText.includes('[data-kg-floating-panel-root="true"]:not(.App-toolbar)') || !responsiveToolbarCssText.includes('--kg-floating-tool-menu-bottom-offset')) {
+  if (!responsiveToolbarCssText.includes('[data-agentic-base-floating-panel="true"]') || !responsiveToolbarCssText.includes('--kg-floating-tool-menu-bottom-offset')) {
     throw new Error('expected floating tool menus to use a shared bottom-safe mobile panel placement')
   }
 }

@@ -2,7 +2,7 @@ import { waitForAuthoredWorkspaceSource as waitForAuthoredSource } from './lib/m
 import { selectMenuOption } from './lib/select-menu-option.mjs'
 import { configureMissionPage, verifyWorkspaceObservation } from './lib/verify-workspace-observation.mjs'
 import { showMissionFace, sourceText, waitForMissionAsync, openEditorWorkspace } from './lib/mission-card-face.mjs'
-import { closeFloatingPanel, closePanelRegion } from './lib/panel-close-helpers.mjs'
+import { BASE_FLOATING_PANEL_ROOT_SELECTOR, closeFloatingPanel, closePanelRegion } from './lib/panel-close-helpers.mjs'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -12,6 +12,7 @@ import { verifyAgentMissionSourceFiles, verifyDashboardWidgets, verifyFullCanvas
 import { verifyCanvasContainerSizing } from './lib/verify-canvas-container-sizing.mjs'
 import { createMissionPhaseObservation } from './lib/mission-phase-observation.mjs'
 import { verifyMissionDashboardEntry, verifyCanvasDashboardEntry } from './lib/verify-mission-dashboard-entry.mjs'
+import { reportMissionFailure } from './lib/mission-failure-diagnostics.mjs'
 const phaseObservation = createMissionPhaseObservation(), output = resolve(process.env.AG_MISSION_ARTIFACT_DIR || '../data/outputs/agent-mission-browser-smoke')
 const browser = await chromium.launch({ headless: true })
 let context = await browser.newContext({ viewport: { width: 360, height: 800 }, reducedMotion: 'reduce' })
@@ -115,7 +116,7 @@ async function openDesktopDashboard() {
 async function verifyWorkspace(label, revoke = false) {
   await waitForAsync(async () => (await import('/src/features/source-files/sourceFilesBootstrapReadiness.ts')).readSourceFilesBootstrapReady())
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
-  const floatingPanel = page.locator('[data-kg-floating-panel-root="true"]')
+  const floatingPanel = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR)
   if (await floatingPanel.isVisible()) await closeFloatingPanel(page, floatingPanel)
   await refreshMission() // Each cold workspace phase receives a fresh authorized minute.
   await showEvidence()
@@ -137,7 +138,7 @@ async function verifyWorkspace(label, revoke = false) {
   await editor.getByRole('checkbox', { name: 'Show Viewer preview pane', exact: true }).check()
   await editor.getByRole('region', { name: 'Viewer', exact: true }).getByRole('heading', { name: /Agent run/ }).waitFor({ state: 'visible' })
   assert.equal(await editor.getByRole('button', { name: 'Insert slash command trigger', exact: true }).count(), 0)
-  assert.equal(await page.locator('[data-kg-floating-panel-root="true"]').count(), 0, 'Run handoff must leave inspection unobscured')
+  assert.equal(await page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR).count(), 0, 'Run handoff must leave inspection unobscured')
   await page.screenshot({ path: resolve(output, label + '-workspace.png') })
   await closePanelRegion(editor, page)
   await waitTopology(canvas)
@@ -312,10 +313,30 @@ async function verifyApexActivation(width) {
   await canvas.waitFor({ timeout: 60000 }); await page.locator('[data-agent-mission-mode="workspace"]').waitFor(); await waitText(evidence, '2 retained matches')
   assertAuthored(await authoredSnapshot(), before, 'Apex discovery must preserve authored work')
   await waitForAsync(async () => (await import('/src/features/toolbar/floatingPanelBridge.ts')).isFloatingPanelBridgeReady())
+  const activePanel = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR)
+  if (await activePanel.count()) {
+    const close = activePanel.getByRole('button', { name: 'Close', exact: true })
+    if (await close.isVisible()) await close.click()
+  }
+  await showEvidence(evidence)
   await page.getByRole('button', { name: 'Create Node', exact: true }).click()
-  const latePanel = page.locator('[data-kg-floating-panel-root="true"]')
+  const latePanel = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR)
   await latePanel.getByRole('region', { name: 'Props Panel', exact: true }).waitFor()
   await latePanel.locator('[data-kg-floating-panel-view-trigger="media"]').waitFor()
+  const panelLayer = await latePanel.evaluate(panel => {
+    const root = panel.closest('.agentic-base-floating-panel-root')
+    const bounds = root.getBoundingClientRect()
+    const close = panel.querySelector('button[aria-label="Close"]')
+    const closeBounds = close.getBoundingClientRect()
+    const hit = document.elementFromPoint(closeBounds.x + closeBounds.width / 2, closeBounds.y + closeBounds.height / 2)
+    return { position: getComputedStyle(root).position, width: bounds.width, height: bounds.height,
+      viewportWidth: window.innerWidth, viewportHeight: window.innerHeight,
+      closeReceivesPointer: hit === close || close.contains(hit) }
+  })
+  assert.equal(panelLayer.position, 'fixed', 'Shared panel host root must cover the viewport')
+  assert.ok(panelLayer.width >= panelLayer.viewportWidth && panelLayer.height >= panelLayer.viewportHeight,
+    'Shared panel host root must stay viewport-sized above dashboard surfaces')
+  assert.equal(panelLayer.closeReceivesPointer, true, 'Shared panel must receive pointer input above dashboard cards')
   await latePanel.getByRole('button', { name: 'Close', exact: true }).click()
   await openRunSource(evidence)
   const refresh = evidence.getByRole('button', { name: 'Refresh runs', exact: true })
@@ -413,7 +434,7 @@ try {
     const { useGraphStore } = await import('/src/hooks/useGraphStore.ts')
     return useGraphStore.getState().floatingPanelOpen
   })
-  let floating = page.locator('[data-kg-floating-panel-root="true"]')
+  let floating = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR)
   if (initialPanelOpen) {
     await closeFloatingPanel(page, floating)
   }
@@ -568,30 +589,6 @@ try {
   console.log('Agent mission browser smoke passed; fixture observations are not production proof.')
   }
 } catch (error) {
-  console.error(error.message)
-  console.error('Completed mission checkpoints:', JSON.stringify(phaseObservation.snapshot()))
-  console.error('Mission entry state:', await page.evaluate(() => ({
-    ready: window.__AG_MAIN_PANEL_OPEN_READY__,
-    dashboard: document.querySelector('#dashboard-surface-agentic-os-panel')?.textContent.slice(0, 4000),
-    modules: performance.getEntriesByType('resource').filter(entry => entry.name.includes('/src/')).slice(-12)
-      .map(entry => ({ path: new URL(entry.name).pathname, duration: entry.duration })),
-    tabs: [...document.querySelectorAll('[role="tab"][aria-selected="true"]')].map(node => node.id),
-    panels: [...document.querySelectorAll('[aria-label="Main panel"]')].map(node => ({
-      width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height,
-    })),
-    topology: [...document.querySelectorAll('#agent-run-view-topology-panel')].map(node => ({
-      text: node.textContent.slice(0, 1000), html: node.innerHTML.slice(0, 2000),
-      width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height,
-      visibility: getComputedStyle(node).visibility,
-      canvas: [...node.querySelectorAll('svg[role="img"]')].map(canvas => ({
-        width: canvas.getBoundingClientRect().width, height: canvas.getBoundingClientRect().height,
-        visibility: getComputedStyle(canvas).visibility, hidden: Boolean(canvas.closest('[aria-hidden="true"], [inert]')),
-      })),
-    })),
-    text: document.querySelector('[aria-label="Agent Mission"]')?.textContent.slice(0, 4000),
-    authoredChanges: window.__AG_ACTIVATION_CHANGES__,
-  })).catch(() => 'Document unavailable'))
-  console.error('Mission transport state:', JSON.stringify({ errors, requests, streamed, pending: pending.size }))
-  await page.screenshot({ path: resolve(output, 'failure.png') }).catch(() => {})
+  await reportMissionFailure({ error, phaseObservation, page, errors, requests, streamed, pending, output })
   throw error
 } finally { await browser.close() }

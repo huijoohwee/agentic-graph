@@ -27,8 +27,8 @@ export function resolveLearningAssetViewport(ownerDocument: Document): LearningA
   }
   // Native panels are inset from the surface edge, so the shared edge detector can miss them.
   const panelContent = ownerDocument.querySelector('[aria-label="Floating panel"]')
-  const panels = new Set<Element>(ownerDocument.querySelectorAll('aside.ModalContainer:not([aria-label="Strybldr Timeline"])'))
-  if (panelContent) panels.add(panelContent.closest('.ModalContainer') ?? panelContent)
+  const panels = new Set<Element>(ownerDocument.querySelectorAll('aside.ModalContainer:not([aria-label="Strybldr Timeline"]), aside.agentic-base-floating-panel:not([aria-label="Strybldr Timeline"])'))
+  if (panelContent) panels.add(panelContent.closest('.ModalContainer, .agentic-base-floating-panel') ?? panelContent)
   for (const element of panels) {
     const rect = localRect(element)
     if (rect && rect.left + rect.right >= viewportW && rect.left < right && rect.right > left
