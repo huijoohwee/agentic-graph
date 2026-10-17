@@ -74,6 +74,7 @@ export type WorkspaceDataViewSource = { id: string; label: string; view: Markdow
 
 export function MarkdownWorkspaceDerivedViewer(props: {
   dataViewSource?: WorkspaceDataViewSource
+  canvasDataViewSurface?: boolean
   viewerKind: MarkdownWorkspaceDerivedViewerKind
   viewerMode: MarkdownWorkspaceDerivedViewerMode
   onChangeViewerMode?: (mode: MarkdownWorkspaceDerivedViewerMode) => void
@@ -241,8 +242,13 @@ export function MarkdownWorkspaceDerivedViewer(props: {
   }, [candidates, selectedTableId])
 
   const { viewConfig, setViewConfig, commitViewConfig } = useWorkspaceDataViewConfig(
-    selected, props.activeDocumentPath, props.viewerMode, !!props.dataViewSource,
+    selected, props.activeDocumentPath, props.viewerMode, !!props.dataViewSource, !!props.canvasDataViewSurface,
   )
+  const effectiveViewerMode = props.canvasDataViewSurface && viewConfig
+    ? viewConfig.layout === 'calendar' ? 'calendar'
+      : viewConfig.layout === 'kanban' ? 'kanban'
+        : viewConfig.graphEnabled ? 'multiDimTable' : 'table'
+    : props.viewerMode
 
   const canMutate = !props.disableViewerMutations && props.viewerKind !== 'json' && !usingLooseTables && !selected?.readonly
 
@@ -280,17 +286,17 @@ export function MarkdownWorkspaceDerivedViewer(props: {
       'workspace-data-view-floating-settings',
       props.activeDocumentPath ?? '',
       selected.id,
-      props.viewerMode,
+      effectiveViewerMode,
     ])
     return {
       registrationId,
       contextLabel: selected.label,
       activePanel: settingsPanel,
       canMutate,
-      viewerLayout: props.viewerMode === 'calendar' ? 'calendar' : props.viewerMode === 'kanban' ? 'kanban' : 'table',
-      viewerMode: props.viewerMode === 'calendar' ? 'calendar' : props.viewerMode === 'kanban'
+      viewerLayout: effectiveViewerMode === 'calendar' ? 'calendar' : effectiveViewerMode === 'kanban' ? 'kanban' : 'table',
+      viewerMode: effectiveViewerMode === 'calendar' ? 'calendar' : effectiveViewerMode === 'kanban'
         ? 'kanban'
-        : props.viewerMode === 'multiDimTable'
+        : effectiveViewerMode === 'multiDimTable'
           ? 'multiDimTable'
           : 'table',
       allowMultiDimLayout: true,
@@ -314,7 +320,7 @@ export function MarkdownWorkspaceDerivedViewer(props: {
           })
         }
         props.onChangeViewerMode?.(mode)
-        if (!props.dataViewSource) useGraphStore.getState().setMultiDimTableModeEnabled(mode === 'multiDimTable')
+        if (!props.dataViewSource && !props.canvasDataViewSurface) useGraphStore.getState().setMultiDimTableModeEnabled(mode === 'multiDimTable')
       },
       onSelectGeospatialView: handleSelectGeospatialView,
       onReset: onResetDataView,
@@ -337,6 +343,7 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     settingsPanel,
     commitViewConfig,
     viewConfig,
+    effectiveViewerMode,
   ])
 
   const activateViewSettings = useWorkspaceDataViewFloatingRegistration(viewSettingsBinding)
@@ -436,7 +443,7 @@ export function MarkdownWorkspaceDerivedViewer(props: {
     <section className={`${UI_RESPONSIVE_WORKSPACE_DATA_VIEW_ROOT_CLASSNAME} h-full w-full flex flex-col`} aria-label="Workspace data view">
       <WorkspaceDataViewHeader
         title={props.title || 'Workspace'}
-        viewerMode={props.viewerMode}
+        viewerMode={effectiveViewerMode}
         canMutate={canMutate}
         columns={(selected?.view.columns ?? [])}
         groupByColumnId={viewConfig ? viewConfig.groupByColumnId : selected?.view.groupByColumnId || null}
@@ -469,9 +476,9 @@ export function MarkdownWorkspaceDerivedViewer(props: {
           </section>
         ) : (
           <React.Suspense fallback={<p role="status" className="p-4">Loading data view…</p>}>
-          {props.viewerMode === 'calendar' && viewConfig ? (
+          {effectiveViewerMode === 'calendar' && viewConfig ? (
             <WorkspaceDataViewCalendarSurface view={displayedView || selected.view} config={viewConfig} onChangeConfig={commitViewConfig} canMutate={canMutate} onUpdateCell={onUpdateCell} onNewRecord={onNewRecord} />
-          ) : props.viewerMode === 'kanban' ? (
+          ) : effectiveViewerMode === 'kanban' ? (
             <MarkdownDataViewKanbanView
             view={displayedView || selected.view}
             visibleColumnIds={visibleColumnIds}

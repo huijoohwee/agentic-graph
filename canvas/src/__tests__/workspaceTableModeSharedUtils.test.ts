@@ -287,6 +287,8 @@ export function testWorkspaceCsvRefreshReusesDelimitedTextDataViewOwners() {
 export function testWorkspaceDataViewGraphToggleBridgesFloatingPanelToCanvasMode() {
   const settingsText = readUtf8('src/features/markdown-workspace/main/viewer/WorkspaceDataViewSettingsPanel.tsx')
   const viewerText = readUtf8('src/features/markdown-workspace/main/viewer/MarkdownWorkspaceDerivedViewer.tsx')
+  const viewConfigHookText = readUtf8('src/features/markdown-workspace/main/viewer/useWorkspaceDataViewConfig.ts')
+  const savedViewHookText = readUtf8('src/features/markdown-workspace/main/viewer/useSavedWorkspaceDataView.ts')
   const activeViewText = readUtf8('src/hooks/active-graph-data/activeViewGraph.ts')
   const modeActionsText = readUtf8('src/hooks/store/uiSettingsSliceModeActions.ts')
   const renderConfigText = readUtf8('src/lib/config.render.ts')
@@ -306,11 +308,18 @@ export function testWorkspaceDataViewGraphToggleBridgesFloatingPanelToCanvasMode
   if (settingsText.includes('disabled={!props.canMutate}')) {
     throw new Error('expected graph-rendering view config toggle to stay enabled for read-only source tables')
   }
-  if (!viewerText.includes('writeWorkspaceDataViewConfig({')) {
-    throw new Error('expected workspace data-view graph config to persist immediately before canvas mode changes')
+  if (!viewConfigHookText.includes('saved.setViewConfig(next)') || !savedViewHookText.includes('writeWorkspaceDataViewConfig({ activeDocumentPath, tableId, value })')) {
+    throw new Error('expected workspace data-view layout changes to persist through the shared saved-view owner')
   }
   if (!viewerText.includes("setMultiDimTableModeEnabled(mode === 'multiDimTable')")) {
     throw new Error('expected workspace data-view layout changes to drive canvas Multi-dimensional Table mode')
+  }
+  if (!viewerText.includes("if (!props.dataViewSource && !props.canvasDataViewSurface) useGraphStore.getState().setMultiDimTableModeEnabled(mode === 'multiDimTable')")
+    || !viewConfigHookText.includes('!canvasDataViewSurface')) {
+    throw new Error('expected the shared canvas data-view surface to keep layout selection from changing the global Graph renderer mode')
+  }
+  if (!viewerText.includes('props.canvasDataViewSurface && viewConfig')) {
+    throw new Error('expected shared canvas view settings and content to follow the persisted Table, Multi-dimensional Table, Kanban, or Calendar layout')
   }
   if (!activeViewText.includes("if (mode === 'multiDimTable') return deriveActiveViewGraph()")) {
     throw new Error('expected Multi-dimensional Table active-view derivation to bypass stale cache after view-config changes')
@@ -327,7 +336,7 @@ export function testWorkspaceDataViewGraphToggleBridgesFloatingPanelToCanvasMode
   if (!canvasViewportText.includes("import('@/features/markdown-workspace/main/viewer/MultiDimTableSurface')") || !canvasViewportText.includes("active2dSurface === 'multiDimTable'") || !canvasViewportText.includes('<MultiDimTableSurfaceLazy active ariaLabel="Canvas Multi-dimensional Table" />')) {
     throw new Error('expected CanvasViewport to mount the shared Multi-dimensional Table surface')
   }
-  if (!canvasTableSurfaceText.includes('MarkdownWorkspaceDerivedViewer') || !canvasTableSurfaceText.includes('viewerMode="multiDimTable"') || !canvasTableSurfaceText.includes('jsonSourceDocumentText')) {
+  if (!canvasTableSurfaceText.includes('MarkdownWorkspaceDerivedViewer') || !canvasTableSurfaceText.includes('viewerMode={viewerMode}') || !canvasTableSurfaceText.includes('jsonSourceDocumentText') || !canvasTableSurfaceText.includes('canvasDataViewSurface={true}')) {
     throw new Error('expected Multi-dimensional Table to reuse Editor Workspace Viewer data-view owners')
   }
   if (canvasViewportText.includes("import('@/lib/graph-table/ui')") || canvasTableSurfaceText.includes(removedWorkspaceSymbol)) {

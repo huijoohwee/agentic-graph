@@ -2,24 +2,24 @@
 title: "Workspace data views: Table, Multi-dimensional Table, Kanban and Calendar"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "workspace-data-views"
-version: "1.5.2"
-prd_revision: "1.5.2"
-tad_revision: "1.5.2"
-adr_revision: "1.5.2"
-mvp_revision: "1.5.2"
-gtm_revision: "1.5.2"
+version: "1.5.3"
+prd_revision: "1.5.3"
+tad_revision: "1.5.3"
+adr_revision: "1.5.3"
+mvp_revision: "1.5.3"
+gtm_revision: "1.5.3"
 date: "2026-10-17"
 lang: "en-US"
 owner: "Workspace data-view product function"
 frontmatter_contract: "required"
 local_rung: "implemented-local"
 delivered_rung: "undocumented"
-lane: "verification"
+lane: "agent/device-0232231d4a19/workspace-table-layout-continuity"
 universal_scope: false
 lifecycle_status: "implemented"
 runtime_readiness_policy: "fail-closed"
 load_policy: "on-demand"
-worktree_id: "device-0232231d4a19--workspace-data-view-handover"
+worktree_id: "device-0232231d4a19--workspace-table-layout-continuity"
 agent_id: "codex"
 source_docs:
   - "Reference implementation: agentic-graph@5d073b96c453cd7ea4c84937daf1dcf6e94f3f87"
@@ -594,5 +594,5 @@ The next implemented UI increment is joined under [ui-appearance@1.0.0](./prd-ta
 ## Checkpoint — Agentic Base shared view owner, 2026-10-17
 `workspace-data-views@1.5.0` makes private `agentic-base` the sole source of shared Table, Multi-dimensional Table, Kanban, Calendar, Dashboard, settings, FloatingPanel, and Workflow Manager field-workbench visuals. Graph pins Base React at `529f1d866974453327977595a457d5065a8dbc45`, observed as `agentic-base` `origin/main`; its two host adapters pass Graph data/schema, theme tokens, actions, and persistence. Graph keeps query, mutation, placement, graph-specific controls, and outer lifecycle; duplicate Graph table cores are removed.
 **ADR:** keep Base private during internal migration, with scoped read-only GitHub CI access for Graph and Commerce; make no public-distribution or license claim. The exact package and lockfile commit is the boundary. No customer data, remote store, sync protocol, paid service, or deployment is added.
-**Development:** PR #1719 head `12cfbef3a6163e7a8b7c521283beb62910917c19` merged as `5d073b96c453cd7ea4c84937daf1dcf6e94f3f87`; `docs-contract` and protected `Integration Gate` passed, as did the 59-path affected plan, Agent Mission smoke, and Python online/offline browser smokes on that head. `npm ci`, `hygiene:check`, and `doc:lint` passed; the lockfile resolves Base at `529f1d866974453327977595a457d5065a8dbc45`. The PRD remains 599 lines; `doc:sanity` is blocked by three unrelated documents at 863, 726, and 1,366 lines. The exact merged Graph UI exposed the renderer menu and accepted Multi-dimensional Table selection without runtime errors; that isolated session had no Markdown source, so rendered-row parity is not newly claimed here. **Production Release:** source integration only; no deployment or production activation was authorized or performed. **Runtime:** this candidate has no new production runtime receipt and is not production-verified. **Next owner:** the Graph release owner binds this candidate to the documented release boundary and supplies authorized Dev/Prod/runtime receipts or a documented no-deploy disposition; `agentic-commerce-os` then consumes the same Base pin for Shoply parity and its separately authorized cutover. Recheck on the corresponding owner CI event; completion requires exact owner receipts. **GTM:** internal reuse does not validate buyer demand, willingness to pay, or revenue; the $1 idea remains an experiment.
+**Development:** PR #1719 head `12cfbef3a6163e7a8b7c521283beb62910917c19` merged as `5d073b96c453cd7ea4c84937daf1dcf6e94f3f87`; `docs-contract` and protected `Integration Gate` passed, as did the 59-path affected plan, Agent Mission smoke, and Python online/offline browser smokes on that head. `npm ci`, `hygiene:check`, and `doc:lint` passed; the lockfile resolves Base at `529f1d866974453327977595a457d5065a8dbc45`. This PRD is 598 lines; `doc:sanity` is blocked by three unrelated documents at 863, 726, and 1,366 lines. The exact merged Graph UI exposed the renderer menu and accepted Multi-dimensional Table selection without runtime errors. A later seeded live preview reproduced and then fixed a settings regression: selecting Table View previously changed the global Graph renderer to D3 and unbound FloatingPanel settings; the canvas adapter now keeps Graph renderer state stable and derives the shared view selection from the saved Base layout. The focused Graph contract, Canvas typecheck/local browser-smoke check, changed-file hygiene, and Agentic OS affected plan (11/11 owner checks selected; all passed) passed on the successor working tree. Live seeded UI checks verified Table, Multi-dimensional Table, Kanban, and Calendar with the shared settings panel attached; after switching back to Table, the renderer remained Multi-dimensional Table. **Production Release:** Dev→Prod is explicitly requested; release remains pending exact candidate checks, immutable build, rollback binding, protected production approval, and runtime readback receipts. **Runtime:** do not claim production verification before those exact receipts. **Next owner:** Graph release owner binds the successor candidate to the documented release boundary and supplies Dev/Prod/runtime receipts; `agentic-commerce-os` consumes the same Base pin for Shoply parity and its separately authorized cutover. Recheck on corresponding owner CI events; completion requires exact owner receipts. **GTM:** internal reuse does not validate buyer demand, willingness to pay, or revenue; the $1 idea remains an experiment.
 **Rollback and bound:** do not merge a failing candidate; the protected Graph tree remains recoverable, and any rollback restores the exact Base pin with the removed Graph implementations retained in history. Use one existing lane, 133 reserved paths, one exact Base pin, two Graph host adapters, ≤3,000 changed lines, no data migration, and zero paid spend/deployment. Local validation has a 60-minute ceiling; external CI wait has no ETA. Table, Kanban, and Calendar components load on intent. PR #1716 passed its 17/17 integration plan but failed hygiene because its browser smoke runner was 617 lines; its offline proof exposed stale Graph source materialization after save. PR #1717 brought the runner below budget; #1718 aligned Agentic OS to canonical `255114403e0910f240081d37d2a6e97267fcba36`. Exact offline validation then showed the development-only authored-readiness helper cannot be imported in the production offline preview. PR #1719 removes that runtime import and reloads from the exact locally saved source before checking Canvas Results. PR #1719 head `12cfbef3a6163e7a8b7c521283beb62910917c19` merged as `5d073b96c453cd7ea4c84937daf1dcf6e94f3f87`; docs-contract and the protected Integration Gate passed. The 59-path local affected plan, Agent Mission smoke, and Python online/offline browser smokes passed on that head. The first offline smoke showed the stale-source guard; the supported same-head retry passed. Agentic OS source closeout quarantined the clean lane projection and registration while retaining its branch and Git objects. PRs #1470 and #1715–#1718 are closed as superseded, with all branches retained. START-lock recovery is implemented in merged Agentic OS PR #476. Base deploy keys for Graph and Commerce are `read_only: true`; both repositories have the `AGENTIC_BASE_READ_KEY` Actions secret. No deployment occurred; production activation and Shoply cutover remain pending.
