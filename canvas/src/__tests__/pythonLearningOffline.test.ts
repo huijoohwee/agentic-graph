@@ -201,6 +201,7 @@ test('one bounded authored asset declaration supplies exact build and precache m
   assert.match(config, /VitePWA\(\{ disable: Boolean\(process\.env\.VITE_OBSERVABILITY_WORKSPACE_MANIFEST\)/)
   assert.match(config, /createPythonLearningOfflinePlugin\(runtimeIdentity.sourceRevision, offlinePublicAssets\)/)
   assert.match(config, /precacheAdmission\.plugin/)
+  assert.match(config, /integration: \{ closeBundleOrder: 'post' \}/)
   assert.match(config, /manifestTransforms: \[precacheAdmission\.manifestTransform\]/)
   for (const file of authoredPublicAssets) {
     const bytes = await readFile(new URL(`../../public/${file.path}`, import.meta.url)); assert.equal(bytes.length, file.bytes); assert.equal(await digest(bytes), file.sha256)
