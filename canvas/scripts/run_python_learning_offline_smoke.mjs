@@ -2,7 +2,6 @@ import { selectMenuOption } from './lib/select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { waitForAuthoredWorkspaceSource } from './lib/mission-authored-state-readiness.mjs'
 import { readFile, mkdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve, join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -347,7 +346,18 @@ try {
   await pane.getByText(/Goal reached · 4\/4 checks · position \(4\.00, 0\.00\) m · output: True/).waitFor()
   await pane.getByRole('button', { name: 'Save source', exact: true }).click()
   await awaitStoredSource(lessons[0].solution)
-  await waitForAuthoredWorkspaceSource(page)
+  const savedReload = await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })
+  assert.equal(savedReload?.status(), 200, 'offline reload must rematerialize the saved source from local storage')
+  await pane.waitFor({ timeout: 60000 })
+  await selectPython()
+  await pane.getByRole('button', { name: 'Code', exact: true }).click()
+  await selectMenuOption(pane.getByLabel('Python lesson', { exact: true }), lessons[0].id)
+  await awaitSource(lessons[0].solution)
+  if (await richEditor.isVisible()) await richEditor.click()
+  await pane.locator('.monaco-editor .view-lines').waitFor({ timeout: 30000 })
+  await pane.getByRole('button', { name: 'Results', exact: true }).click()
+  await pane.getByRole('button', { name: 'Load saved debriefs', exact: true }).click()
+  await pane.getByText(`${lessons.length} matching debriefs`, { exact: false }).waitFor()
   await page.screenshot({ path: join(output, 'offline-desktop.png'), fullPage: true })
   await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await pane.locator('.python-learning-result').evaluate(element => { element.scrollTop = 0 })
