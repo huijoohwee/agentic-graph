@@ -200,43 +200,35 @@ test('one bounded authored asset declaration supplies exact build and precache m
   assert.match(config, /createPwaPrecacheAdmission\(\)/)
   assert.match(config, /VitePWA\(\{ disable: Boolean\(process\.env\.VITE_OBSERVABILITY_WORKSPACE_MANIFEST\)/)
   assert.match(config, /createPythonLearningOfflinePlugin\(runtimeIdentity.sourceRevision, offlinePublicAssets\)/)
-  assert.match(config, /precacheAdmission\.plugin/)
+  assert.doesNotMatch(config, /precacheAdmission\.plugin/)
   assert.match(config, /manifestTransforms: \[precacheAdmission\.manifestTransform\]/)
   for (const file of authoredPublicAssets) {
     const bytes = await readFile(new URL(`../../public/${file.path}`, import.meta.url)); assert.equal(bytes.length, file.bytes); assert.equal(await digest(bytes), file.sha256)
   }
   const directory = await mkdtemp(join(tmpdir(), 'declared-offline-assets-'))
   try {
-    const admission = createPwaPrecacheAdmission(directory)
-    const rollupDirectory = join(directory, 'rollup-output')
-    await admission.plugin.writeBundle.handler.call({}, { dir: rollupDirectory }, {
-      'main.js': { type: 'chunk', fileName: `assets/${first}/main.js`, isEntry: true,
-        imports: [`assets/${first}/shared.mjs`], dynamicImports: [`assets/${first}/deferred.js`] },
-      'shared.mjs': { type: 'chunk', fileName: `assets/${first}/shared.mjs`, imports: [] },
-      'deferred.js': { type: 'chunk', fileName: `assets/${first}/deferred.js`, isDynamicEntry: true, imports: [] },
-    })
-    const metadataPath = join(directory, 'agentic-pwa-static-closure.json')
-    const metadata = JSON.parse(await readFile(metadataPath, 'utf8'))
-    assert.deepEqual(metadata, {
-      schema: 'agentic-graph-pwa-static-closure/v2',
-      required: [`assets/${first}/main.js`, `assets/${first}/shared.mjs`],
-      observation: { bundleDirectory: rollupDirectory, chunkCount: 3, entryCount: 1, entryFiles: [`assets/${first}/main.js`] },
-    })
+    const appPath = `assets/${first}`
+    const files = {
+      'index.html': `<script type="module" crossorigin src="/agentic-graph/${appPath}/main.js"></script>`,
+      [`${appPath}/main.js`]: `import { shared } from './shared.mjs'; import('./deferred.js'); console.log(shared);`,
+      [`${appPath}/shared.mjs`]: `export { leaf as shared } from './leaf.js';`,
+      [`${appPath}/leaf.js`]: `export const leaf = 'static';`,
+      [`${appPath}/deferred.js`]: `export const deferred = true;`,
+      [`${appPath}/unrelated.js`]: `export const unrelated = true;`,
+    }
+    for (const [path, contents] of Object.entries(files)) {
+      if (path !== 'index.html') await mkdir(join(directory, path, '..'), { recursive: true })
+      await writeFile(join(directory, path), contents)
+    }
     const manifestAdmission = createPwaPrecacheAdmission(directory)
-    await manifestAdmission.plugin.writeBundle.handler.call({}, { dir: directory }, {
-      'sw.mjs': { type: 'chunk', fileName: 'sw.mjs', isEntry: true, imports: [] },
-    })
     const admitted = await manifestAdmission.manifestTransform([
-      { url: `assets/${first}/main.js` }, { url: `assets/${first}/shared.mjs` },
-      { url: `assets/${first}/deferred.js` }, { url: 'assets/theme.css' }, { url: 'manifest.webmanifest' },
-      { url: 'agentic-pwa-static-closure.json' },
+      { url: `${appPath}/main.js` }, { url: `${appPath}/shared.mjs` }, { url: `${appPath}/leaf.js` },
+      { url: `${appPath}/deferred.js` }, { url: `${appPath}/unrelated.js` },
+      { url: 'assets/theme.css' }, { url: 'manifest.webmanifest' },
     ])
     assert.deepEqual(admitted.manifest.map(entry => entry.url), [
-      `assets/${first}/main.js`, `assets/${first}/shared.mjs`, 'assets/theme.css', 'manifest.webmanifest',
+      `${appPath}/main.js`, `${appPath}/shared.mjs`, `${appPath}/leaf.js`, 'assets/theme.css', 'manifest.webmanifest',
     ])
-    await assert.rejects(readFile(join(directory, 'agentic-pwa-static-closure.json')), { code: 'ENOENT' })
-    await assert.rejects(manifestAdmission.manifestTransform([]), error =>
-      error instanceof Error && error.message.includes(`ENOENT; path=${metadataPath}`))
     const shell = ['index.html', `assets/${first}/pythonWorker.js`]
     for (const file of shell) { await mkdir(join(directory, file, '..'), { recursive: true }); await writeFile(join(directory, file), file) }
     for (const file of authoredPublicAssets) { await mkdir(join(directory, file.path, '..'), { recursive: true }); await writeFile(join(directory, file.path), await readFile(new URL(`../../public/${file.path}`, import.meta.url))) }
@@ -254,19 +246,14 @@ test('one bounded authored asset declaration supplies exact build and precache m
   } finally { await rm(directory, { recursive: true, force: true }) }
 })
 
-test('empty app bundles produce bounded Workbox diagnostics and fail closed', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'empty-pwa-bundle-'))
+test('Workbox closure fails closed when built HTML or a static import is unavailable', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'pwa-html-closure-'))
   try {
     const admission = createPwaPrecacheAdmission(directory)
-    await admission.plugin.writeBundle.handler.call({}, { dir: directory }, {
-      'index.html': { type: 'asset', fileName: 'index.html', source: '<html></html>' },
-    })
-    const metadata = JSON.parse(await readFile(join(directory, 'agentic-pwa-static-closure.json'), 'utf8'))
-    assert.deepEqual(metadata, {
-      schema: 'agentic-graph-pwa-static-closure/v2', required: [],
-      observation: { bundleDirectory: directory, chunkCount: 0, entryCount: 0, entryFiles: [] },
-    })
-    await assert.rejects(admission.manifestTransform([{ url: 'assets/app.js' }]), error =>
-      error instanceof Error && error.message.includes('chunkCount') && error.message.includes('assets/app.js'))
+    await assert.rejects(admission.manifestTransform([{ url: 'assets/app.js' }]), /built HTML entry is unavailable \(ENOENT;/)
+    await writeFile(join(directory, 'index.html'), '<script type="module" src="/agentic-graph/assets/app.js"></script>')
+    await mkdir(join(directory, 'assets'), { recursive: true })
+    await writeFile(join(directory, 'assets/app.js'), `import './missing.js';`)
+    await assert.rejects(admission.manifestTransform([{ url: 'assets/app.js' }]), /static JavaScript dependency is absent from manifest: assets\/missing.js/)
   } finally { await rm(directory, { recursive: true, force: true }) }
 })
