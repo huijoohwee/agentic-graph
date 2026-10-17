@@ -218,8 +218,8 @@ test('one bounded authored asset declaration supplies exact build and precache m
       unrelated: { type: 'chunk', fileName: `${appPath}/unrelated.js`, imports: [] },
     }
     const manifestAdmission = createPwaPrecacheAdmission(directory)
-    manifestAdmission.plugin.generateBundle.handler({}, appBundle)
-    manifestAdmission.plugin.generateBundle.handler({}, {
+    manifestAdmission.plugin.generateBundle({}, appBundle)
+    manifestAdmission.plugin.generateBundle({}, {
       worker: { type: 'chunk', fileName: 'sw.mjs', isEntry: true, imports: [] },
     })
     const admitted = await manifestAdmission.manifestTransform([
@@ -252,11 +252,11 @@ test('Workbox closure fails closed when the in-memory bundle or a required manif
   try {
     const admission = createPwaPrecacheAdmission(directory)
     await assert.rejects(admission.manifestTransform([{ url: 'assets/app.js' }]), /in-memory application bundle observation is unavailable/)
-    assert.throws(() => admission.plugin.generateBundle.handler({}, {
+    assert.throws(() => admission.plugin.generateBundle({}, {
       app: { type: 'chunk', fileName: 'assets/app.js', isEntry: true, imports: ['assets/missing.js'] },
     }), error => error instanceof Error && error.message.includes('required emitted JavaScript chunk is missing: assets/missing.js'))
     const complete = createPwaPrecacheAdmission(directory)
-    complete.plugin.generateBundle.handler({}, {
+    complete.plugin.generateBundle({}, {
       app: { type: 'chunk', fileName: 'assets/app.js', isEntry: true, imports: [] },
     })
     await assert.rejects(complete.manifestTransform([{ url: 'assets/unrelated.js' }]), error =>
