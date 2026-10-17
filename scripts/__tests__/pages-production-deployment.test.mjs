@@ -77,7 +77,7 @@ test('Dev project creation uses the Free project ceiling and validates isolation
       calls.push({ route, method: init.method || 'GET' })
       if (route === '/pages/projects/agentic-graph-prod') return jsonResponse({ result: { id: 'prod-project-id' } })
       if (route === '/pages/projects/agentic-graph-dev' && init.method !== 'POST') return jsonResponse({ errors: [{ message: 'not found' }] }, 404)
-      if (requestPath === '/pages/projects?per_page=100&page=1') {
+      if (requestPath === '/pages/projects?per_page=20&page=1') {
         return jsonResponse({ result: [], result_info: { total_count: 4 } })
       }
       if (route === '/pages/projects' && init.method === 'POST') return jsonResponse({ result: project })
@@ -110,7 +110,7 @@ test('Dev project creation refuses to cross the Free project limit', async () =>
         const requestPath = route + parsed.search
         if (route === '/pages/projects/agentic-graph-prod') return jsonResponse({ result: { id: 'prod-id' } })
         if (route === '/pages/projects/agentic-graph-dev' && init.method !== 'POST') return jsonResponse({}, 404)
-        if (requestPath === '/pages/projects?per_page=100&page=1') return jsonResponse({ result: [], result_info: { total_count: 100 } })
+        if (requestPath === '/pages/projects?per_page=20&page=1') return jsonResponse({ result: [], result_info: { total_count: 100 } })
         if (init.method === 'POST') createCalls += 1
         throw new Error('unexpected Cloudflare Pages request: ' + route)
       },
@@ -156,7 +156,7 @@ test('Dev candidate capture requires exact project, run identity, and marker byt
         if (route === '/pages/projects/agentic-graph-prod') return jsonResponse({ result: { id: 'prod-project-id' } })
         if (route === '/pages/projects/agentic-graph-dev') return jsonResponse({ result: { id: 'dev-project-id', name: 'agentic-graph-dev', production_branch: 'main', source: null, build_config: {}, deployment_configs: {} } })
         if (route === '/pages/projects/agentic-graph-dev/domains') return jsonResponse({ result: [] })
-          if (requestPath === '/pages/projects/agentic-graph-dev/deployments?env=production&per_page=100') return jsonResponse({ result: [deployment] })
+          if (requestPath === '/pages/projects/agentic-graph-dev/deployments?env=production&per_page=20') return jsonResponse({ result: [deployment] })
         if (route === '/pages/projects/agentic-graph-dev/deployments/' + deploymentId) return jsonResponse({ result: deployment })
         throw new Error('unexpected Cloudflare Pages request: ' + route)
       }
