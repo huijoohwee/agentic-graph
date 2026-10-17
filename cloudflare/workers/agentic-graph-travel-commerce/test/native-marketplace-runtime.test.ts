@@ -67,7 +67,7 @@ describe('native marketplace production runtime', () => {
         'settlement-verified', 'split-committed', 'bundle-committed',
       ]))
       const outcome = instance.finishCascade(begin.record.cascadeId, false)
-      if (outcome.kind === 'rejected') throw new Error(outcome.reason)
+      if (outcome.kind === 'rejected') throw new Error(outcome.reason ?? 'cascade-rejected')
       await state.storage.deleteAlarm()
       const payout = state.storage.sql.exec<PayoutRow>(
         `SELECT p.*, s.cascade_id, s.bundle_id, s.vendor_id, s.payout_principal_id,
