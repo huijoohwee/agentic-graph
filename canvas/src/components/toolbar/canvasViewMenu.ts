@@ -60,7 +60,6 @@ import {
 import { isRichMediaPanelDisplayEnabled } from '@/lib/render/richMediaSsot'
 import { resolveCanvasDisplayControlDisabledReason } from '@/lib/canvas/canvasDisplayControlCapabilities'
 import { uiBooleanRowValue, uiCurrentChoiceRowIsSelected } from 'grph-shared/ui/selectedRowClasses'
-
 const CANVAS_VIEW_SURFACE_MODE_ICON: Record<CanvasSurfaceModeId, CanvasViewOption['Icon']> = {
   '2d': Columns2,
   '3d': Box,
@@ -596,6 +595,5 @@ export const buildCanvasViewOptions = (
     const disabledReason = resolveCanvasDisplayControlDisabledReason(option.id, state)
     if (disabledReason && !option.disabled) Object.assign(option, { disabled: true, disabledReason })
   }
-  return options
-}
+  return options }
 export { getCanvasViewTriggerState } from './canvasViewRendererOptions'
