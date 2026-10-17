@@ -37,12 +37,20 @@ const command = path.basename(process.argv[1]), args = process.argv.slice(2);
 const keyDir = fs.readdirSync(process.env.LC_INSTALL_KEY_DIR).find(name => name.startsWith('agentic-base-read.'));
 const keyFile = keyDir ? path.join(process.env.LC_INSTALL_KEY_DIR, keyDir, 'id_ed25519') : '';
 const keyExists = fs.existsSync(keyFile);
+let installFileMode = null;
+if (command === 'npm' && args.includes('ci')) {
+  const packageFile = path.join(process.env.LC_INSTALL_KEY_DIR, 'package-mode-probe');
+  fs.writeFileSync(packageFile, 'probe', { mode: 0o666 });
+  installFileMode = fs.statSync(packageFile).mode & 0o777;
+}
 fs.appendFileSync(process.env.LC_INSTALL_LOG, JSON.stringify({
     command, args,
   rawKeyPresent: Object.hasOwn(process.env, 'AGENTIC_BASE_READ_KEY'),
   sshConfigured: Boolean(process.env.GIT_SSH_COMMAND),
   keyExists,
   keyMode: keyExists ? fs.statSync(keyFile).mode & 0o777 : null,
+  installUmask: process.umask(),
+  installFileMode,
 }) + '\\n');
 if (command === 'npm' && args.includes('ci')) {
   const mirror = args.includes('--prefix');
@@ -53,7 +61,7 @@ if (command === 'npm' && args.includes('ci')) {
 }
 `
   for (const command of ['npm', 'npx', 'sleep']) fs.writeFileSync(path.join(bin, command), shim, { mode: 0o755 })
-  const result = spawnSync('bash', [installer], { cwd, encoding: 'utf8', timeout: 10_000,
+  const result = spawnSync('bash', ['-c', 'umask 022; source "$1"', 'bash', installer], { cwd, encoding: 'utf8', timeout: 10_000,
     env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`,
       AGENTIC_OS_PUBLISH_REPOSITORY_ROOT: mirrorRoot, LC_INSTALL_LOG: log,
       AGENTIC_BASE_READ_KEY: readKey, LC_INSTALL_KEY_DIR: root, RUNNER_TEMP: root,
@@ -68,7 +76,7 @@ test('release setup installs the mirror lockfile and development dependency befo
   assert.equal(result.status, 0, result.stderr)
   assert.deepEqual(result.observations[0], {
     command: 'npm', args: ['ci', '--ignore-scripts', '--no-audit', '--no-fund'], rawKeyPresent: false,
-    sshConfigured: true, keyExists: true, keyMode: 0o600,
+    sshConfigured: true, keyExists: true, keyMode: 0o600, installUmask: 0o022, installFileMode: 0o644,
   })
   assert.deepEqual(result.calls, [
     ['npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund'],

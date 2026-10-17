@@ -6,6 +6,7 @@ if [[ -z "${AGENTIC_BASE_READ_KEY:-}" ]]; then
   exit 1
 fi
 
+original_umask="$(umask)"
 umask 077
 key_dir="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/agentic-base-read.XXXXXX")"
 key_file="$key_dir/id_ed25519"
@@ -16,6 +17,7 @@ trap cleanup EXIT
 printf '%s\n' "$AGENTIC_BASE_READ_KEY" > "$key_file"
 printf '%s\n' 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "$known_hosts"
 chmod 600 "$key_file" "$known_hosts"
+umask "$original_umask"
 unset AGENTIC_BASE_READ_KEY
 
 export GIT_CONFIG_COUNT=2
