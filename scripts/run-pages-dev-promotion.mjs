@@ -104,8 +104,12 @@ export async function runPagesDevPromotion(env = process.env) {
       views: ui.views,
       completedAt: new Date().toISOString(),
     }
-    await writeReceipt(path.join(evidenceDir, 'promotion.json'), receipt)
-    return receipt
+    const promotionPath = path.join(evidenceDir, 'promotion.json')
+    await writeReceipt(promotionPath, receipt)
+    const promotionReceiptDigest = createHash('sha256').update(await fs.readFile(promotionPath)).digest('hex')
+    const completed = { ...receipt, promotionReceiptDigest }
+    await writeDevPromotionOutputs(env, completed)
+    return completed
   } catch (error) {
     await writeReceipt(path.join(evidenceDir, 'failure.json'), {
       schema: 'agentic-graph-dev-promotion-failure/v1',
@@ -117,6 +121,36 @@ export async function runPagesDevPromotion(env = process.env) {
     })
     throw error
   }
+}
+
+export async function writeDevPromotionOutputs(env, receipt) {
+  const sourceRevision = String(receipt?.sourceRevision || '')
+  const manifestDigest = String(receipt?.immutableManifestDigest || '')
+  const deploymentId = String(receipt?.deploymentId || '')
+  const deploymentUrl = String(receipt?.deploymentUrl || '')
+  const promotionDigest = String(receipt?.promotionReceiptDigest || '')
+  if (!/^[0-9a-f]{40}$/.test(sourceRevision)) throw new Error('Dev promotion source revision is invalid')
+  if (!/^[0-9a-f]{64}$/.test(manifestDigest) || !/^[0-9a-f]{64}$/.test(promotionDigest)) {
+    throw new Error('Dev promotion receipt digest is invalid')
+  }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(deploymentId)) {
+    throw new Error('Dev deployment id is invalid')
+  }
+  const url = new URL(deploymentUrl)
+  if (url.protocol !== 'https:' || !/^[a-z0-9-]+\.agentic-graph-dev\.pages\.dev$/i.test(url.hostname)
+    || url.username || url.password || url.port || url.pathname !== '/' || url.search || url.hash) {
+    throw new Error('Dev deployment URL is not the isolated Pages deployment')
+  }
+  const values = {
+    source_revision: sourceRevision,
+    manifest_digest: manifestDigest,
+    deployment_id: deploymentId,
+    deployment_url: url.origin,
+    promotion_digest: promotionDigest,
+  }
+  const outputPath = required(env, 'GITHUB_OUTPUT')
+  await fs.appendFile(outputPath, Object.entries(values).map(([key, value]) => key + '=' + value).join('\n') + '\n')
+  return values
 }
 
 function deployStaticArtifact(artifactDir, runIdentity, sourceRevision, env) {

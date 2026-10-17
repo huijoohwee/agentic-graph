@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import YAML from 'yaml'
 import { createObservedCurrentRollbackBaseline, createObservedRollbackBaseline } from '../lib/production-rollback-baseline.mjs'
 import { digest } from '../lib/production-release-lifecycle-evidence.mjs'
 import { currentBaselineCaptureSummary } from '../production-rollback-baseline.mjs'
@@ -111,6 +112,10 @@ for (const [label, mutate] of [
 test('current baseline workflow is protected and contains no deployment command', () => {
   const workflow = readFileSync(new URL('../../.github/workflows/production-rollback-baseline-capture.yml', import.meta.url), 'utf8')
   const implementation = readFileSync(new URL('../production-rollback-baseline.mjs', import.meta.url), 'utf8')
+  const parsed = YAML.parse(workflow)
+  const install = parsed.jobs.capture.steps.find(step => step.name === 'Install dependencies')
+  assert.equal(install.run, 'source ./scripts/install-agentic-graph-dependencies.sh')
+  assert.match(install.env.AGENTIC_BASE_READ_KEY, /secrets\.AGENTIC_BASE_READ_KEY/)
   assert.match(workflow, /baseline_mode:[\s\S]*current-observed[\s\S]*successful-release-run/)
   assert.match(workflow, /environment:\n\s+name: production/)
   assert.match(workflow, /path: agentic-graph\n\s+fetch-depth: 0\n\s+fetch-tags: false/)

@@ -1,13 +1,20 @@
 import assert from 'node:assert/strict'
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/
 const DIGEST_PATTERN = /^[0-9a-f]{64}$/
-const VIEW_RENDERERS = ['Dashboard', 'Multi-dimensional Table', 'Kanban', 'Calendar']
+const FIXTURE_TITLE = 'Agentic Base view smoke'
+const BASE_LAYOUTS = [
+  { id: 'Table', label: 'Table View' },
+  { id: 'Multi-dimensional Table', label: 'Multi-dimensional Table' },
+  { id: 'Kanban', label: 'Kanban View' },
+  { id: 'Calendar', label: 'Calendar View' },
+]
 
 export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, readinessPath, outputPath }) {
   const base = normalizeOrigin(origin)
@@ -27,6 +34,8 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
   assert.match(csp, /connect-src\s+'self'/i, 'Dev CSP must restrict data connections to the Dev origin')
   assert.match(csp, /form-action\s+'self'/i, 'Dev CSP must restrict form posts to the Dev origin')
 
+  const fixturePath = path.join(os.tmpdir(), 'agentic-graph-base-view-' + randomUUID() + '.md')
+  await fs.writeFile(fixturePath, buildViewFixture(), { flag: 'wx', mode: 0o600 })
   const browserEnv = { ...process.env }
   delete browserEnv.CLOUDFLARE_API_TOKEN
   delete browserEnv.CLOUDFLARE_ACCOUNT_ID
@@ -51,21 +60,36 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
       if (/^https?:/i.test(requestUrl) && new URL(requestUrl).origin !== base) externalRequests.add(new URL(requestUrl).origin)
     })
     page.on('pageerror', error => pageErrors.push(String(error.message || error).slice(0, 240)))
-    const response = await page.goto(base + '/?kgPath=%2Fagentic-graph%2F', {
-      waitUntil: 'domcontentloaded',
-      timeout: 45_000,
-    })
+    const response = await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 45_000 })
     assert.equal(response?.status(), 200, 'Dev UI route must return 200')
     assert.equal(new URL(page.url()).origin, base, 'Dev UI must remain on the isolated Pages origin')
-    const renderer = page.locator('button[aria-label^=\"Canvas View Mode: 2D Renderer:\"]')
-    await renderer.waitFor({ state: 'visible', timeout: 45_000 })
 
-    await renderer.click()
-    for (const view of VIEW_RENDERERS) {
-      const choice = page.locator(`button[aria-label="2D Renderer: ${view}"]`)
-      await choice.waitFor({ state: 'visible', timeout: 10_000 })
-      verifiedViews.push(view)
+    await ensureTwoDimensionalSurface(page)
+    await importViewFixture(page, fixturePath)
+    await selectRenderer(page, 'Multi-dimensional Table')
+    await page.locator('section[aria-label="Workspace data view"]').waitFor({ state: 'visible', timeout: 20_000 })
+    await page.locator('section[aria-label="Workspace data view"] table[aria-label="Table view"]').waitFor({ state: 'visible', timeout: 20_000 })
+
+    const settingsToggle = page.locator('button[aria-label="View settings"]')
+    await settingsToggle.waitFor({ state: 'visible', timeout: 15_000 })
+    await settingsToggle.click()
+    const settings = page.locator('[aria-label="View settings panel"]')
+    await settings.waitFor({ state: 'visible', timeout: 10_000 })
+
+    for (const layout of BASE_LAYOUTS) {
+      const option = settings.getByRole('button', { name: layout.label, exact: true })
+      await option.waitFor({ state: 'visible', timeout: 10_000 })
+      await option.click()
+      await verifyBaseLayout(page, layout.id)
+      verifiedViews.push(layout.id)
     }
+
+    if (await settings.count()) await settingsToggle.click()
+    await selectRenderer(page, 'Dashboard')
+    const dashboardCards = page.locator('.agentic-base-dashboard-card[aria-label^="Dashboard"]')
+    await dashboardCards.first().waitFor({ state: 'visible', timeout: 20_000 })
+    assert.ok(await dashboardCards.count() > 0, 'Dashboard must render Base-owned dashboard cards')
+    verifiedViews.push('Dashboard')
 
     assert.deepEqual([...externalRequests], [], 'Dev browser must not request production or other cross-origin services')
     assert.deepEqual(pageErrors, [], 'Dev UI must not raise uncaught browser errors')
@@ -77,16 +101,86 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
       readinessMarkerDigest: createHash('sha256').update(markerBody).digest('hex'),
       csp,
       views: verifiedViews,
+      fixture: { title: FIXTURE_TITLE, importedFromLocalFile: true, removedAfterRun: true },
       externalOriginsRequested: [...externalRequests],
       pageErrors,
       verifiedAt: new Date().toISOString(),
     }
     await fs.mkdir(path.dirname(path.resolve(outputPath)), { recursive: true })
     await fs.writeFile(outputPath, JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' })
+    await context.close()
     return receipt
   } finally {
     await browser.close()
+    await fs.rm(fixturePath, { force: true })
   }
+}
+
+async function ensureTwoDimensionalSurface(page) {
+  const mode = page.locator('button[aria-label^="Canvas View Mode:"]')
+  await mode.waitFor({ state: 'visible', timeout: 45_000 })
+  const label = await mode.getAttribute('aria-label') || ''
+  if (label.includes('2D Renderer:')) return
+  await mode.click()
+  await page.getByRole('button', { name: 'Surface Mode', exact: true }).click()
+  await page.getByRole('button', { name: '2D Mode', exact: true }).click()
+  await page.locator('button[aria-label^="Canvas View Mode: 2D Renderer:"]').waitFor({ state: 'visible', timeout: 15_000 })
+}
+
+async function importViewFixture(page, fixturePath) {
+  const input = page.locator('input[type="file"][accept*=".md"]').first()
+  await input.setInputFiles(fixturePath)
+  await page.getByText(FIXTURE_TITLE, { exact: true }).first().waitFor({ state: 'visible', timeout: 30_000 })
+  await page.getByText('Alpha', { exact: true }).first().waitFor({ state: 'visible', timeout: 30_000 })
+  await page.getByText('Beta', { exact: true }).first().waitFor({ state: 'visible', timeout: 30_000 })
+}
+
+async function selectRenderer(page, view) {
+  const mode = page.locator('button[aria-label^="Canvas View Mode:"]')
+  const label = await mode.getAttribute('aria-label') || ''
+  if (label.endsWith('2D Renderer: ' + view)) return
+  await mode.click()
+  await page.getByRole('button', { name: '2D Renderer: ' + view, exact: true }).click()
+  await page.locator('button[aria-label="Canvas View Mode: 2D Renderer: ' + view + '"]').waitFor({ state: 'visible', timeout: 15_000 })
+}
+
+async function verifyBaseLayout(page, layout) {
+  const workspace = page.locator('section[aria-label="Workspace data view"]')
+  if (layout === 'Table' || layout === 'Multi-dimensional Table') {
+    const table = workspace.locator('table[aria-label="Table view"]')
+    await table.waitFor({ state: 'visible', timeout: 15_000 })
+    await table.getByText('Alpha', { exact: true }).waitFor({ state: 'visible', timeout: 10_000 })
+    await table.getByText('Beta', { exact: true }).waitFor({ state: 'visible', timeout: 10_000 })
+    return
+  }
+  if (layout === 'Kanban') {
+    const groups = workspace.locator('[aria-label="Kanban groups"]')
+    await groups.waitFor({ state: 'visible', timeout: 15_000 })
+    assert.ok(await groups.locator('[aria-label="Group: Todo"]').count() > 0, 'Kanban must render the Todo group')
+    assert.ok(await groups.locator('[aria-label="Group: Done"]').count() > 0, 'Kanban must render the Done group')
+    assert.ok(await groups.locator('[aria-label="Card: Alpha"]').count() > 0, 'Kanban must render the Alpha card')
+    return
+  }
+  const calendar = workspace.locator('[aria-label="Calendar view"]')
+  await calendar.waitFor({ state: 'visible', timeout: 15_000 })
+  const grid = calendar.locator('table[aria-label^="Calendar "]')
+  await grid.waitFor({ state: 'visible', timeout: 10_000 })
+  assert.ok(await grid.locator('button[data-calendar-date]').count() >= 28, 'Calendar must render its month grid')
+}
+
+function buildViewFixture() {
+  const today = new Date()
+  const tomorrow = new Date(today.getTime() + 86_400_000)
+  const date = value => value.toISOString().slice(0, 10)
+  return [
+    '# ' + FIXTURE_TITLE,
+    '',
+    '| Name | Status | Date |',
+    '| --- | --- | --- |',
+    '| Alpha | Todo | ' + date(today) + ' |',
+    '| Beta | Done | ' + date(tomorrow) + ' |',
+    '',
+  ].join('\n')
 }
 
 async function readSameOrigin(origin, pathname) {

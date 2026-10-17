@@ -3,7 +3,9 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { test } from 'node:test'
+import YAML from 'yaml'
 import { prepareDevArtifact, runPagesProductionDeployment } from '../pages-production-deployment.mjs'
+import { writeDevPromotionOutputs } from '../run-pages-dev-promotion.mjs'
 
 const sourceSha = 'a'.repeat(40)
 const manifestDigest = 'b'.repeat(64)
@@ -168,17 +170,63 @@ test('Dev candidate capture requires exact project, run identity, and marker byt
   assert.equal(JSON.parse(await fs.readFile(root.receipt, 'utf8')).runIdentity, runIdentity)
 })
 
-test('protected release keeps isolated Dev verification before production mutation', async () => {
+test('protected release authorizes first, then binds isolated Dev verification before Production mutation', async () => {
   const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..')
-  const workflow = await fs.readFile(path.join(root, '.github/workflows/release.yml'), 'utf8')
-  const dev = workflow.indexOf('id: dev_promotion')
-  const owner = workflow.indexOf('name: Enforce sole deployment ownership')
-  const prod = workflow.indexOf('name: Deploy verified artifact')
-  const upload = workflow.indexOf('Persist isolated Dev receipts')
-  assert.ok(dev >= 0 && upload > dev && owner > upload && prod > owner)
-  assert.match(workflow.slice(dev, prod), /run-pages-dev-promotion\.mjs/)
-  assert.match(workflow.slice(dev, prod), /if: always\(\)/)
-  assert.match(workflow.slice(dev, prod), /production-mirror-artifact/)
+  const workflow = YAML.parse(await fs.readFile(path.join(root, '.github/workflows/release.yml'), 'utf8'))
+  const verify = workflow.jobs.verify
+  const deploy = workflow.jobs.deploy
+  const verifySteps = verify.steps
+  assert.equal(verifySteps.some(step => step.id === 'dev_promotion'), false)
+  assert.equal(Object.keys(verify.outputs).some(output => output.startsWith('dev_')), false)
+  assert.equal(deploy.needs, 'verify')
+  assert.equal(deploy.environment.name, 'production')
+  const deploySteps = deploy.steps
+  const auth = deploySteps.findIndex(step => step.name === 'Record exact human authorization and claim release controller')
+  const dev = deploySteps.findIndex(step => step.id === 'dev_promotion')
+  const bind = deploySteps.findIndex(step => step.name === 'Bind Dev receipt to exact candidate')
+  const mutationGate = deploySteps.findIndex(step => step.name === 'Enforce sole deployment ownership')
+  const productionDeploy = deploySteps.findIndex(step => step.name === 'Deploy verified artifact')
+  const persist = deploySteps.findIndex(step => step.name === 'Persist isolated Dev receipts')
+  assert.ok(auth >= 0 && dev > auth && bind > dev && persist > bind && mutationGate > bind && productionDeploy > mutationGate)
+  assert.match(deploySteps[dev].run, /run-pages-dev-promotion\.mjs/)
+  assert.equal(deploySteps[dev].env.PRODUCTION_ARTIFACT_DIR, '${{ runner.temp }}/production-mirror-artifact')
+  assert.equal(deploySteps[dev].env.CLOUDFLARE_PAGES_PROJECT, '${{ vars.CLOUDFLARE_PAGES_PROJECT }}')
+  assert.match(deploySteps[bind].run, /steps\.dev_promotion\.outputs\.source_revision/)
+})
+
+test('Dev outputs bind exact source, manifest, deployment, URL, and promotion digest', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-dev-outputs-'))
+  t.after(() => fs.rm(root, { recursive: true, force: true }))
+  const outputPath = path.join(root, 'github-output')
+  const result = await writeDevPromotionOutputs({ GITHUB_OUTPUT: outputPath }, {
+    sourceRevision: sourceSha,
+    immutableManifestDigest: manifestDigest,
+    deploymentId: '01234567-89ab-cdef-0123-456789abcdef',
+    deploymentUrl: 'https://hash1234.agentic-graph-dev.pages.dev',
+    promotionReceiptDigest: 'c'.repeat(64),
+  })
+  assert.deepEqual(result, {
+    source_revision: sourceSha,
+    manifest_digest: manifestDigest,
+    deployment_id: '01234567-89ab-cdef-0123-456789abcdef',
+    deployment_url: 'https://hash1234.agentic-graph-dev.pages.dev',
+    promotion_digest: 'c'.repeat(64),
+  })
+  assert.equal(await fs.readFile(outputPath, 'utf8'), [
+    `source_revision=${sourceSha}`,
+    `manifest_digest=${manifestDigest}`,
+    'deployment_id=01234567-89ab-cdef-0123-456789abcdef',
+    'deployment_url=https://hash1234.agentic-graph-dev.pages.dev',
+    `promotion_digest=${'c'.repeat(64)}`,
+    '',
+  ].join('\n'))
+  await assert.rejects(writeDevPromotionOutputs({ GITHUB_OUTPUT: outputPath }, {
+    sourceRevision: sourceSha,
+    immutableManifestDigest: manifestDigest,
+    deploymentId: 'not-a-uuid',
+    deploymentUrl: 'https://hash1234.agentic-graph-dev.pages.dev',
+    promotionReceiptDigest: 'c'.repeat(64),
+  }), /deployment id is invalid/)
 })
 
 async function fixture(t) {
