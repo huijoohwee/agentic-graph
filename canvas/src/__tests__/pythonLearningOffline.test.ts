@@ -208,24 +208,23 @@ test('one bounded authored asset declaration supplies exact build and precache m
   const directory = await mkdtemp(join(tmpdir(), 'declared-offline-assets-'))
   try {
     const admission = createPwaPrecacheAdmission(directory)
-    let metadata: { type: string; fileName: string; source: string } | undefined
-    const rollup = { emitFile(asset: typeof metadata) { metadata = asset; return 'metadata' } }
-    admission.plugin.generateBundle.handler.call(rollup, {}, {
+    await admission.plugin.generateBundle.handler.call({}, { dir: directory }, {
       'main.js': { type: 'chunk', fileName: `assets/${first}/main.js`, isEntry: true,
         imports: [`assets/${first}/shared.mjs`], dynamicImports: [`assets/${first}/deferred.js`] },
       'shared.mjs': { type: 'chunk', fileName: `assets/${first}/shared.mjs`, imports: [] },
       'deferred.js': { type: 'chunk', fileName: `assets/${first}/deferred.js`, isDynamicEntry: true, imports: [] },
     })
-    assert.ok(metadata)
-    assert.deepEqual(JSON.parse(metadata.source), { schema: 'agentic-graph-pwa-static-closure/v1',
-      required: [`assets/${first}/main.js`, `assets/${first}/shared.mjs`] })
-    await writeFile(join(directory, metadata.fileName), metadata.source)
+    const metadataPath = join(directory, 'agentic-pwa-static-closure.json')
+    const metadata = JSON.parse(await readFile(metadataPath, 'utf8'))
+    assert.deepEqual(metadata, {
+      schema: 'agentic-graph-pwa-static-closure/v2',
+      required: [`assets/${first}/main.js`, `assets/${first}/shared.mjs`],
+      observation: { bundleDirectory: directory, chunkCount: 3, entryCount: 1, entryFiles: [`assets/${first}/main.js`] },
+    })
     const manifestAdmission = createPwaPrecacheAdmission(directory)
-    const workerAssets: string[] = []
-    manifestAdmission.plugin.generateBundle.handler.call({ emitFile(asset: { fileName: string }) { workerAssets.push(asset.fileName); return 'worker' } }, {}, {
+    await manifestAdmission.plugin.generateBundle.handler.call({}, { dir: directory }, {
       'sw.mjs': { type: 'chunk', fileName: 'sw.mjs', isEntry: true, imports: [] },
     })
-    assert.deepEqual(workerAssets, [])
     const admitted = await manifestAdmission.manifestTransform([
       { url: `assets/${first}/main.js` }, { url: `assets/${first}/shared.mjs` },
       { url: `assets/${first}/deferred.js` }, { url: 'assets/theme.css' }, { url: 'manifest.webmanifest' },
@@ -235,6 +234,8 @@ test('one bounded authored asset declaration supplies exact build and precache m
       `assets/${first}/main.js`, `assets/${first}/shared.mjs`, 'assets/theme.css', 'manifest.webmanifest',
     ])
     await assert.rejects(readFile(join(directory, 'agentic-pwa-static-closure.json')), { code: 'ENOENT' })
+    await assert.rejects(manifestAdmission.manifestTransform([]), error =>
+      error instanceof Error && error.message.includes(`ENOENT; path=${metadataPath}`))
     const shell = ['index.html', `assets/${first}/pythonWorker.js`]
     for (const file of shell) { await mkdir(join(directory, file, '..'), { recursive: true }); await writeFile(join(directory, file), file) }
     for (const file of authoredPublicAssets) { await mkdir(join(directory, file.path, '..'), { recursive: true }); await writeFile(join(directory, file.path), await readFile(new URL(`../../public/${file.path}`, import.meta.url))) }
