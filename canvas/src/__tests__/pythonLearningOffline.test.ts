@@ -214,10 +214,11 @@ test('one bounded authored asset declaration supplies exact build and precache m
       'shared.mjs': { type: 'chunk', fileName: `assets/${first}/shared.mjs`, imports: [] },
       'deferred.js': { type: 'chunk', fileName: `assets/${first}/deferred.js`, isDynamicEntry: true, imports: [] },
     })
-    admission.plugin.generateBundle.handler({}, {
+    const manifestAdmission = createPwaPrecacheAdmission()
+    manifestAdmission.plugin.generateBundle.handler({}, {
       'sw.mjs': { type: 'chunk', fileName: 'sw.mjs', isEntry: true, imports: [] },
     })
-    const admitted = await admission.manifestTransform([
+    const admitted = await manifestAdmission.manifestTransform([
       { url: `assets/${first}/main.js` }, { url: `assets/${first}/shared.mjs` },
       { url: `assets/${first}/deferred.js` }, { url: 'assets/theme.css' }, { url: 'manifest.webmanifest' },
     ])
