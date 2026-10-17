@@ -14,14 +14,23 @@
       "esbuild": "^0.25.12"
     },
     "esbuild": "^0.25.12",
-    "fast-uri": "3.1.6",
+    "fast-uri": "3.1.8",
     "qs": "6.16.0",
-    "sharp": "0.35.4",
+    "sharp": "0.35.5",
     "tsx": {
       "esbuild": "^0.28.1"
     },
     "maplibre-gl": "6.4.1",
-    "onnxruntime-web": "1.26.0-dev.20260416-b7804b056c"
+    "onnxruntime-web": "1.26.0-dev.20260416-b7804b056c",
+    "onnxruntime-node": "1.30.0",
+    "miniflare": "5.20261012.1-beta",
+    "wrangler": "4.151.1",
+    "undici": "7.29.1",
+    "proxy-addr": "2.0.8",
+    "mermaid@12.2.0": {
+      "dompurify": "3.4.17"
+    },
+    "markdown-it": "14.3.1"
   },
   "scripts": {
     "agent-mission:check": "node --test scripts/__tests__/workflow-archive-bridge.test.mjs scripts/__tests__/agent-mission-stages.test.mjs && npm -C canvas run test:ci:unit -- agentReady.missionControl.projection agentReady.webMcpRuntime.durableRun && node canvas/scripts/run_agent_mission_browser_smoke.mjs",
@@ -344,13 +353,13 @@
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",
-    "@cloudflare/workers-types": "5.20260819.1",
+    "@cloudflare/workers-types": "5.20261016.1",
     "ajv": "8.20.0",
     "fake-indexeddb": "^6.2.5",
     "fast-check": "3.23.2",
     "typescript": "5.9.3",
     "vitest": "4.1.11",
-    "wrangler": "4.124.0",
+    "wrangler": "4.151.1",
     "x402-xrpl": "0.3.2",
     "xrpl": "4.5.0",
     "zod": "^4.4.3"
