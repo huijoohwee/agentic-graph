@@ -36,7 +36,7 @@ export function createPwaPrecacheAdmission() {
   return {
     plugin: {
       name: 'agentic-graph-pwa-static-precache', apply: 'build', enforce: 'post',
-      writeBundle: { order: 'post', handler(_options, bundle) {
+      generateBundle: { order: 'post', handler(_options, bundle) {
         const entries = Object.values(bundle ?? {}).filter(item => item?.type === 'chunk' && item.isEntry === true)
         const appEntries = entries.filter(item => !/(?:^|\/)(?:sw|service-worker)\.(?:c?js|mjs)$/i.test(item.fileName))
         if (appEntries.length) required = collectRequiredStaticJavaScriptFiles(bundle,

@@ -208,13 +208,13 @@ test('one bounded authored asset declaration supplies exact build and precache m
   const directory = await mkdtemp(join(tmpdir(), 'declared-offline-assets-'))
   try {
     const admission = createPwaPrecacheAdmission()
-    admission.plugin.writeBundle.handler({}, {
+    admission.plugin.generateBundle.handler({}, {
       'main.js': { type: 'chunk', fileName: `assets/${first}/main.js`, isEntry: true,
         imports: [`assets/${first}/shared.mjs`], dynamicImports: [`assets/${first}/deferred.js`] },
       'shared.mjs': { type: 'chunk', fileName: `assets/${first}/shared.mjs`, imports: [] },
       'deferred.js': { type: 'chunk', fileName: `assets/${first}/deferred.js`, isDynamicEntry: true, imports: [] },
     })
-    admission.plugin.writeBundle.handler({}, {
+    admission.plugin.generateBundle.handler({}, {
       'sw.mjs': { type: 'chunk', fileName: 'sw.mjs', isEntry: true, imports: [] },
     })
     const admitted = await admission.manifestTransform([
