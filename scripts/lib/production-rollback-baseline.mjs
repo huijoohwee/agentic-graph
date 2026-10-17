@@ -28,6 +28,72 @@ const currentSubstantive = round => {
     mirrorReadiness: round.mirrorReadiness }
 }
 
+const PAGES_DEPLOYMENT_COMMIT_PROVENANCE_SCHEMA = 'agentic-graph-pages-deployment-commit-provenance/v1'
+const MAX_ASSOCIATED_PULL_REQUESTS = 100
+const isSha = value => /^[0-9a-f]{40}$/.test(value || '')
+const requireExactKeys = (value, keys, label) => {
+  assert.ok(value && typeof value === 'object' && !Array.isArray(value), `${label} is required`)
+  assert.deepEqual(Object.keys(value).sort(), [...keys].sort(), `${label} fields are invalid`)
+}
+
+export const createPagesDeploymentCommitProvenance = ({ pagesIdentity, sourceRevision, mirror, associatedPullRequests = [],
+  isMirrorMergeAncestor = () => false }) => {
+  assert.match(sourceRevision || '', /^[0-9a-f]{40}$/, 'Pages source revision must be exact')
+  assert.equal(pagesIdentity?.sourceRevision, sourceRevision, 'Pages source identity drifted')
+  assert.match(pagesIdentity?.deploymentCommitRevision || '', /^[0-9a-f]{40}$/, 'Pages deployment commit must be exact')
+  assert.equal(mirror?.repository, 'huijoohwee/huijoohwee', 'Pages commit provenance needs the production mirror')
+  assert.match(mirror?.revision || '', /^[0-9a-f]{40}$/, 'production mirror revision must be exact')
+  if (pagesIdentity.deploymentCommitRevision === sourceRevision) {
+    return {
+      schema: PAGES_DEPLOYMENT_COMMIT_PROVENANCE_SCHEMA, kind: 'graph-source',
+      repository: 'huijoohwee/agentic-graph', deploymentCommitRevision: sourceRevision, sourceRevision,
+    }
+  }
+
+  assert.ok(Array.isArray(associatedPullRequests), 'associated mirror pull requests must be an array')
+  assert.ok(associatedPullRequests.length < MAX_ASSOCIATED_PULL_REQUESTS,
+    'Pages deployment commit pull request associations may be truncated')
+  const integrated = associatedPullRequests.filter(pr => pr?.base?.repo?.full_name?.toLowerCase() === mirror.repository
+    && pr.base.ref === 'main' && pr.head?.repo?.full_name?.toLowerCase() === mirror.repository
+    && pr.state === 'closed' && typeof pr.merged_at === 'string'
+    && Number.isSafeInteger(pr.number) && pr.number > 0
+    && pr.html_url === `https://github.com/${mirror.repository}/pull/${pr.number}`
+    && isSha(pr.merge_commit_sha) && isMirrorMergeAncestor(pr.merge_commit_sha, mirror.revision))
+  assert.equal(integrated.length, 1, 'Pages deployment commit must map to one merged PR in the captured mirror main')
+  const [pr] = integrated
+  return {
+    schema: PAGES_DEPLOYMENT_COMMIT_PROVENANCE_SCHEMA, kind: 'published-mirror-pull-request',
+    repository: mirror.repository, deploymentCommitRevision: pagesIdentity.deploymentCommitRevision,
+    sourceRevision, mirrorRevision: mirror.revision,
+    pullRequest: { number: pr.number, url: pr.html_url, mergeCommitRevision: pr.merge_commit_sha, mergedAt: pr.merged_at },
+  }
+}
+
+const assertPagesDeploymentCommitProvenance = ({ pagesIdentity, sourceRevision, mirror, provenance }) => {
+  assert.equal(provenance?.schema, PAGES_DEPLOYMENT_COMMIT_PROVENANCE_SCHEMA)
+  if (provenance.kind === 'graph-source') {
+    requireExactKeys(provenance, ['schema', 'kind', 'repository', 'deploymentCommitRevision', 'sourceRevision'],
+      'Graph Pages deployment commit provenance')
+    assert.equal(provenance.repository, 'huijoohwee/agentic-graph')
+    assert.equal(provenance.deploymentCommitRevision, pagesIdentity.deploymentCommitRevision)
+    assert.equal(provenance.sourceRevision, sourceRevision)
+    assert.equal(pagesIdentity.deploymentCommitRevision, sourceRevision)
+    return
+  }
+  assert.equal(provenance.kind, 'published-mirror-pull-request', 'Pages deployment commit provenance kind is unsupported')
+  requireExactKeys(provenance, ['schema', 'kind', 'repository', 'deploymentCommitRevision', 'sourceRevision',
+    'mirrorRevision', 'pullRequest'], 'mirror Pages deployment commit provenance')
+  assert.equal(provenance.repository, mirror.repository)
+  assert.equal(provenance.deploymentCommitRevision, pagesIdentity.deploymentCommitRevision)
+  assert.equal(provenance.sourceRevision, sourceRevision)
+  assert.equal(provenance.mirrorRevision, mirror.revision)
+  requireExactKeys(provenance.pullRequest, ['number', 'url', 'mergeCommitRevision', 'mergedAt'], 'mirror deployment PR provenance')
+  assert.ok(Number.isSafeInteger(provenance.pullRequest.number) && provenance.pullRequest.number > 0)
+  assert.equal(provenance.pullRequest.url, `https://github.com/${mirror.repository}/pull/${provenance.pullRequest.number}`)
+  assert.match(provenance.pullRequest.mergeCommitRevision || '', /^[0-9a-f]{40}$/)
+  instant(provenance.pullRequest.mergedAt)
+}
+
 const assertCurrentReadinessParity = round => {
   const { pages, state, mirror, deployment, pagesReadiness, mirrorReadiness } = round
   assert.equal(pages.schema, 'agentic-graph-production-pages-current-observation/v1')
@@ -43,8 +109,6 @@ const assertCurrentReadinessParity = round => {
   assert.equal(pagesReadiness?.source?.repository, 'huijoohwee/agentic-graph')
   assert.equal(pagesReadiness?.source?.revision, pages.identity.sourceRevision,
     'Pages readiness marker does not describe the current deployment')
-  assert.equal(pages.identity.deploymentCommitRevision, pages.identity.sourceRevision,
-    'Pages deployment commit and runtime source differ')
   assert.equal(mirror.sourceRevision, pages.identity.sourceRevision,
     'published mirror source differs from current Pages runtime')
   assert.deepEqual(mirrorReadiness, pagesReadiness,
@@ -61,7 +125,7 @@ const assertCurrentReadinessParity = round => {
 // A fresh provider observation can name today's rollback target without
 // reconstructing the historical release carrier or its authorization.
 export function createObservedCurrentRollbackBaseline({ first, second, repositoryId, candidateSourceRevision,
-  captureRunId, captureWorkflowRef, assembledAt }) {
+  captureRunId, captureWorkflowRef, deploymentCommitProvenance, assembledAt }) {
   assert.ok(Number.isSafeInteger(repositoryId) && repositoryId > 0, 'repository ID is required')
   assert.match(candidateSourceRevision || '', /^[0-9a-f]{40}$/, 'candidate source revision is required')
   assert.match(String(captureRunId || ''), /^[1-9]\d*$/, 'protected capture workflow run ID is required')
@@ -74,7 +138,8 @@ export function createObservedCurrentRollbackBaseline({ first, second, repositor
   assertCurrentReadinessParity(first)
   const sourceRevision = second.pages.identity.sourceRevision
   assert.match(sourceRevision, /^[0-9a-f]{40}$/, 'observed Pages source revision is invalid')
-  assert.equal(second.pages.identity.deploymentCommitRevision, sourceRevision)
+  assertPagesDeploymentCommitProvenance({ pagesIdentity: second.pages.identity, sourceRevision,
+    mirror: second.mirror, provenance: deploymentCommitProvenance })
   assert.equal(second.mirror.sourceRevision, sourceRevision)
   assert.equal(readiness.mirror?.repository, 'huijoohwee/huijoohwee')
   assert.ok(['huijoohwee/agentic-os', 'huijoohwee/agentic-canvas-os'].includes(readiness.agenticCanvasOs?.repository),
@@ -125,6 +190,7 @@ export function createObservedCurrentRollbackBaseline({ first, second, repositor
     captureWorkflowRef,
     captureSourceRevision: candidateSourceRevision,
     observedProductionSourceRevision: sourceRevision,
+    deploymentCommitProvenance,
     observedAt: assembledAt,
     observationDigest: digest({ first, second, repositoryId, candidateSourceRevision }),
     rollbackRecaptureDigest: digest(recapture),

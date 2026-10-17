@@ -6,7 +6,8 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { verifyRemovedTerminalPersistence } from './lib/production-terminal-persistence.mjs'
-import { createObservedCurrentRollbackBaseline, createObservedRollbackBaseline } from './lib/production-rollback-baseline.mjs'
+import { createObservedCurrentRollbackBaseline, createObservedRollbackBaseline,
+  createPagesDeploymentCommitProvenance } from './lib/production-rollback-baseline.mjs'
 import { digest } from './lib/production-release-lifecycle-evidence.mjs'
 
 const repository = 'huijoohwee/agentic-graph'
@@ -21,7 +22,8 @@ const run = (script, args) => execFileSync(process.execPath, [path.join(root, 's
   cwd: root, stdio: ['ignore', 'pipe', 'pipe'], timeout: 120_000, maxBuffer: 4 * 1024 * 1024,
 })
 export const currentBaselineCaptureSummary = (provenance, recapture) => ({ status: provenance.status,
-  productionAuthorized: false, rollbackTargetDigest: digest(recapture.rollbackIdentity) })
+  productionAuthorized: false, pagesDeploymentCommitKind: provenance.deploymentCommitProvenance.kind,
+  rollbackTargetDigest: digest(recapture.rollbackIdentity) })
 const round = async (directory, mirrorRoot) => {
   await fs.mkdir(directory)
   const pagesFile = path.join(directory, 'pages.json')
@@ -80,10 +82,24 @@ export async function main(args = process.argv.slice(2)) {
       'protected main changed during capture')
     execFileSync('git', ['merge-base', '--is-ancestor', second.pages.identity.sourceRevision, sourceRevision],
       { cwd: root, stdio: 'ignore', timeout: 30_000 })
+    const deploymentCommitProvenance = createPagesDeploymentCommitProvenance({
+      pagesIdentity: second.pages.identity, sourceRevision: second.pages.identity.sourceRevision,
+      mirror: second.mirror,
+      associatedPullRequests: second.pages.identity.deploymentCommitRevision === second.pages.identity.sourceRevision
+        ? [] : gh(`repos/${second.mirror.repository}/commits/${second.pages.identity.deploymentCommitRevision}/pulls?per_page=100`),
+      isMirrorMergeAncestor: (mergeRevision, mirrorRevision) => {
+        try {
+          execFileSync('git', ['merge-base', '--is-ancestor', mergeRevision, mirrorRevision],
+            { cwd: mirrorRoot, stdio: 'ignore', timeout: 30_000 })
+          return true
+        } catch { return false }
+      },
+    })
     const assembledAt = new Date().toISOString()
     const { recapture, provenance } = createObservedCurrentRollbackBaseline({ first, second,
       repositoryId: repo.id, candidateSourceRevision: sourceRevision,
-      captureRunId: process.env.GITHUB_RUN_ID, captureWorkflowRef: process.env.GITHUB_WORKFLOW_REF, assembledAt })
+      captureRunId: process.env.GITHUB_RUN_ID, captureWorkflowRef: process.env.GITHUB_WORKFLOW_REF,
+      deploymentCommitProvenance, assembledAt })
     await write(path.join(output, 'observations.json'), { first, second, repositoryId: repo.id,
       candidateSourceRevision: sourceRevision })
     await write(path.join(output, 'provenance.json'), provenance)
