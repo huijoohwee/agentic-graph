@@ -6438,7 +6438,7 @@ export default defineConfig(({ command, mode }) => {
     },
     // Keep Vite quiet for known lazy vendor chunks; hygiene keeps tighter per-chunk budgets for regressions.
     chunkSizeWarningLimit: 3000,
-    rollupOptions: { ...(isPwaFinalizer ? { input: path.resolve(__dirname, 'sw.ts') } : {}),
+    rollupOptions: { ...(isPwaFinalizer ? { input: 'virtual:agentic-graph-pwa-finalizer' } : {}),
       output: { ...buildVersionedAssetFileNames(runtimeIdentity.sourceRevision),
         ...(process.env.AG_LOW_MEM_BUILD === '1'
           ? { inlineDynamicImports: true as const }
@@ -6552,7 +6552,7 @@ export default defineConfig(({ command, mode }) => {
       ]
     }
   },
-  plugins: [
+  plugins: [...(isPwaFinalizer ? [{ name: 'agentic-graph-pwa-finalizer-entry', enforce: 'pre' as const, resolveId: (id: string) => id === 'virtual:agentic-graph-pwa-finalizer' ? '\0virtual:agentic-graph-pwa-finalizer' : null, load: (id: string) => id === '\0virtual:agentic-graph-pwa-finalizer' ? 'export {}' : null }] : []),
     tailwindcss(), stripEntitiesBadSourcemapsPlugin,
     stripMermaidArchitectureDetectorPlugin,
     stripMermaidCoseBilkentLayoutPlugin,

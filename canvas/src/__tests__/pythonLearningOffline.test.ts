@@ -198,6 +198,8 @@ test('one bounded authored asset declaration supplies exact build and precache m
   assert.deepEqual(entries, authoredPublicAssets.map(file => ({ url: file.path, revision: file.sha256 })))
   const config = await readFile(new URL('../../vite.config.ts', import.meta.url), 'utf8')
   assert.match(config, /createPwaPrecacheAdmission\(undefined, pwaBuildPhase\)/)
+  assert.match(config, /input: 'virtual:agentic-graph-pwa-finalizer'/)
+  assert.doesNotMatch(config, /input: path\.resolve\(__dirname, 'sw\.ts'\)/)
   assert.match(await readFile(new URL('../../package.json', import.meta.url), 'utf8'), /"build": "node \.\/scripts\/build-with-pwa\.mjs"/)
   assert.match(config, /VitePWA\(\{ disable: Boolean\(process\.env\.VITE_OBSERVABILITY_WORKSPACE_MANIFEST\)/)
   assert.match(config, /createPythonLearningOfflinePlugin\(runtimeIdentity.sourceRevision, offlinePublicAssets\)/)
