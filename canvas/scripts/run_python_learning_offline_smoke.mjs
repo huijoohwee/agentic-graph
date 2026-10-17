@@ -2,6 +2,7 @@ import { selectMenuOption } from './lib/select-menu-option.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
+import { waitForAuthoredWorkspaceSource } from './lib/mission-authored-state-readiness.mjs'
 import { readFile, mkdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve, join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -346,6 +347,7 @@ try {
   await pane.getByText(/Goal reached · 4\/4 checks · position \(4\.00, 0\.00\) m · output: True/).waitFor()
   await pane.getByRole('button', { name: 'Save source', exact: true }).click()
   await awaitStoredSource(lessons[0].solution)
+  await waitForAuthoredWorkspaceSource(page)
   await page.screenshot({ path: join(output, 'offline-desktop.png'), fullPage: true })
   await pane.getByRole('button', { name: 'Results', exact: true }).click()
   await pane.locator('.python-learning-result').evaluate(element => { element.scrollTop = 0 })
