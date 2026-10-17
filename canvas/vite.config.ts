@@ -6558,8 +6558,8 @@ export default defineConfig(({ command, mode }) => {
     stripMermaidCoseBilkentLayoutPlugin,
     react(),
     inlineHtmlStylesheetAssetsPlugin(), precacheAdmission.plugin, createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision), createPythonLearningOfflinePlugin(runtimeIdentity.sourceRevision, offlinePublicAssets),
-    VitePWA({
-      registerType: 'autoUpdate', strategies: 'injectManifest', srcDir: '.', filename: 'sw.ts',
+    VitePWA({ disable: Boolean(process.env.VITE_OBSERVABILITY_WORKSPACE_MANIFEST),
+      registerType: 'autoUpdate', strategies: 'injectManifest', srcDir: '.', filename: 'sw.ts', integration: { closeBundleOrder: 'post' },
       injectRegister: null,
       devOptions: { enabled: false },
       manifest: {
