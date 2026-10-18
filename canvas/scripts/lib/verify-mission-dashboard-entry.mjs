@@ -103,8 +103,19 @@ export async function verifyMissionDashboardEntry(page, { baseUrl, authoredSnaps
     await page.locator('#main-panel-dashboard-tab:visible').click({ noWaitAfter: true, timeout: 15000 })
     await page.evaluate(() => window.__AG_MISSION_DASHBOARD_ENTRY__.record('dashboard-pointer-returned'))
     await page.locator('[data-kg-dashboard-source="authored"]').waitFor({ state: 'visible', timeout: 60000 })
-    await page.locator('#main-panel-dashboard-tab').waitFor({ state: 'detached' })
-    await page.locator(MAIN_PANEL_SHELL).waitFor({ state: 'detached', timeout: 15000 })
+    // A locked document must keep Settings open and expose the refusal; an unlocked
+    // document applies the Dashboard selection and closes the entry panel.
+    const dashboardEntry = await Promise.race([
+      page.locator(MAIN_PANEL_SHELL).waitFor({ state: 'detached', timeout: 15000 }).then(() => 'applied'),
+      page.locator('#main-panel-dashboard-panel [role="alert"]').waitFor({ state: 'visible', timeout: 15000 }).then(() => 'blocked'),
+    ])
+    if (dashboardEntry === 'blocked') {
+      const refusal = page.locator('#main-panel-dashboard-panel [role="alert"]')
+      assert.match(await refusal.textContent() || '', /baseline|locked/i, 'Locked Dashboard entry reports its refusal')
+      assert.equal(await page.locator(MAIN_PANEL_SHELL).count(), 1, 'Locked Dashboard entry keeps one MainPanel shell')
+      await page.getByRole('region', { name: 'Main panel', exact: true }).getByRole('button', { name: 'Close', exact: true }).click()
+      await page.locator(MAIN_PANEL_SHELL).waitFor({ state: 'detached', timeout: 15000 })
+    }
     assert.equal(await page.locator('[data-renderer="dashboard"]').count(), 1, 'Settings opens one native Dashboard')
     assert.equal(await page.evaluate(async () => (await import('/src/features/agent-ready/agentRunInspectionStore.ts')).readAgentRunWorkspace()), null,
       'Settings Dashboard must not activate a Mission workspace')
