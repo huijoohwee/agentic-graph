@@ -1,18 +1,18 @@
 ---
 title: "Production Runtime Readiness Demo Implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.1"
-revision: "1.0.1"
+version: "1.0.2"
+revision: "1.0.2"
 date: "2026-10-18"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Graph product and runtime owners"
 continuity_id: "RUNTIME-READY-DEMO-IMPLEMENTATION-001"
-prd_revision: "1.0.1"
-tad_revision: "1.0.1"
-adr_revision: "1.0.1"
-mvp_revision: "1.0.1"
-gtm_revision: "1.0.0"
+prd_revision: "1.0.2"
+tad_revision: "1.0.2"
+adr_revision: "1.0.2"
+mvp_revision: "1.0.2"
+gtm_revision: "1.0.2"
 guideline_revision: "3.4.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/82835ac37d524643faa6b9703cb077ea9474ab15/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
 local_rung: "implementation-candidate"
@@ -25,7 +25,7 @@ action: "/change"
 scope: "#production-runtime-demo-implementation"
 actor: "@codex-root"
 base_sha: "af107543b349f31255e30778d6a66b31517da8c4"
-authorization_scope: "User-authorized local demo implementation and candidate verification; no production effect"
+authorization_scope: "User-authorized local demo, candidate verification, and factual release handoff; no production effect"
 baseline_gate: "Catalog demo absent; generic editor launch prepares optional model assets"
 runtime_readiness_policy: "fail-closed"
 lifecycle_status: "proposed"
@@ -60,7 +60,8 @@ The intended users are Graph maintainers, integration evaluators, and prospectiv
 | VCC-05 | The generated document is readable at 360 × 800 CSS pixels and by keyboard. | Pending; the available browser session did not expose a viewport override. |
 | VCC-06 | Production build and XR-specific launch retain their model asset preparation. | Existing `prebuild`, `predev`, and `predev:xr-v2` contract assertions. |
 | VCC-07 | Reverting the exact implementation paths restores the previous catalog and startup behavior. | Exact diff and source-tree review; no cleanup or runtime rollback implied. |
-| VCC-08 | Protected Dev readback waits for the stable Pages origin to serve the exact candidate marker before issuing a Dev receipt; stale or unavailable reads fail closed after a bounded retry window. | `pages-production-deployment.test.mjs` simulates a stale marker followed by the exact candidate bytes; release run #39098316250 records the original propagation failure. |
+| VCC-08 | Protected Dev readback waits for the stable Pages origin to serve the exact candidate marker before issuing a Dev receipt; stale or unavailable reads fail closed after a bounded retry window. | `pages-production-deployment.test.mjs` simulates a stale marker followed by exact candidate bytes; run [39101683970](https://github.com/huijoohwee/agentic-graph/actions/runs/39101683970) verified candidate `f0faad2c` at the stable Dev origin. |
+| VCC-09 | The handoff separates Development, Production Release, and Runtime evidence; blocked Production status and the next owner action are explicit. | Run [39101683970](https://github.com/huijoohwee/agentic-graph/actions/runs/39101683970): Dev passed; Production preflight stopped on expired owner-session metadata before mutation. |
 
 **Success measures**: From a running local app, reach the rendered document in at most two Demo actions; 5/5 initial evaluators distinguish the Graph deployment marker from cross-repository composition status. Both are targets, not observed outcomes. No time-saved, adoption, or paid-conversion claim is made.
 
@@ -125,6 +126,8 @@ The first audience is maintainers and reviewers who need a short source-to-produ
 
 The `$1` figure remains an untested willingness-to-pay question for a future human-assisted evidence review. Do not charge or forecast revenue. Test it only after observed usage and a named buyer accepts a clearly bounded review; keep this implementation free and offline-capable after source checkout.
 
+This release attempt adds no buyer, usage, payment, or cash-savings evidence. Demand, willingness to pay, authoring tokens, energy, and monetary cost remain unmeasured.
+
 ## Evidence and release boundary
 
 ### Delivery handoff — 2026-10-18
@@ -136,7 +139,6 @@ The `$1` figure remains an untested willingness-to-pay question for a future hum
 **Runtime:** The captured Production predecessor is Pages deployment `7de5bb04-c458-4fba-8731-07d2931109a4`, source `ee3c8dd8dd887ffe4fe51c3df1d33702a976cf52`; D1 held 31 documents, 10 chunks, and 0 graph rows. Rollback digest: `2ac5c667a02917db037eb819f3f74151c9b8f9c6625fc392b37ff6263c1315c1`. Live Production Graph and core-storage readiness routes returned HTTP 200 without candidate `f0faad2c`; anonymous export returned HTTP 401. These are baseline observations, not candidate runtime proof.
 
 **Next owner action:** Renew the same owner's D1 session and protected GitHub Production secret plus expiry through the secure owner process; extending expiry metadata alone is insufficient. Do not send the secret through chat. After renewal, run fresh protected candidate validation and obtain fresh run-bound Production authorization for the then-current merged source. The authorization consumed by run `39101683970` cannot be reused. Preserve this delivery lane until Production and Runtime receipts exist.
-
 
 The linked guide records the protected run, source revision, artifact and manifest digests, plus the separate `productionRuntimeReady:false` composition result. Neither this preset nor a green source check changes those records or grants release authority. The local desktop authoring path was observed from the task worktree before its changes were committed. Protected integration, mobile, keyboard, network, user-demand, and production behavior remain unverified.
 
