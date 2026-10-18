@@ -61,7 +61,7 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
       if (/^https?:/i.test(requestUrl) && new URL(requestUrl).origin !== base) externalRequests.add(new URL(requestUrl).origin)
     })
     page.on('pageerror', error => pageErrors.push(String(error.message || error).slice(0, 240)))
-    const response = await page.goto(new URL(APPLICATION_PATH, base), { waitUntil: 'domcontentloaded', timeout: 45_000 })
+    const response = await page.goto(new URL(APPLICATION_PATH, base).href, { waitUntil: 'domcontentloaded', timeout: 45_000 })
     assert.equal(response?.status(), 200, 'Dev UI route must return 200')
     assert.equal(new URL(page.url()).origin, base, 'Dev UI must remain on the isolated Pages origin')
 
