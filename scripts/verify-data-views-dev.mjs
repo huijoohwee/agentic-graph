@@ -69,7 +69,11 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
     await ensureTwoDimensionalSurface(page)
     await selectRenderer(page, 'Multi-dimensional Table')
     await page.locator('section[aria-label="Workspace data view"]').waitFor({ state: 'visible', timeout: 20_000 })
-    await page.locator('section[aria-label="Workspace data view"] table[aria-label="Table view"]').waitFor({ state: 'visible', timeout: 20_000 })
+    const importedTable = page.locator('section[aria-label="Workspace data view"] table[aria-label="Table view"]')
+    await importedTable.waitFor({ state: 'visible', timeout: 20_000 })
+    // Browser storage is scoped by the mounted app path; the rendered, semantic table rows are the import contract.
+    await importedTable.getByText('Alpha', { exact: true }).waitFor({ state: 'visible', timeout: 20_000 })
+    await importedTable.getByText('Beta', { exact: true }).waitFor({ state: 'visible', timeout: 20_000 })
 
     const workspace = page.locator('section[aria-label="Workspace data view"]')
     const settingsToggle = workspace.locator('button[aria-label="View settings"]')
@@ -142,15 +146,6 @@ async function importViewFixture(page, fixturePath) {
   const input = page.locator('input[type="file"][accept*=".md"]').first()
   await input.waitFor({ state: 'attached', timeout: 45_000 })
   await input.setInputFiles(fixturePath)
-  // Import bridge and fallback surfaces use different success wording; active-path plus rendered rows are the stable contract.
-  await page.waitForFunction(fileName => {
-    try {
-      const activePath = JSON.parse(localStorage.getItem('kg:ui:markdown:explorer:activePath') || 'null')
-      return typeof activePath === 'string' && activePath.endsWith('/' + fileName)
-    } catch {
-      return false
-    }
-  }, path.basename(fixturePath), { timeout: 45_000 })
 }
 
 async function selectRenderer(page, view) {
