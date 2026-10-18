@@ -352,7 +352,8 @@ test('transport evidence keeps immutable, stable Pages, and public routes distin
 })
 test('Agentic Canvas OS docs promote automatically through protected agentic-graph integration', () => {
   assert.match(promotionWorkflow, /schedule:\s*\n\s*- cron:/)
-  assert.doesNotMatch(promotionWorkflow, /workflow_dispatch:/)
+  assert.match(promotionWorkflow, /workflow_dispatch:/)
+  assert.match(promotionWorkflow, /if: github\.ref == 'refs\/heads\/main'/)
   assert.match(promotionWorkflow, /secrets\.HUIJOOHWEE_PUSH_TOKEN/)
   assert.match(promotionWorkflow, /gh pr create --draft/)
   assert.match(promotionWorkflow, /gh pr merge "\$url" --auto --squash/)

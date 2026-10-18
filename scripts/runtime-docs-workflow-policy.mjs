@@ -95,7 +95,9 @@ export const validateRuntimeDocsWorkflowConsumer = ({ workflowPath, source }) =>
 
 export const validateRuntimeDocsWorkflowPromoter = ({ workflowPath, source }) => {
   const checks = [
+    [/workflow_dispatch:/, 'manual trigger'],
     [/schedule:\s*\n\s*- cron:/, 'scheduled trigger'],
+    [/if: github\.ref == 'refs\/heads\/main'/, 'protected-main dispatch guard'],
     [/secrets\.HUIJOOHWEE_PUSH_TOKEN/, 'non-recursive automation token'],
     [/node \.\/scripts\/promote-agentic-canvas-os-revision\.mjs/, 'protected revision resolver'],
     [/ref: \$\{\{ steps\.promotion\.outputs\.revision \}\}/, 'resolved revision checkout'],
@@ -105,7 +107,6 @@ export const validateRuntimeDocsWorkflowPromoter = ({ workflowPath, source }) =>
   for (const [pattern, label] of checks) {
     requireWorkflowSource(pattern.test(source), workflowPath, `missing promoter ${label}`)
   }
-  requireWorkflowSource(!/workflow_dispatch:/.test(source), workflowPath, 'promoter must not require manual dispatch')
   requireWorkflowSource(!/ref: [0-9a-f]{40}/.test(source), workflowPath, 'promoter must not copy an immutable ref')
 }
 
