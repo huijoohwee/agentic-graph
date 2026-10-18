@@ -214,6 +214,45 @@
       "evidenceDigest": "8476c366817ea9297ece21dccce3285c126ee59112c8230cee6d11a455e81b9f",
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1694",
       "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/dev-promotion-ui-convergence",
+      "laneHead": "616782e7a24eff81aacc0168aa957e3dedfa763d",
+      "paths": [
+        "scripts/__tests__/dev-promotion-ui-convergence.test.mjs",
+        "scripts/verify-data-views-dev.mjs"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "ecbfe88dea2024f296b02329eca5f35f17d3210b",
+      "candidateDigest": "0cc6be1894599cf256c82dbf2743ae70c9d6d45fbc0c9ec37d492e98b4025a55",
+      "sourceReleaseReceiptDigest": "6cf44b1e2cd65da2a6998ec057224ee723dc023e2078c5352daae709f8ae962f",
+      "deploymentReceiptDigest": "0f3d8697417a8229aa0f61ef3343cf1c8d466f5eb5ff5b89c53c36ec90b3ceca",
+      "runtimeVerificationReceiptDigest": "d297f97ab40bc038eb5c96f2124b586fd2005c65705f056a3d39add44140f986",
+      "evidencePath": "docs/reports/production-delivery-evidence-39163971889.json",
+      "evidenceDigest": "57233ff9aa6ea6d7bc264c7a2ae6270808903d1e9fabab47d722bd7a9fbc2bd3",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39163971889#environment-production",
+      "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/release-install-dependency-gate",
+      "laneHead": "2c6ed1967188187fd21556d1ab0a406bb3f13b63",
+      "paths": [
+        "scripts/__tests__/production-release-dependency-install.test.mjs",
+        "scripts/install-agentic-graph-dependencies.sh",
+        "scripts/install-production-release-dependencies.sh"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "ecbfe88dea2024f296b02329eca5f35f17d3210b",
+      "candidateDigest": "0cc6be1894599cf256c82dbf2743ae70c9d6d45fbc0c9ec37d492e98b4025a55",
+      "sourceReleaseReceiptDigest": "6cf44b1e2cd65da2a6998ec057224ee723dc023e2078c5352daae709f8ae962f",
+      "deploymentReceiptDigest": "0f3d8697417a8229aa0f61ef3343cf1c8d466f5eb5ff5b89c53c36ec90b3ceca",
+      "runtimeVerificationReceiptDigest": "d297f97ab40bc038eb5c96f2124b586fd2005c65705f056a3d39add44140f986",
+      "evidencePath": "docs/reports/production-delivery-evidence-39163971889.json",
+      "evidenceDigest": "57233ff9aa6ea6d7bc264c7a2ae6270808903d1e9fabab47d722bd7a9fbc2bd3",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39163971889#environment-production",
+      "reason": null
     }
   ],
   "receiptDigest": "9575fe0c5ecc0a4cc6a7f5af63f13062260458584c21eb6fcd349645bc460f95"
