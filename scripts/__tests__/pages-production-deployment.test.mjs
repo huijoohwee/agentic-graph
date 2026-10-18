@@ -121,10 +121,11 @@ test('Dev project creation refuses to cross the Free project limit', async () =>
   assert.equal(createCalls, 0)
 })
 
-test('Dev candidate capture requires exact project, run identity, and marker bytes', async t => {
+test('Dev candidate capture retries stable-origin propagation before requiring exact marker bytes', async t => {
   const root = await fixture(t)
   const deploymentId = 'dev-deployment-123'
   const runIdentity = 'ag-dev:aaaaaaaaaaaa:17:1'
+  let markerReads = 0
   const deployment = {
     id: deploymentId,
     project_id: 'dev-project-id',
@@ -165,15 +166,72 @@ test('Dev candidate capture requires exact project, run identity, and marker byt
         if (route === '/pages/projects/agentic-graph-dev/deployments/' + deploymentId) return jsonResponse({ result: deployment })
         throw new Error('unexpected Cloudflare Pages request: ' + route)
       }
-      if (url === 'https://agentic-graph-dev.pages.dev/.well-known/runtime-readiness.json') return new Response(marker, { status: 200 })
+      if (url === 'https://agentic-graph-dev.pages.dev/.well-known/runtime-readiness.json') {
+        markerReads += 1
+        return new Response(markerReads === 1 ? 'previous deployment marker' : marker, { status: 200 })
+      }
       throw new Error('unexpected network request: ' + url)
     },
+    sleepImpl: async () => {},
   })
+  assert.equal(markerReads, 2)
   assert.equal(result.deploymentId, deploymentId)
   assert.equal(result.deploymentUrl, 'https://agentic-graph-dev.pages.dev')
   assert.equal(result.providerDeploymentUrl, 'https://hash1234.agentic-graph-dev.pages.dev')
   assert.equal(result.usesFunctions, false)
   assert.equal(JSON.parse(await fs.readFile(root.receipt, 'utf8')).runIdentity, runIdentity)
+})
+
+test('Dev candidate capture fails closed after bounded stable-origin retries', async t => {
+  const root = await fixture(t)
+  const deploymentId = 'dev-deployment-123'
+  const runIdentity = 'ag-dev:aaaaaaaaaaaa:17:1'
+  const deployment = {
+    id: deploymentId,
+    project_id: 'dev-project-id',
+    environment: 'production',
+    latest_stage: { status: 'success' },
+    deployment_trigger: { metadata: { commit_hash: sourceSha, commit_message: runIdentity, branch: 'main' } },
+    url: 'https://hash1234.agentic-graph-dev.pages.dev',
+    uses_functions: false,
+  }
+  const project = {
+    id: 'dev-project-id', name: 'agentic-graph-dev', production_branch: 'main', source: null,
+    build_config: {}, deployment_configs: {}, canonical_deployment: deployment,
+  }
+  let markerReads = 0
+  await assert.rejects(runPagesProductionDeployment([
+    'capture-dev-candidate', '--commit-sha', sourceSha, '--manifest-digest', manifestDigest,
+    '--run-identity', runIdentity, '--project-id', 'dev-project-id',
+    '--readiness-marker', path.join(root.source, '.well-known/runtime-readiness.json'), '--receipt', root.receipt,
+  ], {
+    env: {
+      CLOUDFLARE_API_TOKEN: 'test-token', CLOUDFLARE_ACCOUNT_ID: 'account-id',
+      CLOUDFLARE_PAGES_PROJECT: 'agentic-graph-prod',
+    },
+    fetchImpl: async input => {
+      const url = String(input)
+      const parsed = new URL(url)
+      if (parsed.hostname === 'api.cloudflare.com') {
+        const route = parsed.pathname.replace('/client/v4/accounts/account-id', '')
+        const requestPath = route + parsed.search
+        if (route === '/pages/projects/agentic-graph-prod') return jsonResponse({ result: { id: 'prod-project-id' } })
+        if (route === '/pages/projects/agentic-graph-dev') return jsonResponse({ result: project })
+        if (route === '/pages/projects/agentic-graph-dev/domains') return jsonResponse({ result: [] })
+        if (requestPath === '/pages/projects/agentic-graph-dev/deployments?env=production&per_page=20') return jsonResponse({ result: [deployment] })
+        if (route === '/pages/projects/agentic-graph-dev/deployments/' + deploymentId) return jsonResponse({ result: deployment })
+        throw new Error('unexpected Cloudflare Pages request: ' + route)
+      }
+      if (url === 'https://agentic-graph-dev.pages.dev/.well-known/runtime-readiness.json') {
+        markerReads += 1
+        return new Response('previous deployment marker', { status: 200 })
+      }
+      throw new Error('unexpected network request: ' + url)
+    },
+    sleepImpl: async () => {},
+  }), /did not converge after 10 checks/)
+  assert.equal(markerReads, 10)
+  await assert.rejects(fs.access(root.receipt))
 })
 
 test('Dev candidate capture refuses a stable origin that is not the exact canonical deployment', async t => {

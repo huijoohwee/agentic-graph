@@ -1,17 +1,17 @@
 ---
 title: "Production Runtime Readiness Demo Implementation"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.0"
-revision: "1.0.0"
-date: "2026-10-09"
+version: "1.0.1"
+revision: "1.0.1"
+date: "2026-10-18"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Graph product and runtime owners"
 continuity_id: "RUNTIME-READY-DEMO-IMPLEMENTATION-001"
-prd_revision: "1.0.0"
-tad_revision: "1.0.0"
-adr_revision: "1.0.0"
-mvp_revision: "1.0.0"
+prd_revision: "1.0.1"
+tad_revision: "1.0.1"
+adr_revision: "1.0.1"
+mvp_revision: "1.0.1"
 gtm_revision: "1.0.0"
 guideline_revision: "3.4.0"
 guideline_source: "https://github.com/huijoohwee/huijoohwee.github.io/blob/82835ac37d524643faa6b9703cb077ea9474ab15/guidelines/prd-tad-adr-mvp-gtm-guidelines.md"
@@ -60,6 +60,7 @@ The intended users are Graph maintainers, integration evaluators, and prospectiv
 | VCC-05 | The generated document is readable at 360 × 800 CSS pixels and by keyboard. | Pending; the available browser session did not expose a viewport override. |
 | VCC-06 | Production build and XR-specific launch retain their model asset preparation. | Existing `prebuild`, `predev`, and `predev:xr-v2` contract assertions. |
 | VCC-07 | Reverting the exact implementation paths restores the previous catalog and startup behavior. | Exact diff and source-tree review; no cleanup or runtime rollback implied. |
+| VCC-08 | Protected Dev readback waits for the stable Pages origin to serve the exact candidate marker before issuing a Dev receipt; stale or unavailable reads fail closed after a bounded retry window. | `pages-production-deployment.test.mjs` simulates a stale marker followed by the exact candidate bytes; release run #39098316250 records the original propagation failure. |
 
 **Success measures**: From a running local app, reach the rendered document in at most two Demo actions; 5/5 initial evaluators distinguish the Graph deployment marker from cross-repository composition status. Both are targets, not observed outcomes. No time-saved, adoption, or paid-conversion claim is made.
 
@@ -102,6 +103,12 @@ Rejected alternatives: a new Source Files seed registry or activation runtime wo
 
 Consequences: the route has no new dependency or hosted service and avoids optional large-asset preparation. The static evidence can drift, so its exact revisions and limits remain visible and must be refreshed before a later decision. The targeted launcher still requires the repository's normal installed dependencies.
 
+### ADR-002 — Bound stable Dev marker propagation
+
+**Status**: Proposed.
+
+After Cloudflare reports an exact canonical Pages deployment, the stable `agentic-graph-dev.pages.dev` origin may briefly return the preceding readiness marker. Poll that same stable origin for at most ten checks, with a four-second request timeout and two-second spacing. Issue the Dev receipt only for HTTP 200 with byte-identical marker content; otherwise stop before Production. Keep source, manifest, deployment ID, and run identity checks unchanged.
+
 ## MVP
 
 **Included**: one Graph-owned Demo-only option sourced from `docs/workspace-seeds/demo.md`, one targeted local command, one generated local `demo.md`, one focused contract test, and the five-role demo specification. The option supplements the shared executable prompt catalog without adding an executable prompt to it. The feature uses Graph's existing workspace persistence.
@@ -123,3 +130,5 @@ The `$1` figure remains an untested willingness-to-pay question for a future hum
 The linked guide records the protected run, source revision, artifact and manifest digests, plus the separate `productionRuntimeReady:false` composition result. Neither this preset nor a green source check changes those records or grants release authority. The local desktop authoring path was observed from the task worktree before its changes were committed. Protected integration, mobile, keyboard, network, user-demand, and production behavior remain unverified.
 
 Source integration requires the exact candidate and green protected checks. Deployment, promotion, readback, and rollback remain separate effects under the Graph owner workflow. This PR authorizes none of them.
+
+**Release observation, 2026-10-18:** Graph candidate `5984bb453fcf35296443137d5596f0a18d916ac7` passed the protected Verify Release Candidate job in run [39098316250](https://github.com/huijoohwee/agentic-graph/actions/runs/39098316250), digest `7772427af336390feba3b50378825cac6e315f95a7441008581a9335fc399565`. The authorized isolated Dev deployment completed, but its immediate stable-origin marker read raced Pages propagation and failed closed. Later readback returned the expected marker digest `055d6565174e939a42009b7e6146597d6e6711d82be7dd0f9ecb57eaceb29ebb` for immutable manifest `d2a09fc0376ceca301670752269c21833d18ecab7f4f445a33eb6ea1bc4808d0`. Production, D1, and mirror steps were skipped. This revision adds the bounded readback contract; the failed run remains failed and does not authorize a retry.
