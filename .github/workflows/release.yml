@@ -41,7 +41,7 @@ jobs:
         id: agentic_os_source
         working-directory: agentic-graph
         run: >-
-          node --input-type=module -e 'import { readFileSync } from "node:fs"; const revision = String(JSON.parse(readFileSync("package.json", "utf8")).dependencies?.["agentic-os"] ?? "").match(/^github:huijoohwee\/agentic-os#([0-9a-f]{40})$/)?.[1]; if (!revision) throw Error("agentic-os must use an exact GitHub commit pin"); process.stdout.write("revision=" + revision + "\\n");' >> "$GITHUB_OUTPUT"
+          node --input-type=module -e 'import { readFileSync } from "node:fs"; const revision = String(JSON.parse(readFileSync("package.json", "utf8")).dependencies?.["agentic-os"] ?? "").match(/^(?:github:huijoohwee\/agentic-os#|https:\/\/codeload\.github\.com\/huijoohwee\/agentic-os\/tar\.gz\/)([0-9a-f]{40})$/)?.[1]; if (!revision) throw Error("agentic-os must use an exact immutable source pin"); process.stdout.write("revision=" + revision + "\\n");' >> "$GITHUB_OUTPUT"
       - name: Checkout exact Agentic OS source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:

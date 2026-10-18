@@ -136,8 +136,10 @@ test('production release preflights the exact Agentic OS source pin before candi
     'name: Build and sync verified candidate',
   ])
   assertIncludes(workflowStep(verifyJob, 'Resolve exact Agentic OS source pin'), [
-    'github:huijoohwee\\/agentic-os#([0-9a-f]{40})',
-    'agentic-os must use an exact GitHub commit pin',
+    'github:huijoohwee\\/agentic-os#',
+    'https:\\/\\/codeload\\.github\\.com\\/huijoohwee\\/agentic-os\\/tar\\.gz\\/',
+    '([0-9a-f]{40})$',
+    'agentic-os must use an exact immutable source pin',
   ])
   assertIncludes(workflowStep(verifyJob, 'Checkout exact Agentic OS source'), [
     'repository: huijoohwee/agentic-os',
