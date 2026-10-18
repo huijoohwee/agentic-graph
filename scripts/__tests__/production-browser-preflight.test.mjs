@@ -145,6 +145,27 @@ test('passed browser history survives exact authorization, Dev, or preflight sto
   }
 })
 
+test('browser history accepts only cancellation before a protected deploy begins', () => {
+  const run = { id: 41, run_attempt: 4, head_sha: 'a'.repeat(40), path: '.github/workflows/release.yml',
+    event: 'workflow_dispatch', head_branch: 'main', status: 'completed', conclusion: 'cancelled' }
+  const job = (name, conclusion, steps = []) => ({ name, conclusion, steps, run_id: run.id,
+    run_attempt: run.run_attempt, head_sha: run.head_sha, status: 'completed' })
+  const jobs = [
+    job('Verify Release Candidate', 'success'),
+    job('Human-Authorized Deploy, Verify, And Publish Mirror', 'cancelled'),
+  ]
+  assert.doesNotThrow(() => assertPriorBrowserRun(run, '42', jobs))
+  assert.throws(() => assertPriorBrowserRun(run, '42', [
+    jobs[0], job('Human-Authorized Deploy, Verify, And Publish Mirror', 'cancelled', [{ name: 'Set up job' }]),
+  ]))
+  assert.throws(() => assertPriorBrowserRun(run, '42', [
+    job('Verify Release Candidate', 'failure'), jobs[1],
+  ]))
+  assert.throws(() => assertPriorBrowserRun(run, '42', [
+    jobs[0], job('Human-Authorized Deploy, Verify, And Publish Mirror', 'failure'),
+  ]))
+})
+
 test('artifact identity detects changed browser bytes and rejects symlink substitutions', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'browser-artifact-check-'))
   try {
