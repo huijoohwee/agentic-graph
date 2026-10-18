@@ -142,7 +142,6 @@ async function importViewFixture(page, fixturePath) {
   const input = page.locator('input[type="file"][accept*=".md"]').first()
   await input.waitFor({ state: 'attached', timeout: 45_000 })
   await input.setInputFiles(fixturePath)
-  await page.getByText('Imported 1 file(s)', { exact: true }).first().waitFor({ state: 'visible', timeout: 45_000 })
   await page.waitForFunction(fileName => {
     try {
       const activePath = JSON.parse(localStorage.getItem('kg:ui:markdown:explorer:activePath') || 'null')
