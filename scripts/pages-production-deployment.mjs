@@ -163,8 +163,18 @@ export async function runPagesProductionDeployment(argv = process.argv.slice(2),
       || deployment.deployment_trigger?.metadata?.commit_message !== runIdentity) {
       throw new Error('Dev deployment detail does not prove the exact candidate')
     }
-    const deploymentUrl = new URL(String(deployment.url || ''))
-    if (deploymentUrl.protocol !== 'https:' || !isPagesDevHost(deploymentUrl.hostname)) throw new Error('Dev deployment URL is outside the isolated pages.dev project')
+    const canonical = project.canonical_deployment
+    if (canonical?.id !== deploymentId || canonical.environment !== 'production' || canonical.latest_stage?.status !== 'success'
+      || canonical.deployment_trigger?.metadata?.commit_hash !== commitSha
+      || canonical.deployment_trigger?.metadata?.commit_message !== runIdentity
+      || canonical.deployment_trigger?.metadata?.branch !== 'main') {
+      throw new Error('Dev stable origin does not resolve to the exact successful canonical deployment')
+    }
+    const providerDeploymentUrl = new URL(String(deployment.url || ''))
+    if (providerDeploymentUrl.protocol !== 'https:' || !isPagesDevHost(providerDeploymentUrl.hostname)) {
+      throw new Error('Dev deployment URL is outside the isolated pages.dev project')
+    }
+    const deploymentUrl = new URL('https://agentic-graph-dev.pages.dev')
     const localMarker = await fsp.readFile(readinessPath, 'utf8')
     const response = await fetchImpl(`${deploymentUrl.origin}/.well-known/runtime-readiness.json`, {
       headers: { accept: 'application/json', 'cache-control': 'no-cache' }, cache: 'no-store', signal: AbortSignal.timeout(30_000),
@@ -177,7 +187,8 @@ export async function runPagesProductionDeployment(argv = process.argv.slice(2),
     }
     const receipt = {
       schema: 'agentic-graph-dev-deployment-receipt/v1', projectId: expectedProjectId, projectName: DEV_PROJECT_NAME,
-      deploymentId, deploymentUrl: deploymentUrl.origin, runIdentity, sourceRevision: commitSha,
+      deploymentId, deploymentUrl: deploymentUrl.origin, providerDeploymentUrl: providerDeploymentUrl.origin,
+      runIdentity, sourceRevision: commitSha,
       immutableManifestDigest: manifestDigest, readinessMarkerDigest: createHash('sha256').update(liveMarker).digest('hex'),
       usesFunctions: deployment.uses_functions === true, observedAt: new Date().toISOString(),
     }
