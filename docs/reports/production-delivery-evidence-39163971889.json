@@ -1,0 +1,57 @@
+{
+  "schema": "agentic-graph-production-delivery-evidence/v1",
+  "status": "deployed-and-runtime-verified",
+  "repository": "github.com/huijoohwee/agentic-graph",
+  "release": {
+    "workflowRunId": "39163971889",
+    "workflowRunUrl": "https://github.com/huijoohwee/agentic-graph/actions/runs/39163971889",
+    "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39163971889#environment-production",
+    "sourceRevision": "ecbfe88dea2024f296b02329eca5f35f17d3210b",
+    "candidateDigest": "0cc6be1894599cf256c82dbf2743ae70c9d6d45fbc0c9ec37d492e98b4025a55",
+    "sourceReleaseReceiptDigest": "6cf44b1e2cd65da2a6998ec057224ee723dc023e2078c5352daae709f8ae962f",
+    "deploymentReceiptDigest": "0f3d8697417a8229aa0f61ef3343cf1c8d466f5eb5ff5b89c53c36ec90b3ceca",
+    "runtimeVerificationReceiptDigest": "d297f97ab40bc038eb5c96f2124b586fd2005c65705f056a3d39add44140f986",
+    "publicationReceiptDigest": "7a121ea615ae319cfe2ef88d0369b53bc27f0aef45c158fcac5a4fe88f0a6420",
+    "development": {
+      "status": "verified",
+      "exactCandidateDigest": "0cc6be1894599cf256c82dbf2743ae70c9d6d45fbc0c9ec37d492e98b4025a55",
+      "verification": "Promote isolated Pages Dev and verify shared data views"
+    },
+    "production": {
+      "status": "deployed-and-verified",
+      "deployedAt": "2026-10-18T20:44:54.637Z",
+      "verifiedAt": "2026-10-18T20:49:14.000Z"
+    }
+  },
+  "sourceLanes": [
+    {
+      "ref": "agent/device-0232231d4a19/dev-promotion-edge-convergence",
+      "laneHead": "f4f496efd21d9b94754b55878998cbd30f67b94e",
+      "pullRequest": 1787,
+      "mergeRevision": "9355f2e7ecb4a80515b1405664588d614bef662e",
+      "paths": [
+        "scripts/__tests__/dev-promotion-edge-convergence.test.mjs",
+        "scripts/run-pages-dev-promotion.mjs"
+      ]
+    },
+    {
+      "ref": "agent/device-0232231d4a19/source-evidence-lookup-budget",
+      "laneHead": "d9ef3ca8f2c4dc99ddc50738d58f25a4d7f0d554",
+      "pullRequest": 1788,
+      "mergeRevision": "ecbfe88dea2024f296b02329eca5f35f17d3210b",
+      "paths": [
+        ".github/actions/protected-ci-evidence/action.yml"
+      ]
+    }
+  ],
+  "retainedEvidence": {
+    "lifecycleCarrierSha256": "7af9f61324b8a04b81c81ec530a1eba5afab8b1841e5b2c493cb6d95164e70c5",
+    "retainedFileCount": 132,
+    "retainedAt": "2026-10-18T20:52:39.697Z",
+    "rollbackBaselineRunId": "39163814564"
+  },
+  "limits": {
+    "committedEvidence": "receipt digests and bounded identifiers only",
+    "rawEvidence": "retained in private lifecycle evidence storage"
+  }
+}
