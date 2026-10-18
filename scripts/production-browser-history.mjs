@@ -38,10 +38,14 @@ export function assertPreDeploymentStop(run, jobs) {
   const stepResult = (name, conclusion) =>
     assert.equal(exactStep(name).conclusion, conclusion, `prior ${name} was not ${conclusion}`)
   const authorization = 'Record exact human authorization and claim release controller'
+  const devPromotion = 'Promote isolated Pages Dev and verify shared data views'
   const preflight = 'Preflight protected travel mesh without mutation'
   const stoppedAtAuthorization = exactStep(authorization).conclusion === 'failure'
+  const stoppedAtDev = !stoppedAtAuthorization && exactStep(devPromotion).conclusion === 'failure'
   stepResult(authorization, stoppedAtAuthorization ? 'failure' : 'success')
-  stepResult(preflight, stoppedAtAuthorization ? 'skipped' : 'failure')
+  stepResult(devPromotion, stoppedAtAuthorization ? 'skipped' : stoppedAtDev ? 'failure' : 'success')
+  stepResult(preflight, stoppedAtAuthorization || stoppedAtDev ? 'skipped' : 'failure')
+  const stopStep = stoppedAtAuthorization ? authorization : stoppedAtDev ? devPromotion : preflight
   for (const name of ['Deploy verified artifact', 'Capture authoritative candidate deployment',
     'Record exact Pages deployment receipt', 'Upload and activate exact-candidate travel mesh versions',
     'Reconcile canonical docs into D1', 'Publish exact canonical documents through the storage owner',
@@ -49,8 +53,9 @@ export function assertPreDeploymentStop(run, jobs) {
     'Roll back Pages to exact last-known-good deployment', 'Restore and reconcile last-known-good D1 state']) {
     stepResult(name, 'skipped')
   }
-  const allowedFailures = new Set([stoppedAtAuthorization ? authorization : preflight,
-    'Require an exact successful deployment attempt'])
+  const attemptGuard = 'Require an exact successful deployment attempt'
+  stepResult(attemptGuard, 'failure')
+  const allowedFailures = new Set([stopStep, attemptGuard])
   assert.ok(deploy.steps.every(step => ['success', 'skipped'].includes(step.conclusion)
     || (step.conclusion === 'failure' && allowedFailures.has(step.name))), 'prior deployment has an unresolved failure')
 }
