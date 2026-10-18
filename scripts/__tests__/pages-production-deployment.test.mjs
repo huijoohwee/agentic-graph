@@ -77,7 +77,7 @@ test('Dev project creation uses the Free project ceiling and validates isolation
       calls.push({ route, method: init.method || 'GET' })
       if (route === '/pages/projects/agentic-graph-prod') return jsonResponse({ result: { id: 'prod-project-id' } })
       if (route === '/pages/projects/agentic-graph-dev' && init.method !== 'POST') return jsonResponse({ errors: [{ message: 'not found' }] }, 404)
-      if (requestPath === '/pages/projects?per_page=20&page=1') {
+      if (requestPath === '/pages/projects' && init.method !== 'POST') {
         return jsonResponse({ result: [], result_info: { total_count: 4 } })
       }
       if (route === '/pages/projects' && init.method === 'POST') return jsonResponse({ result: project })
@@ -88,6 +88,7 @@ test('Dev project creation uses the Free project ceiling and validates isolation
   assert.equal(result.projectId, 'dev-project-id')
   assert.equal(result.projectName, 'agentic-graph-dev')
   assert.equal(calls.filter(call => call.method === 'POST').length, 1)
+  assert.ok(calls.some(call => call.route === '/pages/projects' && call.method === 'GET'))
   assert.equal(calls.at(-1).route, '/pages/projects/agentic-graph-dev/domains')
   assert.equal(JSON.parse(await fs.readFile(createReceipt, 'utf8')).observedProjectCount, 4)
   } finally {
@@ -110,7 +111,7 @@ test('Dev project creation refuses to cross the Free project limit', async () =>
         const requestPath = route + parsed.search
         if (route === '/pages/projects/agentic-graph-prod') return jsonResponse({ result: { id: 'prod-id' } })
         if (route === '/pages/projects/agentic-graph-dev' && init.method !== 'POST') return jsonResponse({}, 404)
-        if (requestPath === '/pages/projects?per_page=20&page=1') return jsonResponse({ result: [], result_info: { total_count: 100 } })
+        if (requestPath === '/pages/projects' && init.method !== 'POST') return jsonResponse({ result: [], result_info: { total_count: 100 } })
         if (init.method === 'POST') createCalls += 1
         throw new Error('unexpected Cloudflare Pages request: ' + route)
       },

@@ -94,7 +94,7 @@ export async function runPagesProductionDeployment(argv = process.argv.slice(2),
     if (projectName === DEV_PROJECT_NAME) throw new Error('Dev and production Pages projects must have different identities')
     let dev = await api(projectPath(DEV_PROJECT_NAME), {}, { allowNotFound: true })
     if (!dev) {
-      const projects = await api('/pages/projects?per_page=20&page=1')
+      const projects = await api('/pages/projects')
       const count = Number(projects.result_info?.total_count)
       if (!Array.isArray(projects.result) || !Number.isInteger(count)) throw new Error('Pages project count is unavailable; refusing to create a Dev project')
       if (count >= PAGES_PROJECT_LIMIT) throw new Error(`Cloudflare Free Pages project limit (${PAGES_PROJECT_LIMIT}) would be exceeded`)
