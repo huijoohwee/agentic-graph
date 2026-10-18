@@ -7,7 +7,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { canonicalJson, createRepositoryProfile } from 'agentic-os'
 import YAML from 'yaml'
-import { historyArtifactName, assertPriorBrowserRun } from '../production-browser-history.mjs'
+import { historyArtifactName, assertPriorBrowserRun, priorRunRequiresJobHistory } from '../production-browser-history.mjs'
 import { browserArtifactDigest, inspectBrowserInput, verifyStaticAssetRevalidation } from '../production-browser-preflight.mjs'
 import { productionMirrorArtifactEntries } from '../production-mirror-artifact-entries.mjs'
 import './production-prompt-catalog.test.mjs'
@@ -164,6 +164,13 @@ test('browser history accepts only cancellation before a protected deploy begins
   assert.throws(() => assertPriorBrowserRun(run, '42', [
     jobs[0], job('Human-Authorized Deploy, Verify, And Publish Mirror', 'failure'),
   ]))
+})
+
+test('restore fetches exact job history for failed or cancelled prior runs', () => {
+  const base = { status: 'completed', conclusion: 'failure' }
+  assert.equal(priorRunRequiresJobHistory(base), true)
+  assert.equal(priorRunRequiresJobHistory({ ...base, conclusion: 'cancelled' }), true)
+  assert.equal(priorRunRequiresJobHistory({ ...base, conclusion: 'success' }), false)
 })
 
 test('artifact identity detects changed browser bytes and rejects symlink substitutions', async () => {
