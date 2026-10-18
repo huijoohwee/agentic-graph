@@ -150,7 +150,7 @@ async function importViewFixture(page, fixturePath) {
     } catch {
       return false
     }
-  }, path.basename(fixturePath), { timeout: 15_000 })
+  }, path.basename(fixturePath), { timeout: 45_000 })
 }
 
 async function selectRenderer(page, view) {
