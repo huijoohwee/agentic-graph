@@ -120,37 +120,9 @@ test('GitHub workflows pin Node 24 actions to immutable revisions', () => {
     assert.ok(actionUses.some(uses => uses.startsWith(`actions/${action}@`)), `${action} workflow action must be present`)
   }
 })
-test('production release builds the exact localhost-reviewed candidate once before authorization', () => {
-  const verifyJob = workflowJob('verify')
-  assertAllMatch(verifyJob, [ /name: Build and sync verified candidate/, /AGENTIC_OS_SOURCE_REVISION: ['"]?\$\{\{ inputs\.source_sha \}\}/, /VITE_AGENTIC_OS_STORAGE_BASE_URL: ['"]?https:\/\/airvio\.co/,
-    /run: npm run pages:build-sync/, /name: Materialize and verify release evidence/, /name: Bind immutable production candidate/, /name: Upload production authorization evidence/, ])
-  assertNoneMatch(verifyJob, [/run: npm run pages:sync/])
-})
-test('production release preflights the exact Agentic OS source pin before candidate build', () => {
-  const verifyJob = workflowJob('verify')
-  assertInOrder(verifyJob, [
-    'name: Initialize native release gate trust',
-    'name: Resolve exact Agentic OS source pin',
-    'name: Checkout exact Agentic OS source',
-    'name: Preflight exact Agentic OS source control',
-    'name: Build and sync verified candidate',
-  ])
-  assertIncludes(workflowStep(verifyJob, 'Resolve exact Agentic OS source pin'), [
-    'github:huijoohwee\\/agentic-os#',
-    'https:\\/\\/codeload\\.github\\.com\\/huijoohwee\\/agentic-os\\/tar\\.gz\\/',
-    '([0-9a-f]{40})$',
-    'agentic-os must use an exact immutable source pin',
-  ])
-  assertIncludes(workflowStep(verifyJob, 'Checkout exact Agentic OS source'), [
-    'repository: huijoohwee/agentic-os',
-    'ref: ${{ steps.agentic_os_source.outputs.revision }}',
-    'path: agentic-os-source',
-  ])
-  assertIncludes(workflowStep(verifyJob, 'Preflight exact Agentic OS source control'), [
-    'agentic-os-pin.mjs',
-    '--consumer="$GITHUB_WORKSPACE/agentic-graph"',
-    '--source-control',
-  ])
+test('production release builds the exact localhost-reviewed candidate after source-control preflight', () => {
+  const verifyJob = workflowJob('verify'); assertAllMatch(verifyJob, [ /name: Build and sync verified candidate/, /AGENTIC_OS_SOURCE_REVISION: ['"]?\$\{\{ inputs\.source_sha \}\}/, /VITE_AGENTIC_OS_STORAGE_BASE_URL: ['"]?https:\/\/airvio\.co/, /run: npm run pages:build-sync/, /name: Materialize and verify release evidence/, /name: Bind immutable production candidate/, /name: Upload production authorization evidence/, ]); assertNoneMatch(verifyJob, [/run: npm run pages:sync/])
+  assertInOrder(verifyJob, ['name: Initialize native release gate trust', 'name: Resolve exact Agentic OS source pin', 'name: Checkout exact Agentic OS source', 'name: Preflight exact Agentic OS source control', 'name: Build and sync verified candidate']); assertIncludes(workflowStep(verifyJob, 'Resolve exact Agentic OS source pin'), ['github:huijoohwee/agentic-os#', 'https://codeload.github.com/huijoohwee/agentic-os/tar.gz/', '^[0-9a-f]{40}$', 'agentic-os must use an exact immutable source pin']); assertIncludes(workflowStep(verifyJob, 'Checkout exact Agentic OS source'), ['repository: huijoohwee/agentic-os', "ref: '${{ steps.agentic_os_source.outputs.revision }}'", 'path: agentic-os-source']); assertIncludes(workflowStep(verifyJob, 'Preflight exact Agentic OS source control'), ['agentic-os-pin.mjs', '--consumer="$GITHUB_WORKSPACE/agentic-graph"', '--source-control'])
 })
 test('Pages release dependencies use the canonical storage origin', () => {
   assertAllMatch(pagesFunctionsBuildScript, [/process\.env\.AGENTIC_OS_PUBLISH_REPOSITORY_ROOT/])
