@@ -11,6 +11,8 @@ const repository = 'huijoohwee/agentic-graph'
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
 const gh = (...args) => execFileSync('gh', args, { cwd: root, encoding: 'utf8', timeout: 30000, maxBuffer: 8 * 1024 * 1024 })
 export const historyArtifactName = binding => 'browser-preflight-' + createHash('sha256').update(canonicalJson(binding)).digest('hex')
+export const priorRunRequiresJobHistory = run => run.status === 'completed'
+  && ['failure', 'cancelled'].includes(run.conclusion)
 const exactPriorJob = (run, jobs, name) => {
   assert.ok(Array.isArray(jobs), 'prior release jobs are required')
   const matches = jobs.filter(job => job.name === name)
@@ -106,7 +108,7 @@ async function restore() {
     assert.ok(artifact.size_in_bytes > 0 && artifact.size_in_bytes <= 4 * 1024 * 1024, 'browser history artifact exceeds its bound')
     const run = JSON.parse(gh('api', `repos/${repository}/actions/runs/${artifact.workflow_run.id}`))
     let jobs
-    if (run.status === 'completed' && run.conclusion === 'failure') {
+    if (priorRunRequiresJobHistory(run)) {
       assert.ok(Number.isSafeInteger(run.run_attempt) && run.run_attempt > 0, 'prior attempt identity is missing')
       const payload = JSON.parse(gh('api', `repos/${repository}/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs?per_page=100`))
       assert.ok(Array.isArray(payload.jobs) && payload.jobs.length === payload.total_count && payload.total_count <= 100,
