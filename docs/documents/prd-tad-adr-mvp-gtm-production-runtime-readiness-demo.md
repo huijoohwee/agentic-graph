@@ -127,6 +127,17 @@ The `$1` figure remains an untested willingness-to-pay question for a future hum
 
 ## Evidence and release boundary
 
+### Delivery handoff — 2026-10-18
+
+**Development:** Run [39101683970](https://github.com/huijoohwee/agentic-graph/actions/runs/39101683970) validated candidate `f0faad2c8685b1c814c695598bbcb2974e84e1cc` with digest `3b28edcc0f66caeedbde94675cf64d244c3a3edfdab3b4b1e407ea7564717880`. Dev deployment `d31f2779-4a08-4b68-b2e4-4790cd510b9b` passed exact-marker readback and five-view verification at `https://agentic-graph-dev.pages.dev`, with no page errors.
+
+**Production Release:** Preflight stopped before mutation because owner-access expiry `2026-10-16T01:00:00.000Z` had expired. Production Pages deployment, Worker activation, D1 reconciliation/publication, Production probes, mirror publication, and terminal success were skipped. No Production change is claimed.
+
+**Runtime:** The captured Production predecessor is Pages deployment `7de5bb04-c458-4fba-8731-07d2931109a4`, source `ee3c8dd8dd887ffe4fe51c3df1d33702a976cf52`; D1 held 31 documents, 10 chunks, and 0 graph rows. Rollback digest: `2ac5c667a02917db037eb819f3f74151c9b8f9c6625fc392b37ff6263c1315c1`. Live Production Graph and core-storage readiness routes returned HTTP 200 without candidate `f0faad2c`; anonymous export returned HTTP 401. These are baseline observations, not candidate runtime proof.
+
+**Next owner action:** Renew the same owner's D1 session and protected GitHub Production secret plus expiry through the secure owner process; extending expiry metadata alone is insufficient. Do not send the secret through chat. After renewal, run fresh protected candidate validation and obtain fresh run-bound Production authorization for the then-current merged source. The authorization consumed by run `39101683970` cannot be reused. Preserve this delivery lane until Production and Runtime receipts exist.
+
+
 The linked guide records the protected run, source revision, artifact and manifest digests, plus the separate `productionRuntimeReady:false` composition result. Neither this preset nor a green source check changes those records or grants release authority. The local desktop authoring path was observed from the task worktree before its changes were committed. Protected integration, mobile, keyboard, network, user-demand, and production behavior remain unverified.
 
 Source integration requires the exact candidate and green protected checks. Deployment, promotion, readback, and rollback remain separate effects under the Graph owner workflow. This PR authorizes none of them.
