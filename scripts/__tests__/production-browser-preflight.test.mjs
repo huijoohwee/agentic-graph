@@ -89,7 +89,7 @@ test('history keys bind source, docs and execution configuration with canonical 
   assert.notEqual(name, historyArtifactName({ ...binding, runtime: { ...binding.runtime, node: '24' } }))
 })
 
-test('passed browser history survives exact authorization or preflight stops, never mutation or failed verification', () => {
+test('passed browser history survives exact authorization, Dev, or preflight stops, never mutation or failed verification', () => {
   const run = { id: 41, run_attempt: 1, head_sha: 'a'.repeat(40), path: '.github/workflows/release.yml',
     event: 'workflow_dispatch', head_branch: 'main', status: 'completed', conclusion: 'failure' }
   const job = (name, conclusion, steps = []) => ({ name, conclusion, steps, run_id: run.id,
@@ -100,19 +100,27 @@ test('passed browser history survives exact authorization or preflight stops, ne
     'Publish verified production mirror', 'Restore exact prior travel mesh versions',
     'Roll back Pages to exact last-known-good deployment', 'Restore and reconcile last-known-good D1 state']
   const authorization = 'Record exact human authorization and claim release controller'
+  const devPromotion = 'Promote isolated Pages Dev and verify shared data views'
   const preflight = 'Preflight protected travel mesh without mutation'
+  const attemptGuard = 'Require an exact successful deployment attempt'
   const step = (name, conclusion) => ({ name, status: 'completed', conclusion })
-  for (const stoppedAtAuthorization of [false, true]) {
-    const jobs = [job('Verify Release Candidate', 'success'),
+  const stopCases = [
+    { name: 'authorization', authorization: 'failure', devPromotion: 'skipped', preflight: 'skipped' },
+    { name: 'Dev promotion', authorization: 'success', devPromotion: 'failure', preflight: 'skipped' },
+    { name: 'read-only preflight', authorization: 'success', devPromotion: 'success', preflight: 'failure' },
+  ]
+  for (const stop of stopCases) {
+    const makeJobs = () => [job('Verify Release Candidate', 'success'),
       job('Human-Authorized Deploy, Verify, And Publish Mirror', 'failure', [
-        step(authorization, stoppedAtAuthorization ? 'failure' : 'success'),
-        step(preflight, stoppedAtAuthorization ? 'skipped' : 'failure'),
-        ...skipped.map(name => step(name, 'skipped')),
-        step('Require an exact successful deployment attempt', 'failure'),
+        step(authorization, stop.authorization), step(devPromotion, stop.devPromotion), step(preflight, stop.preflight),
+        ...skipped.map(name => step(name, 'skipped')), step(attemptGuard, 'failure'),
       ])]
+    const jobs = makeJobs()
     assert.doesNotThrow(() => assertPriorBrowserRun(run, '42', jobs))
     const mutateStep = (name, change) => value => Object.assign(value[1].steps.find(item => item.name === name), change)
-    const invalidConclusions = stoppedAtAuthorization ? ['success', 'failure', 'cancelled', null] : ['success', 'skipped', 'cancelled', null]
+    const expected = { [authorization]: stop.authorization, [devPromotion]: stop.devPromotion, [preflight]: stop.preflight }
+    const invalidConclusions = (name, conclusion) => ['success', 'skipped', 'failure', 'cancelled', null]
+      .filter(value => value !== conclusion).map(value => mutateStep(name, { conclusion: value }))
     for (const mutate of [
       value => { value[0].conclusion = 'failure' },
       value => { value[0].head_sha = 'b'.repeat(40) },
@@ -121,20 +129,19 @@ test('passed browser history survives exact authorization or preflight stops, ne
       value => { value[1].status = 'in_progress' },
       value => { value.push(value[0]) },
       value => { value[1].steps.push(step('Unknown failure', 'failure')) },
-      ...[authorization, preflight, ...skipped].flatMap(name => [
+      ...[authorization, devPromotion, preflight, attemptGuard, ...skipped].flatMap(name => [
         value => { value[1].steps = value[1].steps.filter(item => item.name !== name) },
         value => { value[1].steps.push(structuredClone(value[1].steps.find(item => item.name === name))) },
         mutateStep(name, { status: 'in_progress' }),
       ]),
-      ...['skipped', 'cancelled', null].map(conclusion => mutateStep(authorization, { conclusion })),
-      mutateStep(authorization, { conclusion: stoppedAtAuthorization ? 'success' : 'failure' }),
-      ...invalidConclusions.map(conclusion => mutateStep(preflight, { conclusion })),
+      ...Object.entries(expected).flatMap(([name, conclusion]) => invalidConclusions(name, conclusion)),
+      ...['success', 'skipped', 'cancelled', null].map(conclusion => mutateStep(attemptGuard, { conclusion })),
       ...skipped.flatMap(name => ['success', 'failure', 'cancelled', null].map(conclusion => mutateStep(name, { conclusion }))),
     ]) {
-      const changed = structuredClone(jobs); mutate(changed)
-      assert.throws(() => assertPriorBrowserRun(run, '42', changed))
+      const changed = makeJobs(); mutate(changed)
+      assert.throws(() => assertPriorBrowserRun(run, '42', changed), stop.name)
     }
-    assert.throws(() => assertPriorBrowserRun({ ...run, conclusion: 'cancelled' }, '42', jobs))
+    assert.throws(() => assertPriorBrowserRun({ ...run, conclusion: 'cancelled' }, '42', makeJobs()))
   }
 })
 
