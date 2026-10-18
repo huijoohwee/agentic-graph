@@ -65,8 +65,9 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
     assert.equal(response?.status(), 200, 'Dev UI route must return 200')
     assert.equal(new URL(page.url()).origin, base, 'Dev UI must remain on the isolated Pages origin')
 
-    await importViewFixture(page, fixturePath)
     await ensureTwoDimensionalSurface(page)
+    await selectRenderer(page, 'Multi-dimensional Table')
+    await importViewFixture(page, fixturePath)
     await selectRenderer(page, 'Multi-dimensional Table')
     await page.locator('section[aria-label="Workspace data view"]').waitFor({ state: 'visible', timeout: 20_000 })
     const importedTable = page.locator('section[aria-label="Workspace data view"] table[aria-label="Table view"]')
@@ -186,6 +187,15 @@ function buildViewFixture() {
   const tomorrow = new Date(today.getTime() + 86_400_000)
   const date = value => value.toISOString().slice(0, 10)
   return [
+    '---',
+    'kgCanvasSurfaceMode: "2d"',
+    'kgCanvasRenderMode: "2d"',
+    'kgCanvas2dRenderer: "multiDimTable"',
+    'kgDocumentSemanticMode: "document"',
+    'kgFrontmatterModeEnabled: true',
+    'kgMultiDimTableModeEnabled: true',
+    '---',
+    '',
     '# ' + FIXTURE_TITLE,
     '',
     '| Name | Status | Date |',
