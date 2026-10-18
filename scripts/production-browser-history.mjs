@@ -11,23 +11,23 @@ const repository = 'huijoohwee/agentic-graph'
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
 const gh = (...args) => execFileSync('gh', args, { cwd: root, encoding: 'utf8', timeout: 30000, maxBuffer: 8 * 1024 * 1024 })
 export const historyArtifactName = binding => 'browser-preflight-' + createHash('sha256').update(canonicalJson(binding)).digest('hex')
+const exactPriorJob = (run, jobs, name) => {
+  assert.ok(Array.isArray(jobs), 'prior release jobs are required')
+  const matches = jobs.filter(job => job.name === name)
+  assert.equal(matches.length, 1, `prior ${name} job is ambiguous`)
+  const job = matches[0]
+  assert.equal(job.run_id, run.id)
+  assert.equal(job.run_attempt, run.run_attempt)
+  assert.equal(job.head_sha, run.head_sha)
+  assert.equal(job.status, 'completed')
+  return job
+}
 // A passed browser ledger remains evidence when authorization or a read-only
 // preflight stops deployment. It never substitutes for fresh authorization.
 export function assertPreDeploymentStop(run, jobs) {
-  assert.ok(Array.isArray(jobs), 'prior release jobs are required')
-  const exactJob = name => {
-    const matches = jobs.filter(job => job.name === name)
-    assert.equal(matches.length, 1, `prior ${name} job is ambiguous`)
-    const job = matches[0]
-    assert.equal(job.run_id, run.id)
-    assert.equal(job.run_attempt, run.run_attempt)
-    assert.equal(job.head_sha, run.head_sha)
-    assert.equal(job.status, 'completed')
-    return job
-  }
-  const verify = exactJob('Verify Release Candidate')
+  const verify = exactPriorJob(run, jobs, 'Verify Release Candidate')
   assert.equal(verify.conclusion, 'success', 'prior candidate verification did not pass')
-  const deploy = exactJob('Human-Authorized Deploy, Verify, And Publish Mirror')
+  const deploy = exactPriorJob(run, jobs, 'Human-Authorized Deploy, Verify, And Publish Mirror')
   assert.equal(deploy.conclusion, 'failure')
   const exactStep = name => {
     const matches = deploy.steps.filter(step => step.name === name)
@@ -59,6 +59,14 @@ export function assertPreDeploymentStop(run, jobs) {
   assert.ok(deploy.steps.every(step => ['success', 'skipped'].includes(step.conclusion)
     || (step.conclusion === 'failure' && allowedFailures.has(step.name))), 'prior deployment has an unresolved failure')
 }
+export function assertCancellationBeforeDeployment(run, jobs) {
+  const verify = exactPriorJob(run, jobs, 'Verify Release Candidate')
+  assert.equal(verify.conclusion, 'success', 'prior candidate verification did not pass')
+  const deploy = exactPriorJob(run, jobs, 'Human-Authorized Deploy, Verify, And Publish Mirror')
+  assert.equal(deploy.conclusion, 'cancelled', 'prior deployment was not cancelled')
+  assert.ok(Array.isArray(deploy.steps), 'cancelled deployment step history is unavailable')
+  assert.equal(deploy.steps.length, 0, 'cancelled deployment started before reconciliation')
+}
 export function assertPriorBrowserRun(run, currentRun, jobs) {
   assert.ok(Number.isSafeInteger(run.id), 'prior run identity is missing')
   assert.match(run.head_sha, /^[0-9a-f]{40}$/, 'prior source revision is invalid')
@@ -68,6 +76,7 @@ export function assertPriorBrowserRun(run, currentRun, jobs) {
   assert.equal(run.head_branch, 'main', 'browser history is not protected main')
   assert.equal(run.status, 'completed', 'prior release is still active; preserve its history')
   if (run.conclusion === 'failure' && jobs) assertPreDeploymentStop(run, jobs)
+  else if (run.conclusion === 'cancelled' && jobs) assertCancellationBeforeDeployment(run, jobs)
   else assert.equal(run.conclusion, 'success', 'unchanged prior release failed or was interrupted; repair or reconcile before retry')
 }
 
