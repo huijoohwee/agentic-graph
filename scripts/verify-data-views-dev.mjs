@@ -8,6 +8,7 @@ import { chromium } from 'playwright'
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/
 const DIGEST_PATTERN = /^[0-9a-f]{64}$/
+const APPLICATION_PATH = '/agentic-graph/'
 const FIXTURE_TITLE = 'Agentic Base view smoke'
 const BASE_LAYOUTS = [
   { id: 'Table', label: 'Table View' },
@@ -27,10 +28,10 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
   const expectedMarker = await fs.readFile(readinessPath, 'utf8')
   assert.equal(markerBody, expectedMarker, 'live readiness marker must match the exact static artifact bytes')
 
-  const root = await fetch(new URL('/', base), { redirect: 'manual', cache: 'no-store', signal: AbortSignal.timeout(30_000) })
-  assert.equal(root.status, 200, 'Dev Pages root must return 200 without redirecting to another owner')
-  assert.equal(new URL(root.url).origin, base)
-  const csp = root.headers.get('content-security-policy') || ''
+  const application = await fetch(new URL(APPLICATION_PATH, base), { redirect: 'manual', cache: 'no-store', signal: AbortSignal.timeout(30_000) })
+  assert.equal(application.status, 200, 'Dev application route must return 200 without redirecting to another owner')
+  assert.equal(new URL(application.url).origin, base)
+  const csp = application.headers.get('content-security-policy') || ''
   assert.match(csp, /connect-src\s+'self'/i, 'Dev CSP must restrict data connections to the Dev origin')
   assert.match(csp, /form-action\s+'self'/i, 'Dev CSP must restrict form posts to the Dev origin')
 
@@ -60,7 +61,7 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
       if (/^https?:/i.test(requestUrl) && new URL(requestUrl).origin !== base) externalRequests.add(new URL(requestUrl).origin)
     })
     page.on('pageerror', error => pageErrors.push(String(error.message || error).slice(0, 240)))
-    const response = await page.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 45_000 })
+    const response = await page.goto(new URL(APPLICATION_PATH, base), { waitUntil: 'domcontentloaded', timeout: 45_000 })
     assert.equal(response?.status(), 200, 'Dev UI route must return 200')
     assert.equal(new URL(page.url()).origin, base, 'Dev UI must remain on the isolated Pages origin')
 
