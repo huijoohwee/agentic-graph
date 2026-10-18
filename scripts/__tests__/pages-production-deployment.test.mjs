@@ -134,6 +134,10 @@ test('Dev candidate capture requires exact project, run identity, and marker byt
     url: 'https://hash1234.agentic-graph-dev.pages.dev',
     uses_functions: false,
   }
+  const project = {
+    id: 'dev-project-id', name: 'agentic-graph-dev', production_branch: 'main', source: null,
+    build_config: {}, deployment_configs: {}, canonical_deployment: deployment,
+  }
   const result = await runPagesProductionDeployment([
     'capture-dev-candidate',
     '--commit-sha', sourceSha,
@@ -155,20 +159,60 @@ test('Dev candidate capture requires exact project, run identity, and marker byt
         const route = parsed.pathname.replace('/client/v4/accounts/account-id', '')
           const requestPath = route + parsed.search
         if (route === '/pages/projects/agentic-graph-prod') return jsonResponse({ result: { id: 'prod-project-id' } })
-        if (route === '/pages/projects/agentic-graph-dev') return jsonResponse({ result: { id: 'dev-project-id', name: 'agentic-graph-dev', production_branch: 'main', source: null, build_config: {}, deployment_configs: {} } })
+        if (route === '/pages/projects/agentic-graph-dev') return jsonResponse({ result: project })
         if (route === '/pages/projects/agentic-graph-dev/domains') return jsonResponse({ result: [] })
           if (requestPath === '/pages/projects/agentic-graph-dev/deployments?env=production&per_page=20') return jsonResponse({ result: [deployment] })
         if (route === '/pages/projects/agentic-graph-dev/deployments/' + deploymentId) return jsonResponse({ result: deployment })
         throw new Error('unexpected Cloudflare Pages request: ' + route)
       }
-      if (url === deployment.url + '/.well-known/runtime-readiness.json') return new Response(marker, { status: 200 })
+      if (url === 'https://agentic-graph-dev.pages.dev/.well-known/runtime-readiness.json') return new Response(marker, { status: 200 })
       throw new Error('unexpected network request: ' + url)
     },
   })
   assert.equal(result.deploymentId, deploymentId)
-  assert.equal(result.deploymentUrl, 'https://hash1234.agentic-graph-dev.pages.dev')
+  assert.equal(result.deploymentUrl, 'https://agentic-graph-dev.pages.dev')
+  assert.equal(result.providerDeploymentUrl, 'https://hash1234.agentic-graph-dev.pages.dev')
   assert.equal(result.usesFunctions, false)
   assert.equal(JSON.parse(await fs.readFile(root.receipt, 'utf8')).runIdentity, runIdentity)
+})
+
+test('Dev candidate capture refuses a stable origin that is not the exact canonical deployment', async t => {
+  const root = await fixture(t)
+  const deployment = {
+    id: 'dev-deployment-123', project_id: 'dev-project-id', environment: 'production',
+    latest_stage: { status: 'success' },
+    deployment_trigger: { metadata: { commit_hash: sourceSha, commit_message: 'ag-dev:aaaaaaaaaaaa:17:1', branch: 'main' } },
+    url: 'https://hash1234.agentic-graph-dev.pages.dev', uses_functions: false,
+  }
+  const project = {
+    id: 'dev-project-id', name: 'agentic-graph-dev', production_branch: 'main', source: null,
+    build_config: {}, deployment_configs: {}, canonical_deployment: { ...deployment, id: 'different-deployment' },
+  }
+  await assert.rejects(runPagesProductionDeployment([
+    'capture-dev-candidate', '--commit-sha', sourceSha, '--manifest-digest', manifestDigest,
+    '--run-identity', 'ag-dev:aaaaaaaaaaaa:17:1', '--project-id', 'dev-project-id',
+    '--readiness-marker', path.join(root.source, '.well-known/runtime-readiness.json'), '--receipt', root.receipt,
+  ], {
+    env: {
+      CLOUDFLARE_API_TOKEN: 'test-token', CLOUDFLARE_ACCOUNT_ID: 'account-id',
+      CLOUDFLARE_PAGES_PROJECT: 'agentic-graph-prod',
+    },
+    fetchImpl: async input => {
+      const url = String(input)
+      const parsed = new URL(url)
+      if (parsed.hostname === 'api.cloudflare.com') {
+        const route = parsed.pathname.replace('/client/v4/accounts/account-id', '')
+        const requestPath = route + parsed.search
+        if (route === '/pages/projects/agentic-graph-prod') return jsonResponse({ result: { id: 'prod-project-id' } })
+        if (route === '/pages/projects/agentic-graph-dev') return jsonResponse({ result: project })
+        if (route === '/pages/projects/agentic-graph-dev/domains') return jsonResponse({ result: [] })
+        if (requestPath === '/pages/projects/agentic-graph-dev/deployments?env=production&per_page=20') return jsonResponse({ result: [deployment] })
+        if (route === '/pages/projects/agentic-graph-dev/deployments/' + deployment.id) return jsonResponse({ result: deployment })
+      }
+      throw new Error('unexpected network request: ' + url)
+    },
+  }), /stable origin does not resolve to the exact successful canonical deployment/)
+  await assert.rejects(fs.access(root.receipt))
 })
 
 test('protected release authorizes first, then binds isolated Dev verification before Production mutation', async () => {
@@ -203,21 +247,21 @@ test('Dev outputs bind exact source, manifest, deployment, URL, and promotion di
     sourceRevision: sourceSha,
     immutableManifestDigest: manifestDigest,
     deploymentId: '01234567-89ab-cdef-0123-456789abcdef',
-    deploymentUrl: 'https://hash1234.agentic-graph-dev.pages.dev',
+    deploymentUrl: 'https://agentic-graph-dev.pages.dev',
     promotionReceiptDigest: 'c'.repeat(64),
   })
   assert.deepEqual(result, {
     source_revision: sourceSha,
     manifest_digest: manifestDigest,
     deployment_id: '01234567-89ab-cdef-0123-456789abcdef',
-    deployment_url: 'https://hash1234.agentic-graph-dev.pages.dev',
+    deployment_url: 'https://agentic-graph-dev.pages.dev',
     promotion_digest: 'c'.repeat(64),
   })
   assert.equal(await fs.readFile(outputPath, 'utf8'), [
     `source_revision=${sourceSha}`,
     `manifest_digest=${manifestDigest}`,
     'deployment_id=01234567-89ab-cdef-0123-456789abcdef',
-    'deployment_url=https://hash1234.agentic-graph-dev.pages.dev',
+    'deployment_url=https://agentic-graph-dev.pages.dev',
     `promotion_digest=${'c'.repeat(64)}`,
     '',
   ].join('\n'))

@@ -98,6 +98,7 @@ export async function runPagesDevPromotion(env = process.env) {
       projectId: project.projectId,
       deploymentId: deployment.deploymentId,
       deploymentUrl: deployment.deploymentUrl,
+      providerDeploymentUrl: deployment.providerDeploymentUrl,
       runIdentity,
       staticArtifactDigest: artifact.artifactDigest,
       uiVerificationDigest: createHash('sha256').update(uiReceiptBytes).digest('hex'),
@@ -137,7 +138,7 @@ export async function writeDevPromotionOutputs(env, receipt) {
     throw new Error('Dev deployment id is invalid')
   }
   const url = new URL(deploymentUrl)
-  if (url.protocol !== 'https:' || !/^[a-z0-9-]+\.agentic-graph-dev\.pages\.dev$/i.test(url.hostname)
+  if (url.protocol !== 'https:' || !/^(?:agentic-graph-dev|[a-z0-9-]+\.agentic-graph-dev)\.pages\.dev$/i.test(url.hostname)
     || url.username || url.password || url.port || url.pathname !== '/' || url.search || url.hash) {
     throw new Error('Dev deployment URL is not the isolated Pages deployment')
   }
