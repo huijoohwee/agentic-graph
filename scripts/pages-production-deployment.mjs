@@ -13,6 +13,9 @@ const PAGES_PROJECT_LIMIT = 100
 const PAGES_FILE_LIMIT = 20_000
 const PAGES_FILE_BYTES_LIMIT = 25 * 1024 * 1024
 const DEV_ISOLATION_HEADER = "  Content-Security-Policy: connect-src 'self'; form-action 'self'"
+const DEV_READINESS_POLL_ATTEMPTS = 10
+const DEV_READINESS_POLL_DELAY_MS = 2_000
+const DEV_READINESS_REQUEST_TIMEOUT_MS = 4_000
 
 export async function prepareDevArtifact({ source, target, commitSha, manifestDigest, receiptPath }) {
   if (!SHA_PATTERN.test(commitSha)) throw new Error('Dev release SHA must be an exact lowercase 40-character SHA')
@@ -81,6 +84,7 @@ export async function runPagesProductionDeployment(argv = process.argv.slice(2),
   const projectName = requiredEnv('CLOUDFLARE_PAGES_PROJECT', env)
   validateProjectName(projectName)
   const fetchImpl = options.fetchImpl || globalThis.fetch
+  const sleepImpl = options.sleepImpl || (milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)))
   const api = createCloudflareClient({ accountId, apiToken, fetchImpl })
   const pagesHostname = `${projectName}.pages.dev`
   const productionPagesOrigin = new URL(`https://${pagesHostname}`).origin
@@ -176,11 +180,12 @@ export async function runPagesProductionDeployment(argv = process.argv.slice(2),
     }
     const deploymentUrl = new URL('https://agentic-graph-dev.pages.dev')
     const localMarker = await fsp.readFile(readinessPath, 'utf8')
-    const response = await fetchImpl(`${deploymentUrl.origin}/.well-known/runtime-readiness.json`, {
-      headers: { accept: 'application/json', 'cache-control': 'no-cache' }, cache: 'no-store', signal: AbortSignal.timeout(30_000),
+    const liveMarker = await waitForExactDevReadinessMarker({
+      fetchImpl,
+      sleepImpl,
+      url: `${deploymentUrl.origin}/.well-known/runtime-readiness.json`,
+      expectedBody: localMarker,
     })
-    const liveMarker = await response.text()
-    if (response.status !== 200 || liveMarker !== localMarker) throw new Error('Dev Pages readiness marker bytes differ from the exact artifact')
     const parsedMarker = JSON.parse(liveMarker)
     if (parsedMarker?.source?.revision !== commitSha || parsedMarker?.immutableManifest?.digest !== manifestDigest) {
       throw new Error('Dev Pages readiness marker does not identify the exact candidate')
@@ -294,6 +299,26 @@ function createCloudflareClient({ accountId, apiToken, fetchImpl }) {
     }
     return payload
   }
+}
+
+async function waitForExactDevReadinessMarker({ fetchImpl, sleepImpl, url, expectedBody }) {
+  let lastObservation = 'no response'
+  for (let attempt = 1; attempt <= DEV_READINESS_POLL_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetchImpl(url, {
+        headers: { accept: 'application/json', 'cache-control': 'no-cache' },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(DEV_READINESS_REQUEST_TIMEOUT_MS),
+      })
+      const body = await response.text()
+      if (response.status === 200 && body === expectedBody) return body
+      lastObservation = response.status === 200 ? 'readiness marker bytes differ' : `HTTP ${response.status}`
+    } catch (error) {
+      lastObservation = `request failed: ${String(error?.message || error).slice(0, 120)}`
+    }
+    if (attempt < DEV_READINESS_POLL_ATTEMPTS) await sleepImpl(DEV_READINESS_POLL_DELAY_MS)
+  }
+  throw new Error(`Dev Pages readiness marker did not converge after ${DEV_READINESS_POLL_ATTEMPTS} checks (${lastObservation})`)
 }
 
 function addDevIsolationHeader(text) {
