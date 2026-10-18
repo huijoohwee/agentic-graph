@@ -8,6 +8,7 @@ import test from 'node:test'
 import YAML from 'yaml'
 
 const installer = path.resolve(import.meta.dirname, '../install-production-release-dependencies.sh')
+const sharedInstaller = path.resolve(import.meta.dirname, '../install-agentic-graph-dependencies.sh')
 test('verify and deploy install dependencies before consuming the mirror runtime', () => {
   const workflow = YAML.parse(fs.readFileSync(path.resolve(import.meta.dirname, '../../.github/workflows/release.yml'), 'utf8'))
   for (const [job, consumer] of [['verify', 'Verify complete mirror runtime seal before activation'],
@@ -24,7 +25,7 @@ test('verify and deploy install dependencies before consuming the mirror runtime
   assert.equal(rollback.run, 'source ./scripts/install-agentic-graph-dependencies.sh')
   assert.ok(rollback.env.AGENTIC_BASE_READ_KEY.includes('secrets.AGENTIC_BASE_READ_KEY'))
 })
-const runInstaller = (t, { mirrorRoot = '', graphFailures = 0, mirrorFailures = 0, readKey = 'test-read-key' } = {}) => {
+const runInstaller = (t, { mirrorRoot = '', graphFailures = 0, mirrorFailures = 0, readKey = 'test-read-key', installerPath = installer } = {}) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'release-dependency-install-'))
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   const bin = path.join(root, 'bin'), cwd = path.join(root, 'agentic-graph')
@@ -61,17 +62,18 @@ if (command === 'npm' && args.includes('ci')) {
 }
 `
   for (const command of ['npm', 'npx', 'sleep']) fs.writeFileSync(path.join(bin, command), shim, { mode: 0o755 })
-  const result = spawnSync('bash', ['-c', 'umask 022; source "$1"', 'bash', installer], { cwd, encoding: 'utf8', timeout: 10_000,
+  const result = spawnSync('bash', ['-c', 'umask 022; source "$1"', 'bash', installerPath], { cwd, encoding: 'utf8', timeout: 10_000,
     env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`,
       AGENTIC_OS_PUBLISH_REPOSITORY_ROOT: mirrorRoot, LC_INSTALL_LOG: log,
       AGENTIC_BASE_READ_KEY: readKey, LC_INSTALL_KEY_DIR: root, RUNNER_TEMP: root,
+      AGENTIC_GRAPH_NATIVE_REBUILD: 'required',
       LC_INSTALL_GRAPH_FAILURES: String(graphFailures), LC_INSTALL_MIRROR_FAILURES: String(mirrorFailures) } })
   if (result.error) throw result.error
   const observations = fs.readFileSync(log, 'utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line))
   return { ...result, observations, calls: observations.map(({ command, args }) => [command, ...args]), root }
 }
 
-test('release setup installs the mirror lockfile and development dependency before runtime preparation', async t => {
+test('release setup installs the mirror lockfile without rebuilding unrelated native dependencies', async t => {
   const result = runInstaller(t)
   assert.equal(result.status, 0, result.stderr)
   assert.deepEqual(result.observations[0], {
@@ -80,13 +82,22 @@ test('release setup installs the mirror lockfile and development dependency befo
   })
   assert.deepEqual(result.calls, [
     ['npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund'],
-    ['npm', 'rebuild', '--no-audit', '--no-fund'],
     ['npm', '--prefix', '../huijoohwee', 'ci', '--ignore-scripts', '--include=dev'],
     ['npm', 'run', 'smoke:prepare'],
     ['npx', 'playwright', 'install', '--with-deps', 'chromium'],
   ])
+  assert.equal(result.calls.some(call => call[0] === 'npm' && call[1] === 'rebuild'), false)
   assert.ok(result.observations.slice(1).every(item => !item.rawKeyPresent && !item.sshConfigured && !item.keyExists))
   assert.deepEqual((await fsp.readdir(result.root)).filter(name => name.startsWith('agentic-base-read.')), [])
+})
+
+test('shared setup rebuilds native dependencies unless the caller opts out', t => {
+  const result = runInstaller(t, { installerPath: sharedInstaller })
+  assert.equal(result.status, 0, result.stderr)
+  assert.deepEqual(result.calls, [
+    ['npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund'],
+    ['npm', 'rebuild', '--no-audit', '--no-fund'],
+  ])
 })
 
 test('release setup preserves the configured mirror path without splitting spaces', t => {

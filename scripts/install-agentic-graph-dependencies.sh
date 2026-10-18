@@ -34,4 +34,8 @@ npm ci --ignore-scripts --no-audit --no-fund
 rm -rf "$key_dir"
 trap - EXIT
 unset GIT_SSH_COMMAND GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0 GIT_CONFIG_KEY_1 GIT_CONFIG_VALUE_1 GIT_TERMINAL_PROMPT
-npm rebuild --no-audit --no-fund
+case "${AGENTIC_GRAPH_NATIVE_REBUILD:-required}" in
+  required) npm rebuild --no-audit --no-fund ;;
+  skip) ;;
+  *) echo "AGENTIC_GRAPH_NATIVE_REBUILD must be required or skip" >&2; exit 1 ;;
+esac
