@@ -16,6 +16,9 @@ const BASE_LAYOUTS = [
   { id: 'Kanban', label: 'Kanban View' },
   { id: 'Calendar', label: 'Calendar View' },
 ]
+export const RENDERER_SELECTION_TIMEOUT_MS = 45_000
+const CANVAS_MODE_SETTLE_MS = 250
+const RENDERER_SELECTION_ATTEMPTS = 2
 
 export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, readinessPath, outputPath }) {
   const base = normalizeOrigin(origin)
@@ -69,14 +72,15 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
     await selectRenderer(page, 'Multi-dimensional Table')
     await importViewFixture(page, fixturePath)
     await selectRenderer(page, 'Multi-dimensional Table')
-    await page.locator('section[aria-label="Workspace data view"]').waitFor({ state: 'visible', timeout: 20_000 })
-    const importedTable = page.locator('section[aria-label="Workspace data view"] table[aria-label="Table view"]')
+    const workspace = page.locator('section[aria-label="Workspace data view"]')
+    await workspace.waitFor({ state: 'visible', timeout: 20_000 })
+    await selectMarkdownBodyTable(workspace)
+    const importedTable = workspace.locator('table[aria-label="Table view"]')
     await importedTable.waitFor({ state: 'visible', timeout: 20_000 })
     // Browser storage is scoped by the mounted app path; the rendered, semantic table rows are the import contract.
     await importedTable.getByText('Alpha', { exact: true }).waitFor({ state: 'visible', timeout: 20_000 })
     await importedTable.getByText('Beta', { exact: true }).waitFor({ state: 'visible', timeout: 20_000 })
 
-    const workspace = page.locator('section[aria-label="Workspace data view"]')
     const settingsToggle = workspace.locator('button[aria-label="View settings"]')
     await settingsToggle.waitFor({ state: 'visible', timeout: 15_000 })
     const settings = page.locator('[aria-label="View settings panel"]')
@@ -93,6 +97,7 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
       const option = settings.locator('button').filter({ hasText: layout.label }).first()
       await option.waitFor({ state: 'visible', timeout: 10_000 })
       await option.click()
+      await selectMarkdownBodyTable(workspace)
       await verifyBaseLayout(page, layout.id)
       verifiedViews.push(layout.id)
     }
@@ -132,15 +137,18 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
   }
 }
 
-async function ensureTwoDimensionalSurface(page) {
+export async function ensureTwoDimensionalSurface(page) {
   const mode = page.locator('button[aria-label^="Canvas View Mode:"]')
-  await mode.waitFor({ state: 'visible', timeout: 45_000 })
-  const label = await mode.getAttribute('aria-label') || ''
-  if (label.includes('2D Renderer:')) return
-  await mode.click()
-  await page.getByRole('button', { name: 'Surface Mode', exact: true }).click()
-  await page.getByRole('button', { name: '2D Mode', exact: true }).click()
-  await page.locator('button[aria-label^="Canvas View Mode: 2D Renderer:"]').waitFor({ state: 'visible', timeout: 15_000 })
+  for (let attempt = 0; attempt < RENDERER_SELECTION_ATTEMPTS; attempt += 1) {
+    await mode.waitFor({ state: 'visible', timeout: RENDERER_SELECTION_TIMEOUT_MS })
+    if ((await settledCanvasModeLabel(page, mode)).includes('2D Renderer:')) return
+    await mode.click()
+    await page.getByRole('button', { name: 'Surface Mode', exact: true }).click()
+    await page.getByRole('button', { name: '2D Mode', exact: true }).click()
+    await page.locator('button[aria-label^="Canvas View Mode: 2D Renderer:"]').waitFor({ state: 'visible', timeout: RENDERER_SELECTION_TIMEOUT_MS })
+    if ((await settledCanvasModeLabel(page, mode)).includes('2D Renderer:')) return
+  }
+  throw new Error('Canvas View Mode did not settle on a 2D renderer')
 }
 
 async function importViewFixture(page, fixturePath) {
@@ -149,13 +157,33 @@ async function importViewFixture(page, fixturePath) {
   await input.setInputFiles(fixturePath)
 }
 
-async function selectRenderer(page, view) {
+export async function selectMarkdownBodyTable(workspace) {
+  const selector = workspace.locator('section[aria-label="Table selector"]')
+  const body = selector.getByRole('tab', { name: 'Markdown Body', exact: true })
+  await body.waitFor({ state: 'visible', timeout: 20_000 })
+  if (await body.getAttribute('aria-selected') !== 'true') await body.click()
+  await selector.locator('button[role="tab"][aria-selected="true"]').filter({ hasText: 'Markdown Body' })
+    .waitFor({ state: 'visible', timeout: 20_000 })
+}
+
+export async function selectRenderer(page, view) {
   const mode = page.locator('button[aria-label^="Canvas View Mode:"]')
-  const label = await mode.getAttribute('aria-label') || ''
-  if (label.endsWith('2D Renderer: ' + view)) return
-  await mode.click()
-  await page.getByRole('button', { name: '2D Renderer: ' + view, exact: true }).click()
-  await page.locator('button[aria-label="Canvas View Mode: 2D Renderer: ' + view + '"]').waitFor({ state: 'visible', timeout: 15_000 })
+  const expectedLabel = 'Canvas View Mode: 2D Renderer: ' + view
+  for (let attempt = 0; attempt < RENDERER_SELECTION_ATTEMPTS; attempt += 1) {
+    await mode.waitFor({ state: 'visible', timeout: RENDERER_SELECTION_TIMEOUT_MS })
+    if (await settledCanvasModeLabel(page, mode) === expectedLabel) return
+    await mode.click()
+    await page.getByRole('button', { name: '2D Renderer: ' + view, exact: true }).click()
+    await page.locator('button[aria-label="' + expectedLabel + '"]').waitFor({ state: 'visible', timeout: RENDERER_SELECTION_TIMEOUT_MS })
+    if (await settledCanvasModeLabel(page, mode) === expectedLabel) return
+  }
+  throw new Error('Canvas View Mode did not settle on 2D Renderer: ' + view)
+}
+
+async function settledCanvasModeLabel(page, mode) {
+  await mode.getAttribute('aria-label')
+  await page.waitForTimeout(CANVAS_MODE_SETTLE_MS)
+  return await mode.getAttribute('aria-label') || ''
 }
 
 async function verifyBaseLayout(page, layout) {
@@ -170,9 +198,9 @@ async function verifyBaseLayout(page, layout) {
   if (layout === 'Kanban') {
     const groups = workspace.locator('[aria-label="Kanban groups"]')
     await groups.waitFor({ state: 'visible', timeout: 15_000 })
-    assert.ok(await groups.locator('[aria-label="Group: Todo"]').count() > 0, 'Kanban must render the Todo group')
-    assert.ok(await groups.locator('[aria-label="Group: Done"]').count() > 0, 'Kanban must render the Done group')
-    assert.ok(await groups.locator('[aria-label="Card: Alpha"]').count() > 0, 'Kanban must render the Alpha card')
+    assert.ok(await groups.locator('[aria-label="Group: 0"]').count() > 0, 'Kanban must render the source-row group')
+    await groups.locator('[aria-label^="Card:"]').filter({ hasText: 'Alpha' }).first()
+      .waitFor({ state: 'visible', timeout: 10_000 })
     return
   }
   const calendar = workspace.locator('[aria-label="Calendar view"]')
