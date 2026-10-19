@@ -179,22 +179,22 @@
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
-      "ref": "agent/device-0232231d4a19/production-delivery-39177364647",
-      "laneHead": "08927d4da631e6ab8793ae0ebd4e79f55c300e8a",
-      "paths": [
-        ".agentic-os-delivery-dispositions.json",
-        "docs/reports/production-delivery-evidence-39177364647.json"
-      ],
       "disposition": "no-deploy",
-      "candidateRevision": "0edd843ece4ba7c3ed9e318f7699570941e7d285",
       "candidateDigest": "62add86af30cf2fc5e7064b5e36dff824b0a272ef3793fe73fa3fcfbb8771a81",
       "sourceReleaseReceiptDigest": null,
       "deploymentReceiptDigest": null,
       "runtimeVerificationReceiptDigest": null,
+      "ref": "agent/device-0232231d4a19/production-delivery-39177364647",
+      "laneHead": "ae10910e9dd50d06fd1a0bf89530a8ba33d9d662",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json",
+        "docs/reports/production-delivery-evidence-39177364647.json"
+      ],
+      "candidateRevision": "73949591f67a35612bbdb83c5c2742c563b9baa4",
       "evidencePath": "docs/reports/production-delivery-evidence-39177364647.json",
       "evidenceDigest": "f33240564f120b566247ee096ea466e1cf4f7c96a861abeb5300b2f7b6a11de0",
-      "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39177364647",
-      "reason": "This lane contains only the delivery-disposition ledger and its docs/reports evidence; both are excluded from the product artifact. It records the separately deployed candidate and does not claim a new deployment."
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1795",
+      "reason": "PR #1795 records release receipts and delivery metadata only. The ledger and report are excluded from the product artifact; the separately authorized Production release is recorded in its own run."
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
@@ -215,6 +215,24 @@
       "evidenceDigest": "57233ff9aa6ea6d7bc264c7a2ae6270808903d1e9fabab47d722bd7a9fbc2bd3",
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39163971889#environment-production",
       "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "disposition": "no-deploy",
+      "candidateDigest": "62add86af30cf2fc5e7064b5e36dff824b0a272ef3793fe73fa3fcfbb8771a81",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "ref": "agent/device-0232231d4a19/release-install-dependency-gate-delivery-closeout",
+      "laneHead": "08927d4da631e6ab8793ae0ebd4e79f55c300e8a",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json"
+      ],
+      "candidateRevision": "0edd843ece4ba7c3ed9e318f7699570941e7d285",
+      "evidencePath": "scripts/production-mirror-artifact-entries.mjs",
+      "evidenceDigest": "8476c366817ea9297ece21dccce3285c126ee59112c8230cee6d11a455e81b9f",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1791",
+      "reason": "PR #1791 changes only the delivery-disposition ledger. The production mirror artifact allowlist excludes this ledger from the product artifact; this lane performs no deployment."
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
@@ -293,5 +311,5 @@
       "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
     }
   ],
-  "receiptDigest": "0473cf2742ca71f7f4e0a43e4095eb5b65ddb8fc7683dcab4a4ee64d7e1934b8"
+  "receiptDigest": "e0dc9ca985e46d8538e4ba56e3f74f578be867ac2857471740f0a649eafc3bfa"
 }
