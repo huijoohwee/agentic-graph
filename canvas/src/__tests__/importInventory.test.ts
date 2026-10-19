@@ -225,6 +225,37 @@ test('local host copies use the existing writer once per change and retry a fail
   }
 })
 
+test('offline local imports retain their bytes and defer existing website host copies until reconnect', async () => {
+  const fs = createMemoryWorkspaceFs(), originalFetch = globalThis.fetch, originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  const connection = { onLine: false }, requests: string[] = []
+  const fetcher = (async (url: RequestInfo | URL) => {
+    requests.push(String(url))
+    assert.equal(connection.onLine, true, 'Offline import must not contact the local host')
+    return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } })
+  }) as typeof fetch
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hostname: 'localhost' }, navigator: connection, fetch: fetcher } })
+  globalThis.fetch = fetcher
+  try {
+    await persistImportInventory(fs, [{ source, status: 'not imported' }])
+    const savedIndex = await fs.readFileText(indexPath), text = '# Offline source\nRetain these exact bytes.\n'
+    const imported = await importWorkspaceLocalFiles({ fs, files: [file('offline-local-source.md', text)] })
+    assert.equal(imported.failed.length, 0)
+    assert.equal(imported.createdPaths.length, 1)
+    assert.equal(await fs.readFileText(imported.createdPaths[0]), text)
+    assert.equal(await fs.readFileText(indexPath), savedIndex)
+    assert.deepEqual(requests, [])
+    connection.onLine = true
+    assert.equal(await persistImportInventory(fs), false)
+    assert.deepEqual(requests, ['/__agentic_os_fs_reveal'], 'Skipped offline copy is retried after reconnect')
+    assert.equal(await persistImportInventory(fs), false)
+    assert.equal(requests.length, 1, 'Only an acknowledged host copy suppresses unchanged retries')
+  } finally {
+    globalThis.fetch = originalFetch
+    if (originalWindow) Object.defineProperty(globalThis, 'window', originalWindow)
+    else Reflect.deleteProperty(globalThis, 'window')
+  }
+})
+
 test('grouped local media inputs retain links to their final saved sequence in file and folder imports', async () => {
   for (const mode of ['file', 'folder'] as const) {
     const fs = createMemoryWorkspaceFs()
