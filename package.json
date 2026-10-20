@@ -343,7 +343,7 @@
     "@x402/core": "^2.13.0",
     "@x402/evm": "^2.13.0",
     "@x402/hono": "^2.13.0",
-    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/db680f535f627e13d532b41cee206e712ea67565",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/02f4d82114c0508557e12153f9c1830c97c65be3",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.7",
     "js-yaml": "^4.3.2",
