@@ -58,12 +58,32 @@ const seedSessionAndMembership = async (
 const createProductionEnv = (
   db: FakeAgenticGraphStorageD1Database,
   bucket = new FakeAgenticGraphStorageR2Bucket(),
-): AgenticGraphStorageWorkerEnv => ({
+): AgenticGraphStorageWorkerEnv & { verifyProviderCostEvidence: (request: Readonly<Record<string, unknown>>) => Promise<Record<string, unknown>> } => ({
   DB: db,
   AGENTIC_OS_STORAGE_BLOB_BUCKET: bucket,
   AGENTIC_OS_STORAGE_BLOB_MAX_BYTES: '32',
   AGENTIC_OS_STORAGE_LOCAL_RUNTIME: 'false',
   AGENTIC_OS_STORAGE_SIGNING_SECRET: 'storage-security-signing-secret-32-characters',
+  verifyProviderCostEvidence: async request => {
+    const observedAt = String(request.observedAt)
+    return {
+      schema: 'agentic-os/verified-effect-cost-evidence/v1',
+      status: 'verified-zero-cost',
+      provider: String(request.provider),
+      mode: 'provider-hard-cap',
+      billingPlan: 'free',
+      providerHardCapUsd: 0,
+      quotaExhaustion: 'not-applicable',
+      paidPlanActive: false,
+      addOnsActive: false,
+      overagesEnabled: false,
+      autoUpgradeEnabled: false,
+      evidenceDigest: 'c'.repeat(64),
+      scopeDigest: String(request.scopeDigest),
+      verifiedAt: observedAt,
+      expiresAt: new Date(Date.parse(observedAt) + 60_000).toISOString(),
+    }
+  },
 })
 
 const sessionHeaders = (extra: HeadersInit = {}): Headers => new Headers({ authorization: `Bearer ${SESSION_TOKEN}`, ...Object.fromEntries(new Headers(extra).entries()) })

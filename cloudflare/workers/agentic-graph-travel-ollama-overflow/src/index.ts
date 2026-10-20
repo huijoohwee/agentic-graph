@@ -1,3 +1,5 @@
+import { createZeroCostWorkersAiBinding } from '../../../shared/workers-ai-cost-gate.mjs'
+
 const MAX_BODY_BYTES = 65_536
 const MAX_RESPONSE_BYTES = 262_144
 const MAX_PROMPT_CHARACTERS = 24_000
@@ -22,7 +24,11 @@ export default {
     if (!input) return json({ ok: false, reason: 'input-malformed' }, 400)
 
     try {
-      const output = await env.AI.run(modelId, input, { signal: AbortSignal.timeout(INFERENCE_TIMEOUT_MS) })
+      const ai = createZeroCostWorkersAiBinding(env.AI, {
+        bindingName: 'AI',
+        verifyProviderCostEvidence: Reflect.get(env, 'verifyProviderCostEvidence', env),
+      })
+      const output = await ai.run(modelId, input, { signal: AbortSignal.timeout(INFERENCE_TIMEOUT_MS) })
       return json(normalizeOutput(output))
     } catch (error) {
       console.error(JSON.stringify({
@@ -39,11 +45,13 @@ function readiness(env: WorkersAiOverflowEnv): Response {
   const models = readAllowedModels(env.ALLOWED_MODELS_JSON)
   const tokenConfigured = typeof env.INFERENCE_OVERFLOW_TOKEN === 'string'
     && env.INFERENCE_OVERFLOW_TOKEN.length >= 32
-  const configured = tokenConfigured && models.length > 0 && typeof env.AI?.run === 'function'
+  const costVerifierConfigured = typeof Reflect.get(env, 'verifyProviderCostEvidence', env) === 'function'
+  const configured = tokenConfigured && models.length > 0 && typeof env.AI?.run === 'function' && costVerifierConfigured
   return json({
     ok: configured,
     configuredModels: models.length,
-    dependency: configured ? 'workers-ai-free-configured' : 'workers-ai-unconfigured',
+    dependency: configured ? 'workers-ai-cost-verifier-configured' : 'workers-ai-cost-evidence-unavailable',
+    costVerifierConfigured,
     freeDailyNeuronLimit: 10_000,
   }, configured ? 200 : 503)
 }

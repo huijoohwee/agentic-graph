@@ -5,8 +5,10 @@ import {
   runtimeEnv, userId, providerEnv, readReply, authHeaders, createCheckout, eventFor,
   sendEvent, state, installStrytreeNativeFixture,
 } from './helpers/strytree-native-fixture'
+import { createZeroCostR2TestVerifier } from '../../../shared/r2-cost-gate.test-utils.mjs'
 
 installStrytreeNativeFixture()
+const verifyProviderCostEvidence = createZeroCostR2TestVerifier()
 
 const storyId = 'generation-contract-story'
 const nodeId = 'generation-contract-root'
@@ -18,7 +20,7 @@ const generationBody = () => ({
 const submit = async (overrides: Record<string, unknown>, body = generationBody()) => readReply(
   await worker.fetch(new Request('https://payment.test/api/strytree/generation-jobs', {
     method: 'POST', headers: authHeaders(generationKey), body: JSON.stringify(body),
-  }), { ...providerEnv(), ...overrides }),
+  }), { ...providerEnv(), ...overrides, verifyProviderCostEvidence }),
 )
 const jobs = async () => (await runtimeEnv.DB.prepare('SELECT * FROM strytree_generation_jobs ORDER BY id').all()).results
 const generationState = async () => ({ financial: await state(), jobs: await jobs() })
@@ -57,7 +59,7 @@ const consume = async (body: unknown, overrides: Record<string, unknown>) => {
   let acked = 0; let retried = 0; let error: unknown = null
   try {
     await worker.queue({ messages: [{ body, ack() { acked += 1 }, retry() { retried += 1 } }] },
-      { ...providerEnv(), ...overrides })
+      { ...providerEnv(), ...overrides, verifyProviderCostEvidence })
   } catch (caught) { error = caught }
   return { acked, retried, error }
 }
