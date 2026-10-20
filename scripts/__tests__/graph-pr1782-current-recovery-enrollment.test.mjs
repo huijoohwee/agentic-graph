@@ -21,13 +21,13 @@ test('graph PR 1782 current recovery enrollment matches the historical integrati
   assert.equal(entry.mergeRevision, '680121e0d4ff9862e146bca519f9acad26e47f9e')
   assert.equal(entry.treeRevision, 'c7de204a7bf100f49e213e07ec32534feead4bfc')
   assert.deepEqual(entry.checkContexts, ['Integration Gate'])
-  assert.deepEqual(entry.adoptionScope, ['recovery/current-historical-content/refresh/pr-1782'])
+  assert.deepEqual(entry.adoptionScope, ['recovery/current-historical-content/refresh2/pr-1782'])
 
   const matched = assertGitHubTransitionPolicyOperation(policy, {
     request: {
       repository: 'github.com/huijoohwee/agentic-graph',
       reviewLocator: 'https://github.com/huijoohwee/agentic-graph/pull/1782',
-      scope: ['recovery/current-historical-content/refresh/pr-1782'],
+      scope: ['recovery/current-historical-content/refresh2/pr-1782'],
     },
     plan: { target: { immutableRevision: '680121e0d4ff9862e146bca519f9acad26e47f9e' } },
     predecessorIssuance: {
