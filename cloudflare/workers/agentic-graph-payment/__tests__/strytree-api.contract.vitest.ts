@@ -5,13 +5,16 @@ import {
   runtimeEnv, userId, providerEnv, readReply, authHeaders, createCheckout, eventFor,
   sendEvent, state, installStrytreeNativeFixture,
 } from './helpers/strytree-native-fixture'
+import { createZeroCostR2TestVerifier } from '../../../shared/r2-cost-gate.test-utils.mjs'
 
 installStrytreeNativeFixture()
+const verifyProviderCostEvidence = createZeroCostR2TestVerifier()
 
 const storyId = 'api-contract-story', rootId = 'api-contract-root', paidId = 'api-contract-paid'
 const creatorId = 'api-contract-creator'
 const route = async (path: string, init: RequestInit = {}, overrides: Record<string, unknown> = {}) => readReply(
-  await worker.fetch(new Request(`https://payment.test/api/strytree${path}`, init), { ...providerEnv(), ...overrides }),
+  await worker.fetch(new Request(`https://payment.test/api/strytree${path}`, init),
+    { ...providerEnv(), ...overrides, verifyProviderCostEvidence }),
 )
 const post = (path: string, key: string, body: unknown = {}, overrides: Record<string, unknown> = {}) => route(
   path, { method: 'POST', headers: authHeaders(key), body: JSON.stringify(body) }, overrides,
@@ -52,7 +55,7 @@ const generationBody = () => ({ story_id: storyId, parent_node_id: rootId,
 const consume = async (body: unknown, overrides: Record<string, unknown>) => {
   const ctx = createExecutionContext()
   const batch = createMessageBatch('strytree-native-api', [{ id: 'api-message', timestamp: new Date(), attempts: 1, body }])
-  await worker.queue(batch, { ...providerEnv(), ...overrides })
+  await worker.queue(batch, { ...providerEnv(), ...overrides, verifyProviderCostEvidence })
   const result = await getQueueResult(batch, ctx)
   expect(result.explicitAcks).toEqual(['api-message'])
   expect(result.retryMessages).toEqual([])

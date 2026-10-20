@@ -4,8 +4,8 @@ title: "agentic-graph Runtime Readiness Contract"
 doc_type: "Runtime Contract"
 status: "active"
 contract_version: 1
-version: "1.0.1"
-date: "2026-10-17"
+version: "1.0.2"
+date: "2026-10-20"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "agentic-graph runtime-readiness"
@@ -103,6 +103,27 @@ retired. Start and publish scoped work through the pinned OS `lane` and `land`
 commands. The protected Integration Gate still controls every merge; production
 uses the separate reviewed-candidate workflow. Historical controller revisions
 remain in Git for recovery and are not active lifecycle dependencies.
+
+## Zero-cost provider boundary
+
+The pinned Agentic OS cost rule applies to every repository, worktree, provider,
+and billable effect. Provider calls require current evidence bound to the exact
+provider, resource, operation, and request immediately before dispatch. Included
+quota, usage snapshots, and budget alerts do not establish a hard USD 0 ceiling.
+
+Every deployed Graph R2 binding is wrapped by the shared gate, which uses
+`agentic-os/context/json` and accepts only a provider-enforced USD 0 hard cap for
+Cloudflare R2. Missing, stale, or quota-only evidence blocks the method before
+Cloudflare is called. Storage, Research, and payment bindings have named buckets
+in their Wrangler configuration; `PROVENANCE_ARCHIVE`, Pages source evidence,
+and the optional MCP media binding lack exact bucket names in source and remain
+blocked until their deployed identity is explicitly mapped. The local test
+verifier applies only to in-memory test bindings and grants no deployment
+authority. No current provider verifier or production cap is configured.
+The MCP agent adapter and travel overflow Worker also gate every Workers AI
+inference by exact model, binding, and request. They require a current verified
+Free-plan deny-at-quota proof or provider-enforced USD 0 cap; readiness remains
+blocked without a trusted verifier, and no inference reaches Cloudflare first.
 
 `DURABLE-AGENT-WORKFLOWS-001@0.1.0` source cutover: the local MCP reader verifies the
 clean OS checkout and fetched-main ancestry. The edge reader uses six immutable reads

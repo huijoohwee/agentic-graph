@@ -27,13 +27,17 @@ import { handleCommerceCheckoutProvider } from './commerce-checkout-provider'
 import { CommerceCheckoutStore } from './commerce-checkout-store'
 import { commerceProviderRuntimeProof } from './provider-runtime-proof'
 import { validCommerceProviderSecret } from '../../commerce-provider-auth.ts'
+import { getZeroCostR2GateStatus, withZeroCostR2Bindings } from '../../../shared/r2-cost-gate.mjs'
 
 export { BundleGraphStore, CommerceCheckoutStore, EnvelopeLedger, TravelAgencyGuardrailService }
 
 const MAX_BODY_BYTES = 65_536
 
 export default {
-  async fetch(request: Request, env: TravelCommerceEnv, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, rawEnv: TravelCommerceEnv, ctx: ExecutionContext): Promise<Response> {
+    const env = withZeroCostR2Bindings(rawEnv, {
+      PROVENANCE_ARCHIVE: 'unresolved:PROVENANCE_ARCHIVE',
+    }) as TravelCommerceEnv
     const requestId = crypto.randomUUID()
     const url = new URL(request.url)
     try {
@@ -328,7 +332,15 @@ async function secretMatches(candidate: string, secret: string): Promise<boolean
 
 async function reconciliationAwareReadiness(env: TravelCommerceEnv) {
   const report = await inspectReadiness(env)
-  if (env.DEPLOY_LANE !== 'Production_Lane') return report
+  const archiveBlocked = getZeroCostR2GateStatus(env.PROVENANCE_ARCHIVE) === 'blocked'
+  const readiness = archiveBlocked ? {
+    ...report,
+    ok: false,
+    checks: report.checks.map(check => check.name === 'provenance-archive'
+      ? { ...check, ok: false, status: 503, reason: 'provider-cost-evidence-unavailable' }
+      : check),
+  } : report
+  if (env.DEPLOY_LANE !== 'Production_Lane') return readiness
   const started = performance.now()
   const operatorToken = typeof env.RECONCILIATION_OPERATOR_TOKEN === 'string'
     ? env.RECONCILIATION_OPERATOR_TOKEN : ''
@@ -349,8 +361,8 @@ async function reconciliationAwareReadiness(env: TravelCommerceEnv) {
     elapsedMs: Number((performance.now() - started).toFixed(3)),
     reason: providerSecretsValid ? null : 'invalid-missing-or-shared-secret',
   })
-  const checks = Object.freeze([...report.checks, check, providerAuthCheck])
-  return Object.freeze({ ...report, ok: report.ok && valid && providerSecretsValid, checks })
+  const checks = Object.freeze([...readiness.checks, check, providerAuthCheck])
+  return Object.freeze({ ...readiness, ok: readiness.ok && valid && providerSecretsValid, checks })
 }
 
 function digestEqual(left: ArrayBuffer, right: ArrayBuffer): boolean {

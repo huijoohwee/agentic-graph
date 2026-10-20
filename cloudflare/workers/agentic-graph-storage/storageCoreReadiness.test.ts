@@ -3,8 +3,13 @@ import test from 'node:test'
 import { createAgenticGraphStorageWorker } from './index'
 import type { AgenticGraphStorageWorkerEnv } from './contract'
 import type { D1StatementLike } from '../shared/d1'
+import { createZeroCostR2TestVerifier } from '../../shared/r2-cost-gate.test-utils.mjs'
 
-const env = (): AgenticGraphStorageWorkerEnv => ({
+type TestEnv = AgenticGraphStorageWorkerEnv & {
+  verifyProviderCostEvidence?: (request: Record<string, unknown>) => Promise<Record<string, unknown>>
+}
+
+const env = (): TestEnv => ({
   DB: { prepare: () => {
     const statement: D1StatementLike = { bind: () => statement, run: async () => ({}), all: async <T>() => ({
       results: ['auth_identities', 'auth_sessions', 'users', 'workspace_memberships'].map(name => ({ name }) as T),
@@ -16,6 +21,7 @@ const env = (): AgenticGraphStorageWorkerEnv => ({
   AGENTIC_OS_STORAGE_SIGNING_SECRET: 's'.repeat(48),
   AGENTIC_OS_STORAGE_ACCESS_ISSUER: 'https://storage.cloudflareaccess.com',
   AGENTIC_OS_STORAGE_ACCESS_AUDIENCE: '3'.repeat(64),
+  verifyProviderCostEvidence: createZeroCostR2TestVerifier(),
 })
 const request = (path = '/api/storage/readyz/core', method = 'GET') => new Request(`https://airvio.co${path}`, { method })
 
@@ -42,6 +48,16 @@ test('core readiness does not infer authentication or blob readiness from a D1 b
   const response = await createAgenticGraphStorageWorker().fetch(request(), value)
   assert.equal(response.status, 503)
   assert.equal((await response.json()).dependencies.authSchema, 'unavailable')
+})
+
+test('core readiness fails closed when provider-enforced zero-cost evidence is unavailable', async () => {
+  const value = env()
+  delete value.verifyProviderCostEvidence
+  const response = await createAgenticGraphStorageWorker().fetch(request(), value)
+  const body = await response.json()
+  assert.equal(response.status, 503)
+  assert.equal(body.dependencies.blobStorage, 'blocked')
+  assert.ok(body.reasons.includes('storage-blob-provider-cost-evidence-unavailable'))
 })
 test('core readiness is read-only, supports HEAD, and identifies local runtime explicitly', async () => {
   const worker = createAgenticGraphStorageWorker()
