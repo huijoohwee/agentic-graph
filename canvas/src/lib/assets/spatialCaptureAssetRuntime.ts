@@ -84,9 +84,7 @@ function normalizePayloadCacheIdentity(value: unknown): string {
 
 function buildBrowserPayloadCachePath(identity: unknown, format: SpatialCaptureStandaloneFormat): string {
   const normalized = normalizePayloadCacheIdentity(identity)
-  if (!normalized) return ''
-  const key = [format, normalized].join('|')
-  return `/__agentic_os_spatial_capture_payload/${encodeURIComponent(key)}`
+  return normalized ? `/__agentic_os_spatial_capture_payload/${encodeURIComponent([format, normalized].join('|'))}` : ''
 }
 
 function resolveBrowserPayloadCacheIdentities(args: {
@@ -121,14 +119,17 @@ function resolveBrowserPayloadCacheIdentities(args: {
 async function persistBrowserPayloadCache(path: unknown, item: PendingSpatialCaptureAsset): Promise<void> {
   if (typeof caches === 'undefined' || typeof Response === 'undefined') return
   const cache = await caches.open(SPATIAL_CAPTURE_BROWSER_CACHE_NAME)
+  const identities = resolveBrowserPayloadCacheIdentities({ path, originalName: item.originalName })
+  const primaryPath = buildBrowserPayloadCachePath(identities[0], item.format)
+  if (!primaryPath) return
   const headers = {
     'content-type': item.format === 'ply' ? 'model/ply' : 'application/octet-stream',
     'x-kg-source-name': String(item.originalName || ''),
   }
-  for (const identity of resolveBrowserPayloadCacheIdentities({ path, originalName: item.originalName })) {
-    const cachePath = buildBrowserPayloadCachePath(identity, item.format)
-    if (!cachePath) continue
-    await cache.put(cachePath, new Response(item.file.slice(0, item.file.size, item.file.type), { headers }))
+  await cache.put(primaryPath, new Response(item.file.slice(0, item.file.size, item.file.type), { headers }))
+  for (const identity of identities.slice(1)) {
+    const aliasPath = buildBrowserPayloadCachePath(identity, item.format)
+    if (aliasPath && aliasPath !== primaryPath) await cache.put(aliasPath, new Response(null, { headers: { ...headers, 'x-kg-payload-ref': primaryPath } }))
   }
 }
 
@@ -137,16 +138,17 @@ async function readBrowserPayloadCache(manifest: StandaloneSpatialCaptureManifes
   const cache = await caches.open(SPATIAL_CAPTURE_BROWSER_CACHE_NAME)
   for (const identity of resolveBrowserPayloadCacheIdentities({ manifest })) {
     const response = await cache.match(buildBrowserPayloadCachePath(identity, manifest.format))
-    if (!response || !response.ok) continue
-    return response.arrayBuffer()
+    const reference = response?.headers.get('x-kg-payload-ref')
+    const payload = reference ? await cache.match(reference) : response
+    if (payload?.ok) return payload.arrayBuffer()
   }
   return null
 }
 
-function deleteBrowserPayloadCache(path: unknown, format: SpatialCaptureStandaloneFormat): void {
+function deleteBrowserPayloadCache(path: unknown, format: SpatialCaptureStandaloneFormat, originalName?: unknown): void {
   if (typeof caches === 'undefined') return
   void caches.open(SPATIAL_CAPTURE_BROWSER_CACHE_NAME)
-    .then(cache => cache.delete(buildBrowserPayloadCachePath(path, format)))
+    .then(cache => Promise.all(resolveBrowserPayloadCacheIdentities({ path, originalName }).map(identity => cache.delete(buildBrowserPayloadCachePath(identity, format)))))
     .catch(() => void 0)
 }
 
@@ -243,7 +245,7 @@ export function clearPendingSpatialCaptureAsset(path: unknown): void {
   if (!key) return
   const pending = pendingSpatialCaptureAssetsByPath.get(key)
   pendingSpatialCaptureAssetsByPath.delete(key)
-  if (pending) deleteBrowserPayloadCache(key, pending.format)
+  if (pending) deleteBrowserPayloadCache(key, pending.format, pending.originalName)
 }
 
 export function hasPendingSpatialCaptureAsset(path: unknown): boolean {
@@ -299,15 +301,9 @@ function readHardwareConcurrency(): number {
   return Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0
 }
 
-export function resolveSpatialCapturePointBudget(): number {
-  return resolveAdaptiveSpatialCaptureBudget(LOW_MEMORY_SPATIAL_CAPTURE_POINT_BUDGET, DEFAULT_SPATIAL_CAPTURE_POINT_BUDGET, HIGH_MEMORY_SPATIAL_CAPTURE_POINT_BUDGET)
-}
-export function resolveSpatialCapturePreviewPointBudget(): number {
-  return resolveAdaptiveSpatialCaptureBudget(LOW_MEMORY_SPATIAL_CAPTURE_PREVIEW_POINT_BUDGET, DEFAULT_SPATIAL_CAPTURE_PREVIEW_POINT_BUDGET, HIGH_MEMORY_SPATIAL_CAPTURE_PREVIEW_POINT_BUDGET)
-}
-export function resolveSpatialCaptureParsePointLimit(): number {
-  return resolveAdaptiveSpatialCaptureBudget(LOW_MEMORY_SPATIAL_CAPTURE_PARSE_POINT_LIMIT, DEFAULT_SPATIAL_CAPTURE_PARSE_POINT_LIMIT, HIGH_MEMORY_SPATIAL_CAPTURE_PARSE_POINT_LIMIT)
-}
+export function resolveSpatialCapturePointBudget(): number { return resolveAdaptiveSpatialCaptureBudget(LOW_MEMORY_SPATIAL_CAPTURE_POINT_BUDGET, DEFAULT_SPATIAL_CAPTURE_POINT_BUDGET, HIGH_MEMORY_SPATIAL_CAPTURE_POINT_BUDGET) }
+export function resolveSpatialCapturePreviewPointBudget(): number { return resolveAdaptiveSpatialCaptureBudget(LOW_MEMORY_SPATIAL_CAPTURE_PREVIEW_POINT_BUDGET, DEFAULT_SPATIAL_CAPTURE_PREVIEW_POINT_BUDGET, HIGH_MEMORY_SPATIAL_CAPTURE_PREVIEW_POINT_BUDGET) }
+export function resolveSpatialCaptureParsePointLimit(): number { return resolveAdaptiveSpatialCaptureBudget(LOW_MEMORY_SPATIAL_CAPTURE_PARSE_POINT_LIMIT, DEFAULT_SPATIAL_CAPTURE_PARSE_POINT_LIMIT, HIGH_MEMORY_SPATIAL_CAPTURE_PARSE_POINT_LIMIT) }
 
 function resolveAdaptiveSpatialCaptureBudget(low: number, fallback: number, high: number): number {
   const memoryGb = readDeviceMemoryGb()

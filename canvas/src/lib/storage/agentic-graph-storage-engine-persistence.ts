@@ -5,6 +5,7 @@ import type {
   AgenticGraphStorageEngineOutboxRecord,
   AgenticGraphStorageEnginePersistence,
   AgenticGraphStorageEnginePersistenceState,
+  AgenticGraphStorageEngineUsage,
   StoredEngineRecord,
 } from './agentic-graph-storage-engine-persistence-contract'
 import {
@@ -28,6 +29,7 @@ export type {
   AgenticGraphStorageEngineOutboxRecord,
   AgenticGraphStorageEnginePersistence,
   AgenticGraphStorageEnginePersistenceState,
+  AgenticGraphStorageEngineUsage,
   AgenticGraphStorageEngineRecordWrite,
 } from './agentic-graph-storage-engine-persistence-contract'
 
@@ -61,6 +63,11 @@ class AgenticGraphStorageEngineDexie extends Dexie {
 
 const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer =>
   bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer
+const storageUsageEncoder = new TextEncoder()
+const estimateStoredJsonBytes = (value: unknown): number => {
+  const serialized = JSON.stringify(value)
+  return serialized ? storageUsageEncoder.encode(serialized).byteLength : 0
+}
 
 
 export const createAgenticGraphStorageEnginePersistence = async (args: {
@@ -171,6 +178,41 @@ export const createAgenticGraphStorageEnginePersistence = async (args: {
     withMemoryMutation,
     readOrFallback,
   })
+
+  const collectUsage = async (
+    indexed: boolean,
+    scope: { namespace: string; workspaceId: string },
+  ): Promise<Omit<AgenticGraphStorageEngineUsage, 'scope' | 'mode' | 'status' | 'measuredAtMs' | 'estimatedLogicalBytes' | 'originStorage'>> => {
+    const usage = {
+      records: { entries: 0, estimatedBytes: 0 },
+      outbox: { entries: 0, estimatedBytes: 0 },
+      binaries: { entries: 0, bytes: 0 },
+    }
+    const addRecord = (record: StoredEngineRecord): void => {
+      usage.records.entries += 1
+      usage.records.estimatedBytes += estimateStoredJsonBytes(record.value) + 64 + (record.namespace.length + record.id.length) * 2
+    }
+    const addOutbox = (record: AgenticGraphStorageEngineOutboxRecord): void => {
+      usage.outbox.entries += 1
+      usage.outbox.estimatedBytes += estimateStoredJsonBytes(record) + 64
+    }
+    const addBinary = (manifest: StoredBinaryManifest | AgenticGraphStorageEngineBinaryRecord): void => {
+      usage.binaries.entries += 1
+      usage.binaries.bytes += manifest.byteLength
+    }
+    if (indexed) {
+      await Promise.all([
+        raw.engineRecords.where('namespace').equals(scope.namespace).each(addRecord),
+        raw.engineOutbox.where('workspaceId').equals(scope.workspaceId).each(addOutbox),
+        raw.binaryManifests.where('namespace').equals(scope.namespace).each(addBinary),
+      ])
+    } else {
+      Array.from(memoryRecords.values()).filter(record => record.namespace === scope.namespace).forEach(addRecord)
+      Array.from(memoryOutbox.values()).filter(record => record.workspaceId === scope.workspaceId).forEach(addOutbox)
+      Array.from(memoryBinary.values()).filter(record => record.namespace === scope.namespace).forEach(addBinary)
+    }
+    return usage
+  }
 
   return {
     records: {
@@ -381,6 +423,26 @@ export const createAgenticGraphStorageEnginePersistence = async (args: {
     persistence: {
       getState() {
         return { ...state }
+      },
+      async getUsage(scopeValue) {
+        const [namespace, workspaceId] = assertStorageNamespaceAndId(scopeValue.namespace, scopeValue.workspaceId)
+        const scope = { namespace, workspaceId }
+        const usage = await readOrFallback(() => collectUsage(true, scope), () => collectUsage(false, scope))
+        let originStorage = { usageBytes: null as number | null, quotaBytes: null as number | null }
+        try {
+          const estimate = typeof navigator !== 'undefined' && navigator.storage?.estimate
+            ? await navigator.storage.estimate() : null
+          originStorage = { usageBytes: estimate?.usage ?? null, quotaBytes: estimate?.quota ?? null }
+        } catch { void 0 }
+        return {
+          scope,
+          ...usage,
+          mode: state.mode,
+          status: state.status,
+          estimatedLogicalBytes: usage.records.estimatedBytes + usage.outbox.estimatedBytes + usage.binaries.bytes,
+          originStorage,
+          measuredAtMs: Date.now(),
+        }
       },
     },
     async close() {
