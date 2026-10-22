@@ -4,6 +4,18 @@ export type AgenticGraphStorageEnginePersistenceState = {
   error: string | null
 }
 
+export type AgenticGraphStorageEngineUsage = {
+  scope: { namespace: string; workspaceId: string }
+  mode: 'indexeddb' | 'memory'
+  status: 'active' | 'degraded'
+  records: { entries: number; estimatedBytes: number }
+  outbox: { entries: number; estimatedBytes: number }
+  binaries: { entries: number; bytes: number }
+  estimatedLogicalBytes: number
+  originStorage: { usageBytes: number | null; quotaBytes: number | null }
+  measuredAtMs: number
+}
+
 export type AgenticGraphStorageEngineOutboxKind = 'git-operation' | 'file-transfer'
 
 export type AgenticGraphStorageEngineOutboxRecord = {
@@ -104,6 +116,7 @@ export type AgenticGraphStorageEnginePersistence = {
   }
   persistence: {
     getState(): AgenticGraphStorageEnginePersistenceState
+    getUsage?(scope: { namespace: string; workspaceId: string }): Promise<AgenticGraphStorageEngineUsage>
   }
   close(): Promise<void>
   remove(): Promise<void>
