@@ -1,7 +1,6 @@
 import React from 'react'
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { FloatingPanelCatalogHeader, floatingPanelCatalogBodyClassName, floatingPanelCatalogSurfaceClassName } from '@/lib/ui/floatingPanelCatalogLayout'
-import { DocumentInsights } from './DocumentInsights'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useCommandMenuRichMediaInventory } from '@/lib/command-menu/commandMenuRichMediaInventory'
 import { MediaCatalogModeControls } from '@/features/command-menu/MediaCatalogModeControls'
@@ -29,7 +28,6 @@ export default function FloatingPreviewPanel() {
     <section aria-label="Preview Panel" className={floatingPanelCatalogSurfaceClassName(typography.panelTextClass)}>
       <FloatingPanelCatalogHeader title="Preview Panel" subtitle={documentName || 'Current selection'} actionsLabel="Preview controls" />
       <section className={floatingPanelCatalogBodyClassName('space-y-2')} aria-label="Preview Panel content">
-        <DocumentInsights />
         <MediaCatalogModeControls mode={mode} onChange={setMode} context="preview" />
         <React.Suspense fallback={<p role="status">Loading preview…</p>}>
           {mode === 'voice-studio' ? <PreviewVoicePanel key={documentName} documentText={documentText} selectionText={selectedItem?.alt || selectedItem?.label || ''} /> : <>

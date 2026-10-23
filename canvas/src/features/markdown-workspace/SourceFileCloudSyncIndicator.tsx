@@ -1,10 +1,11 @@
 import React from 'react'
 import { Cloud, CloudOff, HardDrive, LoaderCircle } from 'lucide-react'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
+import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import {
   readCanonicalCloudDocumentSnapshot,
   resolveSourceFileCloudWorkspaceTarget,
-  syncWorkspaceEntryToCloudWorkspaceSnapshot,
+  syncWorkspaceEntriesToCloudWorkspaceSnapshot,
   SOURCE_FILE_CLOUD_SNAPSHOT_VERIFIED_EVENT,
   type SourceFileCloudWorkspaceSnapshotResult,
 } from '@/features/source-files/sourceFileCanonicalCloudSync'
@@ -31,6 +32,7 @@ const CLOUD_STATUS_REFRESH_INTERVAL_MS = 120_000
 
 export type SourceFileCloudSyncStatus =
   | 'checking'
+  | 'disabled'
   | 'local'
   | 'cloud'
   | 'uploading'
@@ -67,6 +69,17 @@ const readSupportedPathSignature = (entries: WorkspaceEntry[]): string =>
     .map(entry => entry.path)
     .sort()
     .join('|')
+
+const readSupportedFolderEntries = (entries: WorkspaceEntry[], folderPath: string): WorkspaceEntry[] => {
+  const folder = normalizeWorkspacePath(folderPath)
+  const prefix = folder === '/' ? '/' : `${folder}/`
+  return entries.filter(entry => entry.kind === 'file'
+    && normalizeWorkspacePath(entry.path).startsWith(prefix)
+    && Boolean(resolveSourceFileCloudWorkspaceTarget(entry.path)))
+}
+
+const folderActionKey = (folderPath: string): string => `folder:${normalizeWorkspacePath(folderPath)}`
+const ONLINE_SYNC_DISABLED_MESSAGE = 'Online sync is off. Enable it in Settings → Document Storage & Sync; this app origin must also be enabled by the storage service.'
 
 export const resolveSourceFileCloudSyncStatus = (args: {
   entry: WorkspaceEntry
@@ -183,16 +196,34 @@ export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
   }, [cloudSyncEnabled, pathSignature, refresh])
 
   const upload = React.useCallback(async (entry: WorkspaceEntry) => {
-    if (
-      !cloudSyncEnabled
-      || entry.kind !== 'file'
-      || !resolveSourceFileCloudWorkspaceTarget(entry.path)
-    ) return
+    const isFolder = entry.kind === 'folder'
+    const selectedEntries = isFolder
+      ? readSupportedFolderEntries(entries, entry.path)
+      : resolveSourceFileCloudWorkspaceTarget(entry.path) ? [entry] : []
+    const actionKey = isFolder ? folderActionKey(entry.path) : entry.path
+    if (!cloudSyncEnabled) {
+      pushUiToast({
+        id: `source-file-cloud-sync:${actionKey}`,
+        kind: 'warning',
+        message: ONLINE_SYNC_DISABLED_MESSAGE,
+      })
+      return
+    }
+    if (!selectedEntries.length) {
+      pushUiToast({
+        id: `source-file-cloud-sync:${actionKey}`,
+        kind: 'warning',
+        message: isFolder
+          ? 'This folder has no Markdown or Python files to sync.'
+          : 'Cloud sync supports Markdown and Python files outside chat-log.',
+      })
+      return
+    }
     const baseUrl = readAgenticGraphStorageBaseUrl()
     const workspaceId = readActiveAgenticGraphStorageWorkspaceId()
     const session = await readAgenticGraphStorageBrowserSession({ baseUrl, workspaceId })
     if (!applyBrowserSessionState(session)) {
-      if (session.status === 'unauthenticated') {
+      if (session.status === 'unauthenticated' || session.status === 'access-denied') {
         try {
           beginAgenticGraphStorageBrowserSignIn({ baseUrl })
         } catch (error) {
@@ -204,31 +235,43 @@ export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
             message,
           })
         }
+      } else {
+        pushUiToast({
+          id: `source-file-cloud-sync:${actionKey}`,
+          kind: 'warning',
+          message: session.message || 'Cloud sync is unavailable for this app origin. Check Document Storage & Sync settings; local files remain saved.',
+        })
       }
       return
     }
     setActionStateByPath(previous => {
       const next = new Map(previous)
-      next.set(entry.path, { status: 'uploading' })
+      next.set(actionKey, { status: 'uploading' })
       return next
     })
     try {
-      const result = await syncWorkspaceEntryToCloudWorkspaceSnapshot({ entry, workspaceId, baseUrl })
+      const results = await syncWorkspaceEntriesToCloudWorkspaceSnapshot({
+        entries: selectedEntries,
+        workspaceId,
+        baseUrl,
+      })
       setRemoteContentByCanonicalPath(previous => {
         const next = new Map(previous)
-        next.set(result.canonicalPath, result.syncedText)
+        for (const result of results) next.set(result.canonicalPath, result.syncedText)
         return next
       })
       setSnapshotStatus('ready')
       setActionStateByPath(previous => {
         const next = new Map(previous)
-        next.delete(entry.path)
+        next.delete(actionKey)
         return next
       })
       pushUiToast({
-        id: `source-file-cloud-sync:${entry.path}`,
+        id: `source-file-cloud-sync:${actionKey}`,
         kind: 'success',
-        message: `${entry.name || entry.path} saved as a shared cloud workspace snapshot.`,
+        message: isFolder
+          ? `${results.length} files from ${entry.name || entry.path} uploaded and verified in the shared cloud workspace.`
+          : `${entry.name || entry.path} saved as a shared cloud workspace snapshot.`,
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Cloud sync failed.'
@@ -236,11 +279,11 @@ export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
       if (!applyBrowserSessionState(currentSession)) {
         setActionStateByPath(previous => {
           const next = new Map(previous)
-          next.delete(entry.path)
+          next.delete(actionKey)
           return next
         })
         pushUiToast({
-          id: `source-file-cloud-sync:${entry.path}`,
+          id: `source-file-cloud-sync:${actionKey}`,
           kind: 'warning',
           message: currentSession.status === 'unauthenticated'
             ? 'Cloud sync requires sign-in. Your local copy remains saved.'
@@ -252,52 +295,85 @@ export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
       }
       setActionStateByPath(previous => {
         const next = new Map(previous)
-        next.set(entry.path, { status: 'error', message })
+        next.set(actionKey, { status: 'error', message })
         return next
       })
       pushUiToast({
-        id: `source-file-cloud-sync:${entry.path}`,
+        id: `source-file-cloud-sync:${actionKey}`,
         kind: 'warning',
         message,
       })
     }
-  }, [applyBrowserSessionState, cloudSyncEnabled, pushUiToast])
+  }, [applyBrowserSessionState, cloudSyncEnabled, entries, pushUiToast])
 
-  const readStatus = React.useCallback((entry: WorkspaceEntry): SourceFileCloudSyncStatus =>
-    resolveSourceFileCloudSyncStatus({
+  const readStatus = React.useCallback((entry: WorkspaceEntry): SourceFileCloudSyncStatus => {
+    if (!cloudSyncEnabled) return 'disabled'
+    return resolveSourceFileCloudSyncStatus({
       entry,
       remoteContentByCanonicalPath,
       snapshotStatus,
       actionState: actionStateByPath.get(entry.path),
-    }), [actionStateByPath, remoteContentByCanonicalPath, snapshotStatus])
+    })
+  }, [actionStateByPath, cloudSyncEnabled, remoteContentByCanonicalPath, snapshotStatus])
+
+  const readFolderStatus = React.useCallback((folderPath: string): SourceFileCloudSyncStatus => {
+    if (!cloudSyncEnabled) return 'disabled'
+    const children = readSupportedFolderEntries(entries, folderPath)
+    if (!children.length) return 'unsupported'
+    const actionState = actionStateByPath.get(folderActionKey(folderPath))
+    if (actionState?.status) return actionState.status
+    if (snapshotStatus === 'auth-required' || snapshotStatus === 'access-required'
+      || snapshotStatus === 'unavailable' || snapshotStatus === 'checking') return snapshotStatus
+    const allCloud = children.every(entry => {
+      const target = resolveSourceFileCloudWorkspaceTarget(entry.path)
+      return target && remoteContentByCanonicalPath.get(target.canonicalPath) === String(entry.text || '')
+    })
+    return allCloud ? 'cloud' : 'local'
+  }, [actionStateByPath, cloudSyncEnabled, entries, remoteContentByCanonicalPath, snapshotStatus])
+
+  const readFolderFileCount = React.useCallback((folderPath: string): number =>
+    readSupportedFolderEntries(entries, folderPath).length, [entries])
 
   const readError = React.useCallback((entry: WorkspaceEntry): string =>
-    actionStateByPath.get(entry.path)?.message || '', [actionStateByPath])
+    actionStateByPath.get(entry.kind === 'folder' ? folderActionKey(entry.path) : entry.path)?.message || '', [actionStateByPath])
 
-  return { readError, readStatus, upload }
+  return { readError, readFolderFileCount, readFolderStatus, readStatus, upload }
 }
 
-const buildIndicatorLabel = (entry: WorkspaceEntry, status: SourceFileCloudSyncStatus, error: string): string => {
+const buildIndicatorLabel = (entry: WorkspaceEntry, status: SourceFileCloudSyncStatus, error: string, fileCount: number): string => {
   const name = entry.name || entry.path
-  if (status === 'cloud') return `Cloud synced: ${name}. Upload current local copy again`
-  if (status === 'uploading') return `Uploading ${name} to the shared cloud workspace`
-  if (status === 'error') return `Cloud sync failed for ${name}. Retry shared cloud upload${error ? `: ${error}` : ''}`
-  if (status === 'auth-required') return `Cloud sync requires sign-in for ${name}. This file remains saved locally.`
-  if (status === 'access-required') return `Cloud sync access is required for ${name}. This file remains saved locally.`
-  if (status === 'unavailable') return `Local saved copy: ${name}. Sign in to sync this file.`
-  if (status === 'checking') return `Checking cloud sync for ${name}`
-  if (status === 'unsupported') return `Local file: ${name}. Cloud upload supports Markdown and Python`
-  return `Local saved copy: ${name}. Upload a shared cloud snapshot`
+  const folder = entry.kind === 'folder'
+  const item = folder ? `folder ${name}` : name
+  if (status === 'cloud') return folder
+    ? `Cloud synced: ${name} (${fileCount} files). Upload this folder again`
+    : `Cloud synced: ${name}. Upload current local copy again`
+  if (status === 'uploading') return folder
+    ? `Uploading ${fileCount} files from ${name} to the shared cloud workspace`
+    : `Uploading ${name} to the shared cloud workspace`
+  if (status === 'error') return `Cloud sync failed for ${item}. Retry shared cloud upload${error ? `: ${error}` : ''}`
+  if (status === 'auth-required') return `Cloud sync requires sign-in for ${item}. Local copies remain saved.`
+  if (status === 'access-required') return `Cloud sync access is required for ${item}. Local copies remain saved.`
+  if (status === 'unavailable') return `Cloud sync is unavailable for ${item}. Check storage settings; local copies remain saved.`
+  if (status === 'disabled') return ONLINE_SYNC_DISABLED_MESSAGE
+  if (status === 'checking') return `Checking cloud sync for ${item}`
+  if (status === 'unsupported') return folder
+    ? `Local folder: ${name}. No Markdown or Python files are available to sync.`
+    : `Local file: ${name}. Cloud upload supports Markdown and Python`
+  return folder
+    ? `Local folder: ${name}. Upload ${fileCount} Markdown or Python files as shared cloud snapshots`
+    : `Local saved copy: ${name}. Upload a shared cloud snapshot`
 }
 
 export function SourceFileCloudSyncIndicator(props: {
   entry: WorkspaceEntry
   status: SourceFileCloudSyncStatus
   error?: string
+  fileCount?: number
   onUpload: (entry: WorkspaceEntry) => void | Promise<void>
 }) {
   const { entry, status } = props
-  const label = buildIndicatorLabel(entry, status, String(props.error || ''))
+  const fileCount = props.fileCount || 0
+  const label = buildIndicatorLabel(entry, status, String(props.error || ''), fileCount)
   const disabled = status === 'checking'
     || status === 'uploading'
     || status === 'unsupported'
@@ -330,8 +406,12 @@ export function SourceFileCloudSyncIndicator(props: {
       data-source-file-cloud-status={status}
       disabled={disabled}
       onClick={() => {
-        if (status === 'unavailable' || status === 'access-required' || status === 'auth-required') {
-          beginAgenticGraphStorageBrowserSignIn({ baseUrl: readAgenticGraphStorageBaseUrl() })
+        if (status === 'auth-required' || status === 'access-required' || status === 'unavailable') {
+          try {
+            beginAgenticGraphStorageBrowserSignIn({ baseUrl: readAgenticGraphStorageBaseUrl() })
+          } catch {
+            void props.onUpload(entry)
+          }
         } else void props.onUpload(entry)
       }}
     >

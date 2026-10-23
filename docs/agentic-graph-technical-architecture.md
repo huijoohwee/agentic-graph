@@ -361,7 +361,6 @@ by the same generator and together form one projection.
 | `webpageImportIncludeImages` | boolean | store |  |  |
 | `webpageImportView` | string | store |  |  |
 | `webpageViewerScriptPolicy` | string | store |  |  |
-| `webpageArtifactFidelityMaxLevel` | number | store |  |  |
 | `websiteImportDiscoverSitemap` | boolean | store |  |  |
 | `websiteImportGenerateWebpageArtifactDocs` | boolean | store |  |  |
 | `websiteImportMaxPages` | number | store |  |  |

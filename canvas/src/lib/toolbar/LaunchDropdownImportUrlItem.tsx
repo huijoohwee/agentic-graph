@@ -252,7 +252,7 @@ export function LaunchDropdownImportUrlItem(props: {
       onClose()
       try {
         const { importWebsiteFromSourceFiles } = await import('@/features/source-files/websiteImportSelectionSession')
-        await importWebsiteFromSourceFiles(nextUrl, undefined, () => targetSkillsCommandsCommand(NATIVE_CRAWLER_COMMAND))
+        await importWebsiteFromSourceFiles(nextUrl, undefined, () => targetSkillsCommandsCommand(NATIVE_CRAWLER_COMMAND), { selectAllOnDiscover: true })
       } catch (error) {
         reportSkillsCommandsResolutionFailure(error)
       }
@@ -326,6 +326,7 @@ export function LaunchDropdownImportUrlItem(props: {
         <section id={importUrlControlsId} className="kg-launch-menu-children kg-click-expand-menu-children mt-1">
           <ImportUrlPrompt
             urlDraft={urlDraft}
+            enablePageCapture
             onChange={next => {
               setUrlDraft(next)
               setRateLimitRecoveryUrl(null)
@@ -367,7 +368,7 @@ export function LaunchDropdownImportUrlItem(props: {
                     <Download className={props.menuIconClass} aria-hidden="true" />
                   </button>
                 ) : null}
-                <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)} title="Crawl website headlessly" aria-label="Crawl website headlessly" data-kg-launch-import-url-crawler-target={NATIVE_CRAWLER_COMMAND} disabled={isImportingUrl || !urlDraft.trim()} onClick={() => { void runWebsiteCrawl(urlDraft) }}>
+                <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)} title="Index the site and select up to 500 pages to import" aria-label="Index and import website pages" data-kg-launch-import-url-crawler-target={NATIVE_CRAWLER_COMMAND} disabled={isImportingUrl || !urlDraft.trim()} onClick={() => { void runWebsiteCrawl(urlDraft) }}>
                   <Globe className={props.menuIconClass} aria-hidden="true" />
                 </button>
               </>

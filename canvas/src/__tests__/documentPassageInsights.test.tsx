@@ -4,7 +4,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
-import DocumentPassageInsights from '@/features/panels/views/DocumentPassageInsights'
+import DocumentPassageInsights from '@/components/DashboardCanvas/DocumentPassageInsights'
 import { applyDocumentPassageLayer, registerDocumentInsightsSource } from '@/features/markdown-workspace/documentInsightsRuntime'
 import type { GraphData } from '@/lib/graph/types'
 import { indexDocumentSignals } from '@/lib/websites/signalTokens'
@@ -99,8 +99,8 @@ test('explicit layers preserve authored graphs and reject wrong-source, stale an
 })
 
 test('native document inspector exposes passage analysis lazily and uses its source navigation', async () => {
-  const { DocumentInsights } = await import('@/features/panels/views/DocumentInsights')
-  await import('@/features/panels/views/DocumentKeywordInsights')
+  const { default: DashboardDocumentInsights } = await import('@/components/DashboardCanvas/DocumentInsightsDashboard')
+  await import('@/components/DashboardCanvas/DocumentKeywordInsights')
   const env = initJsdomHarness(), host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host), visited: number[] = []
@@ -119,7 +119,7 @@ test('native document inspector exposes passage analysis lazily and uses its sou
   }
   Object.defineProperty(globalThis, 'Worker', { configurable: true, value: TestWorker })
   try {
-    await act(async () => root.render(<DocumentInsights />))
+    await act(async () => root.render(<DashboardDocumentInsights />))
     assert.equal(started, 0)
     assert.equal(host.querySelector('[aria-label="Passage insights"]'), null)
     const outer = host.querySelector('details')!

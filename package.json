@@ -30,7 +30,8 @@
     "mermaid@12.2.0": {
       "dompurify": "3.4.17"
     },
-    "markdown-it": "14.3.1"
+    "markdown-it": "14.3.3",
+    "vite": "^6.4.4"
   },
   "scripts": {
     "agent-mission:check": "node --test scripts/__tests__/workflow-archive-bridge.test.mjs scripts/__tests__/agent-mission-stages.test.mjs && npm -C canvas run test:ci:unit -- agentReady.missionControl.projection agentReady.webMcpRuntime.durableRun && node canvas/scripts/run_agent_mission_browser_smoke.mjs",
@@ -163,7 +164,7 @@
     "storage:relay:test": "TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test --test-concurrency=1 cloudflare/workers/agentic-graph-storage/storage-relay/*.test.ts cloudflare/workers/agentic-graph-storage/storageRelayRuntime.test.ts cloudflare/workers/agentic-graph-storage/storageOAuth.test.ts",
     "storage:shared-node:pbt": "TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test --test-concurrency=1 cloudflare/workers/agentic-graph-storage/__pbt__/*.pbt.test.mjs",
     "storage:relay:env:check": "node scripts/check-storage-relay-env.mjs",
-    "storage:worker:types": "npx --yes wrangler@latest types --config=cloudflare/workers/agentic-graph-storage/wrangler.toml --include-runtime=false --env-interface=AgenticGraphStorageBindings cloudflare/workers/agentic-graph-storage/worker-configuration.d.ts",
+    "storage:worker:types": "wrangler types --config=cloudflare/workers/agentic-graph-storage/wrangler.toml --include-runtime=false --env-interface=AgenticGraphStorageBindings cloudflare/workers/agentic-graph-storage/worker-configuration.d.ts",
     "storage:worker:types:check": "npm run storage:worker:types -- --check",
     "payment:stripe:configure": "node ./scripts/configure-stripe-payment-worker.mjs",
     "payment:stripe:readiness": "node ./scripts/check-stripe-payment-readiness.mjs",
@@ -345,7 +346,7 @@
     "@x402/hono": "^2.13.0",
     "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/2ece094c096c67aec5b7f44afe6f84f5520333a2",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.13.7",
+    "hono": "^4.13.11",
     "js-yaml": "^4.3.2",
     "jsonwebtoken": "9.0.2",
     "ripple-address-codec": "5.0.1",
@@ -358,7 +359,7 @@
     "fake-indexeddb": "^6.2.5",
     "fast-check": "3.23.2",
     "typescript": "5.9.3",
-    "vitest": "4.1.11",
+    "vitest": "4.1.12",
     "wrangler": "4.151.1",
     "x402-xrpl": "0.3.2",
     "xrpl": "4.5.0",

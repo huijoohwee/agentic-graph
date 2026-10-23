@@ -4,7 +4,7 @@ import { boundedKeywordText, collectKeywordEvidence } from '@/lib/semantic-mode/
 import { normalizeEntityKey } from '@/lib/graph/textAnalysis/utils'
 import { hashText } from '@/features/parsers/hash'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { jumpToDocumentInsight, selectDocumentKeyword, type DocumentInsightsSource } from '@/features/markdown-workspace/documentInsightsRuntime'
+import { jumpToDocumentInsight, documentInsightsJumpFailureMessage, selectDocumentKeyword, type DocumentInsightsSource } from '@/features/markdown-workspace/documentInsightsRuntime'
 
 /** Local text inspection. Source identity and navigation belong to the caller. */
 export default function DocumentKeywordInsights({ source }: { source: DocumentInsightsSource }) {
@@ -33,7 +33,7 @@ export default function DocumentKeywordInsights({ source }: { source: DocumentIn
     const ids = new Set([selectedNodeId, ...selectedNodeIds])
     const match = analysis.labels?.find(([key]) => ids.has(`kw:entity:${hashText(key)}`))
     if (match) { setSelected(match[0]); selectDocumentKeyword(source, null) }
-  }, [selectedNodeId, selectedNodeIds, analysis])
+  }, [selectedNodeId, selectedNodeIds, analysis, source])
   const chosenKey = analysis.labels?.some(([key]) => key === selected) ? selected : analysis.labels?.[0]?.[0]
   const chosen = chosenKey ? analysis.evidence?.byKey.get(chosenKey) : null
   const candidate = analysis.candidates?.find(item => item.key === chosenKey)
@@ -57,7 +57,7 @@ export default function DocumentKeywordInsights({ source }: { source: DocumentIn
         <ol aria-label="Keyword source contexts" className="max-h-56 space-y-2 overflow-auto">
           {chosen.contexts.map(context => <li key={context.start} className="rounded border p-2">
             <p className="break-words whitespace-pre-wrap">{context.text}</p>
-            <button type="button" className="underline" onClick={() => setStatus(jumpToDocumentInsight(source, context.line) ? `Source line ${context.line} selected.` : 'Source changed. Choose a current match.')}>Jump to source · line {context.line}</button>
+            <button type="button" className="underline" onClick={() => setStatus(jumpToDocumentInsight(source, context.line) ? `Source line ${context.line} selected.` : documentInsightsJumpFailureMessage(source))}>Jump to source · line {context.line}</button>
           </li>)}
         </ol>
         {!chosen.frequency ? <p>No complete-token matches in the scanned source.</p> : null}

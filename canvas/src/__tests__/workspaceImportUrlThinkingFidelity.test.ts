@@ -4,10 +4,33 @@ import { resolve } from 'node:path'
 import { plainTextToMarkdown } from '@/lib/markdown/plainTextToMarkdown'
 import { restoreWebpageMarkdownSyntaxFidelity } from '@/lib/markdown/webpageMarkdownSyntaxFidelity'
 import { chooseDomRecoveredMarkdown } from '@/features/markdown-workspace/workspaceImport/webpageMarkdownFidelity'
+import { buildWorkspaceUrlContentCacheKey } from '@/features/markdown-workspace/workspaceImport/urlContentKey'
+import { uiImportWebpageSettingsRegistry } from '@/features/settings/registry-ui.import-webpage'
+
+export function testWorkspaceImportUrlChoosesFidelityWithoutAUserSetting(): void {
+  if (uiImportWebpageSettingsRegistry.some(setting => setting.key === 'webpageArtifactFidelityMaxLevel')) {
+    throw new Error('expected webpage import fidelity to be automatic, without a setting selector')
+  }
+
+  const cacheKey = (legacyPreference: number) => buildWorkspaceUrlContentCacheKey({
+    normalizedUrl: 'https://example.com/article',
+    mode: 'import',
+    viewHint: '',
+    canvas2dRenderer: null,
+    storeSnapshot: {
+      webpageImportIncludeImages: true,
+      webpageImportView: 'html',
+      webpageArtifactFidelityMaxLevel: legacyPreference,
+    },
+  })
+  if (cacheKey(1) !== cacheKey(4)) {
+    throw new Error('expected a legacy fidelity setting to have no effect on URL import cache identity')
+  }
+}
 
 export function testWorkspaceImportUrlThinkingUsesGenericToggleHints(): void {
   const source = readFileSync(
-    resolve(process.cwd(), 'src', 'features', 'markdown-workspace', 'workspaceImport', 'urlContent.ts'),
+    resolve(process.cwd(), 'src', 'features', 'markdown-workspace', 'workspaceImport', 'webpageMarkdownFidelity.ts'),
     'utf8',
   )
   for (const hint of ['Show thinking', 'Show reasoning', 'View thinking', 'View reasoning']) {

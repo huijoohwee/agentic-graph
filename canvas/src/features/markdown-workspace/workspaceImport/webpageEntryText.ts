@@ -4,6 +4,8 @@ import { upsertWebpageFrontmatterMeta } from '@/lib/markdown/frontmatter'
 import { extractUpstreamUrlFromMarkdownLocalProxyUrl } from '@/lib/markdown-core/ui/mediaProxyUrl'
 import { normalizeSemanticHtmlContainers } from '@/lib/html/semanticHtml'
 import { normalizeWebpageCardAndListBlocks } from './htmlTextFallback'
+import { restoreEncodedBlockquotePrefix } from '@/lib/markdown/markdownStructuralEntities'
+import { restoreWebpageMarkdownSyntaxFidelity } from '@/lib/markdown/webpageMarkdownSyntaxFidelity'
 import { yamlBlockScalar, yamlQuote } from './yaml'
 
 type WebsiteImportMeta = {
@@ -84,6 +86,25 @@ const decodeLooseHtmlEntities = (text: string): string => {
     .replace(/&quot\s*;?/gi, '"')
     .replace(/&apos\s*;?/gi, "'")
   return next
+}
+
+const decodeMarkdownEntitiesOutsideFencedCode = (text: string): string => {
+  const lines = String(text || '').split(/\r?\n/g)
+  let fence: { marker: '`' | '~'; length: number } | null = null
+  return lines.map(line => {
+    const delimiter = line.match(/^\s*(`{3,}|~{3,})/u)?.[1] || ''
+    if (fence) {
+      const closingDelimiter = line.match(/^\s*(`+|~+)[\t ]*$/u)?.[1] || ''
+      const closesFence = closingDelimiter[0] === fence.marker && closingDelimiter.length >= fence.length
+      if (closesFence) fence = null
+      return line
+    }
+    if (delimiter) {
+      fence = { marker: delimiter[0] as '`' | '~', length: delimiter.length }
+      return line
+    }
+    return decodeLooseHtmlEntities(restoreEncodedBlockquotePrefix(line))
+  }).join('\n')
 }
 
 const normalizeLocalProxyUrlsInMarkdown = (text: string): string => {
@@ -307,7 +328,7 @@ const normalizeProxyMarkdownLinks = (text: string): string => {
 }
 
 const normalizeWorkspaceWebpageEntryBodyText = (text: string): string => {
-  const decoded = decodeLooseHtmlEntities(String(text || ''))
+  const decoded = decodeMarkdownEntitiesOutsideFencedCode(String(text || ''))
   const proxyNormalized = normalizeLocalProxyUrlsInMarkdown(decoded)
   const autolinkNormalized = normalizeAutolinksToCardsInMarkdown(proxyNormalized)
   const mediaDestinationsNormalized = normalizeProxyMarkdownMediaDestinations(autolinkNormalized)
@@ -316,7 +337,7 @@ const normalizeWorkspaceWebpageEntryBodyText = (text: string): string => {
   const htmlMediaMarkdownNormalized = normalizeHtmlMediaTagsToMarkdown(semanticHtmlNormalized)
   const linkedMediaNormalized = normalizeLinkedMarkdownMediaWrappers(htmlMediaMarkdownNormalized)
   const proxyLinksNormalized = normalizeProxyMarkdownLinks(linkedMediaNormalized)
-  return normalizeLocalProxyUrlsInMarkdown(proxyLinksNormalized)
+  return restoreWebpageMarkdownSyntaxFidelity(normalizeLocalProxyUrlsInMarkdown(proxyLinksNormalized))
 }
 
 export function buildWebpageWorkspaceEntryStubText(args: {
@@ -383,7 +404,10 @@ export function buildWebpageWorkspaceEntryTextFromUpstreamMarkdown(args: {
       ? args.fidelityLevel
       : 0
   const includeImages = args.includeImages === true ? true : args.includeImages === false ? false : null
-  const upstreamSanitized = sanitizeImportedMarkdownText(String(args.upstreamMarkdown || ''), { sourceUrl: url }).text
+  const upstreamSanitized = sanitizeImportedMarkdownText(String(args.upstreamMarkdown || ''), {
+    sourceUrl: url,
+    preserveBodyFidelity: args.preserveBodyFidelity === true,
+  }).text
   const strippedUpstream = (() => {
     const t = String(upstreamSanitized || '')
     if (!t.startsWith('---')) return t

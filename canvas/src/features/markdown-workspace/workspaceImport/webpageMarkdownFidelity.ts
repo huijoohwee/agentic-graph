@@ -1,7 +1,77 @@
 import { looksLikeWebpageShellText, pruneWebpageChromeText } from '@/lib/websites/webpageShellHeuristics'
+import { exportWebpageDomViaHiddenIframe } from '@/lib/websites/webpageDomExport'
+import { extractHtmlTextForShellProbe, extractWorkspaceWebpageHtmlTitle, looksLikeHydrationShellHtml } from './urlContentShell'
+import { looksLikeJsShellText } from './urlContentHeuristics'
+import { hasCollapsedWebpageDisclosures } from '@/lib/websites/webpageDisclosureExpansion'
+
+const AUTHENTICATION_PAGE_TITLE_PATTERN = /\b(?:sign[\s-]*in|log[\s-]*in|log[\s-]*on|sign[\s-]*up|authentication required)\b/i
+export const AUTHENTICATED_WEBPAGE_IMPORT_MESSAGE =
+  'The page returned only an authentication or loading shell. Copy the rendered page in its browser tab and choose “Use copied page”, or connect the API-native browser runtime, then retry.'
+
+export const looksLikeAuthenticationPageText = (title: string, visibleText: string): boolean =>
+  AUTHENTICATION_PAGE_TITLE_PATTERN.test(String(title || '')) && String(visibleText || '').trim().length < 600
+
+export function looksLikeAuthenticationPageShell(html: string): boolean {
+  const source = String(html || '')
+  return looksLikeAuthenticationPageText(
+    extractWorkspaceWebpageHtmlTitle(source),
+    extractHtmlTextForShellProbe(source),
+  )
+}
+
+export type WorkspaceWebpageDomExportFn = typeof exportWebpageDomViaHiddenIframe
+let workspaceWebpageDomExportOverride: WorkspaceWebpageDomExportFn | null = null
+export const SHARE_THINKING_CLICK_TEXT_HINTS = ['Show thinking trajectory', 'Show thinking', 'Show reasoning', 'Show thought process', 'View thinking', 'View reasoning', 'Thinking', 'Reasoning', '\u663e\u793a\u601d\u8003\u8fc7\u7a0b']
+export const WORKSPACE_IMPORT_DOM_EXPORT_TIMEOUT_MS = 10_000
+
+export const readWorkspaceWebpageDomExport = (): WorkspaceWebpageDomExportFn =>
+  workspaceWebpageDomExportOverride || exportWebpageDomViaHiddenIframe
+
+const looksLikeInsufficientHtmlDomExport = (html: string): boolean => {
+  const raw = String(html || '').trim()
+  if (!raw || looksLikeHydrationShellHtml(raw)) return true
+  return looksLikeJsShellText(extractHtmlTextForShellProbe(raw))
+}
+
+const shouldRetryDomExportWithScripts = (args: {
+  mode: 'text' | 'html' | 'layout'
+  result: Awaited<ReturnType<WorkspaceWebpageDomExportFn>> | null
+}): boolean => {
+  const result = args.result
+  if (!result) return true
+  if (args.mode === 'text') {
+    const text = String(result.text || '').trim()
+    if (!text) return true
+    return text.length < 120 || looksLikeJsShellText(text)
+  }
+  if (args.mode === 'html') return looksLikeInsufficientHtmlDomExport(String(result.text || ''))
+  return false
+}
+
+export const exportDomPreferringScriptDisabled = async (
+  exportDom: WorkspaceWebpageDomExportFn,
+  args: Parameters<WorkspaceWebpageDomExportFn>[0],
+): Promise<Awaited<ReturnType<WorkspaceWebpageDomExportFn>> | null> => {
+  const expandDisclosures = args.expandDisclosures !== false && args.expandFaq !== false
+  const passive = await exportDom({ ...args, preferScriptDisabled: true })
+  if (
+    expandDisclosures && args.mode === 'html'
+    && hasCollapsedWebpageDisclosures(String(passive?.text || ''))
+  ) {
+    const active = await exportDom({ ...args, preferScriptDisabled: false, expandDisclosures: true })
+    return active || passive
+  }
+  if (!shouldRetryDomExportWithScripts({ mode: args.mode, result: passive })) return passive
+  const active = await exportDom({ ...args, preferScriptDisabled: false })
+  return active || passive
+}
+
+export function setWorkspaceWebpageDomExportForTests(fn: WorkspaceWebpageDomExportFn | null): void {
+  workspaceWebpageDomExportOverride = fn
+}
 
 export const WORKSPACE_WEBPAGE_MARKDOWN_REFRESH_MAX_CHARS = 220_000
-export const WORKSPACE_WEBPAGE_MARKDOWN_IMPORT_MAX_CHARS = 1_500_000
+export const WORKSPACE_WEBPAGE_MARKDOWN_IMPORT_MAX_CHARS = 10_000_000
 
 type WebpageMarkdownCoverageMode = 'import' | 'refresh'
 
@@ -257,6 +327,68 @@ export function looksLikeMostlyTitleOnlyMarkdown(markdown: string, title?: strin
   if (!normalizedMarkdown || !normalizedTitle) return false
   if (normalizedMarkdown.length > 120) return false
   return normalizedMarkdown === normalizedTitle
+}
+
+export function hasRunOfEmptyMarkdownSections(markdown: string): boolean {
+  let previousHeadingLevel = 0
+  let adjacentEmptyHeadings = 0
+  let hasBodySinceHeading = false
+  for (const line of stripMarkdownFrontmatterForCoverage(String(markdown || '')).split(/\r?\n/)) {
+    const normalized = line.trim()
+    if (!normalized) continue
+    const heading = normalized.match(/^(#{1,6})\s+\S/)
+    if (!heading) {
+      hasBodySinceHeading = true
+      adjacentEmptyHeadings = 0
+      continue
+    }
+    const level = heading[1]!.length
+    adjacentEmptyHeadings = level === previousHeadingLevel && !hasBodySinceHeading
+      ? adjacentEmptyHeadings + 1
+      : 1
+    previousHeadingLevel = level
+    hasBodySinceHeading = false
+    if (adjacentEmptyHeadings >= 2) return true
+  }
+  return false
+}
+
+function visibleWebpageContentText(value: string): string {
+  return stripMarkdownFrontmatterForCoverage(String(value || ''))
+    .replace(/<(iframe|object|embed)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, ' ')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/https?:\/\/\S+/gi, ' ')
+    .replace(/[`*_~>#|\\-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+export function looksLikeIncompleteWebpageHtml(html: string): boolean {
+  const source = String(html || '')
+  const hiddenEmbedPattern =
+    /<(?:iframe|object|embed)\b(?=[^>]*(?:\b(?:width|height)\s*=\s*["']?0\b|\b(?:width|height)\s*:\s*0(?:px)?\b|\bdisplay\s*:\s*none\b|\bvisibility\s*:\s*hidden\b|\baria-hidden\s*=\s*["']?true\b|\shidden(?:\s|=|>)))[^>]*>/i
+  const hasHiddenEmbed = hiddenEmbedPattern.test(source)
+  const hasTrackingPixel = /<img\b(?=[^>]*\bwidth\s*=\s*["']?1(?:["'\s>]|$))(?=[^>]*\bheight\s*=\s*["']?1(?:["'\s>]|$))[^>]*>/i.test(source)
+  if (!hasHiddenEmbed && !hasTrackingPixel) return false
+  const visibleText = extractHtmlTextForShellProbe(source).replace(/https?:\/\/\S+/gi, ' ').replace(/\s+/g, ' ').trim()
+  if (visibleText.length > 48) return false
+  const contentBlocks = source.matchAll(/<(p|h[1-6]|li|blockquote|pre)\b[^>]*>([\s\S]*?)<\/\1\s*>/gi)
+  for (const match of contentBlocks) {
+    if (visibleWebpageContentText(String(match[2] || '')).length >= 32) return false
+  }
+  return true
+}
+
+export function looksLikeIncompleteWebpageCapture(html: string, markdown: string): boolean {
+  if (!looksLikeIncompleteWebpageHtml(html)) return false
+  return visibleWebpageContentText(markdown).length <= 80
+}
+
+export function looksLikeIncompleteWebpageMarkdown(markdown: string): boolean {
+  const body = stripMarkdownFrontmatterForCoverage(String(markdown || '')).trim()
+  return looksLikeWebpageShellText(body) || looksLikeIncompleteWebpageCapture(body, body)
 }
 
 function isLikelyLowFidelityConvertedMarkdown(markdown: string): boolean {

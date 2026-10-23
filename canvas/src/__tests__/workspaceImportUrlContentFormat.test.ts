@@ -204,7 +204,7 @@ export async function testWorkspaceImportExtensionlessHtmlAuthShellRejectsWithou
   setWorkspaceWebpageDomExportForTests(async () => null)
   try {
     const rejected = await importWorkspaceUrl({ fs, urlRaw: url })
-      .then(() => false, error => String((error as { message?: unknown })?.message || error).includes('Authenticated browser session required'))
+      .then(() => false, error => String((error as { message?: unknown })?.message || error).includes('authentication or loading shell'))
     if (!rejected) throw new Error('Expected the default Import URL flow to reject the HTML authentication shell')
     const persistedFiles = (await fs.listEntries()).filter(entry => entry.kind === 'file')
     if (persistedFiles.length !== 0) throw new Error(`Expected authentication rejection to persist zero files, got ${persistedFiles.map(entry => entry.path).join(', ')}`)

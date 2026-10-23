@@ -8675,22 +8675,6 @@
     "notes": "Used by Flow and Storyboard renderers to decide pan drag and wheel zoom behavior.",
     "lineRange": "canvas/src/features/settings/registry-ui.graph-and-orchestrator.part2.ts:L222"
   },
-  "webpageArtifactFidelityMaxLevel": {
-    "area": "Import Webpage",
-    "modules": [
-      "canvas/src/features/settings/registry-ui.import-webpage.ts"
-    ],
-    "classes": [],
-    "functions": [
-      "setWebpageArtifactFidelityMaxLevel"
-    ],
-    "responsibility": "webpage artifact fidelity max level",
-    "imports": [
-      "zustand"
-    ],
-    "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.import-webpage.ts:L40"
-  },
   "webpageImportIncludeImages": {
     "area": "Import Webpage",
     "modules": [
@@ -8753,7 +8737,7 @@
       "zustand"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.import-webpage.ts:L76"
+    "lineRange": "canvas/src/features/settings/registry-ui.import-webpage.ts:L67"
   },
   "websiteImportDiscoverSitemap": {
     "area": "Import Webpage",
@@ -8769,7 +8753,7 @@
       "zustand"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.import-webpage.ts:L49"
+    "lineRange": "canvas/src/features/settings/registry-ui.import-webpage.ts:L40"
   },
   "websiteImportGenerateWebpageArtifactDocs": {
     "area": "Import Webpage",
@@ -8785,7 +8769,7 @@
       "zustand"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.import-webpage.ts:L58"
+    "lineRange": "canvas/src/features/settings/registry-ui.import-webpage.ts:L49"
   },
   "websiteImportMaxPages": {
     "area": "Import Webpage",
@@ -8801,7 +8785,7 @@
       "zustand"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.import-webpage.ts:L67"
+    "lineRange": "canvas/src/features/settings/registry-ui.import-webpage.ts:L58"
   },
   "websiteImportOutputDirRel": {
     "area": "Import Webpage",
@@ -8817,7 +8801,7 @@
       "zustand"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.import-webpage.ts:L85"
+    "lineRange": "canvas/src/features/settings/registry-ui.import-webpage.ts:L76"
   },
   "wheelZoomCtrlMetaBoostMultiplier": {
     "area": "Canvas Interaction (Wheel Zoom)",
