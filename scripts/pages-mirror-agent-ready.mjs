@@ -98,12 +98,15 @@ export const buildPagesMirrorAgentReadyPlan = async ({ agenticGraphRoot, mirrorR
   const videoFrameFunctionTarget = target('functions', '__video_frame.js')
   const videoFrameSharedProviderSource = source('grph-shared', 'dist', 'rich-media', 'providers.js')
   const videoFrameSharedProviderTarget = target('grph-shared', 'dist', 'rich-media', 'providers.js')
+  const resolveSource = createRequire(source('package.json')).resolve
 
   const productionRuntimeFunctionEntries = [
     { label: 'agentic-os integration helper', source: source('cloudflare', 'pages', 'runtime-integration-hub.mjs'), target: target('functions', 'api', '_integrationHub.js') },
     { label: 'agentic-graph graph API Pages Function', source: source('cloudflare', 'pages', 'runtime-graph.mjs'), target: target('functions', 'api', 'graph.js'), targetIntegrationHubSpecifier: './_integrationHub.js' },
     { label: 'agentic-os chat proxy Pages Function', source: source('cloudflare', 'pages', 'runtime-chat-proxy.mjs'), target: target('functions', '__chat_proxy', '[[path]].js'), targetIntegrationHubSpecifier: '../api/_integrationHub.js' },
     { label: 'agentic-os source evidence Pages Function', source: source('cloudflare', 'pages', 'agentic-os-source-evidence.mjs'), target: target('functions', 'agentic-os', 'api', 'observability-workspace', '[[path]].js') },
+    { label: 'agentic-os source evidence cost verifier', source: resolveSource('agentic-os/context/json'), target: target('functions', 'agentic-os', 'api', 'shared', 'json-contract.mjs') },
+    { label: 'agentic-os source evidence R2 cost gate helper', source: source('cloudflare', 'shared', 'r2-cost-gate.mjs'), target: target('functions', 'agentic-os', 'api', 'shared', 'r2-cost-gate.mjs'), sourceSpecifierReplacements: [["'agentic-os/context/json'", "'./json-contract.mjs'"]] },
   ]
 
   const agentReadyDocRouteTarget = target('functions', 'agentic-graph', 'doc', '[[path]].js')
@@ -190,7 +193,6 @@ export const buildPagesMirrorAgentReadyPlan = async ({ agenticGraphRoot, mirrorR
   const catalogImport = "import catalog from 'agentic-os/catalog/invocation.json' with { type: 'json' }"
   const durableBody = await fs.readFile(durableSource, 'utf8')
   if (durableBody.split(catalogImport).length !== 2) throw new Error('Durable catalog import changed')
-  const resolveSource = createRequire(source('package.json')).resolve
   const catalogBytes = await fs.readFile(resolveSource('agentic-os/catalog/invocation.json'), 'utf8')
   JSON.parse(catalogBytes)
   durableEntry.push(durableBody.replace(catalogImport, () => (

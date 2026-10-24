@@ -1,6 +1,7 @@
 import { type AgenticGraphStorageWorkerEnv } from './contract'
 import { readDb } from './db'
 import { readAgenticGraphStorageBrowserSessionConfiguration } from './storageBrowserSession'
+import { getZeroCostR2GateStatus } from '../../shared/r2-cost-gate.mjs'
 
 const hasCanvasRoomBinding = (value: unknown): boolean => {
   if (!value || typeof value !== 'object') return false
@@ -51,7 +52,10 @@ export const probeStorageCoreReadiness = async (env: AgenticGraphStorageWorkerEn
     if (authSchema !== 'ready') reasons.push('storage-auth-schema-unavailable')
   }
   const bucket = env.AGENTIC_OS_STORAGE_BLOB_BUCKET
-  const blobStorage = bucket && typeof bucket.get === 'function' && typeof bucket.put === 'function' ? 'ready' : 'missing'
+  const costGate = getZeroCostR2GateStatus(bucket)
+  const blobStorage = costGate === 'blocked' ? 'blocked'
+    : bucket && typeof bucket.get === 'function' && typeof bucket.put === 'function' ? 'ready' : 'missing'
+  if (blobStorage === 'blocked') reasons.push('storage-blob-provider-cost-evidence-unavailable')
   if (blobStorage === 'missing') reasons.push('storage-blob-binding-missing')
   return { scope: 'core', runtime: core.runtime, ok: reasons.length === 0,
     dependencies: { ...core.dependencies, authSchema, blobStorage }, reasons }

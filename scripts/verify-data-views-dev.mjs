@@ -9,6 +9,7 @@ import { chromium } from 'playwright'
 const SHA_PATTERN = /^[0-9a-f]{40}$/
 const DIGEST_PATTERN = /^[0-9a-f]{64}$/
 const APPLICATION_PATH = '/agentic-graph/'
+const BASE_DEMO_SOURCE_PIN_PATH = new URL('./agentic-base-demo-source.json', import.meta.url)
 const FIXTURE_TITLE = 'Agentic Base view smoke'
 const BASE_LAYOUTS = [
   { id: 'Table', label: 'Table View' },
@@ -112,6 +113,9 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
     assert.ok(await dashboardCards.count() > 0, 'Dashboard must render Base-owned dashboard cards')
     verifiedViews.push('Dashboard')
 
+    const baseDemoSource = JSON.parse(await fs.readFile(BASE_DEMO_SOURCE_PIN_PATH, 'utf8'))
+    await verifyAgenticBaseDemoRoute(page, base, baseDemoSource.revision)
+    verifiedViews.push('Base demo route')
     assert.deepEqual([...externalRequests], [], 'Dev browser must not request production or other cross-origin services')
     assert.deepEqual(pageErrors, [], 'Dev UI must not raise uncaught browser errors')
     const receipt = {
@@ -122,6 +126,7 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
       readinessMarkerDigest: createHash('sha256').update(markerBody).digest('hex'),
       csp,
       views: verifiedViews,
+      baseDemoRoute: { path: '/agentic-base/', sourceRevision: baseDemoSource.revision },
       fixture: { title: FIXTURE_TITLE, importedFromLocalFile: true, removedAfterRun: true },
       externalOriginsRequested: [...externalRequests],
       pageErrors,
@@ -135,6 +140,32 @@ export async function verifyDataViewsDev({ origin, releaseSha, manifestDigest, r
     await browser.close()
     await fs.rm(fixturePath, { force: true })
   }
+}
+
+async function verifyAgenticBaseDemoRoute(page, origin, sourceRevision) {
+  if (!SHA_PATTERN.test(String(sourceRevision || ''))) throw new Error('Base demo source pin is invalid')
+  const response = await page.goto(new URL('/agentic-base/', origin).href, {
+    waitUntil: 'domcontentloaded',
+    timeout: 45_000,
+  })
+  assert.equal(response?.status(), 200, 'Base demo route must return 200 on the isolated Dev origin')
+  assert.equal(new URL(page.url()).origin, origin, 'Base demo route must remain same-origin')
+  assert.equal(await page.title(), 'agentic-base local demo')
+  assert.equal(
+    await page.locator('meta[name="agentic-base-source-revision"]').getAttribute('content'),
+    sourceRevision,
+    'Base demo route must identify its exact source revision',
+  )
+  await page.getByRole('heading', { name: 'agentic-base', exact: true }).waitFor({ state: 'visible' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  assert.equal(
+    await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),
+    false,
+    'Base demo route must fit a 390px mobile viewport',
+  )
+  await page.getByRole('button', { name: 'Create local sample', exact: true }).click()
+  await page.locator('#projection').getByText('Plan the first integration', { exact: false })
+    .waitFor({ state: 'visible', timeout: 20_000 })
 }
 
 export async function ensureTwoDimensionalSurface(page) {

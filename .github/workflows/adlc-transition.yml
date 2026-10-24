@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: huijoohwee/agentic-os
-          ref: e1cf2c794ca8b8863cce20c267fbeae4639d2117
+          ref: da6d5c2b233e843e3fdf52361e45b8b0365637e3
           path: agentic-os
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020

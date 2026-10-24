@@ -3,7 +3,7 @@ import { createGraphHostRelayClass, routeGraphHostRelay } from "../../../mcp/age
 import { timingSafeTokenMatch } from "./agent-runtime-http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-
+import { createZeroCostR2Binding } from '../../shared/r2-cost-gate.mjs'
 import {
   buildAgenticGraphMcpToolDefinitions,
   AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
@@ -375,7 +375,10 @@ async function dispatchToolCall(
     AGENTIC_OS_PAYMENT_URL: env?.AGENTIC_OS_PAYMENT_URL,
     AGENTIC_OS_PAYMENT_API_KEY: env?.AGENTIC_OS_PAYMENT_API_KEY,
     AGENTIC_OS_MEDIA_BUCKET: env?.AGENTIC_OS_MEDIA_BUCKET,
-  }, { r2Client: env?.AGENTIC_OS_MEDIA_R2 });
+  }, { r2Client: createZeroCostR2Binding(env?.AGENTIC_OS_MEDIA_R2, {
+    bindingName: 'AGENTIC_OS_MEDIA_R2',
+    resourceName: 'unresolved:AGENTIC_OS_MEDIA_R2',
+  }) });
   const agentRuntime = createWorkersAiRunningAgentRuntime(env);
   // Single shared dispatch path (run-manifest-store.mjs) used by both the
   // Worker and the Node unit tests so the gate-enforcement + gated-persistence

@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Protected Release Runbook"
 id: "md:agentic-graph-acos-deploy-runbook"
 doc_type: "Release Runbook"
-version: "2.4.0"
-date: "2026-10-17"
+version: "2.5.0"
+date: "2026-10-24"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.release.runbook"
@@ -63,6 +63,14 @@ The protected production workflow currently:
 7. emits Deployment v1, State Reconciliation v1, Live Verification v2, and Publication v2
    receipts in that order; and
 8. closes `agentic-collaborative-release-lifecycle/v2` as the only authoritative terminal carrier.
+
+The verified Dev browser step also opens `/agentic-base/` from the exact Base revision pinned
+by `scripts/agentic-base-demo-source.json`. It checks the source-revision marker, same-origin
+assets, mobile-width overflow, and successful creation of a browser-local sample. The production
+mirror serves the same generated files at `/content/agentic-base`; generated Pages rules expose
+them at `/agentic-base/` and mark the app shell and service worker `no-store`. This route adds no
+Worker, D1, account, or remote-sync state. Rolling it back restores the previous static artifact;
+it does not erase browser-origin IndexedDB data.
 
 The release-scoped travel-mesh plan selects the Worker versions to activate; the protected
 workflow validates the bootstrap and preflights those units before mutation. The same consumed

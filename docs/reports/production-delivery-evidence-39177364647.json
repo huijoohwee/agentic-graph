@@ -1,0 +1,76 @@
+{
+  "schema": "agentic-graph-production-delivery-evidence/v1",
+  "status": "deployed-and-runtime-verified",
+  "repository": "github.com/huijoohwee/agentic-graph",
+  "release": {
+    "workflowRunId": "39177364647",
+    "workflowRunUrl": "https://github.com/huijoohwee/agentic-graph/actions/runs/39177364647",
+    "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39177364647#environment-production",
+    "sourceRevision": "0edd843ece4ba7c3ed9e318f7699570941e7d285",
+    "candidateDigest": "62add86af30cf2fc5e7064b5e36dff824b0a272ef3793fe73fa3fcfbb8771a81",
+    "lifecycleCandidateDigest": "ca5cbb2e067e244fa173cde2965b5c7d2d7479cf943077d7d2654e8fe889c8c5",
+    "targetDigest": "978b38723276f4c256352b5eb6c09e0266d77ba1c79e9933d455c1f3671de748",
+    "sourceReleaseReceiptDigest": "4a2beea7de7283b12e59a33328d25c34f5d210bcb92bca82a60ba387e077a8a7",
+    "deploymentReceiptDigest": "d28dd354378fbe2c4e856a5d1a4ad2c3bd013d69af7ca2a7afd72d0a6bc8f109",
+    "stateReconciliationReceiptDigest": "7436a9a7ccf6eca8ef4de8056420f34838754bcf414141eb7d561009f502fe0c",
+    "runtimeVerificationReceiptDigest": "6dd423f88f76c4ab64da2114581dc783ebe6a87f39e9bf52f94c0f4772fc7918",
+    "publicationReceiptDigest": "05c6dd78c955256c4c20fba97cab38d737009e4220f0e9e56c1659cabe402a3e",
+    "development": {
+      "status": "verified",
+      "exactCandidateDigest": "62add86af30cf2fc5e7064b5e36dff824b0a272ef3793fe73fa3fcfbb8771a81",
+      "verification": "Isolated Cloudflare Pages Dev deployment and browser smoke of the shared data views",
+      "project": "agentic-graph-dev",
+      "deploymentId": "e054cd48-33b0-4f21-af11-7e8ba666320e",
+      "deploymentUrl": "https://agentic-graph-dev.pages.dev",
+      "uiVerificationDigest": "43ccb4d4990850d26e35dcc18bd3f8a38d07a37bd55439fd6e469a6979c3c0fd",
+      "views": [
+        "Table",
+        "Multi-dimensional Table",
+        "Kanban",
+        "Calendar",
+        "Dashboard"
+      ]
+    },
+    "production": {
+      "status": "deployed-and-verified",
+      "deployedAt": "2026-10-18T23:50:41.564Z",
+      "verifiedAt": "2026-10-18T23:56:24.000Z",
+      "immutableDeploymentId": "d39a76e1-7e9a-4f88-add5-6990cc7ab32f",
+      "immutableDeploymentOrigin": "https://d39a76e1.joohwee.pages.dev",
+      "deployedArtifactDigest": "2d69e0337e6440e59dd48bee76810a91104d32fd97e38f58bc6c59b3d99b8020",
+      "rollbackTargetDigest": "7fba4f35267351fcb8429aa1c02095b92f67f5b95a1ad9420e04274687043154"
+    },
+    "storage": {
+      "status": "reconciled-and-verified",
+      "documentCount": 31,
+      "chunkCount": 10,
+      "graphSnapshotCount": 0,
+      "pathHashParity": true,
+      "contentParity": true
+    }
+  },
+  "sourceLanes": [
+    {
+      "ref": "agent/device-0232231d4a19/browser-history-job-history-fetch-rollforward",
+      "laneHead": "1dc59795b1cbcf26e123f242f30eceb7dc407a49",
+      "pullRequest": 1794,
+      "mergeRevision": "e67e2674b15c61bb726d5b15e3d85bb2de3dd906",
+      "paths": [
+        "scripts/__tests__/production-browser-preflight.test.mjs",
+        "scripts/production-browser-history.mjs"
+      ]
+    }
+  ],
+  "retainedEvidence": {
+    "lifecycleCarrierSha256": "218954c132401e2bed4cc0f717651ad57e6bbc1615e0a3a28acff7f541de441e",
+    "retentionManifestSha256": "9c9c4a6153fcf2107a6ef0e59a5dee8aeab3f3059d617c207c79c9883b1f54c6",
+    "retainedFileCount": 132,
+    "retainedArtifactCount": 3,
+    "devUiVerificationDigest": "43ccb4d4990850d26e35dcc18bd3f8a38d07a37bd55439fd6e469a6979c3c0fd",
+    "browserPreflightContextDigest": "2467121b97392d55513807d759a20c7cb04ea50bd6cbc5a97b2e4644b4655015"
+  },
+  "limits": {
+    "committedEvidence": "receipt digests, artifact identities and bounded runtime outcomes only",
+    "rawEvidence": "retained privately under the local 64 MiB lifecycle-retention budget; source workflow artifacts expire under the repository retention cap"
+  }
+}

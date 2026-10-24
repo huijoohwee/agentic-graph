@@ -22,6 +22,82 @@
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/browser-history-job-history-fetch-rollforward",
+      "laneHead": "1dc59795b1cbcf26e123f242f30eceb7dc407a49",
+      "paths": [
+        "scripts/__tests__/production-browser-preflight.test.mjs",
+        "scripts/production-browser-history.mjs"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "0edd843ece4ba7c3ed9e318f7699570941e7d285",
+      "candidateDigest": "62add86af30cf2fc5e7064b5e36dff824b0a272ef3793fe73fa3fcfbb8771a81",
+      "sourceReleaseReceiptDigest": "4a2beea7de7283b12e59a33328d25c34f5d210bcb92bca82a60ba387e077a8a7",
+      "deploymentReceiptDigest": "d28dd354378fbe2c4e856a5d1a4ad2c3bd013d69af7ca2a7afd72d0a6bc8f109",
+      "runtimeVerificationReceiptDigest": "6dd423f88f76c4ab64da2114581dc783ebe6a87f39e9bf52f94c0f4772fc7918",
+      "evidencePath": "docs/reports/production-delivery-evidence-39177364647.json",
+      "evidenceDigest": "f33240564f120b566247ee096ea466e1cf4f7c96a861abeb5300b2f7b6a11de0",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39177364647#environment-production",
+      "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/delivery-receipts-closeout",
+      "laneHead": "5c1308fb8ef87320fbecfe8a165eb173359f1bba",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json",
+        "docs/reports/production-delivery-evidence-39163971889.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "a3a017ab2de24e913259ac30166433aac9a862bc",
+      "candidateDigest": "0cc6be1894599cf256c82dbf2743ae70c9d6d45fbc0c9ec37d492e98b4025a55",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "scripts/production-mirror-artifact-entries.mjs",
+      "evidenceDigest": "8476c366817ea9297ece21dccce3285c126ee59112c8230cee6d11a455e81b9f",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1789",
+      "reason": "This lane contains only the delivery-disposition ledger and its compact report. Both paths are excluded from the product artifact by the production mirror artifact-entry allowlist; the exact Dev-to-Production candidate is bound by its separately retained lifecycle receipts."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/dev-promotion-edge-convergence",
+      "laneHead": "f4f496efd21d9b94754b55878998cbd30f67b94e",
+      "paths": [
+        "scripts/__tests__/dev-promotion-edge-convergence.test.mjs",
+        "scripts/run-pages-dev-promotion.mjs"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "ecbfe88dea2024f296b02329eca5f35f17d3210b",
+      "candidateDigest": "0cc6be1894599cf256c82dbf2743ae70c9d6d45fbc0c9ec37d492e98b4025a55",
+      "sourceReleaseReceiptDigest": "6cf44b1e2cd65da2a6998ec057224ee723dc023e2078c5352daae709f8ae962f",
+      "deploymentReceiptDigest": "0f3d8697417a8229aa0f61ef3343cf1c8d466f5eb5ff5b89c53c36ec90b3ceca",
+      "runtimeVerificationReceiptDigest": "d297f97ab40bc038eb5c96f2124b586fd2005c65705f056a3d39add44140f986",
+      "evidencePath": "docs/reports/production-delivery-evidence-39163971889.json",
+      "evidenceDigest": "57233ff9aa6ea6d7bc264c7a2ae6270808903d1e9fabab47d722bd7a9fbc2bd3",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39163971889#environment-production",
+      "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/dev-promotion-ui-convergence",
+      "laneHead": "616782e7a24eff81aacc0168aa957e3dedfa763d",
+      "paths": [
+        "scripts/__tests__/dev-promotion-ui-convergence.test.mjs",
+        "scripts/verify-data-views-dev.mjs"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "ecbfe88dea2024f296b02329eca5f35f17d3210b",
+      "candidateDigest": "0cc6be1894599cf256c82dbf2743ae70c9d6d45fbc0c9ec37d492e98b4025a55",
+      "sourceReleaseReceiptDigest": "6cf44b1e2cd65da2a6998ec057224ee723dc023e2078c5352daae709f8ae962f",
+      "deploymentReceiptDigest": "0f3d8697417a8229aa0f61ef3343cf1c8d466f5eb5ff5b89c53c36ec90b3ceca",
+      "runtimeVerificationReceiptDigest": "d297f97ab40bc038eb5c96f2124b586fd2005c65705f056a3d39add44140f986",
+      "evidencePath": "docs/reports/production-delivery-evidence-39163971889.json",
+      "evidenceDigest": "57233ff9aa6ea6d7bc264c7a2ae6270808903d1e9fabab47d722bd7a9fbc2bd3",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39163971889#environment-production",
+      "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/hackamap-delivery-disposition",
       "laneHead": "3aa1402bd7c4474bb48bad71bb1062fbaae767ae",
       "paths": [
@@ -103,6 +179,81 @@
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "disposition": "no-deploy",
+      "candidateDigest": "62add86af30cf2fc5e7064b5e36dff824b0a272ef3793fe73fa3fcfbb8771a81",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "ref": "agent/device-0232231d4a19/production-delivery-39177364647",
+      "laneHead": "1ba102296dd1c7d6aa4c8488f0eb25ec860e6604",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json",
+        "docs/reports/production-delivery-evidence-39177364647.json"
+      ],
+      "candidateRevision": "73949591f67a35612bbdb83c5c2742c563b9baa4",
+      "evidencePath": "docs/reports/production-delivery-evidence-39177364647.json",
+      "evidenceDigest": "f33240564f120b566247ee096ea466e1cf4f7c96a861abeb5300b2f7b6a11de0",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1795",
+      "reason": "PR #1795 records release receipts and delivery metadata only. The ledger and report are excluded from the product artifact; the separately authorized Production release is recorded in its own run."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/release-install-dependency-gate",
+      "laneHead": "2c6ed1967188187fd21556d1ab0a406bb3f13b63",
+      "paths": [
+        "scripts/__tests__/production-release-dependency-install.test.mjs",
+        "scripts/install-agentic-graph-dependencies.sh",
+        "scripts/install-production-release-dependencies.sh"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "ecbfe88dea2024f296b02329eca5f35f17d3210b",
+      "candidateDigest": "0cc6be1894599cf256c82dbf2743ae70c9d6d45fbc0c9ec37d492e98b4025a55",
+      "sourceReleaseReceiptDigest": "6cf44b1e2cd65da2a6998ec057224ee723dc023e2078c5352daae709f8ae962f",
+      "deploymentReceiptDigest": "0f3d8697417a8229aa0f61ef3343cf1c8d466f5eb5ff5b89c53c36ec90b3ceca",
+      "runtimeVerificationReceiptDigest": "d297f97ab40bc038eb5c96f2124b586fd2005c65705f056a3d39add44140f986",
+      "evidencePath": "docs/reports/production-delivery-evidence-39163971889.json",
+      "evidenceDigest": "57233ff9aa6ea6d7bc264c7a2ae6270808903d1e9fabab47d722bd7a9fbc2bd3",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39163971889#environment-production",
+      "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "disposition": "no-deploy",
+      "candidateDigest": "62add86af30cf2fc5e7064b5e36dff824b0a272ef3793fe73fa3fcfbb8771a81",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "ref": "agent/device-0232231d4a19/release-install-dependency-gate-delivery-closeout",
+      "laneHead": "08927d4da631e6ab8793ae0ebd4e79f55c300e8a",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json"
+      ],
+      "candidateRevision": "0edd843ece4ba7c3ed9e318f7699570941e7d285",
+      "evidencePath": "scripts/production-mirror-artifact-entries.mjs",
+      "evidenceDigest": "8476c366817ea9297ece21dccce3285c126ee59112c8230cee6d11a455e81b9f",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1791",
+      "reason": "The only changed path in PR #1791 is the delivery-disposition ledger. This ledger is excluded from the product artifact by the production mirror artifact allowlist; this lane performs no deployment."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/source-evidence-lookup-budget",
+      "laneHead": "d9ef3ca8f2c4dc99ddc50738d58f25a4d7f0d554",
+      "paths": [
+        ".github/actions/protected-ci-evidence/action.yml"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "ecbfe88dea2024f296b02329eca5f35f17d3210b",
+      "candidateDigest": "0cc6be1894599cf256c82dbf2743ae70c9d6d45fbc0c9ec37d492e98b4025a55",
+      "sourceReleaseReceiptDigest": "6cf44b1e2cd65da2a6998ec057224ee723dc023e2078c5352daae709f8ae962f",
+      "deploymentReceiptDigest": "0f3d8697417a8229aa0f61ef3343cf1c8d466f5eb5ff5b89c53c36ec90b3ceca",
+      "runtimeVerificationReceiptDigest": "d297f97ab40bc038eb5c96f2124b586fd2005c65705f056a3d39add44140f986",
+      "evidencePath": "docs/reports/production-delivery-evidence-39163971889.json",
+      "evidenceDigest": "57233ff9aa6ea6d7bc264c7a2ae6270808903d1e9fabab47d722bd7a9fbc2bd3",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/39163971889#environment-production",
+      "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-cba000d3779d/production-baseline-capture-fix",
       "laneHead": "e666e8f4514478d70c9dd09ea47331a1e0f8a972",
       "paths": [
@@ -160,5 +311,5 @@
       "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
     }
   ],
-  "receiptDigest": "8ebfa5df3d720d1a48b3751118f238108d930283fc76abfe49da1dba346d1488"
+  "receiptDigest": "6e496e86dc9261b33933148968d5543bc90449564216eacf00cb726a8102329e"
 }

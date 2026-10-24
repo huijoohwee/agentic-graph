@@ -11,6 +11,7 @@ import { StrytreeCreditLedgerActor, type StrytreeLedgerEnv } from './strytreeCre
 import { handleTravelAgencyRoute, isTravelAgencyRoute } from './travelAgency/orchestrator'
 import { NetSettlementStore, type NetSettlementWorkerEnv } from './travelAgency/netSettlement'
 import { readDb, type D1DatabaseLike } from '../shared/d1'
+import { withZeroCostR2Bindings } from '../../shared/r2-cost-gate.mjs'
 
 type HeadersRecord = Record<string, string>
 
@@ -96,7 +97,10 @@ const handlePaymentRequest = async (
 }
 
 export const createAgenticGraphPaymentWorker = () => ({
-  async fetch(request: Request, env: AgenticGraphPaymentWorkerEnv): Promise<Response> {
+  async fetch(request: Request, rawEnv: AgenticGraphPaymentWorkerEnv): Promise<Response> {
+    const env = withZeroCostR2Bindings(rawEnv, {
+      STRYTREE_MEDIA_BUCKET: 'agentic-strytree-media',
+    }) as AgenticGraphPaymentWorkerEnv
     if (request.method === 'OPTIONS') return noContent()
     const url = new URL(request.url)
     if (
@@ -124,7 +128,10 @@ export const createAgenticGraphPaymentWorker = () => ({
     }
   },
 
-  async queue(batch: QueueBatchLike, env: AgenticGraphPaymentWorkerEnv): Promise<void> {
+  async queue(batch: QueueBatchLike, rawEnv: AgenticGraphPaymentWorkerEnv): Promise<void> {
+    const env = withZeroCostR2Bindings(rawEnv, {
+      STRYTREE_MEDIA_BUCKET: 'agentic-strytree-media',
+    }) as AgenticGraphPaymentWorkerEnv
     const db = readDb(env)
     if (!db) {
       for (const message of batch.messages || []) {

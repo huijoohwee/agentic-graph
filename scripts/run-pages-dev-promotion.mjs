@@ -2,9 +2,13 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
+import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 import { prepareDevArtifact, runPagesProductionDeployment } from './pages-production-deployment.mjs'
 import { verifyDataViewsDev } from './verify-data-views-dev.mjs'
+
+export const DEV_UI_CONVERGENCE_ATTEMPTS = 2
+export const DEV_UI_CONVERGENCE_RETRY_DELAY_MS = 15_000
 
 export async function runPagesDevPromotion(env = process.env) {
   const evidenceDir = required(env, 'DEV_EVIDENCE_DIR')
@@ -83,7 +87,7 @@ export async function runPagesDevPromotion(env = process.env) {
     if (deploymentExitCode !== 0) throw new Error('Wrangler Pages deployment exited ' + deploymentExitCode)
 
     stage = 'dev-browser-verification'
-    const ui = await verifyDataViewsDev({
+    const { attempts: uiVerificationAttempts, verification: ui } = await verifyDevUiWithConvergenceRetry({
       origin: deployment.deploymentUrl,
       releaseSha: sourceRevision,
       manifestDigest,
@@ -102,6 +106,7 @@ export async function runPagesDevPromotion(env = process.env) {
       runIdentity,
       staticArtifactDigest: artifact.artifactDigest,
       uiVerificationDigest: createHash('sha256').update(uiReceiptBytes).digest('hex'),
+      uiVerificationAttempts,
       views: ui.views,
       completedAt: new Date().toISOString(),
     }
@@ -122,6 +127,28 @@ export async function runPagesDevPromotion(env = process.env) {
     })
     throw error
   }
+}
+
+export async function verifyDevUiWithConvergenceRetry(input, {
+  verify = verifyDataViewsDev,
+  sleep = delay,
+} = {}) {
+  let failure = null
+  for (let attempt = 1; attempt <= DEV_UI_CONVERGENCE_ATTEMPTS; attempt += 1) {
+    try {
+      return { attempts: attempt, verification: await verify(input) }
+    } catch (error) {
+      failure = error
+      if (attempt === DEV_UI_CONVERGENCE_ATTEMPTS || !isTransientDevUiConvergenceFailure(error)) throw error
+      await sleep(DEV_UI_CONVERGENCE_RETRY_DELAY_MS)
+    }
+  }
+  throw failure
+}
+
+function isTransientDevUiConvergenceFailure(error) {
+  const message = String(error?.message || error)
+  return /Canvas View Mode|locator\.waitFor timeout|waiting for locator\(/i.test(message)
 }
 
 export async function writeDevPromotionOutputs(env, receipt) {

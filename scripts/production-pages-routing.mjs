@@ -16,6 +16,8 @@ const blockRegex = (start, end) => new RegExp(`${escapeRegExp(start)}[\\s\\S]*?$
 const isManagedRoute = line => {
   const source = line.split(/\s/, 1)[0]
   if (source === '/GameXR' || source === '/GameXR/*') return true
+  if (source === '/agentic-base' || source.startsWith('/agentic-base/')
+    || source === '/content/agentic-base' || source.startsWith('/content/agentic-base/')) return true
   return [CANONICAL_MIRROR_NAMESPACE, ...LEGACY_PRODUCT_NAMESPACES].some(namespace =>
     [ `/${namespace}`, `/content/${namespace}` ].some(prefix =>
       source === prefix || source.startsWith(`${prefix}/`)))
@@ -48,6 +50,12 @@ export const buildAgenticGraphRedirects = ({ existing, rootFiles }) => {
     `${canonicalBase}/vendor/* /content/agentic-graph/vendor/:splat 200`,
     `${canonicalBase}/imports/* /content/agentic-graph/imports/:splat 200`,
     '/content/agentic-graph /agentic-graph 301', '/content/agentic-graph/ /agentic-graph/ 301',
+    '/agentic-base /agentic-base/ 301',
+    '/agentic-base/ /content/agentic-base/index.html 200',
+    '/agentic-base/* /content/agentic-base/:splat 200',
+    '/content/agentic-base /agentic-base/ 301',
+    '/content/agentic-base/ /agentic-base/ 301',
+    '/content/agentic-base/* /agentic-base/:splat 301',
     GENERATED_NAMESPACE_END,
   ]
   const generatedLines = [

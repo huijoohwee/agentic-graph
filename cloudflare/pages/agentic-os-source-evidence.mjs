@@ -1,3 +1,5 @@
+import { getZeroCostR2GateStatus, withZeroCostR2Bindings } from '../shared/r2-cost-gate.mjs';
+
 const CATALOG_SCHEMA = 'agentic-os/source-evidence-catalog/v1';
 const MANIFEST_SCHEMA = 'agentic-os/source-evidence-manifest/v1';
 const MAX_CATALOG_BYTES = 256 * 1024;
@@ -210,9 +212,15 @@ async function operate(bucket, manifest, input) {
 }
 
 export async function onRequest(context) {
-  const { request, env = {} } = context;
+  const { request } = context;
+  const env = withZeroCostR2Bindings(context.env || {}, {
+    AGENTIC_OS_SOURCE_EVIDENCE: 'unresolved:AGENTIC_OS_SOURCE_EVIDENCE',
+  });
   const route = new URL(request.url).pathname.match(/\/agentic-os\/api\/observability-workspace\/(manifest|source-context)$/)?.[1];
   if (!route) return new Response('Not found', { status: 404, headers: { 'cache-control': 'no-store' } });
+  if (getZeroCostR2GateStatus(env.AGENTIC_OS_SOURCE_EVIDENCE) === 'blocked') {
+    return json(503, { error: 'source evidence storage is blocked until an exact provider-enforced USD 0 cap is verified' });
+  }
   try {
     const catalogKey = typeof env.AGENTIC_OS_SOURCE_EVIDENCE_CATALOG_KEY === 'string'
       && objectKey(env.AGENTIC_OS_SOURCE_EVIDENCE_CATALOG_KEY)

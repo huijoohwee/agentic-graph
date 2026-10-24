@@ -1,5 +1,6 @@
 import { mutateFakeMediaArtifacts } from './fake-agentic-graph-storage-media-artifacts'
 import { FakeAgenticGraphStorageR2Bucket } from './fake-agentic-graph-storage-r2'
+import { createZeroCostR2TestVerifier } from '../../../../cloudflare/shared/r2-cost-gate.test-utils.mjs'
 import { runNativeStorageStatements, type NativeStorageStatement } from './native-agentic-graph-storage-d1'
 import {
   readFakeAgenticGraphStorageRawRows,
@@ -523,4 +524,5 @@ export const createFakeAgenticGraphStorageWorkerEnv = () => ({
   DB: new FakeAgenticGraphStorageD1Database(),
   AGENTIC_OS_STORAGE_BLOB_BUCKET: new FakeAgenticGraphStorageR2Bucket(),
   AGENTIC_OS_STORAGE_LOCAL_RUNTIME: 'true',
+  verifyProviderCostEvidence: createZeroCostR2TestVerifier(),
 })
