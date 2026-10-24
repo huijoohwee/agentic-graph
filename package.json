@@ -14,7 +14,7 @@
       "esbuild": "^0.25.12"
     },
     "esbuild": "^0.25.12",
-    "fast-uri": "3.1.8",
+    "fast-uri": "3.1.9",
     "qs": "6.16.0",
     "sharp": "0.35.5",
     "tsx": {
@@ -25,7 +25,8 @@
     "onnxruntime-node": "1.30.0",
     "miniflare": "5.20261012.1-beta",
     "wrangler": "4.151.1",
-    "undici": "7.29.1",
+    "undici": "7.30.1",
+    "zod": "$zod",
     "proxy-addr": "2.0.8",
     "mermaid@12.2.0": {
       "dompurify": "3.4.17"
@@ -341,10 +342,10 @@
   },
   "dependencies": {
     "@huggingface/transformers": "3.8.1",
-    "@x402/core": "^2.13.0",
-    "@x402/evm": "^2.13.0",
-    "@x402/hono": "^2.13.0",
-    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/2ece094c096c67aec5b7f44afe6f84f5520333a2",
+    "@x402/core": "2.13.0",
+    "@x402/evm": "2.13.0",
+    "@x402/hono": "2.13.0",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/09b0a2337ea7470f4024c0881e53be1afb8e0413",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.11",
     "js-yaml": "^4.3.2",
@@ -363,6 +364,6 @@
     "wrangler": "4.151.1",
     "x402-xrpl": "0.3.2",
     "xrpl": "4.5.0",
-    "zod": "^4.4.3"
+    "zod": "^4.6.6"
   }
 }
