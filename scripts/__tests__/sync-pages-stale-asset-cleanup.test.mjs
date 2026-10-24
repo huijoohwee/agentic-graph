@@ -27,6 +27,7 @@ import {
   XR_V2_MIRRORED_IGNORE_RELATIVE_PATH,
   XR_V2_PUBLISH_RUNTIME_RELATIVE_PATHS,
 } from '../xr-v2/production-publish-contract.mjs'
+import { createPagesMirrorFileOperations } from '../pages-mirror-file-operations.mjs'
 
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
 const readScript = filename => fs.readFileSync(path.resolve(repoRoot, 'scripts', filename), 'utf8')
@@ -62,6 +63,27 @@ test('published durable tools use the source catalog with an older mirror harnes
   assert.deepEqual(published.buildDurableRunAgentReadyToolContracts(options), native.buildDurableRunAgentReadyToolContracts(options))
   assert.deepEqual(published.DURABLE_RUN_AGENT_READY_TOOL_IDS, native.DURABLE_RUN_AGENT_READY_TOOL_IDS)
   assert.doesNotMatch(await fsPromises.readFile(target, 'utf8'), /from ['"]agentic-os\//)
+})
+
+test('source-evidence Pages Function mirrors its R2 gate at the target-relative path', async t => {
+  const { mirrorRoot, plan } = await buildPlan(t)
+  const sourceEvidence = plan.productionRuntimeFunctionEntries.find(entry => entry.label === 'agentic-os source evidence Pages Function')
+  const costVerifier = plan.productionRuntimeFunctionEntries.find(entry => entry.label === 'agentic-os source evidence cost verifier')
+  const r2Gate = plan.productionRuntimeFunctionEntries.find(entry => entry.label === 'agentic-os source evidence R2 cost gate helper')
+  assert.ok(sourceEvidence)
+  assert.ok(costVerifier)
+  assert.ok(r2Gate)
+  assert.equal(
+    path.relative(mirrorRoot, r2Gate.target).split(path.sep).join('/'),
+    'functions/agentic-os/api/shared/r2-cost-gate.mjs',
+  )
+  assert.equal(path.resolve(path.dirname(sourceEvidence.target), '../shared/r2-cost-gate.mjs'), r2Gate.target)
+  assert.match(await fsPromises.readFile(sourceEvidence.source, 'utf8'), /from ['"]\.\.\/shared\/r2-cost-gate\.mjs['"];/)
+  assert.match(await fsPromises.readFile(costVerifier.source, 'utf8'), /verifyProviderCostEvidenceBeforeCall/)
+  const { productionRuntimeFunctionTargetBody } = createPagesMirrorFileOperations({ isAllowedRelativePath: () => true })
+  const generatedGate = await productionRuntimeFunctionTargetBody(r2Gate)
+  assert.match(generatedGate, /from ['"]\.\/json-contract\.mjs['"]\s*;?/)
+  assert.doesNotMatch(generatedGate, /agentic-os\/context\/json/)
 })
 
 test('publish sync removes stale generated assets through a sealed legacy boundary', () => {

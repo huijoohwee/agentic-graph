@@ -119,13 +119,17 @@ export const createPagesMirrorFileOperations = ({ isAllowedRelativePath }) => {
     await fs.writeFile(destinationPath, body, 'utf8')
   }
 
-  const productionRuntimeFunctionTargetBody = async ({ source, targetIntegrationHubSpecifier }) => {
-    const body = await fs.readFile(source, 'utf8')
+  const productionRuntimeFunctionTargetBody = async ({ source, targetIntegrationHubSpecifier, sourceSpecifierReplacements = [] }) => {
+    let body = await fs.readFile(source, 'utf8')
+    for (const [sourceSpecifier, targetSpecifier] of sourceSpecifierReplacements) {
+      if (!body.includes(sourceSpecifier)) {
+        throw new Error(`Production runtime function is missing expected import ${sourceSpecifier}: ${source}`)
+      }
+      body = body.replaceAll(sourceSpecifier, targetSpecifier)
+    }
     if (!targetIntegrationHubSpecifier) return body
     const sourceIntegrationHubSpecifier = './runtime-integration-hub.mjs'
-    if (!body.includes(sourceIntegrationHubSpecifier)) {
-      throw new Error(`Production runtime function does not import its source integration helper: ${source}`)
-    }
+    if (!body.includes(sourceIntegrationHubSpecifier)) throw new Error(`Production runtime function does not import its source integration helper: ${source}`)
     return body.replaceAll(sourceIntegrationHubSpecifier, targetIntegrationHubSpecifier)
   }
 
