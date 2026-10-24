@@ -72,4 +72,6 @@ test('release checks docs parity before dependency installation and again before
   assert.ok(first >= 0 && first < install, 'stale pins must fail before npm install and integration work')
   assert.ok(second > install && second < activation, 'pin drift during approval must fail before activation')
   assert.equal(workflow.indexOf(check, second + check.length), -1, 'run only the two boundary checks')
+  assert.match(workflow, /name: Verify checked-out commit[\s\S]{0,300}GH_TOKEN: '\$\{\{ github\.token \}\}'/)
+  assert.match(workflow, /name: Revalidate last-known-good rollback identity[\s\S]{0,180}GH_TOKEN: '\$\{\{ github\.token \}\}'/)
 })

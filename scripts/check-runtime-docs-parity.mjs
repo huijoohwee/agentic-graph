@@ -41,6 +41,7 @@ export const verifyDocsRevisionParity = (identity, remoteOutput, comparisonOutpu
   }
   let revisionBinding = 'fetched-tip'
   if (identity.revision !== revision) {
+    // The compare URL binds the exact ls-remote tip; GitHub exposes its base and merge base.
     const comparison = typeof comparisonOutput === 'string' ? JSON.parse(comparisonOutput) : comparisonOutput
     const isPinnedAncestor = comparison?.status === 'ahead'
       && comparison.base_commit?.sha === identity.revision
