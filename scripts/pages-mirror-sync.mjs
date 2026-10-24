@@ -8,6 +8,7 @@ import { createPagesMirrorFileOperations } from './pages-mirror-file-operations.
 import { buildAgentReadyHeaders } from './pages-mirror-headers.mjs'
 import { createPagesMirrorLegacyCleanup } from './pages-mirror-legacy-cleanup.mjs'
 import { buildAgenticGraphRedirects } from './production-pages-routing.mjs'
+import { applyAgenticBaseDemoSync, planAgenticBaseDemoSync } from './sync-agentic-base-demo.mjs'
 import { offlinePrecacheEntries } from '../canvas/vitePythonLearningOffline.mjs'
 import {
   buildProductionRuntimeReadiness,
@@ -76,6 +77,7 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   const distDir = path.resolve(agenticGraphRoot, 'canvas', 'dist')
   const targetDir = path.resolve(mirrorRoot, 'content', 'agentic-graph')
   const publicRouteDir = path.resolve(mirrorRoot, 'agentic-graph')
+  const baseDemoSyncPlan = await planAgenticBaseDemoSync({ graphRoot: agenticGraphRoot, mirrorRoot })
   const offlineAssetManifestPath = path.resolve(
     agenticGraphRoot,
     'canvas', 'src', 'features', 'evidence-analysis', 'profiles', 'offline-assets.json',
@@ -262,7 +264,7 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     publicFilesToRemove, publishRootManagedFilesToCopy, plainCopyUpdates, productionRuntimeFunctionUpdates,
     agentReadyRuntimeFilesToCopy, agentReadyRouteUpdates, agentReadyStaticFilesToWrite, legacyMirrorFilesToRemove,
     legacyImageMigration.legacyImageFiles, runtimeReadinessPathsNeedingUpdate,
-  ].some(entries => entries.length > 0) || redirectsNeedUpdate || headersNeedUpdate
+  ].some(entries => entries.length > 0) || redirectsNeedUpdate || headersNeedUpdate || baseDemoSyncPlan.hasDrift
 
   if (checkMode) {
     if (!hasDrift) {
@@ -283,6 +285,8 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
     summaryList('agent-ready owned files needing sync', plainCopyUpdates, entry => entry.label)
     summaryList('agent-ready route Functions needing sync', agentReadyRouteUpdates, target => toPosixRel(mirrorRoot, target))
     summaryList('root agent-ready static files needing sync', agentReadyStaticFilesToWrite)
+    summaryList('Base demo route files needing sync', baseDemoSyncPlan.toCopy, entry => entry.relativePath)
+    summaryList('stale Base demo route files needing removal', baseDemoSyncPlan.toRemove)
     summaryList('bounded legacy mirror files needing removal', legacyMirrorFilesToRemove, entry => entry.relativePath)
     summaryList('legacy documents requiring byte-preserving migration', legacyDocumentMigration, entry => entry.relativePath)
     if (legacyImageMigration.legacyImageFiles.length > 0) {
@@ -334,6 +338,7 @@ export const runPagesMirrorSync = async ({ checkMode = false } = {}) => {
   }
   await writeTextFile(agentReadyCommerceX402RouteTarget, agentReadyCommerceX402RouteBody)
   for (const relativePath of agentReadyStaticFilesToWrite) await writeTextFile(path.resolve(mirrorRoot, relativePath), agentReadyArtifacts[relativePath].body)
+  await applyAgenticBaseDemoSync(baseDemoSyncPlan)
   let legacyImagePayloadsCopied = 0
   for (const entry of legacyImageMigration.entries) {
     if (!entry.needsCopy) continue
