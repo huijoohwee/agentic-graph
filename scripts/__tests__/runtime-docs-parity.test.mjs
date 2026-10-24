@@ -17,19 +17,43 @@ const packageSources = revision => {
   })]
 }
 
-test('release docs identity is exact and matches canonical Dev main', () => {
+test('release docs identity is exact and binds to canonical Dev main', () => {
   const identity = readPinnedDocsIdentity(contract(current))
   assert.equal(identity.repository, 'huijoohwee/agentic-os')
   verifyPackagePinParity(identity, ...packageSources(current))
   assert.deepEqual(verifyDocsRevisionParity(identity, `${current}\trefs/heads/main\n`), {
     schema: 'agentic-graph/runtime-docs-parity/v1', status: 'passed',
-    repository: 'huijoohwee/agentic-os', revision: current, ref: 'refs/heads/main',
+    repository: 'huijoohwee/agentic-os', revision: current, pinnedRevision: current,
+    revisionBinding: 'fetched-tip', ref: 'refs/heads/main',
   })
 })
 
-test('release docs parity fails closed on stale pins and malformed ownership', () => {
-  assert.throws(() => verifyDocsRevisionParity(readPinnedDocsIdentity(contract(current)),
-    `${next}\trefs/heads/main\n`), /Dev\/Prod docs pin drift/)
+test('release docs parity accepts only a proven exact consumer-pin ancestor', () => {
+  const identity = readPinnedDocsIdentity(contract(current))
+  const comparison = {
+    status: 'ahead',
+    ahead_by: 1,
+    base_commit: { sha: current },
+    merge_base_commit: { sha: current },
+  }
+  assert.deepEqual(verifyDocsRevisionParity(identity, `${next}\trefs/heads/main\n`, comparison), {
+    schema: 'agentic-graph/runtime-docs-parity/v1', status: 'passed',
+    repository: 'huijoohwee/agentic-os', revision: next, pinnedRevision: current,
+    revisionBinding: 'consumer-pin', ref: 'refs/heads/main',
+  })
+  assert.throws(() => verifyDocsRevisionParity(identity, `${next}\trefs/heads/main\n`), /not an ancestor/)
+  assert.throws(() => verifyDocsRevisionParity(identity, `${next}\trefs/heads/main\n`, {
+    ...comparison, status: 'diverged',
+  }), /not an ancestor/)
+  assert.throws(() => verifyDocsRevisionParity(identity, `${next}\trefs/heads/main\n`, {
+    ...comparison, merge_base_commit: { sha: 'a'.repeat(40) },
+  }), /not an ancestor/)
+  assert.throws(() => verifyDocsRevisionParity(identity, `${next}\trefs/heads/main\n`, {
+    ...comparison, ahead_by: 0,
+  }), /not an ancestor/)
+})
+
+test('release docs parity fails closed on malformed ownership and malformed remote refs', () => {
   assert.throws(() => readPinnedDocsIdentity(contract('main')), /one exact GitHub repository/)
   assert.throws(() => readPinnedDocsIdentity(contract(current).replace('huijoohwee/agentic-os', 'other/os')),
     /canonical Agentic OS repository/)

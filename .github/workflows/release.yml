@@ -26,7 +26,7 @@ jobs:
       - { name: Checkout exact Base demo source, uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1, with: { repository: huijoohwee/agentic-base, ref: '${{ steps.base_demo_source.outputs.revision }}', path: agentic-base, ssh-key: '${{ secrets.AGENTIC_BASE_READ_KEY }}', ssh-known-hosts: 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl', persist-credentials: false } }
       - name: Verify checked-out commit
         working-directory: agentic-graph
-        env: { LOCAL_REVIEW_INPUT: '${{ inputs.local_review_candidate }}', RELEASE_EVIDENCE_INPUT: '${{ inputs.release_evidence }}' }
+        env: { LOCAL_REVIEW_INPUT: '${{ inputs.local_review_candidate }}', RELEASE_EVIDENCE_INPUT: '${{ inputs.release_evidence }}', GH_TOKEN: '${{ github.token }}' }
         run: |
           test -n "$LOCAL_REVIEW_INPUT" && test -n "$RELEASE_EVIDENCE_INPUT" && test "$GITHUB_REF" = "refs/heads/main" && test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$RELEASE_SHA"
@@ -202,6 +202,7 @@ jobs:
           node ./scripts/verify-production-release-transports.mjs recapture-rollback --pages-observation "$RUNNER_TEMP/previous-pages-observation.json" --state-evidence "$RUNNER_TEMP/previous-d1-state-evidence.json" --release-evidence "$RUNNER_TEMP/production-authorization/release-evidence.json" --mirror-revision "${{ needs.verify.outputs.mirror_revision }}" --output "$RUNNER_TEMP/previous-production-rollback-recapture.json" --digest-output "$RUNNER_TEMP/previous-production-rollback-digest.txt"
       - name: Revalidate last-known-good rollback identity
         working-directory: agentic-graph
+        env: { GH_TOKEN: '${{ github.token }}' }
         run: test "$(git -C ../huijoohwee ls-remote origin refs/heads/main | cut -f1)" = "${{ needs.verify.outputs.mirror_revision }}" && node scripts/check-runtime-docs-parity.mjs
       - { name: Promote isolated Pages Dev and verify shared data views, id: dev_promotion, working-directory: agentic-graph, env: { CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}', CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}', CLOUDFLARE_PAGES_PROJECT: '${{ vars.CLOUDFLARE_PAGES_PROJECT }}', PRODUCTION_ARTIFACT_DIR: '${{ runner.temp }}/production-mirror-artifact', DEV_ARTIFACT_DIR: '${{ runner.temp }}/agentic-graph-dev-artifact', DEV_EVIDENCE_DIR: '${{ runner.temp }}/pages-dev-evidence', IMMUTABLE_MANIFEST_DIGEST: '${{ needs.verify.outputs.manifest_digest }}' }, run: 'node scripts/run-pages-dev-promotion.mjs' }
       - { name: Bind Dev receipt to exact candidate, run: 'test "${{ steps.dev_promotion.outputs.source_revision }}" = "${{ inputs.source_sha }}" && test "${{ steps.dev_promotion.outputs.manifest_digest }}" = "${{ needs.verify.outputs.manifest_digest }}" && test -n "${{ steps.dev_promotion.outputs.deployment_id }}" && test -n "${{ steps.dev_promotion.outputs.deployment_url }}" && [[ "${{ steps.dev_promotion.outputs.promotion_digest }}" =~ ^[0-9a-f]{64}$ ]]' }

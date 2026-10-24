@@ -32,18 +32,28 @@ export const readPinnedDocsIdentity = source => {
   return identity
 }
 
-export const verifyDocsRevisionParity = (identity, remoteOutput) => {
+export const verifyDocsRevisionParity = (identity, remoteOutput, comparisonOutput) => {
   const rows = String(remoteOutput).trim().split(/\r?\n/).filter(Boolean)
   if (rows.length !== 1) throw new Error('canonical Agentic OS main did not resolve to one exact ref')
   const [revision, ref, extra] = rows[0].split(/\s+/)
   if (extra || ref !== 'refs/heads/main' || !sha.test(revision)) {
     throw new Error('canonical Agentic OS main returned a malformed revision')
   }
+  let revisionBinding = 'fetched-tip'
   if (identity.revision !== revision) {
-    throw new Error(`Agentic OS Dev/Prod docs pin drift: pinned=${identity.revision} canonical-main=${revision}; promote the exact pin before release`)
+    const comparison = typeof comparisonOutput === 'string' ? JSON.parse(comparisonOutput) : comparisonOutput
+    const isPinnedAncestor = comparison?.status === 'ahead'
+      && comparison.base_commit?.sha === identity.revision
+      && comparison.merge_base_commit?.sha === identity.revision
+      && Number.isSafeInteger(comparison.ahead_by)
+      && comparison.ahead_by > 0
+    if (!isPinnedAncestor) {
+      throw new Error(`Agentic OS consumer docs pin is not an ancestor of canonical main: pinned=${identity.revision} canonical-main=${revision}`)
+    }
+    revisionBinding = 'consumer-pin'
   }
   return { schema: 'agentic-graph/runtime-docs-parity/v1', status: 'passed', repository: identity.repository,
-    revision, ref: 'refs/heads/main' }
+    revision, pinnedRevision: identity.revision, revisionBinding, ref: 'refs/heads/main' }
 }
 
 export const verifyPackagePinParity = (identity, packageSource, lockSource) => {
@@ -74,5 +84,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const remoteOutput = execFileSync('git', ['ls-remote', '--heads', identity.url, 'refs/heads/main'], {
     encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 10_000,
   })
-  process.stdout.write(`${JSON.stringify(verifyDocsRevisionParity(identity, remoteOutput))}\n`)
+  const canonicalRevision = remoteOutput.trim().split(/\s+/)[0]
+  const comparisonOutput = identity.revision === canonicalRevision ? undefined : execFileSync('gh', [
+    'api', `repos/${identity.repository}/compare/${identity.revision}...${canonicalRevision}`,
+    '--header', 'Accept: application/vnd.github+json',
+  ], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 10_000 })
+  process.stdout.write(`${JSON.stringify(verifyDocsRevisionParity(identity, remoteOutput, comparisonOutput))}\n`)
 }
