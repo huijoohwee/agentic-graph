@@ -94,10 +94,13 @@ export const buildAgentReadyHeaders = ({
     '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
     '/content/agentic-graph/sw.js',
     '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
+    // Pages rewrites the public Base aliases to these content targets before
+    // applying headers, so define each mutable file once. Fingerprinted assets
+    // continue to use the shared /content/*/assets/* cache rule.
     ...[
-      '/content/agentic-base/index.html', '/agentic-base', '/agentic-base/', '/agentic-base/index.html',
-      '/content/agentic-base/manifest.webmanifest', '/agentic-base/manifest.webmanifest',
-      '/content/agentic-base/sw.js', '/agentic-base/sw.js',
+      '/content/agentic-base/index.html',
+      '/content/agentic-base/manifest.webmanifest',
+      '/content/agentic-base/sw.js',
     ].flatMap(route => [
       route,
       '  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0',

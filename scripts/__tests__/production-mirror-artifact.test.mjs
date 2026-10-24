@@ -151,8 +151,20 @@ test('Base demo route is deterministic, subpath-safe, and refuses unowned mirror
     agentReadyHomepageLinkHeaderValue: '</agentic-graph/>; rel="canonical"',
     productionRuntimeReadinessHeaderLines: [],
   })
-  assert.match(headers, /\/content\/agentic-base\/index\.html\n  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0/)
-  assert.match(headers, /\/agentic-base\/sw\.js\n  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0/)
+  const baseHeaderSelectors = headers.split(/\r?\n/)
+    .filter(line => line.startsWith('/') && /(?:^|\/)agentic-base(?:\/|$)/.test(line))
+  const headerLines = headers.split(/\r?\n/)
+  assert.deepEqual(baseHeaderSelectors, [
+    '/content/agentic-base/index.html',
+    '/content/agentic-base/manifest.webmanifest',
+    '/content/agentic-base/sw.js',
+  ])
+  for (const route of baseHeaderSelectors) {
+    assert.equal(
+      headerLines[headerLines.indexOf(route) + 1],
+      '  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0',
+    )
+  }
 })
 
 test('the uploaded and reconciled artifact carries generated discovery aliases and preserves unrelated metadata', async t => {
