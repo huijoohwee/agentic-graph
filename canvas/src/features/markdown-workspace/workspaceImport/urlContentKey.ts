@@ -13,14 +13,6 @@ const normalizeWebpageViewMode = (value: unknown): WebpageViewMode => {
   return 'html'
 }
 
-const normalizeFidelityLevel = (value: unknown): 1 | 2 | 3 | 4 => {
-  const n = Number.isFinite(value) ? Math.floor(Number(value)) : 4
-  if (n <= 1) return 1
-  if (n === 2) return 2
-  if (n === 3) return 3
-  return 4
-}
-
 const buildUrlContentSemanticKey = (parts: Array<string | number | boolean | null | undefined>): string => {
   const rawKey = hashSignatureParts(parts)
   return buildScopedGraphSemanticKey('workspace-url-content', { graphSemanticKey: rawKey }) || rawKey
@@ -35,6 +27,7 @@ export const buildWorkspaceUrlContentCacheKey = (args: {
   storeSnapshot?: {
     webpageImportIncludeImages?: unknown
     webpageImportView?: unknown
+    /** Legacy settings are accepted for cache-key compatibility but ignored. */
     webpageArtifactFidelityMaxLevel?: unknown
   } | null
 }): string => {
@@ -51,7 +44,6 @@ export const buildWorkspaceUrlContentCacheKey = (args: {
 
   const snap = args.storeSnapshot || null
   const includeImages = snap?.webpageImportIncludeImages !== false
-  const fidelityLevel = normalizeFidelityLevel(snap?.webpageArtifactFidelityMaxLevel)
   const importView = normalizeWebpageViewMode(snap?.webpageImportView)
 
   const parts: Array<string | number | boolean | null | undefined> = [
@@ -63,8 +55,6 @@ export const buildWorkspaceUrlContentCacheKey = (args: {
     viewHint || 'auto',
     'img',
     includeImages ? '1' : '0',
-    'fid',
-    fidelityLevel,
   ]
   if (mode === 'import' && !viewHint) parts.push('iv', importView)
 

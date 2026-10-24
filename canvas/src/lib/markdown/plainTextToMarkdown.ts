@@ -1,4 +1,5 @@
 import { expandInlineTranscriptMarkdownLines } from './transcriptMarkdownLines'
+import { restoreEncodedBlockquotePrefix } from './markdownStructuralEntities'
 
 function looksLikeMarkdownStructuralLine(line: string): boolean {
   const text = String(line || '').trim()
@@ -59,9 +60,10 @@ function buildMarkdownBodyFromPlainText(text: string): string {
         blocks.push(line)
         continue
       }
-      if (looksLikeMarkdownStructuralLine(trimmed)) {
+      const structuralLine = restoreEncodedBlockquotePrefix(trimmed)
+      if (looksLikeMarkdownStructuralLine(structuralLine)) {
         flushParagraph()
-        blocks.push(trimmed)
+        blocks.push(structuralLine)
         continue
       }
       paragraphLines.push(trimmed)

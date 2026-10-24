@@ -20,10 +20,12 @@ export type WebsiteSelectionSession = {
   importing?: boolean
   importingUrl?: string
   selectAllOnDiscover?: boolean
+  authenticatedBrowserSession?: boolean
+  browserSessionId?: string
 }
 
 type SelectionState = { session: WebsiteSelectionSession | null; recoveryError: string }
-type SavedSelection = { version: 1; url: string; sourcePath?: string; pages: WebsiteDiscoveredPage[]; selected: string[]; visited: string[]; limited: boolean; query: string }
+type SavedSelection = { version: 1; url: string; sourcePath?: string; pages: WebsiteDiscoveredPage[]; selected: string[]; visited: string[]; limited: boolean; query: string; authenticatedBrowserSession?: boolean; browserSessionId?: string }
 const draftKey = 'kg:website-import-selection:v1'
 const maxDraftBytes = 256 * 1024
 export const useWebsiteImportSelectionSession = create<SelectionState>(() => ({ session: null, recoveryError: '' }))
@@ -40,7 +42,9 @@ function writeDraft(session: WebsiteSelectionSession | null): string {
   const storage = draftStorage()
   if (!storage) return 'Browser storage is unavailable; this selection cannot be resumed after restart.'
   const saved: SavedSelection = { version: 1, url: session.url, sourcePath: session.sourcePath, pages: session.pages,
-    selected: [...session.selected], visited: [...session.visited], limited: session.limited, query: session.query }
+    selected: [...session.selected], visited: [...session.visited], limited: session.limited, query: session.query,
+    ...(session.authenticatedBrowserSession ? { authenticatedBrowserSession: true } : {}),
+    ...(session.browserSessionId ? { browserSessionId: session.browserSessionId } : {}) }
   const json = JSON.stringify(saved)
   if (new TextEncoder().encode(json).byteLength > maxDraftBytes) {
     clearDraft()
@@ -68,6 +72,8 @@ export function restoreWebsiteImportSelectionDraft() {
     if (saved.version !== 1 || !['http:', 'https:'].includes(root.protocol) || !Array.isArray(saved.pages)
       || saved.pages.length > 2_000 || !Array.isArray(saved.selected) || !Array.isArray(saved.visited)
       || typeof saved.query !== 'string' || saved.query.length > 500
+      || (saved.authenticatedBrowserSession !== undefined && typeof saved.authenticatedBrowserSession !== 'boolean')
+      || (saved.browserSessionId !== undefined && (typeof saved.browserSessionId !== 'string' || !saved.browserSessionId.trim() || saved.browserSessionId.length > 256))
       || (saved.sourcePath !== undefined && (typeof saved.sourcePath !== 'string' || !saved.sourcePath.startsWith('/')))) throw new Error('Saved selection is invalid.')
     const pages = saved.pages.map(page => {
       if (typeof page?.url !== 'string' || typeof page.path !== 'string' || page.url.length > 4096 || page.path.length > 4096
@@ -84,7 +90,8 @@ export function restoreWebsiteImportSelectionDraft() {
     resolveSelection?.(null); resolveSelection = null
     useWebsiteImportSelectionSession.setState({ session: { id: ++sequence, url: root.href, sourcePath: saved.sourcePath,
       pages, selected: new Set(selected), visited: new Set(saved.visited), busy: false, error: '', limited: saved.limited === true,
-      query: saved.query, restored: true }, recoveryError: '' })
+      query: saved.query, restored: true, authenticatedBrowserSession: saved.authenticatedBrowserSession === true,
+      ...(saved.browserSessionId ? { browserSessionId: saved.browserSessionId } : {}) }, recoveryError: '' })
   } catch {
     clearDraft()
     useWebsiteImportSelectionSession.setState({ recoveryError: 'The saved page selection could not be restored. Find pages again to continue.' })
@@ -142,6 +149,8 @@ export async function discoverWebsiteSelection(url: string, selectAllOnDiscover 
       result.pages.forEach(page => merged.set(page.url, page))
       const pages = [...merged.values()].slice(0, 2_000)
       return { ...current, pages,
+        authenticatedBrowserSession: result.authenticatedBrowserSession === true,
+        browserSessionId: result.browserSessionId,
         selected: current.selectAllOnDiscover ? new Set([...current.selected, ...pages.map(page => page.url)].slice(0, 500)) : current.selected,
         selectAllOnDiscover: false,
         error: current.selectAllOnDiscover && !result.pages.length ? 'No linked pages were found. Try the source link or a different website file.' : '',
@@ -220,7 +229,11 @@ export async function importWebsiteFromSourceFiles(url: string, sourcePath?: str
   const selectedUrls = await selection
   if (!selectedUrls?.length) return
   try {
-    const result = await importSelectedWebsitePages(url, selectedUrls, beforeImport)
+    const current = useWebsiteImportSelectionSession.getState().session
+    const result = await importSelectedWebsitePages(url, selectedUrls, beforeImport, undefined, {
+      authenticatedBrowserSession: current?.authenticatedBrowserSession === true,
+      browserSessionId: current?.browserSessionId,
+    })
     if (session) updateSession(session.id, current => ({ ...current, importing: false, selected: new Set(), error: '' }))
     return result
   } catch (failure) {
@@ -229,9 +242,34 @@ export async function importWebsiteFromSourceFiles(url: string, sourcePath?: str
   }
 }
 
-export async function importSelectedWebsitePages(url: string, selectedUrls: string[], beforeImport?: () => Promise<unknown>, destinationPath?: string) {
+export async function importSelectedWebsitePages(
+  url: string,
+  selectedUrls: string[],
+  beforeImport?: () => Promise<unknown>,
+  destinationPath?: string,
+  options?: { authenticatedBrowserSession?: boolean; browserSessionId?: string },
+) {
   await beforeImport?.()
   const { getMarkdownWorkspaceActionBridge } = await import('@/features/markdown-explorer/workspaceActionBridge')
+  if (options?.authenticatedBrowserSession) {
+    const browserSessionId = String(options.browserSessionId || '').trim()
+    if (!browserSessionId) throw new Error('Authenticated website import requires the discovered browser session.')
+    if (destinationPath && selectedUrls.length !== 1) throw new Error('Saving to an existing destination requires exactly one selected page.')
+    const importUrl = getMarkdownWorkspaceActionBridge().importUrl
+    if (!importUrl) throw new Error('Authenticated website import requires the local Import URL action.')
+    const createdPaths: string[] = []
+    for (let index = 0; index < selectedUrls.length; index += 1) {
+      const pageUrl = selectedUrls[index]!
+      const result = await importUrl(pageUrl, { preserveActiveDocument: true, browserSessionId, ...(destinationPath ? { destinationPath } : {}) })
+      if (!result || typeof result !== 'object') throw new Error(`Import URL did not return a result for ${pageUrl}`)
+      if (result.error) throw new Error(result.error)
+      if (!Array.isArray(result.createdPaths) || result.createdPaths.length === 0) {
+        throw new Error(`Import URL did not create a page for ${pageUrl}`)
+      }
+      createdPaths.push(...result.createdPaths.map(String).filter(Boolean))
+    }
+    return { createdPaths, host: new URL(url).host }
+  }
   const importWebsite = getMarkdownWorkspaceActionBridge().importWebsite
     ?? (await import('@/features/markdown-workspace/useWorkspaceFileActions/websiteImportAction')).importWebsiteViaWorkspaceRuntime
   const { buildAutoWebsiteImportOptions } = await import('@/lib/toolbar/importUrlWebsiteMode')
@@ -263,7 +301,10 @@ async function importSessionPages(id: number, urls: string[], consumeSelection: 
     || urls.some(url => !session.pages.some(page => page.url === url))) return
   updateSession(id, current => ({ ...current, importing: true, importingUrl: urls.length === 1 ? urls[0] : undefined, error: '' }))
   try {
-    await importSelectedWebsitePages(session.url, urls, undefined, destinationPath)
+    await importSelectedWebsitePages(session.url, urls, undefined, destinationPath, {
+      authenticatedBrowserSession: session.authenticatedBrowserSession === true,
+      browserSessionId: session.browserSessionId,
+    })
     updateSession(id, current => ({ ...current, importing: false, importingUrl: undefined,
       selected: consumeSelection === 'partial' ? new Set([...current.selected].filter(url => !urls.includes(url))) : consumeSelection ? new Set() : current.selected, error: '' }))
   } catch (failure) {

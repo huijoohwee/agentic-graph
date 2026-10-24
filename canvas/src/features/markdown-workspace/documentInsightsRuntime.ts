@@ -1,14 +1,14 @@
 import { useLayoutEffect, useSyncExternalStore } from 'react'
-import { emitFloatingPanelOpen } from '@/features/canvas/utils'
 import type { DocumentSignalIndex, DocumentSignalKind } from '@/lib/websites/signalTokens'
 import type { GraphData } from '@/lib/graph/types'
 import { hashText } from '@/features/parsers/hash'
+import { useGraphStore } from '@/hooks/useGraphStore'
 
 export type DocumentInsightsSource = {
   key: string
   text: string
   signals: DocumentSignalIndex | null
-  revealLine: (line: number) => void
+  revealLine?: (line: number) => void
 }
 export type DocumentKeywordHighlight = { text: string; locale: string }
 type InsightsSnapshot = { source: DocumentInsightsSource | null; kind: DocumentSignalKind | null; request: number; keyword: DocumentKeywordHighlight | null }
@@ -20,13 +20,26 @@ export const readDocumentInsights = () => snapshot
 export const isCurrentDocumentInsightsSource = (source: DocumentInsightsSource): boolean => snapshot.source === source
 export const useDocumentInsights = () => useSyncExternalStore(subscribe, readDocumentInsights, readDocumentInsights)
 
-export function registerDocumentInsightsSource(source: DocumentInsightsSource): () => void {
-  publish({ ...snapshot, source, keyword: null })
-  return () => { if (snapshot.source === source) publish({ ...snapshot, source: null, keyword: null }) }
+export function registerDocumentInsightsSource(source: DocumentInsightsSource, options: { retainOnDispose?: boolean } = {}): () => void {
+  const previous = snapshot.source
+  const sameRevision = previous?.key === source.key && previous.text === source.text
+  publish({ ...snapshot, source, keyword: sameRevision ? snapshot.keyword : null })
+  return () => {
+    if (snapshot.source !== source) return
+    if (!options.retainOnDispose) {
+      publish({ ...snapshot, source: null, keyword: null })
+      return
+    }
+    if (source.revealLine) {
+      const retainedSource = { key: source.key, text: source.text, signals: source.signals }
+      publish({ ...snapshot, source: retainedSource })
+    }
+  }
 }
 
 export function useDocumentInsightsSource(source: DocumentInsightsSource) {
-  useLayoutEffect(() => registerDocumentInsightsSource(source), [source.key, source.text, source.signals, source.revealLine])
+  const { key, text, signals, revealLine } = source
+  useLayoutEffect(() => registerDocumentInsightsSource({ key, text, signals, revealLine }, { retainOnDispose: true }), [key, text, signals, revealLine])
 }
 
 /** Transient selection is valid only for the currently registered source revision. */
@@ -39,13 +52,22 @@ export function selectDocumentKeyword(source: DocumentInsightsSource, keyword: D
 
 export function openDocumentInsights(kind: DocumentSignalKind) {
   publish({ ...snapshot, kind, request: snapshot.request + 1 })
-  emitFloatingPanelOpen({ tab: 'preview', open: true })
+  const state = useGraphStore.getState()
+  state.setCanvasRenderMode('2d')
+  state.setCanvas2dRenderer('dashboard')
+  if (state.floatingPanelOpen) state.setFloatingPanelOpen(false)
 }
 
 export function jumpToDocumentInsight(source: DocumentInsightsSource, line: number): boolean {
-  if (!isCurrentDocumentInsightsSource(source) || !source.signals || !Number.isInteger(line) || line < 1 || line > source.signals.scannedLines) return false
+  if (!isCurrentDocumentInsightsSource(source) || !source.revealLine || !source.signals || !Number.isInteger(line) || line < 1 || line > source.signals.scannedLines) return false
   source.revealLine(line)
   return true
+}
+
+export function documentInsightsJumpFailureMessage(source: DocumentInsightsSource): string {
+  return isCurrentDocumentInsightsSource(source) && !source.revealLine
+    ? 'Open the Editor Workspace to jump to the source line.'
+    : 'Source changed. Choose a current match.'
 }
 
 /** Explicit layer action only; merge against the current graph, retaining all authored elements. */

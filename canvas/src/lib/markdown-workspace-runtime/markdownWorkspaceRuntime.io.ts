@@ -268,6 +268,11 @@ export const writeWorkspaceFileAndSync = async (args: {
     text: textToWrite,
     resetParsedState: args.resetParsedState,
   })
+  const normalizedMirrorPath = `/${String(args.path || '').replace(/^\/+/, '')}`
+  if (committedFs && normalizedMirrorPath.startsWith('/websites/')) {
+    const { saveWorkspaceWebsiteLocalCopy } = await import('@/features/workspace-fs/workspaceRevealInFileManager')
+    await saveWorkspaceWebsiteLocalCopy(normalizedMirrorPath, textToWrite)
+  }
   if (typeof args.setGraphRagWorkflowJsonText === 'function') {
     applyWorkspaceSpecialFileEffects({
       path: args.path,

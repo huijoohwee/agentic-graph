@@ -32,6 +32,8 @@ export async function probeWebpageDomViaHiddenIframeOnce(args: {
   maxChars?: number
   maxElements?: number
   scrollCrawl?: boolean
+  expandDisclosures?: boolean
+  /** @deprecated Use expandDisclosures. Retained for older capture callers. */
   expandFaq?: boolean
   preferScriptDisabled?: boolean
   clickTextHints?: string[]
@@ -323,7 +325,7 @@ export async function probeWebpageDomViaHiddenIframeOnce(args: {
               mode: args.mode,
               maxChars,
               maxElements: typeof args.maxElements === 'number' && Number.isFinite(args.maxElements) ? Math.floor(args.maxElements) : undefined,
-              expandFaq: args.expandFaq !== false,
+              expandDisclosures: args.expandDisclosures !== false && args.expandFaq !== false,
               scrollCrawl: !!args.scrollCrawl,
               clickTextHints: Array.isArray(args.clickTextHints)
                 ? args.clickTextHints.map(value => String(value || '').trim()).filter(Boolean).slice(0, 8)

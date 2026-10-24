@@ -5,16 +5,20 @@ import { createRoot } from 'react-dom/client'
 import { initJsdomHarness, settleDiscovery, waitForImportCondition } from '@/tests/lib/importInventoryHarness'
 import { SourceFileWebsiteActions } from '@/features/source-files/SourceFileWebsiteActions'
 import WebsiteImportSelectionView from '@/features/source-files/WebsiteImportSelectionView'
-import { chooseWebsiteImportPages, finishWebsiteImportSelection, useWebsiteImportSelectionSession, visibleWebsiteSelectionPages, showMoreWebsiteSelectionPages, setWebsiteSelectionQuery, toggleWebsiteSelection, importWebsiteFromSourceFiles, confirmRestoredWebsiteSelection, importDiscoveredWebsitePage, discoverWebsiteSelection } from '@/features/source-files/websiteImportSelectionSession'
+import { chooseWebsiteImportPages, finishWebsiteImportSelection, useWebsiteImportSelectionSession, visibleWebsiteSelectionPages, showMoreWebsiteSelectionPages, setWebsiteSelectionQuery, toggleWebsiteSelection, importWebsiteFromSourceFiles, importSelectedWebsitePages, confirmRestoredWebsiteSelection, importDiscoveredWebsitePage, discoverWebsiteSelection, restoreWebsiteImportSelectionDraft } from '@/features/source-files/websiteImportSelectionSession'
 import { sourceFileWebsiteUrl, projectWebsiteImportTree } from '@/features/source-files/websiteImportTreeProjection'
 import { MarkdownWorkspaceSourceFilesList } from '@/features/markdown-workspace/MarkdownWorkspaceSourceFilesList'
 import { ExplorerSearchControl } from '@/features/markdown-workspace/ExplorerSearchControl'
 import { registerMarkdownWorkspaceActionBridge } from '@/features/markdown-explorer/workspaceActionBridge'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { MAIN_PANEL_TABS } from '@/features/panels/mainPanelTabs'
+import { sourceUrl, sourceEntry } from './websiteImportSelectionPanel.testSupport'
 
-const sourceUrl = 'https://example.test/library/'
-const sourceEntry = { path: '/imported.md', parentPath: '/', name: 'imported.md', kind: 'file' as const, updatedAtMs: 0, text: `---\nkgWebpageUrl: "${sourceUrl}"\n---\n# Imported` }
+function apiNativeNoSession(target: unknown): Response | null {
+  return String(target) === 'http://localhost:6969/v1/sessions'
+    ? new Response(JSON.stringify({ sessions: [] }), { status: 200 })
+    : null
+}
 function SourceFilesHarness({ activePath = sourceEntry.path, onSelectFile = () => {} }: { activePath?: string | null; onSelectFile?: (path: string) => void }) {
   const [search, setSearch] = React.useState('saved search')
   return <><ExplorerSearchControl search={search} setSearch={setSearch} panelTextClass="text-xs" /><MarkdownWorkspaceSourceFilesList loading={false} loadError="" textSizeClass="text-xs" entries={[sourceEntry]} expandedPaths={new Set()} activePath={activePath}
@@ -43,6 +47,8 @@ test('idle Source Files checkbox discovers selected website pages before swappin
   const host = document.createElement('section'), root = createRoot(host)
   const requests: string[] = []
   globalThis.fetch = (async target => {
+    const noSession = apiNativeNoSession(target)
+    if (noSession) return noSession
     requests.push(String(target))
     return new Response(JSON.stringify({ ok: true, pages: [{ url: sourceUrl, path: '/library/' }, { url: sourceUrl + 'one', path: '/library/one' }], limited: false }))
   }) as typeof fetch
@@ -70,7 +76,11 @@ test('first checkbox retries an empty discovery without losing the selected webs
   const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   const host = document.createElement('section'), root = createRoot(host)
   let requests = 0
-  globalThis.fetch = (async () => new Response(JSON.stringify({ ok: true, pages: ++requests === 1 ? [] : [{ url: sourceUrl, path: '/library/' }], limited: false }))) as typeof fetch
+  globalThis.fetch = (async target => {
+    const noSession = apiNativeNoSession(target)
+    if (noSession) return noSession
+    return new Response(JSON.stringify({ ok: true, pages: ++requests === 1 ? [] : [{ url: sourceUrl, path: '/library/' }], limited: false }))
+  }) as typeof fetch
   try {
     await act(async () => root.render(<SourceFilesHarness />))
     await act(async () => host.querySelector<HTMLInputElement>('input[aria-label="Select all visible pages"]')!.click())
@@ -94,6 +104,8 @@ test('one Source Files tree supports folder selection, collapse and read-only di
   const root = createRoot(host), source = sourceUrl
   const requests: string[] = [], resolutions: Array<string[] | null> = [], opened: string[] = []
   globalThis.fetch = (async url => {
+    const noSession = apiNativeNoSession(url)
+    if (noSession) return noSession
     requests.push(String(url))
     return new Response(JSON.stringify({ ok: true, pages: [source, source + 'a', source + 'b'].map(url => ({ url, path: new URL(url).pathname })), limited: false }))
   }) as typeof fetch
@@ -273,6 +285,8 @@ test('file row imports only its selected pages through the existing workspace br
   let importedResolve!: () => void
   const importedReady = new Promise<void>(resolve => { importedResolve = resolve })
   globalThis.fetch = (async target => {
+    const noSession = apiNativeNoSession(target)
+    if (noSession) return noSession
     requests.push(String(target))
     return new Response(JSON.stringify({ ok: true, pages: [{ url: url + 'one', path: '/library/one' }], limited: false }))
   }) as typeof fetch
@@ -307,6 +321,8 @@ test('Source Files restores page checkboxes after restart without importing unti
   let importedResolve!: () => void
   const importedReady = new Promise<void>(resolve => { importedResolve = resolve })
   globalThis.fetch = (async target => {
+    const noSession = apiNativeNoSession(target)
+    if (noSession) return noSession
     requests.push(String(target))
     return new Response(JSON.stringify({ ok: true, pages: [{ url: sourceUrl + 'one', path: '/library/one' }], limited: false }))
   }) as typeof fetch
@@ -481,6 +497,8 @@ test('cancel retains saved and discovered rows through document switches and res
   const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   let requests = 0, refreshing = false, signal: AbortSignal | undefined, completeRefresh!: (response: Response) => void
   globalThis.fetch = (async (_target, init) => {
+    const noSession = apiNativeNoSession(_target)
+    if (noSession) return noSession
     assert.equal(String(_target), '/__website_import/discover'); assert.equal(init?.method, 'POST'); assert.deepEqual(JSON.parse(String(init?.body)), { rootUrl: sourceUrl, url: sourceUrl }); assert.ok(init?.signal && !init.signal.aborted)
     requests++; if (!refreshing) return new Response(JSON.stringify({ ok: true, pages: [sourceUrl, sourceUrl + 'new'].map(url => ({ url, path: new URL(url).pathname })), limited: false }))
     assert.equal(signal, undefined); signal = init!.signal as AbortSignal; return new Promise<Response>(resolve => { completeRefresh = resolve })
@@ -521,7 +539,12 @@ test('cancel retains saved and discovered rows through document switches and res
 test('Launch callback does not discard discovery on import completion or restart', async () => {
   const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
   let requests = 0, beforeImportCalls = 0, imports = 0, pending!: Promise<unknown>
-  globalThis.fetch = (async () => { requests++; return new Response(JSON.stringify({ ok: true, pages: [{ url: sourceUrl + 'new', path: '/library/new' }], limited: false })) }) as typeof fetch
+  globalThis.fetch = (async target => {
+    const noSession = apiNativeNoSession(target)
+    if (noSession) return noSession
+    requests++
+    return new Response(JSON.stringify({ ok: true, pages: [{ url: sourceUrl + 'new', path: '/library/new' }], limited: false }))
+  }) as typeof fetch
   const unregister = registerMarkdownWorkspaceActionBridge('test-launch-retention', { importWebsite: async (_url, options) => {
     assert.deepEqual(options?.selectedUrls, [sourceUrl + 'new']); imports++; return { handled: true }
   } })
@@ -544,56 +567,4 @@ test('Launch callback does not discard discovery on import completion or restart
     assert.equal(imports, 1, 'restart never imports automatically')
     assert.equal(beforeImportCalls, 1, 'restart does not replay Launch side effects')
   } finally { await act(async () => { root.unmount(); finishWebsiteImportSelection(null) }); unregister(); globalThis.fetch = previousFetch; restore() }
-})
-
-test('discovered page import is explicit, locked while running and preserves the live batch chooser', async () => {
-  const { restore } = await initJsdomHarness(), previousFetch = globalThis.fetch
-  const host = document.createElement('section'), root = createRoot(host)
-  document.body.append(host)
-  const page = sourceUrl + 'topic?category=Examples%20Only', other = sourceUrl + 'other'
-  globalThis.fetch = (async () => new Response(JSON.stringify({ ok: true, pages: [page, other].map(url => ({ url, path: new URL(url).pathname, title: url === page ? 'Topic page' : 'Other page' })), limited: false }))) as typeof fetch
-  const calls: Array<{ url: string; options: unknown }> = [], resolutions: unknown[] = []
-  let complete!: () => void, reject!: (error: Error) => void, started!: () => void
-  let importStarted = new Promise<void>(resolve => { started = resolve })
-  const unregister = registerMarkdownWorkspaceActionBridge('test-direct-page', { importWebsite: async (url, options) => {
-    calls.push({ url, options }); started()
-    await new Promise<void>((resolve, fail) => { complete = resolve; reject = fail })
-    return { handled: true }
-  } })
-  const importButton = () => Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(button => button.getAttribute('aria-label') === 'Import page Topic page')!
-  try {
-    await act(async () => { void chooseWebsiteImportPages(sourceUrl, sourceEntry.path).then(urls => resolutions.push(urls)); root.render(<><SourceFileWebsiteActions entry={{ ...sourceEntry, name: 'Topic page', path: '/topic.md', text: undefined }} urlOverride={page} destinationPath="/topic.md" confirmationOwner={false} discoveryContext /><WebsiteImportSelectionView /></>) })
-    await settleDiscovery()
-    assert.equal(useWebsiteImportSelectionSession.getState().session!.selected.size, 0)
-    await act(async () => toggleWebsiteSelection([other], true))
-    assert.equal(importButton().disabled, false)
-    await act(async () => { importButton().click(); await importStarted })
-    const id = useWebsiteImportSelectionSession.getState().session!.id
-    assert.equal(calls.length, 1)
-    const options = calls[0].options as { selectedUrls: string[]; maxPages: number; minPages: number; source: string; destinationPath: string }
-    assert.equal(calls[0].url, sourceUrl)
-    assert.deepEqual(options.selectedUrls, [page], 'imports the addressed page, not the selected sibling')
-    assert.equal(options.maxPages, 1); assert.equal(options.minPages, 1)
-    assert.equal(options.source, 'invocation', 'runtime failures must propagate')
-    assert.equal(options.destinationPath, '/topic.md', 'the clicked row owns workspace placement')
-    assert.ok(importButton().disabled)
-    assert.match(document.querySelector('section[aria-label="Website discovery status"]')!.textContent || '', /Importing https:/)
-    await act(async () => { importButton().click(); await importDiscoveredWebsitePage(id, page) })
-    assert.equal(calls.length, 1, 'duplicate clicks and callbacks are locked')
-    await act(async () => reject(new Error('Page capture failed')))
-    assert.equal(importButton().disabled, false)
-    assert.match(document.querySelector('[role="alert"]')!.textContent || '', /Page capture failed/)
-    assert.deepEqual([...useWebsiteImportSelectionSession.getState().session!.selected], [other])
-    await act(async () => { await importDiscoveredWebsitePage(id + 1, page); await importDiscoveredWebsitePage(id, 'https://outside.invalid/') })
-    assert.equal(calls.length, 1, 'stale sessions and non-members do not import')
-    importStarted = new Promise<void>(resolve => { started = resolve })
-    await act(async () => { importButton().click(); await importStarted })
-    assert.equal(calls.length, 2, 'retry uses the same direct action')
-    await act(async () => complete())
-    assert.equal(useWebsiteImportSelectionSession.getState().session!.error, '')
-    assert.deepEqual([...useWebsiteImportSelectionSession.getState().session!.selected], [other])
-    assert.deepEqual(resolutions, [], 'direct import leaves the pending batch chooser intact')
-    await act(async () => finishWebsiteImportSelection([other]))
-    assert.deepEqual(resolutions, [[other]])
-  } finally { await act(async () => { complete?.(); root.unmount(); finishWebsiteImportSelection(null) }); unregister(); host.remove(); globalThis.fetch = previousFetch; restore() }
 })

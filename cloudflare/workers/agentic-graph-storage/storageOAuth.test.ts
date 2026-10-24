@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createFixture, migrations, syncMigrations } from '../../../canvas/src/__tests__/helpers/native-agentic-graph-storage-fixture'
 import { readAgenticGraphStorageBrowserSessionConfiguration, handleAgenticGraphStorageBrowserSessionRoute as route } from './storageBrowserSession'
-import { readOAuthConfiguration, exchangeOAuthIdentity, OAuthFailure } from './storageOAuthProviders'
+import { readOAuthConfiguration, isAllowedOAuthOrigin, exchangeOAuthIdentity, OAuthFailure } from './storageOAuthProviders'
 import { oauthRandom, openOAuthState, sealOAuthState, OAUTH_COOKIE, safeOAuthReturnTo } from './storageOAuthState'
 import { admitOAuthRequest, OAUTH_DAILY_REQUESTS } from './storageOAuthQuota'
 import { AGENTIC_OS_STORAGE_ROUTE_PATHS, AGENTIC_OS_STORAGE_SYNC_API_VERSION, hashAgenticGraphStorageContent } from './contract'
@@ -18,12 +18,12 @@ const fixture = () => createFixture([...syncMigrations, '0016_storage_browser_id
 const cookieOf = (r: Response) => r.headers.get('set-cookie')!.split(';')[0]
 const profileFetch = (calls: string[], id = 8945812) => (async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = String(input); calls.push(url)
-  assert.equal(init?.redirect, 'error'); assert.ok(init?.signal)
+  assert.equal(init?.redirect, 'manual'); assert.ok(init?.signal)
   if (url === 'https://github.com/login/oauth/access_token') {
     const form = init!.body as URLSearchParams
     assert.equal(form.get('client_id'), env.AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_ID)
     assert.match(form.get('code_verifier')!, /^[\w-]{43}$/)
-    return Response.json({ access_token: 'ghu_' + 'a'.repeat(40), token_type: 'bearer', scope: '' })
+    return Response.json({ access_token: 'gho_' + 'a'.repeat(40), token_type: 'bearer', scope: '' })
   }
   assert.equal(url, 'https://api.github.com/user')
   return Response.json({ id })
@@ -37,6 +37,7 @@ const start = async (f: Awaited<ReturnType<typeof fixture>>, provider = 'github'
   assert.equal(response.status, 303)
   const url = new URL(response.headers.get('location')!)
   assert.equal(url.searchParams.get('code_challenge_method'), 'S256')
+  if (provider === 'github') assert.equal(url.searchParams.has('scope'), false)
   assert.ok(!url.searchParams.has('client_secret'))
   return { cookie: cookieOf(response), callback: `/api/storage/auth/callback?state=${url.searchParams.get('state')}&code=valid-code` }
 }
@@ -52,6 +53,17 @@ test('OAuth configuration fails closed and rejects open redirects', () => {
     assert.equal(readOAuthConfiguration({ ...env, AGENTIC_OS_STORAGE_OAUTH_ORIGINS: origins }), null)
   }
   assert.equal(readOAuthConfiguration({ ...env, AGENTIC_OS_STORAGE_GITHUB_APP_CLIENT_SECRET: '' }), null)
+  const fixedOriginConfig = readOAuthConfiguration(env)!
+  assert.equal(isAllowedOAuthOrigin('http://127.0.0.1:4188', fixedOriginConfig), true)
+  assert.equal(isAllowedOAuthOrigin('http://127.0.0.1:5175', fixedOriginConfig), false)
+  const loopbackConfig = readOAuthConfiguration({ ...env, AGENTIC_OS_STORAGE_OAUTH_ALLOW_LOOPBACK_PORTS: 'true' })!
+  assert.equal(isAllowedOAuthOrigin('http://127.0.0.1:5175', loopbackConfig), true)
+  assert.equal(isAllowedOAuthOrigin('http://127.0.0.1:65535', loopbackConfig), true)
+  for (const candidate of ['http://localhost:5175', 'http://127.0.0.2:5175', 'https://127.0.0.1:5175',
+    'http://127.0.0.1:5175/path', 'http://127.0.0.1:65536']) {
+    assert.equal(isAllowedOAuthOrigin(candidate, loopbackConfig), false, candidate)
+  }
+  assert.equal(readOAuthConfiguration({ ...env, AGENTIC_OS_STORAGE_OAUTH_ALLOW_LOOPBACK_PORTS: 'yes' }), null)
   for (const path of ['//evil.test', '/\\evil.test', '/\nsecret', 'https://evil.test']) assert.equal(safeOAuthReturnTo(path), null)
 })
 test('sealed state rejects tampering, expiry and future timestamps', async () => {
@@ -103,7 +115,7 @@ test('OAuth mode preserves the bounded operator exchange used by protected relea
     assert.equal((await invoke(f, '/api/storage/auth/login', { ...request, headers: { ...request.headers, origin: 'https://evil.test' } })).status, 403)
   } finally { await f.close() }
 })
-test('GitHub App callback issues existing storage cookie once; mapping and membership remain authoritative', async () => {
+test('GitHub OAuth callback issues existing storage cookie once; mapping and membership remain authoritative', async () => {
   const f = await fixture()
   try {
     provision(f)
@@ -153,7 +165,9 @@ test('provider failures and oversized responses do not retry or expose tokens', 
   const state = { provider: 'github' as const, origin, returnTo: '/', clientId: config.clients.github!.id,
     state: oauthRandom(), verifier: oauthRandom(), nonce: oauthRandom(), issuedAt: now }
   for (const response of [new Response('limited', { status: 429 }), Response.json({}, { headers: { 'x-ratelimit-remaining': '0' } }),
-    new Response('x'.repeat(65537)), Response.json({ access_token: 'ghp_' + 'a'.repeat(40), token_type: 'bearer', scope: '' })]) {
+    new Response('x'.repeat(65537)),
+    new Response(null, { status: 302, headers: { location: 'https://untrusted.example/collect' } }),
+    ...['ghp_', 'ghu_'].map(prefix => Response.json({ access_token: prefix + 'a'.repeat(40), token_type: 'bearer', scope: '' }))]) {
     let calls = 0
     await assert.rejects(exchangeOAuthIdentity(state, 'code', config, (async () => { calls++; return response }) as typeof fetch, now))
     assert.equal(calls, 1)

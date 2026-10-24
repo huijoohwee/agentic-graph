@@ -63,7 +63,6 @@ function ToastCopyButton({ message, toastId, iconStrokeWidth }: { message: strin
         strokeWidth={iconStrokeWidth}
         role="img"
         aria-label={`${label} icon`}
-        aria-hidden={false}
         focusable={false}
         data-kg-selection-surface="toast-copy-icon"
       />
@@ -106,11 +105,14 @@ function ToastCard({
           strokeWidth={uiIconStrokeWidth}
           role="img"
           aria-label={toast.busy ? 'Notification in progress' : `${toast.kind} notification`}
-          aria-hidden={false}
           focusable={false}
           data-kg-selection-surface="toast-status-icon"
         />
-        <section className="min-w-0">
+        <section
+          className="min-w-0 pointer-events-auto"
+          aria-label="Notification message and actions"
+          data-kg-selection-surface="toast-content"
+        >
           <p
             className="kg-toast-message pointer-events-auto select-text cursor-text whitespace-pre-wrap break-words text-xs leading-5"
             data-kg-selection-surface="toast-message"
@@ -141,7 +143,6 @@ function ToastCard({
               strokeWidth={uiIconStrokeWidth}
               role="img"
               aria-label={`${pinned ? 'Unpin' : 'Pin'} notification icon`}
-              aria-hidden={false}
               focusable={false}
               data-kg-selection-surface="toast-pin-icon"
             />
@@ -166,7 +167,6 @@ function ToastCard({
                 strokeWidth={uiIconStrokeWidth}
                 role="img"
                 aria-label="Dismiss notification icon"
-                aria-hidden={false}
                 focusable={false}
                 data-kg-selection-surface="toast-dismiss-icon"
               />

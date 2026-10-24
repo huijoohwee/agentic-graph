@@ -1,6 +1,6 @@
 import { findSavedUrlImport, recordUrlImport, type SavedUrlImport } from './incrementalImport'
 import { extractYamlFrontmatterHeaderBlock, readYamlFrontmatterValue } from '@/lib/markdown/frontmatter'
-import { workspaceImportSourceUrlsMatch } from './sourceUrlIdentity'
+import { readWorkspaceImportMarkdownSourceUrl, workspaceImportSourceUrlsMatch } from './sourceUrlIdentity'
 import type { WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
 import { WORKSPACE_ROOT_PATH, normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { parseGitHubRepoUrl } from '../githubRepoApi'
@@ -16,6 +16,9 @@ import {
 } from './shareUrlExport'
 import { persistImportedWebpageUrlArtifact } from './webpageUrlExport'
 import { writeWorkspaceFileTextEnsuringFile } from '@/features/chat/chatWorkspaceFsWrite'
+import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
+import { ensureWorkspaceDocsMirrorFolder, upsertWorkspaceDocsMirrorText } from '@/features/workspace-fs/workspaceSeedProvider'
+import { saveWorkspaceWebsiteLocalCopy } from '@/features/workspace-fs/workspaceRevealInFileManager'
 import { buildCorpusImportManifest, buildCorpusSourceUnit } from '@/features/queryable-corpus/sourceFilesCorpusManifest'
 import {
   buildStrybldrStoryboardDocument,
@@ -35,6 +38,46 @@ import { getYouTubeId } from 'grph-shared/rich-media/providers'
  */
 export function isWorkspaceRepositoryImportUrl(rawUrl: string): boolean {
   return parseGitHubRepoUrl(String(rawUrl || '').trim()) !== null
+}
+
+async function writeImportedPageToExactDestination(args: {
+  fs: WorkspaceFs
+  path: WorkspacePath
+  sourceUrl: string
+  text: string
+  mirrorToHost?: boolean
+}): Promise<WorkspacePath> {
+  const path = normalizeWorkspacePath(args.path)
+  if (!String(args.path).startsWith('/') || path === '/' || path !== args.path
+    || path.split('/').some(part => part === '.' || part === '..')) {
+    throw new Error('An in-place import requires an exact workspace file path.')
+  }
+  if (!workspaceImportSourceUrlsMatch(readWorkspaceImportMarkdownSourceUrl(args.text), args.sourceUrl)) {
+    throw new Error('The imported page did not retain its source URL; the selected destination was left unchanged.')
+  }
+  const parentPath = normalizeWorkspacePath(path.slice(0, path.lastIndexOf('/')) || '/')
+  const pathParts = path.split('/').filter(Boolean)
+  const name = pathParts[pathParts.length - 1]
+  if (!name) throw new Error('An in-place import requires a file name.')
+  await ensureWorkspaceFolderTreeIfMissing({ fs: args.fs, folderPath: parentPath })
+  const existing = await args.fs.readFileText(path)
+  if (existing === null) {
+    await args.fs.createFile({ parentPath, name, text: args.text, requireExactPath: true })
+  } else {
+    const existingUrl = readWorkspaceImportMarkdownSourceUrl(existing)
+    if (!workspaceImportSourceUrlsMatch(existingUrl, args.sourceUrl)) {
+      throw new Error(`Website destination belongs to another document: ${path}`)
+    }
+    await args.fs.writeFileText(path, args.text, { expectedText: existing })
+  }
+  if (args.mirrorToHost !== false) {
+    if (path.startsWith('/websites/')) await saveWorkspaceWebsiteLocalCopy(path, args.text)
+    else {
+      await ensureWorkspaceDocsMirrorFolder({ workspacePath: parentPath })
+      await upsertWorkspaceDocsMirrorText({ workspacePath: path, text: args.text })
+    }
+  }
+  return path
 }
 
 async function acceptsSavedVideoAgentImport(saved: SavedUrlImport, requestedUrl: string, requireOwned: boolean): Promise<boolean> {
@@ -96,6 +139,8 @@ export async function importWorkspaceUrl(args: {
   documentSemanticMode?: WorkspaceUrlImportDocumentModeId | null
   viewHint?: 'markdown' | 'json' | 'html'
   preferDirectFetch?: boolean
+  browserSessionId?: string
+  destinationPath?: WorkspacePath
   fetchUrlContent?: typeof fetchWorkspaceUrlContent
   mirrorToHost?: boolean
 }): Promise<WorkspaceImportResult> {
@@ -103,7 +148,7 @@ export async function importWorkspaceUrl(args: {
   if (!rawUrl) return { createdPaths: [], sources: [], skipped: [], failed: [] }
   const parentPath = args.parentPath || WORKSPACE_ROOT_PATH
 
-  if (/^https?:\/\//i.test(rawUrl) && !args.canvas2dRenderer && !args.documentSemanticMode && !args.viewHint) {
+  if (/^https?:\/\//i.test(rawUrl) && !args.destinationPath && !args.canvas2dRenderer && !args.documentSemanticMode && !args.viewHint) {
     const saved = await findSavedUrlImport(args.fs, rawUrl,
       saved => acceptsSavedVideoAgentImport(saved, rawUrl, !!getYouTubeId(rawUrl)))
     if (saved) {
@@ -172,6 +217,8 @@ export async function importWorkspaceUrl(args: {
     canvas2dRenderer: args.canvas2dRenderer,
     documentSemanticMode: args.documentSemanticMode,
     preferDirectFetch: args.preferDirectFetch,
+    browserSessionId: args.browserSessionId,
+    bypassCache: Boolean(args.browserSessionId),
     onProgress: p => {
       try {
         args.onProgress?.({ phase: 'fetching', current: p, total: 100, label: 'Fetching' })
@@ -194,9 +241,16 @@ export async function importWorkspaceUrl(args: {
     importedText: fetched.text,
   })
   const sharePrimaryPath = sharePrimaryPaths?.exportMarkdownPath || null
+  if (args.destinationPath && (sharePrimaryPath || fetched.sourceMediaKind === 'video'
+    || args.canvas2dRenderer || args.documentSemanticMode)) {
+    throw new Error('This URL produces multiple import artifacts and cannot be saved to one page destination.')
+  }
+  const exactDestinationPath = args.destinationPath ? normalizeWorkspacePath(args.destinationPath) : ''
   const webpageUrlArtifact = sharePrimaryPath
     ? null
-    : await persistImportedWebpageUrlArtifact({
+    : exactDestinationPath
+      ? null
+      : await persistImportedWebpageUrlArtifact({
         fs: args.fs,
         url: sourceUrl,
         importedName: fetched.name,
@@ -204,15 +258,26 @@ export async function importWorkspaceUrl(args: {
         mirrorToHost: args.mirrorToHost,
       })
   const webpageUrlArtifactPath = webpageUrlArtifact?.exportMarkdownPath || null
+  const exactDestination = exactDestinationPath
+    ? await writeImportedPageToExactDestination({
+        fs: args.fs,
+        path: exactDestinationPath,
+        sourceUrl,
+        text: fetched.text,
+        mirrorToHost: args.mirrorToHost,
+      })
+    : null
   const createdPath = sharePrimaryPath
     ? (await writeWorkspaceFileTextEnsuringFile({
         fs: args.fs,
         path: sharePrimaryPath,
         text: fetched.text,
       }), sharePrimaryPath)
-    : webpageUrlArtifactPath
-      ? webpageUrlArtifactPath
-    : await args.fs.createFile({ parentPath, name: fetched.name, text: fetched.text })
+    : exactDestination
+      ? exactDestination
+      : webpageUrlArtifactPath
+        ? webpageUrlArtifactPath
+        : await args.fs.createFile({ parentPath, name: fetched.name, text: fetched.text })
   try {
     args.onProgress?.({ phase: 'writing', current: 1, total: 1, label: 'Writing' })
   } catch {

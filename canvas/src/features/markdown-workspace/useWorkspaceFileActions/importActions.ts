@@ -281,7 +281,7 @@ export function useWorkspaceImportActions(args: {
   )
 
   const handleImportUrl = React.useCallback(
-    async (urlRaw: string, opts?: { canvas2dRenderer?: Canvas2dRendererId | null; documentSemanticMode?: 'document' | 'keyword' | null }) => {
+    async (urlRaw: string, opts?: { canvas2dRenderer?: Canvas2dRendererId | null; documentSemanticMode?: 'document' | 'keyword' | null; preserveActiveDocument?: boolean; browserSessionId?: string; destinationPath?: string }) => {
       const url = normalizeWorkspaceImportUrlInput(urlRaw)
       if (!url) {
         status.setStatusError('Import failed: enter a valid URL or local file path')
@@ -313,6 +313,8 @@ export function useWorkspaceImportActions(args: {
             parentPath: WORKSPACE_ROOT_PATH,
             canvas2dRenderer: selectedCanvas2dRenderer,
             documentSemanticMode: selectedDocumentSemanticMode,
+            browserSessionId: opts?.browserSessionId,
+            destinationPath: opts?.destinationPath,
             viewHint: selectedCanvas2dRenderer ? 'html' : undefined,
             onProgress: p => {
               if (importJobRef.current !== jobId) return
@@ -359,12 +361,14 @@ export function useWorkspaceImportActions(args: {
         }
         if (importJobRef.current !== jobId) return bridgeResult
         const summary = formatWorkspaceImportSummary('Imported URL', res)
-        const applyToGraph = typeof res.applyToGraph === 'boolean'
-          ? res.applyToGraph
-          : await importRuntime.resolveImportedCanvasDocumentApplyToGraph({
-              fs,
-              createdPaths: res.createdPaths,
-            })
+        const applyToGraph = opts?.preserveActiveDocument === true
+          ? false
+          : typeof res.applyToGraph === 'boolean'
+            ? res.applyToGraph
+            : await importRuntime.resolveImportedCanvasDocumentApplyToGraph({
+                fs,
+                createdPaths: res.createdPaths,
+              })
         if (importJobRef.current !== jobId) return bridgeResult
         const { createdPath, sourceUrl, jsonSourceText } = await finalizeWorkspaceImportCommit({
           fs,
@@ -374,7 +378,7 @@ export function useWorkspaceImportActions(args: {
           resolveSourceUrl: true,
         })
 
-        if (createdPath) {
+        if (createdPath && opts?.preserveActiveDocument !== true) {
           await focusAfterImport(createdPath, { sourceUrl, jsonSourceText, applyToGraph, jobId })
         }
         if (selectedCanvas2dRenderer === 'design') {

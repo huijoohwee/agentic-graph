@@ -5,11 +5,20 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { uiWorkspaceSettingsRegistry } from '@/features/settings/registry-ui.workspace'
 import {
   readWorkspaceCloudSyncEnabledSetting,
+  readWorkspaceCloudSyncEnabledExplicitSetting,
+  readWorkspaceCloudTransferPathSetting,
   readWorkspaceDocsMirrorRootPathSetting,
   readWorkspaceImportDefaultSourceUrlSetting,
   writeWorkspaceCloudSyncEnabledSetting,
+  writeWorkspaceCloudTransferPathSetting,
 } from '@/lib/workspace/workspaceStoreSyncSettings'
+import {
+  clearOtherStorageAccountSelection,
+  readAgenticGraphStorageWorkspaceSelection,
+  selectAgenticGraphStorageWorkspace,
+} from '@/lib/storage/agentic-graph-storage-workspace-selection'
 import { DocumentStorageSyncSettingsRows } from '@/features/panels/views/DocumentStorageSyncSettingsRows'
+import { readAgenticGraphStorageRuntimeSyncAvailable } from '@/features/source-files/source-files-agentic-graph-storage-settings'
 
 const DASH_D1_URL = 'https://dash.cloudflare.com/170e89fdb8679ff2fcc2900e25ed04f4/workers/d1'
 const LOCAL_DOCS_ROOT_SAMPLE = ['', 'Users', 'huijoohwee', 'Documents', 'GitHub', 'huijoohwee', 'docs'].join('/')
@@ -52,9 +61,25 @@ export function testWorkspaceImportDefaultSourceUrlPrefersStorageBaseUrlForLocal
 
 export function testWorkspaceCloudSyncPreferenceDoesNotDisableLocalMirrorSettings() {
   const { restore } = initJsdomHarness()
+  const previousSelection = readAgenticGraphStorageWorkspaceSelection()
   const previousCloudSync = readWorkspaceCloudSyncEnabledSetting()
+  const previousTransferPath = readWorkspaceCloudTransferPathSetting()
   try {
+    clearOtherStorageAccountSelection('')
+    const runId = Date.now().toString(36)
+    selectAgenticGraphStorageWorkspace({ userId: `user-a-${runId}`, workspaceId: `workspace-a-${runId}` })
+    if (readWorkspaceCloudSyncEnabledSetting()) throw new Error('expected a newly selected account workspace to start offline')
+    writeWorkspaceCloudSyncEnabledSetting(true)
+    writeWorkspaceCloudTransferPathSetting('/private-a/notes.md')
+    selectAgenticGraphStorageWorkspace({ userId: `user-b-${runId}`, workspaceId: `workspace-b-${runId}` })
+    if (readWorkspaceCloudSyncEnabledSetting()) throw new Error('expected account B not to inherit account A cloud sync preference')
+    if (readWorkspaceCloudTransferPathSetting() !== '/') throw new Error('expected account B to start with its own transfer path')
     writeWorkspaceCloudSyncEnabledSetting(false)
+    writeWorkspaceCloudTransferPathSetting('/private-b')
+    selectAgenticGraphStorageWorkspace({ userId: `user-a-${runId}`, workspaceId: `workspace-a-${runId}` })
+    if (!readWorkspaceCloudSyncEnabledSetting()) throw new Error('expected account A cloud sync preference to remain independent')
+    if (readWorkspaceCloudTransferPathSetting() !== '/private-a/notes.md') throw new Error('expected account A transfer path to remain independent')
+    selectAgenticGraphStorageWorkspace({ userId: `user-b-${runId}`, workspaceId: `workspace-b-${runId}` })
     if (readWorkspaceCloudSyncEnabledSetting()) throw new Error('expected offline-only preference to persist')
     if (typeof readWorkspaceDocsMirrorRootPathSetting() !== 'string') {
       throw new Error('expected local docs mirror setting to remain available in offline-only mode')
@@ -62,7 +87,52 @@ export function testWorkspaceCloudSyncPreferenceDoesNotDisableLocalMirrorSetting
     writeWorkspaceCloudSyncEnabledSetting(true)
     if (!readWorkspaceCloudSyncEnabledSetting()) throw new Error('expected online collaboration preference to persist')
   } finally {
+    if (previousSelection) selectAgenticGraphStorageWorkspace(previousSelection)
+    else clearOtherStorageAccountSelection('')
     writeWorkspaceCloudSyncEnabledSetting(previousCloudSync)
+    writeWorkspaceCloudTransferPathSetting(previousTransferPath)
+    restore()
+  }
+}
+
+export function testWorkspaceCloudSyncExplicitChoiceEnablesStorageTransportForSelectedAccount() {
+  const { restore } = initJsdomHarness()
+  const previousSelection = readAgenticGraphStorageWorkspaceSelection()
+  const previousEnv = process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+  const globalKey = 'kg:sync:workspace:cloudEnabled'
+  const previousGlobalValue = window.localStorage.getItem(globalKey)
+  try {
+    delete process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
+    clearOtherStorageAccountSelection('')
+    window.localStorage.removeItem(globalKey)
+    writeWorkspaceCloudSyncEnabledSetting(true)
+    if (readWorkspaceCloudSyncEnabledExplicitSetting() !== true || !readAgenticGraphStorageRuntimeSyncAvailable()) {
+      throw new Error('the global Online preference stored as 1 must enable the configured same-origin transport')
+    }
+    writeWorkspaceCloudSyncEnabledSetting(false)
+    if (readWorkspaceCloudSyncEnabledExplicitSetting() !== false || readAgenticGraphStorageRuntimeSyncAvailable()) {
+      throw new Error('the global Offline preference stored as 0 must keep transport disabled')
+    }
+    const runId = Date.now().toString(36)
+    selectAgenticGraphStorageWorkspace({ userId: `sync-a-${runId}`, workspaceId: `workspace-a-${runId}` })
+    if (readWorkspaceCloudSyncEnabledExplicitSetting() !== null || readAgenticGraphStorageRuntimeSyncAvailable()) {
+      throw new Error('a new account must stay offline until its owner enables sync')
+    }
+    writeWorkspaceCloudSyncEnabledSetting(true)
+    if (readWorkspaceCloudSyncEnabledExplicitSetting() !== true || !readAgenticGraphStorageRuntimeSyncAvailable()) {
+      throw new Error('an explicit account-scoped Online choice must enable the configured same-origin transport')
+    }
+    selectAgenticGraphStorageWorkspace({ userId: `sync-b-${runId}`, workspaceId: `workspace-b-${runId}` })
+    if (readWorkspaceCloudSyncEnabledExplicitSetting() !== null || readAgenticGraphStorageRuntimeSyncAvailable()) {
+      throw new Error('one account must not enable cloud transport for another account')
+    }
+  } finally {
+    if (previousSelection) selectAgenticGraphStorageWorkspace(previousSelection)
+    else clearOtherStorageAccountSelection('')
+    if (previousGlobalValue === null) window.localStorage.removeItem(globalKey)
+    else window.localStorage.setItem(globalKey, previousGlobalValue)
+    if (typeof previousEnv === 'string') process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED = previousEnv
+    else delete process.env.VITE_AGENTIC_OS_STORAGE_RUNTIME_SYNC_ENABLED
     restore()
   }
 }

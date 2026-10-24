@@ -305,11 +305,6 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
   const debouncedSignalText = useDebouncedValue(activeText, 450, webpageMeta?.url)
   const documentSignals = React.useMemo(() => indexDocumentSignals(debouncedSignalText), [debouncedSignalText])
   useDocumentInsightsSource({ key: activeDocumentKey, text: activeText, signals: activeText === debouncedSignalText ? documentSignals : null, revealLine: revealLineInEditor })
-  const webpageSignalSummary = React.useMemo(() => webpageMeta?.url ? {
-    nav: documentSignals.nav.length, cta: documentSignals.cta.length,
-    price: documentSignals.price.length, time: documentSignals.time.length,
-  } : null, [documentSignals, webpageMeta?.url])
-
   const handleMarkdownViewerRootRef = React.useCallback((el: HTMLElement | null) => {
     viewerRef.current = el
     setViewerEl(prev => (prev === el ? prev : el))
@@ -517,7 +512,6 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
         onExportSvg: props.passive ? undefined : handleExportSvg,
         onToggleFullscreen,
         presentationApiRef,
-        webpageSignalSummary,
         webpageWorkspaceMeta, onWebpageChangeView, contentFormat, onContentFormatChange,
         forceMarkdownEditorInEditorMode,
       }}

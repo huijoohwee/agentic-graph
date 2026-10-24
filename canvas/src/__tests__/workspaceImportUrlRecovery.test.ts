@@ -410,7 +410,7 @@ export async function testWorkspaceImportUrlImportDoesNotReuseCachedConnectionSh
   }) as unknown as typeof fetch
   setWorkspaceWebpageDomExportForTests(async () => null)
   try {
-    const rejectedConnectionShell = await fetchWorkspaceUrlContent(url, { mode: 'import', viewHint: 'markdown' }).then(() => false, e => String((e as { message?: unknown })?.message || e).includes('Authenticated browser session required'))
+    const rejectedConnectionShell = await fetchWorkspaceUrlContent(url, { mode: 'import', viewHint: 'markdown' }).then(() => false, e => String((e as { message?: unknown })?.message || e).includes('authentication or loading shell'))
     if (!rejectedConnectionShell) throw new Error('expected first import fetch to reject the low-fidelity connection shell before persistence')
     currentHtml = [
       '<!doctype html>',

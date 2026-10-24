@@ -1,6 +1,7 @@
 import { LS_KEYS } from '@/lib/config'
 import { readEnvString } from '@/lib/config.env'
 import { getLocalStorage, lsBool, lsInt, lsSetBool, lsSetInt } from '@/lib/persistence'
+import { readAgenticGraphStorageWorkspaceSelection, subscribeAgenticGraphStorageWorkspaceSelectionChanged } from '@/lib/storage/agentic-graph-storage-workspace-selection'
 
 const SETTINGS_EVENT = 'kg:workspace-store-sync-settings:changed'
 const SEED_SYNC_POLL_MIN_MS = 1000
@@ -45,19 +46,75 @@ export const subscribeWorkspaceStoreSyncSettingsChanged = (
     cb()
   }
   window.addEventListener(SETTINGS_EVENT, handler)
+  const unsubscribeSelection = subscribeAgenticGraphStorageWorkspaceSelectionChanged(cb)
   return () => {
     window.removeEventListener(SETTINGS_EVENT, handler)
+    unsubscribeSelection()
   }
 }
 
+const selectedWorkspaceSettingKey = (baseKey: string): string => {
+  const selection = readAgenticGraphStorageWorkspaceSelection()
+  return selection
+    ? `${baseKey}:account:${encodeURIComponent(selection.userId)}:${encodeURIComponent(selection.workspaceId)}`
+    : baseKey
+}
+
+const readSelectedWorkspaceBoolean = (fallback: boolean): boolean => {
+  const selection = readAgenticGraphStorageWorkspaceSelection()
+  if (!selection) return lsBool(LS_KEYS.workspaceCloudSyncEnabled, fallback)
+  try {
+    const value = getLocalStorage()?.getItem(selectedWorkspaceSettingKey(LS_KEYS.workspaceCloudSyncEnabled))
+    // A new account/workspace starts offline until its owner explicitly enables sync.
+    return value === 'true'
+  } catch { return false }
+}
+
+const writeSelectedWorkspaceBoolean = (baseKey: string, value: boolean): boolean => {
+  try {
+    const storage = getLocalStorage()
+    if (!storage) return false
+    storage.setItem(selectedWorkspaceSettingKey(baseKey), String(value))
+    return true
+  } catch { return false }
+}
+
 export const readWorkspaceCloudSyncEnabledSetting = (): boolean => {
-  return lsBool(LS_KEYS.workspaceCloudSyncEnabled, true)
+  return readSelectedWorkspaceBoolean(true)
+}
+
+/** Returns only an explicit account/workspace choice; unset preferences stay offline. */
+export const readWorkspaceCloudSyncEnabledExplicitSetting = (): boolean | null => {
+  try {
+    const value = getLocalStorage()?.getItem(selectedWorkspaceSettingKey(LS_KEYS.workspaceCloudSyncEnabled))
+    return value === 'true' || value === '1' ? true : value === 'false' || value === '0' ? false : null
+  } catch { return null }
 }
 
 export const writeWorkspaceCloudSyncEnabledSetting = (next: boolean): boolean => {
-  const written = lsSetBool(LS_KEYS.workspaceCloudSyncEnabled, !!next)
+  const written = readAgenticGraphStorageWorkspaceSelection()
+    ? writeSelectedWorkspaceBoolean(LS_KEYS.workspaceCloudSyncEnabled, !!next)
+    : lsSetBool(LS_KEYS.workspaceCloudSyncEnabled, !!next)
   notifyWorkspaceStoreSyncSettingsChanged()
   return written
+}
+
+export const readWorkspaceCloudTransferPathSetting = (): string => {
+  try {
+    const value = getLocalStorage()?.getItem(selectedWorkspaceSettingKey('kg:sync:workspace:cloudTransferPath'))
+    return typeof value === 'string' && value.length <= 1024 ? value : '/'
+  } catch { return '/' }
+}
+
+export const writeWorkspaceCloudTransferPathSetting = (next: string): boolean => {
+  const value = String(next || '/').slice(0, 1024)
+  try {
+    const storage = getLocalStorage()
+    if (!storage) return false
+    storage.setItem(selectedWorkspaceSettingKey('kg:sync:workspace:cloudTransferPath'), value)
+    notifyWorkspaceStoreSyncSettingsChanged()
+    return true
+  } catch { return false }
 }
 
 export const readWorkspaceSeedSyncEnabledSetting = (): boolean => {

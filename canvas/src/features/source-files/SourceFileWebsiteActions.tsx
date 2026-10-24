@@ -1,5 +1,5 @@
 import React from 'react'
-import { Download, Link, X, Eraser, ListPlus, RefreshCcw, Info, type LucideIcon } from 'lucide-react'
+import { Download, Link, X, Eraser, ListPlus, RefreshCcw, Info, ClipboardPaste, type LucideIcon } from 'lucide-react'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 import type { WorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import { sourceFileWebsiteUrl } from './websiteImportTreeProjection'
@@ -9,13 +9,13 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { importSelectedWebsiteFolderPages, toggleWebsiteSelection } from './websiteImportSelectionSession'
 import { useWebsiteImportSelectionSession, importWebsiteFromSourceFiles, importDiscoveredWebsitePage, discoverWebsiteSelection, finishWebsiteImportSelection, confirmRestoredWebsiteSelection, cancelWebsiteImportSelection, websiteSelectionPagination, showMoreWebsiteSelectionPages } from './websiteImportSelectionSession'
 
-const icons = { discover: Link, refresh: RefreshCcw, more: ListPlus, status: Info, import: Download, cancel: X, clear: Eraser } satisfies Record<string, LucideIcon>
+const icons = { discover: Link, refresh: RefreshCcw, capture: ClipboardPaste, more: ListPlus, status: Info, import: Download, cancel: X, clear: Eraser } satisfies Record<string, LucideIcon>
 export function SourceImportAction({ action, label, type = 'button', ...props }: Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & { action: keyof typeof icons; label: string }) {
   const Icon = icons[action]
   return <button {...props} type={type} aria-label={props['aria-label'] || label} title={props.title || label}
     onClick={event => { if (!props.disabled) props.onClick?.(event) }}
     className={`inline-flex ${UI_RESPONSIVE_DATA_VIEW_ICON_ACTION_SMALL_CLASSNAME} shrink-0 items-center justify-center rounded disabled:opacity-40 ${props.disabled ? `${UI_THEME_TOKENS.text.secondary} cursor-not-allowed` : UI_THEME_TOKENS.button.hoverBg} ${UI_THEME_TOKENS.focus.primaryRing} ${props.className || ''}`}>
-    <Icon className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} role="img" aria-label={label} />
+    <Icon className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} ${props['aria-busy'] ? 'animate-spin' : ''}`} role="img" aria-label={label} />
   </button>
 }
 

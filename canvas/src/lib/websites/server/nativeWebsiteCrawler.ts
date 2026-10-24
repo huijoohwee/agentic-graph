@@ -4,6 +4,7 @@ export { isPrivateCrawlerAddress } from './crawlerNetworkPolicy'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { chromium, type APIResponse, type Browser, type BrowserContext } from 'playwright'
+import { expandWebpageDisclosures } from '../webpageDisclosureExpansion'
 import type { WebsiteImportDownloadArtifact, WebsiteImportRuntime } from './websiteImportTypes'
 
 type ProxyEndpoint = {
@@ -384,6 +385,18 @@ export class NativeWebsiteCrawler {
       for (let index = 0; index < 4; index += 1) {
         await page.evaluate(() => window.scrollBy(0, Math.max(480, window.innerHeight * 0.8))).catch(() => void 0)
         await page.waitForTimeout(80)
+      }
+      const disclosureResult = await page.evaluate(expandWebpageDisclosures, {
+        maxControls: 120,
+        maxRounds: 8,
+        maxDurationMs: 4000,
+      })
+      if (disclosureResult.limited) {
+        throw new Error('The page has more collapsed content than the crawler could safely expand; the incomplete capture was not saved')
+      }
+      if (disclosureResult.detailsOpened || disclosureResult.controlsActivated) {
+        await page.waitForLoadState('networkidle', { timeout: Math.min(1_500, this.navigationTimeoutMs) }).catch(() => void 0)
+        await page.waitForTimeout(250)
       }
       const finalUrl = page.url() || args.url
       if (!await this.isUrlAllowed(finalUrl, args.signal)) throw new Error('Crawler redirect target is not allowed')
