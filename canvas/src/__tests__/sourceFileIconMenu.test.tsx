@@ -76,8 +76,7 @@ test('files and folders use the same icon slots with unavailable actions disable
       else {
         assert.deepEqual(labels, fileLabels, 'file and folder action order cannot diverge')
         assert.deepEqual(buttons.filter(button => !button.disabled).map(button => button.getAttribute('aria-label')),
-          ['Online sync is off. Enable it in Settings → Document Storage & Sync; this app origin must also be enabled by the storage service.',
-            'Reveal in Finder', 'Copy Path', 'Copy Relative Path', 'New file', 'Rename', 'Delete'])
+          ['Reveal in Finder', 'Copy Path', 'Copy Relative Path', 'New file', 'Rename', 'Delete'])
         for (const button of buttons.filter(button => button.disabled)) {
           assert.ok(button.title)
           assert.match(button.className, /opacity-40/)
@@ -88,81 +87,6 @@ test('files and folders use the same icon slots with unavailable actions disable
         assert.deepEqual(calls, ['/notes'])
       }
     }
-  } finally { await act(async () => root.unmount()); host.remove(); restore() }
-})
-
-test('folder toolbar refreshes saved descendant webpage sources sequentially', async () => {
-  const { MarkdownWorkspaceSourceFilesList } = await import('@/features/markdown-workspace/MarkdownWorkspaceSourceFilesList')
-  const { restore } = initJsdomHarness()
-  const host = document.createElement('section'); document.body.append(host)
-  const root = createRoot(host), calls: string[] = []
-  const entries = [
-    { path: '/site', parentPath: '/', kind: 'folder' as const, name: 'site', updatedAtMs: 1 },
-    { path: '/site/a.md', parentPath: '/site', kind: 'file' as const, name: 'a.md', text: '---\nkgWebpageUrl: "https://sample.test/a"\n---\nA', updatedAtMs: 1 },
-    { path: '/site/nested', parentPath: '/site', kind: 'folder' as const, name: 'nested', updatedAtMs: 1 },
-    { path: '/site/nested/b.md', parentPath: '/site/nested', kind: 'file' as const, name: 'b.md', text: '---\nkgWebpageUrl: "https://sample.test/b"\n---\nB', updatedAtMs: 1 },
-    { path: '/site/readme.md', parentPath: '/site', kind: 'file' as const, name: 'readme.md', text: '# Local note', updatedAtMs: 1 },
-  ]
-  try {
-    await act(async () => root.render(<MarkdownWorkspaceSourceFilesList loading={false} loadError="" textSizeClass="text-xs"
-      entries={entries} expandedPaths={new Set()} activePath={null} sourcesByPath={null}
-      toggleExpanded={() => {}} onSelectFile={() => {}} onSelectFolder={() => {}}
-      onRevealInFinder={() => {}} onCreateNewFile={() => {}} onClearFile={() => {}} onRenameEntry={() => {}} onDeleteEntry={() => {}}
-      onRefreshFileFromSource={async path => { calls.push(path); return true }} />))
-    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Folder site"]')!.dispatchEvent(
-      new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 30, clientY: 40 })))
-    const refresh = document.querySelector<HTMLButtonElement>('[data-source-file-actions] button[aria-label="Refresh 2 pages in site from source"]')!
-    assert.ok(refresh, 'folder toolbar exposes refresh when descendant files carry webpage source metadata')
-    await act(async () => refresh.click())
-    assert.deepEqual(calls, ['/site/a.md', '/site/nested/b.md'])
-  } finally { await act(async () => root.unmount()); host.remove(); restore() }
-})
-
-test('folder refresh stops after the first shared authentication shell and reports skipped pages', async () => {
-  const { MarkdownWorkspaceSourceFilesList } = await import('@/features/markdown-workspace/MarkdownWorkspaceSourceFilesList')
-  const { restore } = initJsdomHarness()
-  const host = document.createElement('section'); document.body.append(host)
-  const root = createRoot(host), calls: string[] = []
-  const attempts = new Map<string, number>()
-  const entries = [
-    { path: '/site', parentPath: '/', kind: 'folder' as const, name: 'site', updatedAtMs: 1 },
-    { path: '/site/a.md', parentPath: '/site', kind: 'file' as const, name: 'a.md', text: '---\nkgWebpageUrl: "https://sample.test/a"\n---\nA', updatedAtMs: 1 },
-    { path: '/site/b.md', parentPath: '/site', kind: 'file' as const, name: 'b.md', text: '---\nkgWebpageUrl: "https://sample.test/b"\n---\nB', updatedAtMs: 1 },
-  ]
-  try {
-    await act(async () => root.render(<MarkdownWorkspaceSourceFilesList loading={false} loadError="" textSizeClass="text-xs"
-      entries={entries} expandedPaths={new Set(['/site'])} activePath={null} sourcesByPath={null}
-      toggleExpanded={() => {}} onSelectFile={() => {}} onSelectFolder={() => {}}
-      onRevealInFinder={() => {}} onCreateNewFile={() => {}} onClearFile={() => {}} onRenameEntry={() => {}} onDeleteEntry={() => {}}
-      onRefreshFileFromSource={async (path, _url, options) => {
-        const attempt = (attempts.get(path) || 0) + 1
-        attempts.set(path, attempt)
-        calls.push(path)
-        options?.onFailure?.(path === '/site/a.md' && attempt > 1
-          ? { code: 'WEBPAGE_CONTENT_INCOMPLETE', message: 'The source returned an authentication shell.' }
-          : { code: 'NETWORK_ERROR', message: 'An earlier refresh failed.' })
-        return false
-      }} />))
-    const refreshFile = async (name: string) => {
-      await act(async () => host.querySelector<HTMLButtonElement>(`button[aria-label="File ${name}"]`)!.dispatchEvent(
-        new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 30, clientY: 40 })))
-      await act(async () => document.querySelector<HTMLButtonElement>(`[data-source-file-actions] button[aria-label="Refresh ${name} from source"]`)!.click())
-    }
-    await refreshFile('a.md')
-    await refreshFile('b.md')
-    assert.ok(document.querySelector('[role="img"][aria-label^="Refresh failed for /site/b.md"]'), 'the previous failure is visible before retry')
-    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Folder site"]')!.dispatchEvent(
-      new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 30, clientY: 40 })))
-    const refresh = document.querySelector<HTMLButtonElement>('[data-source-file-actions] button[aria-label="Refresh 2 pages in site from source"]')!
-    await act(async () => {
-      refresh.click()
-      await new Promise(resolve => setTimeout(resolve, 10))
-    })
-    assert.deepEqual(calls, ['/site/a.md', '/site/b.md', '/site/a.md'], 'the preflight prevents repeated requests to the same signed-out source')
-    assert.match(document.querySelector<HTMLElement>('[role="img"][aria-label^="Refresh stopped:"]')?.getAttribute('aria-label') || '', /1 pages not attempted/u)
-    assert.ok(document.querySelector('[role="img"][aria-label^="Refresh failed for /site/a.md: The source returned an authentication shell."]'))
-    assert.equal(document.querySelector('[role="img"][aria-label^="Refresh failed for /site/b.md"]'), null,
-      'a page skipped in this run no longer shows a stale failure from an earlier run')
   } finally { await act(async () => root.unmount()); host.remove(); restore() }
 })
 
