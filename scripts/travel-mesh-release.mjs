@@ -17,7 +17,7 @@ import {
   assertProviderSecretInventory, assertReleaseConfigPreservesBaseline, bindingInventory, secretBindingNames, verifyCandidateVersion,
 } from './travel-mesh-release-bindings.mjs'
 import { probeMesh } from './travel-mesh-release-probes.mjs'
-import { CORE_RUNTIME_PROFILE, TRAVEL_RUNTIME_PROFILE, readRuntimeProfile } from './runtime-release-profile.mjs'
+import { CORE_RUNTIME_PROFILE, PAGES_RUNTIME_PROFILE, TRAVEL_RUNTIME_PROFILE, readRuntimeProfile } from './runtime-release-profile.mjs'
 import { inspectMigrations, applyMigrations } from './runtime-release-migrations.mjs'
 
 export { parseR2BucketNames, validateRouteInventory }
@@ -154,6 +154,11 @@ const remoteReadiness = async (run, environment, apiFetch, profile) => {
 export const preflightMesh = async ({ sourceSha, candidateDigest, authorization,
   environment = process.env, run = execute, apiFetch = fetch, fetchFn = fetch, now = () => new Date(), profile = TRAVEL_RUNTIME_PROFILE }) => {
   assertReleaseAuthority({ sourceSha, candidateDigest, authorization, environment })
+  if (profile.id === PAGES_RUNTIME_PROFILE.id) return seal({
+    schema: profile.schema('preflight'), status: 'passed', sourceRevision: sourceSha, candidateDigest,
+    configurationDigest: digest({ profile: profile.id, workerActivation: 'disabled' }), capturedAt: now().toISOString(),
+    resources: { workerActivation: 'disabled' }, units: [],
+  })
   const configuration = profile.configure(environment, { sourceSha, candidateDigest })
   profile.validateAuthority?.(authorization, configuration, now)
   const remote = await remoteReadiness(run, environment, apiFetch, profile)
@@ -285,6 +290,32 @@ const proveRestoredMesh = async ({ units, run, configuration, environment, apiFe
 
 export const deployMesh = async ({ sourceSha, candidateDigest, authorization, preflight,
   environment = process.env, run = execute, apiFetch = fetch, fetchFn = fetch, now = () => new Date(), profile = TRAVEL_RUNTIME_PROFILE }) => {
+  if (profile.id === PAGES_RUNTIME_PROFILE.id) {
+    const configurationDigest = digest({ profile: profile.id, workerActivation: 'disabled' })
+    try {
+      assertReleaseAuthority({ sourceSha, candidateDigest, authorization, environment })
+      verifyReceipt(preflight, profile.schema('preflight'))
+      const capturedAt = Date.parse(preflight.capturedAt)
+      if (preflight.status !== 'passed' || preflight.sourceRevision !== sourceSha || preflight.candidateDigest !== candidateDigest
+        || preflight.configurationDigest !== configurationDigest || JSON.stringify(preflight.units) !== '[]'
+        || !Number.isFinite(capturedAt) || capturedAt > now().getTime() + 60_000 || now().getTime() - capturedAt > 30 * 60_000) {
+        throw new Error('Pages-only runtime preflight drifted or expired')
+      }
+      return seal({ schema: profile.schema('release-receipt'), status: 'deployed', sourceRevision: sourceSha,
+        candidateDigest, configurationDigest, migrations: { pending: [], applied: false, bookmark: null, disposition: 'not-required' },
+        units: [], mutationAttempted: false, mutationProven: false, mutationAmbiguous: false,
+        deployedAt: now().toISOString() })
+    } catch (error) {
+      const failure = seal({ schema: profile.schema('failure-receipt'), status: 'not-mutated', sourceRevision: sourceSha,
+        candidateDigest, configurationDigest, migrations: { pending: [], applied: false, bookmark: null, disposition: 'not-attempted' },
+        units: [], compensation: { restored: [], failures: [] }, restorationProof: { status: 'not-required', servingBefore: [], probes: [], serving: [] },
+        mutationAttempted: false, mutationProven: false, mutationAmbiguous: false,
+        failedAt: now().toISOString(), error: String(error?.message ?? error).slice(0, 1_000) })
+      const wrapped = new Error(`Pages-only runtime release failed (${failure.status}): ${error.message}`)
+      wrapped.receipt = failure
+      throw wrapped
+    }
+  }
   let configuration = null
   const baselineVersions = new Map()
   try {
@@ -407,6 +438,7 @@ export const deployMesh = async ({ sourceSha, candidateDigest, authorization, pr
 
 export const restoreMesh = async ({ sourceSha, candidateDigest, authorization, receipt,
   environment = process.env, run = execute, apiFetch = fetch, fetchFn = fetch, now = () => new Date(), profile = TRAVEL_RUNTIME_PROFILE }) => {
+  if (profile.id === PAGES_RUNTIME_PROFILE.id) throw new Error('Pages-only runtime profile has no Worker state to restore')
   assertReleaseAuthority({ sourceSha, candidateDigest, authorization, environment })
   verifyReceipt(receipt, profile.schema('release-receipt'))
   const configuration = profile.configure(environment, { sourceSha, candidateDigest })
@@ -444,12 +476,21 @@ const mutationIntentOutputs = Object.freeze({ attempted: true, mutation_possible
 
 export const meshOutcomeOutputs = receipt => {
   if (receipt == null) return { ...mutationIntentOutputs }
-  const profile = [TRAVEL_RUNTIME_PROFILE, CORE_RUNTIME_PROFILE].find(candidate =>
+  const profile = [TRAVEL_RUNTIME_PROFILE, CORE_RUNTIME_PROFILE, PAGES_RUNTIME_PROFILE].find(candidate =>
     [candidate.schema('release-receipt'), candidate.schema('failure-receipt')].includes(receipt.schema))
   if (!profile) throw new Error('invalid runtime release receipt schema')
   const release = receipt.schema === profile.schema('release-receipt')
   const schema = release ? receipt.schema : profile.schema('failure-receipt')
   verifyReceipt(receipt, schema)
+  if (profile.id === PAGES_RUNTIME_PROFILE.id) {
+    if ((release && receipt.status !== 'deployed') || (!release && receipt.status !== 'not-mutated')
+      || receipt.mutationAttempted !== false || receipt.mutationProven !== false || receipt.mutationAmbiguous !== false
+      || receipt.units?.length !== 0 || !['deployed', 'not-mutated'].includes(receipt.status)) {
+      throw new Error('Pages-only runtime receipt claims Worker mutation')
+    }
+    return { attempted: false, mutation_possible: false, mutation_proven: false,
+      restored: false, compensated: false, preserve_required: false, receipt_sealed: true }
+  }
   return { attempted: release ? true : receipt.mutationAttempted === true,
     mutation_possible: release ? true : receipt.mutationAttempted === true,
     mutation_proven: release ? true : receipt.mutationProven === true,
@@ -478,6 +519,7 @@ const main = async () => {
     return
   }
   if (command === 'probe') {
+    if (profile.id === PAGES_RUNTIME_PROFILE.id) throw new Error('Pages-only runtime profile disables Worker probes')
     const probes = profile.id === 'travel'
       ? await probeMesh(requireText(values['probe-spec'] ?? process.env.TRAVEL_MESH_PROBE_SPEC_JSON, '--probe-spec'))
       : await profile.probe(profile.configure(process.env))

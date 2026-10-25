@@ -58,8 +58,8 @@ The protected production workflow currently:
 6. creates or validates the isolated static-only Dev Pages project, deploys the exact verified UI
    artifact, records its attempt and candidate receipts, and checks the exact marker and shared
    Base-owned renderer controls in a browser; only then owns the ordered Production mutation:
-   Pages Direct Upload, exact-candidate travel-mesh Worker version activation, direct D1
-   reconciliation, immutable/stable/custom transport probes, and mirror publication;
+   Pages Direct Upload, the source-selected runtime profile, direct D1 reconciliation,
+   immutable/stable/custom transport probes, and mirror publication;
 7. emits Deployment v1, State Reconciliation v1, Live Verification v2, and Publication v2
    receipts in that order; and
 8. closes `agentic-collaborative-release-lifecycle/v2` as the only authoritative terminal carrier.
@@ -72,11 +72,11 @@ them at `/agentic-base/` and mark the app shell and service worker `no-store`. T
 Worker, D1, account, or remote-sync state. Rolling it back restores the previous static artifact;
 it does not erase browser-origin IndexedDB data.
 
-The release-scoped travel-mesh plan selects the Worker versions to activate; the protected
-workflow validates the bootstrap and preflights those units before mutation. The same consumed
-candidate-bound authorization covers their activation and receipt. It publishes no DNS. Worker
-operations outside that exact travel-mesh plan, and DNS publication, require their own authority,
-evidence and rollback path.
+The source-controlled profile selects the runtime path: `travel` and `core` activate reviewed Worker
+plans; `pages` skips unrelated Worker readiness and seals an empty receipt without Worker, R2, routing,
+or Worker-migration calls. Pages route verification, D1 reconciliation, mirror publication, and terminal
+receipts remain in the protected controller. Use `pages` for the Base static route; it stays browser-local
+and adds no DNS changes. Other Worker or DNS operations need separate authority, evidence, and rollback.
 
 The Dev project is `agentic-graph-dev`, a separate Cloudflare Pages Direct Upload project under the
 same protected controller. The controller derives it from the exact verified artifact, removes the
@@ -593,6 +593,5 @@ separately supplies:
 - live verification and cost impact;
 - rollback command and post-rollback check.
 
-The protected production workflow does activate the exact release-plan travel-mesh Worker
-versions after Pages and before D1; a successful terminal receipt proves that effect for its
-candidate. Do not infer deployment of any other Worker or DNS publication from it.
+Only the selected profile's receipt proves its runtime effects; a Pages receipt proves no Worker or DNS
+deployment.
