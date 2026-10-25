@@ -72,13 +72,11 @@ them at `/agentic-base/` and mark the app shell and service worker `no-store`. T
 Worker, D1, account, or remote-sync state. Rolling it back restores the previous static artifact;
 it does not erase browser-origin IndexedDB data.
 
-The source-controlled profile selects one runtime path: `travel` and `core` activate reviewed Worker
-plans; `pages` seals an empty non-mutating receipt and makes no Worker, R2, routing, or Worker-
-migration calls. Pages route verification, D1 reconciliation, mirror publication, and terminal
-receipts remain in the protected controller. Select `pages` for the Base static-route candidate: it
-skips unrelated Worker readiness and mutations while keeping the Pages route gate and controller-owned
-D1, mirror, and receipt checks. Base remains static and browser-local; Pages adds no DNS changes. Other
-Worker or DNS operations need separate authority, evidence, and rollback.
+The source-controlled profile selects the runtime path: `travel` and `core` activate reviewed Worker
+plans; `pages` skips unrelated Worker readiness and seals an empty receipt without Worker, R2, routing,
+or Worker-migration calls. Pages route verification, D1 reconciliation, mirror publication, and terminal
+receipts remain in the protected controller. Use `pages` for the Base static route; it stays browser-local
+and adds no DNS changes. Other Worker or DNS operations need separate authority, evidence, and rollback.
 
 The Dev project is `agentic-graph-dev`, a separate Cloudflare Pages Direct Upload project under the
 same protected controller. The controller derives it from the exact verified artifact, removes the
@@ -595,6 +593,5 @@ separately supplies:
 - live verification and cost impact;
 - rollback command and post-rollback check.
 
-The protected production workflow does activate the exact release-plan travel-mesh Worker
-versions after Pages and before D1; a successful terminal receipt proves that effect for its
-candidate. Do not infer deployment of any other Worker or DNS publication from it.
+Only the selected profile's receipt proves its runtime effects; a Pages receipt proves no Worker or DNS
+deployment.
