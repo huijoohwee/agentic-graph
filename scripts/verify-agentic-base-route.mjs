@@ -3,16 +3,65 @@
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const HASH = /^[0-9a-f]{64}$/u
 const REVISION = /^[0-9a-f]{40}$/u
 const PUBLIC_CONVERGENCE_MS = 90_000
 const PUBLIC_RETRY_MS = 5_000
 const REQUEST_TIMEOUT_MS = 30_000
+const CLOUDFLARE_JSD_PARAMS = /window\.__CF\$cv\$params=\{r:'[0-9a-f]{16}',t:'[A-Za-z0-9+/=]+'\};/gu
+const CLOUDFLARE_JSD_CANONICAL_SCRIPT = [
+  `(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);`,
+  `if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'',t:''};`,
+  `var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';`,
+  `document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}`,
+  `if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;`,
+  `a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';`,
+  `a.style.visibility='hidden';document.body.appendChild(a);`,
+  `if('loading'!==document.readyState)c();else if(window.addEventListener)`,
+  `document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};`,
+  `document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();`,
+].join('')
 
 class RouteObservationError extends Error {}
 
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')
+
+export function normalizeCloudflarePublicHtml(body, origin) {
+  const bytes = Buffer.from(body)
+  let html = bytes.toString('utf8')
+  const normalizations = []
+  const webmcpBridge = `<script type="module" async fetchpriority="low" src="${new URL('/.webmcp/bridge.js', origin).href}" data-packs="c2pa,mcp-server-client"></script>`
+  const bridgeStart = html.indexOf(webmcpBridge)
+  if (bridgeStart >= 0 && html.indexOf(webmcpBridge, bridgeStart + webmcpBridge.length) < 0
+    && bridgeStart < html.indexOf('<link rel="manifest"')) {
+    html = `${html.slice(0, bridgeStart)}${html.slice(bridgeStart + webmcpBridge.length)}`
+    normalizations.push('cloudflare-webmcp-bridge/v1')
+  }
+
+  const scriptStart = html.lastIndexOf('<script>')
+  if (scriptStart < 0) return { body: Buffer.from(html), normalization: normalizations }
+  const scriptEnd = html.indexOf('</script>', scriptStart)
+  const suffixStart = scriptEnd + '</script>'.length
+  if (scriptEnd < 0 || !/^\s*<\/body>\s*(?:<\/html>\s*)?$/iu.test(html.slice(suffixStart))) {
+    return { body: Buffer.from(html), normalization: normalizations }
+  }
+
+  const script = html.slice(scriptStart + '<script>'.length, scriptEnd)
+  const matches = [...script.matchAll(CLOUDFLARE_JSD_PARAMS)]
+  if (matches.length !== 1 || script.replace(CLOUDFLARE_JSD_PARAMS, "window.__CF$cv$params={r:'',t:''};")
+    !== CLOUDFLARE_JSD_CANONICAL_SCRIPT) {
+    return { body: Buffer.from(html), normalization: normalizations }
+  }
+
+  normalizations.push('cloudflare-js-detection/v1')
+  return {
+    body: Buffer.from(`${html.slice(0, scriptStart)}${html.slice(suffixStart)}`),
+    normalization: normalizations,
+  }
+}
+
 const required = name => {
   const value = String(process.env[name] || '').trim()
   if (!value) throw new Error(`${name} is required`)
@@ -110,17 +159,28 @@ async function verifyOrigin(target, contents, sourceRevision, deadline = null) {
   for (const [relative, expected] of contents) {
     const pathname = relative === 'index.html' ? '/agentic-base/' : `/agentic-base/${relative}`
     const observed = await fetchObservation(target, pathname, deadline)
-    if (observed.response.status !== 200 || observed.bodyDigest !== digest(expected)) {
+    const normalized = target.id === 'public' && relative === 'index.html'
+      ? normalizeCloudflarePublicHtml(observed.body, target.origin)
+      : { body: observed.body, normalization: [] }
+    const canonicalBodyDigest = digest(normalized.body)
+    if (observed.response.status !== 200 || canonicalBodyDigest !== digest(expected)) {
       throw new RouteObservationError(
-        `${target.id} Base asset drifted: ${relative} (HTTP ${observed.response.status}; SHA-256 ${observed.bodyDigest})`,
+        `${target.id} Base asset drifted: ${relative} (HTTP ${observed.response.status}; raw SHA-256 ${observed.bodyDigest}; canonical SHA-256 ${canonicalBodyDigest})`,
       )
     }
     if (relative === 'index.html'
-      && (!observed.body.includes(Buffer.from('agentic-base-source-revision'))
-        || !observed.body.includes(Buffer.from(sourceRevision)))) {
+      && (!normalized.body.includes(Buffer.from('agentic-base-source-revision'))
+        || !normalized.body.includes(Buffer.from(sourceRevision)))) {
       throw new RouteObservationError(`${target.id} app shell does not identify the pinned Base revision`)
     }
-    routes.push({ path: pathname, status: observed.response.status, bodyDigest: observed.bodyDigest, byteLength: observed.body.length })
+    routes.push({
+      path: pathname,
+      status: observed.response.status,
+      bodyDigest: observed.bodyDigest,
+      canonicalBodyDigest,
+      normalization: normalized.normalization.length > 0 ? normalized.normalization : null,
+      byteLength: observed.body.length,
+    })
   }
   return { id: target.id, origin: target.origin, redirectStatus: redirect.response.status, routes }
 }
@@ -191,7 +251,9 @@ async function main() {
   fs.writeFileSync(evidencePath, `${JSON.stringify(receipt, null, 2)}\n`, { flag: 'wx' })
 }
 
-main().catch(error => {
-  process.stderr.write(`${error.stack || error.message}\n`)
-  process.exitCode = 1
-})
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch(error => {
+    process.stderr.write(`${error.stack || error.message}\n`)
+    process.exitCode = 1
+  })
+}
