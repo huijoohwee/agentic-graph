@@ -107,6 +107,7 @@ export const buildPagesMirrorAgentReadyPlan = async ({ agenticGraphRoot, mirrorR
     { label: 'agentic-os source evidence Pages Function', source: source('cloudflare', 'pages', 'agentic-os-source-evidence.mjs'), target: target('functions', 'agentic-os', 'api', 'observability-workspace', '[[path]].js') },
     { label: 'agentic-os source evidence cost verifier', source: resolveSource('agentic-os/context/json'), target: target('functions', 'agentic-os', 'api', 'shared', 'json-contract.mjs') },
     { label: 'agentic-os source evidence R2 cost gate helper', source: source('cloudflare', 'shared', 'r2-cost-gate.mjs'), target: target('functions', 'agentic-os', 'api', 'shared', 'r2-cost-gate.mjs'), sourceSpecifierReplacements: [["'agentic-os/context/json'", "'./json-contract.mjs'"]] },
+    { label: 'agentic-os source evidence R2 free quota helper', source: source('cloudflare', 'shared', 'r2-free-quota.mjs'), target: target('functions', 'agentic-os', 'api', 'shared', 'r2-free-quota.mjs'), sourceSpecifierReplacements: [["'agentic-os/context/json'", "'./json-contract.mjs'"]] },
   ]
 
   const agentReadyDocRouteTarget = target('functions', 'agentic-graph', 'doc', '[[path]].js')

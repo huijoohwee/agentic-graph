@@ -35,12 +35,12 @@ This document owns only the implemented source contract for binary blob/media ro
 agentic-graph storage Worker. It does not make the storage Worker, bucket, endpoint, authentication
 policy, provider ingest, or delivery surface production-ready.
 
-The current zero-cost boundary gates every R2 operation from the deployed Storage
-Worker entrypoint. It calls the pinned Agentic OS verifier for each exact bucket,
-operation, key, and cost-sensitive request summary, and permits Cloudflare R2 only
-with a provider-enforced USD 0 hard cap. The configured storage bucket is named in
-Wrangler; missing verifier evidence blocks before the provider method. Local test
-proofs apply only to in-memory fixtures and grant no live authority.
+The current cost boundary gates each configured Graph R2 operation with the pinned
+Agentic OS call-scope verifier and a shared D1 Free-quota reservation. It allows the
+Graph Workers a bounded 5% slice of the Standard R2 monthly request quotas and 500 MB
+of cumulative writes. Missing ledger evidence or exhausted budgets block before R2.
+The configured storage bucket is named in Wrangler; local fixture evidence grants no
+live authority. Other account R2 callers remain outside this Graph allocation.
 
 The public Worker dispatches through `storagePublicRouteSecurity.ts` before calling the binary
 handlers. Outside explicit local-runtime mode, the three route families are deliberately distinct:
@@ -102,7 +102,7 @@ but must not redefine their arguments or trust boundary.
 | Node | Role | Type | Lane | Connects to | Connection | Data residency |
 |---|---|---|---|---|---|---|
 | Client | Producer/Consumer | browser/tool host | Authoring | Storage Worker | HTTPS | caller device |
-| Storage Worker | Gateway | Worker source | Authoring | zero-cost gate → R2 binding | exact per-call proof; provider call blocked without a hard USD 0 cap | configured Worker region |
+| Storage Worker | Gateway | Worker source | Authoring | exact scope + shared D1 quota gate → R2 binding | per-call proof; provider call blocked at the Graph Free-quota allocation | configured Worker region |
 | Generic blob handler | Router | function | Authoring | secured dispatcher, R2 binding | workspace authorization + async put/get/head | request memory |
 | Run-media handler | Router | function | Authoring | capability verifier, R2 binding | async signature verification + put/get/head | request memory |
 | Media-asset handler | Router | function | Authoring | secured dispatcher, D1, R2, optional KV/room | workspace authorization + async binding calls | request memory |
@@ -141,10 +141,10 @@ flowchart TB
   Dispatch -- "authorized metadata" --> Assets
   Auth -- "authorized issuance" --> Capability
   Media -- "verify scoped capability" --> Capability
-  Blob -- "put/get/head" --> CostGate["Exact USD 0 evidence gate"]
+  Blob -- "put/get/head" --> CostGate["Exact cost + quota gate"]
   Media -- "put/get/head" --> CostGate
   Assets -- "head/delete" --> CostGate
-  CostGate -- "provider-hard-cap only" --> Bucket
+  CostGate -- "5% Free-tier allocation, reserved in shared D1" --> Bucket
   Assets -- "async query/upsert/delete" --> Catalog
   Assets -- "async optional cache/notification" --> Optional
   WorkerSource -. "protected batch" .-> Mirror
@@ -258,8 +258,17 @@ fixture because the runtime intentionally skips cloud synchronization for memory
 - CORS permits `*`; this is not authorization.
 - Content hashes are descriptive metadata, not integrity enforcement.
 - Neither source presence nor local tests prove a private bucket or delivered route.
-- R2 reads and writes remain blocked until the trusted verifier returns current,
-  exact provider-hard-cap USD 0 evidence; included quota and usage snapshots do not qualify.
+- Configured Graph R2 paths reserve against one shared D1 ledger before the provider call:
+  50,000 Class A and 500,000 Class B operations per UTC month, 500 MB cumulative upload
+  bytes, and 5,000 reservations per UTC day. Missing ledger/migration and exhausted budgets
+  block before R2. The operation caps are 5% of the published monthly R2 request quotas.
+- Writes are forced to Standard storage. Reads, overwrites, multipart completion and deletion
+  check object storage class first; Infrequent Access is blocked because it has no Free tier.
+  Unknown-size streams reserve up to 100 MiB before upload, are byte-limited, then release
+  unused reservation after a successful complete upload.
+- This shared ledger covers configured Graph Workers only. It caps their monthly request
+  reservations at 5% of the published Free limits and cumulative new writes at 500 MB.
+  Other account callers remain outside this guard; all account usage must fit the Free limits.
 - Workers AI inference is checked per model, binding, and request. Only a current
   provider-hard-cap USD 0 proof or Free-plan deny-at-quota proof permits inference;
   missing evidence blocks before `AI.run`.
@@ -270,9 +279,9 @@ fixture because the runtime intentionally skips cloud synchronization for memory
 | Model | Infra/month | 12-month estimate | Security/ops burden | Disposition |
 |---|---:|---:|---|---|
 | local fixture/file artifacts | $0 | $0 | low; operator custody | default authoring fallback |
-| managed Worker + object store | USD 0 only with provider hard cap | excluded until proved | medium; auth, retention, egress, rollback | R2 calls blocked |
+| managed Worker + object store | 5% Graph share of Standard R2 Free quota | no overage permitted; other account callers use remaining quota | medium; auth, retention, egress, rollback | Graph calls stop at shared D1 caps |
 | FOSS self-hosted object service | unknown; host and operations are unpriced | excluded until proved | high; patching/backups/auth | portability option needs its own zero-cost proof |
-| hybrid local + managed media | USD 0 only with provider hard cap | excluded until proved | high boundary complexity | managed R2 calls blocked |
+| hybrid local + managed media | 5% Graph share of Standard R2 Free quota | no overage permitted; other account callers use remaining quota | high boundary complexity | Graph calls stop at shared D1 caps |
 
 All paths use zero LLM tokens for storage and replay.
 
