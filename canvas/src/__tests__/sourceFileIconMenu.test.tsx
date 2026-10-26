@@ -75,7 +75,8 @@ test('files and folders use the same icon slots with unavailable actions disable
       if (entry.kind === 'file') fileLabels = labels
       else {
         assert.deepEqual(labels, fileLabels, 'file and folder action order cannot diverge')
-        assert.deepEqual(buttons.filter(button => !button.disabled).map(button => button.getAttribute('aria-label')),
+        const actionButtons = buttons.filter(button => !button.hasAttribute('data-source-file-cloud-status'))
+        assert.deepEqual(actionButtons.filter(button => !button.disabled).map(button => button.getAttribute('aria-label')),
           ['Reveal in Finder', 'Copy Path', 'Copy Relative Path', 'New file', 'Rename', 'Delete'])
         for (const button of buttons.filter(button => button.disabled)) {
           assert.ok(button.title)
