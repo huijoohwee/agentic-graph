@@ -50,14 +50,35 @@ test('core readiness does not infer authentication or blob readiness from a D1 b
   assert.equal((await response.json()).dependencies.authSchema, 'unavailable')
 })
 
-test('core readiness fails closed when provider-enforced zero-cost evidence is unavailable', async () => {
+test('core readiness fails closed when the shared Free quota ledger schema is unavailable', async () => {
   const value = env()
   delete value.verifyProviderCostEvidence
   const response = await createAgenticGraphStorageWorker().fetch(request(), value)
   const body = await response.json()
   assert.equal(response.status, 503)
   assert.equal(body.dependencies.blobStorage, 'blocked')
-  assert.ok(body.reasons.includes('storage-blob-provider-cost-evidence-unavailable'))
+  assert.ok(body.reasons.includes('storage-blob-free-quota-ledger-unavailable'))
+})
+
+test('core readiness accepts the shared Free quota ledger only when its full schema is present', async () => {
+  const value = env()
+  delete value.verifyProviderCostEvidence
+  const columns = [
+    'scope_id', 'month_key', 'day_key', 'class_a_used', 'class_b_used',
+    'uploaded_bytes_lifetime', 'daily_reservations', 'updated_at',
+  ]
+  value.DB = { prepare: sql => {
+    const statement: D1StatementLike = { bind: () => statement, run: async () => ({}), all: async <T>() => ({
+      results: sql.startsWith('PRAGMA table_info(agentic_graph_r2_free_quota)')
+        ? columns.map(name => ({ name }) as T)
+        : ['auth_identities', 'auth_sessions', 'users', 'workspace_memberships'].map(name => ({ name }) as T),
+    }) }
+    return statement
+  } }
+  const response = await createAgenticGraphStorageWorker().fetch(request(), value)
+  const body = await response.json()
+  assert.equal(response.status, 200)
+  assert.equal(body.dependencies.blobStorage, 'ready')
 })
 test('core readiness is read-only, supports HEAD, and identifies local runtime explicitly', async () => {
   const worker = createAgenticGraphStorageWorker()

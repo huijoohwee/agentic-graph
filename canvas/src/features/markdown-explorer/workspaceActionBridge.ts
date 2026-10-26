@@ -7,6 +7,9 @@ import type { GraphData } from '@/lib/graph/types'
 export type WorkspaceImportUrlOpts = {
   canvas2dRenderer?: Canvas2dRendererId | null
   documentSemanticMode?: WorkspaceUrlImportDocumentModeId | null
+  preserveActiveDocument?: boolean
+  browserSessionId?: string
+  destinationPath?: string
 }
 
 export type WorkspaceImportWebsiteOpts = {

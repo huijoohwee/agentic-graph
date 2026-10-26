@@ -219,7 +219,7 @@ export async function onRequest(context) {
   const route = new URL(request.url).pathname.match(/\/agentic-os\/api\/observability-workspace\/(manifest|source-context)$/)?.[1];
   if (!route) return new Response('Not found', { status: 404, headers: { 'cache-control': 'no-store' } });
   if (getZeroCostR2GateStatus(env.AGENTIC_OS_SOURCE_EVIDENCE) === 'blocked') {
-    return json(503, { error: 'source evidence storage is blocked until an exact provider-enforced USD 0 cap is verified' });
+    return json(503, { error: 'source evidence storage requires an exact bucket binding and verified zero-cost gate or shared Free quota ledger' });
   }
   try {
     const catalogKey = typeof env.AGENTIC_OS_SOURCE_EVIDENCE_CATALOG_KEY === 'string'

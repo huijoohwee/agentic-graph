@@ -9,7 +9,7 @@ export type WebpageLayoutProbePreset = {
   domQuietMs: number
   minWaitAfterLoadMs: number
   scrollCrawl: boolean
-  expandFaq: boolean
+  expandDisclosures: boolean
   waitForNetworkIdle: boolean
 }
 
@@ -24,7 +24,7 @@ export function buildWebpageLayoutCacheKey(
     `maxEl=${preset.maxElements}`,
     `vp=${preset.viewportW}x${preset.viewportH}`,
     `scroll=${preset.scrollCrawl ? 1 : 0}`,
-    `faq=${preset.expandFaq ? 1 : 0}`,
+    `disclosures=${preset.expandDisclosures ? 1 : 0}`,
     `netIdle=${preset.waitForNetworkIdle ? 1 : 0}`,
     `netIdleMs=${preset.networkIdleMs}`,
     `domQuietMs=${preset.domQuietMs}`,
@@ -44,7 +44,7 @@ export function getUiWebpageSnapshotPreset(): WebpageLayoutProbePreset {
     domQuietMs: 550,
     minWaitAfterLoadMs: 750,
     scrollCrawl: true,
-    expandFaq: true,
+    expandDisclosures: true,
     waitForNetworkIdle: true,
   }
 }
@@ -61,7 +61,7 @@ export function getMarkdownWebpageSnapshotPreset(): WebpageLayoutProbePreset {
     domQuietMs: 550,
     minWaitAfterLoadMs: 750,
     scrollCrawl: true,
-    expandFaq: true,
+    expandDisclosures: true,
     waitForNetworkIdle: true,
   }
 }
@@ -92,7 +92,7 @@ export function getDesignWebpageWireframePreset(args: {
     domQuietMs: fidelity >= 3 ? 900 : 650,
     minWaitAfterLoadMs: fidelity >= 3 ? 1600 : 1200,
     scrollCrawl: true,
-    expandFaq: true,
+    expandDisclosures: true,
     waitForNetworkIdle: true,
   }
 }

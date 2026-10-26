@@ -90,7 +90,6 @@ function StorageAuthLightbox({ loginUrl, onClose, readSession }: { loginUrl: str
       if (!session?.userId || !session.workspaces?.some(workspace => workspace.id === workspaceId))
         throw new Error('Choose an available workspace.')
       selectAgenticGraphStorageWorkspace({ userId: session.userId, workspaceId })
-      writeWorkspaceCloudSyncEnabledSetting(true)
       const returnTo = new URL(new URL(loginUrl).searchParams.get('return_to') || '/', window.location.origin)
       if (returnTo.origin !== window.location.origin) throw new Error('Workspace return path is invalid.')
       returnTo.searchParams.delete('kgAuth')
@@ -121,7 +120,7 @@ function StorageAuthLightbox({ loginUrl, onClose, readSession }: { loginUrl: str
           <p className="mb-4 flex items-center gap-2 text-sm font-semibold"><AgenticGraphIcon className="h-6 w-6" />airvio</p>
           <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
           <p className={'mt-2 text-sm leading-relaxed ' + theme.text.secondary}>
-            {authenticated ? 'Choose where to sync your files. Your local copies stay available.'
+            {authenticated ? 'Choose the private workspace for this account. Sync stays off until you enable it in Settings.'
               : signup ? 'Create a private workspace with your existing provider account.'
                 : 'Continue to your workspace and sync your files.'}
           </p>
@@ -140,7 +139,7 @@ function StorageAuthLightbox({ loginUrl, onClose, readSession }: { loginUrl: str
                   {session.workspaces.map(workspace => <option key={workspace.id} value={workspace.id}>{workspace.title || workspace.id}</option>)}
                 </PanelSelect>
               </section>
-              <button type="button" className={actionClass + ' ' + theme.button.primarySolid} onClick={continueToWorkspace}>Continue to workspace</button>
+              <button type="button" className={actionClass + ' ' + theme.button.primarySolid} onClick={continueToWorkspace}>Select workspace</button>
             </> : <p role="status" className="text-sm">This account has no workspace available for sync. Ask the workspace owner for access.</p>}
             <details className="text-sm">
               <summary className={'cursor-pointer rounded py-2 ' + theme.focus.primaryRing}>Connect another sign-in method</summary>

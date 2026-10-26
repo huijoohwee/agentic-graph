@@ -13,6 +13,12 @@ const CACHE_TTL_MS_REPO = 10 * 60_000
 const CACHE_TTL_MS_CONVERT = 8 * 60_000
 const CACHE_TTL_MS_ARTIFACT = 60 * 60_000
 const CACHE_TTL_MS_DEFAULT = 4 * 60_000
+export const WEBPAGE_HTML_SOURCE_MAX_BYTES = 32_000_000
+
+const sourceLimit = (requested: number | undefined, fallback: number): number => {
+  if (!Number.isFinite(requested) || Number(requested) <= 0) return fallback
+  return Math.min(WEBPAGE_HTML_SOURCE_MAX_BYTES, Math.floor(Number(requested)))
+}
 
 const cacheTtlMsForKey = (key: string): number => {
   if (key.startsWith('proxy:')) return CACHE_TTL_MS_PROXY
@@ -51,7 +57,12 @@ const fetchBoundedText = async (
   onProgress?: (bytes: number, bytesTotal?: number | null) => void,
   htmlPreview = false,
 ): Promise<string> => {
-  const tooLarge = () => htmlPreview ? new WebpageHtmlPreviewLimitError() : new Error(`Response too large (> ${(limit / 1024 / 1024).toFixed(1)}MB)`)
+  const tooLarge = () => htmlPreview
+    ? new WebpageHtmlPreviewLimitError()
+    : Object.assign(new Error(`Response too large (> ${(limit / 1024 / 1024).toFixed(1)}MB)`), {
+        code: 'WEBPAGE_HTML_SOURCE_LIMIT_EXCEEDED',
+        maxBytes: limit,
+      })
   const bytesTotal = readContentLength(res)
   if (bytesTotal != null && bytesTotal > limit) {
     try { await res.body?.cancel() } catch { /* Preserve the limit error; never retry this body. */ }
@@ -107,17 +118,21 @@ export async function fetchWebpageHtmlViaProxy(args: {
   bypassCache?: boolean
   fetchImpl?: typeof fetch
   htmlPreview?: boolean
+  maxBytes?: number
 }): Promise<string> {
   const u = String(args.url || '').trim()
   if (!u) return ''
-  const key = `proxy:${u}:preview:${args.htmlPreview === true}`
+  const limit = args.htmlPreview
+    ? WEBPAGE_HTML_PREVIEW_MAX_BYTES
+    : sourceLimit(args.maxBytes, 5_000_000)
+  const key = `proxy:${u}:preview:${args.htmlPreview === true}:limit:${limit}`
   return fetchCached(
     key,
     async (signal) => {
       const fetchFn = typeof args.fetchImpl === 'function' ? args.fetchImpl : fetch
       const res = await fetchFn(buildWebpageProxyUrl(u, 'strip'), { signal, headers: { Accept: 'text/html,*/*;q=0.9' } })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await fetchBoundedText(res, args.htmlPreview ? WEBPAGE_HTML_PREVIEW_MAX_BYTES : 5_000_000, args.onProgress, args.htmlPreview)
+      return await fetchBoundedText(res, limit, args.onProgress, args.htmlPreview)
     },
     args.signal,
     { bypassCache: args.bypassCache },
@@ -131,6 +146,7 @@ export async function fetchWebpageHtmlFromRepoFile(args: {
   bypassCache?: boolean
   fetchImpl?: typeof fetch
   htmlPreview?: boolean
+  maxBytes?: number
 }): Promise<string> {
   const rel = String(args.relPath || '')
     .trim()
@@ -140,14 +156,17 @@ export async function fetchWebpageHtmlFromRepoFile(args: {
     .replace(/^\/+/, '')
     .split(/[?#]/)[0]
   if (!rel || rel.includes('..')) return ''
-  const key = `repo:${rel}:preview:${args.htmlPreview === true}`
+  const limit = args.htmlPreview
+    ? WEBPAGE_HTML_PREVIEW_MAX_BYTES
+    : sourceLimit(args.maxBytes, 8_000_000)
+  const key = `repo:${rel}:preview:${args.htmlPreview === true}:limit:${limit}`
   return fetchCached(
     key,
     async (signal) => {
       const fetchFn = typeof args.fetchImpl === 'function' ? args.fetchImpl : fetch
       const res = await fetchFn(buildCodebaseFilePath(rel), { signal, headers: { Accept: 'text/html,*/*;q=0.9' } })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await fetchBoundedText(res, args.htmlPreview ? WEBPAGE_HTML_PREVIEW_MAX_BYTES : 8_000_000, args.onProgress, args.htmlPreview)
+      return await fetchBoundedText(res, limit, args.onProgress, args.htmlPreview)
     },
     args.signal,
     { bypassCache: args.bypassCache },
@@ -161,6 +180,7 @@ export async function fetchWebpageHtmlAuto(args: {
   bypassCache?: boolean
   fetchImpl?: typeof fetch
   htmlPreview?: boolean
+  maxBytes?: number
 }): Promise<string> {
   const u = String(args.url || '').trim()
   if (!u) return ''
@@ -172,6 +192,7 @@ export async function fetchWebpageHtmlAuto(args: {
       bypassCache: args.bypassCache,
       fetchImpl: args.fetchImpl,
       htmlPreview: args.htmlPreview,
+      maxBytes: args.maxBytes,
     })
   }
   return await fetchWebpageHtmlFromRepoFile({
@@ -181,6 +202,7 @@ export async function fetchWebpageHtmlAuto(args: {
     bypassCache: args.bypassCache,
     fetchImpl: args.fetchImpl,
     htmlPreview: args.htmlPreview,
+    maxBytes: args.maxBytes,
   })
 }
 
@@ -223,7 +245,7 @@ export async function fetchWebpageConversionJsonViaConvert(args: {
             timeoutMs: 45_000,
             maxChars: 250_000,
             scrollCrawl: true,
-            expandFaq: true,
+            expandDisclosures: true,
             minWaitAfterLoadMs: 650,
           })
           if (probe.ok !== true) {

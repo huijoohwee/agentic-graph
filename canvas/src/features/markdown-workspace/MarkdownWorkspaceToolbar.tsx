@@ -1,4 +1,3 @@
-import { openDocumentInsights } from './documentInsightsRuntime'
 import React from 'react'
 import {
   FileDiff,
@@ -12,7 +11,6 @@ import { WorkspaceHeaderRow } from '@/components/ui/WorkspaceHeader'
 import { CollapsibleToolbar } from '@/components/ui/CollapsibleToolbar'
 import { useMediaQuery } from '@/lib/ui/useMediaQuery'
 import type { MarkdownPresentationApi } from './markdownWorkspaceTypes'
-import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { PanelCheckbox } from '@/lib/ui/panelFormControls'
 import type { WebpageFrontmatterMeta, WebpageViewMode } from '@/lib/markdown/frontmatter'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -75,13 +73,6 @@ export type MarkdownWorkspaceToolbarProps = {
   onExportSvg?: () => void
   onToggleFullscreen: () => void
   presentationApiRef: React.MutableRefObject<MarkdownPresentationApi | null>
-
-  webpageSignalSummary?: {
-    nav: number
-    cta: number
-    price: number
-    time: number
-  } | null
 
   webpageWorkspaceMeta?: WebpageFrontmatterMeta | null
   onWebpageChangeView?: (view: WebpageViewMode) => void
@@ -167,14 +158,12 @@ export function MarkdownWorkspaceToolbar({
   onExportSvg,
   onToggleFullscreen,
   presentationApiRef,
-  webpageSignalSummary,
   webpageWorkspaceMeta,
   onWebpageChangeView,
   contentFormat,
   onContentFormatChange,
   forceMarkdownEditorInEditorMode,
 }: MarkdownWorkspaceToolbarProps) {
-  const panelTypography = usePanelTypography()
   const setWorkspaceViewMode = useGraphStore(s => s.setWorkspaceViewMode)
   const setWorkspaceViewState = useGraphStore(s => s.setWorkspaceViewState)
   const workspaceViewMode = useGraphStore(s => s.workspaceViewMode)
@@ -298,43 +287,6 @@ export function MarkdownWorkspaceToolbar({
     onWebpageChangeView('html')
   }, [effectivePaneAvailability.viewer, effectiveSplitPanes, htmlPaneAvailable, htmlPaneChecked, layoutMode, onWebpageChangeView, setLayoutMode, setSplitPaneVisibility, visiblePaneCount, webpageControls?.view])
 
-  const webpageSignalsNode = React.useMemo(() => {
-    const s = webpageSignalSummary
-    if (!s) return null
-    const allItems: Array<{ label: string; value: number; tone: 'nav' | 'cta' | 'price' | 'time' }> = [
-      { label: 'NAV', value: s.nav, tone: 'nav' },
-      { label: 'CTA', value: s.cta, tone: 'cta' },
-      { label: 'PRICE', value: s.price, tone: 'price' },
-      { label: 'TIME', value: s.time, tone: 'time' },
-    ]
-    const items = allItems.filter(it => it.value > 0)
-    if (!items.length) return null
-
-    const pillClass = `inline-flex items-center gap-1 h-6 rounded-full border px-2 ${panelTypography.microLabelClass}`
-    const toneClass = (tone: 'nav' | 'cta' | 'price' | 'time') => {
-      if (tone === 'cta') return 'border-emerald-200 bg-emerald-50 text-emerald-700'
-      if (tone === 'nav') return 'border-blue-200 bg-blue-50 text-blue-700'
-      if (tone === 'price') return 'border-amber-200 bg-amber-50 text-amber-700'
-      if (tone === 'time') return 'border-violet-200 bg-violet-50 text-violet-700'
-      return `${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.text.secondary}`
-    }
-
-    return (
-      <span
-        className={`${uiToolbarRowScrollInlineClassName} gap-1`}
-        aria-label="Webpage signals"
-        title="Distinct detected labels (up to 24 per category). Open Document insights for source matches and scan limits."
-      >
-        {items.map(it => (
-          <button type="button" key={it.label} className={`${pillClass} ${toneClass(it.tone)}`} aria-label={`Inspect ${it.label} matches (${it.value} labels)`} onClick={() => openDocumentInsights(it.tone)}>
-            <span className="font-semibold">[{it.label}]</span>
-            <span>{it.value}</span>
-          </button>
-        ))}
-      </span>
-    )
-  }, [panelTypography.microLabelClass, webpageSignalSummary])
-
   const paneToggleLabelClass = (available: boolean): string =>
     `kg-workspace-pane-toggle ${UI_RESPONSIVE_LABEL_ROW_CLASSNAME} ${available ? 'cursor-pointer' : 'cursor-not-allowed opacity-45'}`
   const paneToggleTitle = (label: string, available: boolean): string =>
@@ -344,17 +296,6 @@ export function MarkdownWorkspaceToolbar({
 
   return (
       <WorkspaceHeaderRow className="kg-markdown-workspace-panel-toolbar-row kg-markdown-workspace-toolbar-row !py-0" ariaLabel="Markdown toolbar row">
-        <button type="button" className={`shrink-0 rounded border px-2 py-1 ${panelTypography.microLabelClass}`} onClick={() => openDocumentInsights('price')}>
-          Document insights
-        </button>
-        {webpageSignalsNode ? (
-          <span className="flex shrink-0 items-center">
-            <span className="sr-only">Workspace editor</span>
-            {webpageSignalsNode}
-          </span>
-        ) : (
-          <span className="sr-only">Workspace editor</span>
-        )}
         <CollapsibleToolbar forceExpanded={isTouchToolbarViewport} className={`kg-toolbar kg-markdown-workspace-toolbar-controls kg-workspace-toolbar-controls ${uiToolbarRowScrollClassName} gap-1`} ariaLabel="Markdown view controls">
         <menu className={`${uiToolbarRowScrollListClassName} gap-1`} aria-label="Layout mode">
           <li className="kg-workspace-pane-toggles-item list-none">

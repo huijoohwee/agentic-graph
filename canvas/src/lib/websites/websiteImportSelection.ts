@@ -1,3 +1,5 @@
+import { discoverAuthenticatedWebsitePages } from '@/features/markdown-workspace/workspaceImport/apiNativeWebsiteCrawl'
+
 export type WebsiteDiscoveredPage = { url: string; path: string; title?: string }
 export type WebsiteSelectionFolder = { name: string; path: string; folders: WebsiteSelectionFolder[]; pages: WebsiteDiscoveredPage[] }
 
@@ -31,7 +33,17 @@ export function websiteFolderUrls(folder: WebsiteSelectionFolder): string[] {
   return [...folder.pages.map(page => page.url), ...folder.folders.flatMap(websiteFolderUrls)]
 }
 
-export async function discoverWebsitePages(rootUrl: string, url: string, signal: AbortSignal): Promise<{ pages: WebsiteDiscoveredPage[]; limited: boolean }> {
+export async function discoverWebsitePages(rootUrl: string, url: string, signal: AbortSignal): Promise<{
+  pages: WebsiteDiscoveredPage[]
+  limited: boolean
+  authenticatedBrowserSession?: boolean
+  browserSessionId?: string
+}> {
+  const authenticated = await discoverAuthenticatedWebsitePages({ rootUrl, url, signal })
+  if (authenticated) {
+    return { pages: authenticated.pages, limited: authenticated.limited, authenticatedBrowserSession: true,
+      browserSessionId: authenticated.browserSessionId }
+  }
   const response = await fetch('/__website_import/discover', {
     method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rootUrl, url }),
   })

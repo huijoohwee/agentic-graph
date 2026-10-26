@@ -5,6 +5,9 @@ minify = true
 workers_dev = false
 preview_urls = false
 
+[secrets]
+required = [ "AGENTIC_OS_STORAGE_SIGNING_SECRET" ]
+
 [observability]
 enabled = true
 

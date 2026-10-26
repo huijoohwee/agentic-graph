@@ -16,6 +16,13 @@ export type WorkspaceRefreshSnapshot = {
   sourcesByPath: WorkspaceSourceIndex
 }
 
+export type WorkspaceRefreshOptions = {
+  silent?: boolean
+  signal?: AbortSignal
+  browserSessionId?: string
+  onFailure?: (failure: { code?: string; message: string }) => void
+}
+
 export type UseWorkspaceFileActionsArgs = {
   getFs: () => Promise<WorkspaceFs>
   refresh: () => Promise<WorkspaceRefreshSnapshot>
@@ -87,7 +94,7 @@ export type WorkspaceFileActions = {
   onDeleteEntry: (path: WorkspacePath) => void
   onRenameEntry: (path: WorkspacePath, nextName: string) => void
   onClearFile: (path: WorkspacePath) => void
-  refreshFileFromSource: (path: WorkspacePath) => Promise<void>
+  refreshFileFromSource: (path: WorkspacePath, renderedPageRequestUrl?: string, options?: WorkspaceRefreshOptions) => Promise<boolean>
 }
 
 export type StatusHelpers = {

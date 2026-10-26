@@ -179,7 +179,7 @@
     "storage:relay:test": "TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test --test-concurrency=1 cloudflare/workers/agentic-graph-storage/storage-relay/*.test.ts cloudflare/workers/agentic-graph-storage/storageRelayRuntime.test.ts cloudflare/workers/agentic-graph-storage/storageOAuth.test.ts",
     "storage:shared-node:pbt": "TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test --test-concurrency=1 cloudflare/workers/agentic-graph-storage/__pbt__/*.pbt.test.mjs",
     "storage:relay:env:check": "node scripts/check-storage-relay-env.mjs",
-    "storage:worker:types": "npx --yes wrangler@latest types --config=cloudflare/workers/agentic-graph-storage/wrangler.toml --include-runtime=false --env-interface=AgenticGraphStorageBindings cloudflare/workers/agentic-graph-storage/worker-configuration.d.ts",
+    "storage:worker:types": "wrangler types --config=cloudflare/workers/agentic-graph-storage/wrangler.toml --include-runtime=false --env-interface=AgenticGraphStorageBindings cloudflare/workers/agentic-graph-storage/worker-configuration.d.ts",
     "storage:worker:types:check": "npm run storage:worker:types -- --check",
     "payment:stripe:configure": "node ./scripts/configure-stripe-payment-worker.mjs",
     "payment:stripe:readiness": "node ./scripts/check-stripe-payment-readiness.mjs",

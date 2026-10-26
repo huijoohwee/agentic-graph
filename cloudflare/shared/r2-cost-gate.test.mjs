@@ -7,6 +7,7 @@ import { createZeroCostR2TestVerifier } from './r2-cost-gate.test-utils.mjs'
 const bucketFixture = () => {
   const calls = []
   const bucket = {
+    head: async key => { calls.push(['head', key]); return { storageClass: 'Standard' } },
     get: async key => { calls.push(['get', key]); return null },
     put: async (key, body, options) => { calls.push(['put', key, body, options]); return { key } },
     list: async options => { calls.push(['list', options]); return { objects: [] } },
@@ -32,7 +33,7 @@ test('R2 operation fails closed without provider evidence and leaves the binding
   const { bucket, calls } = bucketFixture()
   const guarded = createZeroCostR2Binding(bucket, { bindingName: 'MEDIA', resourceName: 'media-bucket' })
   assert.equal(getZeroCostR2GateStatus(guarded), 'blocked')
-  await assert.rejects(guarded.put('image/a.png', 'bytes'), /no trusted provider verifier/u)
+  await assert.rejects(guarded.put('image/a.png', 'bytes'), /no trusted zero-cost verifier/u)
   assert.deepEqual(calls, [])
 })
 
@@ -45,7 +46,7 @@ test('R2 verifies exact operation, resource, and cost-sensitive request before t
   })
   const result = await guarded.put('image/a.png', 'bytes', { httpMetadata: { contentType: 'image/png' } })
   assert.deepEqual(result, { key: 'image/a.png' })
-  assert.equal(calls.length, 1)
+  assert.deepEqual(calls.map(([method]) => method), ['head', 'put'])
   assert.equal(scopes[0].provider, 'cloudflare-r2')
   assert.equal(scopes[0].effect, 'r2-put')
   assert.equal(scopes[0].resource, 'cloudflare-r2:media-bucket [binding:MEDIA]/image%2Fa.png')
@@ -55,18 +56,27 @@ test('R2 verifies exact operation, resource, and cost-sensitive request before t
     arguments: {
       key: 'image/a.png', body: { kind: 'text', bytes: 5 },
       options: { httpMetadata: { contentType: 'image/png' } },
+      enforcedStorageClass: 'Standard', quotaPreflight: 'head-storage-class',
     },
   }))
 })
 
-test('free-tier quota denial does not authorize usage-billed R2', async () => {
+test('provider-enforced Free-plan quota denial authorizes only the exact operation', async () => {
   const { bucket, calls } = bucketFixture()
+  const scopes = []
+  const verifier = async request => {
+    scopes.push(request)
+    return createZeroCostR2TestVerifier({ mode: 'free-fail-closed' })(request)
+  }
   const guarded = createZeroCostR2Binding(bucket, {
     bindingName: 'MEDIA', resourceName: 'media-bucket',
-    verifyProviderCostEvidence: createZeroCostR2TestVerifier({ mode: 'free-fail-closed' }),
+    verifyProviderCostEvidence: verifier,
   })
-  await assert.rejects(guarded.get('image/a.png'), /provider-enforced USD 0 hard cap/u)
-  assert.deepEqual(calls, [])
+  await guarded.get('image/a.png')
+  assert.equal(scopes[0].provider, 'cloudflare-r2')
+  assert.equal(scopes[0].effect, 'r2-get')
+  assert.equal(scopes[0].resource, 'cloudflare-r2:media-bucket [binding:MEDIA]/image%2Fa.png')
+  assert.deepEqual(calls.map(([method]) => method), ['head', 'get'])
 })
 
 test('multipart follow-up operations receive separate current cost checks', async () => {
@@ -87,7 +97,9 @@ test('multipart follow-up operations receive separate current cost checks', asyn
     'cloudflare-r2:media-bucket [binding:MEDIA]/video%2Fa.mp4',
     'cloudflare-r2:media-bucket [binding:MEDIA]/video%2Fa.mp4',
   ])
-  assert.deepEqual(calls.map(([method]) => method), ['createMultipartUpload', 'uploadPart', 'complete'])
+  assert.deepEqual(calls.map(([method]) => method), [
+    'head', 'createMultipartUpload', 'uploadPart', 'head', 'complete',
+  ])
 })
 
 test('R2 refuses a configured binding without an exact bucket identity', async () => {

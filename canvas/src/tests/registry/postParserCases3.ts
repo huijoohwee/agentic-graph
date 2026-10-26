@@ -175,6 +175,7 @@ export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
   ["workspace.importUrl.thinking.restoreVisibleSyntaxTokens","@/__tests__/workspaceImportUrlStubNoFetch.test","testWorkspaceImportUrlRestoresVisibleMarkdownSyntaxTokens"],
   ["workspace.importUrl.rootRelativeStorageMarkdown.directFetch","@/__tests__/workspaceImportUrlStubNoFetch.test","testWorkspaceImportUrlFetchesRootRelativeStorageMarkdownAsUrl"],
   ["workspace.importUrl.thinking.genericToggleHints","@/__tests__/workspaceImportUrlThinkingFidelity.test","testWorkspaceImportUrlThinkingUsesGenericToggleHints"],
+  ["workspace.importUrl.fidelity.isAutomatic","@/__tests__/workspaceImportUrlThinkingFidelity.test","testWorkspaceImportUrlChoosesFidelityWithoutAUserSetting"],
   ["workspace.importUrl.thinking.visibleTokenSet","@/__tests__/workspaceImportUrlThinkingFidelity.test","testThinkingPlainTextMarkdownPreservesVisibleSyntaxTokens"],
   ["workspace.importUrl.thinking.renderedTokenParity","@/__tests__/workspaceImportUrlThinkingFidelity.test","testWorkspaceImportUrlThinkingChooserPrefersRenderedMarkdownTokenParity"],
   ["workspace.importUrl.youtubeTranscriptConversion.cacheInflight","@/__tests__/youtubeTranscriptConversion.test","testYouTubeTranscriptConversionCachesInflightAndDerivesTranscriptJson"],

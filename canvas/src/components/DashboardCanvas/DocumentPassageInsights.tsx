@@ -1,7 +1,7 @@
 import React from 'react'
 import { analyzePassagesInWorker, type PassageAnalyzer } from '@/lib/parsers/documentPassageGraphWorker'
 import type { PassageGraphResult } from '@/lib/parsers/documentPassageGraph'
-import { applyDocumentPassageLayer, isCurrentDocumentInsightsSource, jumpToDocumentInsight, type DocumentInsightsSource } from '@/features/markdown-workspace/documentInsightsRuntime'
+import { applyDocumentPassageLayer, isCurrentDocumentInsightsSource, jumpToDocumentInsight, documentInsightsJumpFailureMessage, type DocumentInsightsSource } from '@/features/markdown-workspace/documentInsightsRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
 /** Inspection uses the existing source owner; explicit graph layers preserve authored nodes and source text. */
@@ -36,8 +36,8 @@ export default function DocumentPassageInsights({ source, analyze = analyzePassa
   const metadata = current?.graph.metadata?.passageAnalysis
   const analysis = metadata && typeof metadata === 'object' && !Array.isArray(metadata) ? metadata : null
   const jump = () => {
-    if (!passage || !jumpToDocumentInsight(source, passage.line)) setStatus('Source changed. Analyze the current document again.')
-    else setStatus(`Source line ${passage.line} selected.`)
+    if (!passage) return
+    setStatus(jumpToDocumentInsight(source, passage.line) ? `Source line ${passage.line} selected.` : documentInsightsJumpFailureMessage(source))
   }
   return <details className="min-w-0 border-t pt-2" open={open} onToggle={event => setOpen(event.currentTarget.open)}>
     <summary className="cursor-pointer font-medium">Passages and relationships</summary>

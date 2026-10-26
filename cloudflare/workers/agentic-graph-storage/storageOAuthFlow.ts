@@ -4,7 +4,7 @@ import { AGENTIC_OS_STORAGE_ROUTE_PATHS } from './contract'
 import { hashAgenticGraphStorageAuthSessionToken, readAgenticGraphStorageBrowserSessionToken } from './chatAuth'
 import { queryFirst, readActiveAuthSessionByHash, readAuthIdentityUser, type D1DatabaseLike } from './db'
 import { admitOAuthRequest, consumeOAuthChallenge, saveOAuthChallenge } from './storageOAuthQuota'
-import { exchangeOAuthIdentity, oauthAuthorizationUrl, OAuthFailure, OAUTH_ISSUERS, type OAuthConfiguration, type OAuthFetch } from './storageOAuthProviders'
+import { exchangeOAuthIdentity, isAllowedOAuthOrigin, oauthAuthorizationUrl, OAuthFailure, OAUTH_ISSUERS, type OAuthConfiguration, type OAuthFetch } from './storageOAuthProviders'
 import { oauthCookie, oauthRandom, openOAuthState, readOAuthCookie, safeOAuthReturnTo, sealOAuthState, type OAuthProvider, type OAuthState } from './storageOAuthState'
 
 export const oauthFailureResponse = (status: number, message: string, clear = false, returnTo = '/', origin = ''): Response => new Response(oauthErrorBody(message, returnTo, origin), {
@@ -20,7 +20,7 @@ export const runOAuthFlow = async (args: { request: Request; db: D1DatabaseLike;
     if (callback) {
       if (request.method !== 'GET') throw new OAuthFailure(405, 'Sign-in callback requires GET.')
       const state = await openOAuthState(readOAuthCookie(request), config.secret, now)
-      if (!state || !config.origins.includes(state.origin) || url.searchParams.getAll('state').length !== 1
+      if (!state || !isAllowedOAuthOrigin(state.origin, config) || url.searchParams.getAll('state').length !== 1
         || url.searchParams.get('state') !== state.state) throw new OAuthFailure(401, 'Sign-in expired or browser state is invalid. Start again.')
       failureReturnTo = state.returnTo; retryOrigin = state.origin
       if (!await admitOAuthRequest(db, request, config.secret, now)) throw new OAuthFailure(429, 'Sign-in budget reached. Local files remain available.')
@@ -57,7 +57,7 @@ export const runOAuthFlow = async (args: { request: Request; db: D1DatabaseLike;
     }
     const origin = url.searchParams.get('return_origin') || url.origin
     const returnTo = safeOAuthReturnTo(url.searchParams.get('return_to') || '/')
-    if (!returnTo || !config.origins.includes(origin)) throw new OAuthFailure(400, 'Sign-in origin or return path is not allowed.')
+    if (!returnTo || !isAllowedOAuthOrigin(origin, config)) throw new OAuthFailure(400, 'Sign-in origin or return path is not allowed.')
     failureReturnTo = returnTo; retryOrigin = origin
     const token = readAgenticGraphStorageBrowserSessionToken(request)
     const sessionHash = token ? await hashAgenticGraphStorageAuthSessionToken(token) : ''

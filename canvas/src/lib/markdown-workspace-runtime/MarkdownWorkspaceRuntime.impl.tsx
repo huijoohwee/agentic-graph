@@ -496,9 +496,9 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
             sidebarWidthPx={sidebarWidthPx}
             sidebarWidthMinPx={SIDEBAR_MIN_PX}
             sidebarWidthMaxPx={SIDEBAR_MAX_PX}
-            entries={explorerState.sourceFilesExplorerEntries}
-            filteredEntries={explorerState.filteredEntries}
+            entries={explorerState.sourceFilesExplorerEntries} filteredEntries={explorerState.filteredEntries}
             sourcesByPath={sourcesByPath}
+            activeDocumentKey={selectionState.activeDocumentKey} activeDocumentText={activePath && lastLoadedRef.current?.path === activePath ? effectiveContent.effectiveActiveText : ''}
             loading={loading}
             loadError={loadError}
             expandedPaths={expandedPaths}
@@ -529,7 +529,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
             onRevealInFinder={viewShell.revealInFinder}
             onClearFile={fileActions.onClearFile}
             onRenameEntry={fileActions.onRenameEntry}
-            onDeleteEntry={fileActions.onDeleteEntry}
+            onDeleteEntry={fileActions.onDeleteEntry} onRefreshFileFromSource={(path, requestUrl, options) => fileActions.refreshFileFromSource(path, requestUrl, options)}
             renderSourceFileRight={viewShell.renderSourceFileRight}
           />
           <VerticalResizeSeparatorHr

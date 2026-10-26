@@ -37,6 +37,8 @@ export type MarkdownWorkspaceExplorerProps = {
   entries: WorkspaceEntry[]
   filteredEntries: WorkspaceEntry[]
   sourcesByPath: WorkspaceSourceIndex | null
+  activeDocumentKey?: string
+  activeDocumentText?: string
   loading: boolean
   loadError: string
   expandedPaths: Set<string>
@@ -71,6 +73,7 @@ export type MarkdownWorkspaceExplorerProps = {
   onClearFile: (path: WorkspacePath) => void
   onRenameEntry: (path: WorkspacePath, nextName: string) => void
   onDeleteEntry: (path: WorkspacePath) => void
+  onRefreshFileFromSource?: (path: WorkspacePath, renderedPageRequestUrl?: string, options?: import('./useWorkspaceFileActions/types').WorkspaceRefreshOptions) => Promise<boolean> | void
 
   renderSourceFileRight?: (args: { entry: WorkspaceEntry; isActive: boolean }) => React.ReactNode
 }
@@ -84,6 +87,8 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
     entries,
     filteredEntries,
     sourcesByPath,
+    activeDocumentKey,
+    activeDocumentText,
     loading,
     loadError,
     expandedPaths,
@@ -112,6 +117,7 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
     onClearFile,
     onRenameEntry,
     onDeleteEntry,
+    onRefreshFileFromSource,
     renderSourceFileRight,
   } = props
   const panelTypography = usePanelTypography()
@@ -249,6 +255,8 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
             entries={filteredEntries}
             expandedPaths={expandedPaths}
             activePath={activePath}
+            activeDocumentKey={activeDocumentKey}
+            activeDocumentText={activeDocumentText}
             toggleExpanded={toggleExpanded}
             onSelectFile={onSelectFile}
             onSelectFolder={onSelectFolder}
@@ -258,6 +266,7 @@ export const MarkdownWorkspaceExplorer = React.memo(function MarkdownWorkspaceEx
             onClearFile={onClearFile}
             onRenameEntry={onRenameEntry}
             onDeleteEntry={onDeleteEntry}
+            onRefreshFileFromSource={onRefreshFileFromSource}
             renderFileRight={renderSourceFileRight}
           />
         </MarkdownExplorerSection>

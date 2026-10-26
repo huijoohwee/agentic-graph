@@ -316,9 +316,6 @@ export interface GraphStateChatImport {
   webpageViewerScriptPolicy: 'strip' | 'allow';
   setWebpageViewerScriptPolicy: (v: 'strip' | 'allow') => void;
 
-  webpageArtifactFidelityMaxLevel: number;
-  setWebpageArtifactFidelityMaxLevel: (v: number) => void;
-
   websiteImportDiscoverSitemap: boolean;
   setWebsiteImportDiscoverSitemap: (v: boolean) => void;
 

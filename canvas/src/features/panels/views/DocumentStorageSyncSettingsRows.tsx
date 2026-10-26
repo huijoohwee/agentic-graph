@@ -15,9 +15,11 @@ import {
 import { readAgenticGraphCollaborationConfig } from '@/features/source-files/sourceFilesPocketBaseYjsRoom'
 import {
   readWorkspaceCloudSyncEnabledSetting,
+  readWorkspaceCloudTransferPathSetting,
   readWorkspaceDocsMirrorRootPathSetting,
   subscribeWorkspaceStoreSyncSettingsChanged,
   writeWorkspaceCloudSyncEnabledSetting,
+  writeWorkspaceCloudTransferPathSetting,
 } from '@/lib/workspace/workspaceStoreSyncSettings'
 import { getUiSectionActionClassName, getUiSectionChipClassName } from '@/lib/ui/sectionChipChrome'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -66,7 +68,7 @@ export function DocumentStorageSyncSettingsRows() {
   const [syncing, setSyncing] = React.useState(false)
   const [connection, setConnection] = React.useState<AgenticGraphStorageBrowserSessionState | null>(null)
   const [checking, setChecking] = React.useState(false)
-  const [transferScope, setTransferScope] = React.useState('/')
+  const [transferScope, setTransferScope] = React.useState(() => readWorkspaceCloudTransferPathSetting())
   const workspaceId = readActiveAgenticGraphStorageWorkspaceId()
   const [lastStatus, setLastStatus] = React.useState('Not synced in this session')
   const [persistenceState, setPersistenceState] = React.useState<PersistedCollectionPersistenceState | null>(null)
@@ -83,6 +85,10 @@ export function DocumentStorageSyncSettingsRows() {
   React.useEffect(() => subscribeWorkspaceStoreSyncSettingsChanged(() => {
     setSettingsRevision(previous => previous + 1)
   }), [])
+
+  React.useEffect(() => {
+    setTransferScope(readWorkspaceCloudTransferPathSetting())
+  }, [settingsRevision])
 
   React.useEffect(() => subscribeAgenticGraphStoragePersistenceState(state => {
     setPersistenceState(state)
@@ -315,11 +321,15 @@ export function DocumentStorageSyncSettingsRows() {
           typeNode={<FolderOpen className="h-4 w-4" aria-hidden="true" />}
           valueNode={(
             <section className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-              <input aria-label="Cloud transfer file or folder path" className="min-w-0 rounded border bg-transparent px-2 py-1" value={transferScope} disabled={syncing} onChange={event => setTransferScope(event.target.value)} />
+              <input aria-label="Cloud transfer file or folder path" className="min-w-0 rounded border bg-transparent px-2 py-1" value={transferScope} disabled={syncing} onChange={event => {
+                const value = event.target.value
+                setTransferScope(value)
+                writeWorkspaceCloudTransferPathSetting(value)
+              }} />
               {(['upload', 'download'] as const).map(direction => <button key={direction} type="button" className={actionClassName}
                 disabled={syncing || !online || !storageAvailable || !cloudEnabled || connection?.status !== 'authenticated'}
                 onClick={() => { void transfer(direction) }}>{direction === 'upload' ? 'Upload copies' : 'Download copies'}</button>)}
-              <small className="basis-full">Markdown files and subfolders · 50 files / 5 MiB per transfer. Differing downloads are kept as .cloud copies. No files are deleted; Git remains canonical.</small>
+              <small className="basis-full">This folder path is saved separately for each signed-in user and workspace. Markdown files and subfolders · 50 files / 5 MiB per transfer. Differing downloads are kept as .cloud copies. No files are deleted; Git remains canonical.</small>
               <span role="status" className="basis-full break-words">{syncing ? 'Transfer in progress…' : lastStatus}</span>
             </section>
           )}

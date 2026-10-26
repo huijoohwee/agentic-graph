@@ -30,6 +30,26 @@ export const inspectStorageCoreBindings = (env: AgenticGraphStorageWorkerEnv) =>
 }
 
 const AUTH_TABLES = ['auth_identities', 'auth_sessions', 'users', 'workspace_memberships']
+const R2_FREE_QUOTA_COLUMNS = [
+  'scope_id', 'month_key', 'day_key', 'class_a_used', 'class_b_used',
+  'uploaded_bytes_lifetime', 'daily_reservations', 'updated_at',
+]
+
+const hasR2FreeQuotaLedger = async (env: AgenticGraphStorageWorkerEnv): Promise<boolean> => {
+  const db = readDb(env)
+  if (!db) return false
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    const result = await Promise.race([
+      db.prepare('PRAGMA table_info(agentic_graph_r2_free_quota)').all<{ name: string }>(),
+      new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), 3000) }),
+    ])
+    const columns = new Set(result.results?.map(row => row.name))
+    return R2_FREE_QUOTA_COLUMNS.every(column => columns.has(column))
+  } catch { return false }
+  finally { clearTimeout(timer) }
+}
+
 export const probeStorageCoreReadiness = async (env: AgenticGraphStorageWorkerEnv) => {
   const tables = [...AUTH_TABLES, ...(env.AGENTIC_OS_STORAGE_BROWSER_AUTH_MODE === 'oauth'
     ? ['storage_oauth_budget', 'storage_oauth_challenges'] : [])].sort()
@@ -53,9 +73,12 @@ export const probeStorageCoreReadiness = async (env: AgenticGraphStorageWorkerEn
   }
   const bucket = env.AGENTIC_OS_STORAGE_BLOB_BUCKET
   const costGate = getZeroCostR2GateStatus(bucket)
-  const blobStorage = costGate === 'blocked' ? 'blocked'
+  const quotaLedgerReady = costGate === 'quota-ledger' ? await hasR2FreeQuotaLedger(env) : true
+  const blobStorage = costGate === 'blocked' || !quotaLedgerReady ? 'blocked'
     : bucket && typeof bucket.get === 'function' && typeof bucket.put === 'function' ? 'ready' : 'missing'
-  if (blobStorage === 'blocked') reasons.push('storage-blob-provider-cost-evidence-unavailable')
+  if (blobStorage === 'blocked') reasons.push(costGate === 'quota-ledger'
+    ? 'storage-blob-free-quota-ledger-unavailable'
+    : 'storage-blob-provider-cost-evidence-unavailable')
   if (blobStorage === 'missing') reasons.push('storage-blob-binding-missing')
   return { scope: 'core', runtime: core.runtime, ok: reasons.length === 0,
     dependencies: { ...core.dependencies, authSchema, blobStorage }, reasons }

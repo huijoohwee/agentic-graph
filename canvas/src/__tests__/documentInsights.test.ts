@@ -1,9 +1,6 @@
 import assert from 'node:assert/strict'
-import { JSDOM } from 'jsdom'
 import { indexDocumentSignals } from '@/lib/websites/signalTokens'
 import { jumpToDocumentInsight, openDocumentInsights, readDocumentInsights, registerDocumentInsightsSource, type DocumentInsightsSource } from '@/features/markdown-workspace/documentInsightsRuntime'
-import { installFloatingPanelBridge } from '@/features/toolbar/floatingPanelBridge'
-import { isMainPanelTabKey } from '@/features/panels/mainPanelTabs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
 export function testDocumentInsightsSourceLocations() {
@@ -55,24 +52,19 @@ export function testDocumentInsightsRejectStaleSource() {
   assert.deepEqual(visited, [2, 2])
 }
 
-export function testDocumentInsightsFloatingRoute() {
-  const dom = new JSDOM('<!doctype html><body></body>', { url: 'http://localhost' })
-  const prior = globalThis.window
-  Object.assign(globalThis, { window: dom.window })
-  const seen: unknown[] = []
-  const cleanup = installFloatingPanelBridge({ openPropsPanel: () => {}, openRendererPanel: () => {}, openFloatingPanel: detail => seen.push(detail) })
-  const oldView = useGraphStore.getState().floatingPanelView
+export function testDocumentInsightsDashboardRoute() {
+  const state = useGraphStore.getState()
+  const oldRenderer = state.canvas2dRenderer, oldMode = state.canvasRenderMode, oldFloatingOpen = state.floatingPanelOpen
   try {
+    state.setFloatingPanelOpen(true)
     openDocumentInsights('price')
-    assert.deepEqual(seen, [{ tab: 'preview', open: true }])
+    assert.equal(useGraphStore.getState().canvasRenderMode, '2d')
+    assert.equal(useGraphStore.getState().canvas2dRenderer, 'dashboard')
+    assert.equal(useGraphStore.getState().floatingPanelOpen, false)
     assert.equal(readDocumentInsights().kind, 'price')
-    assert.equal(isMainPanelTabKey('preview'), false)
-    useGraphStore.getState().setFloatingPanelView('preview')
-    assert.equal(useGraphStore.getState().floatingPanelView, 'preview')
   } finally {
-    useGraphStore.getState().setFloatingPanelView(oldView)
-    cleanup()
-    Object.assign(globalThis, { window: prior })
-    dom.window.close()
+    state.setCanvasRenderMode(oldMode)
+    state.setCanvas2dRenderer(oldRenderer)
+    state.setFloatingPanelOpen(oldFloatingOpen)
   }
 }

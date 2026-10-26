@@ -1,8 +1,15 @@
 import { extractYamlFrontmatterHeaderBlock, readYamlFrontmatterValue } from '@/lib/markdown/frontmatter'
+import type { WorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 
 export function readWorkspaceImportMarkdownSourceUrl(text: string): string {
   const header = extractYamlFrontmatterHeaderBlock(String(text || ''))
   return header ? readYamlFrontmatterValue(header.rawBlock, 'kgWebpageUrl').trim() : ''
+}
+
+export function resolveWorkspaceImportSourceUrl(source: WorkspaceEntrySource | undefined, text: string): string {
+  const frontmatterUrl = readWorkspaceImportMarkdownSourceUrl(text)
+  if (frontmatterUrl) return frontmatterUrl
+  return source?.kind === 'url' ? String(source.url || '').trim() : ''
 }
 
 export function normalizeWorkspaceImportSourceUrlIdentity(value: string): string {

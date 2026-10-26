@@ -1,5 +1,5 @@
 import React from 'react'
-import { useDocumentInsights, jumpToDocumentInsight } from '@/features/markdown-workspace/documentInsightsRuntime'
+import { useDocumentInsights, jumpToDocumentInsight, documentInsightsJumpFailureMessage } from '@/features/markdown-workspace/documentInsightsRuntime'
 import type { DocumentSignalKind } from '@/lib/websites/signalTokens'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { sourceLineContexts } from '@/lib/semantic-mode/keywordEvidence'
@@ -9,10 +9,10 @@ const DocumentPassageInsights = React.lazy(() => import('./DocumentPassageInsigh
 const explanations = { nav: 'Navigation label rule', cta: 'Action label rule', price: 'Currency or recurring amount pattern', time: 'Clock or duration pattern' }
 
 const kinds = ['nav', 'cta', 'price', 'time'] as const
-export function DocumentInsights() {
+export default function DashboardDocumentInsights() {
   const { source, kind: requestedKind, request } = useDocumentInsights()
   const [kind, setKind] = React.useState<DocumentSignalKind>(requestedKind || 'price')
-  const [open, setOpen] = React.useState(request > 0)
+  const [open, setOpen] = React.useState(true)
   const [status, setStatus] = React.useState('')
   const detailsRef = React.useRef<HTMLDetailsElement>(null)
   React.useEffect(() => {
@@ -24,9 +24,9 @@ export function DocumentInsights() {
   React.useEffect(() => setStatus(''), [source?.key, source?.text])
   const signals = source?.signals
   const matches = signals?.[kind] || []
-  const contexts = React.useMemo(() => open && source ? sourceLineContexts(source.text) : [], [open, source?.text])
+  const contexts = React.useMemo(() => open && source ? sourceLineContexts(source.text) : [], [open, source])
   return (
-    <details ref={detailsRef} open={open} onToggle={event => setOpen(event.currentTarget.open)} className={`shrink-0 rounded border p-2 ${UI_THEME_TOKENS.panel.border}`}>
+    <details ref={detailsRef} open={open} onToggle={event => setOpen(event.currentTarget.open)} className={`shrink-0 rounded border p-3 ${UI_THEME_TOKENS.panel.border}`} data-kg-dashboard-document-insights="1">
       <summary className="cursor-pointer font-medium">Document insights</summary>
       <section aria-label="Document insights" className="grid min-w-0 gap-2 pt-2 text-xs">
         <p className="break-all">{source?.key || 'Open a text document to inspect its source.'}</p>
@@ -44,8 +44,8 @@ export function DocumentInsights() {
             <p className="break-words">{contexts[(match.lines[0] ?? 1) - 1]}</p>
             <nav className="flex flex-wrap gap-2 pt-1" aria-label={`${match.label} source locations`}>
               {match.lines.map(line => <button key={line} type="button" className="underline" onClick={() => {
-                if (!source || !jumpToDocumentInsight(source, line)) setStatus('Source changed. Choose a current match.')
-                else setStatus(`Source line ${line} selected.`)
+                if (!source) setStatus('Open a text document to inspect its source.')
+                else setStatus(jumpToDocumentInsight(source, line) ? `Source line ${line} selected.` : documentInsightsJumpFailureMessage(source))
               }}>Jump to source · line {line}</button>)}
             </nav>
           </li>)}
