@@ -125,7 +125,7 @@ async function verifyR2Call({ method, args, baseResource, verifier, resourceReso
   return proof
 }
 
-function wrapOperations(target, { baseResource, verifier, resourceResolved, multipart = false, preflightBucket = target, objectKey }) {
+function wrapOperations(target, { baseResource, verifier, resourceResolved, quotaLedger = false, multipart = false, preflightBucket = target, objectKey }) {
   if (!target || typeof target !== 'object') return target
   const allowed = multipart ? MULTIPART_METHODS : BUCKET_METHODS
   const proxy = new Proxy(target, {
@@ -171,12 +171,12 @@ function wrapOperations(target, { baseResource, verifier, resourceResolved, mult
       })
     },
   })
-  gateStates.set(proxy, verifier && resourceResolved ? 'guarded' : 'blocked')
+  gateStates.set(proxy, !verifier || !resourceResolved ? 'blocked' : quotaLedger ? 'quota-ledger' : 'guarded')
   return proxy
 }
 
 export function createZeroCostR2Binding(bucket, {
-  bindingName, resourceName, verifyProviderCostEvidence, database, quotaLimits, maxStreamBytes,
+  bindingName, resourceName, verifyProviderCostEvidence, database, quotaLimits, maxStreamBytes, quotaLedger = false,
 } = {}) {
   if (!bucket || typeof bucket !== 'object') return bucket
   if (typeof bindingName !== 'string' || !bindingName.trim()
@@ -184,12 +184,14 @@ export function createZeroCostR2Binding(bucket, {
     throw new TypeError('An exact Cloudflare R2 binding and resource name are required.')
   }
   const resourceResolved = !resourceName.trim().startsWith('unresolved:')
+  const usesQuotaLedger = quotaLedger || (!verifyProviderCostEvidence && Boolean(database))
   const verifier = verifyProviderCostEvidence ?? (database
     ? createR2FreeQuotaVerifier(database, { limits: quotaLimits, maxStreamBytes }) : undefined)
   return wrapOperations(bucket, {
     baseResource: `cloudflare-r2:${resourceName.trim()} [binding:${bindingName.trim()}]`,
     verifier,
     resourceResolved,
+    quotaLedger: usesQuotaLedger,
   })
 }
 
@@ -197,13 +199,14 @@ export function withZeroCostR2Bindings(env, bindingResources) {
   if (!env || typeof env !== 'object') return env
   const providerVerifier = Reflect.get(env, 'verifyProviderCostEvidence', env)
   const database = Reflect.get(env, 'DB', env)
-  const verifier = providerVerifier ?? (database ? createR2FreeQuotaVerifier(database) : undefined)
+  const quotaLedger = !providerVerifier && Boolean(database)
+  const verifier = providerVerifier ?? (quotaLedger ? createR2FreeQuotaVerifier(database) : undefined)
   const guarded = new Map()
   for (const [bindingName, resourceName] of Object.entries(bindingResources)) {
     const bucket = Reflect.get(env, bindingName, env)
     if (bucket && typeof bucket === 'object') {
       guarded.set(bindingName, createZeroCostR2Binding(bucket, {
-        bindingName, resourceName, verifyProviderCostEvidence: verifier,
+        bindingName, resourceName, verifyProviderCostEvidence: verifier, quotaLedger,
       }))
     }
   }
