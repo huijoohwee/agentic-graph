@@ -384,6 +384,7 @@ describe('Strytree native ambiguous delivery recovery', () => {
     }
     const written: string[] = []; const persistedBeforePut: unknown[] = []
     expectReconciliation(await consume(message, { ...initial, STRYTREE_MEDIA_BUCKET: {
+      async head() { return { storageClass: 'Standard' } },
       async put(_key: string, value: string) {
         written.push(value)
         persistedBeforePut.push(JSON.parse(String((await jobs())[0].result_json)).finalization)
@@ -443,6 +444,7 @@ describe('Strytree native ambiguous delivery recovery', () => {
     })
     let blockedBytes: string | undefined; let puts = 0; let lateWrites = 0
     const first = consume(message, { ...provider, STRYTREE_MEDIA_BUCKET: {
+      async head(key: string) { return media().head(key) },
       async put(key: string, value: string, options?: R2PutOptions) {
         puts += 1
         if (puts === 1) { blockedBytes = value; entered.resolve(); await release.promise }
