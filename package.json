@@ -26,13 +26,27 @@
     "miniflare": "5.20261012.1-beta",
     "wrangler": "4.151.1",
     "undici": "7.30.1",
-    "zod": "$zod",
     "proxy-addr": "2.0.8",
+    "body-parser": "2.4.0",
+    "serialize-javascript": "7.1.3",
+    "vite": "6.4.5",
+    "@vitest/mocker": "4.1.12",
+    "@cloudflare/vitest-pool-workers": {
+      "zod": "4.6.7"
+    },
+    "@x402/core": {
+      "zod": "4.6.7"
+    },
+    "@x402/evm": {
+      "zod": "4.6.7"
+    },
+    "@x402/extensions": {
+      "zod": "4.6.7"
+    },
     "mermaid@12.2.0": {
       "dompurify": "3.4.17"
     },
-    "markdown-it": "14.3.3",
-    "vite": "^6.4.4"
+    "markdown-it": "14.3.3"
   },
   "scripts": {
     "agent-mission:check": "node --test scripts/__tests__/workflow-archive-bridge.test.mjs scripts/__tests__/agent-mission-stages.test.mjs && npm -C canvas run test:ci:unit -- agentReady.missionControl.projection agentReady.webMcpRuntime.durableRun && node canvas/scripts/run_agent_mission_browser_smoke.mjs",
@@ -342,12 +356,12 @@
   },
   "dependencies": {
     "@huggingface/transformers": "3.8.1",
-    "@x402/core": "2.13.0",
-    "@x402/evm": "2.13.0",
-    "@x402/hono": "2.13.0",
-    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/09b0a2337ea7470f4024c0881e53be1afb8e0413",
+    "@x402/core": "^2.13.0",
+    "@x402/evm": "^2.13.0",
+    "@x402/hono": "^2.13.0",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/d45caf5be281922974fdab89f40378a58d527cd2",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.13.11",
+    "hono": "^4.13.14",
     "js-yaml": "^4.3.2",
     "jsonwebtoken": "9.0.2",
     "ripple-address-codec": "5.0.1",
@@ -364,6 +378,6 @@
     "wrangler": "4.151.1",
     "x402-xrpl": "0.3.2",
     "xrpl": "4.5.0",
-    "zod": "^4.6.6"
+    "zod": "^4.6.7"
   }
 }

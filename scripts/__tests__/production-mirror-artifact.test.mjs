@@ -22,6 +22,10 @@ import { LEGACY_MIRROR_LIVE_ONLY_EXACT_PATHS } from '../mirror-namespace-contrac
 import { XR_V2_LEGACY_MIRROR_RELATIVE_PATHS } from '../xr-v2/production-publish-contract.mjs'
 import { buildAgentReadyStaticFiles } from '../../cloudflare/pages/agentic-graph-agent-ready.mjs'
 import { stageProductionMirrorArtifact } from '../production-mirror-artifact-entries.mjs'
+import { buildAgentReadyHeaders } from '../pages-mirror-headers.mjs'
+import { buildAgenticGraphRedirects } from '../production-pages-routing.mjs'
+import { createAgenticBaseDemoArtifact } from '../build-agentic-base-demo.mjs'
+import { applyAgenticBaseDemoSync, planAgenticBaseDemoSync } from '../sync-agentic-base-demo.mjs'
 
 const isolatedGitEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')),
@@ -57,6 +61,7 @@ const createBaseMirror = async root => {
     writeFile(root, '.well-known/runtime-readiness.json', marker),
     writeFile(root, 'content/agentic-graph/.well-known/runtime-readiness.json', marker),
     writeFile(root, 'content/gamexr/index.html', 'old gamexr\n'),
+    writeFile(root, 'content/agentic-base/index.html', '<h1>old Base demo</h1>\n'),
     writeFile(root, 'content/agentic-graph/assets/old/entry.js', 'old content asset\n'),
     writeFile(root, 'agentic-graph/assets/old/entry.js', 'old public asset\n'),
     writeFile(root, '81rv10/index.html', '<main id="root"></main>\n'),
@@ -73,6 +78,94 @@ const createBaseMirror = async root => {
     writeFile(root, 'content/knowgrph/xr-v2/unrelated.txt', 'preserve sibling\n'),
   ])
 }
+
+test('Base demo route is deterministic, subpath-safe, and refuses unowned mirror files', async t => {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-base-demo-route-'))
+  t.after(() => fs.rm(temporaryRoot, { recursive: true, force: true }))
+  const sourceRoot = path.join(temporaryRoot, 'agentic-base')
+  const graphRoot = path.join(temporaryRoot, 'agentic-graph')
+  const mirrorRoot = path.join(temporaryRoot, 'mirror')
+  await Promise.all([fs.mkdir(sourceRoot), fs.mkdir(graphRoot), fs.mkdir(mirrorRoot)])
+  await Promise.all([
+    writeFile(sourceRoot, 'LICENSE', 'MIT License\n'),
+    writeFile(sourceRoot, 'src/index.mjs', "export { value } from './nested.mjs'\n"),
+    writeFile(sourceRoot, 'src/nested.mjs', 'export const value = 1\n'),
+    writeFile(sourceRoot, 'demo/index.html', [
+      '<!doctype html>',
+      '<html><head>',
+      '    <link rel="manifest" href="/demo/manifest.webmanifest">',
+      '    <link rel="stylesheet" href="/demo/styles.css?v=5">',
+      '    <title>agentic-base local demo</title>',
+      '</head><body><script type="module" src="/demo/app.mjs?v=5"></script></body></html>',
+    ].join('\n')),
+    writeFile(sourceRoot, 'demo/app.mjs', [
+      "import { value } from '../src/index.mjs';",
+      "navigator.serviceWorker.register('/sw.js');",
+      'document.body.dataset.value = value;',
+    ].join('\n')),
+    writeFile(sourceRoot, 'demo/styles.css', 'body { color: #123; }\n'),
+    writeFile(sourceRoot, 'demo/manifest.webmanifest', JSON.stringify({ start_url: '/demo/', scope: '/demo/' })),
+    writeFile(sourceRoot, 'sw.js', [
+      "const CACHE = 'agentic-base-app-v5';",
+      "const ASSETS = ['/','/demo/','/src/index.mjs'];",
+      'self.addEventListener("install", () => {});',
+    ].join('\n')),
+  ])
+  initializeRepository(sourceRoot)
+  const revision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: sourceRoot, encoding: 'utf8' }).trim()
+  const sourcePin = {
+    schema: 'agentic-graph/base-demo-source/v1',
+    repository: 'https://github.com/huijoohwee/agentic-base',
+    revision,
+  }
+  const artifact = await createAgenticBaseDemoArtifact({ graphRoot, sourceRoot, sourcePin })
+  const readArtifact = relativePath => artifact.files.get(relativePath).toString('utf8')
+  assert.match(readArtifact('index.html'), /agentic-base-source-revision/)
+  assert.doesNotMatch(readArtifact('index.html'), /(?:href|src)="\/(?:demo|src)\//)
+  assert.match(readArtifact('index.html'), /href="\.\/manifest\.webmanifest"/)
+  assert.match(readArtifact('app.mjs'), /from '\.\/src\/index\.mjs'/)
+  assert.match(readArtifact('app.mjs'), /register\('\.\/sw\.js'\)/)
+  assert.deepEqual(JSON.parse(readArtifact('manifest.webmanifest')), { start_url: './', scope: './' })
+  assert.match(readArtifact('sw.js'), new RegExp('agentic-base-route-' + revision))
+  assert.match(readArtifact('sw.js'), /"\.\/src\/nested\.mjs"/)
+  assert.ok(artifact.totalBytes < 500 * 1024)
+
+  const firstPlan = await planAgenticBaseDemoSync({ graphRoot, sourceRoot, sourcePin, mirrorRoot })
+  assert.equal(firstPlan.hasDrift, true)
+  await applyAgenticBaseDemoSync(firstPlan)
+  assert.equal(await fs.readFile(path.join(mirrorRoot, 'content/agentic-base/index.html'), 'utf8'), readArtifact('index.html'))
+  assert.equal((await planAgenticBaseDemoSync({ graphRoot, sourceRoot, sourcePin, mirrorRoot })).hasDrift, false)
+  await writeFile(mirrorRoot, 'content/agentic-base/unowned.txt', 'preserve me\n')
+  await assert.rejects(
+    planAgenticBaseDemoSync({ graphRoot, sourceRoot, sourcePin, mirrorRoot }),
+    /Unowned files exist in Base demo route/,
+  )
+
+  const redirects = buildAgenticGraphRedirects({ existing: '', rootFiles: [] })
+  assert.match(redirects, /\/agentic-base\/ \/content\/agentic-base\/index\.html 200/)
+  assert.match(redirects, /\/agentic-base\/\* \/content\/agentic-base\/:splat 200/)
+  assert.equal((redirects.match(/\/agentic-base\/ \/content\/agentic-base\/index\.html 200/g) || []).length, 1)
+  const headers = buildAgentReadyHeaders({
+    existing: '',
+    artifacts: {},
+    agentReadyHomepageLinkHeaderValue: '</agentic-graph/>; rel="canonical"',
+    productionRuntimeReadinessHeaderLines: [],
+  })
+  const baseHeaderSelectors = headers.split(/\r?\n/)
+    .filter(line => line.startsWith('/') && /(?:^|\/)agentic-base(?:\/|$)/.test(line))
+  const headerLines = headers.split(/\r?\n/)
+  assert.deepEqual(baseHeaderSelectors, [
+    '/content/agentic-base/index.html',
+    '/content/agentic-base/manifest.webmanifest',
+    '/content/agentic-base/sw.js',
+  ])
+  for (const route of baseHeaderSelectors) {
+    assert.equal(
+      headerLines[headerLines.indexOf(route) + 1],
+      '  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0',
+    )
+  }
+})
 
 test('the uploaded and reconciled artifact carries generated discovery aliases and preserves unrelated metadata', async t => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-graph-discovery-artifact-'))

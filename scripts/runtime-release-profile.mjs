@@ -22,14 +22,20 @@ export const CORE_RUNTIME_PROFILE = Object.freeze({
   probeBaseline: probeCoreBaseline, probeRestored: probeRestoredCore,
   configureRouting: configureCoreStorageDomain, verifyRouting: verifyCoreStorageDomain, restoreRouting: restoreCoreStorageDomain,
 })
+export const PAGES_RUNTIME_PROFILE = Object.freeze({
+  id: 'pages', plan: Object.freeze([]), requiresTravelBootstrap: false,
+  schema: kind => `agentic-graph-pages-runtime-${kind}/v1`,
+})
 
 export const selectRuntimeProfile = value => {
   if (value?.schema !== 'agentic-graph-production-release-profile/v1'
     || Object.keys(value).sort().join(',') !== 'costPolicy,profile,schema'
     || value.costPolicy !== 'existing-free-resources-only'
-    || !['core', 'travel'].includes(value.profile)) throw new Error('production release profile is invalid')
+    || !['core', 'pages', 'travel'].includes(value.profile)) throw new Error('production release profile is invalid')
   validatePlan()
-  return value.profile === 'core' ? CORE_RUNTIME_PROFILE : TRAVEL_RUNTIME_PROFILE
+  if (value.profile === 'core') return CORE_RUNTIME_PROFILE
+  if (value.profile === 'travel') return TRAVEL_RUNTIME_PROFILE
+  return PAGES_RUNTIME_PROFILE
 }
 // No environment override: the selected profile belongs to the reviewed source
 // tree, which is bound into the immutable candidate and human authorization.
