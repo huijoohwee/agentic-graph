@@ -73,8 +73,11 @@ async function verifyR2Call({ method, args, baseResource, verifier, resourceReso
     request,
     verifyProviderCostEvidence: verifier,
   })
-  if (proof.mode !== 'provider-hard-cap' || proof.providerHardCapUsd !== 0) {
-    throw new Error('Cloudflare R2 is blocked: only a provider-enforced USD 0 hard cap permits calls.')
+  const hardCap = proof.mode === 'provider-hard-cap' && proof.providerHardCapUsd === 0
+  const freeQuota = proof.mode === 'free-fail-closed' && proof.billingPlan === 'free'
+    && proof.quotaExhaustion === 'deny'
+  if (!hardCap && !freeQuota) {
+    throw new Error('Cloudflare R2 is blocked: provider evidence must prove a USD 0 cap or deny-on-exhaustion Free plan.')
   }
 }
 

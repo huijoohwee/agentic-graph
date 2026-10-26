@@ -59,14 +59,22 @@ test('R2 verifies exact operation, resource, and cost-sensitive request before t
   }))
 })
 
-test('free-tier quota denial does not authorize usage-billed R2', async () => {
+test('provider-enforced Free-plan quota denial authorizes only the exact operation', async () => {
   const { bucket, calls } = bucketFixture()
+  const scopes = []
+  const verifier = async request => {
+    scopes.push(request)
+    return createZeroCostR2TestVerifier({ mode: 'free-fail-closed' })(request)
+  }
   const guarded = createZeroCostR2Binding(bucket, {
     bindingName: 'MEDIA', resourceName: 'media-bucket',
-    verifyProviderCostEvidence: createZeroCostR2TestVerifier({ mode: 'free-fail-closed' }),
+    verifyProviderCostEvidence: verifier,
   })
-  await assert.rejects(guarded.get('image/a.png'), /provider-enforced USD 0 hard cap/u)
-  assert.deepEqual(calls, [])
+  await guarded.get('image/a.png')
+  assert.equal(scopes[0].provider, 'cloudflare-r2')
+  assert.equal(scopes[0].effect, 'r2-get')
+  assert.equal(scopes[0].resource, 'cloudflare-r2:media-bucket [binding:MEDIA]/image%2Fa.png')
+  assert.deepEqual(calls.map(([method]) => method), ['get'])
 })
 
 test('multipart follow-up operations receive separate current cost checks', async () => {
