@@ -68,6 +68,20 @@ test('R2 quota reservation denies class, byte, and daily limits before the provi
   assert.equal(database.read().uploaded_bytes_lifetime, 5)
 })
 
+test('multipart completion consumes Class A and preflight Class B quota', async () => {
+  const database = databaseFixture()
+  const verifier = createR2FreeQuotaVerifier(database, {
+    limits: { ...R2_FREE_QUOTA_LIMITS, classA: 1 },
+  })
+  const request = { scopeDigest: 'scope', requestDigest: 'complete' }
+  await verifier.verify(request, { method: 'complete', args: [[]], key: 'object' })
+  await assert.rejects(verifier.verify({ ...request, requestDigest: 'put' }, {
+    method: 'put', args: ['next', 'x'], key: 'next',
+  }), /allocation is exhausted/u)
+  assert.equal(database.read().class_a_used, 1)
+  assert.equal(database.read().class_b_used, 1)
+})
+
 test('concurrent R2 calls cannot reserve the same remaining quota', async () => {
   const database = databaseFixture()
   const calls = []
