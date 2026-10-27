@@ -259,6 +259,10 @@ npm run goal:run
 
 This repository is the Dev source of truth and the production release source. Normal implementation and pull-request validation stay in Dev. After protected integration, an operator may manually dispatch `.github/workflows/release.yml` for an exact reviewed `main` revision; the protected workflow builds, attests, deploys, browser-verifies, records receipts, and only then publishes the generated mirror. The public surfaces are `https://airvio.co/` and `https://airvio.co/agentic-graph`.
 
+This public repository remains canonical. `agentic-graph-private-archive` is a private,
+frozen history copy, never a build or release source. Follow the [shared private archive
+policy](https://github.com/huijoohwee/agentic-os/blob/main/guides/PRIVATE-ARCHIVE-POLICY.md).
+
 ## Workspace surfaces
 
 | Surface | Purpose |
