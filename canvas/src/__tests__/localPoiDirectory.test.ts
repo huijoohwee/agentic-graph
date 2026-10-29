@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import type { GraphData } from '@/lib/graph/types'
 import {
+  buildActiveGeoStackPlacesPreview,
   limitLocalPoiVisibleFeatures,
   searchLocalPoiFeatures,
   validateLocalPoiGeoJson,
@@ -209,6 +210,18 @@ export function testLocalPoiDirectorySelectionResolvesCurrentDatasetFeatures() {
     || !affordances.includes("addEventListener('click', onCanvasClick, true)")
     || !affordances.includes('stopImmediatePropagation')) {
     throw new Error('Expected map pointer and keyboard selection to use the shared graph selection owner')
+  }
+  const sourcePath = 'docs/workspace-seeds/agentic-graph-maps-places.md'
+  const markdown = readFileSync(resolve(canvasRoot, '../', sourcePath), 'utf8')
+  if (buildActiveGeoStackPlacesPreview(sourcePath, markdown) !== null) {
+    throw new Error('Expected the historical place report to stay out of the synthetic preview')
+  }
+  if (buildActiveGeoStackPlacesPreview('docs/workspace-seeds/unapproved-places.md', markdown)) {
+    throw new Error('Expected the preview to reject data outside the canonical synthetic fixture')
+  }
+  if (!directory.includes('Showing the synthetic places embedded in the selected demo document.')
+    || !directory.includes('This read-only preview creates no operator attestations or release manifest.')) {
+    throw new Error('Expected the preview UI to disclose its synthetic, read-only status')
   }
 }
 
