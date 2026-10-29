@@ -16,8 +16,12 @@ import {
   subscribeLocalPoiDirectoryDataset,
   type LocalPoiDirectoryDataset,
 } from '@/features/geospatial/localPoiDirectoryRuntime'
-import { buildGeospatialOverlayGraphData, mergeGraphDataUnique } from '@/features/geospatial/geospatialOverlayGraphData'
-import { resolveSelectedGeoGraphNodeIds } from '../../../gympgrph/src/features/geospatial/selectedGraphFeatureIds'
+import {
+  applyLocalPoiGraphSelection,
+  buildGeospatialOverlayGraphData,
+  mergeGraphDataUnique,
+  resolveSelectedGeoGraphNodeIds,
+} from '@/features/geospatial/geospatialOverlayGraphData'
 import { buildLocalPoiGeoJsonDirectory } from '../../../scripts/geostack-local-geojson-build.mjs'
 
 const makePlace = (id: string, name = 'Local Cafe') => ({
@@ -179,27 +183,32 @@ export function testLocalPoiDirectorySelectionResolvesCurrentDatasetFeatures() {
   if (!selected.has('geo:pilot-place') || !selected.has('rich-media:poi')) {
     throw new Error('Expected selected Rich Media provenance to highlight its source map feature')
   }
+  const projected = applyLocalPoiGraphSelection({
+    type: 'Graph',
+    nodes: [{ ...placeNode, properties: { ...placeNode.properties, localPoiRole: 'place' } }, panelNode],
+    edges: [],
+  } as unknown as GraphData, new Set(['rich-media:poi']))
+  if (projected.nodes?.[0]?.properties?.kgSelected !== true) {
+    throw new Error('Expected source-linked local POI projection to carry selected styling state')
+  }
   const canvasRoot = process.cwd()
   const toolbar = readFileSync(resolve(canvasRoot, 'src/lib/toolbar/ToolbarToolMenuGeoView.tsx'), 'utf8')
   const directory = readFileSync(resolve(canvasRoot, 'src/features/maps/LocalPoiDirectory.tsx'), 'utf8')
-  const host = readFileSync(resolve(canvasRoot, '../gympgrph/src/GeospatialHost.tsx'), 'utf8')
+  const overlayData = readFileSync(resolve(canvasRoot, 'src/features/geospatial/geospatialOverlayGraphData.ts'), 'utf8')
   const affordances = readFileSync(resolve(canvasRoot, '../gympgrph/src/features/geospatial/graphFeatureAffordances.ts'), 'utf8')
-  const basemap = readFileSync(resolve(canvasRoot, '../gympgrph/src/features/geospatial/useMapLibreBasemap.ts'), 'utf8')
+  const overlayHost = readFileSync(resolve(canvasRoot, 'src/components/CanvasViewportGeospatialOverlay.tsx'), 'utf8')
   if (!toolbar.includes('findMapFeatureNode(localPoiGraphData')
     || !toolbar.includes('selectedMapFeatureId={selectedMapFeatureId}')
-    || !directory.includes('onGraphMapFeatureSelected')
+    || !directory.includes('bindGraphFeatureAffordances')
     || !directory.includes('onSelectMapFeature(String(featureId)')) {
     throw new Error('Expected directory-list selection and map selection to share the current stable source ID')
   }
-  if (!host.includes("properties.localPoiRole === 'place'")
-    || !host.includes('emitGraphMapFeatureSelected({ sourceFeatureId, graphFeatureId })')
-    || !host.includes('bindGraphFeatureAffordances({')
-    || !affordances.includes("doc.createElement('button')")) {
+  if (!overlayData.includes('applyLocalPoiGraphSelection')
+    || !overlayHost.includes('applyLocalPoiGraphSelection')
+    || !affordances.includes("doc.createElement('button')")
+    || !affordances.includes("addEventListener('click', onCanvasClick, true)")
+    || !affordances.includes('stopImmediatePropagation')) {
     throw new Error('Expected map pointer and keyboard selection to use the shared graph selection owner')
-  }
-  if (!basemap.includes('nearbyFeatures.some(isGraphOverlayFeature)')
-    || !basemap.includes('!isCoarseRegionFeature(f)')) {
-    throw new Error('Expected local graph features and coarse regions not to be intercepted as provider POIs')
   }
 }
 

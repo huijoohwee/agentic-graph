@@ -224,6 +224,57 @@ export const mergeGraphDataUnique = (base: GraphData, extra: GraphData): GraphDa
   }
 }
 
+const readGeoSelectionRecord = (value: unknown): Record<string, unknown> | null => (
+  value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
+)
+
+const readGeoSourceFeatureId = (node: unknown): string => {
+  const properties = readGeoSelectionRecord(readGeoSelectionRecord(node)?.properties)
+  const richMedia = readGeoSelectionRecord(properties?.richMediaPoiProperties)
+  return String(properties?.kgSourceFeatureId ?? richMedia?.kgSourceFeatureId ?? '').trim()
+}
+
+export function resolveSelectedGeoGraphNodeIds(
+  graphData: unknown,
+  selectedNodeIds: ReadonlySet<string>,
+): Set<string> {
+  const result = new Set(selectedNodeIds)
+  const nodes = readGeoSelectionRecord(graphData)?.nodes
+  if (!Array.isArray(nodes) || result.size === 0) return result
+  const selectedSourceIds = new Set<string>()
+  for (const node of nodes) {
+    const id = String(readGeoSelectionRecord(node)?.id ?? '').trim()
+    if (id && result.has(id)) {
+      const sourceId = readGeoSourceFeatureId(node)
+      if (sourceId) selectedSourceIds.add(sourceId)
+    }
+  }
+  if (selectedSourceIds.size === 0) return result
+  for (const node of nodes) {
+    const id = String(readGeoSelectionRecord(node)?.id ?? '').trim()
+    const sourceId = readGeoSourceFeatureId(node)
+    if (id && sourceId && selectedSourceIds.has(sourceId)) result.add(id)
+  }
+  return result
+}
+
+export function applyLocalPoiGraphSelection(
+  graphData: GraphData,
+  selectedNodeIds: ReadonlySet<string>,
+): GraphData {
+  const selected = resolveSelectedGeoGraphNodeIds(graphData, selectedNodeIds)
+  let changed = false
+  const nodes = (graphData.nodes ?? []).map(node => {
+    const properties = (node.properties ?? {}) as Record<string, JSONValue>
+    if (properties.localPoiRole !== 'place') return node
+    const kgSelected = selected.has(String(node.id ?? '').trim())
+    if (properties.kgSelected === kgSelected) return node
+    changed = true
+    return { ...node, properties: { ...properties, kgSelected } }
+  })
+  return changed ? { ...graphData, nodes } : graphData
+}
+
 const attachOverlayDebugInfo = (graphData: GraphData, info: GeospatialOverlayGraphDebugInfo): GraphData => ({
   ...graphData,
   metadata: {

@@ -71,7 +71,6 @@ import {
   bindMapLibreCanvasSemanticOwner,
   type MapLibreCanvasSemanticOwner,
 } from './mapLibreCanvasSemanticOwner.js'
-import { GRAPH_POINT_PICK_RADIUS_PX } from './pickNearestPointFeature.js'
 
 export {
   loadMapLibreProviderStyleDocument,
@@ -262,15 +261,6 @@ const isGraphOverlayFeature = (feature: unknown): boolean => {
   if (!props || typeof props !== 'object') return false
   const record = props as Record<string, unknown>
   return typeof record.kgCategory === 'string' && String(record.id || '').trim() !== ''
-}
-
-const isCoarseRegionFeature = (feature: unknown): boolean => {
-  if (!feature || typeof feature !== 'object') return false
-  const props = (feature as { properties?: unknown }).properties
-  if (!props || typeof props !== 'object') return false
-  const record = props as Record<string, unknown>
-  return String(record.localPoiRole || '').trim() === 'region'
-    && String(record.precision || '').trim() === 'coarse'
 }
 
 const readFeaturePointCoordinates = (feature: unknown): [number, number] | null => {
@@ -916,21 +906,7 @@ export function useMapLibreBasemap(args: {
               const clickPoint = ev && typeof ev === 'object' && 'point' in ev ? (ev as { point?: unknown }).point : null
               const candidates = clickPoint ? map.queryRenderedFeatures(clickPoint) : []
               const features = Array.isArray(candidates) ? candidates : []
-              const clickX = Number((clickPoint as { x?: unknown } | null)?.x)
-              const clickY = Number((clickPoint as { y?: unknown } | null)?.y)
-              const graphFeatureBounds = Number.isFinite(clickX) && Number.isFinite(clickY)
-                ? [
-                    [clickX - GRAPH_POINT_PICK_RADIUS_PX, clickY - GRAPH_POINT_PICK_RADIUS_PX],
-                    [clickX + GRAPH_POINT_PICK_RADIUS_PX, clickY + GRAPH_POINT_PICK_RADIUS_PX],
-                  ]
-                : null
-              const nearbyFeatures = graphFeatureBounds ? map.queryRenderedFeatures(graphFeatureBounds) : features
-              if (Array.isArray(nearbyFeatures) && nearbyFeatures.some(isGraphOverlayFeature)) return
-              const picked = features.find((f: unknown) => (
-                !isGraphOverlayFeature(f)
-                && !isCoarseRegionFeature(f)
-                && readPoiLabelFromFeature(f)
-              ))
+              const picked = features.find((f: unknown) => !isGraphOverlayFeature(f) && readPoiLabelFromFeature(f))
               const label = readPoiLabelFromFeature(picked)
               if (!picked || !label) return
               const poiCoords = readFeaturePointCoordinates(picked)

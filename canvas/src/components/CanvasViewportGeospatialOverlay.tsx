@@ -9,7 +9,7 @@ import type { GraphData } from '@/lib/graph/types'
 import type { ViewportControlsPreset } from '@/lib/config.viewport-controls'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { deriveSceneDisplayGraph } from '@/lib/scene/sceneDerivation'
-import { buildGeospatialOverlayGraphData, mergeGraphDataUnique } from '@/features/geospatial/geospatialOverlayGraphData'
+import { applyLocalPoiGraphSelection, buildGeospatialOverlayGraphData, mergeGraphDataUnique } from '@/features/geospatial/geospatialOverlayGraphData'
 import {
   buildLocalPoiDirectoryGraphData,
   getLocalPoiDirectoryDatasetSnapshot,
@@ -270,17 +270,22 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     const withLocalPoiDirectory = localPoiGraph
       ? mergeGraphDataUnique(withMarkdownGeodata, localPoiGraph)
       : withMarkdownGeodata
-    if (!isSupplyChainWorkspaceSource(canvasMarkdownDocument.name)) return withLocalPoiDirectory
+    const selectedIds = new Set([
+      String(gympgrphBridge.selectedNodeId || '').trim(),
+      ...(Array.isArray(gympgrphBridge.selectedNodeIds) ? gympgrphBridge.selectedNodeIds.map(id => String(id || '').trim()) : []),
+    ].filter(Boolean))
+    if (!isSupplyChainWorkspaceSource(canvasMarkdownDocument.name)) return applyLocalPoiGraphSelection(withLocalPoiDirectory, selectedIds)
     const timeSeconds = timelineTransport.documentKey === `${SUPPLY_CHAIN_SCENARIO.id}@${SUPPLY_CHAIN_SCENARIO.revision}`
       ? Math.max(0, Math.floor(timelineTransport.position * 60))
       : 0
-    return buildSupplyChainGeospatialGraphData({
+    return applyLocalPoiGraphSelection(buildSupplyChainGeospatialGraphData({
       graphData: withLocalPoiDirectory,
       ...supplyChainView,
       timeSeconds,
-    })
+    }), selectedIds)
   }, [active, canvasMarkdownDocument.name, canvasMarkdownDocument.text, geospatialSourceFiles, graphData, graphDataRevision,
-    localPoiDataset, supplyChainView, timelineTransport.documentKey, timelineTransport.position])
+    localPoiDataset, supplyChainView, timelineTransport.documentKey, timelineTransport.position,
+    gympgrphBridge.selectedNodeId, gympgrphBridge.selectedNodeIds])
 
   const supplyChainFitRequestedRef = React.useRef(false)
   React.useEffect(() => {

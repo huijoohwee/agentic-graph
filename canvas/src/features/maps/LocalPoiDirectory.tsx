@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { normalizeComposedSourcePath } from '@/features/source-files/composedSourceSelection'
@@ -95,28 +95,6 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
     mapSelectionGeneration.current += 1
   }, [])
 
-  useEffect(() => {
-    let canceled = false
-    let unsubscribe = () => undefined
-    void import('gympgrph').then(module => {
-      if (canceled) return
-      const geospatialEvents = module as unknown as {
-        onGraphMapFeatureSelected?: (handler: (detail: { sourceFeatureId: string }) => void) => () => void
-      }
-      if (typeof geospatialEvents.onGraphMapFeatureSelected !== 'function') return
-      unsubscribe = geospatialEvents.onGraphMapFeatureSelected(({ sourceFeatureId }) => {
-        const selectedFeature = featureCollection?.features.find(feature => String(feature.id ?? '') === sourceFeatureId)
-        if (!selectedFeature) return
-        setSelectedId(selectedFeature.id)
-        setMapSelectionMessage('Selected on the shared map.')
-      })
-    }).catch(() => undefined)
-    return () => {
-      canceled = true
-      unsubscribe()
-    }
-  }, [featureCollection])
-
   const matches = useMemo(() => featureCollection
     ? searchLocalPoiFeatures(featureCollection, query, category)
     : [], [category, featureCollection, query])
@@ -148,7 +126,7 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
       : selectionSource === 'toolbar' ? 'Selected on the shared map.' : 'Selected from Canvas.')
   }, [featureCollection, selectedMapFeatureId, selectionSource])
 
-  const selectFeature = (featureId: string | number | null) => {
+  const selectFeature = useCallback((featureId: string | number | null) => {
     setSelectedId(featureId)
     const generation = ++mapSelectionGeneration.current
     if (featureId === null) {
@@ -170,7 +148,28 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
         setMapSelectionMessage('This record could not be selected on the active map.')
       }
     })
-  }
+  }, [onSelectMapFeature])
+
+  useEffect(() => {
+    if (!dataset) return
+    let canceled = false
+    let dispose = () => undefined
+    void import('gympgrph').then(module => {
+      if (canceled) return
+      const map = module.readActiveMapLibreMap?.()
+      if (!map || typeof module.bindGraphFeatureAffordances !== 'function') return
+      dispose = module.bindGraphFeatureAffordances({
+        features: dataset.featureCollection.features.filter(feature => feature.properties.localPoiRole === 'place'),
+        map,
+        selectedFeatureIds: new Set(selectedId === null ? [] : [String(selectedId)]),
+        onActivate: feature => selectFeature(feature.id ?? feature.properties?.id ?? null),
+      })
+    }).catch(() => undefined)
+    return () => {
+      canceled = true
+      dispose()
+    }
+  }, [dataset, selectFeature, selectedId])
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget

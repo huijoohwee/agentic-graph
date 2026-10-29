@@ -1,9 +1,12 @@
 import type { FeatureCollection } from 'geojson'
+import { pickNearestPointFeature } from './pickNearestPointFeature.js'
 
 type GraphPointFeature = FeatureCollection['features'][number]
 
 type ProjectedMap = {
   getContainer: () => HTMLElement
+  getCanvasContainer?: () => HTMLElement
+  queryRenderedFeatures?: (point: { x: number; y: number }) => unknown[]
   on: (event: string, listener: () => void) => void
   off?: (event: string, listener: () => void) => void
   project: (coordinate: [number, number]) => { x: number; y: number }
@@ -154,7 +157,32 @@ export function bindGraphFeatureAffordances({
     }
   }
 
+  const canvas = map.getCanvasContainer?.() ?? host
+  const onCanvasClick = (event: MouseEvent) => {
+    if (event.button !== 0) return
+    const bounds = host.getBoundingClientRect()
+    const x = (event.clientX - bounds.left) * (host.clientWidth / Math.max(1, bounds.width))
+    const y = (event.clientY - bounds.top) * (host.clientHeight / Math.max(1, bounds.height))
+    if (x < 0 || y < 0 || x > host.clientWidth || y > host.clientHeight) return
+    const hits = map.queryRenderedFeatures?.({ x, y }) ?? []
+    const regionHit = hits.some(value => {
+      const properties = value && typeof value === 'object' ? (value as { properties?: unknown }).properties : null
+      return properties && typeof properties === 'object'
+        && (properties as Record<string, unknown>).localPoiRole === 'region'
+    })
+    const feature = pickNearestPointFeature(features, { x, y }, (lng, lat) => map.project([lng, lat]))
+    if (feature) {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      onActivate(feature)
+    } else if (regionHit) {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+    }
+  }
+
   doc.body.append(surface)
+  canvas.addEventListener('click', onCanvasClick, true)
   map.on('move', position)
   map.on('resize', position)
   viewport?.addEventListener('resize', position)
@@ -167,6 +195,7 @@ export function bindGraphFeatureAffordances({
   return () => {
     map.off?.('move', position)
     map.off?.('resize', position)
+    canvas.removeEventListener('click', onCanvasClick, true)
     viewport?.removeEventListener('resize', position)
     viewport?.removeEventListener('scroll', position, true)
     resizeObserver?.disconnect()
