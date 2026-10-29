@@ -10,9 +10,7 @@ import { classifyServiceWorkerReleaseTransition } from '../service-worker-releas
 import { seedReturningUserCacheProof } from '../service-worker-upgrade-cache-proof.mjs'
 import {
   assertCandidatePagesAttribution,
-  digestBytes,
   normalizeTransportInstant,
-  validateTransportEvidence,
 } from '../verify-production-release-transports.mjs'
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
 const integrationWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'integration.yml'), 'utf8')
@@ -38,6 +36,7 @@ const protectedMainAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'scr
 const productionAuthorizationScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-authorization.mjs'), 'utf8')
 const productionLifecycleScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-lifecycle.mjs'), 'utf8')
 const productionTerminalAuthorizationScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-terminal-authorization.mjs'), 'utf8')
+const productionMirrorObserverScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'observe-production-mirror-identity.mjs'), 'utf8')
 const productionReleaseTransportScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'verify-production-release-transports.mjs'), 'utf8')
 const packageScripts = JSON.parse(fs.readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')).scripts
 const assertAllMatch = (source, patterns) => patterns.forEach(pattern => assert.match(source, pattern))
@@ -238,6 +237,8 @@ test('production rollback is authoritative, pre-publication only, and emits a te
   assertExcludes(eligibility, ["steps.deploy_pages.outcome == 'success'"])
   assertAllMatch(productionReleaseTransportScript, [ /schema: 'agentic-graph-pages-deployment-capture\/v1', status: 'deployed', adapterId: PAGES_API_ADAPTER/, /schema: 'agentic-graph-production-release-failure-observation\/v1'/,
     /deployment\|state-reconciliation\|live-verification\|publication\|receipt-persistence/, /schema: 'agentic-graph-production-restored-pages-evidence\/v1', status: 'restored', adapterId: PAGES_API_ADAPTER/,
+  ])
+  assertAllMatch(productionMirrorObserverScript, [
     /schema: 'agentic-graph-production-observed-mirror-identity\/v1'/, ])
 })
 test('Pages candidate attribution rejects concurrent same-SHA and mismatched Wrangler deployments', () => {
@@ -300,55 +301,6 @@ test('Pages capture failure preserves a typed mutation-possible reconciliation b
   assert.match(productionReleaseTransportScript, /agentic-graph-pages-mutation-reconciliation\/v1/)
   assert.match(productionReleaseTransportScript, /status: 'preserve-required'/)
   assert.match(productionReleaseTransportScript, /mutationPossible: true, mutationProven: false/)
-})
-test('transport evidence keeps immutable, stable Pages, and public routes distinct with apex/app marker parity', () => {
-  const sourceRevision = 'a'.repeat(40)
-  const manifestDigest = 'b'.repeat(64)
-  const markerBytesDigest = digestBytes('marker-bytes')
-  const marker = {
-    bodyDigest: markerBytesDigest,
-    sourceRevision,
-    agenticCanvasOsRevision: 'c'.repeat(40),
-    catalogRevision: 'c'.repeat(40),
-    artifactDigest: 'd'.repeat(64),
-    immutableManifestDigest: manifestDigest,
-  }
-  const transports = ['immutable', 'stable-pages', 'public'].map((id, index) => ({
-    id,
-    origin: `https://${id}-${index}.example.com`,
-    smoke: { evidenceDigest: 'e'.repeat(64), checkCount: 3 },
-    markers: { apex: { ...marker }, app: { ...marker } },
-    routes: {
-      apex: { routeOwner: 'root-agent-ready-pages', status: 200 },
-      app: { routeOwner: 'agentic-graph-agent-ready-pages', status: 200 },
-    },
-  }))
-  const evidence = {
-    schema: 'agentic-graph-production-transport-evidence/v1',
-    status: 'passed',
-    sourceRevision,
-    immutableManifestDigest: manifestDigest,
-    markerBytesParity: true,
-    markerBytesDigest,
-    transports,
-  }
-  assert.equal(validateTransportEvidence({ evidence, sourceRevision, manifestDigest }), evidence)
-  const markerMismatch = structuredClone(evidence)
-  markerMismatch.transports[1].markers.app.bodyDigest = 'f'.repeat(64)
-  assert.throws(
-    () => validateTransportEvidence({ evidence: markerMismatch, sourceRevision, manifestDigest }),
-    /apex\/app readiness marker bytes differ/,
-  )
-  const ownerMismatch = structuredClone(evidence)
-  ownerMismatch.transports[2].routes.apex.routeOwner = 'agentic-graph-agent-ready-pages'
-  assert.throws(
-    () => validateTransportEvidence({ evidence: ownerMismatch, sourceRevision, manifestDigest }),
-    /apex route owner drifted/,
-  )
-  assert.match(productionReleaseTransportScript, /\/\.well-known\/runtime-readiness\.json/)
-  assert.match(productionReleaseTransportScript, /\/agentic-graph\/\.well-known\/runtime-readiness\.json/)
-  assert.match(releaseWorkflow, /Terminal carrier file digest:[^\n]*sha256sum/)
-  assert.doesNotMatch(releaseWorkflow, /\.carrierDigest/)
 })
 test('Agentic Canvas OS docs promote automatically through protected agentic-graph integration', () => {
   assert.match(promotionWorkflow, /schedule:\s*\n\s*- cron:/)

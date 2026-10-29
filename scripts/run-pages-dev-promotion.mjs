@@ -1,9 +1,11 @@
+import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
+import { AGENTIC_GRAPH_CSP } from './pages-mirror-headers.mjs'
 import { prepareDevArtifact, runPagesProductionDeployment } from './pages-production-deployment.mjs'
 import { verifyDataViewsDev } from './verify-data-views-dev.mjs'
 
@@ -86,6 +88,10 @@ export async function runPagesDevPromotion(env = process.env) {
     ], { env })
     if (deploymentExitCode !== 0) throw new Error('Wrangler Pages deployment exited ' + deploymentExitCode)
 
+    stage = 'dev-csp-verification'
+    const cspVerification = await verifyDevGraphCsp({ origin: deployment.deploymentUrl, releaseSha: sourceRevision })
+    await writeReceipt(path.join(evidenceDir, 'csp-verification.json'), cspVerification)
+
     stage = 'dev-browser-verification'
     const { attempts: uiVerificationAttempts, verification: ui } = await verifyDevUiWithConvergenceRetry({
       origin: deployment.deploymentUrl,
@@ -95,6 +101,7 @@ export async function runPagesDevPromotion(env = process.env) {
       outputPath: path.join(evidenceDir, 'ui-verification.json'),
     })
     const uiReceiptBytes = await fs.readFile(path.join(evidenceDir, 'ui-verification.json'))
+    const cspReceiptBytes = await fs.readFile(path.join(evidenceDir, 'csp-verification.json'))
     const receipt = {
       schema: 'agentic-graph-dev-promotion-receipt/v1',
       sourceRevision,
@@ -105,6 +112,7 @@ export async function runPagesDevPromotion(env = process.env) {
       providerDeploymentUrl: deployment.providerDeploymentUrl,
       runIdentity,
       staticArtifactDigest: artifact.artifactDigest,
+      cspVerificationDigest: createHash('sha256').update(cspReceiptBytes).digest('hex'),
       uiVerificationDigest: createHash('sha256').update(uiReceiptBytes).digest('hex'),
       uiVerificationAttempts,
       views: ui.views,
@@ -126,6 +134,41 @@ export async function runPagesDevPromotion(env = process.env) {
       failedAt: new Date().toISOString(),
     })
     throw error
+  }
+}
+
+export async function verifyDevGraphCsp({ origin, releaseSha, fetchImpl = fetch }) {
+  if (!/^[0-9a-f]{40}$/.test(String(releaseSha || ''))) throw new Error('Dev CSP source revision is invalid')
+  const deploymentOrigin = new URL(String(origin || ''))
+  if (deploymentOrigin.protocol !== 'https:' || !/^(?:agentic-graph-dev|[a-z0-9-]+\.agentic-graph-dev)\.pages\.dev$/i.test(deploymentOrigin.hostname)
+    || deploymentOrigin.username || deploymentOrigin.password || deploymentOrigin.port || deploymentOrigin.pathname !== '/'
+    || deploymentOrigin.search || deploymentOrigin.hash) {
+    throw new Error('Dev CSP origin is not the isolated Pages deployment')
+  }
+  const url = new URL('/agentic-graph/', deploymentOrigin.origin)
+  url.searchParams.set('kgTransportProof', releaseSha)
+  const response = await fetchImpl(url, {
+    headers: { accept: 'text/html', 'cache-control': 'no-cache' },
+    redirect: 'manual',
+    signal: AbortSignal.timeout(30_000),
+  })
+  const body = Buffer.from(await response.arrayBuffer())
+  assert.equal(response.status, 200, `${url} must return HTTP 200`)
+  assert.match(String(response.headers.get('content-type') || ''), /^text\/html\b/i, `${url} must return HTML`)
+  const routeOwner = String(response.headers.get('x-agentic-graph-route-owner') || '').trim()
+  assert.equal(routeOwner, 'agentic-graph-agent-ready-pages', `${url} route owner drifted`)
+  const contentSecurityPolicy = response.headers.get('content-security-policy')
+  assert.equal(contentSecurityPolicy, AGENTIC_GRAPH_CSP, `${url} enforcing CSP drifted`)
+  return {
+    schema: 'agentic-graph-dev-csp-verification/v1',
+    sourceRevision: releaseSha,
+    url: url.toString(),
+    status: response.status,
+    routeOwner,
+    contentSecurityPolicy,
+    bodyDigest: createHash('sha256').update(body).digest('hex'),
+    byteLength: body.length,
+    verifiedAt: new Date().toISOString(),
   }
 }
 

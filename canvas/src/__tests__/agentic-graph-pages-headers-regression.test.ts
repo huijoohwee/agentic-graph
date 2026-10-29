@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolveSiblingFixturePath } from '@/tests/lib/repoTestData'
-import { buildAgentReadyHeaders } from '../../../scripts/pages-mirror-headers.mjs'
+import { AGENTIC_GRAPH_CSP, buildAgentReadyHeaders } from '../../../scripts/pages-mirror-headers.mjs'
 import { productionRuntimeReadinessHeaderLines } from '../../../scripts/production-runtime-readiness-build.mjs'
 
 // Default to the source candidate; a release can explicitly validate its published file.
@@ -16,29 +16,32 @@ const readHeadersForValidation = (): string => {
   })
 }
 
-const assertReportOnlyCsp = (headersText: string): void => {
+const assertEnforcedCsp = (headersText: string): void => {
   let selected = false, hasRoute = false
-  const reports: string[] = []
+  const policies: string[] = [], reports: string[] = []
   for (const line of headersText.split('\n')) {
     if (/^(?:\/|https?:\/\/)/.test(line)) {
       selected = line.trim() === '/agentic-graph/*'
       hasRoute ||= selected
     }
+    const policy = selected ? line.match(/^[ \t]+Content-Security-Policy:[ \t]*(.*)$/i) : null
     const report = selected ? line.match(/^[ \t]+Content-Security-Policy-Report-Only:[ \t]*(.*)$/i) : null
+    if (policy) policies.push(policy[1]!)
     if (report) reports.push(report[1]!)
   }
-  if (!hasRoute || !reports.length) throw new Error('expected selected header input to define /agentic-graph/* report-only CSP')
-  if (reports.some(report => report.split(';').some(directive => /^upgrade-insecure-requests(?:\s|$)/i.test(directive.trim())))) {
-    throw new Error('expected report-only CSP to avoid ignored upgrade-insecure-requests')
+  if (!hasRoute || policies.length !== 1 || policies[0] !== AGENTIC_GRAPH_CSP) {
+    throw new Error('expected /agentic-graph/* to have exactly one canonical enforced CSP')
   }
+  if (reports.length) throw new Error('expected /agentic-graph/* to have no report-only CSP after enforcement')
 }
 
 export function testAgenticGraphReportOnlyCspAvoidsIgnoredUpgradeDirective() {
+  const enforced = `  Content-Security-Policy: ${AGENTIC_GRAPH_CSP}`
   const report = "  Content-Security-Policy-Report-Only: default-src 'self'"
-  assert.doesNotThrow(() => assertReportOnlyCsp(['/agentic-graph/*', '  Permissions-Policy: camera=(self)', '/other/*', '  X-Example: retained', '/agentic-graph/*', report, '  # upgrade-insecure-requests is intentionally omitted'].join('\n')))
-  assert.throws(() => assertReportOnlyCsp('/content/agentic-graph/*\n' + report), /expected selected header input/)
-  assert.throws(() => assertReportOnlyCsp(['/agentic-graph/*', report, '/agentic-graph/*', report + '; upgrade-insecure-requests'].join('\n')), /ignored upgrade-insecure-requests/)
-  assertReportOnlyCsp(readHeadersForValidation())
+  assert.doesNotThrow(() => assertEnforcedCsp(['/agentic-graph/*', '  Permissions-Policy: camera=(self)', '/other/*', '  X-Example: retained', '/agentic-graph/*', enforced].join('\n')))
+  assert.throws(() => assertEnforcedCsp('/content/agentic-graph/*\n' + enforced), /expected \/agentic-graph/)
+  assert.throws(() => assertEnforcedCsp(['/agentic-graph/*', enforced, report].join('\n')), /no report-only CSP/)
+  assertEnforcedCsp(readHeadersForValidation())
 }
 
 export function testAgenticGraphAppShellHtmlAddsNoTransformForCloudflareJsd() {
