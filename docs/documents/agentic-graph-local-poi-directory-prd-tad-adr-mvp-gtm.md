@@ -2,7 +2,7 @@
 title: "agentic-graph Local POI Directory — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-local-poi-directory-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.0"
+version: "1.0.1"
 date: "2026-10-29"
 lang: "en-US"
 owner: "docs.geospatial.local-poi-directory"
@@ -15,12 +15,12 @@ scope: "Prepare and browse an explicitly approved, bounded local GeoJSON POI dir
 deploy_boundary: "Local-first feature planning only; no publication, deployment, promotion, or production effect"
 worktree_id: "device-0232231d4a19--local-poi-directory-plan"
 agent_id: "codex-local-poi-directory-plan"
-prd_revision: "1.0.0"
+prd_revision: "1.0.1"
 tad_revision: "1.0.0"
 adr_revision: "1.0.0"
 mvp_revision: "1.0.0"
 gtm_revision: "1.0.0"
-local_rung: "undocumented"
+local_rung: "dev-proven"
 delivered_rung: "undocumented"
 lane: "authoring"
 ---
@@ -28,11 +28,11 @@ lane: "authoring"
 
 This child plan narrows the [Mapping Stack plan](agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md) to local preparation and browsing of points of interest. The parent owns mapping composition and broad spatial capabilities. The [Geospatial Mode document](agentic-graph-geospatial-mode-document.md) owns the runtime map, dataset, and selection contract. This plan adds no replacement map, spatial engine, or source-of-truth for those contracts.
 
-The existing `agentic-graph-geostack-scratch` checkout contains uncommitted candidate UI, validation, and build work. That checkout is discovery evidence only: it is not an accepted source release, a clean lane, or proof that the feature is integrated. The candidate code must meet this plan and the existing owners' checks in its own admitted implementation lane.
+The separate `agentic-graph-geostack-scratch` checkout remains unaccepted discovery evidence; its dirty contents are preserved. The accepted implementation was developed in the admitted `agent/device-0232231d4a19/local-poi-directory-budget` lane and integrated into `main` through [PR #1843](https://github.com/huijoohwee/agentic-graph/pull/1843), merge commit `dd842651c4f1888d2d4b161b389635b6be3162a1`. [PR #1844](https://github.com/huijoohwee/agentic-graph/pull/1844), merge commit `768e794bcb7f61dfaeb7169a598cab82c9e67dce`, added a synthetic-preview provenance regression guard.
 
 ## Identity and directive
 
-`AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001` joins PRD, TAD, ADR, MVP, and GTM revision `1.0.0`, as a child of `PLAN-AGENTIC-GRAPH-MAPPING-STACK-PRD-TAD-ADR-MVP-GTM@1.0.3`.
+`AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001` joins PRD revision `1.0.1` with TAD, ADR, MVP, and GTM revision `1.0.0`, as a child of `PLAN-AGENTIC-GRAPH-MAPPING-STACK-PRD-TAD-ADR-MVP-GTM@1.0.3`.
 
 **DIR-POI-01** — Context: operators need to inspect small, authorized place datasets without sending source files to a service. Intent: make local POI curation and map browsing usable on a device with minimal setup. Directive: reuse the existing GeoJSON and map selection path, expose bounded validation and explicit approval, and keep data export user-controlled. Role/Subject: local dataset curator. Action: validate, review, and browse an approved POI collection. Outcome: a small, attributable directory that can be inspected locally and exported deliberately. Verb/Object: prepare / an approved local POI directory.
 
@@ -109,11 +109,11 @@ Use the existing clearly labeled synthetic fixture for empty-state demonstration
 
 ## MVP and verification
 
-The planning lane is one file, no code modules, at most 20 active minutes, below 600 lines, and below 500 KiB. A future implementation lane must declare its own mission and budget before editing. Keep that first feature sprint to the existing panel/overlay owners, one validator, and focused regression coverage; no new dependency or paid resource.
+The planning lane is one file, no code modules, at most 20 active minutes, below 600 lines, and below 500 KiB. The implementation was delivered in the admitted `local-poi-directory-budget` lane with no new dependency or paid resource. Keep future changes within the existing panel/overlay owners and validator; new work needs its own mission and budget.
 
 Map each acceptance row to a focused synthetic fixture: collection and byte limits (AC-POI-01); missing metadata and declined attestations (AC-POI-02); precision, geometry, and coordinate boundaries (AC-POI-03); allowlist, stable IDs, date and privacy rejection (AC-POI-04); deterministic manifest digests, bounds, and counts (AC-POI-05); synchronized selection and 50-result cap (AC-POI-06); synthetic-only labeling (AC-POI-07); and no-network, explicit export, and no-overwrite behavior (AC-POI-08). Use a network guard to prove import/validation/export do not fetch or upload data. These checks prove only local source behavior; protected integration and any deployment or runtime result need their own exact evidence.
 
-Current implementation status is **unverified**: candidate files are uncommitted in the separate scratch checkout. Do not report acceptance as passed until the implementation lane supplies the focused checks against its exact candidate.
+The source implementation is **integrated** at `dd842651c4f1888d2d4b161b389635b6be3162a1`; the current protected `main` also includes the provenance guard at `768e794bcb7f61dfaeb7169a598cab82c9e67dce`. PR #1843's required `docs-contract` and `Integration Gate` checks passed. The exact PR #1843 candidate also passed the focused local POI unit suite (4/4), Canvas checks/build, and geospatial-mode checks; the exact PR #1844 candidate passed the focused POI suite (4/4), and its required `docs-contract` and `Integration Gate` checks passed. These records support `local_rung: dev-proven` for local source behavior and protected integration only. No production deployment, production runtime readback, or physical-device acceptance is recorded; `delivered_rung` remains `undocumented`.
 
 ## GTM
 
@@ -121,13 +121,13 @@ Rank the initial pain hypothesis as: (1) reviewing and browsing an already permi
 
 ## Release, deployment, and rollback boundary
 
-This plan is documentation-only and grants no integration or deployment authority. A feature source lane must pass its exact checks and protected Integration Gate, then complete release closeout with receipts before cleanup. Source integration does not prove deployment or device/runtime behavior. If a future change causes a regression, use the product owner's rollback procedure for the exact deployed candidate; reverting source does not itself roll back runtime data or deployment state. This MVP adds no server data to migrate and no hosted state to delete.
+This plan's `deploy_boundary` remains local-first planning only and grants no deployment or production-effect authority. The repository flight contract requires `publication` and `production-activation` for behavioral changes, so the plan and repository policy do not currently authorize a common delivery path. Source integration has completed under the protected source-release workflow; delivery remains pending until the product owner resolves the boundary through a versioned plan or policy change and supplies exact authority for the selected path. Do not infer production activation from the merged PRs or local checks. Any later deployment requires exact candidate, Dev and Prod readbacks, cost/authority proof, rollback instructions, and separate receipts. This MVP adds no server data to migrate and no hosted state to delete.
 
 ## Source bindings and handover
 
 - Parent scope and broad mapping decisions: [Mapping Stack PRD/TAD/ADR/MVP/GTM 1.0.3](agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md).
 - Runtime map, dataset and POI selection owner: [Geospatial Mode](agentic-graph-geospatial-mode-document.md).
-- Existing feature discovery evidence: scratch candidate `canvas/src/features/maps/LocalPoiDirectory.tsx`, `canvas/src/features/geospatial/localPoiDirectoryModel.ts`, and `scripts/geostack-local-geojson-build.mjs`; these paths are not yet merged or acceptance evidence.
-- Source merge, production deployment, runtime verification, rollback, and worktree cleanup remain separate owner actions with exact candidate and receipt evidence.
+- Integrated implementation: `canvas/src/features/maps/LocalPoiDirectory.tsx`, `canvas/src/features/geospatial/localPoiDirectoryModel.ts`, and `scripts/geostack-local-geojson-build.mjs` at merge commit `dd842651c4f1888d2d4b161b389635b6be3162a1`; synthetic-only preview guard at `768e794bcb7f61dfaeb7169a598cab82c9e67dce`.
+- Production deployment, runtime/device verification, rollback, and worktree cleanup remain separate actions with exact authority and receipts. Preserve the dirty scratch checkout until its bytes receive an explicit disposition and native cleanup receipts.
 
-Next action: bind an implementation lane to this committed child plan, recheck current main and open scope ownership, inventory the dirty scratch diff, and move only accepted changes into a clean admitted lane while preserving the scratch bytes. Report the exact diff, checks, and unresolved risks before protected integration.
+Next action: resolve the plan/repository delivery-boundary conflict. Keep `delivered_rung` at `undocumented` until an authorized no-deploy disposition or exact deployment/runtime evidence is recorded. Keep the scratch checkout mounted and preserved while AOS reports dirty bytes and cleanup receipts are absent.
