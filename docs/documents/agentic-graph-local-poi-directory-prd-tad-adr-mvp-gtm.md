@@ -2,7 +2,7 @@
 title: "agentic-graph Local POI Directory — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-local-poi-directory-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.1"
+version: "1.0.2"
 date: "2026-10-29"
 lang: "en-US"
 owner: "docs.geospatial.local-poi-directory"
@@ -12,12 +12,12 @@ frontmatter_contract: "required"
 continuity_id: "AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001"
 parent_plan: "docs/documents/agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md@1.0.3"
 scope: "Prepare and browse an explicitly approved, bounded local GeoJSON POI directory through the existing geospatial map and selection owners"
-deploy_boundary: "Local-first feature planning only; no publication, deployment, promotion, or production effect"
+deploy_boundary: "Production application-code activation through the existing protected core release; POI datasets remain local and are never uploaded"
 worktree_id: "device-0232231d4a19--local-poi-directory-plan"
 agent_id: "codex-local-poi-directory-plan"
-prd_revision: "1.0.1"
+prd_revision: "1.0.2"
 tad_revision: "1.0.0"
-adr_revision: "1.0.0"
+adr_revision: "1.0.1"
 mvp_revision: "1.0.0"
 gtm_revision: "1.0.0"
 local_rung: "dev-proven"
@@ -32,7 +32,7 @@ The separate `agentic-graph-geostack-scratch` checkout remains unaccepted discov
 
 ## Identity and directive
 
-`AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001` joins PRD revision `1.0.1` with TAD, ADR, MVP, and GTM revision `1.0.0`, as a child of `PLAN-AGENTIC-GRAPH-MAPPING-STACK-PRD-TAD-ADR-MVP-GTM@1.0.3`.
+`AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001` joins PRD revision `1.0.2`, ADR revision `1.0.1`, and TAD, MVP, and GTM revision `1.0.0`, as a child of `PLAN-AGENTIC-GRAPH-MAPPING-STACK-PRD-TAD-ADR-MVP-GTM@1.0.3`.
 
 **DIR-POI-01** — Context: operators need to inspect small, authorized place datasets without sending source files to a service. Intent: make local POI curation and map browsing usable on a device with minimal setup. Directive: reuse the existing GeoJSON and map selection path, expose bounded validation and explicit approval, and keep data export user-controlled. Role/Subject: local dataset curator. Action: validate, review, and browse an approved POI collection. Outcome: a small, attributable directory that can be inspected locally and exported deliberately. Verb/Object: prepare / an approved local POI directory.
 
@@ -107,6 +107,10 @@ Render through the current GeoJSON overlay and route feature selection through t
 
 Use the existing clearly labeled synthetic fixture for empty-state demonstration. Historical map/place seed content is not a current source of production data, verified licensing, or real place recommendations.
 
+### ADR-07 — Activate client code through the existing core release
+
+The product owner selected production activation of the integrated client feature. Deliver the exact protected `main` candidate through `.github/workflows/release.yml` using `config/production-release-profile.json`'s `core` profile and `existing-free-resources-only` cost policy. The target is the existing Cloudflare Pages project `joohwee` at `https://airvio.co` plus the existing `agentic-storage` Worker under its core contract. Do not create resources, enable paid plans or overages, enable Cloudflare Access, add a hosted POI service, or send local POI inputs or outputs to a server. Candidate authorization and all release checks remain bound to the exact source, immutable build, runtime evidence, and rollback identity.
+
 ## MVP and verification
 
 The planning lane is one file, no code modules, at most 20 active minutes, below 600 lines, and below 500 KiB. The implementation was delivered in the admitted `local-poi-directory-budget` lane with no new dependency or paid resource. Keep future changes within the existing panel/overlay owners and validator; new work needs its own mission and budget.
@@ -121,7 +125,11 @@ Rank the initial pain hypothesis as: (1) reviewing and browsing an already permi
 
 ## Release, deployment, and rollback boundary
 
-This plan's `deploy_boundary` remains local-first planning only and grants no deployment or production-effect authority. The repository flight contract requires `publication` and `production-activation` for behavioral changes, so the plan and repository policy do not currently authorize a common delivery path. Source integration has completed under the protected source-release workflow; delivery remains pending until the product owner resolves the boundary through a versioned plan or policy change and supplies exact authority for the selected path. Do not infer production activation from the merged PRs or local checks. Any later deployment requires exact candidate, Dev and Prod readbacks, cost/authority proof, rollback instructions, and separate receipts. This MVP adds no server data to migrate and no hosted state to delete.
+The selected delivery boundary is the existing protected core release: exact protected `main` source to Cloudflare Pages project `joohwee` at `https://airvio.co`, the existing `agentic-storage` Worker core profile, and the workflow's canonical-document D1 reconciliation and verified mirror publication. The release profile is `existing-free-resources-only`; no paid plan, overage, Access subscription, new resource, or POI data upload is authorized by this plan. The full runtime's travel and MCP providers remain separate owners.
+
+Before activation, the release must bind a fresh local review, immutable artifact, current rollback identity, and exact human authorization. The current rollback identity records the exact Pages deployment and D1/mirror state; the core Worker preflight records its exact active version, bindings, secret-name inventory, routing, and migration state. On failure, the protected controller restores the prior Pages deployment and core Worker version/routing, restores the canonical-document D1 state within the documented migration contract, and verifies baseline liveness. Forward-compatible core migrations or owner enrollment are retained; this is not a general rollback of arbitrary D1, R2, external providers, or unrelated Workers. If a failure occurs after mirror publication, manual mirror reconciliation may be required.
+
+The integrated source remains `local_rung: dev-proven`; `delivered_rung` stays `undocumented` until the exact candidate passes the protected release, live route/browser checks, rollback receipt validation, and publication receipts. The latest protected attempt, [run #40272873807](https://github.com/huijoohwee/agentic-graph/actions/runs/40272873807), failed six MCP source-file checks. It restored the prior Pages deployment and D1 state, but post-rollback immutable, stable, and public runtime checks also failed, so the terminal rollback was not green. A fresh candidate must pass that full gate before activation. This MVP adds no server POI data to migrate and no hosted POI state to delete.
 
 ## Source bindings and handover
 
@@ -130,4 +138,4 @@ This plan's `deploy_boundary` remains local-first planning only and grants no de
 - Integrated implementation: `canvas/src/features/maps/LocalPoiDirectory.tsx`, `canvas/src/features/geospatial/localPoiDirectoryModel.ts`, and `scripts/geostack-local-geojson-build.mjs` at merge commit `dd842651c4f1888d2d4b161b389635b6be3162a1`; synthetic-only preview guard at `768e794bcb7f61dfaeb7169a598cab82c9e67dce`.
 - Production deployment, runtime/device verification, rollback, and worktree cleanup remain separate actions with exact authority and receipts. Preserve the dirty scratch checkout until its bytes receive an explicit disposition and native cleanup receipts.
 
-Next action: resolve the plan/repository delivery-boundary conflict. Keep `delivered_rung` at `undocumented` until an authorized no-deploy disposition or exact deployment/runtime evidence is recorded. Keep the scratch checkout mounted and preserved while AOS reports dirty bytes and cleanup receipts are absent.
+Next action: pass the current protected production smoke gate, generate the exact candidate and rollback evidence from the fresh baseline, then obtain its candidate-bound human authorization. Keep the scratch checkout mounted and preserved while AOS reports dirty bytes and cleanup receipts are absent.
