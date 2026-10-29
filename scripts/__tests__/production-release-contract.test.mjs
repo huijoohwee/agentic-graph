@@ -9,11 +9,13 @@ import { assertRemoteRevisionAuthority } from '../immutable-release-manifest.mjs
 import { classifyServiceWorkerReleaseTransition } from '../service-worker-release-transition.mjs'
 import { seedReturningUserCacheProof } from '../service-worker-upgrade-cache-proof.mjs'
 import {
+  assertAgenticGraphCsp,
   assertCandidatePagesAttribution,
   digestBytes,
   normalizeTransportInstant,
   validateTransportEvidence,
 } from '../verify-production-release-transports.mjs'
+import { AGENTIC_GRAPH_CSP } from '../pages-mirror-headers.mjs'
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
 const integrationWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'integration.yml'), 'utf8')
 const releaseWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'release.yml'), 'utf8'); const bootstrapWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'travel-mesh-bootstrap.yml'), 'utf8'); const bootstrapScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'travel-mesh-bootstrap.mjs'), 'utf8'); const bootstrapAuthorization = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'travel-mesh-bootstrap-authorization.mjs'), 'utf8')
@@ -52,6 +54,11 @@ const assertInOrder = (source, markers) => {
     previousIndex = index
   }
 }
+test('production transport readback requires the exact enforced Graph CSP', () => {
+  assert.equal(assertAgenticGraphCsp(new Headers({ 'content-security-policy': AGENTIC_GRAPH_CSP })), AGENTIC_GRAPH_CSP)
+  assert.throws(() => assertAgenticGraphCsp(new Headers({ 'content-security-policy': "default-src 'none'" })), /agentic-graph response CSP drifted/)
+  assert.throws(() => assertAgenticGraphCsp(new Headers()), /agentic-graph response CSP drifted/)
+})
 const workflowJob = name => {
   const start = releaseWorkflow.indexOf(`\n  ${name}:`); const relativeEnd = releaseWorkflow.slice(start + 1).search(/\n  [A-Za-z0-9_-]+:/)
   return releaseWorkflow.slice(start, relativeEnd === -1 ? undefined : start + 1 + relativeEnd)
@@ -320,7 +327,7 @@ test('transport evidence keeps immutable, stable Pages, and public routes distin
     markers: { apex: { ...marker }, app: { ...marker } },
     routes: {
       apex: { routeOwner: 'root-agent-ready-pages', status: 200 },
-      app: { routeOwner: 'agentic-graph-agent-ready-pages', status: 200 },
+      app: { routeOwner: 'agentic-graph-agent-ready-pages', status: 200, contentSecurityPolicy: AGENTIC_GRAPH_CSP },
     },
   }))
   const evidence = {
@@ -344,6 +351,12 @@ test('transport evidence keeps immutable, stable Pages, and public routes distin
   assert.throws(
     () => validateTransportEvidence({ evidence: ownerMismatch, sourceRevision, manifestDigest }),
     /apex route owner drifted/,
+  )
+  const cspMismatch = structuredClone(evidence)
+  cspMismatch.transports[1].routes.app.contentSecurityPolicy = "default-src 'none'"
+  assert.throws(
+    () => validateTransportEvidence({ evidence: cspMismatch, sourceRevision, manifestDigest }),
+    /app CSP drifted/,
   )
   assert.match(productionReleaseTransportScript, /\/\.well-known\/runtime-readiness\.json/)
   assert.match(productionReleaseTransportScript, /\/agentic-graph\/\.well-known\/runtime-readiness\.json/)

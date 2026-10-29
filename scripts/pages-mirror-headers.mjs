@@ -6,7 +6,13 @@ const GENERATED_AGENT_HOMEPAGE_HEADERS_START = '# BEGIN agentic-graph generated 
 const GENERATED_AGENT_HOMEPAGE_HEADERS_END = '# END agentic-graph generated homepage discovery headers'
 const GENERATED_XR_RUNTIME_HEADERS_START = '# BEGIN agentic-graph generated XR runtime permissions headers'
 const GENERATED_XR_RUNTIME_HEADERS_END = '# END agentic-graph generated XR runtime permissions headers'
+const GENERATED_GRAPH_CSP_HEADERS_START = '# BEGIN agentic-graph generated production CSP headers'
+const GENERATED_GRAPH_CSP_HEADERS_END = '# END agentic-graph generated production CSP headers'
 const XR_RUNTIME_PERMISSIONS_POLICY = 'accelerometer=(self), autoplay=(self), camera=(self), clipboard-read=(), clipboard-write=(), display-capture=(self), geolocation=(), gyroscope=(self), magnetometer=(self), microphone=(self), payment=(), usb=(), xr-spatial-tracking=(self)'
+// Temporary exception for /agentic-graph/*; owner=agentic-graph; preserves the existing Report-Only
+// integration allowances while enforcement starts. Base/object/form, script attributes, and framing
+// remain restricted. Review by 2026-11-05 and narrow using an enforcing Dev candidate.
+export const AGENTIC_GRAPH_CSP = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https://*.vercel.app https://*.joohwee.pages.dev; form-action 'none'; img-src 'self' data: blob: https:; font-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com; script-src-attr 'none'; connect-src 'self' https: wss:; frame-src 'self' https: data: blob:; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests; block-all-mixed-content"
 
 const escapedBlock = marker => marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const replaceOrAppendBlock = (existing, start, end, block) => {
@@ -60,6 +66,15 @@ const stripLegacyProductNamespaceHeaderBlocks = existing => {
     .trimEnd()
 
   return [stripped, ...policies].filter(Boolean).join('\n\n')
+}
+
+const stripCanonicalGraphCsp = existing => {
+  let route = ''
+  return existing.split('\n').filter(line => {
+    if (/^\S/.test(line) && !line.startsWith('#')) route = line.trim()
+    if (route !== '/agentic-graph/*') return true
+    return !/^[ \t]+(?:![ \t]+)?Content-Security-Policy(?:-Report-Only)?(?::|$)/i.test(line)
+  }).join('\n').replace(/\n{3,}/g, '\n\n')
 }
 
 export const buildAgentReadyHeaders = ({
@@ -134,7 +149,13 @@ export const buildAgentReadyHeaders = ({
     ]),
     GENERATED_XR_RUNTIME_HEADERS_END,
   ].join('\n')
-  let next = stripLegacyProductNamespaceHeaderBlocks(existing).replace(
+  const graphCspHeaderBlock = [
+    GENERATED_GRAPH_CSP_HEADERS_START,
+    '/agentic-graph/*',
+    `  Content-Security-Policy: ${AGENTIC_GRAPH_CSP}`,
+    GENERATED_GRAPH_CSP_HEADERS_END,
+  ].join('\n')
+  let next = stripCanonicalGraphCsp(stripLegacyProductNamespaceHeaderBlocks(existing)).replace(
     /^\/content\/agentic-graph\/index\.html\n  Cache-Control: .*?\n(?:\n)?^\/agentic-graph\n  Cache-Control: .*?\n(?:\n)?^\/agentic-graph\/\n  Cache-Control: .*?\n(?:\n)?^\/agentic-graph\/index\.html\n  Cache-Control: .*?\n(?:\n)?/gm,
     '',
   ).replace(
@@ -144,5 +165,6 @@ export const buildAgentReadyHeaders = ({
   next = replaceOrAppendBlock(next, GENERATED_AGENT_HEADERS_START, GENERATED_AGENT_HEADERS_END, staticArtifactBlock)
   next = replaceOrAppendBlock(next, GENERATED_APP_SHELL_HEADERS_START, GENERATED_APP_SHELL_HEADERS_END, appShellHeaderBlock)
   next = replaceOrAppendBlock(next, GENERATED_XR_RUNTIME_HEADERS_START, GENERATED_XR_RUNTIME_HEADERS_END, xrRuntimeHeaderBlock)
+  next = replaceOrAppendBlock(next, GENERATED_GRAPH_CSP_HEADERS_START, GENERATED_GRAPH_CSP_HEADERS_END, graphCspHeaderBlock)
   return replaceOrAppendBlock(next, GENERATED_AGENT_HOMEPAGE_HEADERS_START, GENERATED_AGENT_HOMEPAGE_HEADERS_END, homepageHeaderBlock).trimEnd() + '\n'
 }

@@ -9,6 +9,7 @@ import { createLifecycleAuthorization, createLifecycleCandidate, createLifecycle
 import * as contract from '../production-release-lifecycle-contract.mjs'
 import { canonicalJson, CLEAN_FRONTIER_CAPTURE_ADAPTER, createReleaseEvidenceFromSnapshot, CURRENT_FRONTIER_CAPTURE_ADAPTER, createProductionCompleteCarrier, createRolledBackCarrier, createSuccessfulReleaseRollbackRecapture, materializeCleanFrontierReleaseEvidence, materializeCurrentFrontierReleaseEvidence, releaseInventoryDigest, validateProductionCompleteCarrier } from '../lib/production-release-lifecycle-evidence.mjs'
 import { normalizeCloudflarePagesDeploymentId, observeMirror } from '../verify-production-release-transports.mjs'
+import { AGENTIC_GRAPH_CSP } from '../pages-mirror-headers.mjs'
 import { buildTerminalAuthorizationEvidence, formatTerminalAuthorizationComment, responseFor } from '../production-terminal-authorization.mjs'
 import { createCanonicalDescendantMirrorRollbackProof } from '../production-mirror-artifact.mjs'
 import { readContract } from '../collaboration-contract.mjs'
@@ -751,7 +752,7 @@ test('strict terminal constructors form and validate one production-complete v2 
         catalogRevision: docsRevision, immutableManifestDigest: readiness.immutableManifest.digest,
         artifactDigest: readiness.artifact.digest, bodyDigest: markerDigest,
       }])),
-      routes: { apex: { status: 200, routeOwner: 'root-agent-ready-pages' }, app: { status: 200, routeOwner: 'agentic-graph-agent-ready-pages' } },
+      routes: { apex: { status: 200, routeOwner: 'root-agent-ready-pages' }, app: { status: 200, routeOwner: 'agentic-graph-agent-ready-pages', contentSecurityPolicy: AGENTIC_GRAPH_CSP } },
     })),
     verifiedAt: '2026-07-29T00:07:00.000Z',
   }

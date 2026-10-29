@@ -10,6 +10,7 @@ import {
   FORWARD_HEAL_BASELINE_OPTIONS,
   runForwardHealBaselineCommand,
 } from './lib/production-forward-heal-command.mjs'
+import { AGENTIC_GRAPH_CSP } from './pages-mirror-headers.mjs'
 
 export { createForwardHealBaselineEvidence } from './lib/production-forward-heal-evidence.mjs'
 
@@ -23,6 +24,11 @@ const PAGES_ATTEMPT_SCHEMA = 'agentic-graph-pages-deployment-attempt/v1'
 const PAGES_CURRENT_OBSERVATION_SCHEMA = 'agentic-graph-production-pages-current-observation/v1'
 
 export const digestBytes = value => createHash('sha256').update(value).digest('hex')
+export const assertAgenticGraphCsp = headers => {
+  const contentSecurityPolicy = headers.get('content-security-policy')
+  assert.equal(contentSecurityPolicy, AGENTIC_GRAPH_CSP, 'agentic-graph response CSP drifted')
+  return contentSecurityPolicy
+}
 const canonicalJson = value => Array.isArray(value)
   ? `[${value.map(canonicalJson).join(',')}]`
   : value && typeof value === 'object'
@@ -103,7 +109,7 @@ const normalizeOrigin = value => {
   return url.origin
 }
 
-const fetchObservation = async ({ origin, pathname, expectedOwner = '' }) => {
+const fetchObservation = async ({ origin, pathname, expectedOwner = '', requireGraphCsp = false }) => {
   const url = new URL(pathname, `${origin}/`).toString()
   const response = await fetch(url, {
     headers: { accept: 'text/html', 'cache-control': 'no-cache' },
@@ -115,12 +121,15 @@ const fetchObservation = async ({ origin, pathname, expectedOwner = '' }) => {
   assert.match(String(response.headers.get('content-type') || ''), /^text\/html\b/i, `${url} must return HTML`)
   const routeOwner = String(response.headers.get('x-agentic-graph-route-owner') || '').trim()
   if (expectedOwner) assert.equal(routeOwner, expectedOwner, `${url} route owner drifted`)
+  const contentSecurityPolicy = requireGraphCsp ? assertAgenticGraphCsp(response.headers)
+    : response.headers.get('content-security-policy')
   return {
     url,
     status: response.status,
     contentType: String(response.headers.get('content-type') || ''),
     routeOwner,
     routeTag: String(response.headers.get('x-agentic-graph-route-tag') || '').trim(),
+    contentSecurityPolicy,
     bodyDigest: digestBytes(body),
     byteLength: body.length,
   }
@@ -190,6 +199,7 @@ export const validateTransportEvidence = ({ evidence, sourceRevision, manifestDi
     assert.equal(transport.routes.app.routeOwner, 'agentic-graph-agent-ready-pages', `${transport.id} app route owner drifted`)
     assert.equal(transport.routes.apex.status, 200, `${transport.id} apex route status drifted`)
     assert.equal(transport.routes.app.status, 200, `${transport.id} app route status drifted`)
+    assert.equal(transport.routes.app.contentSecurityPolicy, AGENTIC_GRAPH_CSP, `${transport.id} app CSP drifted`)
   }
   const markerDigests = [...new Set(evidence.transports.flatMap(item => [
     item.markers.apex.bodyDigest,
@@ -233,6 +243,7 @@ export const verifyProductionReleaseTransports = async ({
         origin: target.origin,
         pathname: `/agentic-graph/?kgTransportProof=${sourceRevision}`,
         expectedOwner: 'agentic-graph-agent-ready-pages',
+        requireGraphCsp: true,
       }),
     ])
     return {
