@@ -2,8 +2,8 @@
 title: "Reference implementation: agentic-graph Cloud Platform Product and Technical Specification"
 id: "md:agentic-graph-cloudflare-document"
 doc_type: "Product and Technical Specification"
-version: "2.1.0"
-date: "2026-08-13"
+version: "2.1.1"
+date: "2026-10-29"
 lang: "en-US"
 owner: "docs.cloudflare-platform-boundary"
 local_rung: "spec-complete"
@@ -106,11 +106,11 @@ handlers in the same Worker enforce sessions.
 
 | ID | Story | Given / When / Then | VCC translation |
 |---|---|---|---|
-| PRD-CF-01 | As a release operator, I want Pages promotion to use one exact candidate so that public bytes match review. | Given an exact protected-main revision and localhost review artifact, when the protected release runs, then it builds a mirror candidate before any delivery mutation. | Verify the candidate manifest binds the exact source and dependency revisions; named release checks exit 0; no Worker deploy command runs. |
+| PRD-CF-01 | As a release operator, I want the selected production profile to use one exact candidate so that public bytes and core runtime match review. | Given an exact protected-main revision and localhost review artifact, when the protected release runs, then it builds and verifies a mirror candidate before any delivery mutation. | Verify the candidate manifest binds exact source and dependency revisions; named release checks exit 0; the selected profile alone determines whether an existing Worker is activated. |
 | PRD-CF-02 | As a maintainer, I want ordinary integration to remain non-deploying so that merge does not publish. | Given a pull request or ordinary `main` push, when integration runs, then it validates source without deploying Pages or Workers. | Verify `.github/workflows/integration.yml` contains no deployment mutation and its check exits 0. |
 | PRD-CF-03 | As an agent integrator, I want public discovery and protected orchestration separated so that a read surface cannot imply control authority. | Given an agent chooses a Cloud-hosted surface, when discovery is public, then control execution remains on the separately authenticated Worker contract. | Verify linked MCP source-parity tests pass and no tool schema is redefined here. |
 | PRD-CF-04 | As a security reviewer, I want storage trust boundaries stated per route family so that unauthenticated access is visible. | Given storage source is inspected, when push, pull, export, blob, run-media, or media-asset behavior is described, then the description matches the handler before any delivery claim. | Verify focused storage tests and static source inspection surface the security matrix below; do not call an unsigned token entitlement. |
-| PRD-CF-05 | As an operator, I want storage, payment, MCP, research, fetch-proxy, and DNS publication treated separately so that Pages approval cannot deploy them. | Given the protected Pages workflow succeeds, when its steps are inspected, then it deploys Pages and reconciles documentation into D1 but does not deploy a Worker or publish DNS. | Verify the release workflow contains no Worker deploy or DNS publish step; preserve separate rollback ownership. |
+| PRD-CF-05 | As an operator, I want the protected core profile separated from other Workers and DNS so that each delivery unit has an exact authorization and rollback. | Given the protected Production Release selects `core`, when its steps are inspected, then it deploys Pages, the existing `agentic-storage` core Worker, and canonical documents into D1; payment, MCP, research, fetch-proxy Workers, travel-provider activation, and DNS remain separate. | Verify `config/production-release-profile.json`, `CORE_RUNTIME_PLAN`, and the release workflow agree; each activated unit has exact prior-state capture, candidate authorization, post-deploy probe, and compensation. |
 | PRD-CF-06 | As a security maintainer, I want secrets externalized so that static artifacts and source never contain credential values. | Given a deployment or DNS mutation needs a credential, when configuration is prepared, then only a secret name or masked presence is surfaced. | Verify secret-canary checks find no value and visible Worker variables contain no credential material. |
 | PRD-CF-07 | As a maintainer, I want routing and discovery checks to consume zero model tokens so that validation is bounded and cheap. | Given a source or deployed route check, when it runs, then it invokes no model harness and records zero prompt/completion tokens. | Verify network/model spies observe zero model calls and the cost record is zero. |
 
@@ -419,16 +419,21 @@ control path.
   candidate-bound interactive challenge while the deployment is pending. The command requires
   clean agentic-graph and Agentic Canvas OS `main` checkouts at the candidate-bound fetched revisions
   and submits the protected-environment approval itself; a separate browser approval is invalid.
-- That workflow owns Pages candidate verification, Pages deployment, D1 documentation
+- The selected `core` profile owns exact candidate verification, Pages deployment, activation of
+  the existing `agentic-storage` core Worker, core migrations and routing, canonical-document D1
   reconciliation, live/browser/service-worker checks, receipts, and post-verification mirror
-  publication.
-- It does not deploy storage, payment, MCP, research, or fetch-proxy Workers and does not publish
-  DNS.
-- `storage:deploy`, `payment:worker:deploy`, `mcp:worker:deploy`, and `dns-aid:publish` exist as
-  separate operator capabilities. Naming them here is not an instruction to run them.
-- Pages rollback restores the captured Pages deployment and reseeds canonical docs from the prior
-  source dependency. It is not a general D1 snapshot, schema rollback, R2 rollback, Worker rollback,
-  DNS rollback, queue rollback, or external-provider compensation.
+  publication. The profile is pinned by `config/production-release-profile.json`; an environment
+  variable cannot change it. The `pages` profile performs no Worker activation.
+- The core profile does not deploy payment, MCP, research, or fetch-proxy Workers, activate the
+  travel-provider profile, or publish DNS. `payment:worker:deploy`, `mcp:worker:deploy`, and
+  `dns-aid:publish` remain separate operator capabilities. A standalone `storage:deploy` command
+  does not replace the profile-bound core release. Naming a capability is not an instruction to run
+  it.
+- Core rollback restores the exact prior Pages deployment and `agentic-storage` Worker version and
+  routing, then checks baseline liveness. The release reseeds canonical documents from the prior
+  source dependency. Core migrations and owner enrollment are forward-compatible and are retained;
+  this is not a general rollback of arbitrary D1 schema/data, R2, non-core Workers, DNS, queues, or
+  external providers.
 - Pages rollback runs only after the Pages deploy step succeeded and does not revert the persistent
   mirror. A failure after mirror publication can leave mirror `main` ahead of restored Pages/D1 and
   requires manual reconciliation.
@@ -438,15 +443,17 @@ control path.
 
 ### Deploy Boundary Register
 
-Every boundary is closed because this revision references no operator instruction or recorded
-result.
+The Local POI plan revision 1.0.2 selects the existing protected `core` release for the POI
+client-code candidate. Pages and the existing storage Worker delivery rows remain closed until the
+exact candidate receives its human authorization and all required live checks and receipts pass.
+No separate Worker, travel-provider, or DNS boundary is selected.
 
 | Boundary | From | To | Evidence Reference | Operator instruction | Rollback statement / check | State |
 |---|---|---|---|---|---|---|
 | `CF-PAGES-SOURCE-TO-MIRROR` | Authoring | Mirror | candidate/parity result not recorded | `none` | discard candidate; rerun source checks | `closed` |
-| `CF-PAGES-MIRROR-TO-DELIVERY` | Mirror | Delivery | protected live result not recorded | `none` | restore captured Pages deployment; reseed prior docs; smoke | `closed` |
+| `CF-PAGES-MIRROR-TO-DELIVERY` | Mirror | Delivery | POI plan 1.0.2 selects core release; read-only rollback baseline #40883532355; latest protected attempt #40272873807 failed live smoke and post-rollback checks | exact `main` candidate authorization pending | restore exact captured Pages deployment; reseed prior canonical docs; pass immutable, stable, and public smoke checks | `closed` |
 | `CF-STORAGE-SOURCE-TO-MIRROR` | Authoring | Mirror | security/migration candidate not recorded | `none` | discard candidate; leave remote state unchanged | `closed` |
-| `CF-STORAGE-MIRROR-TO-DELIVERY` | Mirror | Delivery | auth/read-back/migration result not recorded | `none` | prior Worker/config plus approved data migration plan | `closed` |
+| `CF-STORAGE-MIRROR-TO-DELIVERY` | Mirror | Delivery | POI plan 1.0.2 selects the existing core-profile storage Worker; exact active-version and migration preflight pending | exact `main` candidate authorization pending | restore exact prior core Worker version and routing; retain only the documented forward-compatible core migration state; prove baseline liveness | `closed` |
 | `CF-PAYMENT-SOURCE-TO-MIRROR` | Authoring | Mirror | local payment candidate not recorded | `none` | discard candidate; leave remote/provider state unchanged | `closed` |
 | `CF-PAYMENT-MIRROR-TO-DELIVERY` | Mirror | Delivery | payment/provider result not recorded | `none` | prior Worker/config; provider compensation plan | `closed` |
 | `CF-MCP-SOURCE-TO-MIRROR` | Authoring | Mirror | registry/auth/session candidate not recorded | `none` | discard candidate; leave remote sessions unchanged | `closed` |
