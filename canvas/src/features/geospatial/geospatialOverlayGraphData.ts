@@ -1,4 +1,4 @@
-import type { GraphData, GraphNode, GraphEdge } from '@/lib/graph/types'
+import type { GraphData, GraphNode, GraphEdge, JSONValue } from '@/lib/graph/types'
 import type { SourceFile } from '@/hooks/store/types'
 import { buildGraphDataFromFeatureCollection } from '@/lib/graph/io/geojsonToGraphData'
 import { hashSignatureParts } from '@/lib/hash/signature'
@@ -167,7 +167,29 @@ const buildGraphNodeDedupKeySet = (nodes: GraphNode[]): Set<string> => {
   return dedupKeys
 }
 
-const mergeGraphDataUnique = (base: GraphData, extra: GraphData): GraphData => {
+const readAreaFeatures = (graphData: GraphData): unknown[] => {
+  const metadata = graphData.metadata as Record<string, unknown> | null | undefined
+  const collection = metadata?.kgGeospatialAreaFeatures as { features?: unknown[] } | null | undefined
+  return Array.isArray(collection?.features) ? collection.features : []
+}
+
+const mergeAreaFeatures = (base: GraphData, extra: GraphData): JSONValue | null => {
+  const extraFeatures = readAreaFeatures(extra)
+  if (extraFeatures.length === 0) return null
+  const merged = new Map<string, unknown>()
+  for (const feature of [...readAreaFeatures(base), ...extraFeatures]) {
+    const record = feature && typeof feature === 'object' ? feature as Record<string, unknown> : null
+    const properties = record?.properties && typeof record.properties === 'object'
+      ? record.properties as Record<string, unknown>
+      : null
+    const id = String(record?.id ?? properties?.id ?? '').trim()
+    const key = id ? `id:${id}` : `feature:${hashSignatureParts([JSON.stringify(feature)])}`
+    merged.set(key, feature)
+  }
+  return { type: 'FeatureCollection', features: [...merged.values()] } as unknown as JSONValue
+}
+
+export const mergeGraphDataUnique = (base: GraphData, extra: GraphData): GraphData => {
   const existingNodeDedupKeys = buildGraphNodeDedupKeySet(Array.isArray(base.nodes) ? (base.nodes as GraphNode[]) : [])
   const extraNodes: GraphNode[] = []
   for (const node of Array.isArray(extra.nodes) ? (extra.nodes as GraphNode[]) : []) {
@@ -187,11 +209,18 @@ const mergeGraphDataUnique = (base: GraphData, extra: GraphData): GraphData => {
     existingEdgeIds.add(id)
     extraEdges.push(edge)
   }
-  if (extraNodes.length === 0 && extraEdges.length === 0) return base
+  const mergedAreaFeatures = mergeAreaFeatures(base, extra)
+  if (extraNodes.length === 0 && extraEdges.length === 0 && mergedAreaFeatures === null) return base
   return {
     ...base,
     nodes: [...(Array.isArray(base.nodes) ? base.nodes : []), ...extraNodes],
     edges: [...(Array.isArray(base.edges) ? base.edges : []), ...extraEdges],
+    ...(mergedAreaFeatures ? {
+      metadata: {
+        ...(base.metadata && typeof base.metadata === 'object' ? base.metadata : {}),
+        kgGeospatialAreaFeatures: mergedAreaFeatures,
+      } as GraphData['metadata'],
+    } : {}),
   }
 }
 

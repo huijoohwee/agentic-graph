@@ -1,5 +1,9 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 export const TEST_CASES_POST_PARSER_3_TAIL: TestCaseTuple[] = [
+  ["geospatial.localPoi.approvalAllowlistPrecisionBounds", "@/__tests__/localPoiDirectory.test", "testLocalPoiGeoJsonApprovalAllowlistAndPrecisionContracts"],
+  ["geospatial.localPoi.projectsIntoSharedGraph", "@/__tests__/localPoiDirectory.test", "testLocalPoiDirectoryProjectsApprovedFeaturesIntoMapGraph"],
+  ["geospatial.localPoi.selectionResolvesSourceFeature", "@/__tests__/localPoiDirectory.test", "testLocalPoiDirectorySelectionResolvesCurrentDatasetFeatures"],
+  ["geospatial.localPoi.builderLocalBoundedNoOverwrite", "@/__tests__/localPoiDirectory.test", "testLocalPoiGeoJsonBuilderIsLocalBoundedAndNoOverwrite"],
   ["webpage.htmlToArtifact.embeddedFallback","@/__tests__/webpageHtmlToMarkdownArtifact.test","testWebpageHtmlToMarkdownArtifactAsyncUsesDataPageEmbeddedMarkdown"],
   ["webpage.htmlToArtifact.completeRenderedArticle","@/__tests__/webpageHtmlToMarkdownArtifact.test","testWebpageHtmlToMarkdownArtifactPrefersCompleteRenderedArticle"],
   ["webpage.htmlToArtifact.embeddedOptions","@/__tests__/webpageHtmlToMarkdownArtifact.test","testWebpageHtmlToMarkdownArtifactEmbeddedFallbackHonorsOptions"],
