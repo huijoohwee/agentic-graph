@@ -167,6 +167,7 @@ export type {
 export { LS_KEYS }
 export { useGympgrphStore }
 export { hashStringToIndex }
+export { bindGraphFeatureAffordances } from './features/geospatial/graphFeatureAffordances.js'
 
 export { applyDevCrossOriginProxy, applyMediaProxySrc, coerceFetchUrl, MEDIA_PROXY_ENDPOINT }
 

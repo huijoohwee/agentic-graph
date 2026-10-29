@@ -1,4 +1,4 @@
-import type { GraphData, GraphNode, GraphEdge } from '@/lib/graph/types'
+import type { GraphData, GraphNode, GraphEdge, JSONValue } from '@/lib/graph/types'
 import type { SourceFile } from '@/hooks/store/types'
 import { buildGraphDataFromFeatureCollection } from '@/lib/graph/io/geojsonToGraphData'
 import { hashSignatureParts } from '@/lib/hash/signature'
@@ -167,7 +167,29 @@ const buildGraphNodeDedupKeySet = (nodes: GraphNode[]): Set<string> => {
   return dedupKeys
 }
 
-const mergeGraphDataUnique = (base: GraphData, extra: GraphData): GraphData => {
+const readAreaFeatures = (graphData: GraphData): unknown[] => {
+  const metadata = graphData.metadata as Record<string, unknown> | null | undefined
+  const collection = metadata?.kgGeospatialAreaFeatures as { features?: unknown[] } | null | undefined
+  return Array.isArray(collection?.features) ? collection.features : []
+}
+
+const mergeAreaFeatures = (base: GraphData, extra: GraphData): JSONValue | null => {
+  const extraFeatures = readAreaFeatures(extra)
+  if (extraFeatures.length === 0) return null
+  const merged = new Map<string, unknown>()
+  for (const feature of [...readAreaFeatures(base), ...extraFeatures]) {
+    const record = feature && typeof feature === 'object' ? feature as Record<string, unknown> : null
+    const properties = record?.properties && typeof record.properties === 'object'
+      ? record.properties as Record<string, unknown>
+      : null
+    const id = String(record?.id ?? properties?.id ?? '').trim()
+    const key = id ? `id:${id}` : `feature:${hashSignatureParts([JSON.stringify(feature)])}`
+    merged.set(key, feature)
+  }
+  return { type: 'FeatureCollection', features: [...merged.values()] } as unknown as JSONValue
+}
+
+export const mergeGraphDataUnique = (base: GraphData, extra: GraphData): GraphData => {
   const existingNodeDedupKeys = buildGraphNodeDedupKeySet(Array.isArray(base.nodes) ? (base.nodes as GraphNode[]) : [])
   const extraNodes: GraphNode[] = []
   for (const node of Array.isArray(extra.nodes) ? (extra.nodes as GraphNode[]) : []) {
@@ -187,12 +209,70 @@ const mergeGraphDataUnique = (base: GraphData, extra: GraphData): GraphData => {
     existingEdgeIds.add(id)
     extraEdges.push(edge)
   }
-  if (extraNodes.length === 0 && extraEdges.length === 0) return base
+  const mergedAreaFeatures = mergeAreaFeatures(base, extra)
+  if (extraNodes.length === 0 && extraEdges.length === 0 && mergedAreaFeatures === null) return base
   return {
     ...base,
     nodes: [...(Array.isArray(base.nodes) ? base.nodes : []), ...extraNodes],
     edges: [...(Array.isArray(base.edges) ? base.edges : []), ...extraEdges],
+    ...(mergedAreaFeatures ? {
+      metadata: {
+        ...(base.metadata && typeof base.metadata === 'object' ? base.metadata : {}),
+        kgGeospatialAreaFeatures: mergedAreaFeatures,
+      } as GraphData['metadata'],
+    } : {}),
   }
+}
+
+const readGeoSelectionRecord = (value: unknown): Record<string, unknown> | null => (
+  value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
+)
+
+const readGeoSourceFeatureId = (node: unknown): string => {
+  const properties = readGeoSelectionRecord(readGeoSelectionRecord(node)?.properties)
+  const richMedia = readGeoSelectionRecord(properties?.richMediaPoiProperties)
+  return String(properties?.kgSourceFeatureId ?? richMedia?.kgSourceFeatureId ?? '').trim()
+}
+
+export function resolveSelectedGeoGraphNodeIds(
+  graphData: unknown,
+  selectedNodeIds: ReadonlySet<string>,
+): Set<string> {
+  const result = new Set(selectedNodeIds)
+  const nodes = readGeoSelectionRecord(graphData)?.nodes
+  if (!Array.isArray(nodes) || result.size === 0) return result
+  const selectedSourceIds = new Set<string>()
+  for (const node of nodes) {
+    const id = String(readGeoSelectionRecord(node)?.id ?? '').trim()
+    if (id && result.has(id)) {
+      const sourceId = readGeoSourceFeatureId(node)
+      if (sourceId) selectedSourceIds.add(sourceId)
+    }
+  }
+  if (selectedSourceIds.size === 0) return result
+  for (const node of nodes) {
+    const id = String(readGeoSelectionRecord(node)?.id ?? '').trim()
+    const sourceId = readGeoSourceFeatureId(node)
+    if (id && sourceId && selectedSourceIds.has(sourceId)) result.add(id)
+  }
+  return result
+}
+
+export function applyLocalPoiGraphSelection(
+  graphData: GraphData,
+  selectedNodeIds: ReadonlySet<string>,
+): GraphData {
+  const selected = resolveSelectedGeoGraphNodeIds(graphData, selectedNodeIds)
+  let changed = false
+  const nodes = (graphData.nodes ?? []).map(node => {
+    const properties = (node.properties ?? {}) as Record<string, JSONValue>
+    if (properties.localPoiRole !== 'place') return node
+    const kgSelected = selected.has(String(node.id ?? '').trim())
+    if (properties.kgSelected === kgSelected) return node
+    changed = true
+    return { ...node, properties: { ...properties, kgSelected } }
+  })
+  return changed ? { ...graphData, nodes } : graphData
 }
 
 const attachOverlayDebugInfo = (graphData: GraphData, info: GeospatialOverlayGraphDebugInfo): GraphData => ({

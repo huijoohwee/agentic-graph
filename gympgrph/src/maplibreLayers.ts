@@ -314,11 +314,21 @@ export function ensureDatasetLayer(
       ? ['all', ['==', ['geometry-type'], 'Point'], ['!', ['has', 'point_count']]]
       : ['==', ['geometry-type'], 'Point'],
     paint: {
-      'circle-color': pointColorExpression(color, options?.pointStyleConfig),
-      'circle-radius': pointRadiusByZoomExpression(radiusMultiplier),
+      'circle-color': [
+        'case',
+        ['==', ['get', 'kgSelected'], true],
+        '#2563eb',
+        pointColorExpression(color, options?.pointStyleConfig),
+      ],
+      'circle-radius': [
+        'case',
+        ['==', ['get', 'kgSelected'], true],
+        ['+', pointRadiusByZoomExpression(radiusMultiplier), 3],
+        pointRadiusByZoomExpression(radiusMultiplier),
+      ],
       'circle-opacity': 0.96,
-      'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 1.5,
+      'circle-stroke-color': ['case', ['==', ['get', 'kgSelected'], true], '#1d4ed8', '#ffffff'],
+      'circle-stroke-width': ['case', ['==', ['get', 'kgSelected'], true], 3, 1.5],
       'circle-stroke-opacity': 0.95,
       'circle-blur': 0.05,
     },
