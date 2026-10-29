@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -10,8 +9,10 @@ import {
   FORWARD_HEAL_BASELINE_OPTIONS,
   runForwardHealBaselineCommand,
 } from './lib/production-forward-heal-command.mjs'
+import { observeMirror } from './observe-production-mirror-identity.mjs'
 import { AGENTIC_GRAPH_CSP } from './pages-mirror-headers.mjs'
 
+export { observeMirror, AGENTIC_GRAPH_CSP }
 export { createForwardHealBaselineEvidence } from './lib/production-forward-heal-evidence.mjs'
 
 const EVIDENCE_SCHEMA = 'agentic-graph-production-transport-evidence/v1'
@@ -465,52 +466,6 @@ const recordFailure = async ({ stageFile, stepContext, detailOutput, output }) =
     schema: 'agentic-graph-production-release-failure-observation/v1', failedStage,
     messageDigest: digestBytes(await fs.readFile(path.resolve(detailOutput))), observedAt: new Date().toISOString(),
   })
-}
-
-export const observeMirror = async ({ repositoryRoot, repository, releaseEvidencePath, output, githubOutput }) => {
-  await appendGitHubOutput(githubOutput, { eligible: false })
-  try {
-    const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot, encoding: 'utf8' }).trim()
-    assert.match(head, SHA_PATTERN, 'mirror checkout HEAD must be an exact Git SHA')
-    const remoteRecords = execFileSync('git', ['ls-remote', '--exit-code', 'origin', 'refs/heads/main'], {
-      cwd: repositoryRoot, encoding: 'utf8',
-    }).trim().split(/\r?\n/u).filter(Boolean)
-    assert.equal(remoteRecords.length, 1, 'mirror remote main identity is ambiguous')
-    const [revision, remoteRef] = remoteRecords[0].trim().split(/\s+/u)
-    assert.match(revision, SHA_PATTERN, 'mirror remote main must be an exact Git SHA')
-    assert.equal(remoteRef, 'refs/heads/main', 'mirror remote main ref drifted')
-    assert.equal(head, revision, 'mirror checkout HEAD drifted from remote main')
-    const releaseEvidence = releaseEvidencePath ? await readJson(releaseEvidencePath) : null
-    if (!releaseEvidence) {
-      const status = execFileSync('git', ['status', '--porcelain=v1', '--untracked-files=all'], {
-        cwd: repositoryRoot, encoding: 'utf8',
-      })
-      assert.equal(status, '', 'current mirror observation requires a clean exact checkout')
-    }
-    const readiness = execFileSync('git', ['show', `${head}:.well-known/runtime-readiness.json`], { cwd: repositoryRoot, encoding: 'utf8' })
-    const sourceRevision = JSON.parse(readiness).source.revision
-    assert.match(sourceRevision, SHA_PATTERN, 'mirror readiness sourceRevision must be an exact Git SHA')
-    const expectedRepository = String(releaseEvidence?.rollbackIdentity?.mirror?.repository || '').trim()
-    const observedRepository = String(repository || expectedRepository).trim()
-    assert.ok(observedRepository, '--repository is required without --release-evidence')
-    if (repository && expectedRepository) assert.equal(repository, expectedRepository, 'mirror repository drifted from release evidence')
-    const evidence = {
-      schema: 'agentic-graph-production-observed-mirror-identity/v1',
-      repository: observedRepository, revision, sourceRevision,
-      observedAt: new Date().toISOString(),
-    }
-    await writeJson(output, evidence)
-    const eligible = !releaseEvidence || (revision === releaseEvidence.rollbackIdentity.mirror.revision
-      && sourceRevision === releaseEvidence.rollbackIdentity.pages.sourceRevision)
-    if (eligible) {
-      await appendGitHubOutput(githubOutput, { eligible: true, revision, source_revision: sourceRevision })
-    }
-    return evidence
-  } catch (error) {
-    process.stderr.write(`Authoritative mirror observation failed closed: ${error.message}\n`)
-    if (!releaseEvidencePath) throw error
-    return null
-  }
 }
 
 const main = async () => {
