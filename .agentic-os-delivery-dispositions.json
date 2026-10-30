@@ -186,6 +186,28 @@
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/geostack-scratch-ci-import-fix",
+      "laneHead": "20245223a00f8770bc7f7b4e48b56069645ddc5d",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json",
+        "canvas/src/__tests__/agentReadyWebMcpHtmlFallback.test.ts",
+        "docs/runtime-readiness-contract.md",
+        "package-lock.json",
+        "package.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c",
+      "candidateDigest": "2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json",
+      "evidenceDigest": "e26b49bb1d65dd1a6b3587b9f20029b6f047049d0eeb3e9c477a844d2d86af72",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1875",
+      "reason": "PR #1875 changes only the exact paths .agentic-os-delivery-dispositions.json, canvas/src/__tests__/agentReadyWebMcpHtmlFallback.test.ts, docs/runtime-readiness-contract.md, package-lock.json, and package.json. Every listed path is excluded from the product artifact by the fixed Pages and mirror artifact boundary. The previously approved production candidate remains deployed; this disposition grants no deployment or mirror authority."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/geostack-scratch-disposition-refresh",
       "laneHead": "4a1960675a57d4ada7fc718e38b0f9802198104f",
       "paths": [
@@ -582,5 +604,5 @@
       "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
     }
   ],
-  "receiptDigest": "e0b6b0293168200c7fe06e247714d375b752ca63f71ca2652fe0c55d7d14ee21"
+  "receiptDigest": "8ecf05062e94b393d4f5cd4e65b486524050b21b110c7c95f9f66e6e291d68c1"
 }

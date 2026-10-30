@@ -4,7 +4,7 @@ title: "agentic-graph Runtime Readiness Contract"
 doc_type: "Runtime Contract"
 status: "active"
 contract_version: 1
-version: "1.0.3"
+version: "1.0.4"
 date: "2026-10-31"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -13,8 +13,9 @@ local_rung: "runtime-ready"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
-worktree_id: "huis-macbook-pro-3.local--agent-graph-native-identity"
-agent_id: "codex:graph_frontmatter_and_docs"
+worktree_id: "device-0232231d4a19--local-poi-adlc-closeout"
+agent_id: "codex:local_poi_adlc_closeout"
+base_sha: "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c"
 doc_path: "docs/runtime-readiness-contract.md"
 guidelines_ref: "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md@2.4.0"
 production_release_authorized: false
@@ -33,7 +34,7 @@ stage_contract:
   order: ["research", "storyboard", "render", "edit", "publish", "checkout"]
 docs_dependency:
   repository: "https://github.com/huijoohwee/agentic-os.git"
-  ref: "d1d8daf9407f747432ed39b65313f33105dcd170"
+  ref: "cb973d4a9e77d6211ae126ad633ea6b17efbce89"
   root_env: "AGENTIC_OS_AGENTIC_CANVAS_OS_DOCS_ROOT"
   default_relative_root: "../agentic-os/catalog/dictionaries"
   required_files: [ "AGENTS.md", "DICTIONARY-COMMAND.md", "DICTIONARY-SEMANTIC.md", "DICTIONARY-BINDING.md", "RUNTIME-PROOF.md", "REPOSITORY-PACKING.md", "LIVE-AGENT-PROVIDER-PROOF.md", "PROGRESSIVE-AGENTS.md", "PROMPT-PRESETS.md", "AGENT-TOOLKIT.md", "APPLICATION-COMPOSITION.md", "SKILL-EVOLUTION.md", "AGENT-TEAM.md", "VOICE-STUDIO.md", "SKILLS.md", "schemas/production-runtime-readiness.v2.schema.json"]

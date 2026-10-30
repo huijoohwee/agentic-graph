@@ -2,7 +2,7 @@
 title: "agentic-graph Local POI Directory — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-local-poi-directory-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.9"
+version: "1.0.10"
 date: "2026-10-31"
 lang: "en-US"
 owner: "docs.geospatial.local-poi-directory"
@@ -13,13 +13,13 @@ continuity_id: "AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001"
 parent_plan: "docs/documents/agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md@1.0.3"
 scope: "Prepare and browse an explicitly approved, bounded local GeoJSON POI directory through the existing geospatial map and selection owners"
 deploy_boundary: "Production application-code activation through the existing protected core release; keep POI inputs and outputs local and create no hosted POI service"
-worktree_id: "device-0232231d4a19--geostack-scratch-disposition"
-agent_id: "codex-geostack-scratch-disposition"
+worktree_id: "device-0232231d4a19--local-poi-adlc-closeout"
+agent_id: "codex:local_poi_adlc_closeout"
 action: "/change"
-lane_scope: "#geostack-scratch-disposition"
+lane_scope: "#local-poi-adlc-closeout"
 actor: "@huijoohwee"
-base_sha: "300815a55d79cdd07dfa4ba2d2a887e810cfa6de"
-prd_revision: "1.0.9"
+base_sha: "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c"
+prd_revision: "1.0.10"
 tad_revision: "1.0.1"
 adr_revision: "1.0.2"
 mvp_revision: "1.0.1"
@@ -153,6 +153,10 @@ An earlier protected attempt, [run #40995990581](https://github.com/huijoohwee/a
 That earlier rollback run also reported six of 59 smoke checks failing against the restored Pages baseline: MCP source-file resource read, list, search, content-aware search, fetch, and read. Each returned HTTP 200 JSON while its semantic check failed. The later release run #41021713269 passed its exact candidate verification and live verification gates; use its retained live-verification receipt for the current runtime claim. The older failure receipt remains historical evidence. This MVP adds no POI data migration or hosted POI state.
 
 Later, [run #41021713269](https://github.com/huijoohwee/agentic-graph/actions/runs/41021713269) completed successfully for protected source `f3c7816b2788d006dbf076009560eba18c2aa609` and approved candidate `2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317`. It reused protected CI source evidence, deployed Pages `d4bf1bde-c77b-4495-8085-0874d43450ca`, activated the existing `agentic-storage` Worker, confirmed migration 0022 was already applied, reconciled D1 with content/path parity, passed live verification, public smoke (65/65) and stable Pages smoke (59/59), and published the mirror. Receipts: deployment `85db7c1c138d3efdbfb1c30087e874147e598724e8da7ecbd161e17078955612`; D1 reconciliation `cb2e152f8572a525c2b0ca8990b56f8d19ee7aefd8ab90658df0657af98a6469`; live verification `28e88a4d6efec6f4948e777f386a6b30f4b865fc32f7310939cf42681bf7e838`; publication `e2eba14895b83945e3d2bcd4a410b21442ab452ce350ef69a13d6b5607111b8f`. The post-success rollback baseline is Pages `d4bf1bde-c77b-4495-8085-0874d43450ca`, mirror `7ac091ffbab60eece371a2d09cfb53d29c208244`, and D1 contract `8b7ec9f3a37727785a7b9b9e42a196d4bf27a77b918fc2a7f5add490374b585c` with readback `a669fb19a6bfac145906c8a49cdd9fce0473c27960b924a08de9118d3da3ccb1`.
+
+## Delivery closeout — PR #1875
+
+PR [#1875](https://github.com/huijoohwee/agentic-graph/pull/1875) is integrated at `5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c`. Its exact five paths are recorded in [the path-bound delivery evidence](../reports/agentic-graph-delivery-evidence-geostack-pr1875.json) as excluded from the product artifact. This PR fixes a test import and aligns the Agentic OS dependency and runtime-readiness reference; it does not change the deployed Canvas output. The production-mirror artifact builder stages its fixed allowlist, not the repository root, package manifests, runtime contract, delivery ledger, or reports. The already completed run #41021713269 remains the production proof for the POI product, with the deployment, D1, live-verification, publication, and rollback receipts above. This ADLC closeout records no new deployment or mirror publication.
 
 ## Source bindings and handover
 
