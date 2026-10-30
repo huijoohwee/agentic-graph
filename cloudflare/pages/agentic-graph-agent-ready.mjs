@@ -51,6 +51,7 @@ import {
   handlesAgenticGraphStaticAsset,
 } from "./agentic-graph-agent-ready-app-shell.mjs";
 import { injectWebMcpScript } from "./webmcp-html-injection.mjs";
+import { AGENTIC_GRAPH_CSP, AGENTIC_GRAPH_PUBLIC_DOCUMENT_CSP } from "./agentic-graph-security-headers.mjs";
 import {
   PUBLISHED_DOC_IDENTITY_RESOLVER_BROWSER_SOURCE,
   createPublishedDocIdentityResolver,
@@ -1403,7 +1404,9 @@ async function routeRequest(context) {
   if (handlesAgenticGraphRoot(url.pathname) || publishedDocIdentity) {
     nextResponse.headers.delete("x-frame-options");
     nextResponse.headers.delete("content-security-policy-report-only");
-    nextResponse.headers.set("content-security-policy", "frame-ancestors *");
+    nextResponse.headers.set("content-security-policy", publishedDocIdentity
+      ? AGENTIC_GRAPH_PUBLIC_DOCUMENT_CSP
+      : AGENTIC_GRAPH_CSP);
   }
   return withAgenticGraphRouteHeaders(request, nextResponse);
 }
