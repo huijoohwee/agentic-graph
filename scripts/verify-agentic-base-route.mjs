@@ -10,7 +10,9 @@ const REVISION = /^[0-9a-f]{40}$/u
 const PUBLIC_CONVERGENCE_MS = 90_000
 const PUBLIC_RETRY_MS = 5_000
 const REQUEST_TIMEOUT_MS = 30_000
-const CLOUDFLARE_JSD_PARAMS = /window\.__CF\$cv\$params=\{r:'[0-9a-f]{16}',t:'[A-Za-z0-9+/=]+'\};/gu
+const CLOUDFLARE_JSD_PARAMS = /window\.__CF\$cv\$params=\{r:'([0-9a-f]{16})',t:'([A-Za-z0-9+/=]+)'\};/gu
+const CLOUDFLARE_JSD_RAY_QUERY = /\/cdn-cgi\/challenge-platform\/scripts\/jsd\/main\.js\?ray=([0-9a-f]{16})/gu
+const CLOUDFLARE_JSD_V2_CANONICAL_SHA256 = 'b68c615f75b32ef2cf487d93f2d495121ce8436764f9ec76119f4c1bddfa856d'
 const CLOUDFLARE_JSD_CANONICAL_SCRIPT = [
   `(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);`,
   `if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'',t:''};`,
@@ -27,6 +29,21 @@ const CLOUDFLARE_JSD_CANONICAL_SCRIPT = [
 class RouteObservationError extends Error {}
 
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')
+
+function cloudflareJsDetectionVersion(script) {
+  const parameterMatches = [...script.matchAll(new RegExp(CLOUDFLARE_JSD_PARAMS))]
+  if (parameterMatches.length !== 1) return null
+  const parameterStripped = script.replace(new RegExp(CLOUDFLARE_JSD_PARAMS), "window.__CF$cv$params={r:'',t:''};")
+  if (parameterStripped === CLOUDFLARE_JSD_CANONICAL_SCRIPT) return 'v1'
+
+  const rayMatches = [...script.matchAll(new RegExp(CLOUDFLARE_JSD_RAY_QUERY))]
+  if (rayMatches.length !== 1 || rayMatches[0][1] !== parameterMatches[0][1]) return null
+  const stableScript = parameterStripped.replace(
+    new RegExp(CLOUDFLARE_JSD_RAY_QUERY),
+    '/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=',
+  )
+  return digest(Buffer.from(stableScript)) === CLOUDFLARE_JSD_V2_CANONICAL_SHA256 ? 'v2' : null
+}
 
 export function normalizeCloudflarePublicHtml(body, origin) {
   const bytes = Buffer.from(body)
@@ -49,13 +66,10 @@ export function normalizeCloudflarePublicHtml(body, origin) {
   }
 
   const script = html.slice(scriptStart + '<script>'.length, scriptEnd)
-  const matches = [...script.matchAll(CLOUDFLARE_JSD_PARAMS)]
-  if (matches.length !== 1 || script.replace(CLOUDFLARE_JSD_PARAMS, "window.__CF$cv$params={r:'',t:''};")
-    !== CLOUDFLARE_JSD_CANONICAL_SCRIPT) {
-    return { body: Buffer.from(html), normalization: normalizations }
-  }
+  const version = cloudflareJsDetectionVersion(script)
+  if (!version) return { body: Buffer.from(html), normalization: normalizations }
 
-  normalizations.push('cloudflare-js-detection/v1')
+  normalizations.push('cloudflare-js-detection/' + version)
   return {
     body: Buffer.from(`${html.slice(0, scriptStart)}${html.slice(suffixStart)}`),
     normalization: normalizations,
