@@ -2,9 +2,6 @@ import React from 'react'
 import { hashStringToHex } from 'grph-shared/hash/stringHash'
 import {
   normalizeGeoPoiRichMediaProperties,
-  resolveGeoPoiAddressFromProperties,
-  resolveGeoPoiCategoryFromProperties,
-  type GeoPoiRichMediaProperties,
 } from 'grph-shared/geospatial/poiRichMedia'
 import { UI_THEME_TOKENS } from 'grph-shared/ui/themeTokens'
 import { useGympgrphStore } from './store.js'
@@ -34,12 +31,9 @@ import {
   type FlightGeoOverlayPresentation,
 } from './flightGeoOverlay.js'
 import type { GeospatialPresentationCameraOwner } from './features/geospatial/geospatialPresentationCameraOwner.js'
-import { emitGraphMapFeatureSelected } from './features/geospatial/graphFeatureSelectionEvent.js'
+import { useGraphFeatureActivation, pickNearestGraphFeatureForClick, type RichMediaPoiDetail } from './features/geospatial/graphFeatureInteraction.js'
 import { LS_KEYS } from './lib/config.js'
-import {
-  onGeospatialModeChanged,
-  type GeospatialViewMode,
-} from 'grph-shared/geospatial/events'
+import { onGeospatialModeChanged, type GeospatialViewMode } from 'grph-shared/geospatial/events'
 import { GEOSPATIAL_POINT_STYLE_CHANGED_EVENT, GEOSPATIAL_STYLE_URL_CHANGED_EVENT } from 'grph-shared/geospatial/constants'
 import { computeBoundsFromCollections } from './geo.js'
 import {
@@ -69,8 +63,7 @@ import {
 import type { FeatureCollection } from 'geojson'
 import { useEnhancedGeospatialHostLayers } from './useEnhancedGeospatialHostLayers.js'
 import { SvgGeospatialFallback } from './geospatialMediaStage.js'
-import { resolveSelectedGeoGraphNodeIds } from './features/geospatial/selectedGraphFeatureIds.js'
-import { pickNearestPointFeature } from './features/geospatial/pickNearestPointFeature.js'
+import { markSelectedGeoGraphFeatures, resolveSelectedGeoGraphNodeIds } from './features/geospatial/selectedGraphFeatureIds.js'
 import { bindGraphFeatureAffordances } from './features/geospatial/graphFeatureAffordances.js'
 
 type GeospatialOverlayHostProps = {
@@ -83,15 +76,6 @@ type GeospatialOverlayHostProps = {
   onFlightOverlayPresented?: (
     presentation: FlightGeoOverlayPresentation,
   ) => void
-}
-
-type RichMediaPoiDetail = {
-  label: string
-  lng: number
-  lat: number
-  address?: string
-  category?: string
-  properties?: GeoPoiRichMediaProperties
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -114,30 +98,6 @@ function readNestedValue(root: unknown, path: ReadonlyArray<string>): unknown {
     current = current[segment]
   }
   return current
-}
-
-function readGraphFeaturePoiDetail(
-  feature: FeatureCollection['features'][number],
-): RichMediaPoiDetail | null {
-  if (feature.geometry?.type !== 'Point' || !Array.isArray(feature.geometry.coordinates)) return null
-  const [lngRaw, latRaw] = feature.geometry.coordinates
-  const lng = Number(lngRaw)
-  const lat = Number(latRaw)
-  if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null
-  const rawProperties = isRecord(feature.properties) ? feature.properties : {}
-  const properties = normalizeGeoPoiRichMediaProperties({
-    ...rawProperties,
-    kgSourceFeatureId: rawProperties.kgSourceFeatureId ?? String(feature.id ?? rawProperties.id ?? ''),
-  })
-  const label = String(rawProperties.label ?? rawProperties.name ?? rawProperties.title ?? feature.id ?? 'POI').trim()
-  return {
-    label: label || 'POI',
-    lng,
-    lat,
-    address: resolveGeoPoiAddressFromProperties(properties),
-    category: resolveGeoPoiCategoryFromProperties(properties),
-    properties,
-  }
 }
 
 function getSnapshotGraphData(snapshot: unknown): unknown {
@@ -373,11 +333,7 @@ function buildFeatureCollectionFromGraphData(
     features.push(feature)
     featureById.set(nodeId, feature)
   }
-  for (const feature of features) {
-    const featureId = String(feature.id ?? '').trim()
-    const properties = isRecord(feature.properties) ? feature.properties : {}
-    feature.properties = { ...properties, kgSelected: selectedNodeIds.has(featureId) }
-  }
+  markSelectedGeoGraphFeatures(features, selectedNodeIds)
   const structureSignature = graphRevision > 0
     ? `rev:${graphRevision}`
     : `sig:${hashStringToHex(`features:${features.length}|${signatureParts.join('|')}`)}`
@@ -488,10 +444,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   }, [effectiveTargetStyleUrl, geospatialViewMode, show2dSvgFallback])
   const snapshotGraphData = getSnapshotGraphData(props.snapshot)
   const snapshotGraphRevision = getSnapshotGraphRevision(props.snapshot)
-  const selectedNodeIds = React.useMemo(
-    () => resolveSelectedGeoGraphNodeIds(snapshotGraphData, getSnapshotSelectedNodeIds(props.snapshot)),
-    [props.snapshot, snapshotGraphData],
-  )
+  const selectedNodeIds = React.useMemo(() => resolveSelectedGeoGraphNodeIds(snapshotGraphData, getSnapshotSelectedNodeIds(props.snapshot)), [props.snapshot, snapshotGraphData])
   const selectedNodeIdsKey = React.useMemo(() => buildIdSetSignature('selected', selectedNodeIds), [selectedNodeIds])
   const geospatialPanelNodeIds = React.useMemo(() => getSnapshotGeospatialPanelNodeIds(props.snapshot), [props.snapshot])
   const geospatialPanelNodeIdsKey = React.useMemo(
@@ -653,33 +606,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     nodeIds: string[]
     nextIndex: number
   } | null>(null)
-  const selectGraphNodeFromMapFeature = React.useCallback((feature: unknown) => {
-    const overlayHandlers = getOverlayHandlers(props.snapshot, props.handlers)
-    const selectNode = overlayHandlers && typeof overlayHandlers.selectNode === 'function'
-      ? overlayHandlers.selectNode as ((nodeId: string) => void)
-      : null
-    const setSelectionSource = overlayHandlers && typeof overlayHandlers.setSelectionSource === 'function'
-      ? overlayHandlers.setSelectionSource as ((source: 'canvas') => void)
-      : null
-    const record = isRecord(feature) ? (feature as Record<string, unknown>) : null
-    const propsRaw = record && isRecord(record.properties) ? (record.properties as Record<string, unknown>) : {}
-    const idRaw = record?.id ?? propsRaw.id
-    const nodeId = String(idRaw || '').trim()
-    if (!nodeId || !selectNode) return
-    setSelectionSource?.('canvas')
-    selectNode(nodeId)
-  }, [props.handlers, props.snapshot])
-
-  const activateGraphMapFeature = React.useCallback((feature: unknown) => {
-    selectGraphNodeFromMapFeature(feature)
-    if (!isRecord(feature)) return
-    const featureProperties = isRecord(feature.properties) ? feature.properties : {}
-    const graphFeatureId = String(feature.id ?? featureProperties.id ?? '').trim()
-    const sourceFeatureId = String(featureProperties.kgSourceFeatureId ?? graphFeatureId).trim()
-    if (graphFeatureId && sourceFeatureId) emitGraphMapFeatureSelected({ sourceFeatureId, graphFeatureId })
-    const detail = readGraphFeaturePoiDetail(feature as unknown as FeatureCollection['features'][number])
-    if (detail) handlePoiClick(detail)
-  }, [handlePoiClick, selectGraphNodeFromMapFeature])
+  const activateGraphMapFeature = useGraphFeatureActivation(props.snapshot, props.handlers, handlePoiClick)
 
   const basemap = useMapLibreBasemap({
     enabled: mapLibreRuntimeEnabled,
@@ -870,15 +797,10 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
       }
     })()
     if (!hasLayer) return
-    const selectedFeatureIds = new Set(graphFeatureCollection.features
-      .filter(feature => isRecord(feature.properties) && feature.properties.kgSelected === true)
-      .map(feature => String(feature.id ?? '').trim())
-      .filter(Boolean))
     const disposeFeatureAffordances = bindGraphFeatureAffordances({
       features: graphFeatureCollection.features,
       map,
       onActivate: activateGraphMapFeature,
-      selectedFeatureIds,
     })
     const readFeatureNodeId = (feature: unknown): string => {
       const record = isRecord(feature) ? (feature as Record<string, unknown>) : null
@@ -923,23 +845,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
         const point = ev && typeof ev === 'object' ? (ev as { point?: unknown }).point : null
         const features = point ? map.queryRenderedFeatures(point, { layers: [pointsLayerId] }) : []
         let first = Array.isArray(features) ? pickFeatureForClick(features, point) : null
-        const clickX = isRecord(point) ? readFiniteNumber(point.x) : null
-        const clickY = isRecord(point) ? readFiniteNumber(point.y) : null
-        if (!first && clickX != null && clickY != null) {
-          const nearestFeature = pickNearestPointFeature(
-            graphFeatureCollection.features,
-            { x: clickX, y: clickY },
-            (lng, lat) => {
-              try {
-                const projected = map.project([lng, lat])
-                return projected ? { x: Number(projected.x), y: Number(projected.y) } : null
-              } catch {
-                return null
-              }
-            },
-          )
-          first = nearestFeature ? pickFeatureForClick([nearestFeature], point) : null
-        }
+        if (!first) first = pickNearestGraphFeatureForClick(graphFeatureCollection.features, point, coordinate => map.project(coordinate), pickFeatureForClick)
         if (!first) return
         activateGraphMapFeature(first)
       } catch {

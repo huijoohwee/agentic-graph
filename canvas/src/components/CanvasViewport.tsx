@@ -5,7 +5,7 @@ import { pythonLearningRuntime } from '@/features/python-learning/learningRuntim
 import { learningLesson, type LearningLesson, type LearningSceneSnapshot } from '@/features/python-learning/learningLessons'
 import { useShallow } from 'zustand/react/shallow'
 import type { Canvas2dRendererId, Canvas3dModeId } from '@/lib/config.render'
-import type { GraphData, GraphNode } from '@/lib/graph/types'
+import type { GraphData } from '@/lib/graph/types'
 import { importWithRetry } from '@/lib/react/importWithRetry'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useActiveGraphRenderData } from '@/hooks/useActiveGraphData'
@@ -53,9 +53,7 @@ import { XrPhysicsSemanticMediaSurface } from '@/features/three/XrPhysicsSemanti
 import { useEmbeddedCanvasChatCommandReceiver } from '@/features/canvas/useEmbeddedCanvasChatCommandReceiver'
 import { useSupplyChainOverviewRoute } from '@/features/supply-chain/useSupplyChainOverviewRoute'
 import { SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH } from '@/features/supply-chain/supplyChainOverviewSource'
-import { subscribeGrabMapsPoiRichMediaPreview, type GrabMapsPoiRichMediaPreviewPayload } from '@/features/geospatial/grabMapsPoiRichMedia'
-import { buildRichMediaPanelNode, isRichMediaPanelNode } from '@/lib/render/richMediaPanelNode'
-import { resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
+import { GeospatialStoryboardWidgetPanels } from '@/components/GeospatialStoryboardWidgetPanels'
 const PythonLearningCanvasStatus = React.lazy(() => import('@/features/python-learning/LearningCanvasStatus').then(module => ({ default: module.PythonLearningCanvasStatus })))
 const LearningPlanViewLazy = React.lazy(() => import('@/features/python-learning/LearningPlanView'))
 const CanvasViewportGeospatialOverlayLazy = React.lazy(loadCanvasViewportGeospatialOverlay)
@@ -176,15 +174,6 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
     }),
     [documentSwitchPending, explorerActivePath, markdownDocumentName, sourceFiles],
   )
-  const [geospatialPoiPreview, setGeospatialPoiPreview] = React.useState<GrabMapsPoiRichMediaPreviewPayload | null>(null)
-  React.useEffect(() => subscribeGrabMapsPoiRichMediaPreview(setGeospatialPoiPreview), [])
-  const poiPreviewDocumentKey = String(activeSourceFile?.id || activeSourceFile?.source?.path || markdownDocumentName || '')
-  const poiPreviewDocumentKeyRef = React.useRef(poiPreviewDocumentKey)
-  React.useEffect(() => {
-    if (poiPreviewDocumentKeyRef.current === poiPreviewDocumentKey) return
-    poiPreviewDocumentKeyRef.current = poiPreviewDocumentKey
-    setGeospatialPoiPreview(null)
-  }, [poiPreviewDocumentKey])
   const rawActive2dSurface = getCanvas2dSurfaceId(canvas2dRenderer)
   const workspaceStoryboardSurfaceActive = !documentSwitchPending
     && workspaceEditorOverlayOpen === true
@@ -198,24 +187,6 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
     () => activeGraphData || ({ nodes: [], edges: [] } as GraphData),
     [activeGraphData],
   )
-  const geospatialPoiPreviewNode = React.useMemo<GraphNode | null>(() => {
-    const targetNodeId = String(geospatialPoiPreview?.targetNodeId || '').trim()
-    if (!targetNodeId) return null
-    const resolved = resolveGraphNodeByCanonicalId(safeGraphData, targetNodeId)
-    const existing = resolved && isRichMediaPanelNode(resolved) ? resolved : null
-    const base = existing || buildRichMediaPanelNode({ id: targetNodeId })
-    return {
-      ...base,
-      label: String(geospatialPoiPreview?.label || '').trim() || base.label,
-      properties: {
-        ...(base.properties || {}),
-        media_interactive: true,
-        richMediaActiveTab: 'poi',
-        output: '',
-        outputSrcDoc: String(geospatialPoiPreview?.srcDoc || '').trim(),
-      },
-    }
-  }, [geospatialPoiPreview, safeGraphData])
   const liveCanvasHeroEmbedPreview = isLiveCanvasHeroEmbedPreview(variant)
   const liveCanvasHeroEmbedPreviewSurface = resolveLiveCanvasHeroEmbedPreviewSurface(variant)
   const liveCanvasHeroEmbedGraph = React.useMemo(
@@ -517,20 +488,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
             )}
           </SemanticMediaFigure>
         ) : null}
-        {!documentSwitchOwnsViewport && geospatialCompositionEnabled && active2dSurface === 'storyboard' && !heavyRuntimeIntentBlocked ? (
-          <section
-            className="absolute inset-0 z-[30] pointer-events-none"
-            aria-label="Storyboard widget panels"
-            data-kg-geospatial-storyboard-widget-panels="1"
-          >
-            <StoryboardWidgetCanvasLazy
-              active
-              storyboardWidgetSurfaceId="storyboard"
-              geospatialWidgetPanelMode
-              geospatialPoiPreviewNode={geospatialPoiPreviewNode}
-            />
-          </section>
-        ) : null}
+        <GeospatialStoryboardWidgetPanels active={!documentSwitchOwnsViewport && geospatialCompositionEnabled && active2dSurface === 'storyboard' && !heavyRuntimeIntentBlocked} graphData={safeGraphData} documentKey={String(activeSourceFile?.id || activeSourceFile?.source?.path || markdownDocumentName || '')} />
         {!documentSwitchOwnsViewport && heavyRuntimeIntentSurface && heavyRuntimeIntentBlocked ? (
           <section
             className="absolute inset-0 z-[35] flex items-center justify-center bg-[var(--kg-canvas-bg)]/96 px-4"

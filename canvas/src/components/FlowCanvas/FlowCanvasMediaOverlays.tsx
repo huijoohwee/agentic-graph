@@ -48,7 +48,7 @@ import { resolveCanvasAspectRatioResizeSize, resolveCanvasAspectRatioSize } from
 import { readStoryboardCardSize2d } from '@/components/StoryboardWidgetCanvas/storyboardCardPlacements2d'
 import { readOverlaySizingConfigForDensity, type OverlayDensitySizingConfigInput } from '@/lib/render/overlaySizing2d'
 import { RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE } from '@/lib/render/richMediaPanelDefaults'
-import { readRichMediaOverlayFrameSize } from '@/components/StoryboardWidget/richMediaOverlayFrameSize'
+import { resolveRichMediaOverlayFrameSize } from '@/components/StoryboardWidget/richMediaOverlayFrameSize'
 import { isWorkspaceEditorOverlayOpen, isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
 import { computeBalancedSpreadViewportMargins } from '@/lib/ui/overlayBalancedSpread'
 import { clampMediaLayoutViewportToFrame16x9, coerceRichMediaPanelSizeForLayoutViewport, resolveFlowCanvasMediaLayoutViewport } from '@/components/FlowCanvas/flowCanvasMediaLayoutViewport'
@@ -665,16 +665,9 @@ export default function FlowCanvasMediaOverlays(args: {
       scaleLayoutOnZoom: storyboardWidgetSurfaceRendererMode,
       projectWithWorldTransformScale: storyboardRichMediaWorldTransformProjectionMode,
       getPanelSizeForId: id => {
-        const defaultSize = { w: RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.width, h: RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.height }
-        const graphNode = resolveFlowCanvasMediaOverlayGraphNode(sceneGraphData, id)
-        const richMediaFrameSize = readRichMediaOverlayFrameSize(graphNode)
-        if (richMediaFrameSize) {
-          const override = mediaOverlayPanelSizeOverrideRef.current.get(id)
-          return override || { w: richMediaFrameSize.width, h: richMediaFrameSize.height }
-        }
-        if (!richMediaInfiniteCanvasMode) {
-          return mediaOverlayPanelLastKnownWorldSizeRef.current.get(id) || defaultSize
-        }
+        const frameSize = resolveRichMediaOverlayFrameSize(resolveFlowCanvasMediaOverlayGraphNode(sceneGraphData, id), mediaOverlayPanelSizeOverrideRef.current.get(id))
+        if (frameSize) return frameSize
+        if (!richMediaInfiniteCanvasMode) return mediaOverlayPanelLastKnownWorldSizeRef.current.get(id) || { w: RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.width, h: RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.height }
         const override = mediaOverlayPanelSizeOverrideRef.current.get(id)
         if (override) {
           writeRichMediaResizeTrace(['phase=layout-override', `id=${id}`, `w=${override.w}`, `h=${override.h}`])
@@ -683,7 +676,7 @@ export default function FlowCanvasMediaOverlays(args: {
           return { w: coerced.width, h: coerced.height }
         }
         const stableSize = mediaOverlayPanelLastKnownWorldSizeRef.current.get(id) || null
-        if (!stableSize) return defaultSize
+        if (!stableSize) return { w: RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.width, h: RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.height }
         if (storyboardSharedSurfaceRendererMode) return stableSize
         const zoomK = typeof runtimeRef.current?.transform?.k === 'number' && runtimeRef.current.transform.k > 0 ? runtimeRef.current.transform.k : 1
         const scale = computeOverlaySizingScale(zoomK, stableMediaLayoutItems.length, stableSize.w, stableSize.h)

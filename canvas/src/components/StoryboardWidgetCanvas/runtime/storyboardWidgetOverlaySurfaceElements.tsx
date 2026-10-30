@@ -57,7 +57,6 @@ export function buildOverlayEditorElements(args: {
   pendingOverlayNodeIdRef: React.MutableRefObject<string | null>
   pendingOverlayNode: GraphNode | null
   overlayEditorNodeIds: readonly string[]
-  geospatialPoiPreviewNodeId?: string | null
   connectedValuesByNodeId: ReadonlyMap<string, FlowConnectedValuesBySchemaPath>
   storyboardWidgetSurfaceId: string
   editorSurfaceKind?: WidgetEditorSurfaceKind
@@ -134,6 +133,10 @@ export function buildOverlayEditorElements(args: {
     return null
   }
   const elements: React.ReactElement[] = []
+  const previewProps = args.pendingOverlayNode?.properties
+  const geospatialPoiPreviewNodeId = previewProps?.richMediaActiveTab === 'poi' && String(previewProps.outputSrcDoc || '').trim()
+    ? String(args.pendingOverlayNode?.id || '').trim()
+    : ''
 
   for (let stackIndex = 0; stackIndex < orderedOverlayEditorNodeIds.length; stackIndex += 1) {
     const id = orderedOverlayEditorNodeIds[stackIndex]
@@ -166,9 +169,9 @@ export function buildOverlayEditorElements(args: {
       identity.overlayIdentityId || id,
     ].join(':')
     const forceFloating = Boolean(
-      String(args.geospatialPoiPreviewNodeId || '').trim()
+      geospatialPoiPreviewNodeId
       && [id, identity.actionNodeId, identity.renderNodeId].some(candidate =>
-        isCanonicalNodeIdEqual(candidate, args.geospatialPoiPreviewNodeId),
+        isCanonicalNodeIdEqual(candidate, geospatialPoiPreviewNodeId),
       ),
     )
 

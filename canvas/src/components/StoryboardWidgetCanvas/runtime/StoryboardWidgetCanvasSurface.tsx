@@ -483,12 +483,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
         finalizeEdge={props.finalizePendingEdge}
       >
       {!props.noGraphLoaded && (
-        <section
-          aria-label="Storyboard layout runtime"
-          data-kg-storyboard-layout-runtime={props.geospatialWidgetPanelMode ? 'hidden' : 'visible'}
-          className="absolute inset-0"
-          style={{ visibility: props.geospatialWidgetPanelMode ? 'hidden' : 'visible' }}
-        >
+        <section aria-label="Storyboard layout runtime" data-kg-storyboard-layout-runtime={props.geospatialWidgetPanelMode ? 'hidden' : 'visible'} className="absolute inset-0" style={{ visibility: props.geospatialWidgetPanelMode ? 'hidden' : 'visible' }}>
           <React.Suspense fallback={null}><DeferredFlowCanvas
             active={props.active}
             storyboardWidgetSurfaceId={props.storyboardWidgetSurfaceId}

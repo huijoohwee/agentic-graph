@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { assertLocalPoiDirectoryContract } from './panelFormControlReuseTestUtils'
 const readUtf8 = (relativePath: string): string => fs.readFileSync(path.resolve(process.cwd(), relativePath), 'utf8')
 export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   const sharedControlsText = readUtf8('src/lib/ui/panelFormControls.tsx')
@@ -35,9 +36,6 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   const widgetEditorFormText = readUtf8('src/components/StoryboardWidget/WidgetEditorForm.tsx')
   const graphEditorInspectorText = readUtf8('src/features/graph-editor/panels/GraphEditorInspectorTab.tsx')
   const researchCompilerText = readUtf8('src/features/panels/views/ResearchCompilerView.tsx')
-  const nearbyPlacesPanelText = readUtf8('src/features/maps/NearbyPlacesPanel.tsx')
-  const mapsHubViewText = readUtf8('src/features/panels/views/MapsHubView.tsx')
-  const geoViewText = readUtf8('src/lib/toolbar/ToolbarToolMenuGeoView.tsx')
   const workspaceTableModeControlText = readUtf8('src/features/workspace-table/ui/WorkspaceTableModeControl.tsx')
   const designDomInspectPanelText = readUtf8('src/features/design/DesignDomInspectPanel.tsx')
   const settingsUiText = readUtf8('src/features/settings/ui.tsx')
@@ -382,21 +380,7 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
     throw new Error('expected research compiler prompt, token fields, and run status rows to reuse the shared panel-form primitives')
   }
 
-  if (
-    !nearbyPlacesPanelText.includes("import LocalPoiDirectory from '@/features/maps/LocalPoiDirectory'") ||
-    !nearbyPlacesPanelText.includes('title="Nearby Places"') ||
-    !nearbyPlacesPanelText.includes('<LocalPoiDirectory />') ||
-    !geoViewText.includes("React.lazy(() => import('@/features/maps/NearbyPlacesPanel'))") ||
-    !geoViewText.includes('<NearbyPlacesPanelLazy') ||
-    mapsHubViewText.includes('NearbyPlacesPanel') ||
-    mapsHubViewText.includes('SiteSelectionWidget') ||
-    nearbyPlacesPanelText.includes('dailyCustomers') ||
-    nearbyPlacesPanelText.includes('baseRent') ||
-    nearbyPlacesPanelText.includes('handleRunDCF') ||
-    nearbyPlacesPanelText.includes('Candidate Site Comparison')
-  ) {
-    throw new Error('expected one local POI directory in FloatingPanel Geo and no stale Maps Hub mount or unsupported candidate/DCF assumptions')
-  }
+  assertLocalPoiDirectoryContract({ nearbyPlacesPanelText: readUtf8('src/features/maps/NearbyPlacesPanel.tsx'), mapsHubViewText: readUtf8('src/features/panels/views/MapsHubView.tsx'), geoViewText: readUtf8('src/lib/toolbar/ToolbarToolMenuGeoView.tsx') })
 
   if (
     !workspaceTableModeControlText.includes("from '@/lib/ui/panelFormControls'") ||

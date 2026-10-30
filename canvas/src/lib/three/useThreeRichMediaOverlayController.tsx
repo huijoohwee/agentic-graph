@@ -24,7 +24,7 @@ import {
   readRichMediaPanelFrameMetrics,
   type MediaPanelCssMetrics,
 } from '@/lib/render/mediaPanelLayout'
-import { readRichMediaOverlayFrameSize } from '@/components/StoryboardWidget/richMediaOverlayFrameSize'
+import { createRichMediaOverlayPanelSizeReader } from '@/components/StoryboardWidget/richMediaOverlayFrameSize'
 import {
   computeOverlayDragStartScreenSpace3d,
   computeOverlayDraggedWorldPos3d,
@@ -178,18 +178,7 @@ export function useThreeRichMediaOverlayController(args: {
     return props && typeof props === 'object' && !Array.isArray(props) ? { ...(props as Record<string, unknown>) } : {}
   }, [sceneGraphLookup])
   const bumpControlRevision = React.useCallback(() => setControlRevision(rev => (rev + 1) % 1_000_000), [])
-  const getPanelSizeForId = React.useCallback((id: string) => {
-    const localSize = localPanelSizesRef.current[id]
-    if (localSize) return localSize
-    const node = sceneGraphLookup?.nodeById?.get(id) || null
-    const frameSize = readRichMediaOverlayFrameSize(node)
-    if (frameSize) return { w: frameSize.width, h: frameSize.height }
-    const props = readNodeProperties(id)
-    const width = Number(props['visual:width'])
-    const height = Number(props['visual:height'])
-    if (!(Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0)) return null
-    return { w: width, h: height }
-  }, [readNodeProperties, sceneGraphLookup])
+  const getPanelSizeForId = React.useMemo(() => createRichMediaOverlayPanelSizeReader(localPanelSizesRef, sceneGraphLookup?.nodeById, readNodeProperties), [readNodeProperties, sceneGraphLookup])
   const readPanelPinned = React.useCallback((id: string): boolean => {
     if (typeof localPinnedRef.current[id] === 'boolean') return localPinnedRef.current[id]!
     return readNodeProperties(id)['visual:pinned'] !== false

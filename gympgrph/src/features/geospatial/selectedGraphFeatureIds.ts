@@ -1,3 +1,5 @@
+import type { FeatureCollection } from 'geojson'
+
 type RecordValue = Record<string, unknown>
 
 const asRecord = (value: unknown): RecordValue | null => (
@@ -39,4 +41,17 @@ export function resolveSelectedGeoGraphNodeIds(
     if (nodeId && sourceId && selectedSourceIds.has(sourceId)) result.add(nodeId)
   }
   return result
+}
+
+export function markSelectedGeoGraphFeatures(
+  features: FeatureCollection['features'],
+  selectedNodeIds: ReadonlySet<string>,
+): void {
+  for (const feature of features) {
+    const id = String(feature.id ?? '').trim()
+    const properties = feature.properties && typeof feature.properties === 'object'
+      ? feature.properties as Record<string, unknown>
+      : {}
+    feature.properties = { ...properties, kgSelected: selectedNodeIds.has(id) }
+  }
 }
