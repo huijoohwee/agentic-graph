@@ -274,6 +274,23 @@ test('published agent-ready dependency plan contains the browser and tool-contra
   }
 })
 
+test('agent-ready Pages mirror includes every split route helper in the handler import closure', async t => {
+  const { mirrorRoot, plan } = await buildPlan(t)
+  const targets = copyTargetPaths(plan, mirrorRoot)
+  for (const filename of [
+    'agentic-graph-agent-ready-responses.mjs',
+    'agentic-graph-agent-ready-github-write.mjs',
+    'agentic-graph-agent-ready-discovery-data.mjs',
+    'agentic-graph-agent-ready-webmcp.mjs',
+    'agentic-graph-security-headers.mjs',
+  ]) {
+    assert.ok(
+      targets.has(`functions/agentic-graph/${filename}`),
+      `the production Pages mirror must include ${filename}`,
+    )
+  }
+})
+
 test('publish sync retains the canonical root shell and one managed 404 boundary', () => {
   assert.match(syncSource, /'agentic-graph-live-canvas-hero\.md'/)
   assert.match(syncSource, /rel: '404\.html'/)

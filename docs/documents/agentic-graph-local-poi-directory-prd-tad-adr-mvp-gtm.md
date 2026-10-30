@@ -2,8 +2,8 @@
 title: "agentic-graph Local POI Directory — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-local-poi-directory-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.2"
-date: "2026-10-29"
+version: "1.0.4"
+date: "2026-10-30"
 lang: "en-US"
 owner: "docs.geospatial.local-poi-directory"
 status: "active"
@@ -12,13 +12,13 @@ frontmatter_contract: "required"
 continuity_id: "AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001"
 parent_plan: "docs/documents/agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md@1.0.3"
 scope: "Prepare and browse an explicitly approved, bounded local GeoJSON POI directory through the existing geospatial map and selection owners"
-deploy_boundary: "Production application-code activation through the existing protected core release; POI datasets remain local and are never uploaded"
-worktree_id: "device-0232231d4a19--local-poi-directory-plan"
-agent_id: "codex-local-poi-directory-plan"
-prd_revision: "1.0.2"
-tad_revision: "1.0.0"
-adr_revision: "1.0.1"
-mvp_revision: "1.0.0"
+deploy_boundary: "Production application-code activation through the existing protected core release; keep POI inputs and outputs local and create no hosted POI service"
+worktree_id: "device-0232231d4a19--local-poi-delivery-closeout"
+agent_id: "codex-local-poi-delivery-closeout"
+prd_revision: "1.0.4"
+tad_revision: "1.0.1"
+adr_revision: "1.0.2"
+mvp_revision: "1.0.1"
 gtm_revision: "1.0.0"
 local_rung: "dev-proven"
 delivered_rung: "undocumented"
@@ -28,11 +28,11 @@ lane: "authoring"
 
 This child plan narrows the [Mapping Stack plan](agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md) to local preparation and browsing of points of interest. The parent owns mapping composition and broad spatial capabilities. The [Geospatial Mode document](agentic-graph-geospatial-mode-document.md) owns the runtime map, dataset, and selection contract. This plan adds no replacement map, spatial engine, or source-of-truth for those contracts.
 
-The separate `agentic-graph-geostack-scratch` checkout remains unaccepted discovery evidence; its dirty contents are preserved. The accepted implementation was developed in the admitted `agent/device-0232231d4a19/local-poi-directory-budget` lane and integrated into `main` through [PR #1843](https://github.com/huijoohwee/agentic-graph/pull/1843), merge commit `dd842651c4f1888d2d4b161b389635b6be3162a1`. [PR #1844](https://github.com/huijoohwee/agentic-graph/pull/1844), merge commit `768e794bcb7f61dfaeb7169a598cab82c9e67dce`, added a synthetic-preview provenance regression guard.
+The separately named `agentic-graph-geostack-scratch` checkout was unaccepted discovery evidence and was not used as the source for an admitted merge. Its named checkout path was absent in the 2026-10-30 inventory; preserved recovery bytes have no authored-byte disposition or native cleanup receipt, so this records neither a merge nor completed cleanup. The accepted implementation was developed in the admitted `agent/device-0232231d4a19/local-poi-directory-budget` lane and integrated into `main` through [PR #1843](https://github.com/huijoohwee/agentic-graph/pull/1843), merge commit `dd842651c4f1888d2d4b161b389635b6be3162a1`. [PR #1844](https://github.com/huijoohwee/agentic-graph/pull/1844), merge commit `768e794bcb7f61dfaeb7169a598cab82c9e67dce`, added a synthetic-preview provenance regression guard.
 
 ## Identity and directive
 
-`AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001` joins PRD revision `1.0.2`, ADR revision `1.0.1`, and TAD, MVP, and GTM revision `1.0.0`, as a child of `PLAN-AGENTIC-GRAPH-MAPPING-STACK-PRD-TAD-ADR-MVP-GTM@1.0.3`.
+`AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001` joins PRD revision `1.0.4`, ADR revision `1.0.2`, TAD revision `1.0.1`, MVP revision `1.0.1`, and GTM revision `1.0.0`, as a child of `PLAN-AGENTIC-GRAPH-MAPPING-STACK-PRD-TAD-ADR-MVP-GTM@1.0.3`.
 
 **DIR-POI-01** — Context: operators need to inspect small, authorized place datasets without sending source files to a service. Intent: make local POI curation and map browsing usable on a device with minimal setup. Directive: reuse the existing GeoJSON and map selection path, expose bounded validation and explicit approval, and keep data export user-controlled. Role/Subject: local dataset curator. Action: validate, review, and browse an approved POI collection. Outcome: a small, attributable directory that can be inspected locally and exported deliberately. Verb/Object: prepare / an approved local POI directory.
 
@@ -56,6 +56,7 @@ The curator supplies the file and its source, license, attribution, and approval
 | AC-POI-06 | Given accepted features, when the user searches or selects a place, then the existing geospatial map and selection owner show the same selected feature, category filtering works, and at most 50 results are displayed at once. | Reuse Geospatial Mode and shared selection contracts; check list-to-map and map-to-list selection plus the result cap. | TAD-02 / ADR-05 |
 | AC-POI-07 | Given no user dataset, when the directory opens, then any built-in preview is unmistakably synthetic and is never represented as a real business, recommendation, or licensed public dataset. | Existing synthetic fixture only; assert provenance label and exclude network-backed demo data. | TAD-02 / ADR-06 |
 | AC-POI-08 | Given a validated directory, when the user exports it, then only an explicit download or local build action writes the normalized file and manifest; import and preview never publish, upload, deploy, or overwrite an existing output. | File API/local filesystem boundary and no-overwrite behavior; run the source-owned local checks. | TAD-02 / ADR-01 |
+| AC-POI-09 | Given the existing core release uses the D1-backed Free R2 quota ledger, when its storage Worker candidate is activated, then the exact core migration set includes and applies `0022_agentic_graph_r2_free_quota.sql` first, and readiness proves every required ledger column. If the ledger is unavailable, activation stops; no new or paid resource is introduced. | Keep the migration additive and forward-compatible; assert it is selected rather than deferred, and retain the existing readiness checks for missing and complete ledger schemas. | TAD-03 / ADR-08 |
 
 ### Priority and open questions
 
@@ -73,13 +74,17 @@ The first validation question is whether a target user can take one permitted fi
 4. The directory projects accepted features into the current Geospatial Mode dataset path. Map rendering and selection remain owned by that runtime contract; the directory does not create a competing map or graph database.
 5. Export occurs only after user action. Existing output paths are never overwritten without an explicit, separately designed confirmation flow.
 
-Keep the directory panel and validator lazy-loaded behind the existing map entry point. The MVP adds no dependency, paid API, remote service, persistent schema, or new always-loaded prompt text. Import and validation work offline. Basemap and tile availability follow the existing map-provider contract; this feature does not promise cached or fully offline basemaps.
+Keep the directory panel and validator lazy-loaded behind the existing map entry point. The POI MVP adds no dependency, paid API, remote service, POI-owned persistent schema, or new always-loaded prompt text. Import and validation work offline. Basemap and tile availability follow the existing map-provider contract; this feature does not promise cached or fully offline basemaps. The existing core storage release has a separate D1-backed Free R2 quota ledger contract; its existing additive migration must be selected before activating a Worker version whose readiness requires that ledger.
 
 ### Runtime and failure behavior
 
 Keep parsing bounded to a 500,000-byte input and output, show a visible error on unsupported container structure or failed hashing, and bound visible results to 50. Never silently truncate accepted input or labels. Invalid individual features may be withheld only when the UI reports their count; invalid collection structure blocks the import. Local data remains in memory until the user chooses an export or the existing workspace explicitly saves it.
 
 No remote reads are required for import, validation, preview, or export. Existing map-style/tile requests are separate runtime behavior and must not carry the source dataset to a provider. A request failure in map rendering must leave the original file and normalized local output available.
+
+### Core release readiness
+
+The deployed core storage Worker uses the existing D1-backed quota ledger when no provider cost verifier is bound. Its readiness path checks the ledger table and required columns. The core release migration allowlist must therefore include `cloudflare/d1/migrations/0022_agentic_graph_r2_free_quota.sql` and apply it before Worker activation. This is a storage-runtime prerequisite, not a server-side POI dataset. The schema is additive and remains in place if Worker activation rolls back; missing or incomplete schema blocks activation and leaves POI delivery pending.
 
 ## ADR
 
@@ -111,13 +116,17 @@ Use the existing clearly labeled synthetic fixture for empty-state demonstration
 
 The product owner selected production activation of the integrated client feature. Deliver the exact protected `main` candidate through `.github/workflows/release.yml` using `config/production-release-profile.json`'s `core` profile and `existing-free-resources-only` cost policy. The target is the existing Cloudflare Pages project `joohwee` at `https://airvio.co` plus the existing `agentic-storage` Worker under its core contract. Do not create resources, enable paid plans or overages, enable Cloudflare Access, add a hosted POI service, or send local POI inputs or outputs to a server. Candidate authorization and all release checks remain bound to the exact source, immutable build, runtime evidence, and rollback identity.
 
+### ADR-08 — Include the Free R2 quota ledger prerequisite
+
+The core Worker wraps the existing R2 binding with the shared Free quota gate. In the production core configuration, D1 supplies the quota verifier; `storageCoreReadiness` requires the quota ledger table and its complete column set before it reports the core runtime ready. Select the existing additive `0022_agentic_graph_r2_free_quota.sql` migration in the core release profile and apply it before activating a Worker that depends on it. Retain the table on Worker rollback; do not add a resource, paid feature, or POI data upload. A missing ledger or failed runtime readiness is a rolled-back, not delivered, outcome.
+
 ## MVP and verification
 
-The planning lane is one file, no code modules, at most 20 active minutes, below 600 lines, and below 500 KiB. The implementation was delivered in the admitted `local-poi-directory-budget` lane with no new dependency or paid resource. Keep future changes within the existing panel/overlay owners and validator; new work needs its own mission and budget.
+This closeout is one existing planning file, under 20 active minutes, below 600 lines and below 500 KiB. The local POI workflow is integrated through PR #1843 (implementation), PR #1844 (synthetic-preview provenance), and PR #1852 (complete local GeoJSON workflows), with no new paid resource or POI service. PR #1855 updated the core migration selection; the production preflight for run #41021713269 selected `0022_agentic_graph_r2_free_quota.sql`, found it already applied, and reported no pending migrations. No further migration-code change is required for this release.
 
 Map each acceptance row to a focused synthetic fixture: collection and byte limits (AC-POI-01); missing metadata and declined attestations (AC-POI-02); precision, geometry, and coordinate boundaries (AC-POI-03); allowlist, stable IDs, date and privacy rejection (AC-POI-04); deterministic manifest digests, bounds, and counts (AC-POI-05); synchronized selection and 50-result cap (AC-POI-06); synthetic-only labeling (AC-POI-07); and no-network, explicit export, and no-overwrite behavior (AC-POI-08). Use a network guard to prove import/validation/export do not fetch or upload data. These checks prove only local source behavior; protected integration and any deployment or runtime result need their own exact evidence.
 
-The source implementation is **integrated** at `dd842651c4f1888d2d4b161b389635b6be3162a1`; the current protected `main` also includes the provenance guard at `768e794bcb7f61dfaeb7169a598cab82c9e67dce`. PR #1843's required `docs-contract` and `Integration Gate` checks passed. The exact PR #1843 candidate also passed the focused local POI unit suite (4/4), Canvas checks/build, and geospatial-mode checks; the exact PR #1844 candidate passed the focused POI suite (4/4), and its required `docs-contract` and `Integration Gate` checks passed. These records support `local_rung: dev-proven` for local source behavior and protected integration only. No production deployment, production runtime readback, or physical-device acceptance is recorded; `delivered_rung` remains `undocumented`.
+The protected source now includes PR #1843 (`dd842651c4f1888d2d4b161b389635b6be3162a1`), PR #1844 (`768e794bcb7f61dfaeb7169a598cab82c9e67dce`), the complete local workflows in PR #1852 (`513883f62a7b69669642fb77a1a3321e466c3424`), and subsequent release fixes through `main` `f3c7816b2788d006dbf076009560eba18c2aa609`. PR #1852's focused POI/geospatial suites passed 7/7, browser runtime smoke passed 3/3, and its required `docs-contract` and `Integration Gate` checks passed; its recorded Canvas build and `gympgrph` build also passed. PR #1855 and PR #1858 are included in the same protected source. These records support `local_rung: dev-proven`. Production release, runtime readback and mirror publication are now proven by run #41021713269 below. A user-device acceptance receipt is not recorded, so retain `delivered_rung: undocumented` until that check is completed.
 
 ## GTM
 
@@ -129,13 +138,17 @@ The selected delivery boundary is the existing protected core release: exact pro
 
 Before activation, the release must bind a fresh local review, immutable artifact, current rollback identity, and exact human authorization. The current rollback identity records the exact Pages deployment and D1/mirror state; the core Worker preflight records its exact active version, bindings, secret-name inventory, routing, and migration state. On failure, the protected controller restores the prior Pages deployment and core Worker version/routing, restores the canonical-document D1 state within the documented migration contract, and verifies baseline liveness. Forward-compatible core migrations or owner enrollment are retained; this is not a general rollback of arbitrary D1, R2, external providers, or unrelated Workers. If a failure occurs after mirror publication, manual mirror reconciliation may be required.
 
-The integrated source remains `local_rung: dev-proven`; `delivered_rung` stays `undocumented` until the exact candidate passes the protected release, live route/browser checks, rollback receipt validation, and publication receipts. The latest protected attempt, [run #40272873807](https://github.com/huijoohwee/agentic-graph/actions/runs/40272873807), failed six MCP source-file checks. It restored the prior Pages deployment and D1 state, but post-rollback immutable, stable, and public runtime checks also failed, so the terminal rollback was not green. A fresh candidate must pass that full gate before activation. This MVP adds no server POI data to migrate and no hosted POI state to delete.
+An earlier protected attempt, [run #40995990581](https://github.com/huijoohwee/agentic-graph/actions/runs/40995990581), was authorized for candidate `39a96872e717e6dbfb9d55754a89bdc247a0628291a819b9ec9a7f58791e68eb` from source `73233cd96b6c678c64094bd1970c8c091c2d4302`. Candidate Pages deployment and the exact Base route check passed; candidate Worker version `2b2afe15-b024-4b52-a60b-ef17a14fb0b4` then returned 503 on `/api/storage/readyz/core`. The release receipt records `rolled-back`, a proved restoration to prior Worker version `189e03d3-c738-43fd-b17b-501efda945d7`, the existing route retained, no D1 migration applied, and no compensation failure. Pages was restored to deployment `d39a76e1-7e9a-4f88-add5-6990cc7ab32f`; the D1 state readback digest matched the captured baseline, and mirror publication was skipped. The core migration receipt lists `0022_agentic_graph_r2_free_quota.sql` as deferred, while the exact candidate readiness code requires its D1 ledger columns when the Free quota ledger is selected. The retained failure receipt stores only the response body digest, not the raw reason; the missing migration is therefore a source-backed diagnosis that the next lane must confirm with a focused regression check.
+
+That earlier rollback run also reported six of 59 smoke checks failing against the restored Pages baseline: MCP source-file resource read, list, search, content-aware search, fetch, and read. Each returned HTTP 200 JSON while its semantic check failed. The later release run #41021713269 passed its exact candidate verification and live verification gates; use its retained live-verification receipt for the current runtime claim. The older failure receipt remains historical evidence. This MVP adds no POI data migration or hosted POI state.
+
+Later, [run #41021713269](https://github.com/huijoohwee/agentic-graph/actions/runs/41021713269) completed successfully for protected source `f3c7816b2788d006dbf076009560eba18c2aa609` and approved candidate `2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317`. It reused protected CI source evidence, deployed Pages `d4bf1bde-c77b-4495-8085-0874d43450ca`, activated the existing `agentic-storage` Worker, confirmed migration 0022 was already applied, reconciled D1 with content/path parity, passed live verification, public smoke (65/65) and stable Pages smoke (59/59), and published the mirror. Receipts: deployment `85db7c1c138d3efdbfb1c30087e874147e598724e8da7ecbd161e17078955612`; D1 reconciliation `cb2e152f8572a525c2b0ca8990b56f8d19ee7aefd8ab90658df0657af98a6469`; live verification `28e88a4d6efec6f4948e777f386a6b30f4b865fc32f7310939cf42681bf7e838`; publication `e2eba14895b83945e3d2bcd4a410b21442ab452ce350ef69a13d6b5607111b8f`. The post-success rollback baseline is Pages `d4bf1bde-c77b-4495-8085-0874d43450ca`, mirror `7ac091ffbab60eece371a2d09cfb53d29c208244`, and D1 contract `8b7ec9f3a37727785a7b9b9e42a196d4bf27a77b918fc2a7f5add490374b585c` with readback `a669fb19a6bfac145906c8a49cdd9fce0473c27960b924a08de9118d3da3ccb1`.
 
 ## Source bindings and handover
 
 - Parent scope and broad mapping decisions: [Mapping Stack PRD/TAD/ADR/MVP/GTM 1.0.3](agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md).
 - Runtime map, dataset and POI selection owner: [Geospatial Mode](agentic-graph-geospatial-mode-document.md).
 - Integrated implementation: `canvas/src/features/maps/LocalPoiDirectory.tsx`, `canvas/src/features/geospatial/localPoiDirectoryModel.ts`, and `scripts/geostack-local-geojson-build.mjs` at merge commit `dd842651c4f1888d2d4b161b389635b6be3162a1`; synthetic-only preview guard at `768e794bcb7f61dfaeb7169a598cab82c9e67dce`.
-- Production deployment, runtime/device verification, rollback, and worktree cleanup remain separate actions with exact authority and receipts. Preserve the dirty scratch checkout until its bytes receive an explicit disposition and native cleanup receipts.
+- Production deployment, runtime/device verification, rollback, and worktree cleanup remain separate actions with exact authority and receipts. The named scratch checkout path is absent; keep its preserved recovery bytes separate until their authored content receives an explicit disposition and native cleanup receipts.
 
-Next action: pass the current protected production smoke gate, generate the exact candidate and rollback evidence from the fresh baseline, then obtain its candidate-bound human authorization. Keep the scratch checkout mounted and preserved while AOS reports dirty bytes and cleanup receipts are absent.
+Next action: complete and record user-device acceptance for the production POI workflow; until then, `delivered_rung` remains `undocumented`. Keep the scratch recovery bytes preserved until their authored content has an explicit disposition and native cleanup receipt.
