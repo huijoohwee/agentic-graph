@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { normalizeComposedSourcePath } from '@/features/source-files/composedSourceSelection'
@@ -101,12 +101,13 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
     void import('gympgrph').then(module => {
       if (canceled) return
       const geospatialEvents = module as unknown as {
-        onGraphMapFeatureSelected?: (handler: (detail: { sourceFeatureId: string }) => void) => () => void
+        onGraphMapFeatureSelected?: (handler: (detail: { sourceFeatureId: string; graphFeatureId: string }) => void) => () => void
       }
       if (typeof geospatialEvents.onGraphMapFeatureSelected !== 'function') return
       unsubscribe = geospatialEvents.onGraphMapFeatureSelected(({ sourceFeatureId }) => {
         const selectedFeature = featureCollection?.features.find(feature => String(feature.id ?? '') === sourceFeatureId)
         if (!selectedFeature) return
+        mapSelectionGeneration.current += 1
         setSelectedId(selectedFeature.id)
         setMapSelectionMessage('Selected on the shared map.')
       })
@@ -148,7 +149,7 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
       : selectionSource === 'toolbar' ? 'Selected on the shared map.' : 'Selected from Canvas.')
   }, [featureCollection, selectedMapFeatureId, selectionSource])
 
-  const selectFeature = (featureId: string | number | null) => {
+  const selectFeature = useCallback((featureId: string | number | null) => {
     setSelectedId(featureId)
     const generation = ++mapSelectionGeneration.current
     if (featureId === null) {
@@ -170,15 +171,34 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
         setMapSelectionMessage('This record could not be selected on the active map.')
       }
     })
-  }
+  }, [onSelectMapFeature])
+
+  useEffect(() => {
+    if (!dataset) return
+    let canceled = false
+    let dispose = () => undefined
+    void import('gympgrph').then(module => {
+      if (canceled) return
+      const map = module.readActiveMapLibreMap?.()
+      if (!map || typeof module.bindGraphFeatureAffordances !== 'function') return
+      dispose = module.bindGraphFeatureAffordances({
+        features: dataset.featureCollection.features.filter(feature => feature.properties.localPoiRole === 'place'),
+        map,
+        selectedFeatureIds: new Set(selectedId === null ? [] : [String(selectedId)]),
+        onActivate: feature => selectFeature(feature.id ?? feature.properties?.id ?? null),
+      })
+    }).catch(() => undefined)
+    return () => {
+      canceled = true
+      dispose()
+    }
+  }, [dataset, selectFeature, selectedId])
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget
     const file = input.files?.[0]
     input.value = ''
     const generation = ++loadGeneration.current
-    publishLocalPoiDirectoryDataset(null)
-    setSelectedId(null)
     setError(null)
     setLoading(false)
     if (!file) return
@@ -206,6 +226,8 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
         return
       }
       publishLocalPoiDirectoryDataset({ featureCollection: result.featureCollection, manifest: result.manifest })
+      setSelectedId(null)
+      setMapSelectionMessage('')
       setCategory('all')
       setQuery('')
     } catch {
@@ -266,7 +288,7 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
               <span>Point records marked precision=exact may be shown at exact coordinates in this local preview.</span>
             </label>
           </fieldset>
-          <p className="opacity-70">These attestations are recorded in the manifest; an authorized public release still requires the separate rights and precision review.</p>
+          <p className="opacity-70">Parsing, review, and export stay on this device. These attestations are recorded in the manifest; they do not verify legal rights or authorize public release.</p>
 
           <label className="grid gap-1" htmlFor="local-poi-file">
             <span>GeoJSON FeatureCollection (maximum 500 kB)</span>
@@ -314,7 +336,12 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
 
           <p aria-live="polite">{matches.length} matching features. Region polygons stay on the map as coarse context.</p>
           <div className="max-h-40 overflow-auto rounded border border-white/15" aria-label="Search results">
-            {visibleMatches.length > 0 ? visibleMatches.map(feature => (
+            {visibleMatches.length > 0 ? visibleMatches.map(feature => feature.properties.localPoiRole === 'region' ? (
+              <div key={String(feature.id)} className="border-b border-white/10 px-2 py-2">
+                <span className="block font-medium">{feature.properties.name}</span>
+                <span className="opacity-70">Coarse region context · not a selectable place</span>
+              </div>
+            ) : (
               <button
                 key={String(feature.id)}
                 type="button"
@@ -323,7 +350,7 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
                 className={`block w-full border-b border-white/10 px-2 py-2 text-left hover:bg-white/10 ${selectedId === feature.id ? 'bg-white/10' : ''}`}
               >
                 <span className="block font-medium">{feature.properties.name}</span>
-                <span className="opacity-70">{feature.properties.category} · {feature.properties.localPoiRole === 'region' ? 'region' : 'place'}</span>
+                <span className="opacity-70">{feature.properties.category} · place</span>
               </button>
             )) : <p className="p-2 opacity-70">No local matches.</p>}
             {matches.length > visibleMatches.length ? <p className="p-2 opacity-70">Showing the first 50 results. Narrow the search to find a place.</p> : null}
@@ -343,6 +370,7 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
                 <dt>License</dt><dd>{dataset.manifest.license}</dd>
                 <dt>Attribution</dt><dd>{dataset.manifest.attribution}</dd>
                 <dt>Points / regions</dt><dd>{dataset.manifest.pointCount} / {dataset.manifest.regionCount}</dd>
+                <dt>Category counts</dt><dd>{Object.entries(dataset.manifest.categoryCounts).map(([name, count]) => `${name}: ${count}`).join(', ') || 'None'}</dd>
                 <dt>Withheld</dt><dd>{dataset.manifest.withheldCount} features</dd>
                 <dt>Manifest</dt><dd>{dataset.manifest.schema}; {dataset.manifest.inputBytes} → {dataset.manifest.outputBytes} bytes</dd>
                 <dt>SHA-256</dt><dd>input {dataset.manifest.inputSha256.slice(0, 12)}… / output {dataset.manifest.outputSha256.slice(0, 12)}…</dd>

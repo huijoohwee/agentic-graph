@@ -48,6 +48,7 @@ export type LocalPoiManifest = {
   regionCount: number
   withheldCount: number
   categories: string[]
+  categoryCounts: Record<string, number>
 }
 
 export type LocalPoiApproval = {
@@ -155,7 +156,7 @@ const hasEmailAddress = (value: string): boolean =>
   /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/iu.test(value)
 
 const hasPhoneNumber = (value: string): boolean => {
-  const candidates = value.match(/(?:\+\d[\d().\s-]{5,}\d|\(\d{2,}\)[\d\s.-]{4,}\d|\d{2,}[-\s]\d{2,}[-\s]\d{2,})/gu) ?? []
+  const candidates: string[] = value.match(/(?:\+\d[\d().\s-]{5,}\d|\(\d{2,}\)[\d\s.-]{4,}\d|\d{2,}[-\s]\d{2,}[-\s]\d{2,})/gu) || []
   return candidates.some(candidate => {
     const digits = candidate.replace(/\D/gu, '').length
     return digits >= 7 && digits <= 15
@@ -184,7 +185,7 @@ const sha256 = async (value: Uint8Array): Promise<string | null> => {
 }
 
 const normalizePosition = (value: unknown): [number, number] | null => {
-  if (!Array.isArray(value) || value.length < 2) return null
+  if (!Array.isArray(value) || value.length !== 2) return null
   const longitude = value[0]
   const latitude = value[1]
   if (typeof longitude !== 'number' || typeof latitude !== 'number') return null
@@ -266,6 +267,7 @@ export async function validateLocalPoiGeoJson(
   const features: LocalPoiFeature[] = []
   const usedIds = new Set<string>()
   const categories = new Set<string>()
+  const categoryCounts = new Map<string, number>()
   let pointCount = 0
   let regionCount = 0
   let withheldCount = 0
@@ -316,7 +318,7 @@ export async function validateLocalPoiGeoJson(
     }
 
     const rawId = boundedText(raw.id ?? properties.id, 120)
-    if (!rawId || !rawId.includes(':') || /\s/u.test(rawId)) {
+    if (!rawId || !/^[^:\s]+:[^:\s]+$/u.test(rawId)) {
       return { ok: false, error: `Feature ${index + 1} needs a stable source:id value.` }
     }
     if (usedIds.has(rawId)) return { ok: false, error: `Feature ${index + 1} repeats a stable ID.` }
@@ -336,7 +338,7 @@ export async function validateLocalPoiGeoJson(
     if (!sourceName || !licenseRef || /[\u0000-\u001f\u007f]/u.test(updated) || updated.length > 10) {
       return { ok: false, error: `Feature ${index + 1} has invalid provenance fields.` }
     }
-    if ([sourceName, licenseRef].some(hasContactDetails)) {
+    if ([rawId, sourceName, licenseRef].some(hasContactDetails)) {
       return { ok: false, error: `Feature ${index + 1} includes personal contact details in its provenance fields.` }
     }
     const category = role === 'place'
@@ -374,6 +376,7 @@ export async function validateLocalPoiGeoJson(
     if (role === 'place') {
       pointCount += 1
       categories.add(category)
+      categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1)
     } else {
       regionCount += 1
     }
@@ -423,6 +426,7 @@ export async function validateLocalPoiGeoJson(
       regionCount,
       withheldCount,
       categories: [...categories].sort((left, right) => left < right ? -1 : left > right ? 1 : 0),
+      categoryCounts: Object.fromEntries([...categoryCounts].sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)),
     },
   }
 }

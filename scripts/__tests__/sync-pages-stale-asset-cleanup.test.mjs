@@ -11,7 +11,7 @@ import {
   buildOfflinePublicRoutePlan,
   isBrowserRuntimeArtifactRelativePath,
 } from '../pages-mirror-sync.mjs'
-import { buildAgentReadyHeaders } from '../pages-mirror-headers.mjs'
+import { AGENTIC_GRAPH_CSP, buildAgentReadyHeaders } from '../pages-mirror-headers.mjs'
 import { buildAgenticGraphRedirects } from '../production-pages-routing.mjs'
 import { offlinePrecacheEntries } from '../../canvas/vitePythonLearningOffline.mjs'
 import { productionRuntimeReadinessHeaderLines } from '../production-runtime-readiness-build.mjs'
@@ -425,11 +425,12 @@ test('generated headers preserve authored content policies and adjacent unrelate
   const unrelated = '/unrelated/*\n  X-Example: retained'
   const existing = ['/agenticgraph/*', report, unrelated, 'https://example.invalid/remote/*', '  X-Remote: retained', '/content/knowgrph/*', '  ! Content-Security-Policy', enforced, '/knowgrph/*', report, ''].join('\n')
   const output = generatePolicyHeaders(existing)
-  assert.ok(output.includes('/agentic-graph/*\n' + report))
+  assert.ok(output.includes(`/agentic-graph/*\n  Content-Security-Policy: ${AGENTIC_GRAPH_CSP}`))
   assert.ok(output.includes('/content/agentic-graph/*\n  ! Content-Security-Policy\n' + enforced))
   assert.ok(output.includes(unrelated))
   assert.ok(output.includes('https://example.invalid/remote/*\n  X-Remote: retained'))
-  assert.equal(output.split(report).length - 1, 1)
+  assert.equal(output.split(report).length - 1, 0)
+  assert.equal(output.split(`Content-Security-Policy: ${AGENTIC_GRAPH_CSP}`).length - 1, 1)
   assert.doesNotMatch(output, /^\/(?:content\/)?(?:agenticgraph|knowgrph)(?:\/|\*)/m)
 })
 
@@ -439,9 +440,10 @@ test('generated headers reject conflicting legacy policies and retain explicit c
   const legacy = ['/agenticgraph/*', a, '', '/knowgrph/*', b, ''].join('\n')
   assert.throws(() => generatePolicyHeaders(legacy), /conflicting legacy content policies/)
   const output = generatePolicyHeaders(legacy + '\n/agentic-graph/*\n' + b + '\n')
-  assert.ok(output.includes('/agentic-graph/*\n' + b))
+  assert.ok(output.includes(`/agentic-graph/*\n  Content-Security-Policy: ${AGENTIC_GRAPH_CSP}`))
   assert.ok(!output.includes(a))
-  assert.equal(output.split(b).length - 1, 1)
+  assert.ok(!output.includes(b))
+  assert.equal(output.split(`Content-Security-Policy: ${AGENTIC_GRAPH_CSP}`).length - 1, 1)
 })
 
 test('generated headers have stable bytes immediately after first generation', () => {

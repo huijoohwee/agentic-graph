@@ -216,7 +216,7 @@ const mergeAreaFeatures = (base: GraphData, extra: GraphData): JSONValue | null 
       ? record.properties as Record<string, unknown>
       : null
     const id = String(record?.id ?? properties?.id ?? '').trim()
-    const key = id ? `id:${id}` : `feature:${JSON.stringify(feature)}`
+    const key = id ? `id:${id}` : `feature:${hashSignatureParts([JSON.stringify(feature)])}`
     merged.set(key, feature)
   }
   return { type: 'FeatureCollection', features: [...merged.values()] } as unknown as JSONValue
@@ -257,6 +257,57 @@ export const mergeGraphDataUnique = (base: GraphData, extra: GraphData): GraphDa
   }
 }
 
+const readGeoSelectionRecord = (value: unknown): Record<string, unknown> | null => (
+  value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
+)
+
+const readGeoSourceFeatureId = (node: unknown): string => {
+  const properties = readGeoSelectionRecord(readGeoSelectionRecord(node)?.properties)
+  const richMedia = readGeoSelectionRecord(properties?.richMediaPoiProperties)
+  return String(properties?.kgSourceFeatureId ?? richMedia?.kgSourceFeatureId ?? '').trim()
+}
+
+export function resolveSelectedGeoGraphNodeIds(
+  graphData: unknown,
+  selectedNodeIds: ReadonlySet<string>,
+): Set<string> {
+  const result = new Set(selectedNodeIds)
+  const nodes = readGeoSelectionRecord(graphData)?.nodes
+  if (!Array.isArray(nodes) || result.size === 0) return result
+  const selectedSourceIds = new Set<string>()
+  for (const node of nodes) {
+    const id = String(readGeoSelectionRecord(node)?.id ?? '').trim()
+    if (id && result.has(id)) {
+      const sourceId = readGeoSourceFeatureId(node)
+      if (sourceId) selectedSourceIds.add(sourceId)
+    }
+  }
+  if (selectedSourceIds.size === 0) return result
+  for (const node of nodes) {
+    const id = String(readGeoSelectionRecord(node)?.id ?? '').trim()
+    const sourceId = readGeoSourceFeatureId(node)
+    if (id && sourceId && selectedSourceIds.has(sourceId)) result.add(id)
+  }
+  return result
+}
+
+export function applyLocalPoiGraphSelection(
+  graphData: GraphData,
+  selectedNodeIds: ReadonlySet<string>,
+): GraphData {
+  const selected = resolveSelectedGeoGraphNodeIds(graphData, selectedNodeIds)
+  let changed = false
+  const nodes = (graphData.nodes ?? []).map(node => {
+    const properties = (node.properties ?? {}) as Record<string, JSONValue>
+    if (properties.localPoiRole !== 'place') return node
+    const kgSelected = selected.has(String(node.id ?? '').trim())
+    if (properties.kgSelected === kgSelected) return node
+    changed = true
+    return { ...node, properties: { ...properties, kgSelected } }
+  })
+  return changed ? { ...graphData, nodes } : graphData
+}
+
 const attachOverlayDebugInfo = (graphData: GraphData, info: GeospatialOverlayGraphDebugInfo): GraphData => ({
   ...graphData,
   metadata: {
@@ -288,7 +339,6 @@ const buildMarkdownGeodataSupplementGraph = (args: {
     supplementGraph = supplementGraph ? mergeGraphDataUnique(supplementGraph, built) : built
   }
 
-  const coarseRegionFeatures: Record<string, unknown>[] = []
   for (const req of geodataAnalysis.embeddedGeoJsonGraphDataRequests) {
     const built = buildGraphDataFromFeatureCollection({
       featureCollection: req.featureCollection,
@@ -296,50 +346,10 @@ const buildMarkdownGeodataSupplementGraph = (args: {
       sourceHash: buildMarkdownGeoFeatureCollectionGraphSourceHash(req.featureCollection),
     })
     if (!built) continue
-    const sourceFeatures = Array.isArray((req.featureCollection as { features?: unknown[] } | null)?.features)
-      ? (req.featureCollection as { features: unknown[] }).features
-      : []
-    for (let index = 0; index < sourceFeatures.length; index += 1) {
-      const feature = sourceFeatures[index] as Record<string, unknown> | null
-      const geometry = feature?.geometry as Record<string, unknown> | null
-      const properties = feature?.properties as Record<string, unknown> | null
-      const precision = String(properties?.precision || '').trim().toLowerCase()
-      const role = String(properties?.role || '').trim().toLowerCase()
-      const geometryType = String(geometry?.type || '')
-      if (role !== 'region' || precision !== 'coarse' || !['Polygon', 'MultiPolygon'].includes(geometryType)) continue
-      coarseRegionFeatures.push({
-        type: 'Feature',
-        id: String(feature?.id ?? `region-${index + 1}`),
-        geometry,
-        properties: properties || {},
-      })
-    }
-    const mapReadyGraph: GraphData = {
-      ...built,
-      nodes: (built.nodes || []).map(node => {
-        const properties = (node.properties || {}) as Record<string, JSONValue>
-        if (String(properties.role || '').trim().toLowerCase() !== 'region'
-          || String(properties.precision || '').trim().toLowerCase() !== 'coarse') return node
-        const { geo: _centroid, ...regionProperties } = properties
-        return { ...node, properties: regionProperties }
-      }),
-    }
-    supplementGraph = supplementGraph ? mergeGraphDataUnique(supplementGraph, mapReadyGraph) : mapReadyGraph
+    supplementGraph = supplementGraph ? mergeGraphDataUnique(supplementGraph, built) : built
   }
 
   if (!supplementGraph) return null
-  if (coarseRegionFeatures.length > 0) {
-    supplementGraph = {
-      ...supplementGraph,
-      metadata: {
-        ...(supplementGraph.metadata || {}),
-        kgGeospatialAreaFeatures: {
-          type: 'FeatureCollection',
-          features: coarseRegionFeatures,
-        } as unknown as JSONValue,
-      },
-    }
-  }
   return writeCachedGeospatialOverlaySupplementGraphData(supplementCacheKey, supplementGraph)
 }
 
