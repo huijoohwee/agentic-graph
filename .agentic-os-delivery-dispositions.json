@@ -253,6 +253,24 @@
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/local-poi-user-device-acceptance",
+      "laneHead": "f77dd5ec3738598dafeb3b1a270d7223dbd4a186",
+      "paths": [
+        "docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "83b6541a9da9e1fb71dae67c79f5a92cc7bf8440",
+      "candidateDigest": "957a32f5207b3a4b4465a7be29366f21386fed1a0611f9c5743e632f5a1edd4a",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "scripts/production-mirror-artifact-entries.mjs",
+      "evidenceDigest": "c0bf4042287f7a895cf083afc1d7dcee9d1ae3b614154470d906ccaf8d4dd9cf",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1863",
+      "reason": "PR #1863 changes only the Local POI PRD Markdown path. The production Pages application artifact is built from Canvas output, and the explicit production mirror artifact allowlist excludes this PRD path. Runtime document seeding reads Graph Markdown only from the explicit GRAPH_DOC_PATHS map, which does not include this PRD. The product owner authorized source integration only and excluded deployment and mirror publication. This records no deployment and grants no production effect."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "disposition": "no-deploy",
       "candidateDigest": "62add86af30cf2fc5e7064b5e36dff824b0a272ef3793fe73fa3fcfbb8771a81",
       "sourceReleaseReceiptDigest": null,
@@ -404,5 +422,5 @@
       "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
     }
   ],
-  "receiptDigest": "ab211b1b3d540fb8541839ecaf85f7376840149925aaa383d00a89dee242846b"
+  "receiptDigest": "9df8469aed4a5fd12f3a76435dfabd9b00cb8c9043e5bbaa5d8dab716c4b8ecb"
 }
