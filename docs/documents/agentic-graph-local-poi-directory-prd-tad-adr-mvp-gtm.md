@@ -2,7 +2,7 @@
 title: "agentic-graph Local POI Directory — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-local-poi-directory-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.5"
+version: "1.0.6"
 date: "2026-10-30"
 lang: "en-US"
 owner: "docs.geospatial.local-poi-directory"
@@ -13,13 +13,13 @@ continuity_id: "AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001"
 parent_plan: "docs/documents/agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md@1.0.3"
 scope: "Prepare and browse an explicitly approved, bounded local GeoJSON POI directory through the existing geospatial map and selection owners"
 deploy_boundary: "Production application-code activation through the existing protected core release; keep POI inputs and outputs local and create no hosted POI service"
-worktree_id: "device-0232231d4a19--local-poi-user-device-acceptance"
-agent_id: "codex-local-poi-user-device-acceptance"
+worktree_id: "device-0232231d4a19--geostack-scratch-disposition"
+agent_id: "codex-geostack-scratch-disposition"
 action: "/change"
-scope: "#local-poi-user-device-acceptance"
-actor: "@codex-local-poi-user-device-acceptance"
-base_sha: "ed0d45af3704b3f014eb1d8186b9a49e18d620ae"
-prd_revision: "1.0.5"
+scope: "#geostack-scratch-disposition"
+actor: "@huijoohwee"
+base_sha: "f96282586cc1100c4040d95ccd69cef384269504"
+prd_revision: "1.0.6"
 tad_revision: "1.0.1"
 adr_revision: "1.0.2"
 mvp_revision: "1.0.1"
@@ -32,11 +32,11 @@ lane: "authoring"
 
 This child plan narrows the [Mapping Stack plan](agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md) to local preparation and browsing of points of interest. The parent owns mapping composition and broad spatial capabilities. The [Geospatial Mode document](agentic-graph-geospatial-mode-document.md) owns the runtime map, dataset, and selection contract. This plan adds no replacement map, spatial engine, or source-of-truth for those contracts.
 
-The separately named `agentic-graph-geostack-scratch` checkout was unaccepted discovery evidence and was not used as the source for an admitted merge. Its named checkout path was absent in the 2026-10-30 inventory; preserved recovery bytes have no authored-byte disposition or native cleanup receipt, so this records neither a merge nor completed cleanup. The accepted implementation was developed in the admitted `agent/device-0232231d4a19/local-poi-directory-budget` lane and integrated into `main` through [PR #1843](https://github.com/huijoohwee/agentic-graph/pull/1843), merge commit `dd842651c4f1888d2d4b161b389635b6be3162a1`. [PR #1844](https://github.com/huijoohwee/agentic-graph/pull/1844), merge commit `768e794bcb7f61dfaeb7169a598cab82c9e67dce`, added a synthetic-preview provenance regression guard.
+The separately named `agentic-graph-geostack-scratch` checkout was unaccepted discovery evidence and was not used as the source for an admitted merge. A read-only structural content check using `agentic-os` source revision `2bf74425791761c3253e8112a181ed496c1cdf91` binds its preserved Git snapshot `preserve/geostack-scratch-before-poi-20261029` at `1e310d891140fb0ae0ae3b0f0da75edb12b6b306` to reviewed PR #1852 head `77fc84f0721d3594ef6a7d2fc4e88c0e48adecad` and merge `513883f62a7b69669642fb77a1a3321e466c3424`: all 71 touched tracked paths are accounted for, with 48 identical tree entries and 23 reviewed replacements. This treats the preserved commit's tracked content as superseded by PR #1852; it is not a native closeout or cleanup receipt, does not claim the scratch branch itself was merged, and does not account for uncommitted, untracked, or ignored checkout bytes. The original checkout path is absent and no native cleanup receipt exists, so the checkout's full-byte disposition and cleanup remain unresolved; keep the preserved branch and refs. The accepted implementation was developed in the admitted `agent/device-0232231d4a19/local-poi-directory-budget` lane and integrated into `main` through [PR #1843](https://github.com/huijoohwee/agentic-graph/pull/1843), merge commit `dd842651c4f1888d2d4b161b389635b6be3162a1`. [PR #1844](https://github.com/huijoohwee/agentic-graph/pull/1844), merge commit `768e794bcb7f61dfaeb7169a598cab82c9e67dce`, added a synthetic-preview provenance regression guard.
 
 ## Identity and directive
 
-`AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001` joins PRD revision `1.0.5`, ADR revision `1.0.2`, TAD revision `1.0.1`, MVP revision `1.0.1`, and GTM revision `1.0.0`, as a child of `PLAN-AGENTIC-GRAPH-MAPPING-STACK-PRD-TAD-ADR-MVP-GTM@1.0.3`.
+`AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001` joins PRD revision `1.0.6`, ADR revision `1.0.2`, TAD revision `1.0.1`, MVP revision `1.0.1`, and GTM revision `1.0.0`, as a child of `PLAN-AGENTIC-GRAPH-MAPPING-STACK-PRD-TAD-ADR-MVP-GTM@1.0.3`.
 
 **DIR-POI-01** — Context: operators need to inspect small, authorized place datasets without sending source files to a service. Intent: make local POI curation and map browsing usable on a device with minimal setup. Directive: reuse the existing GeoJSON and map selection path, expose bounded validation and explicit approval, and keep data export user-controlled. Role/Subject: local dataset curator. Action: validate, review, and browse an approved POI collection. Outcome: a small, attributable directory that can be inspected locally and exported deliberately. Verb/Object: prepare / an approved local POI directory.
 
@@ -130,7 +130,7 @@ This closeout is one existing planning file, under 20 active minutes, below 600 
 
 Map each acceptance row to a focused synthetic fixture: collection and byte limits (AC-POI-01); missing metadata and declined attestations (AC-POI-02); precision, geometry, and coordinate boundaries (AC-POI-03); allowlist, stable IDs, date and privacy rejection (AC-POI-04); deterministic manifest digests, bounds, and counts (AC-POI-05); synchronized selection and 50-result cap (AC-POI-06); synthetic-only labeling (AC-POI-07); and no-network, explicit export, and no-overwrite behavior (AC-POI-08). Use a network guard to prove import/validation/export do not fetch or upload data. These checks prove only local source behavior; protected integration and any deployment or runtime result need their own exact evidence.
 
-The protected source now includes PR #1843 (`dd842651c4f1888d2d4b161b389635b6be3162a1`), PR #1844 (`768e794bcb7f61dfaeb7169a598cab82c9e67dce`), the complete local workflows in PR #1852 (`513883f62a7b69669642fb77a1a3321e466c3424`), and subsequent release fixes through protected `main` `ed0d45af3704b3f014eb1d8186b9a49e18d620ae`. PR #1852's focused POI/geospatial suites passed 7/7, browser runtime smoke passed 3/3, and its required `docs-contract` and `Integration Gate` checks passed; its recorded Canvas build and `gympgrph` build also passed. PR #1855 and PR #1858 are included in the same protected source. These records support `local_rung: dev-proven`. Production release, runtime readback and mirror publication are now proven by run #41021713269 below. The user-device acceptance receipt below closes the remaining delivery condition for the deployed local GeoJSON POI workflow. `delivered_rung: production-verified` is scoped to that workflow and evidence; it does not claim a multi-device certification or validate third-party dataset rights.
+The protected source now includes PR #1843 (`dd842651c4f1888d2d4b161b389635b6be3162a1`), PR #1844 (`768e794bcb7f61dfaeb7169a598cab82c9e67dce`), the complete local workflows in PR #1852 (`513883f62a7b69669642fb77a1a3321e466c3424`), and subsequent release and delivery records through protected `main` `f96282586cc1100c4040d95ccd69cef384269504`. PR #1852's focused POI/geospatial suites passed 7/7, browser runtime smoke passed 3/3, and its required `docs-contract` and `Integration Gate` checks passed; its recorded Canvas build and `gympgrph` build also passed. PR #1855 and PR #1858 are included in the same protected source. These records support `local_rung: dev-proven`. Production release, runtime readback and mirror publication are proven by run #41021713269 below. The user-device acceptance receipt below closes the remaining delivery condition for the deployed local GeoJSON POI workflow. `delivered_rung: production-verified` is scoped to that workflow and evidence; it does not claim a multi-device certification or validate third-party dataset rights.
 
 ### User-device acceptance (2026-10-30)
 
@@ -157,6 +157,6 @@ Later, [run #41021713269](https://github.com/huijoohwee/agentic-graph/actions/ru
 - Parent scope and broad mapping decisions: [Mapping Stack PRD/TAD/ADR/MVP/GTM 1.0.3](agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md).
 - Runtime map, dataset and POI selection owner: [Geospatial Mode](agentic-graph-geospatial-mode-document.md).
 - Integrated implementation: `canvas/src/features/maps/LocalPoiDirectory.tsx`, `canvas/src/features/geospatial/localPoiDirectoryModel.ts`, and `scripts/geostack-local-geojson-build.mjs` at merge commit `dd842651c4f1888d2d4b161b389635b6be3162a1`; synthetic-only preview guard at `768e794bcb7f61dfaeb7169a598cab82c9e67dce`.
-- Production deployment, runtime/device verification, rollback, and worktree cleanup remain separate actions with exact authority and receipts. The named scratch checkout path is absent; keep its preserved recovery bytes separate until their authored content receives an explicit disposition and native cleanup receipts.
+- Production deployment, runtime/device verification, rollback, and worktree cleanup remain separate actions with exact authority and receipts. The named scratch checkout path is absent; its preserved tracked snapshot is dispositioned as superseded by PR #1852, while uncommitted/untracked/ignored bytes remain unobserved and no native cleanup receipt exists.
 
-Next action: retain the scratch recovery bytes until their authored content has an explicit disposition and native cleanup receipt. That cleanup remains a separate closeout effect.
+Next action: retain the scratch recovery branch and refs. The original worktree path is absent, and no byte-complete archive or native cleanup receipt was found. Recover the full checkout, including any untracked and ignored files, before requesting native cleanup; if those bytes cannot be recovered, the owner must explicitly disposition that loss before a supported closeout can be claimed. Do not delete refs or report the scratch checkout fully closed on the tracked-content proof alone.
