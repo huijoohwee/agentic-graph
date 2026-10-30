@@ -186,6 +186,24 @@
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/geostack-scratch-disposition-refresh",
+      "laneHead": "4a1960675a57d4ada7fc718e38b0f9802198104f",
+      "paths": [
+        "docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "8423d340f0e2f99882b90d8d3f71f584a20aae34",
+      "candidateDigest": "a82c90dadbb65ad00a8da6152862962175e905091b5f8798f1c4b575d3694631",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "scripts/production-mirror-artifact-entries.mjs",
+      "evidenceDigest": "c0bf4042287f7a895cf083afc1d7dcee9d1ae3b614154470d906ccaf8d4dd9cf",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1871",
+      "reason": "PR #1871 changes only the local POI PRD. The production Pages build is generated from Canvas output, and the explicit production mirror artifact allowlist does not include this planning document. The PRD retains the existing feature delivery evidence from run #41021713269; this change modifies no runtime or build artifact. This records no new deployment or mirror publication and grants no production effect."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/graph-token-rights",
       "laneHead": "84e656bbccb5ab5c5bf4a2150696a939ae9d4af3",
       "paths": [
@@ -564,5 +582,5 @@
       "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
     }
   ],
-  "receiptDigest": "91c1238109e0ed6d8802e79329c6c6345de76d8c346c04057827504dc21d9071"
+  "receiptDigest": "e0b6b0293168200c7fe06e247714d375b752ca63f71ca2652fe0c55d7d14ee21"
 }
