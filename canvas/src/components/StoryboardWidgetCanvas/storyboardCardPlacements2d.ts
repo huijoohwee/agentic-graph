@@ -10,6 +10,7 @@ import { readFlowWidgetPinnedInCanvas, type FlowWidgetPinnedById } from '@/lib/s
 import { isProbeTreeLayoutOwnedNode } from '@/lib/storyboardWidget/probeTreeLayoutContract'
 import { RICH_MEDIA_PANEL_DEFAULT_WIDTH_PX } from '@/lib/render/richMediaPanelDefaults'
 import { readStableRichMediaPanelSize } from '@/lib/render/mediaPanelLayout'
+import { readRichMediaOverlayFrameSize } from '@/components/StoryboardWidget/richMediaOverlayFrameSize'
 
 const DEFAULT_GRID_GAP = 64
 
@@ -21,6 +22,8 @@ export type StoryboardCardPlacement = {
 type ReadStoryboardPlacementSize = (node: GraphNode) => { width: number; height: number }
 
 export const readStoryboardCardSize2d = (node: GraphNode, aspectRatioMode: CanvasAspectRatioMode): { width: number; height: number } => {
+  const richMediaSize = readRichMediaOverlayFrameSize(node)
+  if (richMediaSize) return { width: richMediaSize.width, height: richMediaSize.height }
   const defaultSize = readDefaultStoryboardCardSize2d(aspectRatioMode)
   const props = (node.properties || {}) as Record<string, unknown>
   const stablePanelSize = readStableRichMediaPanelSize(props, aspectRatioMode)

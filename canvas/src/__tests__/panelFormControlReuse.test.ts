@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { assertLocalPoiDirectoryContract } from './panelFormControlReuseTestUtils'
 const readUtf8 = (relativePath: string): string => fs.readFileSync(path.resolve(process.cwd(), relativePath), 'utf8')
 export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   const sharedControlsText = readUtf8('src/lib/ui/panelFormControls.tsx')
@@ -35,7 +36,6 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   const widgetEditorFormText = readUtf8('src/components/StoryboardWidget/WidgetEditorForm.tsx')
   const graphEditorInspectorText = readUtf8('src/features/graph-editor/panels/GraphEditorInspectorTab.tsx')
   const researchCompilerText = readUtf8('src/features/panels/views/ResearchCompilerView.tsx')
-  const siteSelectionWidgetText = readUtf8('src/features/maps/SiteSelectionWidget.tsx')
   const workspaceTableModeControlText = readUtf8('src/features/workspace-table/ui/WorkspaceTableModeControl.tsx')
   const designDomInspectPanelText = readUtf8('src/features/design/DesignDomInspectPanel.tsx')
   const settingsUiText = readUtf8('src/features/settings/ui.tsx')
@@ -380,18 +380,7 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
     throw new Error('expected research compiler prompt, token fields, and run status rows to reuse the shared panel-form primitives')
   }
 
-  if (
-    !siteSelectionWidgetText.includes("from '@/lib/ui/panelFormControls'") ||
-    !siteSelectionWidgetText.includes('PanelField') ||
-    !siteSelectionWidgetText.includes('PanelSelect') ||
-    !siteSelectionWidgetText.includes('PanelTextInput') ||
-    !siteSelectionWidgetText.includes('variant="transparent"') ||
-    !siteSelectionWidgetText.includes('<fieldset') ||
-    siteSelectionWidgetText.includes('bg-transparent border') ||
-    siteSelectionWidgetText.includes('<div key={c.id}')
-  ) {
-    throw new Error('expected site selection widget candidate fields to reuse shared transparent panel-form primitives with semantic fieldsets')
-  }
+  assertLocalPoiDirectoryContract({ nearbyPlacesPanelText: readUtf8('src/features/maps/NearbyPlacesPanel.tsx'), mapsHubViewText: readUtf8('src/features/panels/views/MapsHubView.tsx'), geoViewText: readUtf8('src/lib/toolbar/ToolbarToolMenuGeoView.tsx') })
 
   if (
     !workspaceTableModeControlText.includes("from '@/lib/ui/panelFormControls'") ||

@@ -15,6 +15,7 @@ export function useWidgetEditorOverlayUiState(args: {
   node: { id?: unknown; type?: unknown; properties?: GraphNode['properties'] }
   nodeId: string
   active: boolean
+  forceFloating?: boolean
   autoRevealKey?: string | number | null
   graphMetaKey?: string | null
   graphMetaKind?: string | null
@@ -53,6 +54,7 @@ export function useWidgetEditorOverlayUiState(args: {
     node,
     nodeId,
     active,
+    forceFloating,
     autoRevealKey,
     graphMetaKey,
     graphMetaKind,
@@ -74,6 +76,7 @@ export function useWidgetEditorOverlayUiState(args: {
 
   const readPinnedInCanvas = React.useCallback((id: string): boolean => {
     if (!id) return false
+    if (forceFloating) return false
     const state = useGraphStore.getState()
     const v = readScopedFlowWidgetNodeValue({
       nodeId: id,
@@ -87,7 +90,7 @@ export function useWidgetEditorOverlayUiState(args: {
       node: placementAuthorityNode,
       pinnedValue: typeof v === 'boolean' ? v : null,
     })
-  }, [graphMetaKey, graphMetaKind, placementAuthorityNode])
+  }, [forceFloating, graphMetaKey, graphMetaKind, placementAuthorityNode])
 
   const [pinnedInCanvas, setPinnedInCanvasState] = React.useState<boolean>(() => readPinnedInCanvas(nodeId))
   const pinnedInCanvasRef = React.useRef<boolean>(readPinnedInCanvas(nodeId))
@@ -111,6 +114,7 @@ export function useWidgetEditorOverlayUiState(args: {
 
   React.useEffect(() => {
     const readPinned = (s: unknown) => {
+      if (forceFloating) return false
       const state = s as {
         graphData?: unknown
         flowWidgetPinnedByNodeId?: Record<string, boolean>
@@ -156,7 +160,7 @@ export function useWidgetEditorOverlayUiState(args: {
         void 0
       }
     }
-  }, [graphMetaKey, graphMetaKind, nodeId, placement, placementAuthorityNode, storyboardWidgetSurfaceId])
+  }, [forceFloating, graphMetaKey, graphMetaKind, nodeId, placement, placementAuthorityNode, storyboardWidgetSurfaceId])
 
   React.useEffect(() => {
     if (!active || !autoRevealKey) return
@@ -212,6 +216,7 @@ export function useWidgetEditorOverlayUiState(args: {
   }, [nodeId])
 
   const setPinnedInCanvas = React.useCallback((next: boolean | ((prev: boolean) => boolean)) => {
+    if (forceFloating) return
     const prev = pinnedInCanvasRef.current
     const requested = !!(typeof next === 'function' ? (next as (v: boolean) => boolean)(prev) : next)
     const resolved = resolveEffectiveFlowWidgetPinnedInCanvas({
@@ -247,9 +252,10 @@ export function useWidgetEditorOverlayUiState(args: {
     })
     const nextMap = setFlowWidgetPinnedById(currentPinnedById, nodeId, resolved)
     if (nextMap) setFlowWidgetPinnedByNodeIdForGraph(graphMetaKey, nextMap)
-  }, [graphMetaKey, graphMetaKind, nodeId, placement, placementAuthorityNode, setFlowWidgetPinnedByNodeIdForGraph, storyboardWidgetSurfaceId])
+  }, [forceFloating, graphMetaKey, graphMetaKind, nodeId, placement, placementAuthorityNode, setFlowWidgetPinnedByNodeIdForGraph, storyboardWidgetSurfaceId])
 
   const togglePinnedInternal = React.useCallback(() => {
+    if (forceFloating) return
     if (pinToggleCollisionGuardRef.current != null) {
       clearTimeout(pinToggleCollisionGuardRef.current)
       pinToggleCollisionGuardRef.current = null
@@ -274,7 +280,7 @@ export function useWidgetEditorOverlayUiState(args: {
       }, 240) as unknown as number
     }
     setPinnedInCanvas(!currentPinned)
-  }, [nodeId, placement.asideRef, setPinnedInCanvas])
+  }, [forceFloating, nodeId, placement.asideRef, setPinnedInCanvas])
 
   const handleTogglePinned = React.useCallback((event: React.MouseEvent) => {
     if (skipPinClickRef.current) {

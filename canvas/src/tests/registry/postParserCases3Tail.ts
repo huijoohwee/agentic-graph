@@ -1,5 +1,9 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 export const TEST_CASES_POST_PARSER_3_TAIL: TestCaseTuple[] = [
+  ["geospatial.localPoi.approvalAllowlistPrecisionBounds", "@/__tests__/localPoiDirectory.test", "testLocalPoiGeoJsonApprovalAllowlistAndPrecisionContracts"],
+  ["geospatial.localPoi.projectsIntoSharedGraph", "@/__tests__/localPoiDirectory.test", "testLocalPoiDirectoryProjectsApprovedFeaturesIntoMapGraph"],
+  ["geospatial.localPoi.selectionResolvesSourceFeature", "@/__tests__/localPoiDirectory.test", "testLocalPoiDirectorySelectionResolvesCurrentDatasetFeatures"],
+  ["geospatial.localPoi.builderLocalBoundedNoOverwrite", "@/__tests__/localPoiDirectory.test", "testLocalPoiGeoJsonBuilderIsLocalBoundedAndNoOverwrite"],
   ["webpage.htmlToArtifact.embeddedFallback","@/__tests__/webpageHtmlToMarkdownArtifact.test","testWebpageHtmlToMarkdownArtifactAsyncUsesDataPageEmbeddedMarkdown"],
   ["webpage.htmlToArtifact.completeRenderedArticle","@/__tests__/webpageHtmlToMarkdownArtifact.test","testWebpageHtmlToMarkdownArtifactPrefersCompleteRenderedArticle"],
   ["webpage.htmlToArtifact.embeddedOptions","@/__tests__/webpageHtmlToMarkdownArtifact.test","testWebpageHtmlToMarkdownArtifactEmbeddedFallbackHonorsOptions"],
@@ -205,4 +209,9 @@ export const TEST_CASES_POST_PARSER_3_TAIL: TestCaseTuple[] = [
   ["strybldr.videoHandoff.consolidatedDemoLocalAnimatic","@/__tests__/strybldr.test","testStrybldrConsolidatedDemoGeneratesLocalPlayableAnimatic"],
   ["strybldr.videoSource.renderableMediaAcrossMergeHandoff","@/__tests__/strybldr.test","testStrybldrVideoSourceKeepsRenderableMediaAcrossMergeAndHandoff"],
   ["strybldr.visionHarness.requiredProvidersPrivacyGuard","@/__tests__/strybldr.test","testStrybldrVisionHarnessUsesRequiredProvidersWithPrivacyGuard"],
+  ["geospatial.markdown.activeGeoJsonReplacesStaleMapFeatures","@/__tests__/geospatialOverlayCurrentGeoJsonAuthority.test","testCurrentEmbeddedGeoJsonReplacesStaleMapFeatures"],
+  ["geospatial.localPoiDirectory.projectsApprovedFeatures","@/__tests__/geospatialOverlayCurrentGeoJsonAuthority.test","testLocalPoiDirectoryProjectsApprovedFeaturesIntoMapGraph"],
+  ["geospatial.localPoiDirectory.approvalAllowlistAndPrecision","@/__tests__/geospatialOverlayCurrentGeoJsonAuthority.test","testLocalPoiGeoJsonApprovalAllowlistAndPrecisionContracts"],
+  ["geospatial.localPoiDirectory.selectionResolvesCurrentDataset","@/__tests__/geospatialOverlayCurrentGeoJsonAuthority.test","testLocalPoiDirectorySelectionResolvesCurrentDatasetFeatures"],
+  ["geospatial.panel.directoryCanvasSelectionSync","@/__tests__/geospatialHostMapLibreInteractionIntegration.test","testGeoDirectoryAndCanvasSelectionShareSourceFeature"],
 ]

@@ -19,6 +19,13 @@ const injectedScript = ray => [
   `document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>`,
 ].join('')
 
+const injectedScriptV2 = (ray, routeRay = ray) => injectedScript(ray).replace(
+  "var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);",
+  "var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray="
+    + routeRay
+    + "',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);",
+)
+
 test('normalizes only the exact Cloudflare WebMCP bridge and JavaScript Detection injections', () => {
   const withBridge = sourceHtml.replace(manifestLink, `${bridge}${manifestLink}`)
   const first = normalizeCloudflarePublicHtml(Buffer.from(withBridge.replace('</body>', `${injectedScript('a4fe65b29ee1d3c6')}</body>`)), origin)
@@ -28,6 +35,43 @@ test('normalizes only the exact Cloudflare WebMCP bridge and JavaScript Detectio
   assert.deepEqual(second.normalization, ['cloudflare-webmcp-bridge/v1', 'cloudflare-js-detection/v1'])
   assert.deepEqual(first.body, Buffer.from(sourceHtml))
   assert.deepEqual(second.body, Buffer.from(sourceHtml))
+})
+
+test('normalizes the exact ray-bound Cloudflare JavaScript Detection v2 wrapper', () => {
+  const withBridge = sourceHtml.replace(manifestLink, bridge + manifestLink)
+  const firstRay = 'a4fe65b29ee1d3c6'
+  const secondRay = 'a4fe65b3e9f5d3c6'
+  const first = normalizeCloudflarePublicHtml(
+    Buffer.from(withBridge.replace('</body>', injectedScriptV2(firstRay) + '</body>')),
+    origin,
+  )
+  const second = normalizeCloudflarePublicHtml(
+    Buffer.from(withBridge.replace('</body>', injectedScriptV2(secondRay) + '</body>')),
+    origin,
+  )
+
+  assert.deepEqual(first.normalization, ['cloudflare-webmcp-bridge/v1', 'cloudflare-js-detection/v2'])
+  assert.deepEqual(second.normalization, ['cloudflare-webmcp-bridge/v1', 'cloudflare-js-detection/v2'])
+  assert.deepEqual(first.body, Buffer.from(sourceHtml))
+  assert.deepEqual(second.body, Buffer.from(sourceHtml))
+})
+
+test('does not normalize a ray-mismatched or modified JavaScript Detection v2 wrapper', () => {
+  const withBridge = sourceHtml.replace(manifestLink, bridge + manifestLink)
+  const ray = 'a4fe65b29ee1d3c6'
+  const inputs = [
+    withBridge.replace('</body>', injectedScriptV2(ray, 'a4fe65b3e9f5d3c6') + '</body>'),
+    withBridge.replace(
+      '</body>',
+      injectedScriptV2(ray).replace('appendChild(a);', 'appendChild(a);window.example=true;') + '</body>',
+    ),
+  ]
+
+  for (const input of inputs) {
+    const result = normalizeCloudflarePublicHtml(Buffer.from(input), origin)
+    assert.deepEqual(result.normalization, ['cloudflare-webmcp-bridge/v1'])
+    assert.notDeepEqual(result.body, Buffer.from(sourceHtml))
+  }
 })
 
 test('preserves other scripts and malformed or non-trailing injections', () => {

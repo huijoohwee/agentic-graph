@@ -211,6 +211,7 @@ export const WidgetEditorPanel = React.memo(function WidgetEditorPanel(args: {
         active={active}
         title={beatByBeatTitle || resolveWidgetNodeTitle({ node, graphMetaKind, registryEntry })}
         minimized={minimized}
+        richMediaHeader={isRichMediaPanelWidget}
         hideFields={hideFields}
         showFieldToggle={!isRichMediaPanelWidget}
         showPinToggle={showPinToggle}

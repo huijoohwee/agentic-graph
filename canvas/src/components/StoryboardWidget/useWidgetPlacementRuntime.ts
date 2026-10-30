@@ -58,6 +58,7 @@ export function useWidgetPlacementRuntime(args: {
   openWidgetNodeCount: number
   autoStackOffset: { top: number; left: number }
   floating: boolean
+  forceFloating?: boolean
   floatingUsesScreenAuthority: boolean
 }) {
   const {
@@ -80,6 +81,7 @@ export function useWidgetPlacementRuntime(args: {
     openWidgetNodeCount,
     autoStackOffset,
     floating,
+    forceFloating = false,
     floatingUsesScreenAuthority,
   } = args
 
@@ -123,6 +125,7 @@ export function useWidgetPlacementRuntime(args: {
   const livePosWarmupRafRef = React.useRef<number | null>(null)
 
   const readPanelScaleForZoom = React.useCallback((zoomK: number, frontmatterManagedNode = false, viewportOverride?: { width: number; height: number } | null) => {
+    if (forceFloating) return 1
     const extent = (() => {
       const s = schemaRef.current
       if (!s) return { minK: DEFAULT_ZOOM_MIN_SCALE, maxK: DEFAULT_ZOOM_MAX_SCALE }
@@ -141,7 +144,7 @@ export function useWidgetPlacementRuntime(args: {
       hardMinScale: COLLECTIVE_OVERLAY_SCALE_LIMITS_16X9.widget.min, hardMaxScale: COLLECTIVE_OVERLAY_SCALE_LIMITS_16X9.widget.max,
       viewportPreset: frontmatterManagedNode ? 'widgetFrontmatter' : 'widgetCanvas', fitToViewport: false,
     })
-  }, [openWidgetNodeCount, viewportH, viewportW])
+  }, [forceFloating, openWidgetNodeCount, viewportH, viewportW])
 
   const readScreenAuthorityFollowZoomK = React.useCallback((zoomK: number, enabled: boolean): number => {
     return readScreenAuthorityFollowZoomKState({

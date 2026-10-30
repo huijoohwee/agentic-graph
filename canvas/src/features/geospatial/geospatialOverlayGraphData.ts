@@ -1,4 +1,4 @@
-import type { GraphData, GraphNode, GraphEdge } from '@/lib/graph/types'
+import type { GraphData, GraphNode, GraphEdge, JSONValue } from '@/lib/graph/types'
 import type { SourceFile } from '@/hooks/store/types'
 import { buildGraphDataFromFeatureCollection } from '@/lib/graph/io/geojsonToGraphData'
 import { hashSignatureParts } from '@/lib/hash/signature'
@@ -31,6 +31,39 @@ const hasGeoCoordinates = (graphData: GraphData | null | undefined): boolean => 
     if (Number.isFinite(lat) && Number.isFinite(lng)) return true
   }
   return false
+}
+
+const withoutGeoCoordinateNodes = (graphData: GraphData): GraphData => {
+  const nodes = Array.isArray(graphData.nodes) ? graphData.nodes as GraphNode[] : []
+  const removedIds = new Set<string>()
+  let removedAny = false
+  const retainedNodes = nodes.filter(node => {
+    const props = (node?.properties || {}) as Record<string, unknown>
+    const geo = props.geo as Record<string, unknown> | null
+    const hasCoordinates = !!geo && Number.isFinite(Number(geo.lat)) && Number.isFinite(Number(geo.lng))
+    if (hasCoordinates) {
+      removedAny = true
+      if (node.id) removedIds.add(String(node.id))
+    }
+    return !hasCoordinates
+  })
+  const retainedEdges = removedAny
+    ? (Array.isArray(graphData.edges) ? graphData.edges : []).filter(edge =>
+        !removedIds.has(String(edge.source || '')) && !removedIds.has(String(edge.target || '')),
+      )
+    : graphData.edges
+  const metadata = graphData.metadata && typeof graphData.metadata === 'object'
+    ? { ...graphData.metadata }
+    : null
+  if (metadata) delete metadata.kgGeospatialAreaFeatures
+  const clearedAreaFeatures = !!graphData.metadata?.kgGeospatialAreaFeatures
+  if (!removedAny && !clearedAreaFeatures) return graphData
+  return {
+    ...graphData,
+    nodes: removedAny ? retainedNodes : graphData.nodes,
+    edges: retainedEdges,
+    ...(metadata ? { metadata } : {}),
+  }
 }
 
 export type GeospatialOverlayGraphDebugInfo = {
@@ -167,7 +200,29 @@ const buildGraphNodeDedupKeySet = (nodes: GraphNode[]): Set<string> => {
   return dedupKeys
 }
 
-const mergeGraphDataUnique = (base: GraphData, extra: GraphData): GraphData => {
+const readAreaFeatures = (graphData: GraphData): unknown[] => {
+  const metadata = graphData.metadata as Record<string, unknown> | null | undefined
+  const collection = metadata?.kgGeospatialAreaFeatures as { features?: unknown[] } | null | undefined
+  return Array.isArray(collection?.features) ? collection.features : []
+}
+
+const mergeAreaFeatures = (base: GraphData, extra: GraphData): JSONValue | null => {
+  const extraFeatures = readAreaFeatures(extra)
+  if (extraFeatures.length === 0) return null
+  const merged = new Map<string, unknown>()
+  for (const feature of [...readAreaFeatures(base), ...extraFeatures]) {
+    const record = feature && typeof feature === 'object' ? feature as Record<string, unknown> : null
+    const properties = record?.properties && typeof record.properties === 'object'
+      ? record.properties as Record<string, unknown>
+      : null
+    const id = String(record?.id ?? properties?.id ?? '').trim()
+    const key = id ? `id:${id}` : `feature:${hashSignatureParts([JSON.stringify(feature)])}`
+    merged.set(key, feature)
+  }
+  return { type: 'FeatureCollection', features: [...merged.values()] } as unknown as JSONValue
+}
+
+export const mergeGraphDataUnique = (base: GraphData, extra: GraphData): GraphData => {
   const existingNodeDedupKeys = buildGraphNodeDedupKeySet(Array.isArray(base.nodes) ? (base.nodes as GraphNode[]) : [])
   const extraNodes: GraphNode[] = []
   for (const node of Array.isArray(extra.nodes) ? (extra.nodes as GraphNode[]) : []) {
@@ -187,12 +242,70 @@ const mergeGraphDataUnique = (base: GraphData, extra: GraphData): GraphData => {
     existingEdgeIds.add(id)
     extraEdges.push(edge)
   }
-  if (extraNodes.length === 0 && extraEdges.length === 0) return base
+  const mergedAreaFeatures = mergeAreaFeatures(base, extra)
+  if (extraNodes.length === 0 && extraEdges.length === 0 && mergedAreaFeatures === null) return base
   return {
     ...base,
     nodes: [...(Array.isArray(base.nodes) ? base.nodes : []), ...extraNodes],
     edges: [...(Array.isArray(base.edges) ? base.edges : []), ...extraEdges],
+    ...(mergedAreaFeatures ? {
+      metadata: {
+        ...(base.metadata && typeof base.metadata === 'object' ? base.metadata : {}),
+        kgGeospatialAreaFeatures: mergedAreaFeatures,
+      } as GraphData['metadata'],
+    } : {}),
   }
+}
+
+const readGeoSelectionRecord = (value: unknown): Record<string, unknown> | null => (
+  value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
+)
+
+const readGeoSourceFeatureId = (node: unknown): string => {
+  const properties = readGeoSelectionRecord(readGeoSelectionRecord(node)?.properties)
+  const richMedia = readGeoSelectionRecord(properties?.richMediaPoiProperties)
+  return String(properties?.kgSourceFeatureId ?? richMedia?.kgSourceFeatureId ?? '').trim()
+}
+
+export function resolveSelectedGeoGraphNodeIds(
+  graphData: unknown,
+  selectedNodeIds: ReadonlySet<string>,
+): Set<string> {
+  const result = new Set(selectedNodeIds)
+  const nodes = readGeoSelectionRecord(graphData)?.nodes
+  if (!Array.isArray(nodes) || result.size === 0) return result
+  const selectedSourceIds = new Set<string>()
+  for (const node of nodes) {
+    const id = String(readGeoSelectionRecord(node)?.id ?? '').trim()
+    if (id && result.has(id)) {
+      const sourceId = readGeoSourceFeatureId(node)
+      if (sourceId) selectedSourceIds.add(sourceId)
+    }
+  }
+  if (selectedSourceIds.size === 0) return result
+  for (const node of nodes) {
+    const id = String(readGeoSelectionRecord(node)?.id ?? '').trim()
+    const sourceId = readGeoSourceFeatureId(node)
+    if (id && sourceId && selectedSourceIds.has(sourceId)) result.add(id)
+  }
+  return result
+}
+
+export function applyLocalPoiGraphSelection(
+  graphData: GraphData,
+  selectedNodeIds: ReadonlySet<string>,
+): GraphData {
+  const selected = resolveSelectedGeoGraphNodeIds(graphData, selectedNodeIds)
+  let changed = false
+  const nodes = (graphData.nodes ?? []).map(node => {
+    const properties = (node.properties ?? {}) as Record<string, JSONValue>
+    if (properties.localPoiRole !== 'place') return node
+    const kgSelected = selected.has(String(node.id ?? '').trim())
+    if (properties.kgSelected === kgSelected) return node
+    changed = true
+    return { ...node, properties: { ...properties, kgSelected } }
+  })
+  return changed ? { ...graphData, nodes } : graphData
 }
 
 const attachOverlayDebugInfo = (graphData: GraphData, info: GeospatialOverlayGraphDebugInfo): GraphData => ({
@@ -253,9 +366,10 @@ export function buildGeospatialOverlayGraphData(args: {
   const directMarkdownText = String(args.markdownText || '')
   const directSourceDocumentPath = normalizeWorkspaceDocLike(String(args.sourceDocumentPath || ''))
   const directCandidateProfile: MarkdownGeodataCandidateProfile | null =
-    !graphHasGeoCoordinates && directMarkdownText
+    directMarkdownText
       ? buildMarkdownGeodataCandidateProfile(directMarkdownText)
       : null
+  const directGeoJsonIsAuthoritative = !!directSourceDocumentPath && directCandidateProfile?.mayContainEmbeddedGeoJson === true
   const directAnalysisCacheSignature =
     directCandidateProfile && directSourceDocumentPath
       ? buildMarkdownGeodataAnalysisCacheSignature({
@@ -267,14 +381,68 @@ export function buildGeospatialOverlayGraphData(args: {
           candidateProfile: directCandidateProfile,
         })
       : ''
+  const directGeoJsonAnalysisCacheSignature =
+    directCandidateProfile && directSourceDocumentPath
+      ? buildMarkdownGeodataAnalysisCacheSignature({
+          markdownText: directMarkdownText,
+          sourceDocumentPath: directSourceDocumentPath,
+          embeddedGeoLimit: 8,
+          poiTableLimit: 0,
+          poiRowLimit: 0,
+          candidateProfile: directCandidateProfile,
+        })
+      : ''
   const cacheKey = buildGeospatialOverlayGraphCacheKey({
     ...args,
     markdownAnalysisCacheSignature: directAnalysisCacheSignature,
-    skipMarkdownAnalysis: graphHasGeoCoordinates,
+    skipMarkdownAnalysis: graphHasGeoCoordinates && !directGeoJsonIsAuthoritative,
     skipSourceFiles: graphHasGeoCoordinates,
   })
   const cached = readCachedGeospatialOverlayGraphData(cacheKey)
   if (cached) return cached
+  if (directGeoJsonIsAuthoritative && directCandidateProfile) {
+    const directAnalysis = analyzeMarkdownGeodataSources({
+      markdownText: directMarkdownText,
+      sourceDocumentPath: directSourceDocumentPath,
+      embeddedGeoLimit: 8,
+      poiTableLimit: 0,
+      poiRowLimit: 0,
+      candidateProfile: directCandidateProfile,
+      cacheSignature: directGeoJsonAnalysisCacheSignature,
+    })
+    const authoritativeGeoJsonGraph = buildMarkdownGeodataSupplementGraph({
+      sourceDocumentPath: directSourceDocumentPath,
+      analysisCacheSignature: `${directGeoJsonAnalysisCacheSignature}:active-geojson`,
+      geodataAnalysis: {
+        ...directAnalysis,
+        poiFeatureCollections: [],
+        matchedPoiTables: 0,
+        matchedPoiRows: 0,
+      },
+    })
+    const baseWithoutOldGeo = withoutGeoCoordinateNodes(graphData)
+    const mergedCurrentGraph = authoritativeGeoJsonGraph
+      ? mergeGraphDataUnique(baseWithoutOldGeo, authoritativeGeoJsonGraph)
+      : baseWithoutOldGeo
+    const areaFeatures = authoritativeGeoJsonGraph?.metadata?.kgGeospatialAreaFeatures
+    const currentGraph = areaFeatures === undefined
+      ? mergedCurrentGraph
+      : {
+          ...mergedCurrentGraph,
+          metadata: {
+            ...(mergedCurrentGraph.metadata || {}),
+            kgGeospatialAreaFeatures: areaFeatures,
+          },
+        }
+    const addedNodes = Math.max(0, (currentGraph.nodes?.length || 0) - (baseWithoutOldGeo.nodes?.length || 0))
+    return writeCachedGeospatialOverlayGraphData(cacheKey, attachOverlayDebugInfo(currentGraph, {
+      resolvedFrom: 'direct',
+      sourceDocumentPath: directSourceDocumentPath,
+      embeddedGeoBlockCount: directAnalysis.embeddedGeoBlockCount,
+      supplementedNodeCount: addedNodes,
+      sourceFilesCount: Array.isArray(args.sourceFiles) ? args.sourceFiles.length : 0,
+    }))
+  }
   if (graphHasGeoCoordinates) {
     return writeCachedGeospatialOverlayGraphData(cacheKey, attachOverlayDebugInfo(graphData, {
       resolvedFrom: 'none',

@@ -32,7 +32,6 @@ separate settings authority.
 
 | Setting key | Type | Source | LS key (if any) | Owner |
 | --- | --- | --- | --- | --- |
-| `storyboardWidgetOverlayWheelProxyEnabled` | boolean | store | `kg:ui:storyboardWidget:overlayWheelProxyEnabled` | `ui.workspace` |
 | `viewPinned` | boolean | store |  |  |
 | `fitToScreenMode` | boolean | store |  |  |
 | `zoomToSelectionMode` | boolean | store |  |  |

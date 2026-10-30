@@ -340,8 +340,8 @@ export function testHeavyFeatureSurfacesUseTargetedLazyLoadingGates() {
   if (!canvasViewportGeospatialOverlayText.includes("import { buildGeospatialOverlayGraphData } from '@/features/geospatial/geospatialOverlayGraphData'")) {
     throw new Error('expected CanvasViewportGeospatialOverlay to own geospatial overlay graph derivation after the split')
   }
-  if (!canvasViewportGeospatialOverlayText.includes('buildGrabMapsPoiRichMediaSrcDoc(normalizedDetail)')) {
-    throw new Error('expected CanvasViewportGeospatialOverlay to own POI rich-media srcdoc construction after the split')
+  if (!canvasViewportGeospatialOverlayText.includes('buildGrabMapsPoiRichMediaPreviewPayload({')) {
+    throw new Error('expected CanvasViewportGeospatialOverlay to use the shared POI rich-media preview payload after the split')
   }
   if (!canvasViewportGeospatialOverlayText.includes('requestGeospatialFitToSelection')) {
     throw new Error('expected CanvasViewportGeospatialOverlay to own geospatial selection-fit wiring after the split')
