@@ -359,6 +359,7 @@
     "@x402/core": "^2.13.0",
     "@x402/evm": "^2.13.0",
     "@x402/hono": "^2.13.0",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/d1d8daf9407f747432ed39b65313f33105dcd170",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.14",
     "js-yaml": "^4.3.2",
@@ -369,7 +370,6 @@
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",
     "@cloudflare/workers-types": "5.20261016.1",
-    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/d1d8daf9407f747432ed39b65313f33105dcd170",
     "ajv": "8.20.0",
     "fake-indexeddb": "^6.2.5",
     "fast-check": "3.23.2",
