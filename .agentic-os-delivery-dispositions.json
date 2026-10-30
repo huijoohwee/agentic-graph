@@ -110,7 +110,7 @@
       "deploymentReceiptDigest": null,
       "runtimeVerificationReceiptDigest": null,
       "evidencePath": "scripts/production-mirror-artifact-entries.mjs",
-      "evidenceDigest": "8476c366817ea9297ece21dccce3285c126ee59112c8230cee6d11a455e81b9f",
+      "evidenceDigest": "c0bf4042287f7a895cf083afc1d7dcee9d1ae3b614154470d906ccaf8d4dd9cf",
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1682",
       "reason": "The only changed path in PR #1682 for this lane is the delivery-disposition ledger. The production mirror is staged from the explicit productionMirrorArtifactEntries list in scripts/production-mirror-artifact-entries.mjs; this ledger path is excluded from the product artifact. This records no deployment and grants no production effect."
     },
@@ -179,6 +179,43 @@
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "disposition": "deployed",
+      "candidateRevision": "f3c7816b2788d006dbf076009560eba18c2aa609",
+      "candidateDigest": "2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317",
+      "sourceReleaseReceiptDigest": "5bc1ecc62edd778f91b88cf392d40d7cd16e68496fbd95ca1c8db298479567a7",
+      "deploymentReceiptDigest": "85db7c1c138d3efdbfb1c30087e874147e598724e8da7ecbd161e17078955612",
+      "runtimeVerificationReceiptDigest": "28e88a4d6efec6f4948e777f386a6b30f4b865fc32f7310939cf42681bf7e838",
+      "evidencePath": "docs/reports/production-delivery-evidence-41021713269.json",
+      "evidenceDigest": "5f35bf4013ec6a1f7b91dda89ab17ff3bff96fa643aa08d4239f8d574a4ac757",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/41021713269#environment-production",
+      "reason": null,
+      "ref": "agent/device-0232231d4a19/local-poi-base-route-stability",
+      "laneHead": "15681c40beac27ad8d6f5866373e00ac3acea3fe",
+      "paths": [
+        "scripts/__tests__/verify-agentic-base-route.test.mjs",
+        "scripts/verify-agentic-base-route.mjs"
+      ]
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/local-poi-delivery-closeout",
+      "laneHead": "c3503bb2e367610e8a9b81855518b337093839b9",
+      "paths": [
+        "docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "fac919f3cc872fce1d5f8427f0d016a824d47207",
+      "candidateDigest": "548982a869e4c497dfae81a61e4e5ae892c0c81efcaafa964fddcb9614ad372e",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "scripts/production-mirror-artifact-entries.mjs",
+      "evidenceDigest": "c0bf4042287f7a895cf083afc1d7dcee9d1ae3b614154470d906ccaf8d4dd9cf",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1859",
+      "reason": "PR #1859 changes only the PRD Markdown path. The production Pages build and mirror consume Canvas output; the explicit production mirror artifact allowlist excludes this path. The release workflow uses Graph docs/documents only for a separate schema-map reconciliation, while the runtime document seed uses the pinned Agentic OS docs source. The product owner approved source integration only for PR #1859 and excluded Production Release, deployment, and mirror publication. This records no deployment and grants no production effect."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "disposition": "no-deploy",
       "candidateDigest": "62add86af30cf2fc5e7064b5e36dff824b0a272ef3793fe73fa3fcfbb8771a81",
       "sourceReleaseReceiptDigest": null,
@@ -195,6 +232,25 @@
       "evidenceDigest": "f33240564f120b566247ee096ea466e1cf4f7c96a861abeb5300b2f7b6a11de0",
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1795",
       "reason": "PR #1795 records release receipts and delivery metadata only. The ledger and report are excluded from the product artifact; the separately authorized Production release is recorded in its own run."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "disposition": "deployed",
+      "candidateRevision": "f3c7816b2788d006dbf076009560eba18c2aa609",
+      "candidateDigest": "2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317",
+      "sourceReleaseReceiptDigest": "5bc1ecc62edd778f91b88cf392d40d7cd16e68496fbd95ca1c8db298479567a7",
+      "deploymentReceiptDigest": "85db7c1c138d3efdbfb1c30087e874147e598724e8da7ecbd161e17078955612",
+      "runtimeVerificationReceiptDigest": "28e88a4d6efec6f4948e777f386a6b30f4b865fc32f7310939cf42681bf7e838",
+      "evidencePath": "docs/reports/production-delivery-evidence-41021713269.json",
+      "evidenceDigest": "5f35bf4013ec6a1f7b91dda89ab17ff3bff96fa643aa08d4239f8d574a4ac757",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/41021713269#environment-production",
+      "reason": null,
+      "ref": "agent/device-0232231d4a19/production-mirror-pages-import-closure",
+      "laneHead": "1286be07afb19c43132c46e490f46cb4d5bfdd7a",
+      "paths": [
+        "scripts/__tests__/sync-pages-stale-asset-cleanup.test.mjs",
+        "scripts/pages-mirror-agent-ready.mjs"
+      ]
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
@@ -311,5 +367,5 @@
       "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
     }
   ],
-  "receiptDigest": "6e496e86dc9261b33933148968d5543bc90449564216eacf00cb726a8102329e"
+  "receiptDigest": "8b0df6082546ad6919ac7583551774cf220d2c658c5ed15a552af6d9415d7064"
 }
