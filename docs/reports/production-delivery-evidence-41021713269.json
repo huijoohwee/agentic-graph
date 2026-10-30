@@ -1,0 +1,88 @@
+{
+  "schema": "agentic-graph-production-delivery-evidence/v1",
+  "status": "deployed-and-runtime-verified",
+  "repository": "github.com/huijoohwee/agentic-graph",
+  "release": {
+    "workflowRunId": "41021713269",
+    "workflowRunUrl": "https://github.com/huijoohwee/agentic-graph/actions/runs/41021713269",
+    "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/41021713269#environment-production",
+    "sourceRevision": "f3c7816b2788d006dbf076009560eba18c2aa609",
+    "candidateDigest": "2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317",
+    "lifecycleCandidateDigest": "169412c7ee7d6d1054b0a431b74ec9f77466059b005ea03b825b4f1d1a36185a",
+    "targetDigest": "978b38723276f4c256352b5eb6c09e0266d77ba1c79e9933d455c1f3671de748",
+    "sourceReleaseReceiptDigest": "5bc1ecc62edd778f91b88cf392d40d7cd16e68496fbd95ca1c8db298479567a7",
+    "deploymentReceiptDigest": "85db7c1c138d3efdbfb1c30087e874147e598724e8da7ecbd161e17078955612",
+    "stateReconciliationReceiptDigest": "cb2e152f8572a525c2b0ca8990b56f8d19ee7aefd8ab90658df0657af98a6469",
+    "runtimeVerificationReceiptDigest": "28e88a4d6efec6f4948e777f386a6b30f4b865fc32f7310939cf42681bf7e838",
+    "publicationReceiptDigest": "e2eba14895b83945e3d2bcd4a410b21442ab452ce350ef69a13d6b5607111b8f",
+    "development": {
+      "status": "verified",
+      "exactCandidateDigest": "2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317",
+      "verification": "Isolated Cloudflare Pages Dev deployment and browser smoke of the shared data views and Agentic Base route",
+      "project": "agentic-graph-dev",
+      "deploymentId": "05f13eee-da69-4fd0-9060-8750871734e8",
+      "deploymentUrl": "https://agentic-graph-dev.pages.dev",
+      "artifactDigest": "79c396ccda09852c20ac258376a4d7d67b22ad3f3901186533abeed47cd39de6",
+      "immutableManifestDigest": "b361ece9539906d2438247a6f16de01818716672ba41ca0df98828ba32c394eb",
+      "uiVerificationDigest": "289757fc4088bc990c04accdad60cc3258da02ac9ec048341fe90a4367e630f7",
+      "views": [
+        "Table",
+        "Multi-dimensional Table",
+        "Kanban",
+        "Calendar",
+        "Dashboard",
+        "Base demo route"
+      ]
+    },
+    "production": {
+      "status": "deployed-and-verified",
+      "deployedAt": "2026-10-30T07:58:44.551Z",
+      "verifiedAt": "2026-10-30T08:04:24.000Z",
+      "immutableDeploymentId": "d4bf1bde-c77b-4495-8085-0874d43450ca",
+      "immutableDeploymentOrigin": "https://d4bf1bde.joohwee.pages.dev",
+      "deployedArtifactDigest": "acc80888d971752575bdcdefb044009484c58479083aebdc9350f7ee5ffbcaf3",
+      "rollbackTargetDigest": "033d5b553e243bec99a7b11ad4359057ce9e4df8839c8016e9354f755b320ac4"
+    },
+    "storage": {
+      "status": "reconciled-and-verified",
+      "documentCount": 31,
+      "chunkCount": 10,
+      "graphSnapshotCount": 0,
+      "pathHashParity": true,
+      "contentParity": true
+    }
+  },
+  "sourceLanes": [
+    {
+      "ref": "agent/device-0232231d4a19/local-poi-base-route-stability",
+      "laneHead": "15681c40beac27ad8d6f5866373e00ac3acea3fe",
+      "pullRequest": 1853,
+      "mergeRevision": "73233cd96b6c678c64094bd1970c8c091c2d4302",
+      "paths": [
+        "scripts/__tests__/verify-agentic-base-route.test.mjs",
+        "scripts/verify-agentic-base-route.mjs"
+      ]
+    },
+    {
+      "ref": "agent/device-0232231d4a19/production-mirror-pages-import-closure",
+      "laneHead": "1286be07afb19c43132c46e490f46cb4d5bfdd7a",
+      "pullRequest": 1858,
+      "mergeRevision": "f3c7816b2788d006dbf076009560eba18c2aa609",
+      "paths": [
+        "scripts/__tests__/sync-pages-stale-asset-cleanup.test.mjs",
+        "scripts/pages-mirror-agent-ready.mjs"
+      ]
+    }
+  ],
+  "retainedEvidence": {
+    "lifecycleCarrierSha256": "1420355032e044176dde087625da8adcdc4ed43683d6541aed51e971818d1f90",
+    "retentionManifestSha256": "e9ed1da0553dc95c4bf5b6ae2bd0acadd4165b8d64d746d4bb912af63ce9ab0a",
+    "retainedFileCount": 134,
+    "retainedArtifactCount": 3,
+    "devUiVerificationDigest": "289757fc4088bc990c04accdad60cc3258da02ac9ec048341fe90a4367e630f7"
+  },
+  "limits": {
+    "committedEvidence": "Receipt digests, artifact identities and bounded runtime outcomes only",
+    "rawEvidence": "Retained privately under the local 64 MiB Agentic OS evidence budget; provider artifacts expire under repository retention."
+  }
+}
