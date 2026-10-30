@@ -2,7 +2,7 @@
 title: "agentic-graph Local POI Directory — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-local-poi-directory-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.4"
+version: "1.0.5"
 date: "2026-10-30"
 lang: "en-US"
 owner: "docs.geospatial.local-poi-directory"
@@ -13,15 +13,19 @@ continuity_id: "AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001"
 parent_plan: "docs/documents/agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md@1.0.3"
 scope: "Prepare and browse an explicitly approved, bounded local GeoJSON POI directory through the existing geospatial map and selection owners"
 deploy_boundary: "Production application-code activation through the existing protected core release; keep POI inputs and outputs local and create no hosted POI service"
-worktree_id: "device-0232231d4a19--local-poi-delivery-closeout"
-agent_id: "codex-local-poi-delivery-closeout"
-prd_revision: "1.0.4"
+worktree_id: "device-0232231d4a19--local-poi-user-device-acceptance"
+agent_id: "codex-local-poi-user-device-acceptance"
+action: "/change"
+scope: "#local-poi-user-device-acceptance"
+actor: "@codex-local-poi-user-device-acceptance"
+base_sha: "ed0d45af3704b3f014eb1d8186b9a49e18d620ae"
+prd_revision: "1.0.5"
 tad_revision: "1.0.1"
 adr_revision: "1.0.2"
 mvp_revision: "1.0.1"
 gtm_revision: "1.0.0"
 local_rung: "dev-proven"
-delivered_rung: "undocumented"
+delivered_rung: "production-verified"
 lane: "authoring"
 ---
 # Local POI Directory
@@ -32,7 +36,7 @@ The separately named `agentic-graph-geostack-scratch` checkout was unaccepted di
 
 ## Identity and directive
 
-`AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001` joins PRD revision `1.0.4`, ADR revision `1.0.2`, TAD revision `1.0.1`, MVP revision `1.0.1`, and GTM revision `1.0.0`, as a child of `PLAN-AGENTIC-GRAPH-MAPPING-STACK-PRD-TAD-ADR-MVP-GTM@1.0.3`.
+`AGENTIC-GRAPH-LOCAL-POI-DIRECTORY-001` joins PRD revision `1.0.5`, ADR revision `1.0.2`, TAD revision `1.0.1`, MVP revision `1.0.1`, and GTM revision `1.0.0`, as a child of `PLAN-AGENTIC-GRAPH-MAPPING-STACK-PRD-TAD-ADR-MVP-GTM@1.0.3`.
 
 **DIR-POI-01** — Context: operators need to inspect small, authorized place datasets without sending source files to a service. Intent: make local POI curation and map browsing usable on a device with minimal setup. Directive: reuse the existing GeoJSON and map selection path, expose bounded validation and explicit approval, and keep data export user-controlled. Role/Subject: local dataset curator. Action: validate, review, and browse an approved POI collection. Outcome: a small, attributable directory that can be inspected locally and exported deliberately. Verb/Object: prepare / an approved local POI directory.
 
@@ -126,7 +130,11 @@ This closeout is one existing planning file, under 20 active minutes, below 600 
 
 Map each acceptance row to a focused synthetic fixture: collection and byte limits (AC-POI-01); missing metadata and declined attestations (AC-POI-02); precision, geometry, and coordinate boundaries (AC-POI-03); allowlist, stable IDs, date and privacy rejection (AC-POI-04); deterministic manifest digests, bounds, and counts (AC-POI-05); synchronized selection and 50-result cap (AC-POI-06); synthetic-only labeling (AC-POI-07); and no-network, explicit export, and no-overwrite behavior (AC-POI-08). Use a network guard to prove import/validation/export do not fetch or upload data. These checks prove only local source behavior; protected integration and any deployment or runtime result need their own exact evidence.
 
-The protected source now includes PR #1843 (`dd842651c4f1888d2d4b161b389635b6be3162a1`), PR #1844 (`768e794bcb7f61dfaeb7169a598cab82c9e67dce`), the complete local workflows in PR #1852 (`513883f62a7b69669642fb77a1a3321e466c3424`), and subsequent release fixes through `main` `f3c7816b2788d006dbf076009560eba18c2aa609`. PR #1852's focused POI/geospatial suites passed 7/7, browser runtime smoke passed 3/3, and its required `docs-contract` and `Integration Gate` checks passed; its recorded Canvas build and `gympgrph` build also passed. PR #1855 and PR #1858 are included in the same protected source. These records support `local_rung: dev-proven`. Production release, runtime readback and mirror publication are now proven by run #41021713269 below. A user-device acceptance receipt is not recorded, so retain `delivered_rung: undocumented` until that check is completed.
+The protected source now includes PR #1843 (`dd842651c4f1888d2d4b161b389635b6be3162a1`), PR #1844 (`768e794bcb7f61dfaeb7169a598cab82c9e67dce`), the complete local workflows in PR #1852 (`513883f62a7b69669642fb77a1a3321e466c3424`), and subsequent release fixes through protected `main` `ed0d45af3704b3f014eb1d8186b9a49e18d620ae`. PR #1852's focused POI/geospatial suites passed 7/7, browser runtime smoke passed 3/3, and its required `docs-contract` and `Integration Gate` checks passed; its recorded Canvas build and `gympgrph` build also passed. PR #1855 and PR #1858 are included in the same protected source. These records support `local_rung: dev-proven`. Production release, runtime readback and mirror publication are now proven by run #41021713269 below. The user-device acceptance receipt below closes the remaining delivery condition for the deployed local GeoJSON POI workflow. `delivered_rung: production-verified` is scoped to that workflow and evidence; it does not claim a multi-device certification or validate third-party dataset rights.
+
+### User-device acceptance (2026-10-30)
+
+The deployed workflow at [airvio.co/agentic-graph](https://airvio.co/agentic-graph/) accepted `/tmp/local-poi-acceptance-synthetic.geojson` (772 bytes; SHA-256 `f0519ff14d693187df8eeed77191805039258c3b70a51cf24b911a019561dd3e`). The review used source `Synthetic local acceptance fixture`, license `generated-demo-data`, and attribution `Synthetic demonstration data; no real businesses or sites.`; rights, public-fields, exact-point, and coarse-region attestations were recorded. The UI reported 1 point, 1 region, category `shop: 1`, and 0 withheld. The selected directory row was pressed and announced `Selected on the shared map`; the matching accessible map-feature control was also pressed, and activating it kept the same row selected. This confirms both surfaces exposed the same selected feature in this session; an independent map-originated transition from a cleared selection was not established. Explicit export produced a 1,136-byte GeoJSON (SHA-256 `7e5e3891a77fe2090095f1de1e5568170b5e73f0e1d4186e736ec7266e31739b`) and a 737-byte manifest (SHA-256 `0747f847fcc46d25cfbbcc0e31717b11d6719f731ce64cadcd7373fa61f7345a`) binding the input/output digests, counts, and attestations. Active browser acceptance took about 2 minutes. The receipt covers this synthetic local workflow in one browser session; it does not validate third-party rights or establish a broader device matrix. The session logged 31 console errors and 17 warnings, primarily unrelated canonical-document/GitHub 401/403 reads and one basemap-font 404; POI import, selection, and export completed despite those unrelated page requests.
 
 ## GTM
 
@@ -151,4 +159,4 @@ Later, [run #41021713269](https://github.com/huijoohwee/agentic-graph/actions/ru
 - Integrated implementation: `canvas/src/features/maps/LocalPoiDirectory.tsx`, `canvas/src/features/geospatial/localPoiDirectoryModel.ts`, and `scripts/geostack-local-geojson-build.mjs` at merge commit `dd842651c4f1888d2d4b161b389635b6be3162a1`; synthetic-only preview guard at `768e794bcb7f61dfaeb7169a598cab82c9e67dce`.
 - Production deployment, runtime/device verification, rollback, and worktree cleanup remain separate actions with exact authority and receipts. The named scratch checkout path is absent; keep its preserved recovery bytes separate until their authored content receives an explicit disposition and native cleanup receipts.
 
-Next action: complete and record user-device acceptance for the production POI workflow; until then, `delivered_rung` remains `undocumented`. Keep the scratch recovery bytes preserved until their authored content has an explicit disposition and native cleanup receipt.
+Next action: retain the scratch recovery bytes until their authored content has an explicit disposition and native cleanup receipt. That cleanup remains a separate closeout effect.
