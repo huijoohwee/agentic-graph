@@ -186,6 +186,60 @@
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/graph-token-rights",
+      "laneHead": "84e656bbccb5ab5c5bf4a2150696a939ae9d4af3",
+      "paths": [
+        "grph-shared/src/ui/TOKEN-LICENSES.md"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "8f7fcad1d087e903a19488784a61319bcba77a80",
+      "candidateDigest": "541a080e7309c668568861de2ae1ded77a0e7ee7e751683da657c18f13bb8117",
+      "evidencePath": "docs/reports/graph-token-rights-no-deploy-20261030.md",
+      "evidenceDigest": "8268199a8d5312555b4478a88665cdc8cf113246a590a7a3fe3d7fa8795c4621",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1867",
+      "reason": "This retained lane ref adds only the exact token-rights Markdown path; its bytes are retained at the candidate through PR #1867. The owner-authorized outcome is source integration only. No Dev or Production deployment, mirror publication, or runtime verification is claimed.",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/graph-token-rights-current-main",
+      "laneHead": "e54a71fae162604260efbcb2c36406fc47a190e0",
+      "paths": [
+        "grph-shared/src/ui/TOKEN-LICENSES.md"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "8f7fcad1d087e903a19488784a61319bcba77a80",
+      "candidateDigest": "541a080e7309c668568861de2ae1ded77a0e7ee7e751683da657c18f13bb8117",
+      "evidencePath": "docs/reports/graph-token-rights-no-deploy-20261030.md",
+      "evidenceDigest": "8268199a8d5312555b4478a88665cdc8cf113246a590a7a3fe3d7fa8795c4621",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1867",
+      "reason": "PR #1867 integrates only the owner-authorized token-rights Markdown path at this candidate. The authorized outcome is source integration only. No Dev or Production deployment, mirror publication, or runtime verification is claimed.",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/graph-token-rights-delivery-evidence",
+      "laneHead": "926e668f8c8ad6c6580eabee5d027b374055296f",
+      "paths": [
+        "docs/reports/graph-token-rights-no-deploy-20261030.md"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "8f7fcad1d087e903a19488784a61319bcba77a80",
+      "candidateDigest": "8268199a8d5312555b4478a88665cdc8cf113246a590a7a3fe3d7fa8795c4621",
+      "evidencePath": "scripts/production-mirror-artifact-entries.mjs",
+      "evidenceDigest": "c0bf4042287f7a895cf083afc1d7dcee9d1ae3b614154470d906ccaf8d4dd9cf",
+      "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1869",
+      "reason": "PR #1869 contains only the owner-bound no-deploy report. Its docs/reports path is excluded from the product artifact by the explicit production mirror artifact-entry allowlist. This lane makes no deployment or runtime claim and grants no production or mirror authority.",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/hackamap-delivery-disposition",
       "laneHead": "3aa1402bd7c4474bb48bad71bb1062fbaae767ae",
       "paths": [
@@ -510,5 +564,5 @@
       "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
     }
   ],
-  "receiptDigest": "f9e0c4d2f6863f884742f68f4b55569278106b30671316172094d89db7390dd1"
+  "receiptDigest": "91c1238109e0ed6d8802e79329c6c6345de76d8c346c04057827504dc21d9071"
 }
