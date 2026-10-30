@@ -1,3 +1,5 @@
+import { AGENTIC_GRAPH_CSP } from '../cloudflare/pages/agentic-graph-security-headers.mjs'
+
 const GENERATED_AGENT_HEADERS_START = '# BEGIN agentic-graph generated agent-ready headers'
 const GENERATED_AGENT_HEADERS_END = '# END agentic-graph generated agent-ready headers'
 const GENERATED_APP_SHELL_HEADERS_START = '# BEGIN agentic-graph generated app-shell cache headers'
@@ -9,10 +11,7 @@ const GENERATED_XR_RUNTIME_HEADERS_END = '# END agentic-graph generated XR runti
 const GENERATED_GRAPH_CSP_HEADERS_START = '# BEGIN agentic-graph generated production CSP headers'
 const GENERATED_GRAPH_CSP_HEADERS_END = '# END agentic-graph generated production CSP headers'
 const XR_RUNTIME_PERMISSIONS_POLICY = 'accelerometer=(self), autoplay=(self), camera=(self), clipboard-read=(), clipboard-write=(), display-capture=(self), geolocation=(), gyroscope=(self), magnetometer=(self), microphone=(self), payment=(), usb=(), xr-spatial-tracking=(self)'
-// Temporary exception for /agentic-graph/*; owner=agentic-graph; preserves the existing Report-Only
-// integration allowances while enforcement starts. Base/object/form, script attributes, and framing
-// remain restricted. Review by 2026-11-05 and narrow using an enforcing Dev candidate.
-export const AGENTIC_GRAPH_CSP = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https://*.vercel.app https://*.joohwee.pages.dev; form-action 'none'; img-src 'self' data: blob: https:; font-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com; script-src-attr 'none'; connect-src 'self' https: wss:; frame-src 'self' https: data: blob:; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests; block-all-mixed-content"
+export { AGENTIC_GRAPH_CSP }
 
 const escapedBlock = marker => marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const replaceOrAppendBlock = (existing, start, end, block) => {
