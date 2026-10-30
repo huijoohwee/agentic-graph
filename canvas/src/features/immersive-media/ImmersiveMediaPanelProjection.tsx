@@ -352,7 +352,7 @@ export function ImmersiveMediaPanelProjection({
   return (
     <aside
       className={cn(
-        'mx-1 mb-1 grid shrink-0 gap-1.5 rounded border p-2',
+        'mx-1 mb-1 grid min-w-0 grid-cols-1 shrink-0 gap-1.5 rounded border p-2',
         UI_THEME_TOKENS.panel.border,
         UI_THEME_TOKENS.panel.bg,
       )}
@@ -367,8 +367,8 @@ export function ImmersiveMediaPanelProjection({
       data-kg-immersive-media-selected-marker={snapshot.selectedMarkerId || ''}
       data-kg-immersive-media-mcp="agentic-graph.control_local_immersive_media"
     >
-      <header className="flex items-start justify-between gap-2">
-        <span className="min-w-0">
+      <header className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+        <span className="min-w-0 flex-1">
           <b className="flex items-center gap-1 text-xs"><SurfaceIcon surface={surface} />{copy.title}</b>
           <span className={cn('block truncate text-xs', UI_THEME_TOKENS.text.tertiary)}>{copy.subtitle} · local $0 default</span>
         </span>
