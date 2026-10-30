@@ -2,7 +2,7 @@
 title: "agentic-graph Local POI Directory — PRD-TAD-ADR-MVP-GTM"
 id: "md:agentic-graph-local-poi-directory-prd-tad"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.0.6"
+version: "1.0.7"
 date: "2026-10-30"
 lang: "en-US"
 owner: "docs.geospatial.local-poi-directory"
@@ -16,10 +16,10 @@ deploy_boundary: "Production application-code activation through the existing pr
 worktree_id: "device-0232231d4a19--geostack-scratch-disposition"
 agent_id: "codex-geostack-scratch-disposition"
 action: "/change"
-scope: "#geostack-scratch-disposition"
+lane_scope: "#geostack-scratch-disposition"
 actor: "@huijoohwee"
 base_sha: "f96282586cc1100c4040d95ccd69cef384269504"
-prd_revision: "1.0.6"
+prd_revision: "1.0.7"
 tad_revision: "1.0.1"
 adr_revision: "1.0.2"
 mvp_revision: "1.0.1"
@@ -32,7 +32,9 @@ lane: "authoring"
 
 This child plan narrows the [Mapping Stack plan](agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md) to local preparation and browsing of points of interest. The parent owns mapping composition and broad spatial capabilities. The [Geospatial Mode document](agentic-graph-geospatial-mode-document.md) owns the runtime map, dataset, and selection contract. This plan adds no replacement map, spatial engine, or source-of-truth for those contracts.
 
-The separately named `agentic-graph-geostack-scratch` checkout was unaccepted discovery evidence and was not used as the source for an admitted merge. A read-only structural content check using `agentic-os` source revision `2bf74425791761c3253e8112a181ed496c1cdf91` binds its preserved Git snapshot `preserve/geostack-scratch-before-poi-20261029` at `1e310d891140fb0ae0ae3b0f0da75edb12b6b306` to reviewed PR #1852 head `77fc84f0721d3594ef6a7d2fc4e88c0e48adecad` and merge `513883f62a7b69669642fb77a1a3321e466c3424`: all 71 touched tracked paths are accounted for, with 48 identical tree entries and 23 reviewed replacements. This treats the preserved commit's tracked content as superseded by PR #1852; it is not a native closeout or cleanup receipt, does not claim the scratch branch itself was merged, and does not account for uncommitted, untracked, or ignored checkout bytes. The original checkout path is absent and no native cleanup receipt exists, so the checkout's full-byte disposition and cleanup remain unresolved; keep the preserved branch and refs. The accepted implementation was developed in the admitted `agent/device-0232231d4a19/local-poi-directory-budget` lane and integrated into `main` through [PR #1843](https://github.com/huijoohwee/agentic-graph/pull/1843), merge commit `dd842651c4f1888d2d4b161b389635b6be3162a1`. [PR #1844](https://github.com/huijoohwee/agentic-graph/pull/1844), merge commit `768e794bcb7f61dfaeb7169a598cab82c9e67dce`, added a synthetic-preview provenance regression guard.
+The separately named `agentic-graph-geostack-scratch` checkout was unaccepted discovery evidence and was not used as the source for an admitted merge. Its preserved AOS quarantine projection at coordinate `0f86b539dc79fd8423469388ddb0ab4a9805107233486a13b7c8d8ecb709caad` records operation digest `b928fce98d6d01bf645257966d2929d6f58a6c4f6fab69ca52ab37689b7ee77b` and retained branch `agent/device-0232231d4a19/geostack-poi-directory-mvp-ci-repair` at `77fc84f0721d3594ef6a7d2fc4e88c0e48adecad`. Its projection manifest digest is `18fd7905c26085f28621bd615c924a83ab178782120700ec318c02477ace87b9` (12,084 entries; 546,001,993 bytes); the registration manifest digest is `13096e8748bf541bb333ad6d651cc7f818757828ebc0f7fa3b3c6d5f93e85591` (19 entries; 1,114,894 bytes).
+
+A byte-for-byte comparison with retained head `77fc84f0721d3594ef6a7d2fc4e88c0e48adecad` found all 8,942 tracked entries identical. This proves the projection matches its retained Git tree, not that the source is superseded by protected integration. Native AOS completion status at protected `main` `300815a55d79cdd07dfa4ba2d2a887e810cfa6de` reports `sourceIntegrated:true` by `exact-tree-projection` across 71 paths, but `sourceSuperseded:false`, `preservationSatisfied:false`, `cleanupVerified:false`, `deliveryState: pending`, and lane `dirtyState: unobserved`; it also reports detached lane registration, unverified provider authority, and an unverified cleanup receipt. The projection contains 2,538 extra regular files, all ignored by the snapshot's `.gitignore` files and confined to `canvas/dist`, `canvas/node_modules`, `grph-shared/dist`, `gympgrph/dist`, `data/outputs`, `canvas/public`, and `canvas/tsconfig.tsbuildinfo`, plus four dependency symlinks. These inventory classifications do not establish authorship or disposition of the ignored files or symlink targets. The original checkout path is absent and no native cleanup receipt was found; preserve the quarantine projection and refs until the recorded AOS blockers are resolved. The accepted implementation was developed in the admitted `agent/device-0232231d4a19/local-poi-directory-budget` lane and integrated into `main` through [PR #1843](https://github.com/huijoohwee/agentic-graph/pull/1843), merge commit `dd842651c4f1888d2d4b161b389635b6be3162a1`. [PR #1844](https://github.com/huijoohwee/agentic-graph/pull/1844), merge commit `768e794bcb7f61dfaeb7169a598cab82c9e67dce`, added a synthetic-preview provenance regression guard.
 
 ## Identity and directive
 
@@ -157,6 +159,6 @@ Later, [run #41021713269](https://github.com/huijoohwee/agentic-graph/actions/ru
 - Parent scope and broad mapping decisions: [Mapping Stack PRD/TAD/ADR/MVP/GTM 1.0.3](agentic-graph-mapping-stack-prd-tad-adr-mvp-gtm.md).
 - Runtime map, dataset and POI selection owner: [Geospatial Mode](agentic-graph-geospatial-mode-document.md).
 - Integrated implementation: `canvas/src/features/maps/LocalPoiDirectory.tsx`, `canvas/src/features/geospatial/localPoiDirectoryModel.ts`, and `scripts/geostack-local-geojson-build.mjs` at merge commit `dd842651c4f1888d2d4b161b389635b6be3162a1`; synthetic-only preview guard at `768e794bcb7f61dfaeb7169a598cab82c9e67dce`.
-- Production deployment, runtime/device verification, rollback, and worktree cleanup remain separate actions with exact authority and receipts. The named scratch checkout path is absent; its preserved tracked snapshot is dispositioned as superseded by PR #1852, while uncommitted/untracked/ignored bytes remain unobserved and no native cleanup receipt exists.
+- Production deployment, runtime/device verification, rollback, and worktree cleanup remain separate actions with exact authority and receipts. The scratch projection matches its retained Git head, but AOS still reports source supersession, preservation, delivery disposition, and cleanup as incomplete; its full checkout dirty state remains unobserved. The 2,538 ignored files and four dependency symlinks remain preserved without an owner disposition, and no native cleanup receipt exists.
 
-Next action: retain the scratch recovery branch and refs. The original worktree path is absent, and no byte-complete archive or native cleanup receipt was found. Recover the full checkout, including any untracked and ignored files, before requesting native cleanup; if those bytes cannot be recovered, the owner must explicitly disposition that loss before a supported closeout can be claimed. Do not delete refs or report the scratch checkout fully closed on the tracked-content proof alone.
+Next action: retain the quarantine projection and recovery refs. Rebind the exact lane registration, resolve AOS's source-supersession and provider-authority findings, record preservation and delivery dispositions, and obtain the native cleanup receipt. Do not delete refs or claim the scratch checkout fully closed from tracked-tree equality alone.
