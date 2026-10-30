@@ -185,22 +185,12 @@
       "reason": null
     },
     {
-      "schema": "agentic-os/delivery-disposition/v1",
-      "ref": "agent/device-0232231d4a19/geostack-scratch-ci-import-fix",
+      "schema": "agentic-os/delivery-disposition/v1", "ref": "agent/device-0232231d4a19/geostack-scratch-ci-import-fix",
       "laneHead": "20245223a00f8770bc7f7b4e48b56069645ddc5d",
-      "paths": [
-        ".agentic-os-delivery-dispositions.json",
-        "canvas/src/__tests__/agentReadyWebMcpHtmlFallback.test.ts",
-        "docs/runtime-readiness-contract.md",
-        "package-lock.json",
-        "package.json"
-      ],
-      "disposition": "no-deploy",
-      "candidateRevision": "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c",
+      "paths": [".agentic-os-delivery-dispositions.json", "canvas/src/__tests__/agentReadyWebMcpHtmlFallback.test.ts", "docs/runtime-readiness-contract.md", "package-lock.json", "package.json"],
+      "disposition": "no-deploy", "candidateRevision": "5ca9a0a22bf48d7a4aa1fcf66592bad96eeae29c",
       "candidateDigest": "2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317",
-      "sourceReleaseReceiptDigest": null,
-      "deploymentReceiptDigest": null,
-      "runtimeVerificationReceiptDigest": null,
+      "sourceReleaseReceiptDigest": null, "deploymentReceiptDigest": null, "runtimeVerificationReceiptDigest": null,
       "evidencePath": "docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json",
       "evidenceDigest": "e26b49bb1d65dd1a6b3587b9f20029b6f047049d0eeb3e9c477a844d2d86af72",
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/pull/1875",
