@@ -349,6 +349,7 @@
       "decisionRef": "https://github.com/huijoohwee/agentic-graph/actions/runs/38146256184#environment-production",
       "reason": null
     },
+    {"schema":"agentic-os/delivery-disposition/v1","ref":"agent/device-0232231d4a19/local-poi-adlc-closeout-budget-fix","laneHead":"0c77f1beb0dfa8a2c6c98328934e607674ee8485","paths":[".agentic-os-delivery-dispositions.json","docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md","docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json","docs/runtime-readiness-contract.md","package-lock.json","package.json"],"disposition":"no-deploy","candidateRevision":"01ac9b448d13358c3e6dc8258f2e25a92f343989","candidateDigest":"2729de17d1e80b6d2c2676e0a86f3368bdbd97f0f6f2e7c67e896f1b9e82c317","sourceReleaseReceiptDigest":null,"deploymentReceiptDigest":null,"runtimeVerificationReceiptDigest":null,"evidencePath":"docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json","evidenceDigest":"e26b49bb1d65dd1a6b3587b9f20029b6f047049d0eeb3e9c477a844d2d86af72","decisionRef":"https://github.com/huijoohwee/agentic-graph/pull/1877","reason":"PR #1877 changes only these exact paths: .agentic-os-delivery-dispositions.json, docs/documents/agentic-graph-local-poi-directory-prd-tad-adr-mvp-gtm.md, docs/reports/agentic-graph-delivery-evidence-geostack-pr1875.json, docs/runtime-readiness-contract.md, package-lock.json, and package.json. Each listed path is excluded from the product artifact by the fixed Pages and mirror artifact boundary in the committed evidence report. The existing POI production candidate remains unchanged; this no-deploy disposition does not authorize deployment or mirror publication."},
     {
       "schema": "agentic-os/delivery-disposition/v1",
       "disposition": "deployed",
@@ -594,5 +595,5 @@
       "reason": "This lane contains only delivery metadata and its report; the delivery disposition ledger and docs/reports evidence are excluded from the product artifact. The separately released candidate remains documented with its own source, deployment, runtime, and publication receipts."
     }
   ],
-  "receiptDigest": "8ecf05062e94b393d4f5cd4e65b486524050b21b110c7c95f9f66e6e291d68c1"
+  "receiptDigest": "1ccdb66d09e4cba569d8e0768a0c6d8444da08ad9a8761a587c71a6131839a5a"
 }
