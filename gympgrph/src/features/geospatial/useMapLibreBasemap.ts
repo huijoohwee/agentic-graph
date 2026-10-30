@@ -71,6 +71,12 @@ import {
   bindMapLibreCanvasSemanticOwner,
   type MapLibreCanvasSemanticOwner,
 } from './mapLibreCanvasSemanticOwner.js'
+import {
+  buildGraphFeatureSearchBounds,
+  isCoarseRegionFeature,
+  isGraphOverlayFeature,
+  readPoiLabelFromFeature,
+} from './mapPoiHitTesting.js'
 
 export {
   loadMapLibreProviderStyleDocument,
@@ -215,19 +221,6 @@ const isMapActivelyNavigating = (map: any, lastNavigationAtMs: number): boolean 
   return false
 }
 
-const POI_NAME_KEYS = ['name', 'name_en', 'poi_name', 'label', 'title', 'display_name'] as const
-
-const readPoiLabelFromFeature = (feature: unknown): string => {
-  if (!feature || typeof feature !== 'object') return ''
-  const props = (feature as { properties?: unknown }).properties
-  if (!props || typeof props !== 'object') return ''
-  for (const key of POI_NAME_KEYS) {
-    const value = (props as Record<string, unknown>)[key]
-    if (typeof value === 'string' && value.trim()) return value.trim()
-  }
-  return ''
-}
-
 const POI_ADDRESS_KEYS = ['formatted_address', 'address', 'vicinity', 'display_address'] as const
 
 const readPoiAddressFromFeature = (feature: unknown): string => {
@@ -253,14 +246,6 @@ const readPoiPropertiesFromFeature = (feature: unknown): GeoPoiRichMediaProperti
   if (!feature || typeof feature !== 'object') return {}
   const props = (feature as { properties?: unknown }).properties
   return normalizeGeoPoiRichMediaProperties(props)
-}
-
-const isGraphOverlayFeature = (feature: unknown): boolean => {
-  if (!feature || typeof feature !== 'object') return false
-  const props = (feature as { properties?: unknown }).properties
-  if (!props || typeof props !== 'object') return false
-  const record = props as Record<string, unknown>
-  return typeof record.kgCategory === 'string' && String(record.id || '').trim() !== ''
 }
 
 const readFeaturePointCoordinates = (feature: unknown): [number, number] | null => {
@@ -906,7 +891,14 @@ export function useMapLibreBasemap(args: {
               const clickPoint = ev && typeof ev === 'object' && 'point' in ev ? (ev as { point?: unknown }).point : null
               const candidates = clickPoint ? map.queryRenderedFeatures(clickPoint) : []
               const features = Array.isArray(candidates) ? candidates : []
-              const picked = features.find((f: unknown) => !isGraphOverlayFeature(f) && readPoiLabelFromFeature(f))
+              const graphFeatureBounds = buildGraphFeatureSearchBounds(clickPoint)
+              const nearbyFeatures = graphFeatureBounds ? map.queryRenderedFeatures(graphFeatureBounds) : features
+              if (Array.isArray(nearbyFeatures) && nearbyFeatures.some(isGraphOverlayFeature)) return
+              const picked = features.find((f: unknown) => (
+                !isGraphOverlayFeature(f)
+                && !isCoarseRegionFeature(f)
+                && readPoiLabelFromFeature(f)
+              ))
               const label = readPoiLabelFromFeature(picked)
               if (!picked || !label) return
               const poiCoords = readFeaturePointCoordinates(picked)

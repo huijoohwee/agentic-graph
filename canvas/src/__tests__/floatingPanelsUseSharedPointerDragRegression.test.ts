@@ -31,10 +31,11 @@ export function testFloatingPanelDefaultGeometryMatchesCanvasCommandPanel() {
   }
   if (
     !geometryText.includes('FLOATING_PANEL_DEFAULT_WIDTH_RATIO = 0.3') ||
+    !geometryText.includes('FLOATING_PANEL_DEFAULT_WIDTH_PX = 360') ||
     !geometryText.includes("FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS = '21.6rem'") ||
-    !geometryText.includes('FLOATING_PANEL_DEFAULT_WIDTH_FALLBACK_PX = 384')
+    !geometryText.includes('FLOATING_PANEL_DEFAULT_WIDTH_FALLBACK_PX = FLOATING_PANEL_DEFAULT_WIDTH_PX')
   ) {
-    throw new Error('expected FloatingPanel default width to be 20 percent wider than the prior 25vw/18rem/320px sizing')
+    throw new Error('expected FloatingPanel default width to reuse the 360px Rich Media width without changing custom sizing')
   }
   if (
     !geometryText.includes("FLOATING_PANEL_CANVAS_TOP_INSET_CSS = 'calc(var(--kg-safe-top) + var(--kg-canvas-viewport-edge-gap))'") ||
@@ -51,8 +52,8 @@ export function testFloatingPanelDefaultGeometryMatchesCanvasCommandPanel() {
   if (toolbarToolMenuText.includes('bottomSurfaceHeightRatio') || toolbarToolMenuText.includes('safeBottomRatio')) {
     throw new Error('expected FloatingPanel shell height not to shrink against stale bottom-surface ratio state')
   }
-  if (!toolbarToolMenuText.includes('width: resolveFloatingPanelWidthCss(floatingPanelWidthRatio)') || !geometryText.includes('Number.isFinite(widthRatio) ? widthRatio : FLOATING_PANEL_DEFAULT_WIDTH_RATIO') || !geometryText.includes('max(${FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS}, ${Math.round(safeRatio * 100)}vw)')) {
-    throw new Error('expected FloatingPanel shell width to use shared 20 percent wider geometry constants')
+  if (!toolbarToolMenuText.includes('width: resolveFloatingPanelWidthCss(floatingPanelWidthRatio)') || !geometryText.includes('Number.isFinite(widthRatio) ? widthRatio : FLOATING_PANEL_DEFAULT_WIDTH_RATIO') || !geometryText.includes('safeRatio === FLOATING_PANEL_DEFAULT_WIDTH_RATIO') || !geometryText.includes('max(${FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS}, ${Math.round(safeRatio * 100)}vw)')) {
+    throw new Error('expected FloatingPanel shell width to use shared default and responsive geometry constants')
   }
   if (gitGraphCanvasText.includes('data-kg-gitgraph-crud-panel') || gitGraphCanvasText.includes('CardInlineTextEditor')) {
     throw new Error('expected GitGraph canvas to avoid a duplicate canvas-local command panel')

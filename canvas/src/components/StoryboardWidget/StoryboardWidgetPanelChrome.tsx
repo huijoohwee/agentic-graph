@@ -68,10 +68,10 @@ export function StoryboardWidgetPanelChromeHeader(props: {
   } = props
   const iconSizeClass = getIconSizeClass(uiIconScale)
   const richMediaHeaderStyle: React.CSSProperties | undefined = richMediaHeader ? {
-    height: 'var(--kg-media-panel-header-h, 28px)',
-    minHeight: 'var(--kg-media-panel-header-h, 28px)',
-    maxHeight: 'var(--kg-media-panel-header-h, 28px)',
-    flex: '0 0 var(--kg-media-panel-header-h, 28px)',
+    height: 'var(--kg-toolbar-compact-surface-height)',
+    minHeight: 'var(--kg-toolbar-compact-surface-height)',
+    maxHeight: 'var(--kg-toolbar-compact-surface-height)',
+    flex: '0 0 var(--kg-toolbar-compact-surface-height)',
     boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',
@@ -89,16 +89,16 @@ export function StoryboardWidgetPanelChromeHeader(props: {
     gap: 'max(1px, calc(var(--kg-media-panel-padding, 6px) * 0.35))',
   } : undefined
   const richMediaActionStyle: React.CSSProperties | undefined = richMediaHeader ? {
-    width: 'max(12px, calc(var(--kg-media-panel-header-h, 28px) - 4px))',
-    minWidth: 'max(12px, calc(var(--kg-media-panel-header-h, 28px) - 4px))',
-    height: 'max(12px, calc(var(--kg-media-panel-header-h, 28px) - 4px))',
-    minHeight: 'max(12px, calc(var(--kg-media-panel-header-h, 28px) - 4px))',
+    width: 'max(12px, calc(var(--kg-toolbar-compact-surface-height) - 4px))',
+    minWidth: 'max(12px, calc(var(--kg-toolbar-compact-surface-height) - 4px))',
+    height: 'max(12px, calc(var(--kg-toolbar-compact-surface-height) - 4px))',
+    minHeight: 'max(12px, calc(var(--kg-toolbar-compact-surface-height) - 4px))',
     padding: 0,
     borderRadius: 'calc(var(--kg-media-panel-radius, 10px) * 0.42)',
   } : undefined
   const richMediaIconStyle: React.CSSProperties | undefined = richMediaHeader ? {
-    width: 'max(8px, calc(var(--kg-media-panel-header-h, 28px) * 0.46))',
-    height: 'max(8px, calc(var(--kg-media-panel-header-h, 28px) * 0.46))',
+    width: 'max(8px, calc(var(--kg-toolbar-compact-surface-height) * 0.46))',
+    height: 'max(8px, calc(var(--kg-toolbar-compact-surface-height) * 0.46))',
   } : undefined
   const hasValidateAction = showValidate && typeof onValidate === 'function'
   const hasFieldToggleAction = showFieldToggle && typeof onToggleHideFields === 'function'
@@ -132,7 +132,9 @@ export function StoryboardWidgetPanelChromeHeader(props: {
         minimized ? `px-2 py-0 ${UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME}` : 'px-3 py-2',
         headerClassName,
       )}
-      style={richMediaHeaderStyle}
+      style={minimized
+        ? { ...richMediaHeaderStyle, pointerEvents: 'auto' }
+        : richMediaHeaderStyle}
       data-kg-flow-node-drag-handle={dragHandle ? 'true' : undefined}
       data-kg-canvas-overlay-drag-handle={dragHandle ? 'true' : undefined}
       data-kg-rich-media-storyboard-widget-header={richMediaHeader ? '1' : undefined}

@@ -430,6 +430,7 @@ by the same generator and together form one projection.
 | `infiniteCanvasInteractionMode` | string | store | `kg:ui:canvas:interactionMode` | `ui.workspace` |
 | `canvasWorkspaceSyncMode` | string | store | `kg:ui:canvas:workspaceSyncMode` | `ui.workspace` |
 | `storyboardWidgetSelectionOnDrag` | boolean | store | `kg:ui:storyboardWidget:selectionOnDrag` | `ui.workspace` |
+| `storyboardWidgetOverlayWheelProxyEnabled` | boolean | store | `kg:ui:storyboardWidget:overlayWheelProxyEnabled` | `ui.workspace` |
 
 <!-- SETTINGS_REGISTRY_TABLE_END -->
 

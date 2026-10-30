@@ -9,10 +9,12 @@ type SupplyChainViewState = {
   modeFilter: SupplyChainMode | 'all'
   entityFilter: SupplyChainEntityFilter
   showLabels: boolean
+  showEvents: boolean
   setSelection: (selection: SupplyChainSelection) => void
   setModeFilter: (mode: SupplyChainMode | 'all') => void
   setEntityFilter: (filter: SupplyChainEntityFilter) => void
   setShowLabels: (show: boolean) => void
+  setShowEvents: (show: boolean) => void
 }
 
 export const useSupplyChainViewStore = create<SupplyChainViewState>(set => ({
@@ -20,8 +22,10 @@ export const useSupplyChainViewStore = create<SupplyChainViewState>(set => ({
   modeFilter: 'all',
   entityFilter: 'all',
   showLabels: true,
+  showEvents: true,
   setSelection: selection => set({ selection }),
   setModeFilter: modeFilter => set({ modeFilter }),
   setEntityFilter: entityFilter => set({ entityFilter }),
   setShowLabels: showLabels => set({ showLabels }),
+  setShowEvents: showEvents => set({ showEvents }),
 }))

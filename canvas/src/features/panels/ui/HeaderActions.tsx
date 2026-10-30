@@ -1,7 +1,5 @@
 import IconButton from '@/components/IconButton'
 import { FloatingPanelCloseButton } from '@/components/ui/FloatingPanel'
-import Tooltip from './Tooltip'
-import { UI_THEME_TOKENS } from 'grph-shared/ui/themeTokens'
 import { PinToggleIconButton } from '@/components/PinToggleIconButton'
 import { Search as SearchIcon, Save as SaveIcon, RotateCcw as ResetIcon, Minimize2, Maximize2 } from 'lucide-react'
 import { UI_COPY, UI_LABELS } from '@/lib/config'
@@ -37,10 +35,6 @@ export default function HeaderActions({
   const uiIconScale = useGraphStore(s => s.uiIconScale)
   const uiIconStrokeWidth = useGraphStore(s => s.uiIconStrokeWidth)
   const iconSizeClass = getIconSizeClass(uiIconScale)
-  const closeColor = useGraphStore(s => s.uiIconColorClass)
-  const closeHover = useGraphStore(s => s.uiIconHoverBgClass)
-  const closePadding = useGraphStore(s => s.uiIconButtonPaddingClass)
-  const closeMinimal = useGraphStore(s => s.uiIconFormat === 'minimal')
 
   const minimizeOrRestoreAction = onRestore ?? onMinimize
   const minimizeOrRestoreTitle = onRestore
@@ -112,11 +106,8 @@ export default function HeaderActions({
       )}
 
       {showCloseButton ? (
-        <Tooltip content={UI_LABELS.close} contentClassName={`${UI_THEME_TOKENS.tooltip.bg} pointer-events-none`}>
-          <FloatingPanelCloseButton label={UI_LABELS.close} onClose={onClose!} suppressTitle
-            iconClassName={iconSizeClass} strokeWidth={uiIconStrokeWidth}
-            colorClassName={closeColor} hoverClassName={closeHover} paddingClassName={closePadding} minimal={closeMinimal} />
-        </Tooltip>
+        <FloatingPanelCloseButton label={UI_LABELS.close} onClose={onClose!}
+          iconClassName={iconSizeClass} strokeWidth={uiIconStrokeWidth} />
       ) : null}
     </section>
   )

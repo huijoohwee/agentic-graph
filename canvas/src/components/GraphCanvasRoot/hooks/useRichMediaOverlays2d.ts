@@ -11,7 +11,8 @@ import { isSpacePanHeld } from '@/lib/canvas/space-pan'
 import { disableAutoZoomModesForUserGesture } from '@/lib/canvas/auto-zoom-modes'
 import { clampCanvasInteractionSpeedMultiplier, clampCanvasPanSpeedMultiplier } from '@/lib/canvas/camera-options-2d'
 import { readSnapGridConfigFromSchema, snapPointToGrid } from '@/lib/canvas/gridSnap'
-import { applyPanelBox, readStableRichMediaPanelSize } from '@/lib/render/mediaPanelLayout'
+import { applyPanelBox } from '@/lib/render/mediaPanelLayout'
+import { readRichMediaOverlayFrameSize } from '@/components/StoryboardWidget/richMediaOverlayFrameSize'
 import { computeRichMediaOverlayConnectedValuesByNodeId, listDisplayRichMediaOverlayNodes, normalizeRichMediaPanelDensity } from '@/lib/render/richMediaSsot'
 import { readNodeCenterWorld2d } from '@/lib/render/mediaAnchor'
 import { startMediaOverlayLayoutLoop2d } from '@/lib/render/mediaOverlayLayoutLoop2d'
@@ -416,8 +417,8 @@ export function useRichMediaOverlays2d(args: {
           simulation: sim,
         })
         const n = nodeById.get(id) || null
-        const props = n?.properties && typeof n.properties === 'object' && !Array.isArray(n.properties) ? n.properties as Record<string, unknown> : null
-        return readStableRichMediaPanelSize(props, strybldrStoryboardCardAspectMode)
+        const size = readRichMediaOverlayFrameSize(n)
+        return size ? { w: size.width, h: size.height } : null
       },
       getNodeWorldCenterForId: id => {
         const graph = sceneGraphDataRef.current

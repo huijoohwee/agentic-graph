@@ -23,10 +23,15 @@
 .timeline-transport-chrome-header {
   display: flex;
   min-width: 0;
+  height: var(--kg-toolbar-compact-surface-height);
+  min-height: var(--kg-toolbar-compact-surface-height);
+  max-height: var(--kg-toolbar-compact-surface-height);
+  flex: 0 0 var(--kg-toolbar-compact-surface-height);
+  box-sizing: border-box;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-inline: 4px;
+  padding: 0 4px;
 }
 .timeline-transport-chrome-title-block {
   min-width: 0;

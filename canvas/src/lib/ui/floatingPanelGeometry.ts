@@ -4,14 +4,18 @@ export const FLOATING_PANEL_CANVAS_RIGHT_INSET_CSS = 'calc(var(--kg-safe-right) 
 export const FLOATING_PANEL_CANVAS_INLINE_CLEARANCE_CSS = 'calc(var(--kg-safe-left) + var(--kg-safe-right) + var(--kg-canvas-viewport-edge-gap) + var(--kg-canvas-viewport-edge-gap))'
 export const FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS = 'calc(100% - var(--kg-safe-top) - var(--kg-safe-bottom) - var(--kg-canvas-viewport-edge-gap) - var(--kg-canvas-viewport-edge-gap))'
 export const FLOATING_PANEL_DEFAULT_WIDTH_RATIO = 0.3
+export const FLOATING_PANEL_DEFAULT_WIDTH_PX = 360
 export const FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS = '21.6rem'
-export const FLOATING_PANEL_DEFAULT_WIDTH_FALLBACK_PX = 384
+export const FLOATING_PANEL_DEFAULT_WIDTH_FALLBACK_PX = FLOATING_PANEL_DEFAULT_WIDTH_PX
 export const FLOATING_PANEL_DEFAULT_HEIGHT_FALLBACK_PX = 420
 
 export function resolveFloatingPanelWidthCss(widthRatio: number): string {
   const finiteRatio = Number.isFinite(widthRatio) ? widthRatio : FLOATING_PANEL_DEFAULT_WIDTH_RATIO
   const safeRatio = Math.max(0.15, Math.min(0.6, finiteRatio))
-  return `min(calc(100vw - ${FLOATING_PANEL_CANVAS_INLINE_CLEARANCE_CSS}), max(${FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS}, ${Math.round(safeRatio * 100)}vw))`
+  const width = safeRatio === FLOATING_PANEL_DEFAULT_WIDTH_RATIO
+    ? `${FLOATING_PANEL_DEFAULT_WIDTH_PX}px`
+    : `max(${FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS}, ${Math.round(safeRatio * 100)}vw)`
+  return `min(calc(100vw - ${FLOATING_PANEL_CANVAS_INLINE_CLEARANCE_CSS}), ${width})`
 }
 
 export function resolveFloatingPanelRightClearanceCss(widthRatio: number): string {

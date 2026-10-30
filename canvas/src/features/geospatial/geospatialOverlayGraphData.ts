@@ -33,6 +33,39 @@ const hasGeoCoordinates = (graphData: GraphData | null | undefined): boolean => 
   return false
 }
 
+const withoutGeoCoordinateNodes = (graphData: GraphData): GraphData => {
+  const nodes = Array.isArray(graphData.nodes) ? graphData.nodes as GraphNode[] : []
+  const removedIds = new Set<string>()
+  let removedAny = false
+  const retainedNodes = nodes.filter(node => {
+    const props = (node?.properties || {}) as Record<string, unknown>
+    const geo = props.geo as Record<string, unknown> | null
+    const hasCoordinates = !!geo && Number.isFinite(Number(geo.lat)) && Number.isFinite(Number(geo.lng))
+    if (hasCoordinates) {
+      removedAny = true
+      if (node.id) removedIds.add(String(node.id))
+    }
+    return !hasCoordinates
+  })
+  const retainedEdges = removedAny
+    ? (Array.isArray(graphData.edges) ? graphData.edges : []).filter(edge =>
+        !removedIds.has(String(edge.source || '')) && !removedIds.has(String(edge.target || '')),
+      )
+    : graphData.edges
+  const metadata = graphData.metadata && typeof graphData.metadata === 'object'
+    ? { ...graphData.metadata }
+    : null
+  if (metadata) delete metadata.kgGeospatialAreaFeatures
+  const clearedAreaFeatures = !!graphData.metadata?.kgGeospatialAreaFeatures
+  if (!removedAny && !clearedAreaFeatures) return graphData
+  return {
+    ...graphData,
+    nodes: removedAny ? retainedNodes : graphData.nodes,
+    edges: retainedEdges,
+    ...(metadata ? { metadata } : {}),
+  }
+}
+
 export type GeospatialOverlayGraphDebugInfo = {
   resolvedFrom: 'direct' | 'sourceFiles' | 'sourceFiles-graph' | 'none'
   sourceDocumentPath: string
@@ -333,9 +366,10 @@ export function buildGeospatialOverlayGraphData(args: {
   const directMarkdownText = String(args.markdownText || '')
   const directSourceDocumentPath = normalizeWorkspaceDocLike(String(args.sourceDocumentPath || ''))
   const directCandidateProfile: MarkdownGeodataCandidateProfile | null =
-    !graphHasGeoCoordinates && directMarkdownText
+    directMarkdownText
       ? buildMarkdownGeodataCandidateProfile(directMarkdownText)
       : null
+  const directGeoJsonIsAuthoritative = !!directSourceDocumentPath && directCandidateProfile?.mayContainEmbeddedGeoJson === true
   const directAnalysisCacheSignature =
     directCandidateProfile && directSourceDocumentPath
       ? buildMarkdownGeodataAnalysisCacheSignature({
@@ -347,14 +381,68 @@ export function buildGeospatialOverlayGraphData(args: {
           candidateProfile: directCandidateProfile,
         })
       : ''
+  const directGeoJsonAnalysisCacheSignature =
+    directCandidateProfile && directSourceDocumentPath
+      ? buildMarkdownGeodataAnalysisCacheSignature({
+          markdownText: directMarkdownText,
+          sourceDocumentPath: directSourceDocumentPath,
+          embeddedGeoLimit: 8,
+          poiTableLimit: 0,
+          poiRowLimit: 0,
+          candidateProfile: directCandidateProfile,
+        })
+      : ''
   const cacheKey = buildGeospatialOverlayGraphCacheKey({
     ...args,
     markdownAnalysisCacheSignature: directAnalysisCacheSignature,
-    skipMarkdownAnalysis: graphHasGeoCoordinates,
+    skipMarkdownAnalysis: graphHasGeoCoordinates && !directGeoJsonIsAuthoritative,
     skipSourceFiles: graphHasGeoCoordinates,
   })
   const cached = readCachedGeospatialOverlayGraphData(cacheKey)
   if (cached) return cached
+  if (directGeoJsonIsAuthoritative && directCandidateProfile) {
+    const directAnalysis = analyzeMarkdownGeodataSources({
+      markdownText: directMarkdownText,
+      sourceDocumentPath: directSourceDocumentPath,
+      embeddedGeoLimit: 8,
+      poiTableLimit: 0,
+      poiRowLimit: 0,
+      candidateProfile: directCandidateProfile,
+      cacheSignature: directGeoJsonAnalysisCacheSignature,
+    })
+    const authoritativeGeoJsonGraph = buildMarkdownGeodataSupplementGraph({
+      sourceDocumentPath: directSourceDocumentPath,
+      analysisCacheSignature: `${directGeoJsonAnalysisCacheSignature}:active-geojson`,
+      geodataAnalysis: {
+        ...directAnalysis,
+        poiFeatureCollections: [],
+        matchedPoiTables: 0,
+        matchedPoiRows: 0,
+      },
+    })
+    const baseWithoutOldGeo = withoutGeoCoordinateNodes(graphData)
+    const mergedCurrentGraph = authoritativeGeoJsonGraph
+      ? mergeGraphDataUnique(baseWithoutOldGeo, authoritativeGeoJsonGraph)
+      : baseWithoutOldGeo
+    const areaFeatures = authoritativeGeoJsonGraph?.metadata?.kgGeospatialAreaFeatures
+    const currentGraph = areaFeatures === undefined
+      ? mergedCurrentGraph
+      : {
+          ...mergedCurrentGraph,
+          metadata: {
+            ...(mergedCurrentGraph.metadata || {}),
+            kgGeospatialAreaFeatures: areaFeatures,
+          },
+        }
+    const addedNodes = Math.max(0, (currentGraph.nodes?.length || 0) - (baseWithoutOldGeo.nodes?.length || 0))
+    return writeCachedGeospatialOverlayGraphData(cacheKey, attachOverlayDebugInfo(currentGraph, {
+      resolvedFrom: 'direct',
+      sourceDocumentPath: directSourceDocumentPath,
+      embeddedGeoBlockCount: directAnalysis.embeddedGeoBlockCount,
+      supplementedNodeCount: addedNodes,
+      sourceFilesCount: Array.isArray(args.sourceFiles) ? args.sourceFiles.length : 0,
+    }))
+  }
   if (graphHasGeoCoordinates) {
     return writeCachedGeospatialOverlayGraphData(cacheKey, attachOverlayDebugInfo(graphData, {
       resolvedFrom: 'none',

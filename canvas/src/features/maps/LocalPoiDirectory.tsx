@@ -95,6 +95,29 @@ export default function LocalPoiDirectory({ onSelectMapFeature, selectedMapFeatu
     mapSelectionGeneration.current += 1
   }, [])
 
+  useEffect(() => {
+    let canceled = false
+    let unsubscribe = () => undefined
+    void import('gympgrph').then(module => {
+      if (canceled) return
+      const geospatialEvents = module as unknown as {
+        onGraphMapFeatureSelected?: (handler: (detail: { sourceFeatureId: string; graphFeatureId: string }) => void) => () => void
+      }
+      if (typeof geospatialEvents.onGraphMapFeatureSelected !== 'function') return
+      unsubscribe = geospatialEvents.onGraphMapFeatureSelected(({ sourceFeatureId }) => {
+        const selectedFeature = featureCollection?.features.find(feature => String(feature.id ?? '') === sourceFeatureId)
+        if (!selectedFeature) return
+        mapSelectionGeneration.current += 1
+        setSelectedId(selectedFeature.id)
+        setMapSelectionMessage('Selected on the shared map.')
+      })
+    }).catch(() => undefined)
+    return () => {
+      canceled = true
+      unsubscribe()
+    }
+  }, [featureCollection])
+
   const matches = useMemo(() => featureCollection
     ? searchLocalPoiFeatures(featureCollection, query, category)
     : [], [category, featureCollection, query])
