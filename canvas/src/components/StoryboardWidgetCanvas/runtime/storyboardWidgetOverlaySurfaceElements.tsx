@@ -8,7 +8,7 @@ import { openWorkflowManagerMappingForNode } from '@/features/storyboard-widget-
 import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
 import { resolveRichMediaWidgetKind } from '@/features/chat/richMediaRun'
 import type { FlowConnectedValuesBySchemaPath } from '@/lib/storyboardWidget/flowDataflow'
-import { resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
+import { isCanonicalNodeIdEqual, resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
 import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
 import { buildGraphDocumentMetaKey } from '@/lib/graph/graphMetaKey'
 import { isFrontmatterFlowGraph } from '@/lib/graph/frontmatterMode'
@@ -57,6 +57,7 @@ export function buildOverlayEditorElements(args: {
   pendingOverlayNodeIdRef: React.MutableRefObject<string | null>
   pendingOverlayNode: GraphNode | null
   overlayEditorNodeIds: readonly string[]
+  geospatialPoiPreviewNodeId?: string | null
   connectedValuesByNodeId: ReadonlyMap<string, FlowConnectedValuesBySchemaPath>
   storyboardWidgetSurfaceId: string
   editorSurfaceKind?: WidgetEditorSurfaceKind
@@ -164,12 +165,19 @@ export function buildOverlayEditorElements(args: {
       overlayGraphInstanceKey,
       identity.overlayIdentityId || id,
     ].join(':')
+    const forceFloating = Boolean(
+      String(args.geospatialPoiPreviewNodeId || '').trim()
+      && [id, identity.actionNodeId, identity.renderNodeId].some(candidate =>
+        isCanonicalNodeIdEqual(candidate, args.geospatialPoiPreviewNodeId),
+      ),
+    )
 
     elements.push(
       <StoryboardWidgetOverlay
         key={overlayInstanceKey}
         visible={args.overlayVisibilityActive}
         active={args.canEdit}
+        forceFloating={forceFloating}
         storyboardWidgetSurfaceId={args.storyboardWidgetSurfaceId}
         editorSurfaceKind={args.editorSurfaceKind}
         overlayCollectiveCount={orderedOverlayEditorNodeIds.length}
@@ -218,7 +226,9 @@ export function buildOverlayEditorElements(args: {
         }}
         onDuplicate={() => {
           const pinnedMap = args.flowWidgetPinnedByNodeId || {}
-          const pinned = pinnedMap[actionNodeId] === true || pinnedMap[identity.renderNodeId] === true
+          const pinned = !forceFloating && (
+            pinnedMap[actionNodeId] === true || pinnedMap[identity.renderNodeId] === true
+          )
           if (pinned) {
             args.upsertUiToast({
               id: `storyboard-widget-node-duplicate-disabled-${identity.overlayIdentityId || actionNodeId}`,

@@ -54,12 +54,12 @@
 }
 
 .kg-canvas-bottom-panel {
+  --base-control-height: var(--kg-toolbar-compact-surface-height);
   width: min(calc(100% - 1.5rem - var(--kg-safe-left) - var(--kg-safe-right)), 72rem);
 }
 
 /* Minimized panel chrome uses the same dimensions as the native compact toolbar. */
 [data-kg-panel-minimized="true"] {
-  min-height: var(--kg-toolbar-compact-surface-height);
   min-block-size: var(--kg-toolbar-compact-surface-height);
   border-radius: var(--island-radius);
 }

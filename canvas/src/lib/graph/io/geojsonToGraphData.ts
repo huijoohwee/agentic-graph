@@ -104,6 +104,7 @@ export function buildGraphDataFromFeatureCollection(args: {
     const label = nodeLabelFromProperties(props, baseId)
 
     const nextProps: Record<string, JSONValue> = toJsonProps(props)
+    nextProps.kgSourceFeatureId = baseId
     if (lngLat) {
       const existingGeo = readPlainObject(nextProps.geo) as Record<string, JSONValue> | null
       nextProps.geo = {

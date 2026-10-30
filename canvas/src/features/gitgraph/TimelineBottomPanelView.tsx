@@ -7,6 +7,8 @@ import type { VideoSequenceTimelineInsertedLane } from '@/components/timeline/Vi
 import { useMermaidGanttDocument } from './useMermaidGanttDocument'
 import { useStoryboardWidgetDiagramSelectionBridge } from './useStoryboardWidgetDiagramSelectionBridge'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
+import { SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH } from '@/features/supply-chain/supplyChainOverviewSource'
 import { XrCameraMotionSection } from '@/features/three/XrCameraMotionSection'
 import { readXrMotionReferenceRuntime, subscribeXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
 import { resolveXrStageObjects } from '@/features/three/xrSceneLibrary'
@@ -33,6 +35,7 @@ const SemanticObjectInspector = React.lazy(() => import('@/features/xr-v2/Semant
 const SequenceTimeline = React.lazy(() => import('@/features/sequence/SequenceTimeline').then(module => ({ default: module.SequenceTimeline })))
 const CinemaShotTimeline = React.lazy(() => import('@/features/cinema/CinemaShotTimeline').then(module => ({ default: module.CinemaShotTimeline })))
 const WarehouseTimelinePanel = React.lazy(() => import('@/features/python-learning/WarehouseTimelinePanel').then(module => ({ default: module.WarehouseTimelinePanel })))
+const SupplyChainTimelinePanel = React.lazy(() => import('@/features/supply-chain/SupplyChainTimelinePanel').then(module => ({ default: module.SupplyChainTimelinePanel })))
 
 function hasCinemaTimelineSource(sourceText: string): boolean {
   const yamlText = extractYamlFrontmatterHeaderBlock(sourceText)?.yamlText || ''
@@ -170,12 +173,14 @@ export function XrObjectInspector({ emptyMessage = '' }: { emptyMessage?: string
 
 export function TimelineBottomPanelView({ compact = false }: { compact?: boolean }) {
   const sourceText = useGraphStore(state => state.markdownDocumentText || '')
+  const supplyChainOverviewActive = useMarkdownExplorerStore(state => state.activePath === SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH)
   const sourceContext = useSourceGeospatialContext()
   const cinemaSource = React.useMemo(() => hasCinemaTimelineSource(sourceText), [sourceText])
   const sequenceContext = useGraphStore(state => state.canvasRenderMode === '2d' && ['sequence', 'sequenceMermaid'].includes(state.canvas2dRenderer))
   const { available: warehouseTimelineAvailable } = useWarehouseInspectionMode()
   const xrTimelineContext = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
   const stageAuthority = useGraphStore(state => resolveXrDocumentStageAuthority(state))
+  if (supplyChainOverviewActive) return <React.Suspense fallback={<p>Opening supply-chain Timeline…</p>}><SupplyChainTimelinePanel compact={compact} /></React.Suspense>
   if (sourceContext) return <React.Suspense fallback={<p>Opening source Timeline…</p>}><SourceGeospatialTimelinePanel compact={compact} /></React.Suspense>
   if (warehouseTimelineAvailable) return <React.Suspense fallback={<p>Opening warehouse timeline…</p>}><WarehouseTimelinePanel compact={compact} /></React.Suspense>
   if (cinemaSource) return <React.Suspense fallback={<p>Opening cinema shot Timeline…</p>}>

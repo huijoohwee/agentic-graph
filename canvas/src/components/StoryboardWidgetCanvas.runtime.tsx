@@ -50,12 +50,14 @@ export default function StoryboardWidgetCanvasRuntime(
     storyboardCardsMode = false,
     widgetDropCaptureEnabled = false,
     geospatialWidgetPanelMode = false,
+    geospatialPoiPreviewNode = null,
   }: {
     active?: boolean
     storyboardWidgetSurfaceId?: string
     storyboardCardsMode?: boolean
     widgetDropCaptureEnabled?: boolean
     geospatialWidgetPanelMode?: boolean
+    geospatialPoiPreviewNode?: GraphNode | null
   },
 ) {
   const storyboardWidgetSurfaceIdRef = React.useRef<string>('')
@@ -80,12 +82,17 @@ export default function StoryboardWidgetCanvasRuntime(
     baseWidgetRegistry, canvasRenderMode, canvas2dRenderer, canvasRunMode, collapsedGroupIds, createUserSubgraph,
     documentSemanticMode, documentStructureBaselineLock, documentWidgetRegistry, effectiveWidgetRegistry,
     storyboardWidgetLayoutRebalanceRequest, flowWidgetPinnedByNodeId, frontmatterModeEnabled, graphContentRevision, markdownDocumentName,
-    markdownDocumentApplyRevision, markdownDocumentApplyViewPreset, markdownDocumentSourceUrl, markdownDocumentText, mediaPanelDensity, openWidgetNodeIds, removeNodesFromUserSubgraph,
+    markdownDocumentApplyRevision, markdownDocumentApplyViewPreset, markdownDocumentSourceUrl, markdownDocumentText, mediaPanelDensity, openWidgetNodeIds: storedOpenWidgetNodeIds, removeNodesFromUserSubgraph,
     removeUserSubgraph, renderMediaAsNodes, resolvedThemeMode, schema, selectEdge, selectGroup,
     selectNode, selectedEdgeId, selectedNodeId, selectedNodeIds, setGraphDataPreservingLayout,
     setOpenWidgetNodeIds, setSchema, setSelectionSource, toggleGroupCollapsed, updateEdge, updateNode,
     updateOpenWidgetNodeIds, updateUserSubgraph, upsertUiToast, workspaceMutationBlocked,
   } = useStoryboardWidgetRuntimeStoreState()
+  const poiPreviewNodeId = String(geospatialPoiPreviewNode?.id || '').trim()
+  const openWidgetNodeIds = React.useMemo(
+    () => geospatialWidgetPanelMode && poiPreviewNodeId ? [poiPreviewNodeId] : storedOpenWidgetNodeIds,
+    [geospatialWidgetPanelMode, poiPreviewNodeId, storedOpenWidgetNodeIds],
+  )
   const strybldrStoryboardDisplayMode = useGraphStore(s => s.strybldrStoryboardDisplayMode)
   const historyRestoreRevision = useGraphStore(s => s.historyRestoreRevision)
   const storyboardDisplayMode = readCanvasCardWidgetDisplayMode(strybldrStoryboardDisplayMode)
@@ -218,6 +225,26 @@ export default function StoryboardWidgetCanvasRuntime(
       return { ...prevNodes, [id]: pendingOverlayNode }
     })
   }, [pendingOverlayNode])
+  React.useEffect(() => {
+    const node = geospatialWidgetPanelMode ? geospatialPoiPreviewNode : null
+    const id = String(node?.id || '').trim()
+    if (!node || !id) return
+    pendingOverlayNodeIdRef.current = id
+    lastDroppedWidgetNodeIdRef.current = id
+    setLastDroppedWidgetToken(token => token + 1)
+    setPendingOverlayNode(node)
+    setPendingOverlayNodesById(previous => previous[id] === node ? previous : { ...previous, [id]: node })
+    return () => {
+      if (pendingOverlayNodeIdRef.current === id) pendingOverlayNodeIdRef.current = null
+      setPendingOverlayNode(previous => String(previous?.id || '').trim() === id ? null : previous)
+      setPendingOverlayNodesById(previous => {
+        if (resolveGraphNodeByCanonicalId(baseGraphData, id) || !Object.prototype.hasOwnProperty.call(previous, id)) return previous
+        const next = { ...previous }
+        delete next[id]
+        return next
+      })
+    }
+  }, [baseGraphData, geospatialPoiPreviewNode, geospatialWidgetPanelMode])
   const removePendingOverlayNodeById = React.useCallback((nodeId: string) => {
     const id = String(nodeId || '').trim()
     if (!id) return
@@ -676,13 +703,14 @@ export default function StoryboardWidgetCanvasRuntime(
     storyboardWidgetViewActive,
     storyboardWidgetFrontmatterGraphAvailable, editorSurfaceKind: storyboardCardDisplayActive ? 'card' : 'widget',
     geospatialWidgetPanelMode,
+    geospatialPoiPreviewNodeId: geospatialWidgetPanelMode ? poiPreviewNodeId : null,
     renderGraphDataOverride: overlayRenderGraphDataOverride,
     draftGraphDataRef,
     baseGraphDataRevision,
     draftGraphDataRevision,
     overlayTopologyLayoutSignature,
     openWidgetNodeIds: overlayOpenWidgetNodeIds,
-    allowExplicitOpenWidgetNodeIds: storyboardWidgetDisplayActive,
+    allowExplicitOpenWidgetNodeIds: storyboardWidgetDisplayActive || Boolean(geospatialWidgetPanelMode && poiPreviewNodeId),
     overlayDraftNode,
     pendingOverlayNode,
     pendingOverlayNodeIdRef,

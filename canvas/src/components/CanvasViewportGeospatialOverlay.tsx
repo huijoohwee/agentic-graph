@@ -9,7 +9,12 @@ import type { GraphData } from '@/lib/graph/types'
 import type { ViewportControlsPreset } from '@/lib/config.viewport-controls'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { deriveSceneDisplayGraph } from '@/lib/scene/sceneDerivation'
-import { buildGeospatialOverlayGraphData } from '@/features/geospatial/geospatialOverlayGraphData'
+import { buildGeospatialOverlayGraphData, mergeGraphDataUnique } from '@/features/geospatial/geospatialOverlayGraphData'
+import {
+  buildLocalPoiDirectoryGraphData,
+  getLocalPoiDirectoryDatasetSnapshot,
+  subscribeLocalPoiDirectoryDataset,
+} from '@/features/geospatial/localPoiDirectoryRuntime'
 import {
   buildSupplyChainGeospatialGraphData,
   isSupplyChainWorkspaceSource,
@@ -22,20 +27,13 @@ import {
 } from '@/features/geospatial/geoXrFlightOverlayComposition'
 import { useGeoXrOverlayPublisher } from '@/features/geospatial/useGeoXrOverlayPublisher'
 import {
-  buildGrabMapsPoiRichMediaSrcDoc,
+  buildGrabMapsPoiRichMediaPreviewPayload,
+  GEOSPATIAL_POI_PREVIEW_NODE_ID,
   publishGrabMapsPoiRichMediaPreview,
-  resolveGrabMapsPoiRichMediaPanelNodeId,
   type GrabMapsPoiRichMediaDetail,
 } from '@/features/geospatial/grabMapsPoiRichMedia'
-import {
-  normalizeGeoPoiRichMediaProperties,
-  resolveGeoPoiAddressFromProperties,
-  resolveGeoPoiCategoryFromProperties,
-} from 'grph-shared/geospatial/poiRichMedia'
 import { hashScopedStringArraySignature } from '@/lib/hash/signature'
-import { createId } from '@/lib/id'
 import { resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
-import { buildRichMediaPanelNode } from '@/lib/render/richMediaPanelNode'
 import { buildSourceFilesGeospatialSelectionSignature } from '@/features/source-files/sourceFilesSignatures'
 import { readSourceGeospatialSnapshot, subscribeSourceGeospatial, useSourceGeospatialReview, sourceGeospatialReviewBounds } from '@/features/evidence-analysis/geospatialSource'
 import { GeoXrMediaSelectionTargets, useGeoXrGameModePresentation } from './geoXrMediaSelectionTargets'
@@ -181,14 +179,11 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       selectedEdgeId: s.selectedEdgeId,
       openWidgetNodeIds: s.openWidgetNodeIds ?? EMPTY_STRING_ARRAY,
       openWidgetNodeIdsByRenderer: s.openWidgetNodeIdsByRenderer ?? EMPTY_OPEN_WIDGETS_BY_RENDERER,
-      updateOpenWidgetNodeIds: s.updateOpenWidgetNodeIds,
       selectNode: s.selectNode,
       selectEdge: s.selectEdge,
       setSelectionSource: s.setSelectionSource,
       requestZoom: s.requestZoom,
       requestThreeCamera: s.requestThreeCamera,
-      updateNode: s.updateNode,
-      addNode: s.addNode,
       pushUiToast: s.pushUiToast,
       upsertUiToast: s.upsertUiToast,
       dismissUiToast: s.dismissUiToast,
@@ -222,6 +217,11 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     })),
   )
   const graphDataRevision = useGraphStore(s => s.graphDataRevision || 0)
+  const localPoiDataset = React.useSyncExternalStore(
+    subscribeLocalPoiDirectoryDataset,
+    getLocalPoiDirectoryDatasetSnapshot,
+    () => null,
+  )
   const timelineTransport = useGraphStore(useShallow(s => ({
     documentKey: s.timelineTransportDocumentKey || '',
     position: s.timelineTransportPosition || 0,
@@ -256,17 +256,21 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       sourceDocumentPath: canvasMarkdownDocument.name,
       sourceFiles: geospatialSourceFiles,
     })
-    if (!isSupplyChainWorkspaceSource(canvasMarkdownDocument.name)) return withMarkdownGeodata
+    const localPoiGraph = buildLocalPoiDirectoryGraphData(localPoiDataset)
+    const withLocalPoiDirectory = localPoiGraph
+      ? mergeGraphDataUnique(withMarkdownGeodata, localPoiGraph)
+      : withMarkdownGeodata
+    if (!isSupplyChainWorkspaceSource(canvasMarkdownDocument.name)) return withLocalPoiDirectory
     const timeSeconds = timelineTransport.documentKey === `${SUPPLY_CHAIN_SCENARIO.id}@${SUPPLY_CHAIN_SCENARIO.revision}`
       ? Math.max(0, Math.floor(timelineTransport.position * 60))
       : 0
     return buildSupplyChainGeospatialGraphData({
-      graphData: withMarkdownGeodata,
+      graphData: withLocalPoiDirectory,
       ...supplyChainView,
       timeSeconds,
     })
   }, [active, canvasMarkdownDocument.name, canvasMarkdownDocument.text, geospatialSourceFiles, graphData, graphDataRevision,
-    supplyChainView, timelineTransport.documentKey, timelineTransport.position])
+    localPoiDataset, supplyChainView, timelineTransport.documentKey, timelineTransport.position])
 
   const supplyChainFitRequestedRef = React.useRef(false)
   React.useEffect(() => {
@@ -322,66 +326,23 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
   )
 
   const renderPoiInRichMediaPanel = React.useCallback((detail: GrabMapsPoiRichMediaDetail): boolean => {
-    const poiProperties = normalizeGeoPoiRichMediaProperties(detail.properties)
-    const poiAddress = String(detail.address || '').trim() || resolveGeoPoiAddressFromProperties(poiProperties)
-    const poiCategory = String(detail.category || '').trim() || resolveGeoPoiCategoryFromProperties(poiProperties)
-    const normalizedDetail = { ...detail, address: poiAddress, category: poiCategory, properties: poiProperties }
-    const srcDoc = buildGrabMapsPoiRichMediaSrcDoc(normalizedDetail)
     const storyboardWidgetOpenWidgetNodeIds = Array.isArray(gympgrphBridge.openWidgetNodeIdsByRenderer?.storyboard)
       ? gympgrphBridge.openWidgetNodeIdsByRenderer.storyboard
       : []
-    let targetNodeId = resolveGrabMapsPoiRichMediaPanelNodeId({
+    const payload = buildGrabMapsPoiRichMediaPreviewPayload({
+      detail,
       graphData,
       selectedNodeId: gympgrphBridge.selectedNodeId,
       selectedNodeIds: gympgrphBridge.selectedNodeIds,
       openWidgetNodeIds: gympgrphBridge.openWidgetNodeIds,
       storyboardWidgetOpenWidgetNodeIds,
     })
-    if (!targetNodeId) {
-      const candidateIds = [
-        String(gympgrphBridge.selectedNodeId || '').trim(),
-        ...(Array.isArray(gympgrphBridge.selectedNodeIds) ? gympgrphBridge.selectedNodeIds : []).map(v => String(v || '').trim()),
-      ].filter(Boolean)
-      let anchorNode = null
-      for (let i = 0; i < candidateIds.length; i += 1) {
-        const resolved = resolveGraphNodeByCanonicalId(graphData, candidateIds[i]) || null
-        if (!resolved) continue
-        if (Number.isFinite(resolved.x) && Number.isFinite(resolved.y)) {
-          anchorNode = resolved
-          break
-        }
-        if (!anchorNode) anchorNode = resolved
-      }
-      const nextId = createId('rich-media-panel')
-      gympgrphBridge.addNode(buildRichMediaPanelNode({ id: nextId, anchor: anchorNode }))
-      targetNodeId = nextId
+    publishGrabMapsPoiRichMediaPreview(payload)
+    gympgrphBridge.setSelectionSource('canvas')
+    if (payload.targetNodeId !== GEOSPATIAL_POI_PREVIEW_NODE_ID
+      && resolveGraphNodeByCanonicalId(graphData, payload.targetNodeId)) {
+      gympgrphBridge.selectNode(payload.targetNodeId)
     }
-    publishGrabMapsPoiRichMediaPreview({
-      targetNodeId,
-      srcDoc,
-      label: String(detail.label || '').trim() || 'POI',
-    })
-    const panelNodeId = targetNodeId
-    gympgrphBridge.updateNode(panelNodeId, {
-      properties: {
-        richMediaActiveTab: 'poi',
-        freezeConnectedOutput: true,
-        richMediaPoiLabel: String(detail.label || '').trim() || 'POI',
-        richMediaPoiAddress: poiAddress,
-        richMediaPoiCategory: poiCategory,
-        richMediaPoiProperties: poiProperties,
-        richMediaPoiLat: Number.isFinite(Number(detail.lat)) ? Number(detail.lat) : null,
-        richMediaPoiLng: Number.isFinite(Number(detail.lng)) ? Number(detail.lng) : null,
-        richMediaPoiCoordinates:
-          Number.isFinite(Number(detail.lat)) && Number.isFinite(Number(detail.lng))
-            ? `${Number(detail.lat).toFixed(6)}, ${Number(detail.lng).toFixed(6)}`
-            : '',
-        output: '',
-        outputSrcDoc: srcDoc,
-      },
-    })
-    gympgrphBridge.updateOpenWidgetNodeIds(prev => (prev.includes(panelNodeId) ? prev : [...prev, panelNodeId]))
-    gympgrphBridge.selectNode(panelNodeId)
     return true
   }, [
     graphData,

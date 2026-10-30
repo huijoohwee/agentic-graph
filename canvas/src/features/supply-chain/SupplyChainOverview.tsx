@@ -1,15 +1,11 @@
 import React from 'react'
-import { Activity, ArrowDownRight, ArrowLeftRight, Boxes, Building2, Check, ChevronDown, ChevronRight, CircleHelp, Clock3, Factory, LocateFixed, MapPin, Package, Plane, RotateCcw, Search, Ship, TrainFront, Truck, Warehouse, ZoomIn, ZoomOut } from 'lucide-react'
+import { Activity, ArrowDownRight, ArrowLeftRight, Boxes, Building2, ChevronDown, ChevronRight, CircleHelp, Clock3, Factory, LocateFixed, MapPin, Package, Plane, RotateCcw, Search, Ship, TrainFront, Truck, Warehouse, ZoomIn, ZoomOut } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { requestGeospatialFitToBounds, requestGeospatialFitToData } from '@/features/geospatial/gympgrphBridge'
 import { getSupplyChainFacilityBounds } from './supplyChainGeospatialGraph'
 import { useSupplyChainViewStore, type SupplyChainSelection } from './supplyChainViewStore'
-import { GanttTimelineTransportPanel } from '@/features/gitgraph/GanttTimelineTransportPanel'
-import { READ_ONLY_GANTT_TIMELINE_COMMAND_ADAPTER } from '@/features/gitgraph/ganttTimelineTransportCommandAdapter'
-import { TimelineTransportTimeAxisClip } from '@/components/timeline/TimelineTransportControls'
 import { openXrMediaLibrary } from '@/features/xr-v2/openXrMediaLibrary'
-import { resolveVideoSequenceTimelineScaleDurationSeconds } from '@/components/timeline/videoSequenceTimelineZoom'
 import {
   projectSupplyChainScenario,
   scenarioConsignment,
@@ -28,7 +24,6 @@ import './supplyChainOverview.css'
 
 const SCENARIO = SUPPLY_CHAIN_SCENARIO
 const TRANSPORT_DOCUMENT_KEY = `${SCENARIO.id}@${SCENARIO.revision}`
-const TIMELINE_SCALE_SECONDS = resolveVideoSequenceTimelineScaleDurationSeconds(SCENARIO.durationSeconds)
 const MODE_COLORS: Record<SupplyChainMode, string> = {
   road: '#4169e1', rail: '#8b5cf6', air: '#0e9f9a', sea: '#0b7fab', reverse: '#d38b24',
 }
@@ -237,27 +232,6 @@ function ArrowRightGlyph({ mode }: { mode: SupplyChainMode }) {
   return <span aria-label={MODE_LABELS[mode]} className="mx-1 inline-flex translate-y-[2px]" style={{ color: MODE_COLORS[mode] }}><ArrowLeftRight size={10}/></span>
 }
 
-function TimelineEventsLane({
-  onSelectRow, onSelectConsignment,
-}: {
-  onSelectRow: () => void
-  onSelectConsignment: (consignment: SupplyChainConsignment) => void
-}) {
-  const setState = useGraphStore(state => state.setTimelineTransportState)
-  const choose = (atSeconds: number) => setState({ documentKey: TRANSPORT_DOCUMENT_KEY, position: atSeconds / 60, playing: false })
-  return <TimelineTransportTimeAxisClip laneStyle="video" aria-label="Supply chain event timeline lane">
-    <div className="relative h-8 w-full">
-      {SCENARIO.events.map((event, index) => {
-        const consignment = scenarioConsignment(SCENARIO, event.consignmentId)!
-        const mode: SupplyChainMode = consignment.service.includes('air') ? 'air' : consignment.service.includes('Ocean') ? 'sea' : 'rail'
-        const left = `${(event.atSeconds / TIMELINE_SCALE_SECONDS) * 100}%`
-        const markerColor = event.state === 'exception' ? '#e11d48' : MODE_COLORS[mode]
-        return <button key={event.id} type="button" title={`${consignment.reference} · ${formatClock(event.atSeconds)} · ${event.state} · ${event.title}`} aria-label={`Seek to ${consignment.reference}: ${event.title} at ${formatClock(event.atSeconds)}${event.state === 'exception' ? ', exception' : ''}`} onClick={() => { onSelectRow(); onSelectConsignment(consignment); choose(event.atSeconds) }} className="sc-event-marker" style={{ left, top: `${[28, 50, 72][index % 3]}%`, borderColor: markerColor }}><span style={{ backgroundColor: markerColor }} /></button>
-      })}
-    </div>
-  </TimelineTransportTimeAxisClip>
-}
-
 export function SupplyChainOverview() {
   const selection = useSupplyChainViewStore(state => state.selection)
   const setSelection = useSupplyChainViewStore(state => state.setSelection)
@@ -267,8 +241,9 @@ export function SupplyChainOverview() {
   const setEntityFilter = useSupplyChainViewStore(state => state.setEntityFilter)
   const showLabels = useSupplyChainViewStore(state => state.showLabels)
   const setShowLabels = useSupplyChainViewStore(state => state.setShowLabels)
+  const showEvents = useSupplyChainViewStore(state => state.showEvents)
+  const setShowEvents = useSupplyChainViewStore(state => state.setShowEvents)
   const [search, setSearch] = React.useState('')
-  const [showEvents, setShowEvents] = React.useState(true)
   const [offline, setOffline] = React.useState(() => typeof navigator !== 'undefined' && navigator.onLine === false)
   const selectedMapNodeId = useGraphStore(state => state.selectedNodeId)
   const transport = useGraphStore(useShallow(state => ({
@@ -289,7 +264,6 @@ export function SupplyChainOverview() {
     window.addEventListener('online', update)
     return () => { window.removeEventListener('offline', update); window.removeEventListener('online', update) }
   }, [])
-  const selectedConsignment = scenarioConsignment(SCENARIO, selectedConsignmentId)!
   const chooseConsignment = React.useCallback((consignment: SupplyChainConsignment) => setSelection({ kind: 'consignment', id: consignment.id }), [setSelection])
   const chooseFacility = React.useCallback((facility: SupplyChainFacility) => {
     setSelection({ kind: 'facility', id: facility.id })
@@ -304,24 +278,6 @@ export function SupplyChainOverview() {
     [selectedConsignmentId, timeSeconds],
   )
   const activeFacilityId = selection.kind === 'facility' ? selection.id : projection.latestEvent?.facilityId
-  const activeEventTitle = projection.latestEvent?.title || 'Scenario ready'
-  const timelineCode = React.useMemo(() => [
-    'gantt',
-    '  title Network movement scenario',
-    '  dateFormat HH:mm',
-    '  axisFormat %M:%S',
-    '  section End-to-end logistics',
-    `  Supply chain network : network_scenario, kgpos_0, ${SCENARIO.durationSeconds / 60}m`,
-  ].join('\n'), [])
-  const timelineLanes = React.useMemo(() => showEvents ? [{
-    id: 'supply-chain:events',
-    selectRowKey: 'supply-chain:events',
-    insertAfterLaneId: 'workflow',
-    label: 'Network events',
-    ariaLabel: 'Network consignment events',
-    selected: true,
-    content: ({ selectRow }: { selectRow: () => void }) => <TimelineEventsLane onSelectRow={selectRow} onSelectConsignment={chooseConsignment} />,
-  }] : [], [chooseConsignment, showEvents])
   React.useEffect(() => {
     const selected = String(selectedMapNodeId || '')
     const facilityPrefix = 'supply-chain:facility.'
@@ -409,20 +365,11 @@ export function SupplyChainOverview() {
         {search && <div className="space-y-1">{filteredFacilities.slice(0, 8).map(facility => <button key={facility.id} type="button" onClick={() => { chooseFacility(facility); setSearch('') }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-slate-50"><MapPin size={13} style={{ color: FACILITY_COLORS[facility.kind] }}/><span className="min-w-0 flex-1 truncate text-[10px] font-medium">{facility.name}</span><span className="text-[9px] text-slate-400">{facility.code}</span></button>)}{filteredConsignments.map(consignment => <button key={consignment.id} type="button" onClick={() => { chooseConsignment(consignment); setSearch('') }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-slate-50"><Package size={13} className="text-blue-600"/><span className="min-w-0 flex-1 truncate text-[10px] font-medium">{consignment.reference} · {consignment.contents}</span><ChevronRight size={12} className="text-slate-400"/></button>)}</div>}
       </section>}
       <div className="pointer-events-auto absolute bottom-[202px] left-3 z-10 flex items-center gap-1.5 rounded-lg border border-white/90 bg-white/90 p-1.5 shadow-sm backdrop-blur" aria-label="Map display controls">
-        <button type="button" onClick={() => setShowEvents(value => !value)} aria-pressed={showEvents} className={`${smallButtonClass} ${showEvents ? '!border-blue-200 !bg-blue-50 !text-blue-700' : ''}`}><Activity size={12}/><span>Movement events</span></button>
+        <button type="button" onClick={() => setShowEvents(!showEvents)} aria-pressed={showEvents} className={`${smallButtonClass} ${showEvents ? '!border-blue-200 !bg-blue-50 !text-blue-700' : ''}`}><Activity size={12}/><span>Movement events</span></button>
         <button type="button" onClick={() => setSelection({ kind: 'consignment', id: SCENARIO.consignments[0].id })} className={smallButtonClass}><RouteIconGlyph/><span>Focus journey</span></button>
       </div>
       <div className="pointer-events-auto absolute bottom-[202px] right-3 z-10 hidden items-center gap-1 rounded-lg border border-white/90 bg-white/90 px-2 py-1.5 text-[9px] text-slate-500 shadow-sm backdrop-blur sm:flex"><Clock3 size={12}/><span>{formatClock(timeSeconds)}</span><span className="mx-1 h-3 w-px bg-slate-200"/>{projection.activeConsignmentCount} active sample movements</div>
     </section>
-    <footer className="pointer-events-auto absolute bottom-0 left-0 right-0 z-20 flex h-[174px] flex-col overflow-hidden border-t border-slate-200 bg-white/95 px-2 pb-1 pt-1 shadow-[0_-6px_24px_rgba(15,23,42,.06)] sm:h-[190px] sm:px-3" aria-label="Shared supply chain timeline" data-kg-workspace-visible-viewport-occluder="bottom">
-      <div className="flex min-h-0 flex-1 items-stretch gap-2 overflow-hidden">
-        <section className="hidden min-w-[150px] max-w-[240px] flex-1 items-center gap-2 md:flex"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600"><Clock3 size={15}/></span><div className="min-w-0"><h2 className="truncate text-[11px] font-bold text-slate-800">Network movement timeline</h2><p className="truncate text-[9px] text-slate-400">{selectedConsignment.reference} · {activeEventTitle} · {formatClock(timeSeconds)}</p></div></section>
-        <div className="min-h-0 min-w-0 flex-1 overflow-hidden" data-supply-chain-shared-timeline="true">
-          <GanttTimelineTransportPanel code={timelineCode} compact clockActive editable={false} commandAdapter={READ_ONLY_GANTT_TIMELINE_COMMAND_ADAPTER} mode="workflow" publishPlaybackRequest={false} runtimeDocumentKey={TRANSPORT_DOCUMENT_KEY} runtimeDurationSeconds={SCENARIO.durationSeconds} runtimeFrameRate={1} timelineInsertedLanes={timelineLanes} />
-        </div>
-      </div>
-      <div className="flex h-5 shrink-0 items-center justify-between border-t border-slate-100 px-1 text-[9px] text-slate-400"><span className="inline-flex items-center gap-1.5"><Check size={11} className="text-emerald-600"/>One scenario clock drives the map, event list and journey</span><span>Sample playback · {SCENARIO.durationSeconds / 60} min · read-only</span></div>
-    </footer>
   </main>
 }
 

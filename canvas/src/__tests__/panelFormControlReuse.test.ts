@@ -35,7 +35,9 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   const widgetEditorFormText = readUtf8('src/components/StoryboardWidget/WidgetEditorForm.tsx')
   const graphEditorInspectorText = readUtf8('src/features/graph-editor/panels/GraphEditorInspectorTab.tsx')
   const researchCompilerText = readUtf8('src/features/panels/views/ResearchCompilerView.tsx')
-  const siteSelectionWidgetText = readUtf8('src/features/maps/SiteSelectionWidget.tsx')
+  const nearbyPlacesPanelText = readUtf8('src/features/maps/NearbyPlacesPanel.tsx')
+  const mapsHubViewText = readUtf8('src/features/panels/views/MapsHubView.tsx')
+  const geoViewText = readUtf8('src/lib/toolbar/ToolbarToolMenuGeoView.tsx')
   const workspaceTableModeControlText = readUtf8('src/features/workspace-table/ui/WorkspaceTableModeControl.tsx')
   const designDomInspectPanelText = readUtf8('src/features/design/DesignDomInspectPanel.tsx')
   const settingsUiText = readUtf8('src/features/settings/ui.tsx')
@@ -381,16 +383,19 @@ export function testPanelFormControlsAreSharedAcrossCameraAndDataViewDensity() {
   }
 
   if (
-    !siteSelectionWidgetText.includes("from '@/lib/ui/panelFormControls'") ||
-    !siteSelectionWidgetText.includes('PanelField') ||
-    !siteSelectionWidgetText.includes('PanelSelect') ||
-    !siteSelectionWidgetText.includes('PanelTextInput') ||
-    !siteSelectionWidgetText.includes('variant="transparent"') ||
-    !siteSelectionWidgetText.includes('<fieldset') ||
-    siteSelectionWidgetText.includes('bg-transparent border') ||
-    siteSelectionWidgetText.includes('<div key={c.id}')
+    !nearbyPlacesPanelText.includes("import LocalPoiDirectory from '@/features/maps/LocalPoiDirectory'") ||
+    !nearbyPlacesPanelText.includes('title="Nearby Places"') ||
+    !nearbyPlacesPanelText.includes('<LocalPoiDirectory />') ||
+    !geoViewText.includes("React.lazy(() => import('@/features/maps/NearbyPlacesPanel'))") ||
+    !geoViewText.includes('<NearbyPlacesPanelLazy') ||
+    mapsHubViewText.includes('NearbyPlacesPanel') ||
+    mapsHubViewText.includes('SiteSelectionWidget') ||
+    nearbyPlacesPanelText.includes('dailyCustomers') ||
+    nearbyPlacesPanelText.includes('baseRent') ||
+    nearbyPlacesPanelText.includes('handleRunDCF') ||
+    nearbyPlacesPanelText.includes('Candidate Site Comparison')
   ) {
-    throw new Error('expected site selection widget candidate fields to reuse shared transparent panel-form primitives with semantic fieldsets')
+    throw new Error('expected one local POI directory in FloatingPanel Geo and no stale Maps Hub mount or unsupported candidate/DCF assumptions')
   }
 
   if (

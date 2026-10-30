@@ -26,6 +26,7 @@ export type GrabMapsPoiRichMediaPreviewPayload = {
 }
 
 export const GRABMAPS_POI_RICH_MEDIA_PREVIEW_EVENT = 'kg:grabmaps:poi-rich-media-preview'
+export const GEOSPATIAL_POI_PREVIEW_NODE_ID = 'geospatial-poi-rich-media-preview'
 
 let latestGrabMapsPoiRichMediaPreviewPayload: GrabMapsPoiRichMediaPreviewPayload | null = null
 
@@ -57,6 +58,46 @@ export function resolveGrabMapsPoiRichMediaPanelNodeId(args: {
     storyboardWidgetOpenWidgetNodeIds: args.storyboardWidgetOpenWidgetNodeIds,
     nodeById,
   })
+}
+
+export function buildGrabMapsPoiRichMediaPreviewPayload(args: {
+  detail: GrabMapsPoiRichMediaDetail
+  graphData: GraphData | null | undefined
+  selectedNodeId?: string | null
+  selectedNodeIds?: readonly string[]
+  openWidgetNodeIds?: readonly string[]
+  storyboardWidgetOpenWidgetNodeIds?: readonly string[]
+}): GrabMapsPoiRichMediaPreviewPayload {
+  const detail = args.detail
+  const properties = normalizeGeoPoiRichMediaProperties(detail.properties)
+  const normalizedDetail = {
+    ...detail,
+    address: String(detail.address || '').trim() || resolveGeoPoiAddressFromProperties(properties),
+    category: String(detail.category || '').trim() || resolveGeoPoiCategoryFromProperties(properties),
+    properties,
+  }
+  const existingPanelNodeId = resolveGrabMapsPoiRichMediaPanelNodeId({
+    graphData: args.graphData,
+    selectedNodeId: args.selectedNodeId,
+    selectedNodeIds: args.selectedNodeIds,
+    openWidgetNodeIds: args.openWidgetNodeIds,
+    storyboardWidgetOpenWidgetNodeIds: args.storyboardWidgetOpenWidgetNodeIds,
+  })
+  let targetNodeId = existingPanelNodeId
+  if (!targetNodeId) {
+    const existingIds = new Set(readGraphNodes(args.graphData).map(node => String(node.id || '').trim()).filter(Boolean))
+    targetNodeId = GEOSPATIAL_POI_PREVIEW_NODE_ID
+    let suffix = 2
+    while (existingIds.has(targetNodeId)) {
+      targetNodeId = `${GEOSPATIAL_POI_PREVIEW_NODE_ID}-${suffix}`
+      suffix += 1
+    }
+  }
+  return {
+    targetNodeId,
+    srcDoc: buildGrabMapsPoiRichMediaSrcDoc(normalizedDetail),
+    label: String(detail.label || '').trim() || 'POI',
+  }
 }
 
 function escapeHtml(text: string): string {
@@ -96,10 +137,10 @@ export function buildGrabMapsPoiRichMediaSrcDoc(detail: GrabMapsPoiRichMediaDeta
     `<a href="${searchHref}" target="_blank" rel="noopener noreferrer">Search POI label in OpenStreetMap</a>`,
   ].filter(Boolean).join('')
   const metaRows = [
-    `<section><strong>Address</strong><span>${address || 'Not provided'}</span></section>`,
-    `<section><strong>Category</strong><span>${category || 'Uncategorized'}</span></section>`,
-    `<section><strong>Coordinates</strong><span>${coordText || 'Not provided'}</span></section>`,
-  ].filter(Boolean).join('')
+    `<dt>Address</dt><dd>${address || 'Not provided'}</dd>`,
+    `<dt>Category</dt><dd>${category || 'Uncategorized'}</dd>`,
+    `<dt>Coordinates</dt><dd>${coordText || 'Not provided'}</dd>`,
+  ].join('')
   const semanticKey = buildGeoPoiRichMediaSemanticKey({
     label: rawLabel,
     lat,
@@ -113,7 +154,7 @@ export function buildGrabMapsPoiRichMediaSrcDoc(detail: GrabMapsPoiRichMediaDeta
     maxRows: 18,
   })
   const geoRowsHtml = geoRows.map(row => (
-    `<section><strong>${escapeHtml(row.label)}</strong><span>${escapeHtml(row.value)}</span></section>`
+    `<dt>${escapeHtml(row.label)}</dt><dd>${escapeHtml(row.value)}</dd>`
   )).join('')
   const payload = escapeHtml(JSON.stringify({
     semanticKey,
@@ -123,41 +164,6 @@ export function buildGrabMapsPoiRichMediaSrcDoc(detail: GrabMapsPoiRichMediaDeta
     coordinates: hasFiniteCoordinates ? { lat, lng } : null,
     properties,
   }, null, 2))
-  const miniMap = (() => {
-    if (!hasFiniteCoordinates) return ''
-    const width = 320
-    const height = 170
-    const pad = 12
-    const innerWidth = width - pad * 2
-    const innerHeight = height - pad * 2
-    const normalizedX = ((lng + 180) / 360) * innerWidth + pad
-    const normalizedY = ((90 - lat) / 180) * innerHeight + pad
-    const markerX = Math.max(pad, Math.min(width - pad, normalizedX))
-    const markerY = Math.max(pad, Math.min(height - pad, normalizedY))
-    const markerLabel = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
-    const latText = lat >= 0 ? `${Math.abs(lat).toFixed(2)}°N` : `${Math.abs(lat).toFixed(2)}°S`
-    const lngText = lng >= 0 ? `${Math.abs(lng).toFixed(2)}°E` : `${Math.abs(lng).toFixed(2)}°W`
-    return [
-      '<figure class="mini-map" aria-label="POI mini-map snapshot">',
-      `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Mini-map snapshot for ${label}">`,
-      '<defs>',
-      '<linearGradient id="kgMiniMapBg" x1="0" y1="0" x2="0" y2="1">',
-      '<stop offset="0%" stop-color="#dbeafe"/>',
-      '<stop offset="100%" stop-color="#bfdbfe"/>',
-      '</linearGradient>',
-      '</defs>',
-      `<rect x="0" y="0" width="${width}" height="${height}" rx="12" fill="url(#kgMiniMapBg)"/>`,
-      `<rect x="${pad}" y="${pad}" width="${innerWidth}" height="${innerHeight}" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>`,
-      `<line x1="${pad}" y1="${height / 2}" x2="${width - pad}" y2="${height / 2}" stroke="#cbd5e1" stroke-dasharray="4 4"/>`,
-      `<line x1="${width / 2}" y1="${pad}" x2="${width / 2}" y2="${height - pad}" stroke="#cbd5e1" stroke-dasharray="4 4"/>`,
-      `<circle cx="${markerX.toFixed(2)}" cy="${markerY.toFixed(2)}" r="5.5" fill="#ef4444" stroke="#ffffff" stroke-width="2"/>`,
-      `<circle cx="${markerX.toFixed(2)}" cy="${markerY.toFixed(2)}" r="14" fill="none" stroke="#ef4444" stroke-opacity="0.35" stroke-width="2"/>`,
-      `<text x="${pad + 6}" y="${height - 16}" fill="#334155" font-size="12" font-family="${UI_FONT_MONO}">${escapeHtml(latText)} / ${escapeHtml(lngText)}</text>`,
-      '</svg>',
-      `<figcaption>${escapeHtml(markerLabel)}</figcaption>`,
-      '</figure>',
-    ].join('')
-  })()
   return [
     '<!doctype html>',
     '<html><head><meta charset="utf-8" />',
@@ -168,25 +174,22 @@ export function buildGrabMapsPoiRichMediaSrcDoc(detail: GrabMapsPoiRichMediaDeta
     'article{width:100%;max-width:520px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 8px 28px rgba(15,23,42,.08);padding:16px 18px;}',
     'h1{margin:0;font-size:20px;line-height:1.25;}',
     'p{margin:8px 0 0;color:#475569;}',
-    'section{margin-top:16px;display:grid;gap:10px;}',
-    'section div{display:grid;gap:2px;padding:10px 12px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;}',
-    '.geo-details{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));}',
-    '.actions{display:grid;gap:8px;margin-top:16px;}',
-    '.actions a{display:inline-flex;align-items:center;justify-content:center;padding:10px 12px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#0f172a;text-decoration:none;font-weight:600;}',
-    '.actions a:hover{background:#f1f5f9;}',
-    '.mini-map{margin:16px 0 0;display:grid;gap:8px;}',
-    '.mini-map svg{width:100%;height:auto;display:block;border-radius:12px;box-shadow:inset 0 0 0 1px #cbd5e1;}',
-    `.mini-map figcaption{font-size:12px;color:#475569;font-family:${UI_FONT_MONO};}`,
-    `pre{margin:16px 0 0;padding:10px 12px;background:#0f172a;color:#e2e8f0;border-radius:10px;overflow:auto;font:12px/1.45 ${UI_FONT_MONO};}`,
-    'strong{font-size:12px;letter-spacing:normal;text-transform:uppercase;color:#64748b;}',
-    'span{font-size:14px;color:#0f172a;word-break:break-word;}',
+    'dl{margin:16px 0 0;display:grid;grid-template-columns:minmax(7rem,auto) minmax(0,1fr);gap:8px 12px;}',
+    'dt{font-size:12px;font-weight:700;text-transform:uppercase;color:#64748b;}',
+    'dd{margin:0;color:#0f172a;overflow-wrap:anywhere;}',
+    '.geo-details{padding-top:12px;border-top:1px solid #cbd5e1;}',
+    'nav{display:grid;gap:8px;margin-top:16px;}',
+    'nav a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#0f172a;text-decoration:none;font-weight:600;}',
+    'nav a:hover,nav a:focus-visible{background:#f1f5f9;outline:3px solid #2563eb;outline-offset:2px;}',
+    'details{margin-top:16px;border-top:1px solid #cbd5e1;padding-top:12px;}',
+    'summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:700;}',
+    `pre{margin:8px 0 0;padding:10px 12px;background:#0f172a;color:#e2e8f0;border-radius:10px;overflow:auto;font:12px/1.45 ${UI_FONT_MONO};}`,
     '</style></head><body>',
-    `<main><article><h1>${label}</h1><p>GrabMaps POI selection rendered on the Rich Media Panel surface.</p>`,
-    metaRows ? `<section>${metaRows}</section>` : '',
-    geoRowsHtml ? `<section class="geo-details" aria-label="Geo metadata">${geoRowsHtml}</section>` : '',
-    miniMap,
-    actions ? `<section class="actions">${actions}</section>` : '',
-    `<pre aria-label="POI payload">${payload}</pre>`,
+    `<main><article aria-labelledby="poi-title"><header><h1 id="poi-title">${label}</h1><p>Place details from the selected feature on the shared map.</p></header>`,
+    `<dl aria-label="Place details">${metaRows}</dl>`,
+    geoRowsHtml ? `<dl class="geo-details" aria-label="Additional place details">${geoRowsHtml}</dl>` : '',
+    actions ? `<nav aria-label="Place actions">${actions}</nav>` : '',
+    `<details><summary>View normalized place data</summary><pre aria-label="POI payload">${payload}</pre></details>`,
     '</article></main></body></html>',
   ].join('')
 }

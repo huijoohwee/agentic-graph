@@ -2,6 +2,7 @@ import { computePanelFrameSizeFromDensityWidth16x9, readStableRichMediaPanelSize
 import { MARKDOWN_DESIGN_LAYOUT } from '@/features/markdown-edgeless/markdownDesignLayout'
 import type { GraphNode } from '@/lib/graph/types'
 import { readNodeProperties } from '@/lib/graph/nodeProperties'
+import { readRichMediaOverlayFrameSize } from '@/components/StoryboardWidget/richMediaOverlayFrameSize'
 import type { MediaPanelDensity } from '@/lib/render/mediaPanelSpec'
 import type { NodeHalfExtents } from '@/components/GraphCanvas/layout/overlap'
 import { computeOverlayHalfExtentsWorld, readOverlaySizingConfigForDensity, type OverlayDensitySizingConfigInput } from '@/lib/render/overlaySizing2d'
@@ -59,6 +60,11 @@ export function computeOverlayHalfExtentsByNodeId2d(args: {
     const hRaw = props['visual:height']
     const w = typeof wRaw === 'number' && Number.isFinite(wRaw) && wRaw > 0 ? wRaw : NaN
     const h = typeof hRaw === 'number' && Number.isFinite(hRaw) && hRaw > 0 ? hRaw : NaN
+    const richMediaSize = readRichMediaOverlayFrameSize(n)
+    if (richMediaSize) {
+      out[id] = { halfW: richMediaSize.width / 2, halfH: richMediaSize.height / 2 }
+      continue
+    }
     if (Number.isFinite(w) && Number.isFinite(h)) {
       out[id] = { halfW: Math.max(1, w / 2), halfH: Math.max(1, h / 2) }
     } else {

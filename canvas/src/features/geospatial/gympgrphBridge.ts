@@ -191,3 +191,11 @@ export async function requestGeospatialFitToData(): Promise<void> {
   }
   m.requestGeospatialFitToData()
 }
+
+export async function requestGeospatialFitToSelection(): Promise<void> {
+  const m = await importGympgrph()
+  if (typeof m.requestGeospatialFitToSelection !== 'function') {
+    throw new Error('Geospatial selection fit API is unavailable')
+  }
+  m.requestGeospatialFitToSelection()
+}

@@ -483,32 +483,39 @@ export default function StoryboardWidgetCanvasSurface(props: {
         finalizeEdge={props.finalizePendingEdge}
       >
       {!props.noGraphLoaded && (
-        <React.Suspense fallback={null}><DeferredFlowCanvas
-          active={props.active}
-          storyboardWidgetSurfaceId={props.storyboardWidgetSurfaceId}
-          allowNodeDragOverride={props.canInteract}
-          graphDataOverride={flowCanvasGraphDataOverride}
-          mutationSourceGraphDataOverride={storyboardSourceGraphData || flowCanvasGraphDataOverride}
-          graphDataRevisionOverride={props.storyboardWidgetViewActive ? props.draftGraphDataRevision : props.baseGraphDataRevision}
-          excludeNativeSceneNodeIds={flowCanvasNativeSceneExcludedNodeIds}
-          hideGroupIds={storyboardGroupPanelIds}
-          overlayAabbByNodeId={flowCanvasOverlayAabbByNodeId}
-          excludeRichMediaOverlayNodeIds={flowCanvasRichMediaOverlayExcludedNodeIds}
-          flowWidgetPinnedByNodeIdOverride={effectiveFlowWidgetPinnedByNodeId}
-          flowWidgetStateGraphKeyOverride={flowWidgetStateGraphKey}
-          storyboardCollectiveZoomBaselineKRef={storyboardCollectiveZoomBaselineKRef}
-          onNodeChange={props.patchNodeById}
-          onNodePropertiesChange={props.patchNodePropertiesById}
-          onNodeRemove={props.removeNodeById}
-          exposeRuntimeRef={ref => {
-            props.flowRuntimeRefRef.current = ref
-          }}
-          onInteractionFrame={props.hasOverlayEditors ? props.emitStoryboardWidgetInteractionFrame : undefined}
-          onOverlayInteractionFrame={storyboardCardsActive ? flushCardOverlayInteractionFrame : undefined}
-        /></React.Suspense>
+        <section
+          aria-label="Storyboard layout runtime"
+          data-kg-storyboard-layout-runtime={props.geospatialWidgetPanelMode ? 'hidden' : 'visible'}
+          className="absolute inset-0"
+          style={{ visibility: props.geospatialWidgetPanelMode ? 'hidden' : 'visible' }}
+        >
+          <React.Suspense fallback={null}><DeferredFlowCanvas
+            active={props.active}
+            storyboardWidgetSurfaceId={props.storyboardWidgetSurfaceId}
+            allowNodeDragOverride={props.canInteract}
+            graphDataOverride={flowCanvasGraphDataOverride}
+            mutationSourceGraphDataOverride={storyboardSourceGraphData || flowCanvasGraphDataOverride}
+            graphDataRevisionOverride={props.storyboardWidgetViewActive ? props.draftGraphDataRevision : props.baseGraphDataRevision}
+            excludeNativeSceneNodeIds={flowCanvasNativeSceneExcludedNodeIds}
+            hideGroupIds={storyboardGroupPanelIds}
+            overlayAabbByNodeId={flowCanvasOverlayAabbByNodeId}
+            excludeRichMediaOverlayNodeIds={flowCanvasRichMediaOverlayExcludedNodeIds}
+            flowWidgetPinnedByNodeIdOverride={effectiveFlowWidgetPinnedByNodeId}
+            flowWidgetStateGraphKeyOverride={flowWidgetStateGraphKey}
+            storyboardCollectiveZoomBaselineKRef={storyboardCollectiveZoomBaselineKRef}
+            onNodeChange={props.patchNodeById}
+            onNodePropertiesChange={props.patchNodePropertiesById}
+            onNodeRemove={props.removeNodeById}
+            exposeRuntimeRef={ref => {
+              props.flowRuntimeRefRef.current = ref
+            }}
+            onInteractionFrame={props.hasOverlayEditors ? props.emitStoryboardWidgetInteractionFrame : undefined}
+            onOverlayInteractionFrame={storyboardCardsActive ? flushCardOverlayInteractionFrame : undefined}
+          /></React.Suspense>
+        </section>
       )}
 
-      {(props.overlayOnlyActive || props.hasOverlayEditors || storyboardCardsActive) && (
+      {!props.geospatialWidgetPanelMode && (props.overlayOnlyActive || props.hasOverlayEditors || storyboardCardsActive) && (
         <svg
           ref={props.overlayEdgesSvgRef}
           className={UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME}
@@ -535,7 +542,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
 
       <React.Suspense fallback={null}>{props.overlayEditorElements}</React.Suspense>
       <React.Suspense fallback={null}><DeferredStoryboardGroupPanelLayer2d
-        active={storyboardSharedSurfaceActive}
+        active={storyboardSharedSurfaceActive && !props.geospatialWidgetPanelMode}
         fallbackNodePositions={stableStoryboardCardPlacements}
         flowWidgetPinnedByNodeId={effectiveFlowWidgetPinnedByNodeId}
         flowWidgetStateGraphKey={flowWidgetStateGraphKey}

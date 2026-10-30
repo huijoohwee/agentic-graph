@@ -342,7 +342,7 @@ export function StrybldrTimelineBottomPanel({
     maxHeight: 'min(62dvh, 24rem)',
   }
   const panelHeightStyle = minimized
-    ? { height: 'auto', minHeight: 'var(--kg-toolbar-compact-surface-height)' }
+    ? { height: 'auto' }
     : pinned ? expandedPinnedHeightStyle : expandedUnpinnedHeightStyle
   const panelPosition = position || getDefaultUnpinnedPosition()
   const layerStyle = React.useMemo(() => ({ left: workspaceLayerInsetLeft }), [workspaceLayerInsetLeft])
@@ -400,12 +400,10 @@ export function StrybldrTimelineBottomPanel({
           data-kg-strybldr-bottom-timeline-drag-enabled={!pinned && !minimized ? 'true' : 'false'}
         >
           <header
-            className={cn('flex select-none items-center justify-between gap-2', !pinned && 'cursor-move')}
-            style={{
-              minHeight: 'var(--kg-control-height, 28px)',
-              paddingBlock: 'var(--kg-toolbar-compact-pad-y)',
-              paddingInline: 'var(--kg-toolbar-compact-pad-x)',
-            }}
+            className={cn(
+              'agentic-base-floating-panel-header px-2',
+              !pinned && 'agentic-base-floating-panel-draggable',
+            )}
             onPointerDown={handleHeaderPointerDown}
           >
             <PanelViewTabs activeKey={view} aria-label="Bottom panel views">

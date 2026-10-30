@@ -78,6 +78,7 @@ export function useStoryboardWidgetOverlaySurface(args: {
   storyboardWidgetViewActive: boolean
   storyboardWidgetFrontmatterGraphAvailable: boolean; editorSurfaceKind?: 'card' | 'widget'
   geospatialWidgetPanelMode?: boolean
+  geospatialPoiPreviewNodeId?: string | null
   renderGraphDataOverride: GraphData | null
   draftGraphDataRef: React.MutableRefObject<GraphData | null>
   baseGraphDataRevision: number
@@ -125,6 +126,7 @@ export function useStoryboardWidgetOverlaySurface(args: {
     storyboardWidgetViewActive,
     storyboardWidgetFrontmatterGraphAvailable, editorSurfaceKind,
     geospatialWidgetPanelMode,
+    geospatialPoiPreviewNodeId,
     renderGraphDataOverride: rawRenderGraphDataOverride,
     draftGraphDataRef,
     baseGraphDataRevision,
@@ -702,6 +704,7 @@ export function useStoryboardWidgetOverlaySurface(args: {
       pendingOverlayNodeIdRef,
       pendingOverlayNode,
       overlayEditorNodeIds,
+      geospatialPoiPreviewNodeId: geospatialWidgetPanelMode ? geospatialPoiPreviewNodeId : null,
       connectedValuesByNodeId,
       storyboardWidgetSurfaceId, editorSurfaceKind,
       renderGraphSemanticKey,
@@ -775,6 +778,8 @@ export function useStoryboardWidgetOverlaySurface(args: {
     connectedValuesByNodeId,
     handlePinnedInCanvasChange,
     overlayEditorNodeIds,
+    geospatialWidgetPanelMode,
+    geospatialPoiPreviewNodeId,
     renderGraphIncidentEdgesByNodeId,
     renderGraphMetaKind,
     renderGraphNodeById,
