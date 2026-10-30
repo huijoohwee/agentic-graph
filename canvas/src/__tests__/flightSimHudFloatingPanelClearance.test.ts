@@ -19,10 +19,12 @@ import {
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
 
 test('floating-panel geometry clamps one shared responsive width expression', () => {
-  assert.match(resolveFloatingPanelWidthCss(Number.NaN), /30vw/)
+  assert.match(resolveFloatingPanelWidthCss(Number.NaN), /360px/)
+  assert.doesNotMatch(resolveFloatingPanelWidthCss(Number.NaN), /30vw/)
   assert.match(resolveFloatingPanelWidthCss(0.01), /15vw/)
   assert.match(resolveFloatingPanelWidthCss(0.9), /60vw/)
-  assert.match(resolveFloatingPanelRightClearanceCss(0.3), /30vw/)
+  assert.match(resolveFloatingPanelWidthCss(0.31), /31vw/)
+  assert.match(resolveFloatingPanelRightClearanceCss(0.3), /360px/)
   assert.match(resolveFloatingPanelRightClearanceCss(0.3), /kg-safe-right/)
 })
 

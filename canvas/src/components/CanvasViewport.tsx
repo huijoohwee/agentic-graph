@@ -53,6 +53,7 @@ import { XrPhysicsSemanticMediaSurface } from '@/features/three/XrPhysicsSemanti
 import { useEmbeddedCanvasChatCommandReceiver } from '@/features/canvas/useEmbeddedCanvasChatCommandReceiver'
 import { useSupplyChainOverviewRoute } from '@/features/supply-chain/useSupplyChainOverviewRoute'
 import { SUPPLY_CHAIN_OVERVIEW_WORKSPACE_PATH } from '@/features/supply-chain/supplyChainOverviewSource'
+import { GeospatialStoryboardWidgetPanels } from '@/components/GeospatialStoryboardWidgetPanels'
 const PythonLearningCanvasStatus = React.lazy(() => import('@/features/python-learning/LearningCanvasStatus').then(module => ({ default: module.PythonLearningCanvasStatus })))
 const LearningPlanViewLazy = React.lazy(() => import('@/features/python-learning/LearningPlanView'))
 const CanvasViewportGeospatialOverlayLazy = React.lazy(loadCanvasViewportGeospatialOverlay)
@@ -487,6 +488,7 @@ function AuthoredCanvasViewport(props: CanvasViewportProps & { learningScene?: {
             )}
           </SemanticMediaFigure>
         ) : null}
+        <GeospatialStoryboardWidgetPanels active={!documentSwitchOwnsViewport && geospatialCompositionEnabled && active2dSurface === 'storyboard' && !heavyRuntimeIntentBlocked} graphData={safeGraphData} documentKey={String(activeSourceFile?.id || activeSourceFile?.source?.path || markdownDocumentName || '')} />
         {!documentSwitchOwnsViewport && heavyRuntimeIntentSurface && heavyRuntimeIntentBlocked ? (
           <section
             className="absolute inset-0 z-[35] flex items-center justify-center bg-[var(--kg-canvas-bg)]/96 px-4"

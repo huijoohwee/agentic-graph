@@ -89,7 +89,7 @@ export async function runPagesDevPromotion(env = process.env) {
     if (deploymentExitCode !== 0) throw new Error('Wrangler Pages deployment exited ' + deploymentExitCode)
 
     stage = 'dev-csp-verification'
-    const cspVerification = await verifyDevGraphCsp({ origin: deployment.deploymentUrl, releaseSha: sourceRevision })
+    const cspVerification = await verifyDevGraphCsp({ deployment, artifact })
     await writeReceipt(path.join(evidenceDir, 'csp-verification.json'), cspVerification)
 
     stage = 'dev-browser-verification'
@@ -137,16 +137,35 @@ export async function runPagesDevPromotion(env = process.env) {
   }
 }
 
-export async function verifyDevGraphCsp({ origin, releaseSha, fetchImpl = fetch }) {
-  if (!/^[0-9a-f]{40}$/.test(String(releaseSha || ''))) throw new Error('Dev CSP source revision is invalid')
-  const deploymentOrigin = new URL(String(origin || ''))
-  if (deploymentOrigin.protocol !== 'https:' || !/^(?:agentic-graph-dev|[a-z0-9-]+\.agentic-graph-dev)\.pages\.dev$/i.test(deploymentOrigin.hostname)
-    || deploymentOrigin.username || deploymentOrigin.password || deploymentOrigin.port || deploymentOrigin.pathname !== '/'
-    || deploymentOrigin.search || deploymentOrigin.hash) {
-    throw new Error('Dev CSP origin is not the isolated Pages deployment')
+export async function verifyDevGraphCsp({ deployment, artifact, fetchImpl = fetch }) {
+  const sourceRevision = String(deployment?.sourceRevision || '')
+  const manifestDigest = String(deployment?.immutableManifestDigest || '')
+  const projectId = String(deployment?.projectId || '')
+  const deploymentId = String(deployment?.deploymentId || '')
+  const origin = devUrl(deployment?.deploymentUrl, 'stable Dev Pages project URL')
+  const providerOrigin = devUrl(deployment?.providerDeploymentUrl, 'immutable Dev Pages deployment URL')
+  if (!/^[0-9a-f]{40}$/.test(sourceRevision)) throw new Error('Dev CSP source revision is invalid')
+  if (!/^[0-9a-f]{64}$/.test(manifestDigest) || !/^[0-9a-f]{64}$/.test(String(artifact?.artifactDigest || ''))
+    || !/^[0-9a-f]{64}$/.test(String(artifact?.readinessMarkerDigest || ''))) {
+    throw new Error('Dev CSP artifact identity is invalid')
   }
-  const url = new URL('/agentic-graph/', deploymentOrigin.origin)
-  url.searchParams.set('kgTransportProof', releaseSha)
+  if (!projectId || !/^[A-Za-z0-9-]{8,64}$/.test(deploymentId)
+    || deployment?.projectName !== 'agentic-graph-dev' || deployment?.usesFunctions !== false
+    || artifact?.sourceRevision !== sourceRevision || artifact?.immutableManifestDigest !== manifestDigest
+    || artifact?.readinessMarkerDigest !== deployment?.readinessMarkerDigest
+    || artifact?.connectPolicy !== "connect-src 'self'; form-action 'self'"
+    || JSON.stringify(artifact?.disabledRuntimeEntries) !== JSON.stringify(['functions/', '_routes.json', '_worker.js'])) {
+    throw new Error('Dev CSP identity does not bind the exact static Pages candidate')
+  }
+  if (origin.origin !== 'https://agentic-graph-dev.pages.dev' || origin.pathname !== '/' || origin.search || origin.hash
+    || origin.username || origin.password || origin.port
+    || providerOrigin.protocol !== 'https:' || !/^[a-z0-9-]+\.agentic-graph-dev\.pages\.dev$/i.test(providerOrigin.hostname)
+    || providerOrigin.pathname !== '/' || providerOrigin.search || providerOrigin.hash
+    || providerOrigin.username || providerOrigin.password || providerOrigin.port) {
+    throw new Error('Dev CSP origin is not the exact isolated Pages project')
+  }
+  const url = new URL('/agentic-graph/', origin.origin)
+  url.searchParams.set('kgTransportProof', sourceRevision)
   const response = await fetchImpl(url, {
     headers: { accept: 'text/html', 'cache-control': 'no-cache' },
     redirect: 'manual',
@@ -156,20 +175,31 @@ export async function verifyDevGraphCsp({ origin, releaseSha, fetchImpl = fetch 
   assert.equal(response.status, 200, `${url} must return HTTP 200`)
   assert.match(String(response.headers.get('content-type') || ''), /^text\/html\b/i, `${url} must return HTML`)
   const routeOwner = String(response.headers.get('x-agentic-graph-route-owner') || '').trim()
-  assert.equal(routeOwner, 'agentic-graph-agent-ready-pages', `${url} route owner drifted`)
-  const contentSecurityPolicy = response.headers.get('content-security-policy')
-  assert.equal(contentSecurityPolicy, AGENTIC_GRAPH_CSP, `${url} enforcing CSP drifted`)
+  assert.equal(routeOwner, '', `${url} static Dev candidate unexpectedly claims a Pages Function route owner`)
+  const contentSecurityPolicy = String(response.headers.get('content-security-policy') || '')
+  const observedPolicies = contentSecurityPolicy.split(', ').map(policy => policy.trim()).sort()
+  const expectedPolicies = [artifact.connectPolicy, AGENTIC_GRAPH_CSP].sort()
+  assert.deepEqual(observedPolicies, expectedPolicies, `${url} enforcing CSP policies drifted`)
   return {
-    schema: 'agentic-graph-dev-csp-verification/v1',
-    sourceRevision: releaseSha,
+    schema: 'agentic-graph-dev-csp-verification/v2',
+    projectId,
+    deploymentId,
+    sourceRevision,
+    immutableManifestDigest: manifestDigest,
+    staticArtifactDigest: artifact.artifactDigest,
     url: url.toString(),
     status: response.status,
-    routeOwner,
-    contentSecurityPolicy,
+    routeOwner: null,
+    contentSecurityPolicies: observedPolicies,
     bodyDigest: createHash('sha256').update(body).digest('hex'),
     byteLength: body.length,
     verifiedAt: new Date().toISOString(),
   }
+}
+
+function devUrl(value, label) {
+  try { return new URL(String(value || '')) }
+  catch { throw new Error(`${label} is invalid`) }
 }
 
 export async function verifyDevUiWithConvergenceRetry(input, {

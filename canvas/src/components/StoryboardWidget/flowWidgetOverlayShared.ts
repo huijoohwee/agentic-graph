@@ -17,6 +17,7 @@ export {
 export type FlowWidgetOverlayProps = {
   visible?: boolean
   active: boolean
+  forceFloating?: boolean
   storyboardWidgetSurfaceId?: string
   editorSurfaceKind?: WidgetEditorSurfaceKind
   overlayCollectiveCount?: number

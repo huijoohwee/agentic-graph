@@ -92,7 +92,10 @@ export function assertPhase5(fixture: SourceFixture) {
   if (
     !cssText.includes('--kg-toolbar-compact-surface-height') ||
     !cssText.includes('--toolbar-padding: var(--kg-toolbar-compact-padding)') ||
-    !strybldrTimelineBottomPanelText.includes("height: 'var(--kg-toolbar-compact-surface-height)'") ||
+    !strybldrTimelineBottomPanelText.includes("data-kg-panel-minimized={minimized ? 'true' : undefined}") ||
+    !strybldrTimelineBottomPanelText.includes('agentic-base-floating-panel-header px-2') ||
+    !responsiveCanvasToolbarCssText.includes('--base-control-height: var(--kg-toolbar-compact-surface-height)') ||
+    !responsiveCanvasToolbarCssText.includes('min-block-size: var(--kg-toolbar-compact-surface-height)') ||
     strybldrTimelineBottomPanelText.includes('min-h-[36px]')
   ) {
     throw new Error('expected minimized Timeline bottom panel height to reuse existing compact Toolbar sizing tokens')

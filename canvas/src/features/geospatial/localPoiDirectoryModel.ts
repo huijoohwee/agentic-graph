@@ -450,4 +450,3 @@ export function searchLocalPoiFeatures(
 export function limitLocalPoiVisibleFeatures(features: LocalPoiFeature[]): LocalPoiFeature[] {
   return features.slice(0, LOCAL_POI_VISIBLE_LIMIT)
 }
-

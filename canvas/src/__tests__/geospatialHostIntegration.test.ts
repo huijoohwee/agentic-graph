@@ -2,7 +2,7 @@ import path from 'node:path'
 import assert from 'node:assert/strict'
 import { resolveCanvasSurfaceOwnership } from '@/lib/canvas/canvasSurfaceOwnershipRuntime'
 import { buildStoryboardWidgetInsertionPlacement } from '@/lib/storyboardWidget/widgetInsertionPlacement'
-import { readUtf8 } from './geospatialHostIntegrationTestUtils'
+import { assertTextIncludes, readUtf8 } from './geospatialHostIntegrationTestUtils'
 
 export const testGeospatialOverlayHostNotGatedBySidebar = () => {
   const text = readUtf8(path.resolve(process.cwd(), 'src', 'pages', 'Canvas.tsx'))
@@ -69,6 +69,7 @@ export const testGeospatialStoryboardWidgetDropBridgeStaysMounted = () => {
   const viewportPath = path.resolve(process.cwd(), 'src', 'components', 'CanvasViewport.tsx')
   const storyboardWidgetPath = path.resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas.tsx')
   const viewportText = readUtf8(viewportPath)
+  const panelsText = readUtf8(path.resolve(process.cwd(), 'src', 'components', 'GeospatialStoryboardWidgetPanels.tsx'))
   const storyboardWidgetText = readUtf8(storyboardWidgetPath)
 
   if (!viewportText.includes("geospatialCompositionEnabled && active2dSurface === 'storyboard'")) {
@@ -77,12 +78,9 @@ export const testGeospatialStoryboardWidgetDropBridgeStaysMounted = () => {
   if (!viewportText.includes('<StoryboardWidgetDropBridgeLazy active={false} widgetDropCaptureEnabled geospatialWidgetPanelMode />')) {
     throw new Error('Expected Geospatial Storyboard widget bridge to mount with widget-drop capture and geospatial panel mode')
   }
-  if (!storyboardWidgetText.includes('widgetDropCaptureEnabled')) {
-    throw new Error('Expected StoryboardWidgetCanvas to expose widgetDropCaptureEnabled override for drop listeners')
-  }
-  if (!storyboardWidgetText.includes('geospatialWidgetPanelMode')) {
-    throw new Error('Expected StoryboardWidgetCanvas to expose geospatial widget panel overlay mode')
-  }
+  assertTextIncludes(panelsText, 'data-kg-geospatial-storyboard-widget-panels="1"', 'Expected geospatial panel marker')
+  assertTextIncludes(panelsText, '<StoryboardWidgetCanvas active storyboardWidgetSurfaceId="storyboard" geospatialWidgetPanelMode', 'Expected Geospatial mode to mount the existing Storyboard Rich Media renderer above the map')
+  if (!storyboardWidgetText.includes('widgetDropCaptureEnabled') || !storyboardWidgetText.includes('geospatialWidgetPanelMode')) throw new Error('Expected StoryboardWidgetCanvas to expose geospatial drop and panel modes')
 }
 
 export const testGeospatialWidgetPanelsDefaultToFloatingAndHideMapDots = () => {
@@ -553,15 +551,17 @@ export const testGeospatialPoiClicksRenderIntoRichMediaPanelInsteadOfMapLibrePop
   if (!viewportText.includes('renderPoiInRichMediaPanel')) {
     throw new Error('Expected CanvasViewport to expose a shared geospatial POI -> Rich Media Panel handoff')
   }
-  if (!viewportText.includes('buildGrabMapsPoiRichMediaSrcDoc(normalizedDetail)')) {
-    throw new Error('Expected CanvasViewport to write GrabMaps POI output into Rich Media Panel srcdoc content')
+  if (!viewportText.includes('buildGrabMapsPoiRichMediaPreviewPayload({')) {
+    throw new Error('Expected CanvasViewport to build POI previews through the shared Rich Media payload helper')
   }
-  if (!viewportText.includes('publishGrabMapsPoiRichMediaPreview({')) {
+  if (!viewportText.includes('publishGrabMapsPoiRichMediaPreview(payload)')) {
     throw new Error('Expected CanvasViewport to publish GrabMaps POI preview payloads for visible Rich Media panels')
   }
-  if (!viewportText.includes('resolveGrabMapsPoiRichMediaPanelNodeId')) {
-    throw new Error('Expected CanvasViewport to resolve the canonical Rich Media Panel node before writing POI output')
+  if (!richMediaPanelText.includes('resolveGrabMapsPoiRichMediaPanelNodeId')) {
+    throw new Error('Expected the shared POI preview payload helper to resolve the canonical Rich Media Panel node')
   }
+  const toolbarText = readUtf8(path.resolve(process.cwd(), 'src', 'lib', 'toolbar', 'ToolbarToolMenuGeoView.tsx'))
+  assertTextIncludes(toolbarText, 'publishGrabMapsPoiRichMediaPreview(buildGrabMapsPoiRichMediaPreviewPayload({', 'Expected Nearby Places selection to refresh the same Rich Media POI preview as a map click')
   if (!basemapText.includes('onPoiClick?.({')) {
     throw new Error('Expected MapLibre basemap click handling to emit structured POI details upstream')
   }

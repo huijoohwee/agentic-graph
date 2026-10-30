@@ -16,7 +16,7 @@ export type GraphFeatureAffordanceOptions = {
   features: readonly GraphPointFeature[]
   map: ProjectedMap
   onActivate: (feature: GraphPointFeature) => void
-  selectedFeatureIds: ReadonlySet<string>
+  selectedFeatureIds?: ReadonlySet<string>
 }
 
 function readFeatureId(feature: GraphPointFeature): string {
@@ -38,8 +38,12 @@ export function bindGraphFeatureAffordances({
   features,
   map,
   onActivate,
-  selectedFeatureIds,
+  selectedFeatureIds: selectedFeatureIdsOverride,
 }: GraphFeatureAffordanceOptions): () => void {
+  const selectedFeatureIds = selectedFeatureIdsOverride ?? new Set(features.filter(feature => {
+    const properties = feature.properties
+    return properties && typeof properties === 'object' && (properties as Record<string, unknown>).kgSelected === true
+  }).map(readFeatureId))
   const host = map.getContainer()
   const doc = host.ownerDocument
   const viewport = doc.defaultView

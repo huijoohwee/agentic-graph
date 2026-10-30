@@ -209,4 +209,9 @@ export const TEST_CASES_POST_PARSER_3_TAIL: TestCaseTuple[] = [
   ["strybldr.videoHandoff.consolidatedDemoLocalAnimatic","@/__tests__/strybldr.test","testStrybldrConsolidatedDemoGeneratesLocalPlayableAnimatic"],
   ["strybldr.videoSource.renderableMediaAcrossMergeHandoff","@/__tests__/strybldr.test","testStrybldrVideoSourceKeepsRenderableMediaAcrossMergeAndHandoff"],
   ["strybldr.visionHarness.requiredProvidersPrivacyGuard","@/__tests__/strybldr.test","testStrybldrVisionHarnessUsesRequiredProvidersWithPrivacyGuard"],
+  ["geospatial.markdown.activeGeoJsonReplacesStaleMapFeatures","@/__tests__/geospatialOverlayCurrentGeoJsonAuthority.test","testCurrentEmbeddedGeoJsonReplacesStaleMapFeatures"],
+  ["geospatial.localPoiDirectory.projectsApprovedFeatures","@/__tests__/geospatialOverlayCurrentGeoJsonAuthority.test","testLocalPoiDirectoryProjectsApprovedFeaturesIntoMapGraph"],
+  ["geospatial.localPoiDirectory.approvalAllowlistAndPrecision","@/__tests__/geospatialOverlayCurrentGeoJsonAuthority.test","testLocalPoiGeoJsonApprovalAllowlistAndPrecisionContracts"],
+  ["geospatial.localPoiDirectory.selectionResolvesCurrentDataset","@/__tests__/geospatialOverlayCurrentGeoJsonAuthority.test","testLocalPoiDirectorySelectionResolvesCurrentDatasetFeatures"],
+  ["geospatial.panel.directoryCanvasSelectionSync","@/__tests__/geospatialHostMapLibreInteractionIntegration.test","testGeoDirectoryAndCanvasSelectionShareSourceFeature"],
 ]
