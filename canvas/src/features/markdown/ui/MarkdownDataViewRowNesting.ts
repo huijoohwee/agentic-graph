@@ -1,5 +1,3 @@
-import type React from 'react'
-
 const MAX_MARKDOWN_DATA_VIEW_ROW_DEPTH = 8
 
 const readLevelDepth = (raw: string): number => {
@@ -56,11 +54,4 @@ export const buildMarkdownDataViewNestedRowStates = <Row extends { id: string; c
     }
   }
   return states
-}
-
-export const readMarkdownDataViewRowsAsRecordsHierarchyStyle = (args: {
-  depth: number
-}): React.CSSProperties | undefined => {
-  const depth = Math.min(MAX_MARKDOWN_DATA_VIEW_ROW_DEPTH, Math.max(0, args.depth))
-  return { '--kg-data-view-tree-depth': String(depth) } as React.CSSProperties
 }

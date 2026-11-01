@@ -189,36 +189,38 @@ export async function testMarkdownDataViewSourceLineNestedTablesRenderInRowsAndC
     if (nestedRows.length < 3) {
       throw new Error(`expected rows-as-records pivot to expose Level-derived row nesting, html=${container.innerHTML}`)
     }
-    const hierarchyCells = Array.from(dom.window.document.querySelectorAll('tbody tr[data-kg-markdown-data-view-row-nested-depth="2"] td[data-kg-markdown-data-view-row-hierarchy-cell="1"]'))
+    const hierarchyCells = Array.from(dom.window.document.querySelectorAll('tbody tr[data-kg-markdown-data-view-row-nested-depth="2"] td.agentic-base-data-tree-cell'))
       .filter((cell): cell is HTMLElement => cell instanceof dom.window.HTMLElement)
-    if (hierarchyCells.length < 3 || !hierarchyCells.every(cell => cell.getAttribute('data-kg-markdown-data-view-row-hierarchy-line-depth') === '2' && cell.style.getPropertyValue('--kg-data-view-tree-depth') === '2' && !cell.style.paddingInlineStart)) {
-      throw new Error('expected rows-as-records hierarchy cells to expose bounded Level-derived depth metadata without padding into text columns')
+    if (hierarchyCells.length < 3 || !hierarchyCells.every(cell => cell.getAttribute('data-agentic-base-hierarchy-depth') === '0' && !cell.style.paddingInlineStart)) {
+      throw new Error('expected rows-as-records hierarchy cells to use fixed-position Base controls at every nesting depth')
     }
-    if (!hierarchyCells.every(cell => cell.className.includes('kg-data-view-tree-cell') && cell.getAttribute('data-kg-markdown-data-view-row-hierarchy-branch') === '1' && cell.style.getPropertyValue('--kg-data-view-tree-depth') === '2' && cell.querySelector('.kg-data-view-tree-cell-guide'))) {
-      throw new Error('expected rows-as-records hierarchy cells to expose subtle tree guide metadata')
+    if (!hierarchyCells.every(cell => !cell.querySelector('.kg-data-view-tree-cell-guide'))) {
+      throw new Error('expected rows-as-records hierarchy cells to use Base controls without tree guide lines')
     }
-    const rootLeafHierarchyCell = Array.from(dom.window.document.querySelectorAll('tbody td[data-kg-markdown-data-view-row-hierarchy-line-depth="1"][data-kg-markdown-data-view-row-hierarchy-branch="1"]'))
-      .filter((cell): cell is HTMLElement => cell instanceof dom.window.HTMLElement)
-      .find(cell => String(cell.parentElement?.textContent || '').includes('graphId: "md:demo-root-leaf"')) || null
+    const rootLeafHierarchyCell = Array.from(dom.window.document.querySelectorAll('tbody tr'))
+      .find(row => String(row.textContent || '').includes('graphId: "md:demo-root-leaf"'))
+      ?.querySelector('td.agentic-base-data-tree-cell') || null
     const rootLeafGuide = rootLeafHierarchyCell?.querySelector('.kg-data-view-tree-cell-guide') || null
-    if (!rootLeafGuide || rootLeafGuide.tagName.toLowerCase() !== 'svg' || String(rootLeafGuide.textContent || '').trim() || !rootLeafGuide.querySelector('.kg-data-view-tree-cell-guide-line')) {
-      throw new Error('expected root leaf rows to expose the body tree guide')
+    if (rootLeafGuide) {
+      throw new Error('expected root leaf rows to omit the legacy vertical tree guide')
     }
     const valueCells = Array.from(dom.window.document.querySelectorAll('tbody tr[data-kg-markdown-data-view-row-nested-depth="2"] td:nth-child(4)'))
       .filter((cell): cell is HTMLElement => cell instanceof dom.window.HTMLElement)
     if (valueCells.length < 3 || valueCells.some(cell => cell.style.paddingInlineStart)) {
-      throw new Error('expected rows-as-records Value cells to stay aligned while the hierarchy column owns indentation')
+      throw new Error('expected rows-as-records Value cells to remain unpadded while shared hierarchy controls stay aligned')
     }
-    const nestedToggle = dom.window.document.querySelector('[data-kg-markdown-data-view-row-nested-toggle="1"]') as HTMLButtonElement | null
+    const nestedToggle = Array.from(nestedRows)
+      .map(row => row.querySelector('button.agentic-base-row-expand'))
+      .find((button): button is HTMLButtonElement => button instanceof dom.window.HTMLButtonElement) || null
     if (!nestedToggle || nestedToggle.getAttribute('aria-expanded') !== 'true') {
       throw new Error('expected rows-as-records nested parent row to expose a default-expanded toggle')
     }
-    if (nestedToggle.closest('.kg-data-view-tree-cell')?.querySelector('.kg-data-view-tree-cell-guide')) {
-      throw new Error('expected rows-as-records parent toggle cell to keep the tree guide off the chevron row')
+    if (nestedToggle.className !== 'agentic-base-row-expand') {
+      throw new Error('expected rows-as-records parent toggle to use the shared Base chevron')
     }
     const treeGuideCss = readFileSync(resolve(process.cwd(), 'src/styles/markdown-data-view-table.css'), 'utf8')
-    if (!treeGuideCss.includes('--kg-data-view-tree-chevron-size: var(--kg-compact-glyph-size, 0.75rem);') || !treeGuideCss.includes('--kg-data-view-tree-stroke-width: var(--kg-surface-border-width, 1px);') || !treeGuideCss.includes('--kg-data-view-tree-chevron-stroke-width: var(--kg-icon-stroke-width, 1.5);') || !treeGuideCss.includes('--kg-data-view-tree-guide-width: var(--kg-data-view-tree-stroke-width);') || !treeGuideCss.includes('--kg-data-view-tree-stroke-color: var(--kg-text-secondary, currentColor);') || !treeGuideCss.includes('--kg-data-view-tree-stroke-opacity: 0.72;') || !treeGuideCss.includes('--kg-data-view-tree-guide-color: var(--kg-data-view-tree-stroke-color);') || !treeGuideCss.includes('--kg-data-view-tree-parent-depth-offset: max(calc((var(--kg-data-view-tree-depth, 0) - 1) * var(--kg-data-view-tree-depth-step)), 0rem);') || !treeGuideCss.includes('--kg-data-view-tree-parent-chevron-center: calc(var(--kg-data-view-tree-cell-padding-inline) + var(--kg-data-view-tree-parent-control-start) + var(--kg-data-view-tree-control-icon-center));') || !treeGuideCss.includes('--kg-data-view-tree-guide-inset: var(--kg-data-view-tree-parent-chevron-center);') || !treeGuideCss.includes('.kg-data-view-tree-cell {\n  --kg-data-view-tree-parent-depth-offset') || !treeGuideCss.includes('color: var(--kg-data-view-tree-stroke-color, currentColor);') || !treeGuideCss.includes('.kg-data-view-tree-control svg {\n  color: var(--kg-data-view-tree-stroke-color, currentColor);\n  stroke: var(--kg-data-view-tree-stroke-color, currentColor);\n  stroke-opacity: var(--kg-data-view-tree-stroke-opacity);\n  stroke-width: var(--kg-data-view-tree-chevron-stroke-width);') || !treeGuideCss.includes('.kg-data-view-tree-control svg :where(path, line, polyline, polygon, circle) {\n  stroke: var(--kg-data-view-tree-stroke-color, currentColor);\n  stroke-opacity: var(--kg-data-view-tree-stroke-opacity);') || !treeGuideCss.includes('.kg-data-view-tree-control:hover') || !treeGuideCss.includes('width: var(--kg-data-view-tree-chevron-size);') || !treeGuideCss.includes('.kg-data-view-tree-cell-guide-line {\n  stroke: var(--kg-data-view-tree-stroke-color, currentColor);\n  stroke-linecap: round;\n  stroke-opacity: var(--kg-data-view-tree-stroke-opacity);\n  stroke-width: var(--kg-data-view-tree-guide-width);') || treeGuideCss.includes('text-stroke-width') || treeGuideCss.includes('vector-effect: non-scaling-stroke') || !treeGuideCss.includes('transform: translate(-50%, -50%);')) {
-      throw new Error('expected body tree guide CSS to align with the parent chevron rail inside the hierarchy column')
+    if (treeGuideCss.includes('.kg-data-view-tree-control') || treeGuideCss.includes('.kg-data-view-tree-cell-guide') || treeGuideCss.includes('--kg-data-view-tree-depth-step')) {
+      throw new Error('expected Graph to reuse Base hierarchy styling without a duplicate indentation or guide system')
     }
     Simulate.click(nestedToggle)
     await tick()
@@ -235,7 +237,7 @@ export async function testMarkdownDataViewSourceLineNestedTablesRenderInRowsAndC
     if (nestedToggle.getAttribute('aria-expanded') !== 'true' || !dom.window.document.querySelector('[data-kg-markdown-data-view-nested-source-table="1"]')) {
       throw new Error('expected rows-as-records nested toggle to restore descendant nested table rows')
     }
-    const rowBulkToggle = dom.window.document.querySelector('thead [data-kg-markdown-data-view-row-nested-bulk-toggle="1"]') as HTMLButtonElement | null
+    const rowBulkToggle = dom.window.document.querySelector('thead button[aria-label="Collapse all nested rows"]') as HTMLButtonElement | null
     if (!rowBulkToggle || rowBulkToggle.getAttribute('aria-label') !== 'Collapse all nested rows') {
       throw new Error('expected rows-as-records hierarchy header to expose collapse-all control')
     }
@@ -273,14 +275,14 @@ export async function testMarkdownDataViewSourceLineNestedTablesRenderInRowsAndC
     if (!(columnHierarchyRow instanceof dom.window.HTMLElement)) {
       throw new Error(`expected columns-as-records pivot to expose a dedicated hierarchy row, html=${container.innerHTML}`)
     }
-    const columnHierarchyCells = Array.from(columnHierarchyRow.querySelectorAll('td[data-kg-markdown-data-view-column-record-hierarchy-cell="1"]'))
+    const columnHierarchyCells = Array.from(columnHierarchyRow.querySelectorAll('td.agentic-base-data-tree-cell'))
       .filter((cell): cell is HTMLElement => cell instanceof dom.window.HTMLElement)
-    if (columnHierarchyCells.length < 4 || !columnHierarchyCells.some(cell => cell.getAttribute('data-kg-markdown-data-view-row-hierarchy-line-depth') === '2' && cell.style.getPropertyValue('--kg-data-view-tree-depth') === '2' && !cell.style.paddingInlineStart)) {
-      throw new Error('expected columns-as-records hierarchy cells to expose bounded Level-derived depth metadata without padding into text columns')
+    if (columnHierarchyCells.length < 4 || !columnHierarchyCells.every(cell => cell.getAttribute('data-agentic-base-hierarchy-depth') === '0' && !cell.style.paddingInlineStart)) {
+      throw new Error('expected columns-as-records hierarchy cells to use fixed-position Base controls at every nesting depth')
     }
-    const deepColumnHierarchyCell = columnHierarchyCells.find(cell => cell.getAttribute('data-kg-markdown-data-view-row-hierarchy-line-depth') === '2') || null
-    if (!deepColumnHierarchyCell || !deepColumnHierarchyCell.className.includes('kg-data-view-tree-cell') || deepColumnHierarchyCell.getAttribute('data-kg-markdown-data-view-row-hierarchy-branch') !== '1' || deepColumnHierarchyCell.style.getPropertyValue('--kg-data-view-tree-depth') !== '2' || !deepColumnHierarchyCell.querySelector('.kg-data-view-tree-cell-guide')) {
-      throw new Error('expected columns-as-records hierarchy cells to expose subtle tree guide metadata')
+    const deepColumnHierarchyCell = columnHierarchyCells[0] || null
+    if (!deepColumnHierarchyCell || deepColumnHierarchyCell.querySelector('.kg-data-view-tree-cell-guide')) {
+      throw new Error('expected columns-as-records hierarchy cells to use Base layout without tree guide lines')
     }
     const columnValueRow = Array.from(dom.window.document.querySelectorAll('tbody tr'))
       .filter((row): row is HTMLElement => row instanceof dom.window.HTMLElement)
@@ -290,9 +292,9 @@ export async function testMarkdownDataViewSourceLineNestedTablesRenderInRowsAndC
     }
     const columnValueCells = Array.from(columnValueRow.querySelectorAll('td')).filter((cell): cell is HTMLTableCellElement => cell instanceof dom.window.HTMLTableCellElement)
     if (!columnValueCells.length || columnValueCells.some(cell => cell.style.paddingInlineStart)) {
-      throw new Error('expected columns-as-records Value cells to stay aligned while the hierarchy row owns indentation')
+      throw new Error('expected columns-as-records Value cells to remain unpadded while shared hierarchy controls stay aligned')
     }
-    const columnToggle = columnHierarchyRow.querySelector('[data-kg-markdown-data-view-row-nested-toggle="1"]') as HTMLButtonElement | null
+    const columnToggle = columnHierarchyRow.querySelector('button.agentic-base-row-expand') as HTMLButtonElement | null
     if (!columnToggle || columnToggle.getAttribute('aria-expanded') !== 'true') {
       throw new Error('expected columns-as-records nested group toggle to default expanded')
     }
@@ -311,7 +313,7 @@ export async function testMarkdownDataViewSourceLineNestedTablesRenderInRowsAndC
     if (columnToggle.getAttribute('aria-expanded') !== 'true' || !dom.window.document.querySelector('[data-kg-markdown-data-view-nested-source-table="1"]')) {
       throw new Error('expected columns-as-records nested toggle to restore descendant nested table columns')
     }
-    const columnBulkToggle = columnHierarchyRow.querySelector('[data-kg-markdown-data-view-row-nested-bulk-toggle="1"]') as HTMLButtonElement | null
+    const columnBulkToggle = columnHierarchyRow.querySelector('button[aria-label="Collapse all nested rows"]') as HTMLButtonElement | null
     if (!columnBulkToggle || columnBulkToggle.getAttribute('aria-label') !== 'Collapse all nested rows') {
       throw new Error('expected columns-as-records hierarchy row to expose collapse-all control')
     }

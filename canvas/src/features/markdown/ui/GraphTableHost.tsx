@@ -1,3 +1,6 @@
+import React from 'react'
+import { createBaseTableHost } from '@agentic-base/views-react/table'
+import '@agentic-base/views-react/browser.css'
 import type { TableHostAdapter } from '@agentic-base/views-react/table'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { MARKDOWN_DATA_VIEW_COPY } from '@/lib/config-copy/markdownDataViewCopy'
@@ -22,9 +25,7 @@ import { readMarkdownSigilDisplayText } from '@/lib/markdown/markdownSigil'
 import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
 import { buildInlineMediaCommandContextFromRecord } from '@/lib/command-menu/inlineMediaCommandContext'
 import { buildSourceLineNestedTableCellMap, renderMarkdownDataViewTableRichCell } from '@/features/markdown/ui/MarkdownDataViewImageCell'
-import { MarkdownDataViewHierarchyCell } from '@/features/markdown/ui/MarkdownDataViewHierarchyCell'
 import { MarkdownDataViewInlineTextCellEditor } from '@/features/markdown/ui/MarkdownDataViewInlineTextCellEditor'
-import { MarkdownDataViewNestedRowsBulkToggle } from '@/features/markdown/ui/MarkdownDataViewNestedRowsBulkToggle'
 import { useMarkdownDataViewNestedRowCollapse } from '@/features/markdown/ui/useMarkdownDataViewNestedRowCollapse'
 import { MarkdownDataViewColumnResizeHandle } from '@/features/markdown/ui/MarkdownDataViewColumnResizeHandle'
 import { MarkdownDataViewCellSelectPopover } from '@/features/markdown/ui/MarkdownDataViewCellSelectPopover'
@@ -42,6 +43,14 @@ import {
   readDataViewHeaderPaddingClassName as readHeaderPaddingClassName,
   readDataViewTablePaddingClassName as readTablePaddingClassName,
 } from '@/lib/ui/dataViewDensity'
+
+const baseTableComponents = createBaseTableHost().components
+const baseHierarchyCell = baseTableComponents.HierarchyCell
+
+/** Keep Graph source hierarchy while using Base controls at one fixed position for every depth. */
+function GraphAlignedBaseHierarchyCell(props: Record<string, unknown>) {
+  return React.createElement(baseHierarchyCell, { ...props, depth: 0 })
+}
 
 export const graphTableHost: TableHostAdapter = {
   contract: 'agentic-base/table-host/v1',
@@ -68,9 +77,9 @@ export const graphTableHost: TableHostAdapter = {
     AddColumnMenu: MarkdownDataViewAddColumnMenu,
     ColumnHeaderPropertyTypeMenu,
     ColumnHeaderMenu,
-    HierarchyCell: MarkdownDataViewHierarchyCell,
+    HierarchyCell: GraphAlignedBaseHierarchyCell,
+    NestedRowsBulkToggle: baseTableComponents.NestedRowsBulkToggle,
     InlineTextCellEditor: MarkdownDataViewInlineTextCellEditor,
-    NestedRowsBulkToggle: MarkdownDataViewNestedRowsBulkToggle,
     ColumnResizeHandle: MarkdownDataViewColumnResizeHandle,
     CellSelectPopover: MarkdownDataViewCellSelectPopover,
   },
