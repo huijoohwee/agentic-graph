@@ -185,7 +185,7 @@ export async function testMarkdownDataViewSourceLineNestedTablesRenderInRowsAndC
     if (!String(frontmatterSourceTable.textContent || '').includes('lines 20-22')) {
       throw new Error(`expected frontmatter nested source table to retain source line range, got ${frontmatterSourceTable.textContent}`)
     }
-    const nestedRows = Array.from(dom.window.document.querySelectorAll('tr[data-kg-markdown-data-view-row-nested-depth="2"]'))
+    const nestedRows = Array.from(dom.window.document.querySelectorAll('tr[data-kg-markdown-data-view-row-nested-depth="2"]')) as HTMLTableRowElement[]
     if (nestedRows.length < 3) {
       throw new Error(`expected rows-as-records pivot to expose Level-derived row nesting, html=${container.innerHTML}`)
     }
@@ -197,7 +197,7 @@ export async function testMarkdownDataViewSourceLineNestedTablesRenderInRowsAndC
     if (!hierarchyCells.every(cell => !cell.querySelector('.kg-data-view-tree-cell-guide'))) {
       throw new Error('expected rows-as-records hierarchy cells to use Base controls without tree guide lines')
     }
-    const rootLeafHierarchyCell = Array.from(dom.window.document.querySelectorAll('tbody tr'))
+    const rootLeafHierarchyCell = (Array.from(dom.window.document.querySelectorAll('tbody tr')) as HTMLTableRowElement[])
       .find(row => String(row.textContent || '').includes('graphId: "md:demo-root-leaf"'))
       ?.querySelector('td.agentic-base-data-tree-cell') || null
     const rootLeafGuide = rootLeafHierarchyCell?.querySelector('.kg-data-view-tree-cell-guide') || null
