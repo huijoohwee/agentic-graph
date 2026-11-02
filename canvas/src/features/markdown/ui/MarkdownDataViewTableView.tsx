@@ -20,8 +20,19 @@ export type MarkdownDataViewTableViewProps = Omit<TableViewProps, 'view' | 'colu
 /** Graph owns source edits and cell operations; Base owns the shared table visuals and interaction shell. */
 export const MarkdownDataViewTableView = React.memo(function MarkdownDataViewTableView(props: MarkdownDataViewTableViewProps) {
   const { multiDimensional = false, ...tableProps } = props
+  const [localSelectedRowIds, setLocalSelectedRowIds] = React.useState<string[]>([])
+  const currentRowIds = React.useMemo(() => new Set(props.view.rows.map(row => row.id)), [props.view.rows])
+  const filteredLocalSelectedRowIds = React.useMemo(
+    () => localSelectedRowIds.filter(rowId => currentRowIds.has(rowId)),
+    [currentRowIds, localSelectedRowIds],
+  )
+  const selectionIsConsumerControlled = tableProps.selectedRowIds !== undefined
+    || tableProps.onSelectionChange !== undefined
+    || tableProps.selectedRowId !== undefined
+  const selectedRowIds = tableProps.selectedRowIds ?? (selectionIsConsumerControlled ? undefined : filteredLocalSelectedRowIds)
+  const onSelectionChange = tableProps.onSelectionChange ?? (selectionIsConsumerControlled ? undefined : setLocalSelectedRowIds)
   const View = multiDimensional ? MultiDimTableView : TableView
   return <TableHostProvider value={graphTableHost}>
-    <View {...tableProps} view={props.view} columnTypesById={props.columnTypesById} />
+    <View {...tableProps} selectedRowIds={selectedRowIds} onSelectionChange={onSelectionChange} view={props.view} columnTypesById={props.columnTypesById} />
   </TableHostProvider>
 })
