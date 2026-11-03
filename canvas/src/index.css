@@ -5,6 +5,7 @@
 @import './styles/application-typography.css';
 @import './styles/semantic-colour-palette.css';
 @import './styles/shared-borders.css';
+@import './styles/shared-ui-profile.css';
 @import './styles/responsive-toolbar.css';
 @import './styles/responsive-canvas-toolbar.css';
 @import './styles/markdown-presentation-responsive.css';
@@ -21,6 +22,8 @@
 @import './styles/markdown-media-responsive.css'; @import './styles/markdown-data-view-table.css';
 @import './styles/aie-book-demo-responsive.css';
 :root {
+  --kg-compact-glyph-size: var(--agentic-icon-size-compact);
+  --kg-default-glyph-size: var(--agentic-icon-size-default);
   --gap: 0.5rem;
   --padding: 0.5rem;
   --toolbar-gap: 0.5rem;
