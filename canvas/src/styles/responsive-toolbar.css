@@ -1,11 +1,4 @@
-@import './shared-ui-profile.css';
-
-:root {
-  --kg-compact-glyph-size: var(--agentic-icon-size-compact);
-  --kg-default-glyph-size: var(--agentic-icon-size-default);
-  --kg-control-height: 28px;
-  --kg-overlay-max-height: calc(100dvh - var(--kg-safe-top) - var(--kg-safe-bottom) - 1rem);
-}
+:root { --kg-control-height: 28px; --kg-overlay-max-height: calc(100dvh - var(--kg-safe-top) - var(--kg-safe-bottom) - 1rem); }
 
   .kg-collapsible-toolbar-overflow {
     max-width: calc(100vw - var(--kg-safe-left) - var(--kg-safe-right) - 1rem);
