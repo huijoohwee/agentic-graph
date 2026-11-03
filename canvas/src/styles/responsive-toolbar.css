@@ -1,4 +1,11 @@
-:root { --kg-control-height: 28px; --kg-overlay-max-height: calc(100dvh - var(--kg-safe-top) - var(--kg-safe-bottom) - 1rem); }
+@import './shared-ui-profile.css';
+
+:root {
+  --kg-compact-glyph-size: var(--agentic-icon-size-compact);
+  --kg-default-glyph-size: var(--agentic-icon-size-default);
+  --kg-control-height: 28px;
+  --kg-overlay-max-height: calc(100dvh - var(--kg-safe-top) - var(--kg-safe-bottom) - 1rem);
+}
 
   .kg-collapsible-toolbar-overflow {
     max-width: calc(100vw - var(--kg-safe-left) - var(--kg-safe-right) - 1rem);
@@ -1145,23 +1152,23 @@
 
   .kg-compact-glyph {
     display: inline-block;
-    width: var(--kg-compact-glyph-size, 0.75rem);
-    inline-size: var(--kg-compact-glyph-size, 0.75rem);
-    min-width: var(--kg-compact-glyph-size, 0.75rem);
-    min-inline-size: var(--kg-compact-glyph-size, 0.75rem);
-    height: var(--kg-compact-glyph-size, 0.75rem);
-    block-size: var(--kg-compact-glyph-size, 0.75rem);
+    width: var(--kg-compact-glyph-size);
+    inline-size: var(--kg-compact-glyph-size);
+    min-width: var(--kg-compact-glyph-size);
+    min-inline-size: var(--kg-compact-glyph-size);
+    height: var(--kg-compact-glyph-size);
+    block-size: var(--kg-compact-glyph-size);
     flex: 0 0 auto;
   }
 
   .kg-default-glyph {
     display: inline-block;
-    width: var(--kg-default-glyph-size, 1rem);
-    inline-size: var(--kg-default-glyph-size, 1rem);
-    min-width: var(--kg-default-glyph-size, 1rem);
-    min-inline-size: var(--kg-default-glyph-size, 1rem);
-    height: var(--kg-default-glyph-size, 1rem);
-    block-size: var(--kg-default-glyph-size, 1rem);
+    width: var(--kg-default-glyph-size);
+    inline-size: var(--kg-default-glyph-size);
+    min-width: var(--kg-default-glyph-size);
+    min-inline-size: var(--kg-default-glyph-size);
+    height: var(--kg-default-glyph-size);
+    block-size: var(--kg-default-glyph-size);
     flex: 0 0 auto;
   }
 
