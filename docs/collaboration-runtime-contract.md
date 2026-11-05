@@ -45,7 +45,7 @@ local_development:
   worktree_policy:
     mode: "same-device-multi-worktree"
     minimum_registered_per_repository: 1
-    session_end:
+    session_end: # Graph removal policy; AOS-managed tasks use the shared authorized END/quarantine owner.
       completion_state: "completed"
       cleanup_requires: ["clean", "detached", "exact-origin-main", "explicit-target"]
       retain_states: ["canonical", "active", "delivery", "parked"]
