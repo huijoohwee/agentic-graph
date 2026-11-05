@@ -108,8 +108,9 @@ export function persistImportInventory(fs: WorkspaceFs, known: ImportInventoryIt
         const digest = await importContentDigest(next)
         if (copies.get(path) !== digest) {
           const { saveWorkspaceWebsiteLocalCopy } = await import('./workspaceRevealInFileManager')
-          await saveWorkspaceWebsiteLocalCopy(path, next)
-          copies.set(path, digest); mirrored.set(fs, copies)
+          if (await saveWorkspaceWebsiteLocalCopy(path, next)) {
+            copies.set(path, digest); mirrored.set(fs, copies)
+          }
         }
       }
     }

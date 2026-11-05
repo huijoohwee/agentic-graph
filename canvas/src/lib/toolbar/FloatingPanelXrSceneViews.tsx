@@ -30,6 +30,24 @@ const ImmersiveMediaPanelProjectionLazy = React.lazy(() =>
   })),
 )
 
+export function FloatingPanelSceneContext({ view, children }: {
+  view: FloatingPanelView
+  children: React.ReactNode
+}) {
+  const [expanded, setExpanded] = React.useState(false)
+  React.useEffect(() => setExpanded(false), [view])
+  if (view !== 'flightSim') return <>{children}</>
+  return <details
+    className="min-w-0 max-h-[40%] shrink-0 overflow-auto"
+    aria-label="Optional scene context"
+    data-kg-flight-context="1"
+    onToggle={event => setExpanded(event.currentTarget.open)}
+  >
+    <summary className="min-h-[44px] cursor-pointer content-center px-2 text-xs font-semibold">Panorama and city tools</summary>
+    {expanded ? <React.Suspense fallback={<p role="status" className="px-2 text-xs">Loading scene context…</p>}>{children}</React.Suspense> : null}
+  </details>
+}
+
 export function FloatingPanelXrSceneView({ view }: { view: FloatingPanelView }) {
   const { available: warehouseAvailable } = useWarehouseInspectionMode()
   const xr = useGraphStore(state => state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr')
@@ -53,14 +71,16 @@ export function FloatingPanelXrSceneView({ view }: { view: FloatingPanelView }) 
   const immersiveMediaSurface = projectionSurface as ImmersiveMediaProjectionSurface | null
   const content = (
       <section
-        className="flex h-full min-h-0 flex-col"
+        className="flex h-full min-h-0 min-w-0 flex-col"
         data-kg-city-sim-panel-composition={projectionSurface || undefined}
         data-kg-immersive-media-panel-composition={immersiveMediaSurface || undefined}
       >
-        {immersiveMediaSurface ? <ImmersiveMediaPanelProjectionLazy surface={immersiveMediaSurface} /> : null}
-        {projectionSurface ? <CitySimPanelProjection surface={projectionSurface} /> : null}
+        <FloatingPanelSceneContext view={view}>
+          {immersiveMediaSurface ? <ImmersiveMediaPanelProjectionLazy surface={immersiveMediaSurface} /> : null}
+          {projectionSurface ? <CitySimPanelProjection surface={projectionSurface} /> : null}
+        </FloatingPanelSceneContext>
         <section
-          className={`min-h-0 flex-1 ${view === 'media' ? 'overflow-auto' : 'overflow-hidden'}`}
+          className={`min-h-0 min-w-0 flex-1 ${view === 'media' ? 'overflow-auto' : 'overflow-hidden'}`}
           data-kg-city-sim-panel-scroll-owner={view === 'media' ? 'media' : undefined}
         >
           {panel}
