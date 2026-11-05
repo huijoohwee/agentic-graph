@@ -30,6 +30,21 @@ const WEBPAGE_SHELL_PROMO_LINE_REGEX =
 const WEBPAGE_SHELL_COOKIE_LINE_REGEX =
   /\b(?:we\s+use\s+cookies|cookie\s+policy|manage\s+cookies|reject\s+non-essential|accept\s+all)\b/i
 
+const WEBPAGE_COOKIE_CONSENT_CATEGORY_REGEXES = [
+  /\bessential\b/i,
+  /\bperformance\b/i,
+  /\bfunctional\b/i,
+  /\badvertising\b/i,
+  /\banalytics\b/i,
+  /\btargeting\b/i,
+] as const
+
+const WEBPAGE_COOKIE_CONSENT_ACTION_REGEX =
+  /\b(?:allowed|always\s+active|accept\s+all|reject\s+(?:all|non-essential)|save\s+(?:settings|preferences)|privacy\s+preferences)\b/i
+
+const WEBPAGE_COOKIE_CONSENT_COPY_REGEX =
+  /\b(?:cookies?\s+are\s+necessary|cannot\s+be\s+deactivated|third\s+part(?:y|ies)|our\s+site\s+and\s+services|site\s+features|marketing\s+content|anonymous\s+statistics|similar\s+tools)\b/i
+
 const WEBPAGE_SHELL_CHROME_ACTION_LINE_REGEX =
   /^(?:get|open|download|install)\s+app$|^(?:sign\s*in|sign\s*up|log\s*in|log\s*on)$|^(?:click\s+to\s+view|copy|new\s+chat|visit\s+website|visit\s+site|view\s+github|join\s+discord|view\s+hugging\s*face|got\s+it!?|close)$|^(?:web\s+report|view\s*\/\s*share\s+web\s+report)$/i
 
@@ -43,10 +58,34 @@ const normalizeWebpageShellProbeText = (text: string): string =>
     .replace(/\s+/g, ' ')
     .trim()
 
+export function looksLikeCookieConsentWallText(text: string): boolean {
+  const raw = String(text || '')
+  const normalized = normalizeWebpageShellProbeText(raw)
+  if (!normalized || !WEBPAGE_SHELL_COOKIE_LINE_REGEX.test(normalized)) return false
+
+  const categoryMatches = WEBPAGE_COOKIE_CONSENT_CATEGORY_REGEXES
+    .filter(pattern => pattern.test(raw))
+    .length
+  const allowedCount = (normalized.match(/\ballowed\b/g) || []).length
+  const actionCueCount =
+    (WEBPAGE_COOKIE_CONSENT_ACTION_REGEX.test(normalized) ? 1 : 0)
+    + (/\b(?:manage\s+cookies|privacy\s+preferences)\b/i.test(normalized) ? 1 : 0)
+  const copyCueCount = WEBPAGE_COOKIE_CONSENT_COPY_REGEX.test(normalized)
+    ? (normalized.match(/\b(?:cookies?\s+are\s+necessary|cannot\s+be\s+deactivated|third\s+part(?:y|ies)|our\s+site\s+and\s+services|site\s+features|marketing\s+content|anonymous\s+statistics|similar\s+tools)\b/gi) || []).length
+    : 0
+
+  return (
+    categoryMatches >= 3 && (allowedCount >= 2 || actionCueCount >= 1 || copyCueCount >= 3)
+  ) || (
+    categoryMatches >= 2 && allowedCount >= 3 && copyCueCount >= 2
+  )
+}
+
 export function looksLikeWebpageShellText(text: string): boolean {
   const raw = String(text || '')
   const normalized = normalizeWebpageShellProbeText(raw)
   if (!normalized) return false
+  if (looksLikeCookieConsentWallText(raw)) return true
   if (WEBPAGE_SHELL_PATTERNS.some(pattern => pattern.test(normalized)) === false) return false
 
   const lines = raw
@@ -118,9 +157,22 @@ export function pruneWebpageChromeText(text: string): string {
   if (rawLines.length === 0) return ''
 
   let startIndex = 0
+  let sawCookieConsentLead = false
   while (startIndex < rawLines.length) {
     const line = rawLines[startIndex] || ''
     if (!line || isLikelyWebpageChromeTextLine(line)) {
+      sawCookieConsentLead = sawCookieConsentLead || WEBPAGE_SHELL_COOKIE_LINE_REGEX.test(line)
+      startIndex += 1
+      continue
+    }
+    if (
+      sawCookieConsentLead
+      && (
+        WEBPAGE_COOKIE_CONSENT_ACTION_REGEX.test(line)
+        || WEBPAGE_COOKIE_CONSENT_COPY_REGEX.test(line)
+        || WEBPAGE_COOKIE_CONSENT_CATEGORY_REGEXES.some(pattern => pattern.test(line))
+      )
+    ) {
       startIndex += 1
       continue
     }

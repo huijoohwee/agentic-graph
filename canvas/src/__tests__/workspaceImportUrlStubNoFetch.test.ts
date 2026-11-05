@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { setWorkspaceWebpageDomExportForTests } from '@/features/markdown-workspace/workspaceImport/urlContent'
 import { fetchWorkspaceUrlContent, importWorkspaceUrl } from '@/features/markdown-workspace/workspaceImport'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
@@ -492,6 +493,7 @@ export {
   testWorkspaceImportUrlPrefersHigherCoverageMarkdownFallback,
   testWorkspaceImportUrlDomChooserIgnoresShellChromeDuringCoverage,
   testWorkspaceImportUrlChromePruningDoesNotTruncateSubstantiveAboutLines,
+  testWorkspaceImportUrlChromePruningSkipsLeadingCookieConsentWall,
   testWorkspaceImportUrlDomChooserRepairsMergedLeadingBoundariesFromRenderedText,
   testWorkspaceImportUrlImportPreservesFullTextFallbackBody,
   testWorkspaceImportUrlImportRecoversJsRenderedContentViaDomExportFallback,
@@ -511,3 +513,85 @@ export {
   testPlainTextToMarkdownSplitsThinkingNarrativeTailsFromInlineListLines,
   testWorkspaceImportUrlRestoresVisibleMarkdownSyntaxTokens,
 } from './workspaceImportUrlDomRecovery.test'
+
+export async function testWorkspaceImportUrlImportPrunesLeadingCookieConsentWallFromApiNativeBrowserSessionMarkdown(): Promise<void> {
+  resetWorkspaceUrlContentCacheForTests()
+  const url = 'https://example.test/event/dashboard/en-US'
+  const fetchCalls: string[] = []
+  const g = globalThis as GlobalWithFetch
+  const previousFetch = g.fetch
+  g.fetch = (async (input: unknown, init?: RequestInit) => {
+    const requestUrl = input instanceof URL ? input.toString() : String(input || '')
+    fetchCalls.push(requestUrl)
+    if (requestUrl.startsWith('/__webpage_proxy?')) {
+      return new Response([
+        '<!doctype html><html><head><title>Workshop Studio</title></head><body>',
+        '<noscript>You need to enable JavaScript to run this app.</noscript>',
+        '<div id="raw-loader-container">Loading page...</div>',
+        '<div id="root"></div>',
+        '</body></html>',
+      ].join(''), { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+    }
+    if (requestUrl === 'http://localhost:6969/v1/sessions') {
+      return new Response(JSON.stringify({
+        sessions: [
+          { id: 'event-dashboard-session', url, domain: 'example.test', title: 'Event Dashboard - Workshop Studio' },
+        ],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    }
+    if (requestUrl === 'http://localhost:6969/v1/browser/markdown') {
+      const body = JSON.parse(String(init?.body || '{}')) as Record<string, unknown>
+      if (body.session_id !== 'event-dashboard-session' || body.url !== url) {
+        throw new Error(`expected browser markdown recovery to target the matching event dashboard session, got ${JSON.stringify(body)}`)
+      }
+      return new Response(JSON.stringify({
+        markdown: [
+          'We use cookies and similar tools ("cookies") for the following purposes.',
+          '',
+          '### Essential',
+          'Essential cookies are necessary to provide our site and services and cannot be deactivated.',
+          'Allowed',
+          '',
+          '### Performance',
+          'Performance cookies provide anonymous statistics about how customers navigate our site so we can improve site experience and performance.',
+          'Allowed',
+          '',
+          '### Functional',
+          'Functional cookies help us provide useful site features, remember your preferences, and display relevant content.',
+          'Allowed',
+          '',
+          '# Event Dashboard',
+          '',
+          'Original event overview content remains visible after the consent wall is dismissed.',
+          '',
+          'Session details and logistics stay part of the imported page.',
+        ].join('\n'),
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    }
+    return new Response('not found', { status: 404, headers: { 'Content-Type': 'text/plain' } })
+  }) as unknown as typeof fetch
+  setWorkspaceWebpageDomExportForTests(async () => ({
+    text: 'Loading page...\n\nSign in\n\nOpen App',
+    title: 'Workshop Studio',
+    clipped: false,
+  }))
+  try {
+    const res = await fetchWorkspaceUrlContent(url, { mode: 'import', viewHint: 'markdown' })
+    if (!res.text.includes('# Event Dashboard')) {
+      throw new Error(`expected browser-session markdown recovery to preserve the event dashboard body, got:\n${res.text}`)
+    }
+    if (!res.text.includes('Original event overview content remains visible after the consent wall is dismissed.')) {
+      throw new Error(`expected browser-session markdown recovery to keep substantive page content after the consent wall, got:\n${res.text}`)
+    }
+    if (res.text.includes('We use cookies') || res.text.includes('### Essential') || res.text.includes('Allowed')) {
+      throw new Error(`expected browser-session markdown recovery to prune the leading cookie-consent wall, got:\n${res.text}`)
+    }
+    if (!fetchCalls.includes('http://localhost:6969/v1/browser/markdown')) {
+      throw new Error(`expected cookie-wall recovery to request API-native browser-session markdown, got ${JSON.stringify(fetchCalls)}`)
+    }
+  } finally {
+    setWorkspaceWebpageDomExportForTests(null)
+    g.fetch = previousFetch
+    resetWorkspaceUrlContentCacheForTests()
+  }
+}
