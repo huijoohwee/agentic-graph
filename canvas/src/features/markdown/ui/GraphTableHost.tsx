@@ -26,7 +26,6 @@ import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
 import { buildInlineMediaCommandContextFromRecord } from '@/lib/command-menu/inlineMediaCommandContext'
 import { buildSourceLineNestedTableCellMap, renderMarkdownDataViewTableRichCell } from '@/features/markdown/ui/MarkdownDataViewImageCell'
 import { MarkdownDataViewInlineTextCellEditor } from '@/features/markdown/ui/MarkdownDataViewInlineTextCellEditor'
-import { useMarkdownDataViewNestedRowCollapse } from '@/features/markdown/ui/useMarkdownDataViewNestedRowCollapse'
 import { MarkdownDataViewColumnResizeHandle } from '@/features/markdown/ui/MarkdownDataViewColumnResizeHandle'
 import { MarkdownDataViewCellSelectPopover } from '@/features/markdown/ui/MarkdownDataViewCellSelectPopover'
 import { MARKDOWN_DATA_VIEW_DEFAULT_COLUMN_WIDTH_PX as defaultColumnWidthPx, readMarkdownDataViewDefaultColumnWidth as readDefaultColumnWidth } from '@/features/markdown/ui/markdownDataViewColumnSizing'
@@ -44,7 +43,8 @@ import {
   readDataViewTablePaddingClassName as readTablePaddingClassName,
 } from '@/lib/ui/dataViewDensity'
 
-const baseTableComponents = createBaseTableHost().components
+const baseTableHost = createBaseTableHost()
+const baseTableComponents = baseTableHost.components
 const baseHierarchyCell = baseTableComponents.HierarchyCell
 
 /** Keep Graph source hierarchy while using Base controls at one fixed position for every depth. */
@@ -97,7 +97,7 @@ export const graphTableHost: TableHostAdapter = {
     buildMediaCommandContext: buildInlineMediaCommandContextFromRecord,
     buildNestedCellMap: buildSourceLineNestedTableCellMap,
     renderRichCell: renderMarkdownDataViewTableRichCell,
-    useNestedRowCollapse: useMarkdownDataViewNestedRowCollapse,
+    useNestedRowCollapse: baseTableHost.data.useNestedRowCollapse,
   },
   helpers: {
     defaultColumnWidthPx,
