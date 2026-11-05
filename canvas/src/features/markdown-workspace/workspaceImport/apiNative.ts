@@ -9,6 +9,7 @@ import { fetchWebpageHtmlAuto } from '@/lib/websites/webpageIframeSrcdoc'
 import { LS_KEYS } from '@/lib/config.ls.keys'
 import { API_NATIVE_BROWSER_DEFAULT_RUNTIME_URL } from 'grph-shared/browser/apiNativeBrowserMcpSsot'
 import { looksLowFidelityWebpageMarkdown } from '@/lib/websites/webpageClientConvert'
+import { pruneWebpageChromeText } from '@/lib/websites/webpageShellHeuristics'
 import { plainTextToMarkdown } from '@/lib/markdown/plainTextToMarkdown'
 import { restoreWebpageMarkdownSyntaxFidelity } from '@/lib/markdown/webpageMarkdownSyntaxFidelity'
 import { readApiNativeBrowserMarkdownPayload, readApiNativeBrowserResponseSourceUrl, readApiNativeBrowserResponseText } from './apiNativeResponse'
@@ -166,6 +167,16 @@ function pickApiNativeBrowserSessions(url: string, sessions: ApiNativeBrowserSes
   return sessions.map(session => ({ session, score: scoreSession(session) })).filter(item => item.score > 0 && item.session.id).sort((a, b) => b.score - a.score).map(item => item.session)
 }
 
+function recoverAcceptableApiNativeBrowserMarkdown(markdown: string): string {
+  const normalizedMarkdown = restoreWebpageMarkdownSyntaxFidelity(String(markdown || '')).trim()
+  if (!normalizedMarkdown) return ''
+  if (!looksLowFidelityWebpageMarkdown(normalizedMarkdown)) return normalizedMarkdown
+
+  const prunedMarkdown = restoreWebpageMarkdownSyntaxFidelity(pruneWebpageChromeText(normalizedMarkdown)).trim()
+  if (!prunedMarkdown || prunedMarkdown === normalizedMarkdown) return ''
+  return looksLowFidelityWebpageMarkdown(prunedMarkdown) ? '' : prunedMarkdown
+}
+
 export async function tryFetchApiNativeBrowserSessionMarkdown(args: TryFetchApiNativeMarkdownArgs): Promise<ApiNativeMarkdownResult | null> {
   const normalizedRuntimeUrl = normalizeApiNativeBrowserRuntimeUrl(readApiNativeBrowserRuntimeUrl())
   if (!normalizedRuntimeUrl) return null
@@ -205,13 +216,13 @@ export async function tryFetchApiNativeBrowserSessionMarkdown(args: TryFetchApiN
       if (!markdownRes.ok) continue
       const markdownPayload = readApiNativeBrowserMarkdownPayload(await markdownRes.text())
       if (!shouldAcceptWorkspaceImportSourceContent(args.url, markdownPayload.sourceUrl, session.url)) continue
-      const markdownText = markdownPayload.markdown
-      if (markdownText && !looksLowFidelityWebpageMarkdown(markdownText)) {
+      const markdownText = recoverAcceptableApiNativeBrowserMarkdown(markdownPayload.markdown)
+      if (markdownText) {
         return {
           normalizedUrl: args.url,
           name: deriveFilenameFromUrl(args.url, 'webpage.md'),
           ...(markdownPayload.title || session.title ? { title: markdownPayload.title || session.title } : {}),
-          upstreamMarkdown: restoreWebpageMarkdownSyntaxFidelity(markdownText),
+          upstreamMarkdown: markdownText,
           ...(markdownPayload.thinkingMarkdown ? { thinkingMarkdown: restoreWebpageMarkdownSyntaxFidelity(markdownPayload.thinkingMarkdown) } : {}),
           diagnostics: `api-native-browser-session:${sessionId}`,
           browserSessionId: sessionId,
@@ -238,8 +249,8 @@ export async function tryFetchApiNativeBrowserSessionMarkdown(args: TryFetchApiN
       if (!shouldAcceptWorkspaceImportSourceContent(args.url, readApiNativeBrowserResponseSourceUrl(textRaw), session.url)) continue
       const textBody = readApiNativeBrowserResponseText(textRaw)
       if (!textBody || textBody.length < 220) continue
-      const plainMarkdown = restoreWebpageMarkdownSyntaxFidelity(plainTextToMarkdown(textBody))
-      if (!looksLowFidelityWebpageMarkdown(plainMarkdown)) {
+      const plainMarkdown = recoverAcceptableApiNativeBrowserMarkdown(plainTextToMarkdown(textBody))
+      if (plainMarkdown) {
         return { normalizedUrl: args.url, name: deriveFilenameFromUrl(args.url, 'webpage.md'), ...(session.title ? { title: session.title } : {}), upstreamMarkdown: plainMarkdown, diagnostics: `api-native-browser-session:${sessionId}:text`, browserSessionId: sessionId }
       }
     }

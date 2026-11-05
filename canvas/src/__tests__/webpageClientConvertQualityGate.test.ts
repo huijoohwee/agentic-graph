@@ -102,3 +102,27 @@ export function testWebpageClientConvertQualityGateDetectsConnectionErrorShellMa
     throw new Error('expected connection-error shell markdown to be rejected by the quality gate')
   }
 }
+
+export function testWebpageClientConvertQualityGateDetectsCookieConsentWallMarkdown() {
+  const shell = [
+    'We use cookies and similar tools ("cookies") for the following purposes.',
+    '',
+    '### Essential',
+    'Essential cookies are necessary to provide our site and services and cannot be deactivated.',
+    'Allowed',
+    '',
+    '### Performance',
+    'Performance cookies provide anonymous statistics about how customers navigate our site so we can improve site experience and performance.',
+    'Allowed',
+    '',
+    '### Functional',
+    'Functional cookies help us provide useful site features, remember your preferences, and display relevant content.',
+    'Allowed',
+    '',
+    '### Advertising',
+    'Advertising cookies may be set through our site by us or our advertising partners and help us deliver relevant marketing content.',
+  ].join('\n')
+  if (!looksLowFidelityWebpageMarkdown(shell)) {
+    throw new Error('expected cookie-consent wall markdown to be rejected by the quality gate')
+  }
+}

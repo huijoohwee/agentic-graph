@@ -389,12 +389,17 @@ function runtimeValidationForbiddenNeedles(runtimeInputPath: string): readonly s
     } catch {
       declaredCanonicalPath = ''
     }
-    const token = parsedUrl.pathname.split('/').filter(Boolean).at(-1) || ''
+    const urlPathSegments = parsedUrl.pathname.split('/').filter(Boolean)
+    const token = urlPathSegments.at(-1) || ''
+    const remotePathTail = urlPathSegments.length >= 2 ? urlPathSegments.slice(-3).join('/') : ''
     // A short route name is shared vocabulary, not an external input identity.
     // Keep exact URL/authority-path protection and distinctive opaque tokens.
+    // Multi-segment route tails are specific enough to guard without banning
+    // ordinary one-word paths that are likely shared vocabulary.
     return Array.from(new Set([
       normalizedInputPath,
       `${parsedUrl.host}${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`,
+      remotePathTail,
       /^[A-Za-z0-9_-]{20,}$/.test(token) ? token : '',
       declaredCanonicalPath,
     ].filter(v => v.length >= 4)))
@@ -457,6 +462,19 @@ function assertRuntimeValidationHardcodePolicyContract() {
     || !ordinaryNeedles.includes('validation.invalid/articles')
     || ordinaryNeedles.includes('articles')) {
     throw new Error('Expected full remote URL protection without banning ordinary route words')
+  }
+  const nestedRouteHost = [
+    'catalog.us-east-1',
+    'prod.workshops.aws',
+  ].join('.')
+  const nestedRouteTail = ['event', 'dashboard', 'en-US'].join('/')
+  const nestedRouteInput = `https://${nestedRouteHost}/${nestedRouteTail}`
+  const nestedRouteNeedles = runtimeValidationForbiddenNeedles(nestedRouteInput)
+  if (!nestedRouteNeedles.includes(nestedRouteInput)
+    || !nestedRouteNeedles.includes(`${nestedRouteHost}/${nestedRouteTail}`)
+    || !nestedRouteNeedles.includes(nestedRouteTail)
+    || nestedRouteNeedles.includes('en-US')) {
+    throw new Error('Expected nested external Import URL routes to guard their distinctive tail without banning leaf route words')
   }
 }
 
