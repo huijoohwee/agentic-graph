@@ -26,3 +26,14 @@ test('native Gantt ruler bundles without Graph application stores', async () => 
   assert(result.outputFiles[0].contents.length < 200000)
   assert(!Object.keys(result.metafile.inputs).some(file => /useGraphStore|workspace-seeds|maplibre-gl|elkjs/.test(file)))
 })
+
+
+test('native ticks retain clocks and entered dates without inventing ordinal durations', async () => {
+  const React = await import('react')
+  const { renderToStaticMarkup } = await import('react-dom/server')
+  const { VideoSequenceTimelineRulerTicks } = await import('../VideoSequenceTimelineRulerTicks')
+  const render = (label: string) => renderToStaticMarkup(React.createElement(VideoSequenceTimelineRulerTicks, { displayTicks: [{ label, minutes: 1, percent: 0 }] }))
+  assert.match(render('0:01'), /dateTime="PT1S"/i)
+  assert.match(render('2026-11-06'), /dateTime="2026-11-06"/i)
+  assert.doesNotMatch(render('Step 1'), /dateTime=/i)
+})
