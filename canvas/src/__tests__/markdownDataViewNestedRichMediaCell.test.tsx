@@ -185,13 +185,13 @@ export async function testMarkdownDataViewSourceLineNestedTablesRenderInRowsAndC
     if (!String(frontmatterSourceTable.textContent || '').includes('lines 20-22')) {
       throw new Error(`expected frontmatter nested source table to retain source line range, got ${frontmatterSourceTable.textContent}`)
     }
-    const nestedRows = Array.from(dom.window.document.querySelectorAll('tr[data-kg-markdown-data-view-row-nested-depth="2"]')) as HTMLTableRowElement[]
+    const nestedRows = Array.from(dom.window.document.querySelectorAll('tr[data-agentic-base-row-depth="2"]')) as HTMLTableRowElement[]
     if (nestedRows.length < 3) {
       throw new Error(`expected rows-as-records pivot to expose Level-derived row nesting, html=${container.innerHTML}`)
     }
-    const hierarchyCells = Array.from(dom.window.document.querySelectorAll('tbody tr[data-kg-markdown-data-view-row-nested-depth="2"] td.agentic-base-data-tree-cell'))
+    const hierarchyCells = Array.from(dom.window.document.querySelectorAll('tbody tr[data-agentic-base-row-depth="2"] td.agentic-base-data-tree-cell'))
       .filter((cell): cell is HTMLElement => cell instanceof dom.window.HTMLElement)
-    if (hierarchyCells.length < 3 || !hierarchyCells.every(cell => cell.getAttribute('data-agentic-base-hierarchy-depth') === '0' && !cell.style.paddingInlineStart)) {
+    if (hierarchyCells.length < 3 || !hierarchyCells.every(cell => !cell.style.paddingInlineStart && cell.querySelectorAll('.agentic-base-row-expand').length <= 1)) {
       throw new Error('expected rows-as-records hierarchy cells to use fixed-position Base controls at every nesting depth')
     }
     if (!hierarchyCells.every(cell => !cell.querySelector('.kg-data-view-tree-cell-guide'))) {
@@ -204,12 +204,12 @@ export async function testMarkdownDataViewSourceLineNestedTablesRenderInRowsAndC
     if (rootLeafGuide) {
       throw new Error('expected root leaf rows to omit the legacy vertical tree guide')
     }
-    const valueCells = Array.from(dom.window.document.querySelectorAll('tbody tr[data-kg-markdown-data-view-row-nested-depth="2"] td:nth-child(4)'))
+    const valueCells = Array.from(dom.window.document.querySelectorAll('tbody tr[data-agentic-base-row-depth="2"] td:nth-child(4)'))
       .filter((cell): cell is HTMLElement => cell instanceof dom.window.HTMLElement)
     if (valueCells.length < 3 || valueCells.some(cell => cell.style.paddingInlineStart)) {
       throw new Error('expected rows-as-records Value cells to remain unpadded while shared hierarchy controls stay aligned')
     }
-    const nestedToggle = Array.from(nestedRows)
+    const nestedToggle = Array.from(dom.window.document.querySelectorAll('tr[data-agentic-base-row-parent="true"]'))
       .map(row => row.querySelector('button.agentic-base-row-expand'))
       .find((button): button is HTMLButtonElement => button instanceof dom.window.HTMLButtonElement) || null
     if (!nestedToggle || nestedToggle.getAttribute('aria-expanded') !== 'true') {
@@ -271,13 +271,13 @@ export async function testMarkdownDataViewSourceLineNestedTablesRenderInRowsAndC
     await tick()
     await tick()
 
-    const columnHierarchyRow = dom.window.document.querySelector('tr[data-kg-markdown-data-view-column-record-hierarchy-row="1"]')
+    const columnHierarchyRow = dom.window.document.querySelector('tr[data-agentic-base-column-record-hierarchy-row="1"]')
     if (!(columnHierarchyRow instanceof dom.window.HTMLElement)) {
       throw new Error(`expected columns-as-records pivot to expose a dedicated hierarchy row, html=${container.innerHTML}`)
     }
     const columnHierarchyCells = Array.from(columnHierarchyRow.querySelectorAll('td.agentic-base-data-tree-cell'))
       .filter((cell): cell is HTMLElement => cell instanceof dom.window.HTMLElement)
-    if (columnHierarchyCells.length < 4 || !columnHierarchyCells.every(cell => cell.getAttribute('data-agentic-base-hierarchy-depth') === '0' && !cell.style.paddingInlineStart)) {
+    if (columnHierarchyCells.length < 4 || !columnHierarchyCells.every(cell => !cell.style.paddingInlineStart && cell.querySelectorAll('.agentic-base-row-expand').length <= 1)) {
       throw new Error('expected columns-as-records hierarchy cells to use fixed-position Base controls at every nesting depth')
     }
     const deepColumnHierarchyCell = columnHierarchyCells[0] || null

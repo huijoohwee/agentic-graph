@@ -1,4 +1,3 @@
-import React from 'react'
 import { createBaseTableHost } from '@agentic-base/views-react/table'
 import '@agentic-base/views-react/browser.css'
 import type { TableHostAdapter } from '@agentic-base/views-react/table'
@@ -45,13 +44,6 @@ import {
 
 const baseTableHost = createBaseTableHost()
 const baseTableComponents = baseTableHost.components
-const baseHierarchyCell = baseTableComponents.HierarchyCell
-
-/** Keep Graph source hierarchy while using Base controls at one fixed position for every depth. */
-function GraphAlignedBaseHierarchyCell(props: Record<string, unknown>) {
-  return React.createElement(baseHierarchyCell, { ...props, depth: 0 })
-}
-
 export const graphTableHost: TableHostAdapter = {
   contract: 'agentic-base/table-host/v1',
   themeTokens: UI_THEME_TOKENS,
@@ -77,7 +69,7 @@ export const graphTableHost: TableHostAdapter = {
     AddColumnMenu: MarkdownDataViewAddColumnMenu,
     ColumnHeaderPropertyTypeMenu,
     ColumnHeaderMenu,
-    HierarchyCell: GraphAlignedBaseHierarchyCell,
+    HierarchyCell: baseTableComponents.HierarchyCell,
     NestedRowsBulkToggle: baseTableComponents.NestedRowsBulkToggle,
     InlineTextCellEditor: MarkdownDataViewInlineTextCellEditor,
     ColumnResizeHandle: MarkdownDataViewColumnResizeHandle,
