@@ -209,7 +209,7 @@ export async function testMarkdownDataViewSourceLineNestedTablesRenderInRowsAndC
     if (valueCells.length < 3 || valueCells.some(cell => cell.style.paddingInlineStart)) {
       throw new Error('expected rows-as-records Value cells to remain unpadded while shared hierarchy controls stay aligned')
     }
-    const nestedToggle = Array.from(dom.window.document.querySelectorAll('tr[data-agentic-base-row-parent="true"]'))
+    const nestedToggle = (Array.from(dom.window.document.querySelectorAll('tr[data-agentic-base-row-parent="true"]')) as HTMLTableRowElement[])
       .map(row => row.querySelector('button.agentic-base-row-expand'))
       .find((button): button is HTMLButtonElement => button instanceof dom.window.HTMLButtonElement) || null
     if (!nestedToggle || nestedToggle.getAttribute('aria-expanded') !== 'true') {
