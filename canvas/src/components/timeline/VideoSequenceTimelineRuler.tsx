@@ -169,7 +169,7 @@ function resolveActiveVideoSequenceResizeMode(args: {
 export function resolveVideoSequenceRulerMinHeight(laneCount = VIDEO_SEQUENCE_TIMELINE_LANES.length): number { return VIDEO_SEQUENCE_LANE_TOP_OFFSET_PX + (laneCount * VIDEO_SEQUENCE_LANE_HEIGHT_PX) + VIDEO_SEQUENCE_RULER_FOOTER_PX }
 export function VideoSequenceTimelineRuler({
   contentRef, viewportRef, displayTicks, dragPreview, draggingMode, draggingRowKey,
-  editable = true, canEditTrack, maxMinutes,
+  editable = true, canEditTrack, maxMinutes, formatPositionLabel,
   mediaDurationSeconds = 0, mediaFrameRate = 0, playheadPercent,
   projectionMode = 'media', selectedRowKey,
   sourceThumbnails = [], sourceThumbnailWindows = [], sourceThumbnailSets = [], scopes = [], renderClipOverlay, renderLaneOverlay,
@@ -183,7 +183,7 @@ export function VideoSequenceTimelineRuler({
   dragPreview: MermaidGanttTimelineDragPreview | null
   draggingMode: MermaidGanttBarDragMode | null
   draggingRowKey: string; editable?: boolean; canEditTrack?: (rowKey: string, mode: MermaidGanttBarDragMode) => boolean
-  maxMinutes: number
+  maxMinutes: number; formatPositionLabel?: (position: number) => string
   mediaDurationSeconds?: number
   mediaFrameRate?: number
   playheadPercent: number
@@ -226,9 +226,9 @@ export function VideoSequenceTimelineRuler({
     span.rowKey,
     workflowProjection ? 'workflow' : resolveVideoSequenceTimelineDisplayLaneId(span, renderableSpans, projectionOptions),
   ])), [projectionOptions, renderableSpans, workflowProjection])
-  const formatClipTime = React.useCallback((positionMinutes: number) => formatVideoSequenceTimelineSecondsOffset(
+  const formatClipTime = React.useCallback((positionMinutes: number) => formatPositionLabel?.(positionMinutes) ?? formatVideoSequenceTimelineSecondsOffset(
     mediaDurationSeconds > 0 && maxMinutes > 0 ? resolveVideoSequenceTimelineMediaSeconds({ durationSeconds: mediaDurationSeconds, maxMinutes, positionMinutes }) : positionMinutes,
-  ), [maxMinutes, mediaDurationSeconds])
+  ), [formatPositionLabel, maxMinutes, mediaDurationSeconds])
   const minHeight = resolveVideoSequenceRulerMinHeight(timelineLanes.length)
   const timelineScaleMaxMinutes = React.useMemo(() => resolveVideoSequenceTimelineScaleMaxMinutes({ maxMinutes, mediaDurationSeconds }), [maxMinutes, mediaDurationSeconds])
   const handleDropMedia = React.useCallback((payload: MediaDragPayload, positionMinutes: number) => (
