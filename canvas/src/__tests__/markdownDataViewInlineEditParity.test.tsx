@@ -399,8 +399,8 @@ export async function testMarkdownDataViewInlineEditAppliesDensityClassesFromVie
       String(td.textContent || '').includes('longer note'),
     ) || null
     if (!noteCell) throw new Error('expected note cell')
-    if (!noteCell.className.includes('py-1.5')) {
-      throw new Error(`expected compact row-height class, got ${noteCell.className}`)
+    if (!noteCell.className.includes('agentic-base-data-density-compact')) {
+      throw new Error(`expected shared Base row-height class, got ${noteCell.className}`)
     }
 
     const noteValue = noteCell.querySelector('span')

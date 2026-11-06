@@ -221,6 +221,8 @@ export const TEST_CASES_POST_PARSER_5: TestCaseTuple[] = [
   ["markdown.dataView.richMediaCells","@/__tests__/markdownDataViewInlineEditParity.test","testMarkdownDataViewTableRendersInlineMediaCellsWithSharedChipToggle"],
   ["markdown.dataView.nestedTableMediaChipToggle","@/__tests__/markdownDataViewNestedRichMediaCell.test","testMarkdownDataViewNestedTableMediaCellsUseSharedInlineChipToggle"],
   ["markdown.dataView.sourceLineNestedTables","@/__tests__/markdownDataViewNestedRichMediaCell.test","testMarkdownDataViewSourceLineNestedTablesRenderInRowsAndColumns"],
+  ["ui.typography.graphTable.sharedRowHeight","@/__tests__/graphTableTypography.test","testGraphDataTableDomTableViewAppliesCompactDensityHeight"],
+  ["markdown.dataView.sharedRowHeight","@/__tests__/markdownDataViewInlineEditParity.test","testMarkdownDataViewInlineEditAppliesDensityClassesFromViewControls"],
   ["markdown.dataView.stickyHeaderOpaqueMask","@/__tests__/markdownDataViewStickyHeaderMask.test","testMarkdownDataViewStickyHeadersUseOpaqueMaskClass"],
   ["markdown.dataView.inlineEditor.sharedAtMediaCommands","@/__tests__/markdownDataViewInlineEditParity.test","testMarkdownDataViewTableInlineEditorReusesSharedAtMediaCommands"],
   ["videoAgent.importUrl.transcriptUnavailableNotCue","@/__tests__/videoAgentTranscriptUnavailableImport.test","testVideoAgentImportUrlKeepsTranscriptStatusOutOfCueContent"],

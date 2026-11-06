@@ -1,3 +1,4 @@
+import sharedUiPin from '../styles/shared-ui-profile.pin.json'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { GraphDataTableFastGrid } from '@/features/graph-data-table/ui/GraphDataTableFastGrid'
@@ -152,13 +153,13 @@ export async function testGraphDataTableDomTableViewAppliesCompactDensityHeight(
 
     const headerCells = Array.from(container.querySelectorAll('thead th')) as HTMLTableCellElement[]
     if (headerCells.length === 0) throw new Error('expected graph table header cells')
-    if (headerCells.some(cell => cell.style.height !== '22px')) {
+    if (headerCells.some(cell => cell.style.height !== `${sharedUiPin.metrics.rowHeight}px`)) {
       throw new Error(`expected compact header density height, got ${headerCells.map(cell => cell.style.height).join(',')}`)
     }
 
     const bodyCells = Array.from(container.querySelectorAll('tbody td')) as HTMLTableCellElement[]
     if (bodyCells.length === 0) throw new Error('expected graph table body cells')
-    if (bodyCells.some(cell => cell.style.height !== '22px')) {
+    if (bodyCells.some(cell => cell.style.height !== `${sharedUiPin.metrics.rowHeight}px`)) {
       throw new Error(`expected compact body density height, got ${bodyCells.map(cell => cell.style.height).join(',')}`)
     }
   } finally {
