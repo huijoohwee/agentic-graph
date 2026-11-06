@@ -54,18 +54,30 @@ export async function testMarkdownDataViewStickyHeadersUseOpaqueMaskClass() {
     if (!frame || !header || !table) throw new Error('missing embedded table')
     const bounds = (top: number, height: number) => ({ top, bottom: top + height, height } as DOMRect)
     rowsContainer.style.overflowY = 'auto'
+    rowsContainer.style.scrollPaddingTop = '90px'
     Object.defineProperties(rowsContainer, { clientHeight: { value: 300 }, scrollHeight: { value: 900 } })
-    Object.defineProperties(frame, { clientHeight: { value: 600 }, scrollHeight: { value: 600 } })
+    let innerScrollHeight = 600
+    Object.defineProperties(frame, { clientHeight: { value: 600 }, scrollHeight: { get: () => innerScrollHeight } })
     rowsContainer.getBoundingClientRect = () => bounds(60, 300)
     let tableBottom = 380
-    frame.getBoundingClientRect = table.getBoundingClientRect = () => bounds(tableBottom - 500, 500)
-    header.getBoundingClientRect = () => bounds(tableBottom - 500 + (Number.parseFloat(header.style.transform.replace('translateY(', '')) || 0), 40)
+    let tableHeight = 500
+    frame.getBoundingClientRect = () => bounds(tableBottom - tableHeight, 600)
+    table.getBoundingClientRect = () => bounds(tableBottom - tableHeight, tableHeight)
+    header.getBoundingClientRect = () => bounds(tableBottom - tableHeight + (Number.parseFloat(header.style.transform.replace('translateY(', '')) || 0), 40)
     const scrollPane = async () => {
       rowsContainer.dispatchEvent(new dom.window.Event('scroll'))
       await new Promise<void>(resolve => dom.window.requestAnimationFrame(() => resolve()))
     }
     await scrollPane()
-    if (header.getBoundingClientRect().top !== 60) throw new Error('Viewer outer pane must pin the shared original header')
+    if (header.getBoundingClientRect().top !== 150) throw new Error('Viewer header must respect the pane edge and reserved sticky content')
+    rowsContainer.style.scrollPaddingTop = '120px'
+    await tick()
+    await new Promise<void>(resolve => dom.window.requestAnimationFrame(() => resolve()))
+    if (header.getBoundingClientRect().top !== 180) throw new Error('shared header must follow changed reserved space without another scroll')
+    innerScrollHeight = tableHeight = 1000
+    tableBottom = 880
+    await scrollPane()
+    if (header.getBoundingClientRect().top !== 180) throw new Error('an overflowing inner frame must also respect the outer scroll boundary')
     tableBottom = 80
     await scrollPane()
     if (header.getBoundingClientRect().bottom !== 80) throw new Error('shared header must release at the table boundary')
