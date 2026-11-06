@@ -54,6 +54,7 @@ export async function testMarkdownDataViewStickyHeadersUseOpaqueMaskClass() {
     if (!frame || !header || !table) throw new Error('missing embedded table')
     const bounds = (top: number, height: number) => ({ top, bottom: top + height, height } as DOMRect)
     rowsContainer.style.overflowY = 'auto'
+    rowsContainer.style.scrollPaddingTop = '90px'
     Object.defineProperties(rowsContainer, { clientHeight: { value: 300 }, scrollHeight: { value: 900 } })
     Object.defineProperties(frame, { clientHeight: { value: 600 }, scrollHeight: { value: 600 } })
     rowsContainer.getBoundingClientRect = () => bounds(60, 300)
@@ -65,7 +66,11 @@ export async function testMarkdownDataViewStickyHeadersUseOpaqueMaskClass() {
       await new Promise<void>(resolve => dom.window.requestAnimationFrame(() => resolve()))
     }
     await scrollPane()
-    if (header.getBoundingClientRect().top !== 60) throw new Error('Viewer outer pane must pin the shared original header')
+    if (header.getBoundingClientRect().top !== 150) throw new Error('Viewer header must respect the pane edge and reserved sticky content')
+    rowsContainer.style.scrollPaddingTop = '120px'
+    await tick()
+    await new Promise<void>(resolve => dom.window.requestAnimationFrame(() => resolve()))
+    if (header.getBoundingClientRect().top !== 180) throw new Error('shared header must follow changed reserved space without another scroll')
     tableBottom = 80
     await scrollPane()
     if (header.getBoundingClientRect().bottom !== 80) throw new Error('shared header must release at the table boundary')
