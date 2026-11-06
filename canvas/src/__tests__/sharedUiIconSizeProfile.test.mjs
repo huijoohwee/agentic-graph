@@ -23,3 +23,17 @@ test('Graph glyph roles consume the pinned Design System icon-size projection', 
   assert.doesNotMatch(toolbarCss, /@import '\.\/shared-ui-profile\.css';/)
   assert.doesNotMatch(toolbarCss, /var\(--kg-(?:compact|default)-glyph-size,\s*(?:0\.75rem|1rem)\)/)
 })
+
+test('Graph toolbar, table and virtualized row metrics share the Base and Design System owner', () => {
+  assert.match(applicationCss, /--kg-toolbar-compact-surface-height: var\(--agentic-row-height\);/)
+  assert.match(applicationCss, /--kg-table-row-height: var\(--agentic-row-height\);/)
+  for (const [key, cssName] of [['rowHeight', 'row-height'], ['rowHeightTouch', 'row-height-touch']]) {
+    assert.ok(profileCss.toString().includes(`--agentic-${cssName}: ${pin.metrics[key]}px;`))
+  }
+  const density = fs.readFileSync(new URL('../lib/ui/dataViewDensity.ts', import.meta.url), 'utf8')
+  assert.match(density, /return readBaseDataViewRowHeightPx\(preset\)/)
+  assert.doesNotMatch(density, /preset === 'compact' \? 22 : 28/)
+  const host = fs.readFileSync(new URL('../features/markdown/ui/GraphTableHost.tsx', import.meta.url), 'utf8')
+  assert.match(host, /readHeaderPaddingClassName: baseTableHost.helpers.readHeaderPaddingClassName/)
+  assert.match(host, /readTablePaddingClassName: baseTableHost.helpers.readTablePaddingClassName/)
+})

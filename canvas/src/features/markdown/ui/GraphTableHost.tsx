@@ -38,8 +38,6 @@ import {
   coerceDataViewFieldLineMode as coerceFieldLineMode,
   coerceDataViewRowHeightPreset as coerceRowHeightPreset,
   readDataViewFieldLineClassName as readFieldLineClassName,
-  readDataViewHeaderPaddingClassName as readHeaderPaddingClassName,
-  readDataViewTablePaddingClassName as readTablePaddingClassName,
 } from '@/lib/ui/dataViewDensity'
 
 const baseTableHost = createBaseTableHost()
@@ -100,7 +98,7 @@ export const graphTableHost: TableHostAdapter = {
     coerceFieldLineMode,
     coerceRowHeightPreset,
     readFieldLineClassName,
-    readHeaderPaddingClassName,
-    readTablePaddingClassName,
+    readHeaderPaddingClassName: baseTableHost.helpers.readHeaderPaddingClassName,
+    readTablePaddingClassName: baseTableHost.helpers.readTablePaddingClassName,
   },
 }
