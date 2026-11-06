@@ -39,7 +39,7 @@
   --kg-code-text: #0f172a;
   --kg-control-height: 28px;
   --kg-status-pill-height: 24px;
-  --kg-table-row-height: 44px;
+  --kg-table-row-height: var(--agentic-row-height);
   --kg-focus-ring: #3b82f6;
   --kg-accent: #3b82f6;
   --kg-accent-contrast: #ffffff;

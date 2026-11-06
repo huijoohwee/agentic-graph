@@ -32,6 +32,11 @@ export async function testKgTokenValidationAndAliases() {
   const alias = { ...base, name: 'alias', cssVar: '--kg-alias' as const,
     light: 'var(--kg-base)', dark: 'var(--kg-base, #000000)', black: 'var(--kg-base)',
     references: { light: 'base', dark: 'base', black: 'base' } }
+  const shared = { ...base, name: 'shared-row', cssVar: '--kg-shared-row' as const, type: 'dimension' as const,
+    light: 'var(--agentic-row-height)', dark: 'var(--agentic-row-height)', black: 'var(--agentic-row-height)' }
+  assert.equal(resolveKgTokens([shared])[0].light, 'var(--agentic-row-height)')
+  assert.throws(() => resolveKgTokens([{ ...shared, light: 'var(--agentic-unknown)' }]), /invalid literal/)
+  assert.throws(() => resolveKgTokens([{ ...base, light: 'var(--agentic-row-height)' }]), /invalid literal/)
   const resolved = resolveKgTokens([alias, base])
   assert.equal(resolved[0].light, '#ffffff')
   assert.equal(resolved[0].dark, '#000000')
