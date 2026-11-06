@@ -1,5 +1,7 @@
 import React from 'react'
+import { useContainerDims } from '@/hooks/useContainerDims'
 import { VIDEO_SEQUENCE_LANE_HEIGHT_PX, VIDEO_SEQUENCE_TIMELINE_LANES, type VideoSequenceTimelineDisplayLane } from './videoSequenceTimeline'
+import { resolveWorkflowTimelineLaneId, workflowLaneHeight } from './videoSequenceTimelineRulerGeometry'
 
 export type VideoSequenceTimelineInsertedLaneRenderArgs = {
   selected: boolean
@@ -23,17 +25,18 @@ function laneSelected(lane: TimelineLane, selectedDisplayLaneId?: string, select
     ? lane.selected ?? (!!lane.selectRowKey && lane.selectRowKey === selectedRowKey)
     : lane.id === selectedDisplayLaneId
 }
-export function buildVideoSequenceLaneSidebarStyle(lanes: readonly { id: string }[] = VIDEO_SEQUENCE_TIMELINE_LANES): React.CSSProperties {
-  return { gridTemplateRows: `repeat(${lanes.length}, ${VIDEO_SEQUENCE_LANE_HEIGHT_PX}px)` }
+export function buildVideoSequenceLaneSidebarStyle(lanes: readonly { id: string }[] = VIDEO_SEQUENCE_TIMELINE_LANES, heights?: Readonly<Record<string, number>>): React.CSSProperties {
+  return { gridTemplateRows: heights ? lanes.map(lane => `${workflowLaneHeight(heights[lane.id])}px`).join(' ') : `repeat(${lanes.length}, ${VIDEO_SEQUENCE_LANE_HEIGHT_PX}px)` }
 }
 
-export function VideoSequenceTimelineLaneLabels({ lanes, selectedDisplayLaneId, scrollRef, rowKeyToDisplayLaneId, selectedRowKey, onSelectRowKey }: LaneProps & {
+export function VideoSequenceTimelineLaneLabels({ lanes, selectedDisplayLaneId, scrollRef, rowKeyToDisplayLaneId, selectedRowKey, onSelectRowKey, heights }: LaneProps & {
   scrollRef: React.RefObject<HTMLElement | null>
   rowKeyToDisplayLaneId: ReadonlyMap<string, string>
   selectedRowKey: string
   onSelectRowKey: (rowKey: string) => void
+  heights?: Readonly<Record<string, number>>
 }) {
-  return <section ref={scrollRef} className="timeline-video-sequence-lane-sidebar-scroll" style={buildVideoSequenceLaneSidebarStyle(lanes)}>
+  return <section ref={scrollRef} className="timeline-video-sequence-lane-sidebar-scroll" style={buildVideoSequenceLaneSidebarStyle(lanes, heights)}>
     {lanes.map(lane => {
       const inserted = 'content' in lane
       const insertedSelected = laneSelected(lane, selectedDisplayLaneId, selectedRowKey)
@@ -56,6 +59,33 @@ export function VideoSequenceTimelineLaneLabels({ lanes, selectedDisplayLaneId, 
         onClick={() => onSelectRowKey(selectRowKey)}>{lane.label}</button> : lane.label}</section>
     })}
   </section>
+}
+
+export type VideoSequenceWorkflowRow = { rowKey: string; label: string; content: React.ReactNode }
+export function useWorkflowLaneHeights() {
+  const [heights, setHeights] = React.useState<Record<string, number>>({})
+  const reportHeight = React.useCallback((id: string, value: number) => {
+    const height = workflowLaneHeight(value)
+    setHeights(previous => previous[id] === height ? previous : { ...previous, [id]: height })
+  }, [])
+  return { heights, reportHeight }
+}
+export function VideoSequenceWorkflowLane({ row, clip, selected, reportHeight }: {
+  row: VideoSequenceWorkflowRow; clip?: React.ReactNode; selected: boolean; reportHeight: (id: string, height: number) => void
+}) {
+  const ref = React.useRef<HTMLElement>(null), dims = useContainerDims(ref), id = resolveWorkflowTimelineLaneId(row.rowKey, true)
+  React.useEffect(() => { reportHeight(id, dims.height) }, [dims.height, id, reportHeight])
+  return <section ref={ref} className="timeline-workflow-content-row" aria-label={row.label} aria-current={selected ? 'true' : undefined}
+    data-kg-workflow-content-row={row.rowKey} data-kg-video-sequence-display-lane-row={id}>
+    <section className="timeline-workflow-row-clip">{clip ?? <p>No interval placed</p>}</section>
+    <section className="timeline-workflow-row-content">{row.content}</section>
+  </section>
+}
+export function bindTimelineSidebarScroll(scroller: HTMLElement | null, sidebarRef: React.RefObject<HTMLElement | null>) {
+  if (!scroller) return
+  const sync = () => sidebarRef.current?.style.setProperty('--kg-video-sequence-sidebar-scroll-top', `${scroller.scrollTop || 0}px`)
+  sync(); scroller.addEventListener('scroll', sync, { passive: true })
+  return () => scroller.removeEventListener('scroll', sync)
 }
 
 export function VideoSequenceTimelineLaneRows({ lanes, selectedDisplayLaneId, selectedRowKey, onSelectRowKey }: LaneProps & {

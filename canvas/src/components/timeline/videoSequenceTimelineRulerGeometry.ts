@@ -1,4 +1,4 @@
-import type { VideoSequenceTimelineDisplayLane } from './videoSequenceTimeline'
+import { VIDEO_SEQUENCE_LANE_HEIGHT_PX, type VideoSequenceTimelineDisplayLane } from './videoSequenceTimeline'
 
 export const VIDEO_SEQUENCE_RULER_AXIS_EDGE_INSET_PX = 14
 
@@ -39,4 +39,12 @@ export function resolveWorkflowTimelineLanes(rows: readonly { rowKey: string; la
     seen.add(row.rowKey)
     return { id: resolveWorkflowTimelineLaneId(row.rowKey, true), label: row.label, semanticId: 'video' }
   })
+}
+export function workflowLaneHeight(height?: number): number {
+  return Number.isFinite(height) ? Math.max(VIDEO_SEQUENCE_LANE_HEIGHT_PX, Math.ceil(height!)) : VIDEO_SEQUENCE_LANE_HEIGHT_PX
+}
+export function resolveWorkflowContentLanes(spans: readonly { rowKey: string }[], rows: readonly { rowKey: string; label: string }[]): VideoSequenceTimelineDisplayLane[] {
+  const lanes = resolveWorkflowTimelineLanes(rows, true), keys = new Set(rows.map(row => row.rowKey))
+  if (spans.some(span => !keys.has(span.rowKey))) throw Error('workflow_row_content_missing')
+  return lanes
 }
