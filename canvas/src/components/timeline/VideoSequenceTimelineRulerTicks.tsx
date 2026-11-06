@@ -1,3 +1,4 @@
+import React from 'react'
 import type { MermaidGanttTimelineTick } from '@/lib/mermaid/mermaidGanttBarInteraction'
 import { resolveVideoSequenceRulerInsetLeft } from './videoSequenceTimelineRulerGeometry'
 
@@ -12,10 +13,12 @@ function formatVideoSequenceTimeAxisLabel(label: string): string {
   return `${match[1].padStart(2, '0')}:${match[2]}`
 }
 
-function resolveVideoSequenceTickDateTime(tick: MermaidGanttTimelineTick): string {
+function resolveVideoSequenceTickDateTime(tick: MermaidGanttTimelineTick): string | undefined {
   const match = String(tick.label || '').trim().match(/^(\d+):(\d{2})$/)
   if (match) return `PT${Math.max(0, Number(match[1]) * 60 + Number(match[2]))}S`
-  return `PT${Math.max(0, Math.round(tick.minutes * 60))}S`
+  if (/^\d{4}-\d{2}-\d{2}$/.test(tick.label)) return tick.label
+  if (/^\d+f$/i.test(tick.label)) return `PT${Math.max(0, Math.round(tick.minutes * 60))}S`
+  return undefined
 }
 
 function resolveVideoSequenceTickMajor(tick: MermaidGanttTimelineTick): boolean {

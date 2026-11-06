@@ -1,6 +1,6 @@
 import type { MermaidGanttSourceRangeSeconds, MermaidGanttTimelineTaskSpan } from '@/lib/mermaid/mermaidGanttBarInteraction'
 import { buildMermaidGanttTimelineModel, readMermaidGanttTaskSourceRangeSeconds } from '@/lib/mermaid/mermaidGanttBarInteraction'
-import { clampTimelineTransportValue } from './timelineTransport'
+import { clampTimelineTransportValue } from './timelineTransportMath'
 import { isLikelyAbsoluteFsPath, buildLocalFsFetchPath } from '@/lib/url'
 import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
 import { isPlainObject } from '@/lib/graph/value'

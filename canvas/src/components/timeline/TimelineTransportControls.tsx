@@ -6,7 +6,7 @@ import {
   TIMELINE_TRANSPORT_PLAYBACK_RATES,
   resolveTimelineTransportPlaybackRate,
   type TimelineTransportPlaybackRate,
-} from './timelineTransport'
+} from './timelineTransportMath'
 import './TimelineTransportControls.css'
 import './TimelineTransportControlsMermaidGantt.css'
 import './TimelineTransportLane.css'
