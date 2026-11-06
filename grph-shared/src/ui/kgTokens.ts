@@ -19,7 +19,7 @@ const tokenValues: readonly Pick<KgTokenDef, 'cssVar' | 'light' | 'dark'>[] = [
   { cssVar: '--kg-code-text', light: '#0f172a', dark: '#e2e8f0' },
   { cssVar: '--kg-control-height', light: '28px', dark: '28px' },
   { cssVar: '--kg-status-pill-height', light: '24px', dark: '24px' },
-  { cssVar: '--kg-table-row-height', light: '44px', dark: '44px' },
+  { cssVar: '--kg-table-row-height', light: 'var(--agentic-row-height)', dark: 'var(--agentic-row-height)' },
   { cssVar: '--kg-focus-ring', light: '#3b82f6', dark: '#60a5fa' },
   { cssVar: '--kg-accent', light: '#3b82f6', dark: '#60a5fa' },
   { cssVar: '--kg-accent-contrast', light: '#ffffff', dark: '#020617' },

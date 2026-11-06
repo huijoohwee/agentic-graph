@@ -1,5 +1,5 @@
 import { selectMenuOption } from './lib/select-menu-option.mjs'
-import { dismissVisibleFloatingPanel } from './lib/panel-close-helpers.mjs'
+import { BASE_FLOATING_PANEL_ROOT_SELECTOR, dismissVisibleFloatingPanel } from './lib/panel-close-helpers.mjs'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
@@ -46,7 +46,7 @@ async function verify() {
         && state.sourceFiles[0]?.source?.path === `workspace:${path}`
     }, undefined, { timeout: 120000 })
     // Finish seed activation, then dismiss overlays from front to back through rendered controls.
-    const floatingPanel = page.locator('[data-kg-floating-panel-root="true"]:not([data-kg-strybldr-bottom-timeline-panel])').first()
+    const floatingPanel = page.locator(`${BASE_FLOATING_PANEL_ROOT_SELECTOR}:not([data-kg-strybldr-bottom-timeline-panel])`).first()
     await floatingPanel.waitFor({ state: 'visible' })
     assert.equal(await dismissVisibleFloatingPanel(page, floatingPanel), true, 'Expected seed floating panel must close through its rendered control')
     const timeline = page.getByRole('complementary', { name: 'Strybldr Timeline', exact: true })
@@ -75,7 +75,7 @@ async function verify() {
       useGraphStore.getState().setFloatingPanelView('design')
       useGraphStore.getState().setFloatingPanelOpen(true)
     })
-    const panel = page.locator('[data-kg-floating-panel-root="true"]').getByRole('region', { name: 'Design panel', exact: true })
+    const panel = page.locator(BASE_FLOATING_PANEL_ROOT_SELECTOR).getByRole('region', { name: 'Design panel', exact: true })
     await panel.getByRole('button', { name: 'Open Tokens', exact: true }).click()
     const review = panel.getByRole('region', { name: 'Design Tokens', exact: true })
     await review.getByRole('heading', { name: 'Design token review' }).waitFor()

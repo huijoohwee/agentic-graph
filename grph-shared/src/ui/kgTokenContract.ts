@@ -41,7 +41,9 @@ const dimension = /^-?(?:\d+(?:\.\d+)?|\.\d+)(?:px|rem|em|%|vh|vw)$/
 function validLiteral(type: KgTokenType, value: string): boolean {
   if (type === 'color') return parseKgColor(value) !== null
   if (type === 'number') return numeric.test(value) && Number.isFinite(Number(value))
-  if (type === 'dimension') return dimension.test(value) && Number.isFinite(parseFloat(value))
+  // The finite shared-layout alias is owned and projected by Design System.
+  if (type === 'dimension') return value === 'var(--agentic-row-height)'
+    || dimension.test(value) && Number.isFinite(parseFloat(value))
   const shadow = /^(?:inset )?((?:-?(?:\d+(?:\.\d+)?|\.\d+)(?:px|rem|em)? ){2,4})(.+)$/.exec(value)
   const lengths = shadow?.[1].trim().split(' ') ?? []
   return !!shadow && lengths.every(v => v === '0' || dimension.test(v) && Number.isFinite(parseFloat(v)))

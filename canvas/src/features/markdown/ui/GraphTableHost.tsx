@@ -38,8 +38,6 @@ import {
   coerceDataViewFieldLineMode as coerceFieldLineMode,
   coerceDataViewRowHeightPreset as coerceRowHeightPreset,
   readDataViewFieldLineClassName as readFieldLineClassName,
-  readDataViewHeaderPaddingClassName as readHeaderPaddingClassName,
-  readDataViewTablePaddingClassName as readTablePaddingClassName,
 } from '@/lib/ui/dataViewDensity'
 
 const baseTableHost = createBaseTableHost()
@@ -52,7 +50,7 @@ export const graphTableHost: TableHostAdapter = {
     actionRowClass: UI_RESPONSIVE_ACTION_ROW_CLASSNAME,
     compactGlyphClass: UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME,
     dataViewMenuPanelClass: UI_RESPONSIVE_DATA_VIEW_MENU_PANEL_CLASSNAME,
-    dataViewTableFrameClass: UI_RESPONSIVE_DATA_VIEW_TABLE_FRAME_CLASSNAME,
+    dataViewTableFrameClass: `${UI_RESPONSIVE_DATA_VIEW_TABLE_FRAME_CLASSNAME} [&_th]:px-3 [&_td]:px-3`,
     dataViewTableProgressClass: UI_RESPONSIVE_DATA_VIEW_TABLE_PROGRESS_CLASSNAME,
     dataViewTableValueClass: UI_RESPONSIVE_DATA_VIEW_TABLE_VALUE_CLASSNAME,
     elementRowClass: UI_RESPONSIVE_ELEMENT_ROW_CLASSNAME,
@@ -100,7 +98,7 @@ export const graphTableHost: TableHostAdapter = {
     coerceFieldLineMode,
     coerceRowHeightPreset,
     readFieldLineClassName,
-    readHeaderPaddingClassName,
-    readTablePaddingClassName,
+    readHeaderPaddingClassName: baseTableHost.helpers.readHeaderPaddingClassName,
+    readTablePaddingClassName: baseTableHost.helpers.readTablePaddingClassName,
   },
 }

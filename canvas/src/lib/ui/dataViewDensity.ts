@@ -1,11 +1,12 @@
+import { readBaseDataViewRowHeightPx, readBaseDataViewCellPaddingClassName, readBaseDataViewHeaderPaddingClassName } from '@agentic-base/views-react/table'
 import { UI_THEME_TOKENS } from './theme-tokens'
 
 export type DataViewRowHeightPreset = 'compact' | 'comfortable'
 export type DataViewFieldLineMode = 'single' | 'double' | 'flex'
 
 export const DATA_VIEW_ROW_HEIGHT_OPTIONS = [
-  { value: 'compact', label: 'Compact', description: 'Show denser rows.' },
-  { value: 'comfortable', label: 'Comfortable', description: 'Show more breathing room.' },
+  { value: 'compact', label: 'Compact', description: 'Use the shared toolbar-height rows.' },
+  { value: 'comfortable', label: 'Comfortable', description: 'Use the shared toolbar-height rows.' },
 ] as const satisfies readonly {
   value: DataViewRowHeightPreset
   label: string
@@ -53,7 +54,7 @@ export function readDataViewFieldLineLabel(mode: DataViewFieldLineMode): string 
 }
 
 export function readDataViewRowPixelHeight(preset: DataViewRowHeightPreset): number {
-  return preset === 'compact' ? 22 : 28
+  return readBaseDataViewRowHeightPx(preset)
 }
 
 export function readDataViewHeaderPixelHeight(preset: DataViewRowHeightPreset): number {
@@ -61,11 +62,11 @@ export function readDataViewHeaderPixelHeight(preset: DataViewRowHeightPreset): 
 }
 
 export function readDataViewTablePaddingClassName(preset: DataViewRowHeightPreset): string {
-  return preset === 'compact' ? 'px-3 py-1.5' : 'px-3 py-2'
+  return readBaseDataViewCellPaddingClassName(preset)
 }
 
 export function readDataViewHeaderPaddingClassName(preset: DataViewRowHeightPreset): string {
-  return preset === 'compact' ? 'px-2 py-1.5' : 'px-3 py-2'
+  return readBaseDataViewHeaderPaddingClassName(preset)
 }
 
 export function readDataViewFieldLineClassName(mode: DataViewFieldLineMode): string {

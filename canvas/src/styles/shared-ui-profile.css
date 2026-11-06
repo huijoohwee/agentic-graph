@@ -1,5 +1,10 @@
-/* Generated from agentic-design-system@3224afd19c086e511dcfd892d82d12b68460b971; profile sha256 f335bd273298f267eddffdf3b3f344a69e31e965223e527e6f599b2947ac9856. Do not edit. */
+/* Generated from agentic-design-system@26af2c05edec17808f84571478bf38fbff2c7bfb; profile sha256 d2691e47750d52376fd68c5efdbaf38393808c39da8ad065815609bdd03eb8ee. Do not edit. */
 :root, :host {
   --agentic-icon-size-compact: 0.75rem;
   --agentic-icon-size-default: 1rem;
+  --agentic-row-height: 38px;
+  --agentic-row-height-touch: 54px;
+}
+@media (pointer: coarse), (max-width: 768px) {
+  :root, :host { --agentic-row-height: var(--agentic-row-height-touch); }
 }
