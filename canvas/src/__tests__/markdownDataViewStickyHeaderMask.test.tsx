@@ -47,7 +47,31 @@ export async function testMarkdownDataViewStickyHeadersUseOpaqueMaskClass() {
       }
     }
 
+    // Embedded Viewer tables scroll with their outer pane, unlike bounded Canvas grids.
+    const frame = rowsContainer.querySelector('table')?.parentElement
+    const header = rowsContainer.querySelector('thead')
+    const table = rowsContainer.querySelector('table')
+    if (!frame || !header || !table) throw new Error('missing embedded table')
+    const bounds = (top: number, height: number) => ({ top, bottom: top + height, height } as DOMRect)
+    rowsContainer.style.overflowY = 'auto'
+    Object.defineProperties(rowsContainer, { clientHeight: { value: 300 }, scrollHeight: { value: 900 } })
+    Object.defineProperties(frame, { clientHeight: { value: 600 }, scrollHeight: { value: 600 } })
+    rowsContainer.getBoundingClientRect = () => bounds(60, 300)
+    let tableBottom = 380
+    frame.getBoundingClientRect = table.getBoundingClientRect = () => bounds(tableBottom - 500, 500)
+    header.getBoundingClientRect = () => bounds(tableBottom - 500 + (Number.parseFloat(header.style.transform.replace('translateY(', '')) || 0), 40)
+    const scrollPane = async () => {
+      rowsContainer.dispatchEvent(new dom.window.Event('scroll'))
+      await new Promise<void>(resolve => dom.window.requestAnimationFrame(() => resolve()))
+    }
+    await scrollPane()
+    if (header.getBoundingClientRect().top !== 60) throw new Error('Viewer outer pane must pin the shared original header')
+    tableBottom = 80
+    await scrollPane()
+    if (header.getBoundingClientRect().bottom !== 80) throw new Error('shared header must release at the table boundary')
+    if (rowsContainer.querySelectorAll('thead').length !== 1) throw new Error('sticky headers must never be cloned')
     rowsRoot.unmount()
+    if (header.style.transform !== '') throw new Error('unmount must restore the original header transform')
     columnsRoot.unmount()
   } finally {
     restore()
