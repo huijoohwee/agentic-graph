@@ -144,3 +144,27 @@ for (const scenario of ['move', 'cancel', 'allocation', 'summary'] as const) {
     } finally { await act(async () => root.unmount()); host.remove(); restore() }
   })
 }
+
+test('workflow content rows preserve identities, measured heights and native clip containment', async () => {
+  const { buildVideoSequenceLaneSidebarStyle, VideoSequenceWorkflowLane } = await import('../components/timeline/VideoSequenceTimelineLanes')
+  const { resolveWorkflowContentLanes, workflowLaneHeight } = await import('../components/timeline/videoSequenceTimelineRulerGeometry')
+  const rows = [{ rowKey: 'first', label: 'First', content: <details open><summary>Shared fields</summary><input aria-label="Existing field" defaultValue="kept" /></details> },
+    { rowKey: 'unknown', label: 'Unknown', content: 'No supplied timing' }]
+  const lanes = resolveWorkflowContentLanes([{ rowKey: 'first' }], rows)
+  assert.deepEqual(lanes.map(row => row.id), ['workflow:first', 'workflow:unknown'])
+  assert.throws(() => resolveWorkflowContentLanes([{ rowKey: 'missing' }], rows), /content_missing/)
+  assert.throws(() => resolveWorkflowContentLanes([], [rows[0], rows[0]]), /identity_invalid/)
+  assert.throws(() => resolveWorkflowContentLanes([], [{ ...rows[0], rowKey: '' }]), /identity_invalid/)
+  assert.equal(workflowLaneHeight(NaN), 61); assert.equal(workflowLaneHeight(-1), 61); assert.equal(workflowLaneHeight(120.2), 121)
+  assert.equal(buildVideoSequenceLaneSidebarStyle(lanes).gridTemplateRows, 'repeat(2, 61px)')
+  assert.equal(buildVideoSequenceLaneSidebarStyle(lanes, { 'workflow:first': 201 }).gridTemplateRows, '201px 61px')
+  const { restore } = initJsdomHarness(), host = document.createElement('section'), root = createRoot(host), heights: number[] = []
+  document.body.append(host)
+  try {
+    await act(async () => root.render(<VideoSequenceWorkflowLane row={rows[0]} selected reportHeight={(_, height) => heights.push(height)} clip={<button>Native clip</button>} />))
+    const lane = host.querySelector('[data-kg-workflow-content-row="first"]')!
+    assert(lane.querySelector('.timeline-workflow-row-clip button'))
+    assert.equal(lane.querySelector('input')?.value, 'kept'); assert.equal(lane.getAttribute('aria-current'), 'true')
+    assert(heights.length > 0 && heights.every(Number.isFinite))
+  } finally { await act(async () => root.unmount()); host.remove(); restore() }
+})
