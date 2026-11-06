@@ -12,7 +12,7 @@ import { buildVideoSequenceGeneratedFrameThumbnails, type VideoSequenceGenerated
 import { VideoSequenceTimelineClipMeta, resolveVideoSequenceSourceWindowLabel } from './VideoSequenceTimelineClipMeta'
 import { VideoSequenceTimelineRulerTicks } from './VideoSequenceTimelineRulerTicks'
 import { VideoSequenceTimeAxisControls } from './VideoSequenceTimeAxisControls'
-import { resolveVideoSequenceRulerInsetLeft, resolveVideoSequenceRulerInsetWidth } from './videoSequenceTimelineRulerGeometry'
+import { resolveVideoSequenceRulerInsetLeft, resolveVideoSequenceRulerInsetWidth, resolveWorkflowTimelineLanes, resolveWorkflowTimelineLaneId } from './videoSequenceTimelineRulerGeometry'
 import { buildVideoSequenceSourceImageThumbnail } from './videoSequenceSourceImageThumbnail'
 import { resolveVideoSequenceSourceThumbnailSet } from './videoSequenceSourceThumbnailSet'
 import { resolveVideoSequenceClipThumbnails } from './videoSequenceClipThumbnailSelection'
@@ -24,7 +24,7 @@ import {
   formatVideoSequenceTimelineSecondsOffset, isCompactSourceMediaSpan, resolveRenderableVideoSequenceTimelineSpans,
   resolveVideoSequenceTimelineDisplayLaneId, resolveVideoSequenceTimelineMediaSeconds, resolveVideoSequenceTimelineLane,
   resolveVisibleVideoSequenceTimelineDisplayLanes, shouldRenderVideoSequenceTimelineSpan,
-  type VideoSequenceTimelineDisplayLane, type VideoSequenceTimelineLaneId, type VideoSequenceTimelineProjectionOptions, type VideoSequenceTimelineScope,
+  type VideoSequenceTimelineLaneId, type VideoSequenceTimelineProjectionOptions, type VideoSequenceTimelineScope,
 } from './videoSequenceTimeline'
 import { readMermaidGanttTaskSourceRangeSeconds, type MermaidGanttBarDragMode, type MermaidGanttTimelineDragPreview, type MermaidGanttTimelineTaskSpan, type MermaidGanttTimelineTick } from '@/lib/mermaid/mermaidGanttBarInteraction'
 import type { MediaDragPayload } from '@/lib/ui/mediaDragPayload'
@@ -49,9 +49,6 @@ const VIDEO_SEQUENCE_DENSE_FBF_MAX_DURATION_MINUTES = 1.25 / 60
 const VIDEO_SEQUENCE_SOURCE_CONTENT_LANES = new Set<VideoSequenceTimelineLaneId>(['video', 'image', 'scene'])
 const VIDEO_SEQUENCE_OPERATION_CONTENT_LANES = new Set<VideoSequenceTimelineLaneId>(['mask', 'grade', 'audio'])
 const VIDEO_SEQUENCE_GENERATED_FRAME_CONTENT_LANES = new Set<VideoSequenceTimelineLaneId>(['fbf'])
-const WORKFLOW_TIMELINE_DISPLAY_LANES: readonly VideoSequenceTimelineDisplayLane[] = [{
-  id: 'workflow', label: 'Workflow', semanticId: 'video',
-}]
 function resolveVideoSequenceThumbnailWindow(args: {
   span: MermaidGanttTimelineTaskSpan
   windows: readonly VideoSequenceTimelineThumbnailWindow[]
@@ -174,7 +171,7 @@ export function VideoSequenceTimelineRuler({
   projectionMode = 'media', selectedRowKey,
   sourceThumbnails = [], sourceThumbnailWindows = [], sourceThumbnailSets = [], scopes = [], renderClipOverlay, renderLaneOverlay,
   taskSpans, timeAxisControls, timeRulerOverlay, timelineInsertedLanes = [], timelineZoom,
-  disabledLaneIds = VIDEO_SEQUENCE_BOTTOM_PANEL_DISABLED_LANE_IDS,
+  disabledLaneIds = VIDEO_SEQUENCE_BOTTOM_PANEL_DISABLED_LANE_IDS, workflowRows = false,
   onRulerPointerDown, onSelectRowKey, onSelectRowPosition, onDropMedia, onTrackPointerStart,
 }: {
   contentRef: React.RefObject<HTMLElement | null>
@@ -187,7 +184,7 @@ export function VideoSequenceTimelineRuler({
   mediaDurationSeconds?: number
   mediaFrameRate?: number
   playheadPercent: number
-  projectionMode?: VideoSequenceTimelineProjectionMode
+  projectionMode?: VideoSequenceTimelineProjectionMode; workflowRows?: boolean
   selectedRowKey: string
   sourceThumbnails?: readonly TimelineMediaReaderThumbnail[]
   sourceThumbnailWindows?: readonly VideoSequenceTimelineThumbnailWindow[]
@@ -211,9 +208,9 @@ export function VideoSequenceTimelineRuler({
   const projectionOptions = React.useMemo<VideoSequenceTimelineProjectionOptions>(() => ({ disabledLaneIds }), [disabledLaneIds])
   const visibleLanes = React.useMemo(() => (
     workflowProjection
-      ? (taskSpans.some(shouldRenderVideoSequenceTimelineSpan) ? WORKFLOW_TIMELINE_DISPLAY_LANES : [])
+      ? resolveWorkflowTimelineLanes(taskSpans.filter(shouldRenderVideoSequenceTimelineSpan), workflowRows)
       : resolveVisibleVideoSequenceTimelineDisplayLanes(taskSpans, projectionOptions)
-  ), [projectionOptions, taskSpans, workflowProjection])
+  ), [projectionOptions, taskSpans, workflowProjection, workflowRows])
   const timelineLanes = React.useMemo(() => buildVideoSequenceTimelineLaneOrder(visibleLanes, timelineInsertedLanes), [timelineInsertedLanes, visibleLanes])
   const renderableSpans = React.useMemo(() => (
     workflowProjection
@@ -224,8 +221,8 @@ export function VideoSequenceTimelineRuler({
   const visibleLaneIndexById = React.useMemo(() => new Map<string, number>(timelineLanes.map((lane, index): [string, number] => [lane.id, index])), [timelineLanes])
   const displayLaneIdByRowKey = React.useMemo(() => new Map(renderableSpans.map(span => [
     span.rowKey,
-    workflowProjection ? 'workflow' : resolveVideoSequenceTimelineDisplayLaneId(span, renderableSpans, projectionOptions),
-  ])), [projectionOptions, renderableSpans, workflowProjection])
+    workflowProjection ? resolveWorkflowTimelineLaneId(span.rowKey, workflowRows) : resolveVideoSequenceTimelineDisplayLaneId(span, renderableSpans, projectionOptions),
+  ])), [projectionOptions, renderableSpans, workflowProjection, workflowRows])
   const formatClipTime = React.useCallback((positionMinutes: number) => formatPositionLabel?.(positionMinutes) ?? formatVideoSequenceTimelineSecondsOffset(
     mediaDurationSeconds > 0 && maxMinutes > 0 ? resolveVideoSequenceTimelineMediaSeconds({ durationSeconds: mediaDurationSeconds, maxMinutes, positionMinutes }) : positionMinutes,
   ), [formatPositionLabel, maxMinutes, mediaDurationSeconds])

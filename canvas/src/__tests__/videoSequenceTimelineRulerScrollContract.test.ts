@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict'
+import { resolveWorkflowTimelineLanes, resolveWorkflowTimelineLaneId } from '../components/timeline/videoSequenceTimelineRulerGeometry'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -34,4 +36,16 @@ export function testVideoSequenceTimelineRulerUsesSingleScrollOwner() {
   ) {
     throw new Error('expected video sequence ruler rail to own both horizontal and vertical scroll without nested lane-body overflow')
   }
+}
+
+export function testWorkflowTimelineRowsUseDistinctStableLanesWithoutChangingLegacyProjection() {
+  const rows = [{ rowKey: 'option-a:one', label: 'First activity' }, { rowKey: 'option-a:two', label: 'Second activity' }]
+  assert.deepEqual(resolveWorkflowTimelineLanes(rows), [{ id: 'workflow', label: 'Workflow', semanticId: 'video' }])
+  const lanes = resolveWorkflowTimelineLanes(rows, true)
+  assert.deepEqual(lanes.map(lane => lane.label), rows.map(row => row.label))
+  assert.deepEqual(lanes.map(lane => lane.id), rows.map(row => resolveWorkflowTimelineLaneId(row.rowKey, true)))
+  assert.equal(new Set(lanes.map(lane => lane.id)).size, 2)
+  assert.deepEqual(resolveWorkflowTimelineLanes([], true), [])
+  assert.throws(() => resolveWorkflowTimelineLanes([rows[0], rows[0]], true), /row_identity_invalid/)
+  assert.throws(() => resolveWorkflowTimelineLanes([{ rowKey: '', label: 'Unknown' }], true), /row_identity_invalid/)
 }
