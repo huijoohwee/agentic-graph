@@ -183,7 +183,10 @@ test('discovery summary opens in a separate shared overlay only after an applica
     await act(async () => statusButton().click())
     assert.equal(document.querySelectorAll('[data-kg-anchor-overlay]').length, 2)
     await act(async () => new Promise(resolve => setTimeout(resolve, 130)))
-    await act(async () => document.body.dispatchEvent(new window.MouseEvent('mousedown', { bubbles: true })))
+    await act(async () => {
+      document.body.dispatchEvent(new window.MouseEvent('mousedown', { bubbles: true }))
+      await new Promise(resolve => setTimeout(resolve, 0))
+    })
     assert.equal(document.querySelectorAll('[data-kg-anchor-overlay]').length, 0, 'outside clicks dismiss both panels')
     await open('capture.md')
     await act(async () => statusButton().click())
