@@ -93,9 +93,14 @@ test('multiple saved sources require choosing a URL before discovery', async () 
     await openFolderActions(host)
     await act(async () => button('Choose pages to import in websites').click())
     assert.equal(requests.length, 0, 'no first-source guess')
-    const select = document.querySelector<HTMLSelectElement>('select[aria-label="Website source in websites"]')!
-    assert.equal(select.options.length, 2)
-    await act(async () => { select.value = '/websites/b.md'; select.dispatchEvent(new window.Event('change', { bubbles: true })) })
+    const select = document.querySelector<HTMLButtonElement>('button[data-kg-select][aria-label="Website source in websites"]')!
+    await act(async () => { select.click(); await new Promise(resolve => setTimeout(resolve, 35)) })
+    const menu = document.querySelector('menu[aria-label="Website source in websites"]')!
+    const options = Array.from(menu.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]'))
+    assert.equal(options.length, 2)
+    await act(async () => options.find(option => option.value === '/websites/b.md')!.click())
+    assert.equal(select.getAttribute('data-value'), '/websites/b.md')
+    assert.equal(select.getAttribute('aria-expanded'), 'false')
     await act(async () => Array.from(document.querySelectorAll('button')).find(item => item.textContent === 'Find pages to import')!.click())
     await settleDiscovery()
     assert.equal(requests[0].rootUrl, 'https://second.test/')
