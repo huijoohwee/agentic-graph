@@ -1,3 +1,4 @@
+import { bindOutsideDismiss } from '@agentic-base/views-react/controls'
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { clampOverlayTopLeftFullyInViewport } from '@/lib/ui/overlayClamp'
@@ -90,38 +91,28 @@ export function AnchorOverlay({
     if (!open) return
     if (!onClose) return
 
-    const openedAt = typeof performance !== 'undefined' ? performance.now() : Date.now()
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
       onClose()
     }
 
-    const handlePointerDown = (e: MouseEvent | PointerEvent) => {
-      const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
-      if (now - openedAt < 120) return
-      const anchorEl = anchorRef?.current
-      const containerEl = containerRef.current
+    const stopOutside = bindOutsideDismiss(e => {
       const t = e.target as Node | null
-      if (!t) return
-      if (anchorEl && anchorEl.contains(t)) return
-      if (containerEl && containerEl.contains(t)) return
+      if (!t || anchorRef?.current?.contains(t) || containerRef.current?.contains(t)) return true
       const targetElement = t instanceof Element ? t : t.parentElement
-      if (dismissalGroup && targetElement?.closest('[data-kg-overlay-group]')?.getAttribute('data-kg-overlay-group') === dismissalGroup) return
-      onClose()
-    }
+      return !!dismissalGroup && targetElement?.closest('[data-kg-overlay-group]')?.getAttribute('data-kg-overlay-group') === dismissalGroup
+    }, onClose, 120)
 
     const handleReposition = () => {
       requestAnimationFrame(updatePosition)
     }
 
     window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('mousedown', handlePointerDown, true)
     window.addEventListener('scroll', handleReposition, true)
     window.addEventListener('resize', handleReposition)
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('mousedown', handlePointerDown, true)
+      stopOutside()
       window.removeEventListener('scroll', handleReposition, true)
       window.removeEventListener('resize', handleReposition)
     }
