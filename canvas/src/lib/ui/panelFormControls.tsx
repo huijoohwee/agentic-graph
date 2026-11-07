@@ -2,7 +2,7 @@ import { SemanticSelect, type SemanticSelectProps } from '@/lib/ui/SemanticSelec
 import React from 'react'
 import { usePanelTypography } from './panelTypography'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
-import { KeyTypeValueStaticRow } from 'grph-shared/react/keyTypeValueRow'
+import { KeyTypeValueContainer, KeyTypeValueStaticRow } from 'grph-shared/react/keyTypeValueRow'
 import { KTV_FIELD_GRID_CLASS_NAME, KTV_ROW_LABEL_CELL_CLASS_NAME, KTV_ROW_VALUE_CELL_CLASS_NAME, panelFieldDecorationClassName } from 'grph-shared/ui/keyTypeValueRows'
 import { UI_THEME_TOKENS, normalizeSingleLineControlClassName } from '@/lib/ui/theme-tokens'
 import {
@@ -220,15 +220,19 @@ export const PanelRangeInput = React.forwardRef<HTMLInputElement, PanelRangeInpu
 // variant/layout are accepted for older callers only; there is one field presentation.
 export function PanelField({ label, children, className, labelClassName }: PanelFieldProps) {
   const row = useCanvasKeyTypeValueStaticRowProps()
+  const rawCells = { keyNode: label, valueNode: children }
+  const cells = row.presentCells ? row.presentCells(rawCells) : rawCells
   return (
+    <KeyTypeValueContainer className="col-span-full">
     <label data-panel-field-row="true" className={cn(
       panelFieldDecorationClassName(className), KTV_FIELD_GRID_CLASS_NAME,
       'col-span-full items-center', row.fontClassName, row.textSizeClassName, row.densityClassName,
     )}>
-      <span className={cn(KTV_ROW_LABEL_CELL_CLASS_NAME, panelFieldDecorationClassName(labelClassName))}>{label}</span>
+      <span className={cn(KTV_ROW_LABEL_CELL_CLASS_NAME, panelFieldDecorationClassName(labelClassName))}>{cells.keyNode}</span>
       <span />
-      <span className={cn(KTV_ROW_VALUE_CELL_CLASS_NAME, 'items-center')}>{children}</span>
+      <span className={cn(KTV_ROW_VALUE_CELL_CLASS_NAME, 'items-center')}>{cells.valueNode}</span>
     </label>
+    </KeyTypeValueContainer>
   )
 }
 

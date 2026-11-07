@@ -1,4 +1,4 @@
-/* Generated from agentic-design-system@c62a67978f4df85ae5f5681522ff7ae44d530f49; profile sha256 50f41445e4e4bd06a82e25818d3020b60c788e801c24347af4de2b48587bfa65. Do not edit. */
+/* Generated from agentic-design-system@e7bdeb88762ee787872d96ae4a8fdfe0b7329934; profile sha256 8165a6d938440b4a9db217d200922868af769791fa9fdc0b9da54cc96eb3e81c. Do not edit. */
 :root, :host {
   --agentic-icon-size-compact: 0.75rem;
   --agentic-icon-size-default: 1rem;
@@ -8,11 +8,15 @@
   --agentic-line-height-body: 1.25rem;
   --agentic-font-sans: -apple-system, BlinkMacSystemFont, Segoe UI, Noto Sans, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
   --agentic-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
-  --agentic-ktv-columns: minmax(0,1fr) minmax(3rem,4.75rem) minmax(0,1.45fr);
-  --agentic-ktv-columns-narrow: minmax(0,0.95fr) minmax(2.75rem,0.42fr) minmax(0,1.2fr);
+  --agentic-ktv-columns: minmax(10.5rem,11rem) 2rem minmax(8.75rem,1fr);
+  --agentic-ktv-columns-narrow: minmax(0,1fr) 2rem;
+  --agentic-ktv-stack-breakpoint: 22.25rem;
+  --agentic-ktv-panel-width: 26.25rem;
 }
-@media (max-width: 639px) {
-  :root, :host { --agentic-ktv-columns: var(--agentic-ktv-columns-narrow); }
+.agentic-ktv-container { min-inline-size: 0; inline-size: 100%; container: agentic-ktv / inline-size; }
+@container agentic-ktv (width < 22.25rem) {
+  .agentic-ktv-row { grid-template-columns: var(--agentic-ktv-columns-narrow); }
+  .agentic-ktv-row > :last-child { grid-column: 1 / -1; }
 }
 @media (pointer: coarse), (max-width: 768px) {
   :root, :host { --agentic-row-height: var(--agentic-row-height-touch); }

@@ -10,9 +10,13 @@ export type MainPanelFieldHelp = {
   value: Parameters<typeof buildSettingsValueTooltip>[0]
 }
 
-export function buildMainPanelFieldHelp(help: MainPanelFieldHelp) {
+function completeKeyHelp(label: string, description: string): string {
+  return description.includes(label) ? description : `${label}: ${description}`
+}
+
+export function buildMainPanelFieldHelp(help: MainPanelFieldHelp, label = help.value.key) {
   return {
-    key: buildRoleActionOutcomeTooltip(help),
+    key: completeKeyHelp(label, buildRoleActionOutcomeTooltip(help)),
     value: buildSettingsValueTooltip(help.value),
   }
 }
@@ -89,7 +93,7 @@ export function prepareMainPanelRowHelp(cells: KeyTypeValueCells, help?: MainPan
   if (!help && !label) return cells
   const legacyKey = [...new Set(keyDescriptions)].join('; ')
   const legacyValue = [...new Set(valueDescriptions)].join('; ')
-  const content = help ? buildMainPanelFieldHelp(help) : {
+  const content = help ? buildMainPanelFieldHelp(help, label) : {
     key: legacyKey.includes('→') ? legacyKey : buildRoleActionOutcomeTooltip({
       role: 'Reader', actions: [`inspect ${label}`],
       outcome: legacyKey || 'read the field and its current value',
@@ -101,7 +105,7 @@ export function prepareMainPanelRowHelp(cells: KeyTypeValueCells, help?: MainPan
   }
   return {
     typeNode: valueDescriptions.length && typeNode ? <MainPanelCellHelp content={content.value} className="w-full">{type}</MainPanelCellHelp> : type,
-    keyNode: <MainPanelCellHelp content={content.key}>{key}</MainPanelCellHelp>,
+    keyNode: <MainPanelCellHelp content={completeKeyHelp(label, content.key)}>{key}</MainPanelCellHelp>,
     valueNode: <MainPanelCellHelp content={content.value} className="w-full justify-end"><RightAlignedValueCell>{value}</RightAlignedValueCell></MainPanelCellHelp>,
   }
 }

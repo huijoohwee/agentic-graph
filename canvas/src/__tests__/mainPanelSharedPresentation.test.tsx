@@ -163,7 +163,7 @@ async function testMainPanelRawAndLegacyRowsShareHelp() {
   const legacy = 'Default: 2; Min: 1; Max: 8; Interval: 1; Adjust the displayed reach.'
   function RawRow() {
     return <KeyTypeValueStaticRow {...useCanvasKeyTypeValueStaticRowProps()}
-      keyNode={<Tooltip content="Operator → select palette → update the graph"><span>Palette</span></Tooltip>}
+      keyNode={<Tooltip content="Operator → select palette → update the graph"><span>renderer:palette.nodes.hypothesis</span></Tooltip>}
       valueNode={<Tooltip content="Default: blue; Updates the graph colour"><input aria-label="Palette value" defaultValue="red" onChange={() => changes++} /></Tooltip>} />
   }
   try {
@@ -184,7 +184,7 @@ async function testMainPanelRawAndLegacyRowsShareHelp() {
       assert.equal(row.querySelectorAll('[data-kg-tooltip-anchor]').length, 2, 'one key and one value help owner')
       assert(row.querySelector('dt [aria-description]')?.getAttribute('aria-description')?.includes('→'), 'same key help grammar')
     }
-    assert.equal(rows[0].querySelector('dt [aria-description]')?.getAttribute('aria-description'), 'Operator → select palette → update the graph')
+    assert.equal(rows[0].querySelector('dt [aria-description]')?.getAttribute('aria-description'), 'renderer:palette.nodes.hypothesis: Operator → select palette → update the graph')
     assert.equal(rows[0].querySelector<HTMLInputElement>('input')?.value, 'red', 'current value is not mistaken for the default')
     const range = rows[1].querySelector<HTMLInputElement>('input')!
     assert.equal(range.value, '5'); assert.equal(range.min, '1'); assert.equal(range.max, '8'); assert.equal(range.step, '1')
@@ -196,9 +196,9 @@ async function testMainPanelRawAndLegacyRowsShareHelp() {
     const key = rows[0].querySelector<HTMLElement>('dt [tabindex="0"]')!
     await act(async () => key.focus())
     assert.equal(document.querySelectorAll('[role="tooltip"]').length, 1)
-    assert.equal(document.querySelector('[role="tooltip"]')?.textContent, 'Operator → select palette → update the graph')
+    assert.equal(document.querySelector('[role="tooltip"]')?.textContent, 'renderer:palette.nodes.hypothesis: Operator → select palette → update the graph')
     await act(async () => { key.blur(); key.dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true })) })
-    assert.equal(document.querySelector('[role="tooltip"]')?.textContent, 'Operator → select palette → update the graph', 'hover and keyboard share content')
+    assert.equal(document.querySelector('[role="tooltip"]')?.textContent, 'renderer:palette.nodes.hypothesis: Operator → select palette → update the graph', 'hover and keyboard share content')
     assert.equal(changes, 0, 'inspection never edits a field')
     const palette = rows[0].querySelector<HTMLInputElement>('input')!
     await act(async () => {
