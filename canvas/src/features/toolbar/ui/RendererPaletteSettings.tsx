@@ -1,3 +1,4 @@
+import { uiToolbarSettingsPanelBodyClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { PanelColorPicker } from '@/lib/ui/PanelColorPicker'
 import React from 'react';
 import {
@@ -43,7 +44,7 @@ export function RendererPaletteSettings() {
   const edgeTypes = ['critical', 'neutral'] as const;
 
   return (
-    <section className="grid grid-cols-1 gap-1">
+    <section className={uiToolbarSettingsPanelBodyClassName}>
       <section className={`text-xs ${UI_THEME_TOKENS.text.secondary} leading-snug`}>
         <Tooltip
           content={RENDERER_PALETTE_LIFECYCLE_TOOLTIP}

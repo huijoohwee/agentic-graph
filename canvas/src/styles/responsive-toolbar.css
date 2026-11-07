@@ -283,8 +283,8 @@
   }
 
   .kg-toolbar-settings-panel-body {
-    --kg-toolbar-settings-panel-body-padding-inline: 0;
-    --kg-toolbar-settings-panel-body-padding-block: 0;
+    --kg-toolbar-settings-panel-body-padding-inline: 0.75rem;
+    --kg-toolbar-settings-panel-body-padding-block: 0.5rem;
     min-width: 0;
     max-width: 100%;
     padding-inline: var(--kg-toolbar-settings-panel-body-padding-inline);
@@ -292,7 +292,7 @@
   }
 
   .kg-toolbar-settings-panel-body > :not([hidden]) ~ :not([hidden]) {
-    margin-block-start: var(--kg-toolbar-settings-panel-body-gap, 0);
+    margin-block-start: var(--kg-toolbar-settings-panel-body-gap, 0.5rem);
   }
 
   .kg-toolbar-settings-panel-subsection {

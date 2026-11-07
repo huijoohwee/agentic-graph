@@ -53,11 +53,13 @@ test('headless typography metadata and KTV layout are projections of the pinned 
 })
 
 
-test('legacy renderer fields reuse the KTV adapter and section bodies add no competing inset', () => {
+test('legacy renderer fields reuse the KTV adapter and palette and renderer sections reuse the selected inset', () => {
   const rows = fs.readFileSync(new URL('../lib/ui/responsiveControlRows.tsx', import.meta.url), 'utf8')
   assert.ok(rows.includes('<CanvasKeyTypeValueStaticRow'))
   assert.ok(!rows.includes('responsiveControlWidthClassName'))
   assert.ok(rows.includes("'aria-labelledby': labelId"), 'Original accessible control names must survive the adapter')
-  assert.match(toolbarCss, /--kg-toolbar-settings-panel-body-padding-inline: 0;/)
-  assert.match(toolbarCss, /--kg-toolbar-settings-panel-body-padding-block: 0;/)
+  const palette = fs.readFileSync(new URL('../features/toolbar/ui/RendererPaletteSettings.tsx', import.meta.url), 'utf8')
+  assert.ok(palette.includes('className={uiToolbarSettingsPanelBodyClassName}'))
+  assert.match(toolbarCss, /--kg-toolbar-settings-panel-body-padding-inline: 0\.75rem;/)
+  assert.match(toolbarCss, /--kg-toolbar-settings-panel-body-padding-block: 0\.5rem;/)
 })
